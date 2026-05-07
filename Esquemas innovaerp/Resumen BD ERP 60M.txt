@@ -1,0 +1,398 @@
+Visión General de la Arquitectura de InnovaERP (Lista Completa y Revisada)
+InnovaERP es un sistema de gestión empresarial (ERP) integral, modular y altamente adaptable, diseñado para optimizar las operaciones y la toma de decisiones en diversos tipos de negocios. Se compone de los siguientes 60 módulos interconectados:
+
+I. Módulos Fundamentales y de Gestión General
+core (Núcleo del Sistema)
+
+Propósito: Gestión de la información básica de la empresa, sucursales, usuarios, roles y permisos.
+
+Interacciones Clave: Interacción transversal con todos los módulos.
+
+configuracion_motor (Configuración General)
+
+Propósito: Gestionar configuraciones generales del sistema y la definición de tipos de documentos y datos maestros utilizados transversalmente.
+
+Interacciones Clave: Proporciona definiciones a la mayoría de los módulos.
+
+auditoria (Registro de Auditoría)
+
+Propósito: Registrar todas las acciones importantes del sistema para fines de trazabilidad, seguridad y cumplimiento.
+
+Interacciones Clave: Todos los módulos envían eventos a auditoria.
+
+gestion_documental (Gestión de Documentos)
+
+Propósito: Almacenamiento, organización y gestión de documentos electrónicos y archivos adjuntos.
+
+Interacciones Clave: Módulos de RRHH, Ventas, Compras, Calidad, Salud, Reclutamiento, Procesos, Comunicación, Productividad, Servicio al Cliente, Delivery, Gestión de Propiedades, Planificación de Recursos y Capacidad, Portal de Clientes, Portal de Proveedores, Portal de Vendedores, Portal de Conductores de Delivery adjuntan documentos aquí.
+
+gestion_aprobaciones (Gestión de Aprobaciones)
+
+Propósito: Centralizar y automatizar los flujos de aprobación para diversas operaciones del ERP.
+
+Interacciones Clave: Módulos como Compras, Finanzas, RRHH, Calidad, Solicitudes Internas, Reclutamiento, Portal de Empleados, Procesos de Negocio, Gestión de Propiedades, Portal de Clientes, Portal de Proveedores, Portal de Vendedores, Portal de Conductores de Delivery inician solicitudes aquí.
+
+integracion_b2b (Integración B2B)
+
+Propósito: Facilitar el intercambio estructurado de datos transaccionales con socios comerciales externos (proveedores, clientes, bancos, pasarelas de pago).
+
+Interacciones Clave: Compras, Ventas, Banca Electrónica, Inventario.
+
+migracion_datos (Migración de Datos)
+
+Propósito: Facilitar la carga inicial de datos y la migración de información al sistema.
+
+Interacciones Clave: Herramienta de utilidad que interactúa con todos los módulos para la carga de datos maestros y transaccionales.
+
+compliance (Cumplimiento Normativo y Legal)
+
+Propósito: Gestión de regulaciones, políticas internas y auditorías de cumplimiento.
+
+Interacciones Clave: Impacta RRHH, Nómina, Finanzas, Compras, Ventas, Control de Calidad.
+
+gestion_procesos_negocio (Gestión de Procesos de Negocio - BPM)
+
+Propósito: Definir, ejecutar, monitorear y optimizar flujos de trabajo y procesos de negocio personalizados, automatizando tareas, decisiones y aprobaciones entre módulos y usuarios.
+
+Interacciones Clave: Orquesta acciones en prácticamente todos los módulos del ERP.
+
+II. Módulos Financieros y Contables
+finanzas (Finanzas Generales)
+
+Propósito: Centralizar la gestión de monedas, tasas de cambio, métodos de pago y todas las transacciones financieras generales, incluyendo la gestión y registro de retenciones de impuesto.
+
+Modelos Clave (Adición): MetodoPago (maestro de métodos de pago).
+
+Interacciones Clave: Contabilidad, Ventas, Compras, Nómina, Gastos, Tesorería, Banca Electrónica, Gestión de Propiedades (ingresos por alquiler).
+
+contabilidad (Contabilidad General)
+
+Propósito: Gestionar el plan de cuentas, los asientos contables y los libros mayores para generar los estados financieros.
+
+Interacciones Clave: Recibe información de Finanzas, Ventas, Compras, Inventario (costo de ventas), Nómina, Activos Fijos, CxC, CxP, Gestión de Propiedades (ingresos/gastos).
+
+cuentas_por_cobrar (Cuentas por Cobrar - CxC)
+
+Propósito: Gestionar los saldos pendientes de los clientes, los plazos de crédito y el proceso de cobranza.
+
+Modelos Clave (Actualización): AbonoCxC (ahora con id_metodo_pago FK a finanzas.MetodoPago).
+
+Interacciones Clave: Ventas (Factura), Finanzas (Pago Recibido), CRM (Cliente), Portal de Clientes, Portal de Vendedores.
+
+cuentas_por_pagar (Cuentas por Pagar - CxP)
+
+Propósito: Gestionar los saldos pendientes a proveedores, las fechas de vencimiento y el proceso de pago.
+
+Modelos Clave (Actualización): PagoCxP (ahora con id_metodo_pago FK a finanzas.MetodoPago).
+
+Interacciones Clave: Compras (Factura Compra), Finanzas (Egreso Realizado), Proveedores, Portal de Proveedores.
+
+tesoreria (Tesorería)
+
+Propósito: Gestionar el flujo de efectivo, la conciliación bancaria y las operaciones de cambio de divisas.
+
+Interacciones Clave: Finanzas (Caja, Cuenta Bancaria), Banca Electrónica, Portal de Vendedores (confirmación de entrega de efectivo a administración).
+
+banca_electronica (Banca Electrónica)
+
+Propósito: Integración con pasarelas de pago y bancos para procesar transacciones electrónicas y conciliar movimientos bancarios.
+
+Modelos Clave (Actualización): TransaccionPasarelaPago (ahora con id_metodo_pago FK a finanzas.MetodoPago).
+
+Interacciones Clave: Ventas (pagos online), Finanzas, CxC, Nómina, Integracion B2B, Portal de Clientes (futuros pagos directos), Portal de Proveedores (consulta de pagos).
+
+gastos (Gestión de Gastos)
+
+Propósito: Registrar y gestionar los gastos operativos de la empresa, incluyendo reembolsos a empleados.
+
+Modelos Clave (Actualización): Gasto (ahora con id_metodo_pago FK a finanzas.MetodoPago para el reembolso).
+
+Interacciones Clave: Finanzas, Contabilidad, RRHH (reembolsos), Nómina (procesar reembolsos), Compras (vincular a OC), Gestión de Propiedades (gastos de propiedad).
+
+planificacion_financiera (Presupuesto y Planificación Financiera)
+
+Propósito: Crear, gestionar y monitorear presupuestos financieros y realizar proyecciones.
+
+Interacciones Clave: Contabilidad (Plan de Cuentas), Finanzas (Transacciones), Analítica de Negocio.
+
+activos_fijos (Gestión de Activos Fijos)
+
+Propósito: Gestionar el ciclo de vida de los activos fijos de la empresa (adquisición, depreciación, disposición).
+
+Interacciones Clave: Contabilidad (depreciación), Compras (adquisición), Mantenimiento, IoT Data (monitoreo de activos), Gestión de Propiedades (si la propiedad es un activo fijo), Planificación de Recursos y Capacidad.
+
+III. Módulos de Cadena de Suministro y Logística
+inventario (Inventario)
+
+Propósito: Gestión de productos, variantes, atributos, unidades de medida, categorías y el control de stock. Incluye el seguimiento de inventarios en consignación (tanto de cliente como de proveedor).
+
+Modelos Clave (Adición para Consignación): StockConsignacionCliente, StockConsignacionProveedor.
+
+Interacciones Clave: Compras, Ventas, Manufactura, Almacenes, Despacho, Control de Calidad, IoT Data (monitoreo de productos/lotes), Portal de Clientes (consulta de stock, reporte de ventas a consignación), Portal de Proveedores (consulta de stock en consignación), Portal de Vendedores (consulta de stock para pedidos).
+
+almacenes (Gestión de Almacenes)
+
+Propósito: Gestionar la estructura física de los almacenes, las ubicaciones y los movimientos internos de inventario.
+
+Interacciones Clave: Inventario, Ventas, Despacho, Manufactura, WMS Avanzado.
+
+compras (Compras)
+
+Propósito: Gestionar el ciclo completo de compras, desde la requisición hasta la recepción de facturas de proveedores. Incluye la gestión de compras a consignación (autopago al consumo).
+
+Interacciones Clave: Inventario, Cuentas por Pagar, Proveedores, Finanzas, Contabilidad, Gestión de Aprobaciones, Portal de Proveedores (consulta de OC, registro de facturas/borradores, respuesta a SDC).
+
+logistica_transporte (Logística y Transporte)
+
+Propósito: Planificar y gestionar los envíos y la distribución de mercancías. Cubre la parte de planificación y rutas de la entrega general.
+
+Interacciones Clave: Despacho, Flota, Ventas (seguimiento), Portal de Clientes (status de despachos), Portal de Proveedores (notificación de despachos a clientes/nuestra empresa), Portal de Vendedores (optimización de rutas de visita), Portal de Conductores de Delivery (rutas de entrega).
+
+flota (Gestión de Flota)
+
+Propósito: Gestionar los vehículos, conductores y el mantenimiento de la flota de transporte.
+
+Interacciones Clave: Logística y Transporte, Mantenimiento, RRHH (conductores), Planificación de Recursos y Capacidad, Portal de Conductores de Delivery (información del vehículo).
+
+despacho (Despacho de Mercancías)
+
+Propósito: Gestionar la preparación final y la salida de mercancías del almacén para su entrega. Cubre la parte de salida física de la mercancía para la entrega general.
+
+Interacciones Clave: Almacenes, Ventas, Inventario, Logística y Transporte, Portal de Clientes (cotejo de pedidos vs. recibido), Portal de Conductores de Delivery (confirmación de recogida).
+
+proveedores (Gestión de Proveedores)
+
+Propósito: Gestionar la información maestra de los proveedores de la empresa.
+
+Interacciones Clave: Compras, Cuentas por Pagar, Finanzas (pagos), Control de Calidad (calidad de proveedores), Portal de Proveedores, Portal de Conductores de Delivery (si el conductor es un proveedor externo).
+
+wms_avanzado (Gestión Avanzada de Almacenes - WMS)
+
+Propósito: Optimización de operaciones de almacén: estrategias de almacenamiento, picking, putaway y gestión de mano de obra.
+
+Interacciones Clave: Almacenes, Inventario, Manufactura, RRHH (mano de obra), IoT Data.
+
+mantenimiento (Gestión de Mantenimiento)
+
+Propósito: Planificar, ejecutar y registrar el mantenimiento preventivo y correctivo de equipos y activos.
+
+Interacciones Clave: Activos Fijos, Flota, Manufactura (maquinaria), IoT Data (mantenimiento predictivo), Compras (repuestos), Gestión de Solicitudes Internas, Gestión de Propiedades (mantenimiento de inmuebles), Portal de Proveedores (reportes de servicio si es externo).
+
+planificacion_recursos_capacidad (Planificación de Recursos y Capacidad)
+
+Propósito: Centralizar la definición, gestión y optimización de la capacidad de todos los tipos de recursos (maquinaria, vehículos, propiedades, personal) para su asignación eficiente a operaciones, proyectos y servicios.
+
+Interacciones Clave: Activos Fijos, Flota, Gestión de Propiedades, RRHH (Empleado), Manufactura (Centro de Trabajo), Servicios y Proyectos, Mantenimiento, Delivery General, Gestión de Procesos de Negocio, Analítica de Negocio, Inteligencia Artificial Aplicada.
+
+IV. Módulos de Ventas y Clientes
+crm (Gestión de Relaciones con Clientes - Básico)
+
+Propósito: Gestión de la información maestra de clientes.
+
+Interacciones Clave: Ventas, Cuentas por Cobrar, CRM Ventas y Marketing, Servicio al Cliente, Gestión de Propiedades (inquilinos), Portal de Clientes, Portal de Vendedores.
+
+ventas (Gestión de Ventas)
+
+Propósito: Gestión completa del ciclo de ventas, desde cotizaciones hasta facturación y devoluciones. Incluye la gestión de ventas a consignación (facturación al consumo).
+
+Interacciones Clave: Inventario, Cuentas por Cobrar, Finanzas, Despacho, CRM (Cliente), CRM Ventas y Marketing, Portal de Clientes (historial de compras, pedidos, cotizaciones, notas de venta, notas de crédito, devoluciones, reportes de ventas a consignación), Portal de Vendedores (generación de pedidos/cotizaciones).
+
+retail_pos (Punto de Venta Retail)
+
+Propósito: Gestión de ventas y operaciones en tiendas físicas (Punto de Venta).
+
+Modelos Clave (Actualización): TransaccionPOS (ahora con id_metodo_pago FK a finanzas.MetodoPago).
+
+Interacciones Clave: Ventas, Inventario, Finanzas (Caja), RRHH (cajeros).
+
+restaurante_pos (Punto de Venta Restaurante)
+
+Propósito: Gestión de ventas y operaciones específicas de restaurantes (mesas, órdenes de cocina).
+
+Modelos Clave (Actualización): OrdenRestaurante (ahora con id_metodo_pago FK a finanzas.MetodoPago para el pago final).
+
+Interacciones Clave: Ventas, Inventario (consumo de ingredientes), Finanzas (Caja).
+
+crm_ventas_marketing (CRM de Ventas y Marketing)
+
+Propósito: Gestionar el ciclo completo de la relación con el cliente desde la generación de prospectos hasta la gestión de oportunidades de venta, actividades de ventas y campañas de marketing.
+
+Interacciones Clave: CRM (Cliente), Ventas (Cotización), RRHH (vendedores), Productividad Personal, Comunicación Interna, Gestión de Procesos de Negocio, Servicio al Cliente, Analítica de Negocio, IoT Data, Portal de Vendedores (registro/asignación de prospectos).
+
+servicio_cliente (Servicio al Cliente y Mesa de Ayuda)
+
+Propósito: Centralizar la gestión de consultas, quejas y solicitudes de soporte de los clientes, proporcionando una base de conocimientos y seguimiento de SLAs.
+
+Interacciones Clave: CRM (Cliente), Ventas (contexto del ticket), RRHH (agentes), Comunicación Interna, Gestión de Procesos de Negocio, Analítica de Negocio, Delivery General, Portal de Clientes (creación/seguimiento de tickets), Portal de Vendedores (creación/seguimiento de tickets en nombre del cliente), Portal de Conductores de Delivery (reporte de incidencias).
+
+portal_clientes (Portal de Clientes - Multi-tenant)
+
+Propósito: Proporcionar una interfaz de autoservicio web para que los clientes finales de las empresas que adquieren InnovaERP accedan a su información financiera, historial de transacciones, estado de pedidos/despachos, realicen pedidos y gestionen diversas solicitudes. El diseño multi-tenant permite a cada empresa cliente de InnovaERP extender esta funcionalidad a sus propios clientes. Incluye la visualización y gestión de retenciones de impuesto y la capacidad de subir/registrar documentos.
+
+Modelos Clave (Actualización): BorradorPagoCliente (ahora con id_metodo_pago FK a finanzas.MetodoPago).
+
+Interacciones Clave: crm.Cliente, cuentas_por_cobrar, ventas (todos los documentos: Pedido, Cotizacion, Factura, NotaVenta, NotaCreditoVenta, DevolucionVenta), inventario (stock, stock en consignación), manufactura, despacho, logistica_transporte, banca_electronica, servicio_cliente, gestion_aprobaciones, gestion_documental, inteligencia_artificial_aplicada, auditoria, finanzas (para retenciones), portal_vendedores (iniciación de BorradorPagoCliente).
+
+portal_vendedores (Portal de Vendedores - Multi-tenant)
+
+Propósito: Proporcionar una interfaz de autoservicio web (y en el futuro móvil) para que los vendedores accedan a información clave de sus clientes (historial, CxC, estado), gestionen prospectos, generen pedidos y cotizaciones, y confirmen pagos en campo, optimizando su gestión de ventas y rutas. Diseñado con capacidad multi-tenant.
+
+Modelos Clave (Actualización): ConfirmacionPagoVendedor (ahora con id_metodo_pago FK a finanzas.MetodoPago), EntregaDineroAdmin (ahora con id_metodo_pago FK a finanzas.MetodoPago).
+
+Interacciones Clave: rrhh.Empleado, crm.Cliente, crm_ventas_marketing.Prospecto, ventas (todos los documentos de venta), cuentas_por_cobrar, finanzas (flujo de pago en efectivo, retenciones), tesoreria (confirmación de entrega de efectivo), logistica_transporte (rutas), inventario (consulta de stock), gestion_documental, comunicacion_interna, gestion_procesos_negocio, inteligencia_artificial_aplicada, analitica_negocio, auditoria, portal_clientes (iniciación de BorradorPagoCliente).
+
+V. Módulos de Manufactura y Calidad
+manufactura (Manufactura)
+
+Propósito: Gestionar el proceso de producción, desde las órdenes de producción hasta el control de la planta y las listas de materiales.
+
+Interacciones Clave: Inventario, Almacenes, Costos, Control de Calidad, Mantenimiento, IoT Data, Planificación de Recursos y Capacidad (centros de trabajo), Portal de Clientes (status de pedidos en producción).
+
+costos (Costos)
+
+Propósito: Calcular y analizar los costos de productos y procesos, incluyendo costeo estándar, real y análisis de variaciones.
+
+Interacciones Clave: Manufactura, Inventario, Contabilidad, Finanzas.
+
+control_calidad (Control de Calidad)
+
+Propósito: Gestionar las especificaciones de calidad, los planes de inspección, las no conformidades y las acciones correctivas y preventivas (CAPAs).
+
+Interacciones Clave: Manufactura, Inventario, Compras, Servicio al Cliente, Gestión de Aprobaciones.
+
+VI. Módulos de Gestión de Proyectos y Servicios
+servicios_proyectos (Servicios y Proyectos)
+
+Propósito: Gestionar proyectos, tareas de proyecto, recursos y el registro de tiempo para la facturación de servicios.
+
+Interacciones Clave: Ventas (proyectos facturables), RRHH (recursos), Finanzas (facturación), Gestión de Tareas Colaborativas, Planificación de Recursos y Capacidad.
+
+VII. Módulos de Recursos Humanos y Personal
+rrhh (Gestión Básica de Recursos Humanos y Beneficios)
+
+Propósito: Gestión de la información maestra del empleado y administración de beneficios laborales.
+
+Interacciones Clave: Nómina, Gestión de Talento RRHH, Control de Asistencia, Reclutamiento y Selección, Portal de Empleados, Planificación de Recursos y Capacidad, Portal de Vendedores, Portal de Conductores de Delivery.
+
+gestion_talento_rrhh (Gestión del Rendimiento y Desarrollo del Talento)
+
+Propósito: Gestión del rendimiento, desarrollo, capacitación y habilidades del talento humano, incluyendo bonificaciones por desempeño/producción.
+
+Interacciones Clave: RRHH (Empleado), Manufactura (producción para bonos), Nómina (alimenta bonificaciones), Gestión Documental, Productividad Personal, Analítica de Negocio.
+
+control_asistencia (Gestión de Horarios y Asistencia)
+
+Propósito: Gestionar horarios, registrar marcajes (biométricos), calcular horas trabajadas, ausencias y horas extras, y determinar elegibilidad para bonos de asistencia.
+
+Interacciones Clave: RRHH (Empleado), IoT Data (marcajes biométricos), Nómina (alimenta horas y bonos), Gestión de Aprobaciones, Productividad Personal.
+
+nomina (Gestión de Nómina Legal y Extrasalarial)
+
+Propósito: Cálculo, procesamiento, pago y registro contable de la nómina (legal y extrasalarial), con apego a la legislación venezolana y manejo multimoneda.
+
+Modelos Clave (Actualización): ProcesoNomina y ProcesoNominaExtrasalarial (podrían vincularse a id_metodo_pago si el pago de nómina es por diferentes métodos).
+
+Interacciones Clave: RRHH (Empleado), Control de Asistencia, Gestión de Talento RRHH, Finanzas (Egresos), Contabilidad (Asientos), Banca Electrónica, Finanzas (Tasa de Cambio), Gastos.
+
+salud_seguridad_ocupacional (Salud y Seguridad Ocupacional)
+
+Propósito: Gestionar la salud y seguridad de los empleados: consultas médicas internas, referencias, órdenes y resultados de exámenes médicos, y gestión de riesgos laborales.
+
+Interacciones Clave: RRHH (Empleado), Control de Asistencia (reposos), Gestión Documental, Gestión de Aprobaciones.
+
+comedor_empleados (Comedor de Empleados)
+
+Propósito: Gestionar las operaciones del comedor de empleados: planificación de menús, registro de consumo, control de inventario de alimentos y deducciones de nómina.
+
+Interacciones Clave: RRHH (Empleado), Nómina (deducciones), Inventario (consumo de insumos), Gastos (compras de insumos), IoT Data (registro de consumo).
+
+reclutamiento_seleccion (Reclutamiento y Selección)
+
+Propósito: Gestionar el ciclo completo de reclutamiento y selección de personal, desde la creación de vacantes hasta la contratación y el onboarding.
+
+Interacciones Clave: RRHH (creación de empleados), RRHH (Cargo), Core (Departamento), Gestión Documental, Gestión de Aprobaciones, Productividad Personal, Comunicación Interna.
+
+portal_empleados (Portal de Empleados)
+
+Propósito: Proporcionar una interfaz de autoservicio web para que los empleados accedan y gestionen su información, nómina, asistencia, beneficios, y soliciten permisos.
+
+Interacciones Clave: Actúa como una capa de interfaz que lee y escribe en todos los módulos de personal y se integra con Gestión de Aprobaciones.
+
+VIII. Módulos de Productividad y Colaboración
+gestion_solicitudes_internas (Gestión de Solicitudes Internas)
+
+Propósito: Centralizar la creación, asignación, seguimiento y resolución de requerimientos y tareas entre departamentos y usuarios dentro de la empresa.
+
+Interacciones Clave: Core (Usuarios, Departamentos), Gestión de Aprobaciones, Auditoría, Gestión Documental, Gestión de Procesos de Negocio.
+
+comunicacion_interna (Comunicación Interna)
+
+Propósito: Proporcionar una plataforma de mensajería interna en tiempo real y compartición de archivos segura para los usuarios del ERP.
+
+Interacciones Clave: Core (Usuarios), Gestión Documental, Auditoría, Gestión de Tareas Colaborativas, Productividad Personal, Servicio al Cliente, CRM Ventas y Marketing.
+
+gestion_tareas_colaborativas (Gestión de Tareas Colaborativas)
+
+Propósito: Proporcionar una plataforma flexible y visual (estilo Kanban) para la gestión de tareas, proyectos pequeños y colaboración interna.
+
+Interacciones Clave: Core (Usuarios), Gestión Documental, Productividad Personal, Comunicación Interna, Servicios y Proyectos, Gestión de Procesos de Negocio.
+
+productividad_personal (Productividad Personal)
+
+Propósito: Proporcionar herramientas para que los empleados organicen sus tareas individuales, gestionen su calendario, hagan seguimiento de reuniones y planifiquen su agenda.
+
+Interacciones Clave: RRHH (Empleado), Control de Asistencia, Gestión de Tareas Colaborativas, Comunicación Interna, Google Calendar/Outlook Calendar (integración externa).
+
+IX. Módulos de Gestión de Entregas y Servicios a Domicilio
+delivery_general (Gestión de Entregas y Servicios a Domicilio)
+
+Propósito: Gestionar el proceso de entrega de productos o servicios a domicilio, similar a plataformas "Uber-like", incluyendo la asignación de pedidos a conductores (internos o externos), seguimiento en tiempo real y gestión de tarifas.
+
+Interacciones Clave: Ventas / Retail POS / Restaurante POS, Despacho, Flota / RRHH (conductores internos), Proveedores (socios externos), Finanzas, IoT Data (seguimiento GPS), Servicio al Cliente, Analítica de Negocio, Planificación de Recursos y Capacidad, Portal de Conductores de Delivery.
+
+portal_conductores_delivery (Portal de Conductores de Delivery - Multi-tenant)
+
+Propósito: Proporcionar una interfaz web (y en el futuro móvil) para que los conductores de delivery gestionen sus asignaciones de entrega, actualicen el estado de los pedidos, registren pruebas de entrega, gestionen sus ganancias y comuniquen incidencias, optimizando la eficiencia de la última milla. Diseñado con capacidad multi-tenant.
+
+Modelos Clave (Actualización): AsignacionEntregaConductor, EstadoEntregaConductor, IncidenciaDelivery, CuentaConductor, MovimientoCuentaConductor (ahora con id_metodo_pago FK a finanzas.MetodoPago).
+
+Interacciones Clave: delivery_general, flota, despacho, rrhh.Empleado, proveedores.Proveedor, iot_data, finanzas (pagos a conductores, MetodoPago), gestion_documental, servicio_cliente, logistica_transporte, comunicacion_interna, analitica_negocio, gestion_aprobaciones.
+
+X. Módulos de Gestión de Propiedades
+gestion_propiedades (Gestión de Propiedades)
+
+Propósito: Gestionar el ciclo de vida de propiedades (inmuebles) que la empresa posee, arrienda o administra para terceros. Incluye gestión de contratos de arrendamiento, inquilinos, mantenimiento específico de propiedades, ingresos por alquiler y gastos asociados.
+
+Interacciones Clave: Finanzas (ingresos por alquiler), Contabilidad, CRM (inquilinos), Mantenimiento (órdenes de trabajo), Activos Fijos (si la propiedad es un activo), Gestión Documental (contratos), Analítica de Negocio (ocupación, rentabilidad), IoT Data (monitoreo de propiedades), Gestión de Aprobaciones (contratos, gastos mayores), Planificación de Recursos y Capacidad.
+
+XI. Módulos de Inteligencia y Automatización Avanzada
+iot_data (Datos de IoT y Telemetría)
+
+Propósito: Ingesta, almacenamiento y estructuración de datos de telemetría y eventos de dispositivos y sensores de IoT.
+
+Interacciones Clave: Fuente de datos para Control de Asistencia, Manufactura, Flota, Analítica de Negocio, ML Ops, Delivery General, Gestión de Propiedades.
+
+ml_ops (Machine Learning Operations)
+
+Propósito: Gestión del ciclo de vida de los modelos de Inteligencia Artificial y Aprendizaje Automático (MLOps): definición, entrenamiento, despliegue, monitoreo y versionado de modelos.
+
+Interacciones Clave: Consume datos de Analítica de Negocio (Fuente Datos BI). Proporciona modelos y resultados de inferencia a Inteligencia Artificial Aplicada.
+
+inteligencia_artificial_aplicada (Inteligencia Artificial Aplicada)
+
+Propósito: Aplicar directamente la IA en los procesos de negocio, generando predicciones, recomendaciones y alertas inteligentes basadas en los modelos de ml_ops.
+
+Interacciones Clave: Consume resultados de ML Ops. Dispara acciones en Gestión de Procesos de Negocio, Gestión de Tareas Colaborativas, Comunicación Interna. Alimenta a Analítica de Negocio.
+
+analitica_negocio (Análisis de Negocio y Business Intelligence)
+
+Propósito: Plataforma central para transformar datos en insights accionables, visualizarlos y generar reportes estratégicos (análisis descriptivo y diagnóstico).
+
+Interacciones Clave: Consumidor principal de datos de TODOS los módulos del ERP (incluyendo IoT Data y los outputs de Inteligencia Artificial Aplicada).
+
+XII. Módulos de Relación con Socios Externos (Portales)
+portal_proveedores (Portal de Proveedores - Multi-tenant)
+
+Propósito: Proporcionar una interfaz de autoservicio web para que los proveedores de las empresas que adquieren InnovaERP puedan gestionar su información, ver el estado de sus facturas (CxP de nuestra empresa), consultar órdenes de compra, cargar documentos, reportar despachos, y gestionar cotizaciones. Está diseñado para ser una solución multi-tenant, permitiendo a cada empresa cliente de InnovaERP extender esta funcionalidad a sus propios proveedores. Incluye la visualización y gestión de retenciones de impuesto y la capacidad de subir/registrar documentos.
+
+Interacciones Clave: proveedores.Proveedor, cuentas_por_pagar, compras (consulta de OrdenCompra, registro de FacturaProveedorBorrador, respuesta a SolicitudCotizacion), inventario (reporte de despachos, stock en consignación), gestion_documental, banca_electronica, mantenimiento (si el proveedor es de servicio), auditoria, finanzas (para retenciones), gestion_aprobaciones, gestion_procesos_negocio.

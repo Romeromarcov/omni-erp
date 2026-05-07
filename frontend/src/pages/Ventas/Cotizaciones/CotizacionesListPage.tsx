@@ -1,0 +1,154 @@
+import React, { useEffect, useState } from 'react';
+import PageLayout from '../../../components/PageLayout';
+import { useNavigate } from 'react-router-dom';
+import { cotizacionService } from '../../../services/ventas';
+import type { Cotizacion } from '../../../types/ventas';
+import { Button } from '@mui/material';
+
+const CotizacionesListPage: React.FC = () => {
+  const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadCotizaciones();
+  }, []);
+
+  const loadCotizaciones = async () => {
+    setLoading(true);
+    try {
+      const data = await cotizacionService.getAll();
+      setCotizaciones(data);
+    } catch (error) {
+      console.error('Error loading cotizaciones:', error);
+      setCotizaciones([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConvertirAPedido = async (cotizacion: Cotizacion) => {
+    if (!cotizacion.convertido_a_pedido) {
+      try {
+        await cotizacionService.convertirAPedido(cotizacion.id_cotizacion, {});
+        await loadCotizaciones(); // Recargar la lista
+      } catch (error) {
+        console.error('Error convirtiendo cotización a pedido:', error);
+        alert('Error al convertir la cotización a pedido');
+      }
+    }
+  };
+
+  const getEstadoColor = (estado: string) => {
+    switch (estado) {
+      case 'BORRADOR': return '#6c757d';
+      case 'ENVIADA': return '#007bff';
+      case 'ACEPTADA': return '#28a745';
+      case 'RECHAZADA': return '#dc3545';
+      case 'VENCIDA': return '#ffc107';
+      case 'ANULADA': return '#6c757d';
+      default: return '#6c757d';
+    }
+  };
+
+  return (
+    <PageLayout>
+      <h2 style={{ marginBottom: 16 }}>Gestión de Cotizaciones</h2>
+      <div style={{ marginBottom: 16 }}>
+        <Button variant="contained" onClick={() => navigate('new')}>Nueva Cotización</Button>
+      </div>
+
+      {loading ? (
+        <div>Cargando cotizaciones...</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8f9fa' }}>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Número</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Fecha</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Vencimiento</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Estado</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Cliente</th>
+                <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>Monto Total</th>
+                <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #dee2e6' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cotizaciones.map((cotizacion) => (
+                <tr key={cotizacion.id_cotizacion} style={{ borderBottom: '1px solid #dee2e6' }}>
+                  <td style={{ padding: '12px' }}>{cotizacion.numero_cotizacion}</td>
+                  <td style={{ padding: '12px' }}>{new Date(cotizacion.fecha_cotizacion).toLocaleDateString()}</td>
+                  <td style={{ padding: '12px' }}>{new Date(cotizacion.fecha_vencimiento).toLocaleDateString()}</td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      backgroundColor: getEstadoColor(cotizacion.estado),
+                      color: 'white',
+                      fontSize: '12px'
+                    }}>
+                      {cotizacion.estado}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    {cotizacion.id_cliente ? (
+                      <div>
+                        <div style={{ fontWeight: 'bold' }}>{cotizacion.id_cliente.nombre}</div>
+                        <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                          {cotizacion.id_cliente.razon_social} - {cotizacion.id_cliente.rif}
+                        </div>
+                      </div>
+                    ) : (
+                      <span style={{ color: '#dc3545' }}>Cliente no encontrado</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'right' }}>
+                    {cotizacion.monto_total.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <Button
+                        variant="contained" color="secondary"
+                        onClick={() => navigate(cotizacion.id_cotizacion)}
+                      >
+                        Ver
+                      </Button>
+                      <Button
+                        variant="contained" color="secondary"
+                        onClick={() => navigate(`${cotizacion.id_cotizacion}/edit`)}
+                      >
+                        Editar
+                      </Button>
+                      {!cotizacion.convertido_a_pedido && cotizacion.estado === 'ACEPTADA' && (
+                        <Button
+                          variant="contained"
+                          onClick={() => handleConvertirAPedido(cotizacion)}
+                        >
+                          Convertir a Pedido
+                        </Button>
+                      )}
+                      {cotizacion.convertido_a_pedido && (
+                        <span style={{ color: '#28a745', fontSize: '12px' }}>
+                          ✓ Convertido
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {cotizaciones.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
+              No hay cotizaciones registradas
+            </div>
+          )}
+        </div>
+      )}
+    </PageLayout>
+  );
+};
+
+export default CotizacionesListPage;

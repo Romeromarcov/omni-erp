@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.env
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Django
+/staticfiles/
+/media/
+
+# Node
+node_modules/
+
+# Vite/React
+.vite/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test/coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Virtualenv
+.venv/
+venv/
+
+# Docker
+**/postgres_data*
+**/omni_db_data*
+**/innovaerp_db_data*
+
+# SQLite tools binaries
+backend/sqlite-tools/
+
+# Others
+*.bak
+*.swp
+*.swo
+*.tmp
+*.orig
+
+# Build artifacts
+frontend/dist/
+frontend/build_errors.txt
+
+# Debug/maintenance scripts (not for version control)
+backend/bcv_debug.html
+backend/temp_views.py
+backend/debug_api.py
+backend/check_*.py
+backend/inspect_*.py
+backend/update_bcv_exchange.*
+backend/check_bcv_rates.ps1
+backend/create_bcv_task.ps1
+backend/manual_bcv_update.ps1
+backend/update_bcv_exchange_cron.txt
+check_api.py
+debug_pago.py
+test_frontend_api.py

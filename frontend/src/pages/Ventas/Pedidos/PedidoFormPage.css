@@ -1,0 +1,64 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+  padding: 2rem;
+  min-width: 350px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.close-modal-btn {
+  margin-top: 1rem;
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Responsive styles for PedidoFormPage */
+@media (max-width: 768px) {
+  .modal-content {
+    min-width: 95vw;
+    max-width: 95vw;
+    padding: 1rem;
+    margin: 0 2.5vw;
+  }
+
+  .modal-overlay {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    min-width: 98vw;
+    max-width: 98vw;
+    padding: 0.5rem;
+    margin: 0 1vw;
+  }
+}
+
+/* General responsive improvements */
+@media (max-width: 1024px) {
+  .modal-content {
+    max-height: 90vh;
+  }
+}

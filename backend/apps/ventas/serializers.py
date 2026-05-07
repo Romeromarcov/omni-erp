@@ -1,0 +1,384 @@
+import logging
+from rest_framework import serializers
+from .models import (
+    Pedido, DetallePedido, NotaVenta, DetalleNotaVenta, FacturaFiscal,
+    DetalleFacturaFiscal, NotaCreditoVenta, DetalleNotaCreditoVenta,
+    DevolucionVenta, DetalleDevolucionVenta, Cotizacion, DetalleCotizacion,
+    NotaCreditoFiscal, DetalleNotaCreditoFiscal
+)
+from apps.inventario.models import Producto
+from apps.crm.models import Cliente
+
+logger = logging.getLogger(__name__)
+
+class DetallePedidoSerializer(serializers.ModelSerializer):
+    id_pedido = serializers.PrimaryKeyRelatedField(queryset=Pedido.objects.all(), required=False)
+    id_producto = serializers.PrimaryKeyRelatedField(queryset=Producto.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        prod = getattr(instance, 'id_producto', None)
+        if prod:
+            rep['id_producto'] = {
+                'id_producto': str(getattr(prod, 'id_producto', '')),
+                'nombre_producto': getattr(prod, 'nombre_producto', ''),
+                'sku': getattr(prod, 'sku', '')
+            }
+        else:
+            rep['id_producto'] = None
+        return rep
+    class Meta:
+        model = DetallePedido
+        fields = '__all__'
+
+class PedidoSerializer(serializers.ModelSerializer):
+    detalles = DetallePedidoSerializer(many=True, required=False)
+    # Cliente anidado para mostrar nombre, razon_social, rif, telefono
+    id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        cli = getattr(instance, 'id_cliente', None)
+        if cli:
+            rep['id_cliente'] = {
+                'id_cliente': str(getattr(cli, 'id_cliente', '')),
+                'nombre': getattr(cli, 'nombre', ''),
+                'razon_social': getattr(cli, 'razon_social', ''),
+                'rif': getattr(cli, 'rif', ''),
+                'telefono': getattr(cli, 'telefono', '')
+            }
+        else:
+            rep['id_cliente'] = None
+        
+        # Agregar información de sucursal y usuario
+        caja = getattr(instance, 'id_caja', None)
+        if caja:
+            rep['id_caja'] = {
+                'id_caja': str(getattr(caja, 'id_caja', '')),
+                'nombre': getattr(caja, 'nombre', '')
+            }
+            sucursal = getattr(caja, 'sucursal', None)
+            if sucursal:
+                rep['id_sucursal'] = {
+                    'id_sucursal': str(getattr(sucursal, 'id_sucursal', '')),
+                    'nombre': getattr(sucursal, 'nombre', '')
+                }
+        
+        # Usuario que creó el pedido (de documento_json o de la sesión)
+        documento_json = getattr(instance, 'documento_json', {}) or {}
+        usuario_id = documento_json.get('id_usuario')
+        if usuario_id:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                usuario = User.objects.get(id=usuario_id)
+                rep['id_usuario'] = {
+                    'id': usuario.id,
+                    'username': usuario.username,
+                    'first_name': usuario.first_name,
+                    'last_name': usuario.last_name
+                }
+            except User.DoesNotExist:
+                pass
+        
+        return rep
+    class Meta:
+        model = Pedido
+        fields = '__all__'
+        read_only_fields = ('numero_pedido',)
+
+    def validate(self, data):
+        if data.get('fecha_cierre_estimada') and data['fecha_cierre_estimada'] < data['fecha_pedido']:
+            raise serializers.ValidationError({
+                'fecha_cierre_estimada': "La fecha de cierre estimada no puede ser anterior a la fecha del pedido."
+            })
+        return data
+
+    def create(self, validated_data):
+        detalles_data = validated_data.pop('detalles', [])
+
+        # Asignación automática del número de pedido
+        from apps.core.models import Sucursal
+        from apps.finanzas.models import Caja, SesionCajaFisica
+        from django.db.models import Max
+
+        id_empresa = validated_data.get('id_empresa')
+
+        # Buscar sucursal y caja - PRIMERO intentar usar sesión activa del usuario
+        sucursal = None
+        caja = None
+
+        # Obtener usuario del contexto
+        usuario = None
+        if self.context and 'request' in self.context:
+            usuario = self.context['request'].user
+
+        # Buscar sesión activa del usuario
+        sesion_activa = None
+        if usuario:
+            try:
+                sesion_activa = SesionCajaFisica.objects.filter(
+                    usuario=usuario,
+                    estado='ABIERTA'
+                ).select_related('caja_fisica_principal').first()
+            except Exception:
+                sesion_activa = None
+
+        if sesion_activa and sesion_activa.caja_fisica_principal:
+            # Usar la caja física principal de la sesión activa
+            caja = sesion_activa.caja_fisica_principal
+            sucursal = caja.sucursal
+            logger.debug(f"DEBUG: Usando caja de sesión activa: {caja.nombre}, sucursal: {sucursal.nombre if sucursal else 'N/A'}")
+        else:
+            # Fallback: Si el frontend envía sucursal/caja en documento_json, extraerlo
+            doc_json = validated_data.get('documento_json', {})
+            sucursal_id = doc_json.get('id_sucursal')
+            caja_id = doc_json.get('id_caja')
+
+            if sucursal_id:
+                try:
+                    sucursal = Sucursal.objects.get(id_sucursal=sucursal_id)
+                except Sucursal.DoesNotExist:
+                    sucursal = None
+            if caja_id:
+                try:
+                    caja = Caja.objects.get(id_caja=caja_id)
+                except Caja.DoesNotExist:
+                    caja = None
+
+        # Códigos
+        codigo_sucursal = sucursal.codigo_sucursal if sucursal else 'GEN'
+        codigo_caja = caja.nombre[:6].upper() if caja else 'CAJGEN'
+        prefijo = f"{codigo_sucursal}-{codigo_caja}-"
+
+        # Secuencia: buscar el último pedido con el mismo prefijo
+        filtro = {'id_empresa': id_empresa, 'numero_pedido__startswith': prefijo}
+        if sucursal:
+            filtro['documento_json__id_sucursal'] = str(sucursal.id_sucursal)
+        if caja:
+            filtro['documento_json__id_caja'] = str(caja.id_caja)
+        
+        # Obtener todos los números de pedido con este prefijo y extraer las secuencias
+        pedidos_con_prefijo = Pedido.objects.filter(**filtro).values_list('numero_pedido', flat=True)
+        secuencias = []
+        import re
+        for num_pedido in pedidos_con_prefijo:
+            m = re.search(r'-([0-9]{6})$', num_pedido)
+            if m:
+                secuencias.append(int(m.group(1)))
+        
+        secuencia = max(secuencias) + 1 if secuencias else 1
+
+        numero_pedido = f"{prefijo}{secuencia:06d}"
+        validated_data['numero_pedido'] = numero_pedido
+        
+        # Agregar información al documento_json
+        doc_json = validated_data.get('documento_json', {}) or {}
+        if usuario:
+            doc_json['id_usuario'] = str(usuario.id)
+        if sucursal:
+            doc_json['id_sucursal'] = str(sucursal.id_sucursal)
+        if caja:
+            doc_json['id_caja'] = str(caja.id_caja)
+        validated_data['documento_json'] = doc_json
+        
+        pedido = super().create(validated_data)
+        
+        for detalle in detalles_data:
+            DetallePedido.objects.create(id_pedido=pedido, **detalle)
+                
+        return pedido
+
+class DetallePedidoSerializer(serializers.ModelSerializer):
+    id_pedido = serializers.PrimaryKeyRelatedField(queryset=Pedido.objects.all(), required=False)
+    class Meta:
+        model = DetallePedido
+        fields = '__all__'
+
+    def validate_cantidad(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("La cantidad debe ser mayor que cero.")
+        return value
+
+    def validate_precio_unitario(self, value):
+        if value < 0:
+            raise serializers.ValidationError("El precio unitario debe ser mayor o igual a cero.")
+        return value
+
+class FacturaFiscalSerializer(serializers.ModelSerializer):
+    # Cliente anidado para mostrar nombre, razon_social, rif, telefono
+    id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        cli = getattr(instance, 'id_cliente', None)
+        if cli:
+            rep['id_cliente'] = {
+                'id_cliente': str(getattr(cli, 'id_cliente', '')),
+                'nombre': getattr(cli, 'nombre', ''),
+                'razon_social': getattr(cli, 'razon_social', ''),
+                'rif': getattr(cli, 'rif', ''),
+                'telefono': getattr(cli, 'telefono', '')
+            }
+        else:
+            rep['id_cliente'] = None
+        return rep
+    class Meta:
+        model = FacturaFiscal
+        fields = '__all__'
+
+
+class DetalleFacturaFiscalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleFacturaFiscal
+        fields = '__all__'
+
+
+class NotaCreditoVentaSerializer(serializers.ModelSerializer):
+    # Cliente anidado para mostrar nombre, razon_social, rif, telefono
+    id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        cli = getattr(instance, 'id_cliente', None)
+        if cli:
+            rep['id_cliente'] = {
+                'id_cliente': str(getattr(cli, 'id_cliente', '')),
+                'nombre': getattr(cli, 'nombre', ''),
+                'razon_social': getattr(cli, 'razon_social', ''),
+                'rif': getattr(cli, 'rif', ''),
+                'telefono': getattr(cli, 'telefono', '')
+            }
+        else:
+            rep['id_cliente'] = None
+        return rep
+    class Meta:
+        model = NotaCreditoVenta
+        fields = '__all__'
+
+
+class DetalleNotaCreditoVentaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleNotaCreditoVenta
+        fields = '__all__'
+
+
+class DevolucionVentaSerializer(serializers.ModelSerializer):
+    # Cliente anidado para mostrar nombre, razon_social, rif, telefono
+    id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        cli = getattr(instance, 'id_cliente', None)
+        if cli:
+            rep['id_cliente'] = {
+                'id_cliente': str(getattr(cli, 'id_cliente', '')),
+                'nombre': getattr(cli, 'nombre', ''),
+                'razon_social': getattr(cli, 'razon_social', ''),
+                'rif': getattr(cli, 'rif', ''),
+                'telefono': getattr(cli, 'telefono', '')
+            }
+        else:
+            rep['id_cliente'] = None
+        return rep
+    class Meta:
+        model = DevolucionVenta
+        fields = '__all__'
+
+
+class DetalleDevolucionVentaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleDevolucionVenta
+        fields = '__all__'
+
+
+class CotizacionSerializer(serializers.ModelSerializer):
+    # Cliente anidado para mostrar nombre, razon_social, rif, telefono
+    id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        cli = getattr(instance, 'id_cliente', None)
+        if cli:
+            rep['id_cliente'] = {
+                'id_cliente': str(getattr(cli, 'id_cliente', '')),
+                'nombre': getattr(cli, 'nombre', ''),
+                'razon_social': getattr(cli, 'razon_social', ''),
+                'rif': getattr(cli, 'rif', ''),
+                'telefono': getattr(cli, 'telefono', '')
+            }
+        else:
+            rep['id_cliente'] = None
+        return rep
+    class Meta:
+        model = Cotizacion
+        fields = '__all__'
+
+
+class DetalleCotizacionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleCotizacion
+        fields = '__all__'
+
+class NotaVentaSerializer(serializers.ModelSerializer):
+    # Cliente anidado para mostrar nombre, razon_social, rif, telefono
+    id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        cli = getattr(instance, 'id_cliente', None)
+        if cli:
+            rep['id_cliente'] = {
+                'id_cliente': str(getattr(cli, 'id_cliente', '')),
+                'nombre': getattr(cli, 'nombre', ''),
+                'razon_social': getattr(cli, 'razon_social', ''),
+                'rif': getattr(cli, 'rif', ''),
+                'telefono': getattr(cli, 'telefono', '')
+            }
+        else:
+            rep['id_cliente'] = None
+        return rep
+    class Meta:
+        model = NotaVenta
+        fields = '__all__'
+
+    def validate_numero_nota(self, value):
+        if not value:
+            raise serializers.ValidationError("El número de nota es obligatorio.")
+        return value
+
+class DetalleNotaVentaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleNotaVenta
+        fields = '__all__'
+
+    def validate_cantidad(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("La cantidad debe ser mayor que cero.")
+        return value
+
+    def validate_precio_unitario(self, value):
+        if value < 0:
+            raise serializers.ValidationError("El precio unitario no puede ser negativo.")
+        return value
+
+
+class NotaCreditoFiscalSerializer(serializers.ModelSerializer):
+    # Cliente anidado para mostrar nombre, razon_social, rif, telefono
+    id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        cli = getattr(instance, 'id_cliente', None)
+        if cli:
+            rep['id_cliente'] = {
+                'id_cliente': str(getattr(cli, 'id_cliente', '')),
+                'nombre': getattr(cli, 'nombre', ''),
+                'razon_social': getattr(cli, 'razon_social', ''),
+                'rif': getattr(cli, 'rif', ''),
+                'telefono': getattr(cli, 'telefono', '')
+            }
+        else:
+            rep['id_cliente'] = None
+        return rep
+    class Meta:
+        model = NotaCreditoFiscal
+        fields = '__all__'
+
+
+class DetalleNotaCreditoFiscalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleNotaCreditoFiscal
+        fields = '__all__'

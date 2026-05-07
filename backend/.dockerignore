@@ -1,0 +1,50 @@
+# Ignorar directorios de entornos virtuales
+venv/
+.venv/
+env/
+
+# Ignorar archivos de caché de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignorar archivos de bases de datos SQLite (si los usas para desarrollo local)
+*.sqlite3
+db.sqlite3
+
+# Ignorar directorios de control de versiones
+.git/
+.gitignore
+
+# Ignorar archivos de IDEs (opcional, si usas alguno)
+.vscode/
+.idea/
+
+# Ignorar archivos de variables de entorno (¡CRÍTICO para la seguridad!)
+.env
+*.env
+
+# Ignorar archivos de Docker (ya están en el contexto de construcción o son parte del proceso)
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml # Por si tienes otros archivos compose
+
+# Ignorar la carpeta de la documentación (si la tuvieras)
+docs/
+
+# Ignorar cualquier directorio o archivo que contenga logs
+*.log
+logs/
+
+# Ignorar el directorio de media/uploads si no se gestiona como parte del código
+# Si los archivos subidos por los usuarios se almacenan en un volumen persistente, no deberían estar en la imagen.
+# Descomenta la siguiente línea si este es tu caso:
+# media/
+
+# Ignorar archivos o directorios de pruebas si no son parte de la aplicación final
+# tests/
+
+# Ignorar directorios temporales o de compilación si los usas
+tmp/
+build/
+dist/

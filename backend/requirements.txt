@@ -1,0 +1,16 @@
+asgiref==3.9.1
+uvicorn[standard]==0.34.0
+Django==5.2.4
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+django-filter==24.3
+psycopg2-binary==2.9.10
+PyJWT==2.9.0
+python-dotenv==1.1.1
+sqlparse==0.5.3
+tzdata==2025.2
+django-cors-headers==4.7.0
+drf-yasg==1.21.10
+pytest==8.2.2
+pytest-django==4.8.0
+httpx==0.27.0

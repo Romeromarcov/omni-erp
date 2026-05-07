@@ -1,0 +1,32 @@
+.dashboard-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 20px;
+  min-width: 160px;
+  margin: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.dashboard-card-title {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 8px;
+}
+.dashboard-card-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #222;
+}
+.dashboard-card-subtitle {
+  font-size: 0.9rem;
+  color: #4caf50;
+  margin-top: 4px;
+}
+.trend-up .dashboard-card-subtitle {
+  color: #4caf50;
+}
+.trend-down .dashboard-card-subtitle {
+  color: #f44336;
+}

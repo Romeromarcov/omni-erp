@@ -1,0 +1,220 @@
+[
+  {
+    "model": "finanzas.moneda",
+    "pk": "11111111-1111-1111-1111-111111111111",
+    "fields": {
+      "codigo_iso": "USD",
+      "nombre": "Dólar estadounidense",
+      "referencia_externa": "",
+      "documento_json": null,
+      "tipo_operacion": "",
+      "fecha_cierre_estimada": null,
+      "simbolo": "$",
+      "decimales": 2,
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "finanzas.moneda",
+    "pk": "22222222-2222-2222-2222-222222222222",
+    "fields": {
+      "codigo_iso": "EUR",
+      "nombre": "Euro",
+      "referencia_externa": "",
+      "documento_json": null,
+      "tipo_operacion": "",
+      "fecha_cierre_estimada": null,
+      "simbolo": "€",
+      "decimales": 2,
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "finanzas.moneda",
+    "pk": "33333333-3333-3333-3333-333333333333",
+    "fields": {
+      "codigo_iso": "VES",
+      "nombre": "Bolívar venezolano",
+      "referencia_externa": "",
+      "documento_json": null,
+      "tipo_operacion": "",
+      "fecha_cierre_estimada": null,
+      "simbolo": "Bs.",
+      "decimales": 2,
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "core.empresa",
+    "pk": "44444444-4444-4444-4444-444444444444",
+    "fields": {
+      "nombre_legal": "Omni ERP S.A.",
+      "nombre_comercial": "Omni ERP",
+      "identificador_fiscal": "J-12345678-9",
+      "direccion_fiscal": "Av. Principal, Edif. Omni, Caracas",
+      "telefono": "+58-212-1234567",
+      "email_contacto": "info@omni-erp.com",
+      "web_url": "https://omni-erp.com",
+      "logo_url": "https://omni-erp.com/logo.png",
+      "fecha_registro": "2025-07-26T00:00:00Z",
+      "activo": true,
+      "id_moneda_base": "11111111-1111-1111-1111-111111111111",
+      "referencia_externa": "",
+      "documento_json": null,
+      "tipo_operacion": "",
+      "fecha_cierre_estimada": null
+    }
+  },
+  {
+    "model": "core.sucursal",
+    "pk": "55555555-5555-5555-5555-555555555555",
+    "fields": {
+      "referencia_externa": "",
+      "documento_json": null,
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "nombre": "Sucursal Principal",
+      "codigo_sucursal": "SP001",
+      "fecha_creacion": "2025-07-26T00:00:00Z",
+      "activo": true
+    }
+  },
+  {
+    "model": "inventario.unidadmedida",
+    "pk": "66666666-6666-6666-6666-666666666666",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "nombre": "Kilogramo",
+      "abreviatura": "kg",
+      "tipo": "PESO",
+      "activo": true
+    }
+  },
+  {
+    "model": "inventario.unidadmedida",
+    "pk": "77777777-7777-7777-7777-777777777777",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "nombre": "Litro",
+      "abreviatura": "l",
+      "tipo": "VOLUMEN",
+      "activo": true
+    }
+  },
+  {
+    "model": "inventario.categoriaproducto",
+    "pk": "88888888-8888-8888-8888-888888888888",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "nombre_categoria": "Alimentos",
+      "descripcion": "Productos alimenticios",
+      "activo": true
+    }
+  },
+  {
+    "model": "inventario.categoriaproducto",
+    "pk": "99999999-9999-9999-9999-999999999999",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "nombre_categoria": "Bebidas",
+      "descripcion": "Productos líquidos para consumo",
+      "activo": true
+    }
+  },
+  {
+    "model": "inventario.producto",
+    "pk": "10101010-1010-1010-1010-101010101010",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "nombre_producto": "Arroz",
+      "sku": "ARZ001",
+      "id_categoria": "88888888-8888-8888-8888-888888888888",
+      "id_unidad_medida_base": "66666666-6666-6666-6666-666666666666",
+      "tipo_producto": "PRODUCTO_FISICO",
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z",
+      "id_moneda_precio": "11111111-1111-1111-1111-111111111111"
+    }
+  },
+  {
+    "model": "inventario.producto",
+    "pk": "20202020-2020-2020-2020-202020202020",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "nombre_producto": "Agua Mineral",
+      "sku": "AGM001",
+      "id_categoria": "99999999-9999-9999-9999-999999999999",
+      "id_unidad_medida_base": "77777777-7777-7777-7777-777777777777",
+      "tipo_producto": "PRODUCTO_FISICO",
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z",
+      "id_moneda_precio": "11111111-1111-1111-1111-111111111111"
+    }
+  },
+  {
+    "model": "crm.cliente",
+    "pk": "30303030-3030-3030-3030-303030303030",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "razon_social": "Distribuidora El Sol C.A.",
+      "nombre_comercial": "El Sol",
+      "rif": "J-87654321-0",
+      "direccion": "Calle Luna, Edif. Sol, Valencia",
+      "telefono": "+58-241-7654321",
+      "email": "contacto@elsol.com",
+      "contacto": "Ana Pérez",
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "crm.contactocliente",
+    "pk": "40404040-4040-4040-4040-404040404040",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "id_cliente": "30303030-3030-3030-3030-303030303030",
+      "nombre_contacto": "Ana",
+      "apellido_contacto": "Pérez",
+      "cargo": "Gerente de Compras",
+      "telefono_directo": "+58-241-7654322",
+      "telefono_movil": "+58-412-7654322",
+      "email_contacto": "ana.perez@elsol.com",
+      "es_contacto_principal": true,
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "proveedores.proveedor",
+    "pk": "50505050-5050-5050-5050-505050505050",
+    "fields": {
+      "id_empresa": "44444444-4444-4444-4444-444444444444",
+      "razon_social": "Alimentos La Fuente S.A.",
+      "nombre_comercial": "La Fuente",
+      "rif": "J-11223344-5",
+      "direccion": "Av. Central, Edif. Fuente, Maracaibo",
+      "telefono": "+58-261-1122334",
+      "email": "ventas@lafuente.com",
+      "contacto": "Luis Romero",
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "proveedores.contactoproveedor",
+    "pk": "60606060-6060-6060-6060-606060606060",
+    "fields": {
+      "id_proveedor": "50505050-5050-5050-5050-505050505050",
+      "nombre": "Luis",
+      "apellido": "Romero",
+      "cargo": "Ejecutivo de Ventas",
+      "telefono": "+58-261-1122335",
+      "email": "luis.romero@lafuente.com",
+      "es_contacto_principal": true,
+      "activo": true,
+      "fecha_creacion": "2025-07-26T00:00:00Z"
+    }
+  }
+]

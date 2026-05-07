@@ -1,0 +1,113 @@
+Proyecto: InnovaERP
+Versión: Arquitectura Expandida + Módulos Avanzados
+Autor: Marco [Caracas, Venezuela]
+Fecha: [Actualización dinámica]
+-------------------------------------------------------
+
+🔷 VISIÓN DEL PROYECTO
+
+InnovaERP es un sistema de gestión empresarial integral, modular y escalable, diseñado para adaptarse a cualquier tipo de industria y tamaño de negocio — desde microemprendimientos informales hasta corporaciones altamente reguladas. Está construido para reflejar las particularidades del mercado venezolano (multimoneda, pagos mixtos, fiscalidad adaptable), y para brindar automatización inteligente, trazabilidad, flexibilidad operativa y control sin rigidez contable impuesta.
+
+-------------------------------------------------------
+
+📦 ARQUITECTURA BASE (60 Módulos)
+
+Organizados en secciones funcionales:
+
+I. Módulos Fundamentales
+ - core, configuracion_motor, auditoria, gestion_documental, gestion_aprobaciones, migracion_datos, compliance, gestion_procesos_negocio
+
+II. Finanzas y Contabilidad
+ - finanzas, contabilidad, cuentas_por_cobrar, cuentas_por_pagar, tesoreria, banca_electronica, gastos, activos_fijos, planificacion_financiera
+
+III. Logística y Cadena de Suministro
+ - inventario, almacenes, compras, despacho, logistica_transporte, flota, proveedores, mantenimiento, wms_avanzado, planificacion_recursos_capacidad
+
+IV. Ventas y Clientes
+ - crm, ventas, servicio_cliente, crm_ventas_marketing, retail_pos, restaurante_pos, portal_clientes, portal_vendedores
+
+V. Manufactura y Calidad
+ - manufactura, costos, control_calidad
+
+VI. Proyectos y Propiedades
+ - servicios_proyectos, gestion_propiedades
+
+VII. Recursos Humanos
+ - rrhh, nomina, control_asistencia, gestion_talento_rrhh, comedor_empleados, salud_seguridad_ocupacional, reclutamiento_seleccion, portal_empleados
+
+VIII. Productividad y Colaboración
+ - gestion_solicitudes_internas, comunicacion_interna, gestion_tareas_colaborativas, productividad_personal
+
+IX. Delivery y Servicios a Domicilio
+ - delivery_general, portal_conductores_delivery
+
+X. Inteligencia y Automatización
+ - analitica_negocio, inteligencia_artificial_aplicada, ml_ops, iot_data, integracion_b2b
+
+XI. Portales Externos
+ - portal_proveedores
+
+-------------------------------------------------------
+
+🧩 NUEVOS MÓDULOS INCORPORADOS
+
+1️⃣ motor_reglas_negocio
+ - Propósito: Centraliza la lógica condicional del ERP para validar operaciones, generar alertas o bloquear flujos según parámetros.
+ - Interacciones:
+   • ventas, contabilidad, inventario, rrhh, bpm, aprobaciones
+   • conecta con inteligencia_artificial_aplicada para reglas predictivas
+
+2️⃣ gestion_api_externas
+ - Propósito: Trazabilidad y gobernanza sobre servicios externos (API, pasarelas, terceros)
+ - Interacciones:
+   • integracion_b2b, banca_electronica, portales, ml_ops
+
+3️⃣ gestion_analitica_avanzada
+ - Propósito: KPIs inteligentes, simulación de escenarios, alertas de desviación
+ - Interacciones:
+   • analitica_negocio, inteligencia_artificial_aplicada, dashboard de dirección
+
+-------------------------------------------------------
+
+🔁 RECOMENDACIONES Y AJUSTES ESTRATÉGICOS
+
+🟡 Campos estandarizados sugeridos:
+  - estado_*
+  - referencia_externa
+  - documento_json
+  - tipo_operacion
+  - fecha_cierre_estimada
+
+🟡 Mejoras de modelos:
+  - Agregar relaciones faltantes a solicitudes/aprobaciones para trazabilidad cruzada
+  - Refactorizar relaciones polimórficas con nomenclatura única: id_origen + modelo_origen
+  - Agregar vistas simplificadas para microempresas o comercios informales
+
+🟡 Futuras apps sugeridas:
+  - gestion_clinica (pacientes, historia clínica, citas, facturación médica)
+  - servicios_freelance (cotización, entrega, cobro)
+  - gestion_academica (cursos, alumnos, evaluación, certificación)
+
+-------------------------------------------------------
+
+🇻🇪 ADAPTACIONES AL MERCADO VENEZOLANO
+
+✔ Multimoneda: definido por empresa, aplicado a todas las transacciones
+✔ Pagos mixtos por operación: cada abono o movimiento puede tener diferentes monedas y métodos
+✔ Control contable opcional: arquitectura permite operar sin exponer fiscalidad innecesaria
+✔ Modo simplificado: permite ventas sin factura, control tipo caja diaria
+✔ Informalidad gestionada: trazabilidad sin imposición de estructura contable tradicional
+✔ Activación modular: cada empresa configura qué módulos usa sin necesidad de modificar código fuente
+
+-------------------------------------------------------
+
+🌟 PROYECTO LISTO PARA CONSTRUCCIÓN TÉCNICA
+
+➡ Estructura Docker con PostgreSQL lista
+➡ Proyecto modular por apps funcionales
+➡ Codificación inicia con módulo 'core': Empresa, Sucursal, Usuario, Rol, Permiso
+➡ Avance documentado en bitácora técnica con persistencia de decisiones y modificaciones
+
+-------------------------------------------------------
+
+Fin del resumen.
