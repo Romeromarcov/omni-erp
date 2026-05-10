@@ -89,24 +89,29 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-if os.environ.get('DB_HOST'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'omni_erp'),
-            'USER': os.environ.get('DB_USER', 'omni_erp'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-        }
+_db_host = os.environ.get('DB_HOST')
+if not _db_host:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "La variable de entorno DB_HOST no está configurada. "
+        "Omni ERP requiere PostgreSQL — SQLite no está soportado. "
+        "Copiá .env.example a .env y completá las variables DB_*. "
+        "Instrucciones: ver README.md sección 'Desarrollo local'."
+    )
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'omni_erp'),
+        'USER': os.environ.get('DB_USER', 'omni_erp'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': _db_host,
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'connect_timeout': 5,
+        },
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {

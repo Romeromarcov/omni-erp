@@ -2,18 +2,17 @@
 from rest_framework import viewsets
 from .models import Cliente, ContactoCliente, DireccionCliente
 from .serializers import ClienteSerializer, ContactoClienteSerializer, DireccionClienteSerializer
-from apps.core.viewsets import BaseModelViewSet
+from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 class ClienteViewSet(BaseModelViewSet):
     queryset = Cliente.objects.all()
     serializer_class = ClienteSerializer
 
     def get_queryset(self):
-        queryset = Cliente.objects.all()
-        empresa_id = self.request.query_params.get('empresa')
-        if empresa_id:
-            queryset = queryset.filter(id_empresa=empresa_id)
-        return queryset
+        # R-CODE-1: filtrar SIEMPRE por las empresas visibles del usuario autenticado.
+        # Nunca devolver clientes de empresas ajenas.
+        empresas = get_empresas_visible(self.request.user)
+        return Cliente.objects.filter(id_empresa__in=empresas)
 
 class ContactoClienteViewSet(BaseModelViewSet):
     queryset = ContactoCliente.objects.all()
