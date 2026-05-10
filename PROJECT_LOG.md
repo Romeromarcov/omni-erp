@@ -62,3 +62,36 @@ Cada entrada se agrega al final. Nunca se edita ni se borra.
 Sub-fase 1.A, semana 1: Instalar dependencias faltantes, corregir build, migrar de SQLite a PostgreSQL (local con Docker), ejecutar migración pendiente de manufactura.
 
 ---
+
+## Sesión 2 — 2026-05-10
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Tarea #1 del orden aprobado de Sub-fase 1.A — migrar de SQLite a PostgreSQL exclusivo.
+
+### Tareas completadas
+
+1. **PARTE 0 — Arranque:** leído PROJECT_LOG y DIAGNOSTICO_INICIAL; verificado estado del repo (limpio, build verde, SQLite activo).
+2. **PostgreSQL 18 levantado:** servicio estaba detenido; iniciado manualmente. Puerto 5433.
+3. **DB y usuario creados:** `omni_erp` con `CREATEDB` privilege para pytest.
+4. **settings_base.py:** eliminado bloque `else: sqlite`; reemplazado con `ImproperlyConfigured` explícito.
+5. **migrate completo:** 100% de migraciones aplicadas contra PostgreSQL, incluyendo `manufactura/0002` que estaba pendiente.
+6. **Fix R-CODE-1 en ClienteViewSet (crm):** `get_queryset()` devolvía todos los clientes sin filtro. Corregido a `get_empresas_visible(user)`.
+7. **conftest.py reparado:** import roto `Moneda` from `core` → `finanzas`. Fixtures empresa_a/b, user_a/b añadidas.
+8. **3 tests de aislamiento:** listado solo empresa propia, GET otra empresa → 404, PATCH otra empresa → 404. **6/6 PASSED**.
+9. **pytest.ini:** `tests_api/` agregado a `testpaths`.
+10. **.env.example y README:** documentados con setup PostgreSQL en 5 pasos.
+11. **Commit y push:** `0b92dda` en `chore/diagnostico-inicial`.
+
+### Decisiones tomadas
+
+- Se eligió PostgreSQL 18 en puerto 5433 (instalación existente del usuario).
+- Se otorgó `CREATEDB` al usuario `omni_erp` para que pytest pueda crear `test_omni_erp`.
+- Se corrigió el bug R-CODE-1 en `crm/views.py` como parte de esta tarea (era un multi-tenant leak directo que habría hecho fallar los tests).
+- No se instaló Docker ni se creó docker-compose.yml (es tarea #2).
+
+### Próximo paso recomendado
+
+Tarea #2: Setup Docker Compose con Postgres + Redis.
+
+---
