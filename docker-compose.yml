@@ -80,6 +80,72 @@ services:
         --reload-dir /app
 
   # ─────────────────────────────────────────
+  # Celery — worker (procesa tareas)
+  # ─────────────────────────────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_ENV: dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-docker-only-change-in-prod}
+      DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    command: >
+      python -m celery -A config worker
+        --loglevel=info
+        --concurrency=2
+        --queues=celery,auditoria
+        --hostname=worker@%h
+
+  # ─────────────────────────────────────────
+  # Celery Beat — scheduler de tareas periódicas
+  # ─────────────────────────────────────────
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_ENV: dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-docker-only-change-in-prod}
+      DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    command: >
+      python -m celery -A config beat
+        --loglevel=info
+        --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  # ─────────────────────────────────────────
   # Frontend — React / Vite dev server
   # ─────────────────────────────────────────
   frontend:

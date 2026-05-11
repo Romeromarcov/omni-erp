@@ -45,6 +45,9 @@ jobs:
       # SECRET_KEY de CI: no es un secreto real, solo satisface el
       # requerimiento de Django. No se usa en ningún contexto de producción.
       SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      # Celery: los tests usan ALWAYS_EAGER (sin broker real),
+      # pero settings necesita una URL válida.
+      REDIS_URL: "redis://localhost:6379/0"
 
     steps:
       - name: Checkout

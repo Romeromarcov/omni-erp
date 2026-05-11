@@ -18,6 +18,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'django_filters',
+    'django_celery_beat',
+    'django_celery_results',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -264,3 +266,31 @@ os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# ─────────────────────────────────────────────────────────────────
+# Celery — broker Redis, resultados en Django DB
+# ─────────────────────────────────────────────────────────────────
+_redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+
+CELERY_BROKER_URL = _redis_url
+CELERY_RESULT_BACKEND = 'django-db'          # persiste en django_celery_results
+CELERY_CACHE_BACKEND = 'default'
+
+# Serialización
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Zona horaria coherente con Django
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Reintentos: no perder tareas si Redis está momentáneamente caído
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Límite suave de tiempo por tarea (segundos) — previene tareas zombis
+CELERY_TASK_SOFT_TIME_LIMIT = 300   # 5 min
+CELERY_TASK_TIME_LIMIT = 600        # 10 min (hard kill)
+
+# Beat — schedule de tareas periódicas
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

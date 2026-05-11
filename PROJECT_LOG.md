@@ -246,3 +246,62 @@ Tarea #4: Refactor con TanStack Query — instalar `@tanstack/react-query` v5, m
 Retomar orden de tareas del Sub-fase 1.A: Tarea #5 (División de ModalPago.tsx).
 
 ---
+
+## Sesión 6 — 2026-05-11
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Tareas #6, #7 y #8 de Sub-fase 1.A.
+
+### Tarea #6 completada — Eliminar todos los tipos `any` de TypeScript
+
+1. **31 errores ESLint eliminados** en 11 archivos:
+   - `no-explicit-any` ×21: interfaces tipadas en `CotizacionDetailPage.tsx`, `FacturaFiscalDetailPage.tsx`, `MonedaDetailPage.tsx`, `MonedaFormPage.tsx`, `FormularioProducto.tsx`
+   - `no-unused-vars` ×3: renombrado `idDocumento → _idDocumento` (ModalPago), removidos imports sin uso (useCotizacionForm)
+   - `react-refresh/only-export-components` ×4: `eslint-disable` con comentario justificativo en `SidebarContext.tsx`, `AuthContext.tsx`, `coreRoutes.tsx`
+2. **`eslint.config.js`**: regla `argsIgnorePattern: '^_'` añadida para parámetros stub.
+3. **`ci.yml`**: removido `continue-on-error: true` del paso ESLint — ahora bloquea merges.
+4. **Resultado**: `tsc --noEmit` CLEAN, `npm run lint` 0 errores.
+
+### Tarea #7 completada — Aislamiento multi-tenant en todos los módulos
+
+1. **6 módulos corregidos** (R-CODE-1 faltaba en `get_queryset`):
+   - `inventario/views.py`: 8 viewsets corregidos
+   - `compras/views.py`: 3 viewsets corregidos
+   - `proveedores/views.py`: `ProveedorViewSet` corregido
+   - `gastos/views.py`: 3 viewsets + acción `activas` corregidas
+   - `nomina/views.py`: 2 viewsets + acción `activos` corregida
+   - `finanzas/views.py`: `PagoViewSet.get_queryset()` añadido
+2. **4 URLs wired** en `config/urls.py`: `proveedores`, `gastos`, `nomina`, `cuentas-por-pagar`.
+3. **`tests_api/test_aislamiento_multimodulo.py`** creado: 7 clases × 3 tests = 21 tests.
+4. **27/27 PASSED** (21 nuevos + 6 originales).
+
+### Tarea #8 completada — Celery + Redis setup
+
+1. **`requirements.txt`**: `celery==5.6.3`, `redis==7.4.0`, `django-celery-beat==2.9.0`, `django-celery-results==2.6.0`.
+2. **`config/celery.py`**: instancia Celery `omni_erp`, auto-discovery, `debug_task`.
+3. **`config/__init__.py`**: importa `celery_app` para carga temprana.
+4. **`settings_base.py`**: bloque `CELERY_*` completo (broker, result backend django-db, timezone, retries, soft/hard time limits, beat scheduler).
+5. **`django-celery-beat` y `django-celery-results`** añadidos a `INSTALLED_APPS`.
+6. **Migraciones aplicadas**: 19 migraciones de `django_celery_beat` + 14 de `django_celery_results`.
+7. **`apps/core/tasks.py`**: tareas `core.ping` y `core.log_evento`.
+8. **`apps/auditoria/tasks.py`**: tarea real `auditoria.registrar_evento` (fire-and-forget con acks_late y reintentos).
+9. **`docker-compose.yml`**: servicios `celery_worker` (concurrency=2, queues celery+auditoria) y `celery_beat` (DatabaseScheduler).
+10. **`.env.example`**: documentado `REDIS_URL` para dev local y Docker.
+11. **`tests_api/test_celery_tasks.py`**: 13 tests con `CELERY_TASK_ALWAYS_EAGER=True`.
+12. **`ci.yml`**: `REDIS_URL` añadido al env (satisface settings; no necesita broker real porque los tests usan ALWAYS_EAGER).
+13. **40/40 PASSED**.
+
+### Decisiones tomadas
+
+- `django-celery-results` como result backend (en vez de Redis) para persistir resultados en PostgreSQL — más simple para inspección y auditoría en dev.
+- `acks_late=True` en `registrar_evento` para garantizar at-least-once delivery.
+- `max_retries=0` en `core.ping` — no tiene sentido reintentar un health-check.
+- No se crea `celery_beat` con `schedule.ini` — se usa `DatabaseScheduler` para que el schedule sea administrable desde Django Admin sin redeploy.
+- Tests usan `CELERY_TASK_ALWAYS_EAGER=True` y `CELERY_TASK_EAGER_PROPAGATES=True` — no requieren Redis en CI.
+
+### Próximo paso recomendado
+
+Tarea #9: MinIO / S3-compatible para archivos (o según el orden aprobado de Sub-fase 1.A).
+
+---
