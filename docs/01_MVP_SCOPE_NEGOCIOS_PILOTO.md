@@ -265,10 +265,26 @@ Después de tener el núcleo común corriendo, agregás los específicos. Probab
 | # | Capacidad | Por qué primero |
 |---|-----------|-----------------|
 | 1 | POS ágil para mostrador con código de barras | Es uso diario, frecuente, alto valor. |
-| 2 | Vendedores con comisión por cobranza | Necesario si tienen vendedores |
-| 3 | Notas de crédito y devoluciones | Frecuente en distribución |
-| 4 | Despacho con guía y manejo de flota mínimo | Si despachan al mayorista |
-| 5 | Conteo cíclico guiado | Para conciliar inventario |
+| 2 | POS en modo kiosco autoservicio para clientes finales | Diferenciación; misma arquitectura del POS con perfil distinto |
+| 3 | Vendedores con comisión por cobranza | Necesario si tienen vendedores |
+| 4 | Notas de crédito y devoluciones | Frecuente en distribución |
+| 5 | Despacho con guía y manejo de flota mínimo | Si despachan al mayorista |
+| 6 | Conteo cíclico guiado | Para conciliar inventario |
+
+**Sobre el modo kiosco autoservicio (capacidad 2):**
+
+El POS no se construye dos veces. Se construye una vez con perfiles configurables:
+
+- **Perfil "mostrador":** uso por personal de la distribuidora. Acceso a precios, descuentos, modificaciones, devoluciones.
+- **Perfil "kiosco cliente":** el cliente mayorista (dueño de bodega/colmado) se loguea con su RIF/cédula. Ve solo su catálogo, sus precios negociados, su estado de cuenta. Puede hacer pedidos, ver historial, cargar comprobantes de pago. No puede modificar precios ni ver datos de otros clientes.
+
+**Por qué esto importa:**
+- Permite a distribuidoras ofrecer autoservicio a sus mejores clientes (menos cola, mejor experiencia).
+- Es ventaja competitiva real frente a Odoo/Fina.
+- Sienta arquitectura para el caso futuro de "app del cliente final" si se decide construir.
+- Cero costo adicional de construcción si se planifica desde el inicio del POS.
+
+**Cuándo:** mes 8-9 (después de validar el POS modo mostrador en mes 7).
 
 ## 5.2 Específicos de la fábrica (entran después, son más complejos)
 

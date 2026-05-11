@@ -1016,6 +1016,7 @@ Términos que se usan en este documento y en el proyecto. Cuando hay duda sobre 
 | A-018 | Celery + Redis para tareas operacionales; Redpanda para eventos de dominio | Carriles separados; cargas y patrones distintos. | Día 1 del pivot |
 | A-019 | WeasyPrint para generación de PDFs | HTML/CSS → PDF, fácil templating, control fino. | Heredada |
 | A-020 | WhatsApp Business API (Meta Cloud) directo, no Twilio | Oficial, sin intermediarios, menor costo. | Heredada |
+| A-021 | Postgres en servidor + offline-first en clientes (3 niveles) | Diferenciación competitiva en VE/Latam; objeción de venta común resuelta. | 2026-05-10 |
 
 > **Cuando se proponga cambiar una decisión inmutable**, documentar en una página: alternativa, razón, costo estimado de migración, beneficio esperado. Trimestral decide.
 

@@ -31,13 +31,14 @@
 
 **Un sistema operativo de negocio AI-nativo, donde una empresa de cualquier tamaño, país, industria o nivel de formalidad puede operar y evolucionar su gestión completa hablándole en lenguaje natural — y eventualmente lanzar plataformas digitales propias sin contratar desarrolladores.**
 
-## 1.2 Las cinco propiedades irrenunciables del producto
+## 1.2 Las seis propiedades irrenunciables del producto
 
 1. **Conversacional primero, no como añadidura.**
 2. **Determinista donde la ley lo exige, agéntico donde el juicio paga.**
 3. **Personalizable por conversación, no por consultoría.**
 4. **Cada empresa es potencialmente un emisor de software.**
 5. **Localización y regulación son ciudadanos de primera clase.**
+6. **Resiliencia ante conectividad inestable.** El sistema opera funciones esenciales sin conexión donde la realidad operativa lo requiere. Tres niveles: (1) caché agresivo en todos los clientes; (2) offline-first operativo en módulos críticos (POS, vendedores en calle, captura en planta, kioscos); (3) versión lite para zonas sin conectividad confiable, activable por tenant. El servidor sigue siendo PostgreSQL; el offline vive en los clientes con sincronización diferida via event sourcing.
 
 ## 1.3 Los cinco principios arquitectónicos no negociables
 
@@ -68,6 +69,17 @@
 **R-PROC-1 a R-PROC-8:** una fuente de verdad por dominio, PRs pequeños, code review obligatorio, CI verde no-negociable, migraciones reversibles, compromisos técnicos se vencen, **deuda técnica cada dos semanas**, **cliente real desde el día 90** ← **ESTA REGLA CAMBIA: ahora es "cliente real piloto operando, no externo pagando"**.
 
 **R-PROD-1 a R-PROD-5:** nada se llama AI-powered si no es nativo, personalización del usuario antes que de consultor, complejidad escondida no eliminada, reversibilidad por defecto, transparencia de la IA.
+
+## Reglas con texto expandido en v2.0
+
+Las siguientes reglas tienen modificaciones respecto al texto de v1 y se documentan aquí explícitamente.
+
+### R-CODE-2: PostgreSQL en servidor, sin SQLite en backend
+Desarrollo, staging, producción del **servidor**: PostgreSQL. La diferencia en comportamiento de constraints parciales y transacciones ya costó bugs documentados. SQLite no vuelve a entrar al backend.
+
+**Excepción explícita:** SQLite-as-local-storage en el cliente (apps móviles nativas para almacenamiento local offline-first) es aceptable, porque no es la BD del servidor. Ver ADR-001 para arquitectura completa. IndexedDB es la opción default para clientes web/PWA.
+
+---
 
 ## Cambios respecto a v1
 
@@ -417,11 +429,12 @@ Para founder solo, **el Nivel 3 (decisiones que afectan futuro) es especialmente
 
 | Mes | Hito | Riesgo principal |
 |-----|------|------------------|
-| 1 | Fundación técnica sólida | Que la deuda técnica te tome 2 meses en lugar de 1 |
+| 1 | Fundación técnica sólida + Service Workers básicos (Nivel 1 offline) | Que la deuda técnica te tome 2 meses en lugar de 1 |
 | 3 | Ciclo comercial completo en sistema | Errores fiscales VE |
 | 5 | Agentes operando, personalización Capa 1-2 | Costo de inferencia descontrolado |
 | 6 | Distribuidora operando 30 días continuos | Migración de datos sale mal |
-| 9 | Distribuidora completa (con POS, comisiones, despacho) | Que aparezca un bug crítico que tumbe la operación |
+| 7 | POS distribuidora con código de barras (Nivel 2 offline) | Sincronización de eventos no resuelta bien |
+| 8-9 | POS modo kiosco autoservicio + vendedores comisión + despacho | Que el modo kiosco confunda a los clientes |
 | 12 | Fábrica con OF y BOM | Complejidad de manufactura subestimada |
 | 15 | Ambos negocios operando con sistema completo | Burnout |
 
@@ -708,6 +721,22 @@ Lo que Omni AI-Native podría ser, eventualmente, si todo va bien y se construye
 6. **Cada cliente puede lanzar plataformas digitales propias** — webs, apps, marketplaces verticales, redes B2B sectoriales — sin contratar desarrolladores.
 
 7. **Todo esto cumple regulación local** en cada país donde opera, con localización profunda, no superficial.
+
+8. **Plataforma de crédito al consumidor a través de la red de bodegas** (modelo Cashea, pero diferenciado). En estado maduro, la red de bodegas que usan Omni podría ofrecer crédito al consumidor final con scoring basado en historial real de consumo, en partnership con un proveedor financiero regulado. Omni cobra fee de plataforma, no spread financiero.
+
+**ADVERTENCIA EXPLÍCITA SOBRE ESTA IDEA:**
+
+Esta idea tiene mucho upside pero también riesgos enormes. Antes de cualquier movimiento en esta dirección:
+
+- Omni NO debe convertirse en empresa financiera ni dar crédito propio. El crédito debe darlo un partner regulado.
+- Requiere masa crítica significativa (estimado: 50+ distribuidoras con sus bodegas usando Omni) antes de tener relevancia para un partner financiero.
+- Requiere análisis legal-fiscal venezolano profundo antes de cualquier paso.
+- NO entra al plan de Bloques 1, 2, ni 3.A. Solo se considera en Bloque 3.B o posterior, y solo si hay tracción que lo justifique.
+
+Lo que SÍ se puede hacer ahora para preparar el camino sin pavimentarlo:
+- Modelar las bodegas como tenants potenciales de Omni (no solo clientes de la distribuidora).
+- Diseñar el módulo de clientes finales pensando en posible identidad cross-tenant futura.
+- NO construir nada de la app del consumidor final. Solo asegurar que la arquitectura no lo prohíba.
 
 ## C.2 Cómo se construye realmente
 
