@@ -4,6 +4,12 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count
 from .models import CategoriaGasto, Gasto, ReembolsoGasto
 from .serializers import CategoriaGastoSerializer, GastoSerializer, ReembolsoGastoSerializer
+from apps.core.viewsets import get_empresas_visible
+
+
+def _empresas(request):
+    return get_empresas_visible(request.user)
+
 
 class CategoriaGastoViewSet(viewsets.ModelViewSet):
     queryset = CategoriaGasto.objects.all()
@@ -13,10 +19,14 @@ class CategoriaGastoViewSet(viewsets.ModelViewSet):
     ordering_fields = ['nombre_categoria', 'fecha_creacion']
     ordering = ['nombre_categoria']
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        return CategoriaGasto.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=['get'])
     def activas(self, request):
-        """Obtiene solo las categorías activas"""
-        categorias_activas = self.queryset.filter(activo=True)
+        """Obtiene solo las categorías activas de las empresas propias"""
+        categorias_activas = self.get_queryset().filter(activo=True)
         serializer = self.get_serializer(categorias_activas, many=True)
         return Response(serializer.data)
 
@@ -27,6 +37,10 @@ class GastoViewSet(viewsets.ModelViewSet):
     search_fields = ['descripcion']
     ordering_fields = ['fecha_gasto', 'monto', 'fecha_creacion']
     ordering = ['-fecha_gasto']
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        return Gasto.objects.filter(id_empresa__in=_empresas(self.request))
 
     @action(detail=True, methods=['post'])
     def aprobar(self, request, pk=None):
@@ -113,6 +127,10 @@ class ReembolsoGastoViewSet(viewsets.ModelViewSet):
     queryset = ReembolsoGasto.objects.all()
     serializer_class = ReembolsoGastoSerializer
     filterset_fields = ['estado_reembolso', 'id_empresa', 'fecha_reembolso']
+
+    def get_queryset(self):
+        # R-CODE-1
+        return ReembolsoGasto.objects.filter(id_empresa__in=_empresas(self.request))
     search_fields = ['id_gasto__descripcion']
     ordering_fields = ['fecha_reembolso', 'monto_reembolso', 'fecha_creacion']
     ordering = ['-fecha_reembolso']

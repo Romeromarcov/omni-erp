@@ -1032,13 +1032,12 @@ class PagoViewSet(BaseModelViewSet):
     serializer_class = PagoSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        # Filtrar por empresas del usuario
-        user = self.request.user
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
-            queryset = queryset.filter(id_empresa__in=empresas_usuario.all())
-        return queryset
+        # R-CODE-1: usar get_empresas_visible para incluir subsidiarias y
+        # garantizar aislamiento simétrico con los demás módulos.
+        from apps.core.viewsets import get_empresas_visible
+        return Pago.objects.filter(
+            id_empresa__in=get_empresas_visible(self.request.user)
+        ).order_by('-fecha_pago')
 
     @action(detail=False, methods=['get'])
     def tipos_documento(self, request):

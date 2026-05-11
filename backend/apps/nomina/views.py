@@ -12,6 +12,12 @@ from .serializers import (
     NominaSerializer, DetalleNominaSerializer, ProcesoNominaExtrasalarialSerializer,
     NominaExtrasalarialSerializer
 )
+from apps.core.viewsets import get_empresas_visible
+
+
+def _empresas(request):
+    return get_empresas_visible(request.user)
+
 
 class PeriodoNominaViewSet(viewsets.ModelViewSet):
     queryset = PeriodoNomina.objects.all()
@@ -21,10 +27,14 @@ class PeriodoNominaViewSet(viewsets.ModelViewSet):
     ordering_fields = ['fecha_inicio', 'fecha_fin', 'fecha_pago', 'nombre_periodo']
     ordering = ['-fecha_inicio']
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        return PeriodoNomina.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=['get'])
     def activos(self, request):
-        """Obtiene períodos activos"""
-        periodos_activos = self.queryset.filter(activo=True)
+        """Obtiene períodos activos de las empresas propias"""
+        periodos_activos = self.get_queryset().filter(activo=True)
         serializer = self.get_serializer(periodos_activos, many=True)
         return Response(serializer.data)
 
@@ -62,6 +72,10 @@ class ConceptoNominaViewSet(viewsets.ModelViewSet):
     serializer_class = ConceptoNominaSerializer
     filterset_fields = ['tipo_concepto', 'categoria', 'activo', 'id_empresa', 'es_fijo', 'es_porcentaje']
     search_fields = ['codigo_concepto', 'nombre_concepto']
+
+    def get_queryset(self):
+        # R-CODE-1
+        return ConceptoNomina.objects.filter(id_empresa__in=_empresas(self.request))
     ordering_fields = ['codigo_concepto', 'nombre_concepto', 'fecha_creacion']
     ordering = ['codigo_concepto']
 
