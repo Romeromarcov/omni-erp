@@ -23,8 +23,14 @@ fi
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 
-echo "Collecting static files..."
-python manage.py collectstatic --noinput
+# collectstatic solo en prod — en dev uvicorn sirve estáticos directamente
+# y el volume mount genera conflictos de permisos con el usuario no-root
+if [ "${DJANGO_ENV}" = "prod" ]; then
+    echo "Collecting static files..."
+    python manage.py collectstatic --noinput
+else
+    echo "Skipping collectstatic (DJANGO_ENV=${DJANGO_ENV:-dev})"
+fi
 
 echo "Starting server..."
 exec "$@"
