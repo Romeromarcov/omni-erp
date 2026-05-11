@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+# Cancela runs anteriores del mismo branch/PR si llega uno nuevo
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Backend — Django check + pytest contra PostgreSQL real
+  # ──────────────────────────────────────────────────────────────
+  backend:
+    name: "Backend (Django + pytest)"
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: omni_erp
+          POSTGRES_USER: omni_erp
+          POSTGRES_PASSWORD: omni_erp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Variables de entorno para todos los steps del job
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      DJANGO_ENV: dev
+      # SECRET_KEY de CI: no es un secreto real, solo satisface el
+      # requerimiento de Django. No se usa en ningún contexto de producción.
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Django system check
+        working-directory: backend
+        run: python manage.py check
+
+      - name: Run tests
+        working-directory: backend
+        run: python -m pytest tests_api/ -v --tb=short --no-header
+
+  # ──────────────────────────────────────────────────────────────
+  # Frontend — TypeScript + ESLint
+  # ──────────────────────────────────────────────────────────────
+  frontend:
+    name: "Frontend (tsc + eslint)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        working-directory: frontend
+        # TODO(task-6): eliminar continue-on-error cuando se corrijan
+        # los 31 errores pre-existentes (D-003, D-013).
+        # Deuda catalogada en docs/DIAGNOSTICO_INICIAL.md sección 3.3.
+        continue-on-error: true
+        run: npm run lint
