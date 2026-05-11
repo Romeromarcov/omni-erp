@@ -28,6 +28,9 @@ class Cliente(models.Model):
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['razon_social']
+
     def __str__(self):
         return self.razon_social
 

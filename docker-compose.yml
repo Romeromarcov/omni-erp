@@ -1,0 +1,109 @@
+services:
+
+  # ─────────────────────────────────────────
+  # Base de datos — PostgreSQL 17
+  # ─────────────────────────────────────────
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: omni_erp
+      POSTGRES_USER: omni_erp
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+    volumes:
+      - omni_db_data:/var/lib/postgresql/data
+    ports:
+      # Host 5434 para no colisionar con instalaciones nativas (5432/5433)
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omni_erp -d omni_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ─────────────────────────────────────────
+  # Cache / broker — Redis 7
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - omni_redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # ─────────────────────────────────────────
+  # Backend — Django / uvicorn
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_ENV: dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-docker-only-change-in-prod}
+      DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
+      # DB apunta al servicio interno, no al Postgres nativo del host
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      # Hot reload: el código fuente se monta en el contenedor
+      - ./backend:/app
+      # Evitar que el venv del host pise el del contenedor
+      - /app/.venv
+    ports:
+      - "8000:8000"
+    command: >
+      python -m uvicorn config.asgi:application
+        --host 0.0.0.0
+        --port 8000
+        --reload
+        --reload-dir /app
+
+  # ─────────────────────────────────────────
+  # Frontend — React / Vite dev server
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
+      # El proxy de Vite redirige /api → backend (nombre del servicio Docker)
+      BACKEND_URL: http://backend:8000
+    volumes:
+      # Hot reload: montar src para que Vite detecte cambios
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      # Preservar node_modules del contenedor (no pisarlos con los del host)
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+
+volumes:
+  omni_db_data:
+    name: omni_db_data
+  omni_redis_data:
+    name: omni_redis_data

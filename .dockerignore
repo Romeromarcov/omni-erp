@@ -1,0 +1,46 @@
+# Control de versiones
+.git/
+.gitignore
+.gitattributes
+
+# Documentación (no entra en la imagen)
+docs/
+*.md
+
+# Entornos virtuales
+**/.venv/
+**/venv/
+**/env/
+
+# Node
+**/node_modules/
+frontend/dist/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Secrets (NUNCA en la imagen)
+**/.env
+**/*.env
+!**/.env.example
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+**/*.log
+**/logs/
+
+# SQLite
+**/*.sqlite3
+**/db.sqlite3
+
+# SQLite tools
+**/sqlite-tools/
+
+# OS
+.DS_Store
+Thumbs.db

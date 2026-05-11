@@ -1,8 +1,9 @@
 #!/bin/sh
 set -e
 
-DB_HOST="${DB_HOST:-db}"
-DB_PORT="${DB_PORT:-5432}"
+# Exportar defaults para que Django los vea si no vienen del entorno
+export DB_HOST="${DB_HOST:-db}"
+export DB_PORT="${DB_PORT:-5432}"
 
 if [ -n "$DB_HOST" ]; then
     echo "Waiting for postgres at ${DB_HOST}:${DB_PORT}..."
