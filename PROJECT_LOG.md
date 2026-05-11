@@ -300,8 +300,40 @@ Retomar orden de tareas del Sub-fase 1.A: Tarea #5 (División de ModalPago.tsx).
 - No se crea `celery_beat` con `schedule.ini` — se usa `DatabaseScheduler` para que el schedule sea administrable desde Django Admin sin redeploy.
 - Tests usan `CELERY_TASK_ALWAYS_EAGER=True` y `CELERY_TASK_EAGER_PROPAGATES=True` — no requieren Redis en CI.
 
+### Tarea #9 completada — MinIO / S3-compatible para archivos
+
+1. **`requirements.txt`**: `django-storages[s3]==1.14.6`, `boto3==1.43.6`.
+2. **`settings_base.py`**: bloque `USE_S3` togglable. `USE_S3=True` → S3Boto3Storage; `USE_S3=False` → local filesystem. Variables `S3_*` exportadas para `StorageService`.
+3. **`storages`** añadido a `INSTALLED_APPS`.
+4. **`apps/core/storage.py`**: `StorageService` — capa de abstracción sobre S3/MinIO con:
+   - `upload_file()` con validación de extensión y tamaño
+   - `generate_presigned_url()` con `Content-Disposition`
+   - `delete_file()`, `file_exists()`, `get_file_metadata()`
+   - Paths multi-tenant: `empresas/{empresa_id}/{carpeta}/{uuid}_{filename}`
+   - Modo local (stub) cuando `USE_S3=False`
+5. **`apps/gestion_documental/views.py`**: 3 nuevas acciones en `DocumentoViewSet`:
+   - `POST /subir/` — sube archivo + crea registro DB + R-CODE-1
+   - `GET /{pk}/descargar/` — genera URL pre-firmada
+   - `DELETE /{pk}/eliminar-archivo/` — borra DB + dispara tarea Celery
+6. **`apps/gestion_documental/tasks.py`**:
+   - `eliminar_archivo_s3` (acks_late, 5 reintentos, backoff exponencial)
+   - `limpiar_archivos_huerfanos` (tarea periódica via beat)
+7. **`docker-compose.yml`**: servicio `minio` (ports 9000/9001) + `minio_init` (crea bucket al arrancar). Variables S3 en `backend`, `celery_worker`, `celery_beat`.
+8. **`config/urls.py`**: `api/gestion-documental/` wired. `static()` condicionado a `USE_S3=False`.
+9. **`.env.example`**: variables `USE_S3`, `S3_*` documentadas.
+10. **`tests_api/test_storage.py`**: 26 tests (4 clases).
+11. **66/66 PASSED**.
+
+### Decisiones tomadas (Task #9)
+
+- `StorageService` como servicio puro (no Django storage backend) para mayor control sobre paths multi-tenant y validaciones ERP-específicas.
+- `USE_S3=False` en dev local por defecto — no requiere MinIO para correr el proyecto; solo activar para testing de storage real.
+- `eliminar_archivo_s3` con backoff exponencial: `30 * 2^retries` segundos entre intentos.
+- Tarea `limpiar_archivos_huerfanos` definida pero sin schedule — se configura desde Django Admin via django-celery-beat.
+- Bucket creado con `anonymous set none` (sin acceso público) — toda descarga requiere URL pre-firmada.
+
 ### Próximo paso recomendado
 
-Tarea #9: MinIO / S3-compatible para archivos (o según el orden aprobado de Sub-fase 1.A).
+Tarea #10: BaseModel y BaseModelViewSet — consolidar campos comunes (created_at, updated_at, is_active) en modelos heredados.
 
 ---

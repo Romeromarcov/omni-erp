@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'django_filters',
     'django_celery_beat',
     'django_celery_results',
+    'storages',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -266,6 +267,58 @@ os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# ─────────────────────────────────────────────────────────────────
+# Almacenamiento de archivos — S3-compatible (MinIO en dev, S3 en prod)
+# ─────────────────────────────────────────────────────────────────
+USE_S3 = os.environ.get('USE_S3', 'False') == 'True'
+
+if USE_S3:
+    # Backend S3-compatible (funciona con MinIO, AWS S3, Cloudflare R2, etc.)
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
+
+    # Credenciales S3 / MinIO
+    AWS_ACCESS_KEY_ID = os.environ.get('S3_ACCESS_KEY', 'minioadmin')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('S3_SECRET_KEY', 'minioadmin')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'omni-erp')
+    AWS_S3_ENDPOINT_URL = os.environ.get('S3_ENDPOINT_URL', 'http://localhost:9000')
+    AWS_S3_REGION_NAME = os.environ.get('S3_REGION', 'us-east-1')
+
+    # Seguridad: los archivos no son públicos por defecto
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = True          # URLs firmadas (presigned)
+    AWS_QUERYSTRING_EXPIRE = 3600        # 1 hora
+    AWS_S3_FILE_OVERWRITE = False        # evitar sobreescritura silenciosa
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+    # Usar path-style para MinIO (virtual-hosted no está disponible en dev)
+    AWS_S3_ADDRESSING_STYLE = 'path'
+
+    # Prefijo raíz para todos los archivos subidos por Django
+    # (los archivos de tenant usarán empresa_id como prefijo adicional)
+    AWS_LOCATION = 'media'
+
+    MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/media/"
+
+else:
+    # Almacenamiento local — para desarrollo sin MinIO levantado
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+
+# Variables exportadas para que StorageService pueda leer sin importar settings
+S3_ENDPOINT_URL = os.environ.get('S3_ENDPOINT_URL', 'http://localhost:9000')
+S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY', 'minioadmin')
+S3_SECRET_KEY = os.environ.get('S3_SECRET_KEY', 'minioadmin')
+S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'omni-erp')
+S3_REGION = os.environ.get('S3_REGION', 'us-east-1')
+S3_PRESIGNED_URL_EXPIRES = int(os.environ.get('S3_PRESIGNED_URL_EXPIRES', '3600'))
 
 # ─────────────────────────────────────────────────────────────────
 # Celery — broker Redis, resultados en Django DB

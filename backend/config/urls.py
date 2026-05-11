@@ -59,8 +59,11 @@ urlpatterns = [
     path('api/rrhh/', include('apps.rrhh.urls')),
     path('api/auditoria/', include('apps.auditoria.urls')),
     path('api/fiscal/', include('apps.fiscal.urls')),
+    path('api/gestion-documental/', include('apps.gestion_documental.urls')),
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # En modo S3 no hay MEDIA_ROOT local — solo servir static y media local si aplica
+    if not getattr(settings, 'USE_S3', False):
+        urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
