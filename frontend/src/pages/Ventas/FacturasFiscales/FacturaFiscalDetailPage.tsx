@@ -6,6 +6,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -20,6 +21,13 @@ interface FacturaFiscalDetalle {
   observaciones?: string;
 }
 
+interface ClienteInfoFactura {
+  razon_social?: string;
+  nombre?: string;
+  rif?: string;
+  telefono?: string;
+}
+
 interface FacturaFiscal {
   id_factura: string;
   numero_factura: string;
@@ -29,7 +37,7 @@ interface FacturaFiscal {
   id_sucursal?: { id_sucursal: string; nombre: string };
   id_caja?: { id_caja: string; nombre: string };
   id_usuario?: { id: number; username: string; first_name: string; last_name: string };
-  id_cliente: { nombre: string };
+  id_cliente: ClienteInfoFactura;
   observaciones?: string;
   detalles: FacturaFiscalDetalle[];
   // pagos será cargado desde la nueva API
@@ -40,7 +48,7 @@ const FacturaFiscalDetailPage: React.FC = () => {
   const [factura, setFactura] = useState<FacturaFiscal | null>(null);
   const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
   const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<any[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
@@ -59,8 +67,8 @@ const FacturaFiscalDetailPage: React.FC = () => {
   useEffect(() => {
     if (!id_factura) return;
     setLoading(true);
-    get(`/ventas/facturas-fiscales/${id_factura}/`)
-      .then((res: any) => {
+    get<FacturaFiscal>(`/ventas/facturas-fiscales/${id_factura}/`)
+      .then(res => {
         setFactura(res);
         // Cargar pagos de la factura
         loadPagos(id_factura);
@@ -74,14 +82,14 @@ const FacturaFiscalDetailPage: React.FC = () => {
       fetchProductos(factura.id_empresa.id_empresa)
         .then((res) => {
           if (Array.isArray(res)) setProductos(res);
-          else if (res && Array.isArray((res as { results: any[] }).results)) setProductos((res as { results: any[] }).results);
+          else if (res && Array.isArray((res as { results: Producto[] }).results)) setProductos((res as { results: Producto[] }).results);
           else setProductos([]);
         })
         .catch(() => setProductos([]));
     }
   }, [factura?.id_empresa]);
 
-  function mapDetalles(detalles: any[]): any[] {
+  function mapDetalles(detalles: FacturaFiscalDetalle[]) {
     return detalles.map(det => ({
       id_producto: det.id_producto?.id_producto || '',
       sku: det.id_producto?.sku || '',
@@ -94,7 +102,7 @@ const FacturaFiscalDetailPage: React.FC = () => {
     }));
   }
 
-  function getClienteInfo(cliente: any) {
+  function getClienteInfo(cliente: ClienteInfoFactura | null | undefined) {
     if (!cliente) return '-';
     const nombre = cliente.razon_social || cliente.nombre || '-';
     const rif = cliente.rif ? ` | RIF: ${cliente.rif}` : '';

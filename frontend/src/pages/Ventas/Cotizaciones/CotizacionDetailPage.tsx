@@ -2,22 +2,56 @@
 import React, { useEffect, useState } from 'react';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
+import type { Pago as PagoFinanzas } from '../../../services/pagosService';
 import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
 
+interface ClienteInfoAPI {
+  id_cliente?: string;
+  razon_social?: string;
+  nombre?: string;
+  rif?: string;
+  telefono?: string;
+}
+
+interface CotizacionDetalleAPI {
+  id_producto?: { id_producto: string; sku?: string; nombre_producto: string };
+  producto?: string;
+  cantidad: string | number;
+  precio_unitario: string | number;
+  descuento_porcentaje?: string | number;
+  observaciones?: string;
+  subtotal?: string | number;
+}
+
+interface CotizacionAPI {
+  id_cotizacion: string;
+  numero_cotizacion: string;
+  fecha_cotizacion: string;
+  estado: string;
+  id_empresa?: { id_empresa: string; nombre: string };
+  id_sucursal?: { id_sucursal: string; nombre: string };
+  id_caja?: { id_caja: string; nombre: string };
+  id_usuario?: { id: number; username: string; first_name: string; last_name: string };
+  id_cliente?: ClienteInfoAPI | null;
+  observaciones?: string;
+  detalles: CotizacionDetalleAPI[];
+}
+
 const CotizacionDetailPage: React.FC = () => {
   const { id_cotizacion } = useParams<{ id_cotizacion: string }>();
   const navigate = useNavigate();
-  const [cotizacion, setCotizacion] = useState<any>(null);
+  const [cotizacion, setCotizacion] = useState<CotizacionAPI | null>(null);
   const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<any[]>([]);
-  const [pagos, setPagos] = useState<any[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
   const [pagoError, setPagoError] = useState('');
@@ -26,14 +60,13 @@ const CotizacionDetailPage: React.FC = () => {
   useEffect(() => {
     if (!id_cotizacion) return;
     setLoading(true);
-    get(`/ventas/cotizaciones/${id_cotizacion}/`)
-      .then((res: any) => {
+    get<CotizacionAPI>(`/ventas/cotizaciones/${id_cotizacion}/`)
+      .then(res => {
         setCotizacion(res);
         loadPagos(id_cotizacion);
       })
       .catch(() => setCotizacion(null))
       .finally(() => setLoading(false));
-    // eslint-disable-next-line
   }, [id_cotizacion]);
 
   const loadPagos = async (cotizacionId: string) => {
@@ -50,14 +83,14 @@ const CotizacionDetailPage: React.FC = () => {
       fetchProductos(cotizacion.id_empresa.id_empresa)
         .then((res) => {
           if (Array.isArray(res)) setProductos(res);
-          else if (res && Array.isArray((res as { results: any[] }).results)) setProductos((res as { results: any[] }).results);
+          else if (res && Array.isArray((res as { results: Producto[] }).results)) setProductos((res as { results: Producto[] }).results);
           else setProductos([]);
         })
         .catch(() => setProductos([]));
     }
   }, [cotizacion?.id_empresa]);
 
-  function mapDetalles(detalles: any[]): any[] {
+  function mapDetalles(detalles: CotizacionDetalleAPI[]) {
     return detalles.map(det => ({
       id_producto: det.id_producto?.id_producto || '',
       sku: det.id_producto?.sku || '',
@@ -70,7 +103,7 @@ const CotizacionDetailPage: React.FC = () => {
     }));
   }
 
-  function getClienteInfo(cliente: any) {
+  function getClienteInfo(cliente: ClienteInfoAPI | null | undefined) {
     if (!cliente) return '-';
     const nombre = cliente.razon_social || cliente.nombre || '-';
     const rif = cliente.rif ? ` | RIF: ${cliente.rif}` : '';
@@ -117,7 +150,7 @@ const CotizacionDetailPage: React.FC = () => {
 
   const calcularTotalCotizacion = () => {
     if (!cotizacion?.detalles) return 0;
-    return cotizacion.detalles.reduce((total: number, detalle: any) => {
+    return cotizacion.detalles.reduce((total: number, detalle: CotizacionDetalleAPI) => {
       return total + (Number(detalle.precio_unitario) * Number(detalle.cantidad));
     }, 0);
   };
@@ -195,7 +228,7 @@ const CotizacionDetailPage: React.FC = () => {
           {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
           {pagos && pagos.length > 0 ? (
             <List>
-              {pagos.map((pago: any) => (
+              {pagos.map(pago => (
                 <ListItem key={pago.id_pago} divider>
                   <ListItemText
                     primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}

@@ -97,8 +97,4 @@ jobs:
 
       - name: ESLint
         working-directory: frontend
-        # TODO(task-6): eliminar continue-on-error cuando se corrijan
-        # los 31 errores pre-existentes (D-003, D-013).
-        # Deuda catalogada en docs/DIAGNOSTICO_INICIAL.md sección 3.3.
-        continue-on-error: true
         run: npm run lint

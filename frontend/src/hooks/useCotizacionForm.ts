@@ -5,10 +5,8 @@ import { pagosService } from '../services/pagosService';
 import { getEmpresaId } from '../utils/empresa';
 import type { Pago } from '../components/Pedidos/ModalPago';
 import { cotizacionService } from '../services/ventas';
-import { crearClienteConEmpresa } from '../services/clientesService';
 import {
   useDocumentoVentaBase,
-  type CajaUsuario,
 } from './useDocumentoVentaBase';
 
 interface CotizacionForm {

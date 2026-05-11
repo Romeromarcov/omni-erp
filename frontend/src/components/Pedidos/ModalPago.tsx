@@ -31,8 +31,8 @@ const ModalPago: React.FC<ModalPagoProps> = ({
   onConfirm,
   empresaId,
   tipoDocumento,
-  // @ts-expect-error - idDocumento se mantiene por consistencia de interfaz pero no se usa actualmente
-  idDocumento,
+  // @ts-expect-error - _idDocumento se mantiene por consistencia de interfaz pero no se usa actualmente
+  idDocumento: _idDocumento,
   idCliente,
   idProveedor,
   tipoOperacionInicial,

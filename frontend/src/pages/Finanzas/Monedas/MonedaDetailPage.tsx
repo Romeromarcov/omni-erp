@@ -16,7 +16,7 @@ const MonedaDetailPage: React.FC = () => {
   useEffect(() => {
     get('/finanzas/monedas/?limit=1000').then((res) => {
       if (Array.isArray(res)) setMonedasExistentes(res);
-      else if (res && Array.isArray((res as any).results)) setMonedasExistentes((res as any).results);
+      else if (res && Array.isArray((res as { results: Moneda[] }).results)) setMonedasExistentes((res as { results: Moneda[] }).results);
       else setMonedasExistentes([]);
     }).catch(() => setMonedasExistentes([]));
   }, []);

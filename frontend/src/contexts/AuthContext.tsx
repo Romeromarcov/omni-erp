@@ -1,3 +1,6 @@
+// Context files intentionally export both the provider component and the hook.
+// react-refresh/only-export-components is a dev-HMR concern; does not affect production.
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Usuario } from '../services/users';
 import type { DispositivoInfo } from '../types/dispositivos';
