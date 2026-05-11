@@ -133,3 +133,50 @@ Tarea #2: Setup Docker Compose con Postgres + Redis.
 Validar stack Docker completo, luego avanzar a Tarea #3: CI con GitHub Actions (lint + type-check + tests).
 
 ---
+
+## Sesión 4 — 2026-05-10
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Tarea #3 — CI con GitHub Actions + corrección de migraciones pendientes.
+
+### Tareas completadas
+
+1. **`.github/workflows/ci.yml` creado** (commit `f980fd6`):
+   - Job `backend`: ubuntu-latest + servicio PostgreSQL 17-alpine, instala deps, `django check`, `pytest tests_api/`.
+   - Job `frontend`: ubuntu-latest, `npm ci`, `tsc --noEmit`, `npm run lint` (continue-on-error: 31 errores preexistentes).
+   - Concurrency group cancela runs anteriores del mismo branch.
+
+2. **CI falló en primera ejecución**: `relation "inventario_unidad_medida" does not exist`.
+   - Causa: 7 apps del codebase heredado tenían cambios de modelo sin migraciones generadas.
+   - pytest-django crea la DB desde las migraciones → las tablas se creaban con nombres viejos → `serialize_db_to_string()` fallaba al leer el nombre nuevo definido en `Meta.db_table`.
+
+3. **`makemigrations` ejecutado** — 7 archivos generados:
+   - `core/0007`: alter field es_superusuario_omni
+   - `compras/0003`: rename ordencompra → compras_orden_compra, alter unique_together
+   - `cuentas_por_pagar/0002`: delete model PagoCxP
+   - `fiscal/0002`: delete model PagoContribucionParafiscal
+   - `inventario/0002`: rename unidadmedida → inventario_unidad_medida, rename producto → inventario_producto, alter unique_together + índices
+   - `nomina/0002`: alter unique_together en 3 modelos
+   - `ventas/0008`: delete PagoPedido, rename 4 tablas, añade índices
+
+4. **`migrate` aplicado** localmente — OK.
+
+5. **Tests: 6/6 PASSED** localmente.
+
+6. **Commit `b98adb3` pusheado** — CI en ejecución.
+
+### Decisiones tomadas
+
+- Se generaron las migraciones del codebase heredado sin modificar los modelos (solo `makemigrations`).
+- No se aplicó migración `core/0006_rename_es_superusuario_innova_to_omni` manual — ya estaba en la DB del usuario desde sesión anterior; la nueva `0007` la continúa correctamente.
+
+### Resultado esperado
+
+CI backend job: GREEN. Frontend job: GREEN (tsc) + continue-on-error (ESLint).
+
+### Próximo paso recomendado
+
+Tarea #4: Refactor con TanStack Query — instalar `@tanstack/react-query` v5, migrar 3-5 páginas críticas.
+
+---
