@@ -180,3 +180,69 @@ CI backend job: GREEN. Frontend job: GREEN (tsc) + continue-on-error (ESLint).
 Tarea #4: Refactor con TanStack Query — instalar `@tanstack/react-query` v5, migrar 3-5 páginas críticas.
 
 ---
+
+## Sesión 5 — 2026-05-10
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Documentar decisiones arquitectónicas offline-first. Sin código de producto.
+
+### Tareas completadas
+
+1. **PARTE 0 — Arranque:** repo limpio, CI verde, `docs/decisions/` vacío (solo `.gitkeep`).
+
+2. **ADR-001 creado** (`docs/decisions/ADR-001-postgres-server-offline-clients.md`):
+   - Postgres en servidor + offline-first en 3 niveles en clientes.
+   - Alternativas A-D documentadas y razones de rechazo.
+   - Cronograma por nivel: Nivel 1 desde Fase 0, Nivel 2 por módulo, Nivel 3 solo con cliente concreto.
+
+3. **README de decisions creado** (`docs/decisions/README.md`):
+   - Índice de ADRs con criterios de creación y proceso de revisión.
+
+4. **Cambio 1** — `02_PLAN_EJECUCION_FOUNDER_SOLO.md` sección 1.2:
+   - "cinco" → "seis" propiedades irrenunciables.
+   - Propiedad #6: Resiliencia ante conectividad inestable.
+
+5. **Cambio 2** — `OMNI_AI_NATIVE_EXECUTION_PLAN.md` Apéndice A (v1):
+   - A-021 agregado: Postgres servidor + offline-first 3 niveles.
+   - El Apéndice A de v2.0 solo tiene puntero a v1 (sin tabla propia) → fallback aplicado.
+
+6. **Cambio 3 (Opción B)** — `02_PLAN_EJECUCION_FOUNDER_SOLO.md` PARTE II:
+   - R-CODE-2 expandida directamente en v2.0 (el texto original estaba solo en v1).
+   - Sección "Reglas con texto expandido en v2.0" creada como contenedor.
+   - Excepción explícita: SQLite-as-local-storage en cliente (móvil nativo) es aceptable.
+
+7. **Cambio 4** — `01_MVP_SCOPE_NEGOCIOS_PILOTO.md` sección 5.1:
+   - Tabla 5 filas → 6 filas con kiosco autoservicio como capacidad #2.
+   - Bloque explicativo: perfiles POS (mostrador vs kiosco cliente), justificación, cuándo.
+
+8. **Cambio 5** — `02_PLAN_EJECUCION_FOUNDER_SOLO.md` sección 5.7:
+   - Tabla de hitos del año 1 actualizada: Service Workers en mes 1, POS Nivel 2 en mes 7, kiosco+vendedores en mes 8-9.
+
+9. **Cambio 6** — `02_PLAN_EJECUCION_FOUNDER_SOLO.md` Apéndice C.1:
+   - Idea #8: plataforma crédito al consumidor (modelo Cashea) con advertencias explícitas.
+
+10. **Commit `264c701` y push.** CI verde (solo docs, no hay tests afectados).
+
+### Decisiones tomadas
+
+- Cambio 3: Opción B (insertar R-CODE-2 expandida en v2.0 directamente). El texto original solo existía en v1.
+- No se creó un PR nuevo; el commit se incorporó al PR existente (#1, `chore/diagnostico-inicial`).
+- Placeholders `[Fecha de aplicación]` y `[Fecha]` reemplazados con `2026-05-10`.
+
+### Checks post-aplicación
+
+- [x] ADR-001 existe en `docs/decisions/`
+- [x] README de decisions referencia ADR-001
+- [x] Plan v2.0 sección 1.2 menciona 6 propiedades
+- [x] R-CODE-2 menciona excepción de cliente local
+- [x] MVP scope sección 5.1 tiene 6 capacidades
+- [x] Kiosco autoservicio documentado con justificación
+- [x] Tabla de hitos incluye offline-first (mes 1, 7, 8-9)
+- [x] Apéndice C tiene idea Cashea con advertencia
+
+### Próximo paso recomendado
+
+Retomar orden de tareas del Sub-fase 1.A: Tarea #5 (División de ModalPago.tsx).
+
+---
