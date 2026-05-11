@@ -95,3 +95,41 @@ Sub-fase 1.A, semana 1: Instalar dependencias faltantes, corregir build, migrar 
 Tarea #2: Setup Docker Compose con Postgres + Redis.
 
 ---
+
+## Sesión 3 — 2026-05-10
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Tarea #2 — Setup Docker Compose con PostgreSQL + Redis.
+
+### Tareas completadas
+
+1. **PARTE 0 — Arranque:** repo limpio (salvo crm/models.py del task paralelo), build verde, tests 6/6.
+2. **frontend/Dockerfile:** node:22-alpine, npm ci, hot reload vía volume, --host 0.0.0.0.
+3. **docker-compose.yml:** 4 servicios (db, redis, backend, frontend) con healthchecks, volúmenes persistentes, hot reload para dev. db en host:5434, redis en 6379.
+4. **.dockerignore (raíz):** excluye .git, venvs, node_modules, .env, docs del build context.
+5. **vite.config.ts:** proxy target configurable via BACKEND_URL (default localhost:8000, Docker usa http://backend:8000).
+6. **entrypoint.sh:** `export` en DB_HOST/DB_PORT para que Django vea el default.
+7. **crm/models.py:** Meta.ordering = ['razon_social'] — silencia UnorderedObjectListWarning.
+8. **crm/migrations/0003:** generada y aplicada.
+9. **Tests:** 6/6 passed. Commit `2c455fe`, pusheado.
+
+### Pendiente de validar (requiere Docker Desktop corriendo)
+
+- `docker compose up db redis -d` → ambos servicios en estado `healthy`
+- `docker compose up --build` → stack completo levanta sin errores
+- `http://localhost:8000/api/docs/` accesible desde backend dockerizado
+- `http://localhost:5173` accesible desde frontend dockerizado
+
+### Decisiones tomadas
+
+- PostgreSQL 17-alpine (no 18) para Docker: versión LTS más estable para imagen; el dev local del usuario usa PG18 nativo.
+- DB expuesta en host:5434 para evitar colisión con PG18 nativo (5433) y PG estándar (5432).
+- Hot reload en backend via `--reload --reload-dir /app` en uvicorn.
+- No se creó `docker-compose.override.yml` — composición directa más simple para este punto.
+
+### Próximo paso recomendado
+
+Validar stack Docker completo, luego avanzar a Tarea #3: CI con GitHub Actions (lint + type-check + tests).
+
+---
