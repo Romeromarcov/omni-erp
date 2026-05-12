@@ -72,12 +72,12 @@ class ConceptoNominaViewSet(viewsets.ModelViewSet):
     serializer_class = ConceptoNominaSerializer
     filterset_fields = ['tipo_concepto', 'categoria', 'activo', 'id_empresa', 'es_fijo', 'es_porcentaje']
     search_fields = ['codigo_concepto', 'nombre_concepto']
+    ordering_fields = ['codigo_concepto', 'nombre_concepto', 'fecha_creacion']
+    ordering = ['codigo_concepto']
 
     def get_queryset(self):
         # R-CODE-1
         return ConceptoNomina.objects.filter(id_empresa__in=_empresas(self.request))
-    ordering_fields = ['codigo_concepto', 'nombre_concepto', 'fecha_creacion']
-    ordering = ['codigo_concepto']
 
     @action(detail=False, methods=['get'])
     def por_tipo(self, request):

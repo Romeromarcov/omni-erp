@@ -1,16 +1,127 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 from .models import Empresa, Sucursal, Departamento, Usuarios, Dispositivo
 from .serializers import EmpresaSerializer, SucursalSerializer, DepartamentoSerializer, UsuariosSerializer, DispositivoSerializer
 
+
 class BaseModelViewSet(viewsets.ModelViewSet):
-    """ViewSet base para CRUD genérico con paginación, búsqueda y permisos estándar."""
+    """
+    ViewSet base para CRUD genérico con paginación, búsqueda y permisos estándar.
+
+    Todos los ViewSets del ERP deben heredar de este en lugar de
+    ``viewsets.ModelViewSet`` directamente.
+
+    Funcionalidades incluidas:
+    - Autenticación requerida (IsAuthenticated)
+    - Paginación con PageNumberPagination
+    - Filtros de búsqueda y ordenamiento
+    - Campos de búsqueda por defecto para modelos de empresa
+    """
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = PageNumberPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    # Campos permitidos para búsqueda en modelos comunes (ajusta según tus modelos)
     search_fields = ['razon_social', 'rif', 'telefono', 'nombre_comercial']
     ordering_fields = '__all__'
+
+
+class ActiveFilterMixin:
+    """
+    Mixin para ViewSets que soporten filtrado por ``activo``.
+
+    Por defecto retorna SOLO registros activos (``activo=True``).
+    Para incluir inactivos, pasar ``?incluir_inactivos=true`` en la query.
+
+    Uso:
+        class MiViewSet(ActiveFilterMixin, BaseModelViewSet):
+            queryset = MiModelo.objects.all()
+            serializer_class = MiSerializer
+
+            def get_queryset(self):
+                qs = super().get_queryset()   # aplica filtro activo
+                return qs.filter(id_empresa__in=_empresas(self.request))
+
+    El método ``get_queryset()`` de este mixin llama a ``super().get_queryset()``
+    y aplica el filtro ``activo=True`` a menos que se pase ``?incluir_inactivos=true``.
+
+    Nota: Para que funcione, el modelo subyacente debe tener el campo ``activo``.
+    """
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        incluir_inactivos = self.request.query_params.get('incluir_inactivos', 'false')
+        if incluir_inactivos.lower() not in ('true', '1', 'yes'):
+            qs = qs.filter(activo=True)
+        return qs
+
+
+class SoftDeleteModelMixin:
+    """
+    Mixin para ViewSets cuyos modelos usen ``SoftDeleteModel``.
+
+    Sobreescribe ``perform_destroy()`` para hacer borrado lógico en lugar de
+    físico. Si el modelo no tiene el método ``soft_delete()``, cae back al
+    borrado físico estándar de Django.
+
+    Adicionalmente expone dos acciones:
+    - ``POST /{pk}/activar/``   — Reactiva un registro inactivo.
+    - ``POST /{pk}/desactivar/`` — Desactiva (soft-delete) un registro activo.
+
+    Uso:
+        class MiViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet):
+            queryset = MiModelo.objects.all()
+            ...
+    """
+
+    def perform_destroy(self, instance):
+        """Usa soft_delete() si está disponible; sino borra físicamente."""
+        if hasattr(instance, 'soft_delete'):
+            instance.soft_delete()
+        else:
+            instance.delete()
+
+    @action(detail=True, methods=['post'], url_path='activar')
+    def activar(self, request, pk=None):
+        """
+        POST /{pk}/activar/
+        Reactiva un registro que fue desactivado.
+        """
+        instance = self.get_object()
+        if not hasattr(instance, 'restore'):
+            return Response(
+                {'error': 'Este modelo no soporta activación/desactivación.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if getattr(instance, 'activo', True):
+            return Response(
+                {'error': 'El registro ya está activo.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        instance.restore()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='desactivar')
+    def desactivar(self, request, pk=None):
+        """
+        POST /{pk}/desactivar/
+        Desactiva (borrado lógico) un registro activo.
+        """
+        instance = self.get_object()
+        if not hasattr(instance, 'soft_delete'):
+            return Response(
+                {'error': 'Este modelo no soporta activación/desactivación.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not getattr(instance, 'activo', True):
+            return Response(
+                {'error': 'El registro ya está inactivo.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        instance.soft_delete()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 # --- Visibilidad recursiva ---

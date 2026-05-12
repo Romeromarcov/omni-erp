@@ -332,8 +332,31 @@ Retomar orden de tareas del Sub-fase 1.A: Tarea #5 (División de ModalPago.tsx).
 - Tarea `limpiar_archivos_huerfanos` definida pero sin schedule — se configura desde Django Admin via django-celery-beat.
 - Bucket creado con `anonymous set none` (sin acceso público) — toda descarga requiere URL pre-firmada.
 
+### Tarea #10 completada — BaseModel y BaseModelViewSet consolidation
+
+1. **`apps/core/base_models.py`** creado — librería de modelos abstractos:
+   - `TimeStampedModel`: `fecha_creacion` (auto_now_add) + `fecha_actualizacion` (auto_now)
+   - `SoftDeleteModel`: `activo` + `soft_delete()` / `restore()` / `hard_delete()`
+   - `IntegrationFieldsMixin`: `referencia_externa` + `documento_json`
+   - `OmniBaseModel` = `TimeStampedModel` + `SoftDeleteModel` (combo estándar)
+   - `TenantModel` = `OmniBaseModel` (base para entidades tenant-aware)
+2. **`apps/core/models.py`**: `Roles` y `Permisos` refactorizados para heredar `OmniBaseModel + IntegrationFieldsMixin` (eliminados 10 campos duplicados).
+3. **`apps/core/migrations/0008_use_base_models_for_roles_permisos.py`**: 10 AlterField de metadatos — cero SQL generado (`(no-op)` confirmado con `sqlmigrate`).
+4. **`apps/core/viewsets.py`** ampliado con 2 mixins:
+   - `ActiveFilterMixin`: filtra `activo=True` por defecto; `?incluir_inactivos=true` para ver todos.
+   - `SoftDeleteModelMixin`: `perform_destroy()` → soft_delete en lugar de DELETE; acciones `/activar/` y `/desactivar/`.
+5. **`tests_api/test_base_models.py`**: 28 tests (5 clases) + 1 skipped esperado.
+6. **94/94 passed (+ 1 skipped)**.
+
+### Decisiones tomadas (Task #10)
+
+- Solo `Roles` y `Permisos` refactorizados en esta tarea — los modelos más simples y con match exacto de campos. Los 27 módulos restantes usarán `OmniBaseModel` en código nuevo (no migración masiva).
+- La migración `0008` es de solo metadatos (`help_text`, `verbose_name`) — **cero SQL** en producción.
+- `ActiveFilterMixin` NO agrega el filtro por defecto en `BaseModelViewSet` para no romper viewsets existentes. Se aplica opt-in.
+- `hard_delete()` es `public` pero documentado como "solo administración" — es la vía de escape cuando se necesita DELETE real.
+
 ### Próximo paso recomendado
 
-Tarea #10: BaseModel y BaseModelViewSet — consolidar campos comunes (created_at, updated_at, is_active) en modelos heredados.
+Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 
 ---

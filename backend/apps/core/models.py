@@ -1,8 +1,10 @@
 # apps/core/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-import uuid # Importamos uuid para usar UUIDField como PK
+import uuid
 from django.utils import timezone
+
+from .base_models import OmniBaseModel, IntegrationFieldsMixin
 
 
 
@@ -187,16 +189,16 @@ class Usuarios(AbstractUser):
 
 # 5. Modelo de Roles (Actualizado)
 # Define los diferentes roles que los usuarios pueden tener en el sistema (ej. Administrador, Vendedor, Almacenista).
-class Roles(models.Model):
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
+class Roles(OmniBaseModel, IntegrationFieldsMixin):
+    """
+    Roles de usuario en el sistema.
+    Hereda: fecha_creacion, fecha_actualizacion, activo (OmniBaseModel)
+            referencia_externa, documento_json (IntegrationFieldsMixin)
+    """
     id_rol = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, db_column='id_empresa', blank=True, null=True, related_name='roles_empresa', verbose_name="Empresa (Opcional)") # Puede ser un rol global o específico de la empresa.
     nombre_rol = models.CharField(max_length=100, verbose_name="Nombre de Rol")
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción") # Cambiado a TextField
-    activo = models.BooleanField(default=True, verbose_name="Activo")
-    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
-    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 
     class Meta:
         db_table = 'roles'
@@ -210,9 +212,12 @@ class Roles(models.Model):
 
 # 6. Modelo de Permisos (Actualizado)
 # Define las acciones o recursos específicos a los que se puede acceder (ej. 'ventas.crear_factura', 'inventario.ver_stock').
-class Permisos(models.Model):
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
+class Permisos(OmniBaseModel, IntegrationFieldsMixin):
+    """
+    Permisos granulares del sistema.
+    Hereda: fecha_creacion, fecha_actualizacion, activo (OmniBaseModel)
+            referencia_externa, documento_json (IntegrationFieldsMixin)
+    """
     id_permiso = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, db_column='id_empresa', blank=True, null=True, related_name='permisos_empresa', verbose_name="Empresa (Opcional)") # Permisos pueden ser globales o por empresa
     # El esquema original no tenía id_empresa para Permisos, lo mantendremos así por ahora.
@@ -220,9 +225,6 @@ class Permisos(models.Model):
     nombre_permiso = models.CharField(max_length=255, verbose_name="Nombre de Permiso")
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción") # Cambiado a TextField
     modulo = models.CharField(max_length=50, verbose_name="Módulo Asociado") # Ej: ventas, finanzas.
-    activo = models.BooleanField(default=True, verbose_name="Activo")
-    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
-    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 
     class Meta:
         db_table = 'permisos'
