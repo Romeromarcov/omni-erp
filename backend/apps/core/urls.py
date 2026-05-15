@@ -21,6 +21,8 @@ router.register(r"empresas", core_viewsets.EmpresaViewSet)
 router.register(r"sucursales", core_viewsets.SucursalViewSet)
 router.register(r"departamentos", core_viewsets.DepartamentoViewSet)
 router.register(r"dispositivos", core_viewsets.DispositivoViewSet)
+router.register(r"roles", core_viewsets.RolesViewSet)
+router.register(r"permisos", core_viewsets.PermisosViewSet)
 
 urlpatterns = [
     # Custom endpoints que deben tener prioridad sobre el router
@@ -37,8 +39,8 @@ urlpatterns = [
     path("sucursales/", views.placeholder_sucursales_view, name="sucursales_list"),
     path("departamentos/", views.placeholder_departamentos_view, name="departamentos_list"),
     path("departamentos/<uuid:id_departamento>/", DepartamentoDetailView.as_view(), name="departamento_detail"),
-    path("roles/", views.RoleListCreateView.as_view(), name="roles_list"),
-    path("roles/<uuid:id_rol>/", views.RoleRetrieveUpdateDestroyView.as_view(), name="role_detail"),
+    # roles/ y roles/<pk>/ ahora los maneja el router (RolesViewSet)
+    # con soft-delete, activar/desactivar y filtro de empresa.
     path("permisos/", views.placeholder_permisos_view, name="permisos_list"),
     path("monedas/", views.placeholder_monedas_view, name="monedas_list"),
     path("empresas/<uuid:id_empresa>/", EmpresaDetailView.as_view(), name="empresa_detail"),

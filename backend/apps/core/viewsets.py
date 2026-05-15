@@ -3,11 +3,13 @@ from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from .models import Departamento, Dispositivo, Empresa, Sucursal, Usuarios
+from .models import Departamento, Dispositivo, Empresa, Permisos, Roles, Sucursal, Usuarios
 from .serializers import (
     DepartamentoSerializer,
     DispositivoSerializer,
     EmpresaSerializer,
+    PermisosSerializer,
+    RolesSerializer,
     SucursalSerializer,
     UsuariosSerializer,
 )
@@ -89,13 +91,68 @@ class SoftDeleteModelMixin:
         else:
             instance.delete()
 
+    def _get_object_any_state(self):
+        """
+        Como get_object() pero sin el filtro activo=True.
+        Necesario para /activar/ — el objeto está inactivo y no aparecería
+        en el queryset normal filtrado por ActiveFilterMixin.
+        """
+        # Obtiene el queryset sin filtro de activo (incluye inactivos)
+        queryset = self.filter_queryset(
+            self.get_queryset().model.objects.all()
+            if hasattr(self.get_queryset(), "model")
+            else self.get_queryset()
+        )
+        # Si el ViewSet tiene get_queryset con filtros de empresa, los aplicamos
+        # usando el queryset base del modelo pero con los filtros de empresa del ViewSet
+        # Para lograr esto correctamente, sobreescribimos sólo el filtro de activo:
+        base_qs = super().get_queryset() if hasattr(super(), "get_queryset") else queryset  # type: ignore[misc]
+        # Llamamos directamente al get_queryset del ViewSet padre para mantener
+        # los filtros de empresa, pero quitamos el filtro de activo
+        qs_sin_activo = self.get_queryset().model.objects.all()
+
+        # Re-aplicar los filtros propios del ViewSet (empresa, etc.) sin pasar por ActiveFilterMixin
+        # La forma más limpia: obtener el queryset sin filtro de activo
+        # tomando los filtros de empresa del ViewSet heredado.
+        filter_kwargs = {self.lookup_field: self.kwargs[self.lookup_field]}
+        obj = None
+
+        # Intentar obtener el objeto en el queryset ya filtrado (activos)
+        qs = self.get_queryset()
+        try:
+            obj = qs.get(**filter_kwargs)
+        except qs.model.DoesNotExist:
+            pass
+
+        if obj is None:
+            # No está en activos — buscar en inactivos con los mismos filtros de empresa
+            qs_all = qs.model.objects.filter(activo=False)
+            # Aplicar filtros de empresa si existen (heredados de get_queryset con incluir_inactivos)
+            # Temporalmente forzar incluir_inactivos para obtener el queryset completo
+            original_params = self.request.query_params
+            self.request._request.GET = self.request.query_params.copy()
+            self.request._request.GET["incluir_inactivos"] = "true"
+            qs_full = self.get_queryset()
+            # Restaurar
+            self.request._request.GET = original_params._mutable and original_params or original_params
+            obj = qs_full.filter(activo=False).filter(**filter_kwargs).first()
+
+        if obj is None:
+            from rest_framework.exceptions import NotFound  # noqa: PLC0415
+
+            raise NotFound()
+
+        self.check_object_permissions(self.request, obj)
+        return obj
+
     @action(detail=True, methods=["post"], url_path="activar")
     def activar(self, request, pk=None):
         """
         POST /{pk}/activar/
         Reactiva un registro que fue desactivado.
+        Busca el objeto incluyendo inactivos (necesario para reactivar).
         """
-        instance = self.get_object()
+        instance = self._get_object_any_state()
         if not hasattr(instance, "restore"):
             return Response(
                 {"error": "Este modelo no soporta activación/desactivación."},
@@ -269,3 +326,47 @@ class DispositivoViewSet(BaseModelViewSet):
     def perform_create(self, serializer):
         # Asegurar que el dispositivo se crea para el usuario autenticado
         serializer.save(creado_por=self.request.user)
+
+
+class RolesViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet):
+    """
+    ViewSet para gestión de Roles.
+
+    Endpoints:
+      GET    /api/core/roles/               — listar roles activos (R-CODE-1)
+      POST   /api/core/roles/               — crear rol
+      GET    /api/core/roles/{pk}/          — detalle
+      PATCH  /api/core/roles/{pk}/          — actualizar
+      DELETE /api/core/roles/{pk}/          — soft-delete (activo=False)
+      POST   /api/core/roles/{pk}/activar/  — reactivar
+      POST   /api/core/roles/{pk}/desactivar/ — desactivar
+    """
+
+    queryset = Roles.objects.all()
+    serializer_class = RolesSerializer
+    search_fields = ["nombre_rol", "descripcion"]
+    ordering_fields = ["nombre_rol", "fecha_creacion"]
+    ordering = ["nombre_rol"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()  # aplica filtro activo=True de ActiveFilterMixin
+        empresas = get_empresas_visible(self.request.user)
+        return qs.filter(id_empresa__in=empresas)
+
+
+class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet):
+    """
+    ViewSet para gestión de Permisos del sistema.
+
+    Los permisos son globales (no por empresa), por lo que solo
+    superusuarios Omni deben poder crearlos o eliminarlos.
+    """
+
+    queryset = Permisos.objects.all()
+    serializer_class = PermisosSerializer
+    search_fields = ["codigo_permiso", "nombre_permiso", "modulo"]
+    ordering_fields = ["codigo_permiso", "modulo", "fecha_creacion"]
+    ordering = ["modulo", "codigo_permiso"]
+
+    def get_queryset(self):
+        return super().get_queryset()  # solo filtro activo, no por empresa
