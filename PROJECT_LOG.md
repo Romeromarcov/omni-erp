@@ -360,3 +360,92 @@ Retomar orden de tareas del Sub-fase 1.A: Tarea #5 (División de ModalPago.tsx).
 Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 
 ---
+
+## Sesión 7 — 2026-05-14
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Completar todas las tareas pendientes de Sub-fase 1.A.
+
+### Estado al iniciar
+
+- Sub-fase 1.A 80% completa: Tasks #1–#3 y #6–#10 hechas. Pendientes: pre-commit hooks, Task #4 (TanStack Query), Task #5 (ModalPago), Semana 4 primitivas AI-nativas.
+- Task #5 (División ModalPago): ya estaba realizada en sesión anterior. Confirmado 372 líneas con subcomponentes extraídos.
+- Tests: 94 passed, 1 skipped al iniciar la sesión.
+
+### Pre-commit hooks (Semana 2-3)
+
+1. **`pre-commit`, `black`, `isort`, `flake8`** instalados en venv.
+2. **`.pre-commit-config.yaml`** creado con: pre-commit-hooks (safety), black (auto-format), isort, flake8, ESLint frontend.
+3. **`setup.cfg`** creado: configuración flake8 (`max-line-length=119`, ignores compatibles con black), isort (`profile=black`).
+4. **Baseline de formateo aplicado**: isort consolidó imports multi-línea en 199 archivos Python. Commit separado: `e1f3556`.
+5. **`pre-commit install`** ejecutado — hooks activos en `.git/hooks`.
+6. **`requirements.txt`** actualizado con pre-commit, black, isort, flake8.
+
+### Tarea #4 — TanStack Query (Semana 2-3)
+
+1. **`frontend/src/utils/api.ts`** creado: `toList<T>()` y `toCount<T>()` para normalizar respuestas DRF (lista directa o paginada `{ results, count }`).
+2. **4 páginas migradas** de `useEffect + get()` → `useQuery` / `useMutation`:
+   - `BranchListPage.tsx`: useQuery con `select: toList`, `enabled: !!id_empresa`.
+   - `DepartmentListPage.tsx`: useQuery con `select: toList`.
+   - `CatalogoValorListPage.tsx`: useQuery con `select: toList`.
+   - `MetodoPagoListPage.tsx`: 2 queries paralelas + useMutation para toggle activa. QueryKey incluye filtro+página+pageSize para re-fetch automático al cambiar filtros.
+3. **TSC clean** — 0 errores de TypeScript.
+
+### Redpanda — Event Store Docker (Semana 4)
+
+1. **`docker-compose.yml`**: servicio `redpanda` (v24.3.1, modo dev-container, 512MB RAM) + `redpanda_console` (UI en puerto 8080).
+2. **Volumen** `omni_redpanda_data` declarado.
+3. **Variable** `KAFKA_BOOTSTRAP_SERVERS: redpanda:9092` en `backend` y `celery_worker`.
+4. **`infra/redpanda/console-config.yml`**: configuración de Redpanda Console con kafka + schema registry + admin API.
+
+### Primitivas AI-nativas (Semana 4)
+
+**Event Store:**
+1. **`apps/core/events.py`** creado:
+   - `build_event()`: sobre canónico (event_id, event_type, schema_version, occurred_at, tenant_id, actor_id, payload, metadata).
+   - `publish()`: publica en Redpanda/Kafka; en modo stub (sin `KAFKA_BOOTSTRAP_SERVERS`) loguea y retorna sin error. **Nunca rompe la transacción de negocio.**
+   - Catálogos de constantes: `CoreEvents`, `VentasEvents`, `InventarioEvents`, `CobranzaEvents`.
+2. **`requirements.txt`**: `mcp>=1.9.0`, `confluent-kafka>=2.6.0`.
+
+**MCP Server:**
+3. **`apps/core/mcp_server.py`** creado: FastMCP server con herramientas:
+   - `omni_ping`: health check con token válido.
+   - `omni_get_empresas`: lista empresas del tenant. Scope: `core:read`.
+   - `omni_get_clientes`: lista clientes con búsqueda. Scope: `crm:read`.
+   - `omni_get_saldo_cliente`: saldo CxC de un cliente. Scope: `cxc:read`.
+   - Helpers: `_resolve_token()` (valida UUID+BD+expiración) y `_require_scope()`.
+4. **`management/commands/run_mcp_server.py`**: `python manage.py run_mcp_server [--sse [--port N]]`.
+
+**Capability Tokens:**
+5. **`apps/core/models.py`**: modelo `CapabilityToken` (hereda `OmniBaseModel`):
+   - Campos: `token` (UUID único), `empresa` (FK), `nombre`, `scopes` (JSONField), `expires_at`, `creado_por`, `ultimo_uso`.
+   - Métodos: `is_expired()`, `has_scope()`, `mark_used()`.
+6. **`migrations/0009_add_capability_token.py`**: `CREATE TABLE core_capability_token`.
+
+### Tests
+
+- **`tests_api/test_ai_primitives.py`**: 34 tests — `TestBuildEvent` (10), `TestPublishEventStub` (3), `TestCapabilityToken` (11), `TestMCPServerStructure` (10).
+- **Suite completa: 128 passed, 1 skipped** ✅.
+
+### Decisiones tomadas
+
+- isort en modo `profile=black` con `line_length=119` — compatible con black sin conflictos.
+- flake8 ignora E501 (line too long) — manejado por black; ignora E203, W503 (conflictos estilísticos con black).
+- Baseline de formateo en commit separado para que el historial de git muestre cambios de lógica limpios.
+- `publish()` nunca lanza excepción aunque el broker falle — el event store es infraestructura, no debe romper transacciones.
+- `CapabilityToken.token` es UUID validado antes de consultar BD para evitar `ValidationError` de Django.
+- `FastMCP` instanciado con `name` e `instructions` únicamente (v1.27 no acepta `version`).
+
+### Commits
+
+- `e1f3556`: style: apply isort import formatting baseline
+- `523986b`: feat(subfase-1a): pre-commit, TanStack Query, Redpanda, MCP server, CapabilityToken
+
+### Estado al cerrar
+
+- **Sub-fase 1.A: COMPLETA** ✅ — todos los items de Semana 2-3 y Semana 4 terminados.
+- **128 passed, 1 skipped**.
+- **Próximo:** Sub-fase 1.B — Mes 2: Núcleo común parte 1 (empresa, productos, clientes, proveedores, inventario, multimoneda).
+
+---
