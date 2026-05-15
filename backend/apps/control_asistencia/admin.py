@@ -1,28 +1,27 @@
 from django.contrib import admin
-from .models import (
-    HorarioTrabajo,
-    AsignacionHorario,
-    RegistroAsistencia,
-    ResumenAsistenciaDiario
-)
+
 from . import models
+from .models import AsignacionHorario, HorarioTrabajo, RegistroAsistencia, ResumenAsistenciaDiario
+
 
 @admin.register(HorarioTrabajo)
 class HorarioTrabajoAdmin(admin.ModelAdmin):
-    list_display = ['nombre_horario']
-    list_filter = ['activo']
-    search_fields = ['nombre_horario', 'descripcion']
+    list_display = ["nombre_horario"]
+    list_filter = ["activo"]
+    search_fields = ["nombre_horario", "descripcion"]
+
 
 @admin.register(AsignacionHorario)
 class AsignacionHorarioAdmin(admin.ModelAdmin):
-    list_display = ['fecha_inicio', 'fecha_fin']
-    list_filter = ['activo']
+    list_display = ["fecha_inicio", "fecha_fin"]
+    list_filter = ["activo"]
+
 
 @admin.register(RegistroAsistencia)
 class RegistroAsistenciaAdmin(admin.ModelAdmin):
-    list_display = ['fecha_hora_marcado', 'fecha_creacion']
+    list_display = ["fecha_hora_marcado", "fecha_creacion"]
+
 
 @admin.register(ResumenAsistenciaDiario)
 class ResumenAsistenciaDiarioAdmin(admin.ModelAdmin):
-    list_display = ['estado_revision', 'fecha_creacion']
-
+    list_display = ["estado_revision", "fecha_creacion"]

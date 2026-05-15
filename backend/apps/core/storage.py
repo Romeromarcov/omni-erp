@@ -23,6 +23,7 @@ Uso típico:
     )
     url = storage.generate_presigned_url(s3_key)
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,14 +41,15 @@ logger = logging.getLogger(__name__)
 def _get_s3_client():
     """Crea y retorna un cliente boto3 configurado desde Django settings."""
     import boto3
+
     from django.conf import settings
 
     return boto3.client(
-        's3',
-        endpoint_url=getattr(settings, 'S3_ENDPOINT_URL', 'http://localhost:9000'),
-        aws_access_key_id=getattr(settings, 'S3_ACCESS_KEY', 'minioadmin'),
-        aws_secret_access_key=getattr(settings, 'S3_SECRET_KEY', 'minioadmin'),
-        region_name=getattr(settings, 'S3_REGION', 'us-east-1'),
+        "s3",
+        endpoint_url=getattr(settings, "S3_ENDPOINT_URL", "http://localhost:9000"),
+        aws_access_key_id=getattr(settings, "S3_ACCESS_KEY", "minioadmin"),
+        aws_secret_access_key=getattr(settings, "S3_SECRET_KEY", "minioadmin"),
+        region_name=getattr(settings, "S3_REGION", "us-east-1"),
         config=_get_boto_config(),
     )
 
@@ -55,12 +57,14 @@ def _get_s3_client():
 def _get_boto_config():
     """Retorna BotoCoreConfig con path-style (necesario para MinIO en dev)."""
     from botocore.config import Config
-    return Config(signature_version='s3v4', s3={'addressing_style': 'path'})
+
+    return Config(signature_version="s3v4", s3={"addressing_style": "path"})
 
 
 def _settings():
     """Devuelve el módulo de settings de Django."""
     from django.conf import settings
+
     return settings
 
 
@@ -78,16 +82,26 @@ class StorageService:
 
     # Extensiones bloqueadas por seguridad
     BLOCKED_EXTENSIONS = {
-        '.exe', '.bat', '.cmd', '.sh', '.ps1', '.msi', '.dll',
-        '.php', '.py', '.rb', '.pl', '.cgi',
+        ".exe",
+        ".bat",
+        ".cmd",
+        ".sh",
+        ".ps1",
+        ".msi",
+        ".dll",
+        ".php",
+        ".py",
+        ".rb",
+        ".pl",
+        ".cgi",
     }
     MAX_FILE_SIZE_MB = 100
 
     def __init__(self):
         cfg = _settings()
-        self.use_s3: bool = getattr(cfg, 'USE_S3', False)
-        self.bucket: str = getattr(cfg, 'S3_BUCKET_NAME', 'omni-erp')
-        self.presigned_expires: int = getattr(cfg, 'S3_PRESIGNED_URL_EXPIRES', 3600)
+        self.use_s3: bool = getattr(cfg, "USE_S3", False)
+        self.bucket: str = getattr(cfg, "S3_BUCKET_NAME", "omni-erp")
+        self.presigned_expires: int = getattr(cfg, "S3_PRESIGNED_URL_EXPIRES", 3600)
 
     # ── Métodos públicos ─────────────────────────────────────────────────────
 
@@ -127,10 +141,10 @@ class StorageService:
 
         if content_type is None:
             content_type, _ = mimetypes.guess_type(filename)
-            content_type = content_type or 'application/octet-stream'
+            content_type = content_type or "application/octet-stream"
 
         # Leer contenido para medir tamaño
-        if hasattr(file_obj, 'read'):
+        if hasattr(file_obj, "read"):
             content = file_obj.read()
         else:
             content = file_obj
@@ -139,9 +153,7 @@ class StorageService:
         self._validate_size(size_bytes, filename)
 
         if not self.use_s3:
-            logger.debug(
-                'StorageService [LOCAL] upload simulado: %s (%d bytes)', s3_key, size_bytes
-            )
+            logger.debug("StorageService [LOCAL] upload simulado: %s (%d bytes)", s3_key, size_bytes)
             return s3_key, size_bytes
 
         try:
@@ -153,9 +165,9 @@ class StorageService:
                 Body=content,
                 ContentType=content_type,
             )
-            logger.info('StorageService upload OK: s3://%s/%s (%d bytes)', self.bucket, s3_key, size_bytes)
+            logger.info("StorageService upload OK: s3://%s/%s (%d bytes)", self.bucket, s3_key, size_bytes)
         except Exception as exc:
-            logger.error('StorageService upload FAILED: %s — %s', s3_key, exc)
+            logger.error("StorageService upload FAILED: %s — %s", s3_key, exc)
             raise
 
         return s3_key, size_bytes
@@ -184,20 +196,18 @@ class StorageService:
 
         try:
             client = _get_s3_client()
-            params: dict = {'Bucket': self.bucket, 'Key': s3_key}
+            params: dict = {"Bucket": self.bucket, "Key": s3_key}
             if filename_hint:
-                params['ResponseContentDisposition'] = (
-                    f'attachment; filename="{filename_hint}"'
-                )
+                params["ResponseContentDisposition"] = f'attachment; filename="{filename_hint}"'
             url = client.generate_presigned_url(
-                'get_object',
+                "get_object",
                 Params=params,
                 ExpiresIn=expires,
             )
-            logger.debug('StorageService presigned_url: key=%s expires=%ds', s3_key, expires)
+            logger.debug("StorageService presigned_url: key=%s expires=%ds", s3_key, expires)
             return url
         except Exception as exc:
-            logger.error('StorageService presigned_url FAILED: %s — %s', s3_key, exc)
+            logger.error("StorageService presigned_url FAILED: %s — %s", s3_key, exc)
             raise
 
     def delete_file(self, s3_key: str) -> bool:
@@ -208,16 +218,16 @@ class StorageService:
             True si la eliminación fue exitosa (o si está en modo local).
         """
         if not self.use_s3:
-            logger.debug('StorageService [LOCAL] delete simulado: %s', s3_key)
+            logger.debug("StorageService [LOCAL] delete simulado: %s", s3_key)
             return True
 
         try:
             client = _get_s3_client()
             client.delete_object(Bucket=self.bucket, Key=s3_key)
-            logger.info('StorageService delete OK: s3://%s/%s', self.bucket, s3_key)
+            logger.info("StorageService delete OK: s3://%s/%s", self.bucket, s3_key)
             return True
         except Exception as exc:
-            logger.error('StorageService delete FAILED: %s — %s', s3_key, exc)
+            logger.error("StorageService delete FAILED: %s — %s", s3_key, exc)
             raise
 
     def file_exists(self, s3_key: str) -> bool:
@@ -246,18 +256,18 @@ class StorageService:
             En modo local retorna un dict de stub.
         """
         if not self.use_s3:
-            return {'content_type': 'application/octet-stream', 'size': 0, 'last_modified': None}
+            return {"content_type": "application/octet-stream", "size": 0, "last_modified": None}
 
         try:
             client = _get_s3_client()
             response = client.head_object(Bucket=self.bucket, Key=s3_key)
             return {
-                'content_type': response.get('ContentType', 'application/octet-stream'),
-                'size': response.get('ContentLength', 0),
-                'last_modified': response.get('LastModified'),
+                "content_type": response.get("ContentType", "application/octet-stream"),
+                "size": response.get("ContentLength", 0),
+                "last_modified": response.get("LastModified"),
             }
         except Exception as exc:
-            logger.error('StorageService get_metadata FAILED: %s — %s', s3_key, exc)
+            logger.error("StorageService get_metadata FAILED: %s — %s", s3_key, exc)
             raise
 
     # ── Helpers internos ─────────────────────────────────────────────────────
@@ -266,9 +276,7 @@ class StorageService:
         """Lanza ValueError si la extensión está bloqueada."""
         _, ext = os.path.splitext(filename.lower())
         if ext in self.BLOCKED_EXTENSIONS:
-            raise ValueError(
-                f"El tipo de archivo '{ext}' no está permitido por seguridad."
-            )
+            raise ValueError(f"El tipo de archivo '{ext}' no está permitido por seguridad.")
 
     def _validate_size(self, size_bytes: int, filename: str) -> None:
         """Lanza ValueError si el archivo supera MAX_FILE_SIZE_MB."""
@@ -286,8 +294,9 @@ class StorageService:
         Solo permite alfanuméricos, guiones, puntos y underscores.
         """
         import re
+
         name, ext = os.path.splitext(filename)
-        safe = re.sub(r'[^\w\-.]', '_', name)
+        safe = re.sub(r"[^\w\-.]", "_", name)
         return f"{safe}{ext}"
 
     def _ensure_bucket(self, client) -> None:
@@ -300,4 +309,4 @@ class StorageService:
                 logger.info('StorageService: bucket "%s" creado', self.bucket)
             except Exception as exc:
                 # El bucket puede existir ya (race condition) — ignorar
-                logger.debug('StorageService _ensure_bucket: %s', exc)
+                logger.debug("StorageService _ensure_bucket: %s", exc)

@@ -1,15 +1,18 @@
-from rest_framework import viewsets, status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import Carpeta, Documento, VinculoDocumento, PermisoDocumento
-from .serializers import (
-    CarpetaSerializer, DocumentoSerializer,
-    VinculoDocumentoSerializer, PermisoDocumentoSerializer,
-)
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 from apps.core.storage import StorageService
+from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+
+from .models import Carpeta, Documento, PermisoDocumento, VinculoDocumento
+from .serializers import (
+    CarpetaSerializer,
+    DocumentoSerializer,
+    PermisoDocumentoSerializer,
+    VinculoDocumentoSerializer,
+)
 
 
 def _empresas(request):
@@ -22,9 +25,7 @@ class CarpetaViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles
-        return Carpeta.objects.filter(
-            id_empresa__in=_empresas(self.request)
-        ).order_by('nombre_carpeta')
+        return Carpeta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("nombre_carpeta")
 
 
 class DocumentoViewSet(BaseModelViewSet):
@@ -34,14 +35,12 @@ class DocumentoViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles
-        return Documento.objects.filter(
-            id_empresa__in=_empresas(self.request)
-        ).order_by('-fecha_subida')
+        return Documento.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_subida")
 
     @action(
         detail=False,
-        methods=['post'],
-        url_path='subir',
+        methods=["post"],
+        url_path="subir",
         parser_classes=[MultiPartParser, FormParser],
     )
     def subir(self, request):
@@ -59,31 +58,31 @@ class DocumentoViewSet(BaseModelViewSet):
             201 + DocumentoSerializer si la subida fue exitosa.
             400 si faltan campos requeridos o el archivo es inválido.
         """
-        archivo = request.FILES.get('archivo')
+        archivo = request.FILES.get("archivo")
         if not archivo:
             return Response(
-                {'error': 'El campo "archivo" es requerido.'},
+                {"error": 'El campo "archivo" es requerido.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        empresa_id = request.data.get('empresa_id')
+        empresa_id = request.data.get("empresa_id")
         if not empresa_id:
             return Response(
-                {'error': 'El campo "empresa_id" es requerido.'},
+                {"error": 'El campo "empresa_id" es requerido.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Verificar que la empresa pertenece al usuario
-        empresas_ids = list(_empresas(request).values_list('pk', flat=True))
+        empresas_ids = list(_empresas(request).values_list("pk", flat=True))
         if str(empresa_id) not in [str(e) for e in empresas_ids]:
             return Response(
-                {'error': 'No tienes acceso a esta empresa.'},
+                {"error": "No tienes acceso a esta empresa."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        carpeta_s3 = request.data.get('carpeta_nombre', 'general')
-        carpeta_id = request.data.get('carpeta_id')
-        descripcion = request.data.get('descripcion', '')
+        carpeta_s3 = request.data.get("carpeta_nombre", "general")
+        carpeta_id = request.data.get("carpeta_id")
+        descripcion = request.data.get("descripcion", "")
 
         storage = StorageService()
 
@@ -96,16 +95,17 @@ class DocumentoViewSet(BaseModelViewSet):
                 content_type=archivo.content_type,
             )
         except ValueError as exc:
-            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Obtener empresa y usuario para el registro
         from apps.core.models import Empresa
+
         empresa = Empresa.objects.get(pk=empresa_id)
 
         documento = Documento.objects.create(
             id_empresa=empresa,
             nombre_archivo=archivo.name,
-            tipo_contenido=archivo.content_type or 'application/octet-stream',
+            tipo_contenido=archivo.content_type or "application/octet-stream",
             tamano_bytes=size_bytes,
             ruta_almacenamiento=s3_key,
             id_usuario_subida=request.user,
@@ -116,7 +116,7 @@ class DocumentoViewSet(BaseModelViewSet):
         serializer = self.get_serializer(documento)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['get'], url_path='descargar')
+    @action(detail=True, methods=["get"], url_path="descargar")
     def descargar(self, request, pk=None):
         """
         Genera una URL pre-firmada para descarga temporal del documento.
@@ -125,7 +125,7 @@ class DocumentoViewSet(BaseModelViewSet):
             200 + {'url': '...', 'expires_in': 3600}
             404 si el documento no existe o no pertenece a la empresa del usuario.
         """
-        documento = self.get_object()     # aplica get_queryset → R-CODE-1
+        documento = self.get_object()  # aplica get_queryset → R-CODE-1
 
         storage = StorageService()
         url = storage.generate_presigned_url(
@@ -133,13 +133,15 @@ class DocumentoViewSet(BaseModelViewSet):
             filename_hint=documento.nombre_archivo,
         )
 
-        return Response({
-            'url': url,
-            'expires_in': storage.presigned_expires,
-            'nombre_archivo': documento.nombre_archivo,
-        })
+        return Response(
+            {
+                "url": url,
+                "expires_in": storage.presigned_expires,
+                "nombre_archivo": documento.nombre_archivo,
+            }
+        )
 
-    @action(detail=True, methods=['delete'], url_path='eliminar-archivo')
+    @action(detail=True, methods=["delete"], url_path="eliminar-archivo")
     def eliminar_archivo(self, request, pk=None):
         """
         Elimina el archivo de S3 y el registro Documento de la DB.
@@ -147,7 +149,7 @@ class DocumentoViewSet(BaseModelViewSet):
         La eliminación del objeto S3 se delega a una tarea Celery para
         no bloquear la request en caso de lentitud del storage.
         """
-        documento = self.get_object()     # aplica get_queryset → R-CODE-1
+        documento = self.get_object()  # aplica get_queryset → R-CODE-1
         s3_key = documento.ruta_almacenamiento
 
         # Eliminar el registro de DB primero
@@ -157,12 +159,16 @@ class DocumentoViewSet(BaseModelViewSet):
 
         # Disparar eliminación async del archivo en S3
         from apps.gestion_documental.tasks import eliminar_archivo_s3
+
         eliminar_archivo_s3.delay(s3_key=s3_key, documento_id=documento_id)
 
-        return Response({
-            'mensaje': f'Documento "{nombre_archivo}" eliminado correctamente.',
-            'documento_id': documento_id,
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "mensaje": f'Documento "{nombre_archivo}" eliminado correctamente.',
+                "documento_id": documento_id,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class VinculoDocumentoViewSet(BaseModelViewSet):

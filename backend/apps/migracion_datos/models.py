@@ -1,6 +1,9 @@
-from django.db import models
-from apps.core.models import Empresa, Usuarios
 import uuid
+
+from django.db import models
+
+from apps.core.models import Empresa, Usuarios
+
 
 class PlantillaMigracion(models.Model):
     id_plantilla_migracion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -11,6 +14,7 @@ class PlantillaMigracion(models.Model):
     estructura_json = models.JSONField()
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+
 
 class ProcesoMigracion(models.Model):
     id_proceso_migracion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -25,6 +29,7 @@ class ProcesoMigracion(models.Model):
     total_registros_fallidos = models.IntegerField(default=0)
     ruta_archivo_cargado = models.CharField(max_length=500)
     ruta_archivo_errores = models.CharField(max_length=500, null=True, blank=True)
+
 
 class DetalleErrorMigracion(models.Model):
     id_detalle_error = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

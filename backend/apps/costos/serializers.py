@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from . import models
 
 # Serializadores para costos
@@ -10,17 +11,20 @@ from . import models
 
 # Serializadores agregados automáticamente
 
+
 class CostoProduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CostoProduccion
-        fields = '__all__'
+        fields = "__all__"
+
 
 class CostoEstandarProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CostoEstandarProducto
-        fields = '__all__'
+        fields = "__all__"
+
 
 class AnalisisVariacionCostoSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.AnalisisVariacionCosto
-        fields = '__all__'
+        fields = "__all__"

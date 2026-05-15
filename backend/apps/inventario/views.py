@@ -1,16 +1,29 @@
 from rest_framework import viewsets
+
+from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+
 from .models import (
-    UnidadMedida, CategoriaProducto, Producto, VarianteProducto,
-    StockActual, MovimientoInventario, ConversionUnidadMedida,
-    StockConsignacionCliente, StockConsignacionProveedor
+    CategoriaProducto,
+    ConversionUnidadMedida,
+    MovimientoInventario,
+    Producto,
+    StockActual,
+    StockConsignacionCliente,
+    StockConsignacionProveedor,
+    UnidadMedida,
+    VarianteProducto,
 )
 from .serializers import (
-    UnidadMedidaSerializer, CategoriaProductoSerializer, ProductoSerializer,
-    VarianteProductoSerializer, StockActualSerializer,
-    MovimientoInventarioSerializer, ConversionUnidadMedidaSerializer,
-    StockConsignacionClienteSerializer, StockConsignacionProveedorSerializer
+    CategoriaProductoSerializer,
+    ConversionUnidadMedidaSerializer,
+    MovimientoInventarioSerializer,
+    ProductoSerializer,
+    StockActualSerializer,
+    StockConsignacionClienteSerializer,
+    StockConsignacionProveedorSerializer,
+    UnidadMedidaSerializer,
+    VarianteProductoSerializer,
 )
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 
 def _empresas(request):
@@ -33,7 +46,7 @@ class CategoriaProductoViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles del usuario
-        return CategoriaProducto.objects.filter(id_empresa__in=_empresas(self.request)).order_by('nombre_categoria')
+        return CategoriaProducto.objects.filter(id_empresa__in=_empresas(self.request)).order_by("nombre_categoria")
 
 
 class ProductoViewSet(BaseModelViewSet):
@@ -44,7 +57,7 @@ class ProductoViewSet(BaseModelViewSet):
         # R-CODE-1: filtrar SIEMPRE por empresas visibles; el parámetro
         # ?empresa= es opcional para restringir aún más dentro de las propias.
         qs = Producto.objects.filter(id_empresa__in=_empresas(self.request))
-        empresa_id = self.request.query_params.get('empresa')
+        empresa_id = self.request.query_params.get("empresa")
         if empresa_id:
             qs = qs.filter(id_empresa=empresa_id)
         return qs

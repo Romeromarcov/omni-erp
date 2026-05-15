@@ -1,8 +1,15 @@
 from django.contrib import admin
+
 from .models import (
-    Impuesto, ConfiguracionImpuesto, Retencion, ContribucionParafiscal,
-    ImpuestoEmpresaActiva, RetencionEmpresaActiva, ContribucionEmpresaActiva,
-    EmpresaContribucionParafiscal, ConfiguracionRetencion
+    ConfiguracionImpuesto,
+    ConfiguracionRetencion,
+    ContribucionEmpresaActiva,
+    ContribucionParafiscal,
+    EmpresaContribucionParafiscal,
+    Impuesto,
+    ImpuestoEmpresaActiva,
+    Retencion,
+    RetencionEmpresaActiva,
 )
 
 # Register your models here.

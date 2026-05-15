@@ -1,7 +1,9 @@
 """
 Utilidades para el manejo de cajas y sesiones en el sistema ERP venezolano.
 """
+
 from django.db import models
+
 
 def asignar_permisos_caja_fisica(usuario, caja_fisica, puede_abrir=True, puede_cerrar=True, es_predeterminada=False):
     """
@@ -20,10 +22,10 @@ def asignar_permisos_caja_fisica(usuario, caja_fisica, puede_abrir=True, puede_c
         usuario=usuario,
         caja_fisica=caja_fisica,
         defaults={
-            'puede_abrir_sesion': puede_abrir,
-            'puede_cerrar_sesion': puede_cerrar,
-            'es_predeterminada': es_predeterminada
-        }
+            "puede_abrir_sesion": puede_abrir,
+            "puede_cerrar_sesion": puede_cerrar,
+            "es_predeterminada": es_predeterminada,
+        },
     )
 
     if not created:
@@ -42,11 +44,13 @@ def obtener_sesion_activa_usuario(usuario):
     Retorna None si no hay sesión activa.
     """
     from .models import SesionCaja
+
     try:
-        return SesionCaja.objects.filter(
-            usuario=usuario,
-            estado='ABIERTA'
-        ).select_related('caja_fisica_principal').first()
+        return (
+            SesionCaja.objects.filter(usuario=usuario, estado="ABIERTA")
+            .select_related("caja_fisica_principal")
+            .first()
+        )
     except Exception:
         return None
 
@@ -59,11 +63,7 @@ def validar_acceso_caja_usuario(usuario, caja):
     from .models import CajaUsuario
 
     # Verificar asignación directa
-    asignacion_directa = CajaUsuario.objects.filter(
-        usuario=usuario,
-        caja=caja,
-        caja__activa=True
-    ).exists()
+    asignacion_directa = CajaUsuario.objects.filter(usuario=usuario, caja=caja, caja__activa=True).exists()
 
     if asignacion_directa:
         return True
@@ -91,32 +91,32 @@ def crear_configuracion_inicial_venezolana(empresa):
     """
     Crea la configuración inicial de cajas virtuales para un contexto venezolano.
     """
-    from .models import PlantillaMaestroCajasVirtuales, Moneda, MetodoPago
+    from .models import MetodoPago, Moneda, PlantillaMaestroCajasVirtuales
 
     # Obtener monedas y métodos de pago disponibles
     try:
-        ves = Moneda.objects.get(codigo_iso='VES', empresa=empresa)
-        usd = Moneda.objects.get(codigo_iso='USD', empresa=empresa)
+        ves = Moneda.objects.get(codigo_iso="VES", empresa=empresa)
+        usd = Moneda.objects.get(codigo_iso="USD", empresa=empresa)
     except Moneda.DoesNotExist:
         return {"error": "Monedas VES y USD no encontradas"}
 
     try:
-        efectivo = MetodoPago.objects.get(nombre_metodo='EFECTIVO', empresa=empresa)
-        tarjeta = MetodoPago.objects.get(nombre_metodo='TARJETA', empresa=empresa)
-        credito = MetodoPago.objects.get(nombre_metodo='CREDITO', empresa=empresa)
+        efectivo = MetodoPago.objects.get(nombre_metodo="EFECTIVO", empresa=empresa)
+        tarjeta = MetodoPago.objects.get(nombre_metodo="TARJETA", empresa=empresa)
+        credito = MetodoPago.objects.get(nombre_metodo="CREDITO", empresa=empresa)
     except MetodoPago.DoesNotExist:
         return {"error": "Métodos de pago básicos no encontrados"}
 
     # Crear plantilla maestra para cajas físicas
     plantilla_fisica, created_fisica = PlantillaMaestroCajasVirtuales.objects.get_or_create(
         empresa=empresa,
-        nombre='Plantilla Cajas Físicas Venezuela',
+        nombre="Plantilla Cajas Físicas Venezuela",
         defaults={
-            'descripcion': 'Configuración automática para todas las cajas físicas venezolanas',
-            'aplicar_a_todas_cajas_fisicas': True,
-            'aplicar_a_empleados_con_rol': None,
-            'activa': True
-        }
+            "descripcion": "Configuración automática para todas las cajas físicas venezolanas",
+            "aplicar_a_todas_cajas_fisicas": True,
+            "aplicar_a_empleados_con_rol": None,
+            "activa": True,
+        },
     )
 
     if created_fisica:
@@ -127,13 +127,13 @@ def crear_configuracion_inicial_venezolana(empresa):
     # Crear plantilla para vendedores móviles
     plantilla_movil, created_movil = PlantillaMaestroCajasVirtuales.objects.get_or_create(
         empresa=empresa,
-        nombre='Plantilla Vendedores Móviles',
+        nombre="Plantilla Vendedores Móviles",
         defaults={
-            'descripcion': 'Configuración para vendedores que usan la app móvil',
-            'aplicar_a_todas_cajas_fisicas': False,
-            'aplicar_a_empleados_con_rol': 'vendedor',  # Ajustar según el rol real
-            'activa': True
-        }
+            "descripcion": "Configuración para vendedores que usan la app móvil",
+            "aplicar_a_todas_cajas_fisicas": False,
+            "aplicar_a_empleados_con_rol": "vendedor",  # Ajustar según el rol real
+            "activa": True,
+        },
     )
 
     if created_movil:
@@ -144,5 +144,5 @@ def crear_configuracion_inicial_venezolana(empresa):
     return {
         "plantilla_fisica": plantilla_fisica,
         "plantilla_movil": plantilla_movil,
-        "mensaje": "Configuración inicial creada exitosamente"
+        "mensaje": "Configuración inicial creada exitosamente",
     }

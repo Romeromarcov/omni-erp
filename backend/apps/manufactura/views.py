@@ -1,33 +1,52 @@
 from rest_framework import viewsets
+
+from apps.core.viewsets import BaseModelViewSet
+
 from .models import (
-    ListaMateriales, RutaProduccion, OrdenProduccion, ConsumoMaterial,
-    ProduccionTerminada, ListaMaterialesDetalle, CentroTrabajo,
-    OperacionProduccion, RutaProduccionDetalle, RegistroOperacion
+    CentroTrabajo,
+    ConsumoMaterial,
+    ListaMateriales,
+    ListaMaterialesDetalle,
+    OperacionProduccion,
+    OrdenProduccion,
+    ProduccionTerminada,
+    RegistroOperacion,
+    RutaProduccion,
+    RutaProduccionDetalle,
 )
 from .serializers import (
-    ListaMaterialesSerializer, RutaProduccionSerializer, OrdenProduccionSerializer,
-    ConsumoMaterialSerializer, ProduccionTerminadaSerializer,
-    ListaMaterialesDetalleSerializer, CentroTrabajoSerializer,
-    OperacionProduccionSerializer, RutaProduccionDetalleSerializer,
-    RegistroOperacionSerializer
+    CentroTrabajoSerializer,
+    ConsumoMaterialSerializer,
+    ListaMaterialesDetalleSerializer,
+    ListaMaterialesSerializer,
+    OperacionProduccionSerializer,
+    OrdenProduccionSerializer,
+    ProduccionTerminadaSerializer,
+    RegistroOperacionSerializer,
+    RutaProduccionDetalleSerializer,
+    RutaProduccionSerializer,
 )
-from apps.core.viewsets import BaseModelViewSet
+
 
 class ListaMaterialesViewSet(BaseModelViewSet):
     queryset = ListaMateriales.objects.all()
     serializer_class = ListaMaterialesSerializer
 
+
 class RutaProduccionViewSet(BaseModelViewSet):
     queryset = RutaProduccion.objects.all()
     serializer_class = RutaProduccionSerializer
+
 
 class OrdenProduccionViewSet(BaseModelViewSet):
     queryset = OrdenProduccion.objects.all()
     serializer_class = OrdenProduccionSerializer
 
+
 class ConsumoMaterialViewSet(BaseModelViewSet):
     queryset = ConsumoMaterial.objects.all()
     serializer_class = ConsumoMaterialSerializer
+
 
 class ProduccionTerminadaViewSet(BaseModelViewSet):
     queryset = ProduccionTerminada.objects.all()

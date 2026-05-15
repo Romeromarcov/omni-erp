@@ -1,7 +1,9 @@
 from rest_framework import viewsets
-from .models import Proveedor, ContactoProveedor, CuentaBancariaProveedor
-from .serializers import ProveedorSerializer, ContactoProveedorSerializer, CuentaBancariaProveedorSerializer
+
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+
+from .models import ContactoProveedor, CuentaBancariaProveedor, Proveedor
+from .serializers import ContactoProveedorSerializer, CuentaBancariaProveedorSerializer, ProveedorSerializer
 
 
 def _empresas(request):
@@ -14,7 +16,7 @@ class ProveedorViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
-        return Proveedor.objects.filter(id_empresa__in=_empresas(self.request)).order_by('razon_social')
+        return Proveedor.objects.filter(id_empresa__in=_empresas(self.request)).order_by("razon_social")
 
 
 class ContactoProveedorViewSet(BaseModelViewSet):

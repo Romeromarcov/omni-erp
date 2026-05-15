@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
+
 class CuentasPorCobrarConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.cuentas_por_cobrar'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.cuentas_por_cobrar"

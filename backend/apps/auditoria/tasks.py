@@ -4,6 +4,7 @@ Tareas Celery del módulo auditoria.
 Permite registrar eventos de auditoría de forma asíncrona (fire-and-forget),
 evitando que el registro afecte la latencia de la request HTTP.
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(
-    name='auditoria.registrar_evento',
+    name="auditoria.registrar_evento",
     bind=True,
     max_retries=3,
     default_retry_delay=10,
-    acks_late=True,       # no consumir el mensaje hasta que la tarea termine
+    acks_late=True,  # no consumir el mensaje hasta que la tarea termine
 )
 def registrar_evento(
     self,
@@ -77,26 +78,26 @@ def registrar_evento(
         )
 
         logger.info(
-            'auditoria.registrar_evento OK — empresa=%s módulo=%s accion=%s log_id=%s',
-            empresa_id, modulo, tipo_accion, log.pk,
+            "auditoria.registrar_evento OK — empresa=%s módulo=%s accion=%s log_id=%s",
+            empresa_id,
+            modulo,
+            tipo_accion,
+            log.pk,
         )
 
         return {
-            'task_id': self.request.id,
-            'log_id': str(log.pk),
-            'empresa_id': empresa_id,
-            'modulo': modulo,
-            'tipo_accion': tipo_accion,
+            "task_id": self.request.id,
+            "log_id": str(log.pk),
+            "empresa_id": empresa_id,
+            "modulo": modulo,
+            "tipo_accion": tipo_accion,
         }
 
     except Empresa.DoesNotExist:
-        logger.error('auditoria.registrar_evento: empresa %s no encontrada', empresa_id)
+        logger.error("auditoria.registrar_evento: empresa %s no encontrada", empresa_id)
         # No reintentar si la empresa no existe — es un error de programación
         raise
 
     except Exception as exc:
-        logger.warning(
-            'auditoria.registrar_evento falló (intento %s): %s',
-            self.request.retries, exc
-        )
+        logger.warning("auditoria.registrar_evento falló (intento %s): %s", self.request.retries, exc)
         raise self.retry(exc=exc)

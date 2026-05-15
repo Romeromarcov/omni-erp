@@ -23,12 +23,13 @@ Regla de migración:
     concreta. Siempre que las definiciones coincidan exactamente con los campos
     que ya existen en la tabla, makemigrations NO generará migraciones.
 """
+
 from __future__ import annotations
 
 from django.db import models
 
-
 # ── 1. Auditoría temporal ────────────────────────────────────────────────────
+
 
 class TimeStampedModel(models.Model):
     """
@@ -42,6 +43,7 @@ class TimeStampedModel(models.Model):
         Estos campos son de solo escritura vía Django ORM. Para tests que necesiten
         valores específicos, usar `update()` en lugar de `save()`.
     """
+
     fecha_creacion = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Fecha de Creación",
@@ -58,6 +60,7 @@ class TimeStampedModel(models.Model):
 
 
 # ── 2. Borrado lógico (soft delete) ─────────────────────────────────────────
+
 
 class SoftDeleteModel(models.Model):
     """
@@ -80,6 +83,7 @@ class SoftDeleteModel(models.Model):
         Para ese comportamiento usa ``SoftDeleteModelMixin`` en el ViewSet
         (``apps.core.viewsets``), o filtra explícitamente en ``get_queryset()``.
     """
+
     activo = models.BooleanField(
         default=True,
         verbose_name="Activo",
@@ -97,18 +101,18 @@ class SoftDeleteModel(models.Model):
         de otros campos. Agrega 'activo' a ``update_fields`` si se proveen.
         """
         if update_fields is not None:
-            if 'activo' not in update_fields:
-                update_fields = list(update_fields) + ['activo']
+            if "activo" not in update_fields:
+                update_fields = list(update_fields) + ["activo"]
             self.activo = False
             self.save(update_fields=update_fields)
         else:
             self.activo = False
-            self.save(update_fields=['activo'])
+            self.save(update_fields=["activo"])
 
     def restore(self) -> None:
         """Reactiva el registro (revierte el borrado lógico)."""
         self.activo = True
-        self.save(update_fields=['activo'])
+        self.save(update_fields=["activo"])
 
     def hard_delete(self) -> None:
         """Elimina el registro físicamente. Usar solo en administración."""
@@ -116,6 +120,7 @@ class SoftDeleteModel(models.Model):
 
 
 # ── 3. Integración con sistemas externos ────────────────────────────────────
+
 
 class IntegrationFieldsMixin(models.Model):
     """
@@ -133,6 +138,7 @@ class IntegrationFieldsMixin(models.Model):
         - Nunca leer ``documento_json`` en lógica de negocio; solo para auditoría.
         - ``referencia_externa`` es de libre formato — no usar como FK.
     """
+
     referencia_externa = models.CharField(
         max_length=100,
         null=True,
@@ -153,6 +159,7 @@ class IntegrationFieldsMixin(models.Model):
 
 # ── 4. Base combinada estándar ───────────────────────────────────────────────
 
+
 class OmniBaseModel(TimeStampedModel, SoftDeleteModel):
     """
     Modelo abstracto base estándar de Omni ERP.
@@ -170,11 +177,13 @@ class OmniBaseModel(TimeStampedModel, SoftDeleteModel):
         class MiEntidad(OmniBaseModel, IntegrationFieldsMixin):
             ...
     """
+
     class Meta:
         abstract = True
 
 
 # ── 5. Base para tablas "maestras" de empresa (tenant-aware) ─────────────────
+
 
 class TenantModel(OmniBaseModel):
     """
@@ -193,5 +202,6 @@ class TenantModel(OmniBaseModel):
             db_column='id_empresa',
         )
     """
+
     class Meta:
         abstract = True

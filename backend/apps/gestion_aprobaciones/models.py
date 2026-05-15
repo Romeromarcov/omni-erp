@@ -1,6 +1,9 @@
-from django.db import models
-from apps.core.models import Empresa, Usuarios, Roles
 import uuid
+
+from django.db import models
+
+from apps.core.models import Empresa, Roles, Usuarios
+
 
 class TipoAprobacion(models.Model):
     id_tipo_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -10,6 +13,7 @@ class TipoAprobacion(models.Model):
     descripcion = models.TextField(null=True, blank=True)
     modulo_origen = models.CharField(max_length=50)
     activo = models.BooleanField(default=True)
+
 
 class FlujoAprobacion(models.Model):
     id_flujo_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -22,6 +26,7 @@ class FlujoAprobacion(models.Model):
     monto_maximo = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     activo = models.BooleanField(default=True)
 
+
 class SolicitudAprobacion(models.Model):
     id_solicitud_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_tipo_aprobacion = models.ForeignKey(TipoAprobacion, on_delete=models.CASCADE)
@@ -33,6 +38,7 @@ class SolicitudAprobacion(models.Model):
     comentarios_solicitante = models.TextField(null=True, blank=True)
     fecha_ultima_actualizacion = models.DateTimeField(auto_now=True)
     etapa_actual_flujo = models.ForeignKey(FlujoAprobacion, null=True, blank=True, on_delete=models.SET_NULL)
+
 
 class RegistroAprobacion(models.Model):
     id_registro_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

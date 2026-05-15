@@ -1,6 +1,9 @@
-from django.db import models
-from apps.core.models import Empresa, Usuarios
 import uuid
+
+from django.db import models
+
+from apps.core.models import Empresa, Usuarios
+
 
 class LogAuditoria(models.Model):
     id_log_auditoria = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

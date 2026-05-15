@@ -4,13 +4,15 @@ Tareas Celery del módulo core.
 Estas tareas sirven como smoke-test del bus de mensajes y como
 utilidades transversales reutilizables por otros módulos.
 """
-from celery import shared_task
+
 import logging
+
+from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name='core.ping', bind=True, max_retries=0)
+@shared_task(name="core.ping", bind=True, max_retries=0)
 def ping(self) -> dict:
     """
     Tarea de health-check del worker.
@@ -21,12 +23,12 @@ def ping(self) -> dict:
     Returns:
         dict: {'task_id': str, 'status': 'pong'}
     """
-    logger.info('core.ping ejecutado — task_id=%s', self.request.id)
-    return {'task_id': self.request.id, 'status': 'pong'}
+    logger.info("core.ping ejecutado — task_id=%s", self.request.id)
+    return {"task_id": self.request.id, "status": "pong"}
 
 
-@shared_task(name='core.log_evento', bind=True, max_retries=3, default_retry_delay=5)
-def log_evento(self, nivel: str, mensaje: str, modulo: str = 'core') -> dict:
+@shared_task(name="core.log_evento", bind=True, max_retries=3, default_retry_delay=5)
+def log_evento(self, nivel: str, mensaje: str, modulo: str = "core") -> dict:
     """
     Registra un evento de aplicación de forma asíncrona.
 
@@ -38,16 +40,16 @@ def log_evento(self, nivel: str, mensaje: str, modulo: str = 'core') -> dict:
     Retorna el mismo dict de entrada enriquecido con el task_id.
     """
     log_fn = {
-        'info': logger.info,
-        'warning': logger.warning,
-        'error': logger.error,
+        "info": logger.info,
+        "warning": logger.warning,
+        "error": logger.error,
     }.get(nivel.lower(), logger.info)
 
-    log_fn('[%s] %s — task_id=%s', modulo, mensaje, self.request.id)
+    log_fn("[%s] %s — task_id=%s", modulo, mensaje, self.request.id)
 
     return {
-        'task_id': self.request.id,
-        'nivel': nivel,
-        'modulo': modulo,
-        'mensaje': mensaje,
+        "task_id": self.request.id,
+        "nivel": nivel,
+        "modulo": modulo,
+        "mensaje": mensaje,
     }

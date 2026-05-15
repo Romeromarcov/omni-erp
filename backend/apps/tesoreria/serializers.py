@@ -1,18 +1,22 @@
 from rest_framework import serializers
+
 from .models import Caja, MovimientoInternoFondo, OperacionCambioDivisa
+
 
 class CajaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Caja
-        fields = '__all__'
+        fields = "__all__"
+
 
 class MovimientoInternoFondoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MovimientoInternoFondo
-        fields = '__all__'
+        fields = "__all__"
 
     def create(self, validated_data):
         from apps.finanzas.models import MovimientoCajaBanco
+
         # Crear el movimiento interno
         movimiento = super().create(validated_data)
 
@@ -21,11 +25,11 @@ class MovimientoInternoFondoSerializer(serializers.ModelSerializer):
             id_empresa=movimiento.caja_origen.empresa,
             fecha_movimiento=movimiento.fecha.date(),
             hora_movimiento=movimiento.fecha.time(),
-            tipo_movimiento='TRANSFERENCIA_SALIDA',
+            tipo_movimiento="TRANSFERENCIA_SALIDA",
             monto=movimiento.monto,
             id_moneda=movimiento.id_moneda,
-            concepto=movimiento.descripcion or '',
-            referencia=movimiento.referencia_externa or '',
+            concepto=movimiento.descripcion or "",
+            referencia=movimiento.referencia_externa or "",
             id_caja=movimiento.caja_origen,
             id_cuenta_bancaria=movimiento.id_banco_origen,
             id_transaccion_financiera=None,
@@ -38,11 +42,11 @@ class MovimientoInternoFondoSerializer(serializers.ModelSerializer):
             id_empresa=movimiento.caja_destino.empresa,
             fecha_movimiento=movimiento.fecha.date(),
             hora_movimiento=movimiento.fecha.time(),
-            tipo_movimiento='TRANSFERENCIA_ENTRADA',
+            tipo_movimiento="TRANSFERENCIA_ENTRADA",
             monto=movimiento.monto,
             id_moneda=movimiento.id_moneda,
-            concepto=movimiento.descripcion or '',
-            referencia=movimiento.referencia_externa or '',
+            concepto=movimiento.descripcion or "",
+            referencia=movimiento.referencia_externa or "",
             id_caja=movimiento.caja_destino,
             id_cuenta_bancaria=movimiento.id_banco_destino,
             id_transaccion_financiera=None,
@@ -56,24 +60,25 @@ class MovimientoInternoFondoSerializer(serializers.ModelSerializer):
 class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
     class Meta:
         model = OperacionCambioDivisa
-        fields = '__all__'
+        fields = "__all__"
 
     def create(self, validated_data):
-        from apps.finanzas.models import TransaccionFinanciera, MovimientoCajaBanco, MetodoPago
+        from apps.finanzas.models import MetodoPago, MovimientoCajaBanco, TransaccionFinanciera
         from apps.gastos.models import DocumentoGasto
+
         # Crear la operación de cambio
         operacion = super().create(validated_data)
 
-        usuario = validated_data.get('usuario') if 'usuario' in validated_data else None
+        usuario = validated_data.get("usuario") if "usuario" in validated_data else None
         empresa = operacion.empresa
         fecha = operacion.fecha_operacion
-        descripcion = operacion.observaciones or ''
+        descripcion = operacion.observaciones or ""
 
         # Egreso por monto_origen (concepto: cambio de divisas)
         trans_egreso = TransaccionFinanciera.objects.create(
             id_empresa=empresa,
             fecha_hora_transaccion=fecha,
-            tipo_transaccion='EGRESO',
+            tipo_transaccion="EGRESO",
             monto_transaccion=operacion.monto_origen,
             id_moneda_transaccion=operacion.moneda_origen,
             descripcion=f"Cambio de divisas: {descripcion}",
@@ -87,11 +92,11 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
             id_empresa=empresa,
             fecha_movimiento=fecha.date(),
             hora_movimiento=fecha.time(),
-            tipo_movimiento='EGRESO',
+            tipo_movimiento="EGRESO",
             monto=operacion.monto_origen,
             id_moneda=operacion.moneda_origen,
             concepto=f"Cambio de divisas: {descripcion}",
-            referencia=operacion.referencia_transaccion_origen or '',
+            referencia=operacion.referencia_transaccion_origen or "",
             id_caja=operacion.caja_origen,
             id_cuenta_bancaria=operacion.banco_origen,
             id_transaccion_financiera=trans_egreso,
@@ -105,7 +110,7 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
             trans_comision = TransaccionFinanciera.objects.create(
                 id_empresa=empresa,
                 fecha_hora_transaccion=fecha,
-                tipo_transaccion='EGRESO',
+                tipo_transaccion="EGRESO",
                 monto_transaccion=operacion.comision,
                 id_moneda_transaccion=operacion.moneda_origen,
                 descripcion=f"Comisión cambio divisas: {descripcion}",
@@ -119,11 +124,11 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
                 id_empresa=empresa,
                 fecha_movimiento=fecha.date(),
                 hora_movimiento=fecha.time(),
-                tipo_movimiento='EGRESO',
+                tipo_movimiento="EGRESO",
                 monto=operacion.comision,
                 id_moneda=operacion.moneda_origen,
                 concepto=f"Comisión cambio divisas: {descripcion}",
-                referencia=operacion.referencia_transaccion_origen or '',
+                referencia=operacion.referencia_transaccion_origen or "",
                 id_caja=operacion.caja_origen,
                 id_cuenta_bancaria=operacion.banco_origen,
                 id_transaccion_financiera=trans_comision,
@@ -147,7 +152,7 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
         trans_ingreso = TransaccionFinanciera.objects.create(
             id_empresa=empresa,
             fecha_hora_transaccion=fecha,
-            tipo_transaccion='INGRESO',
+            tipo_transaccion="INGRESO",
             monto_transaccion=operacion.monto_destino,
             id_moneda_transaccion=operacion.moneda_destino,
             descripcion=f"Cambio de divisas: {descripcion}",
@@ -161,11 +166,11 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
             id_empresa=empresa,
             fecha_movimiento=fecha.date(),
             hora_movimiento=fecha.time(),
-            tipo_movimiento='INGRESO',
+            tipo_movimiento="INGRESO",
             monto=operacion.monto_destino,
             id_moneda=operacion.moneda_destino,
             concepto=f"Cambio de divisas: {descripcion}",
-            referencia=operacion.referencia_transaccion_destino or '',
+            referencia=operacion.referencia_transaccion_destino or "",
             id_caja=operacion.caja_destino,
             id_cuenta_bancaria=operacion.banco_destino,
             id_transaccion_financiera=trans_ingreso,

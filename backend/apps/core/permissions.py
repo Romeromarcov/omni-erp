@@ -18,9 +18,9 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.user.is_staff:
             return True
-        owner_field = getattr(view, 'owner_field', 'id_usuario')
+        owner_field = getattr(view, "owner_field", "id_usuario")
         owner = getattr(obj, owner_field, None)
         if owner is None:
             return False
-        owner_id = getattr(owner, 'pk', owner)
+        owner_id = getattr(owner, "pk", owner)
         return owner_id == request.user.pk
