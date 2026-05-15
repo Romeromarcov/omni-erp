@@ -74,6 +74,8 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-omni-erp}
       S3_REGION: us-east-1
+      # Event Store — Redpanda/Kafka
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
     volumes:
       # Hot reload: el código fuente se monta en el contenedor
       - ./backend:/app
@@ -161,6 +163,8 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-omni-erp}
       S3_REGION: us-east-1
+      # Event Store — Redpanda/Kafka
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
     volumes:
       - ./backend:/app
       - /app/.venv
@@ -210,6 +214,56 @@ services:
         --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
   # ─────────────────────────────────────────
+  # Event Store — Redpanda (Kafka-compatible)
+  # ─────────────────────────────────────────
+  # Redpanda es Kafka-compatible pero mucho más simple de operar.
+  # Expone la misma API Kafka; el código Python usa confluent-kafka.
+  # UI: http://localhost:8080 (Redpanda Console)
+  redpanda:
+    image: redpandadata/redpanda:v24.3.1
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --smp 1
+      - --memory 512M
+      - --mode dev-container
+      - --default-log-level=warn
+    volumes:
+      - omni_redpanda_data:/var/lib/redpanda/data
+    ports:
+      - "19092:19092"   # Kafka API (host → dev)
+      - "18082:18082"   # HTTP Proxy
+      - "18081:18081"   # Schema Registry
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Consola web de Redpanda — UI para explorar topics y mensajes
+  redpanda_console:
+    image: redpandadata/console:v2.8.3
+    restart: unless-stopped
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+    volumes:
+      - ./infra/redpanda/console-config.yml:/tmp/config.yml:ro
+    ports:
+      - "8080:8080"
+
+  # ─────────────────────────────────────────
   # Frontend — React / Vite dev server
   # ─────────────────────────────────────────
   frontend:
@@ -239,3 +293,5 @@ volumes:
     name: omni_redis_data
   omni_minio_data:
     name: omni_minio_data
+  omni_redpanda_data:
+    name: omni_redpanda_data
