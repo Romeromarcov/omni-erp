@@ -4,42 +4,46 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.core.base_models import IntegrationFieldsMixin, OmniBaseModel
+
 
 def validar_rif(value):
-    # Validar formato RIF: Letra-Mayúscula seguida de guion y números
     if not re.match(r"^[VJEGBP]-[0-9]+$", value):
         raise ValidationError("RIF debe tener formato Letra-Mayúscula (V/J/E/G/B/P) seguida de guion y números.")
 
 
 def validar_telefono(value):
-    # Validar teléfono venezolano: 0412/0414/0416/0422/0424/0426 + 7 dígitos
-    if not re.match(r"^(0412|0414|0416|0422|0424|0426)[0-9]{7}$", value):
-        raise ValidationError("Teléfono debe comenzar con 0412, 0414, 0416, 0422, 0424 o 0426 y tener 11 dígitos.")
+    # Acepta móviles y fijos venezolanos, y formatos internacionales con +
+    cleaned = re.sub(r"[\s\-\(\)]", "", value)
+    if not re.match(r"^\+?[0-9]{7,15}$", cleaned):
+        raise ValidationError("Teléfono inválido. Ingrese entre 7 y 15 dígitos, con prefijo + opcional.")
 
 
-class Cliente(models.Model):
+class Cliente(OmniBaseModel, IntegrationFieldsMixin):
+    """
+    Cliente del negocio. Hereda timestamps, soft-delete e integración externa.
+    RIF único por empresa (no globalmente) para soportar multi-tenant.
+    """
+
     id_cliente = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="clientes")
     razon_social = models.CharField(max_length=255)
     nombre_comercial = models.CharField(max_length=255, null=True, blank=True)
-    rif = models.CharField(max_length=20, unique=True, validators=[validar_rif])
+    rif = models.CharField(max_length=20, validators=[validar_rif])
     direccion = models.TextField(null=True, blank=True)
     telefono = models.CharField(max_length=50, null=True, blank=True, validators=[validar_telefono])
     email = models.EmailField(null=True, blank=True)
     contacto = models.CharField(max_length=100, null=True, blank=True)
-    activo = models.BooleanField(default=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["razon_social"]
+        unique_together = [["id_empresa", "rif"]]
 
     def __str__(self):
         return self.razon_social
 
 
-class ContactoCliente(models.Model):
+class ContactoCliente(OmniBaseModel):
     id_contacto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="contactos_cliente")
     id_cliente = models.ForeignKey("Cliente", on_delete=models.CASCADE, related_name="contactos")
@@ -51,9 +55,7 @@ class ContactoCliente(models.Model):
     email_contacto = models.EmailField()
     fecha_nacimiento = models.DateField(null=True, blank=True)
     es_contacto_principal = models.BooleanField(default=False)
-    activo = models.BooleanField(default=True)
     observaciones = models.TextField(null=True, blank=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "crm_contacto_cliente"
@@ -64,7 +66,7 @@ class ContactoCliente(models.Model):
         return f"{self.nombre_contacto} {self.apellido_contacto} - {self.id_cliente.razon_social}"
 
 
-class DireccionCliente(models.Model):
+class DireccionCliente(OmniBaseModel):
     TIPOS_DIRECCION = [
         ("FISCAL", "Fiscal"),
         ("COMERCIAL", "Comercial"),
@@ -85,9 +87,7 @@ class DireccionCliente(models.Model):
     telefono = models.CharField(max_length=50, null=True, blank=True)
     persona_contacto = models.CharField(max_length=100, null=True, blank=True)
     es_direccion_principal = models.BooleanField(default=False)
-    activo = models.BooleanField(default=True)
     observaciones = models.TextField(null=True, blank=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "crm_direccion_cliente"

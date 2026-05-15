@@ -7,16 +7,13 @@ from django.utils import timezone
 
 from .base_models import IntegrationFieldsMixin, OmniBaseModel
 
-# Asegúrate de que finanzas.Moneda esté disponible.
-# Si el módulo 'finanzas' aún no existe como una app, esto podría dar un error.
-# Para evitarlo temporalmente en desarrollo inicial, podrías comentar la FK a Moneda
-# y añadirla una vez que la app 'finanzas' esté creada y en INSTALLED_APPS.
-# Por ahora, asumimos que 'finanzas' será una app hermana en 'apps/'.
 
+class Empresa(OmniBaseModel, IntegrationFieldsMixin):
+    """
+    Empresa cliente del ERP. Entidad raíz del multi-tenant.
+    fecha_creacion proviene de OmniBaseModel (antes: fecha_registro).
+    """
 
-# 1. Modelo de Empresa (Tabla Maestra de las Empresas Clientes de Omni ERP - Multi-tenant)
-# Esta tabla es fundamental para la arquitectura multi-tenant.
-class Empresa(models.Model):
     empresa_matriz = models.ForeignKey(
         "self",
         null=True,
@@ -25,7 +22,7 @@ class Empresa(models.Model):
         on_delete=models.SET_NULL,
         verbose_name="Empresa Matriz",
     )
-    id_empresa = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # PK, UUIDField
+    id_empresa = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nombre_legal = models.CharField(max_length=255, verbose_name="Nombre Legal")
     nombre_comercial = models.CharField(max_length=255, null=True, blank=True, verbose_name="Nombre Comercial")
     identificador_fiscal = models.CharField(max_length=20, blank=True, null=True)
@@ -34,8 +31,6 @@ class Empresa(models.Model):
     email_contacto = models.EmailField(null=True, blank=True, verbose_name="Email de Contacto")
     web_url = models.URLField(null=True, blank=True, verbose_name="URL Web")
     logo_url = models.URLField(null=True, blank=True, verbose_name="URL del Logo")
-    fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Registro")
-    activo = models.BooleanField(default=True, db_index=True, verbose_name="Activo")
     id_moneda_base = models.ForeignKey(
         "finanzas.Moneda",
         on_delete=models.SET_NULL,
@@ -56,13 +51,11 @@ class Empresa(models.Model):
     )
     pais_codigo_iso = models.CharField(max_length=3, null=True, blank=True, verbose_name="Código ISO del País")
     pais_nombre = models.CharField(max_length=100, null=True, blank=True, verbose_name="Nombre del País")
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
     fecha_cierre_estimada = models.DateField(null=True, blank=True)
 
     class Meta:
-        db_table = "empresas"  # Nombre de la tabla en la base de datos
+        db_table = "empresas"
         verbose_name = "Empresa"
         verbose_name_plural = "Empresas"
         ordering = ["nombre_legal"]
@@ -71,8 +64,7 @@ class Empresa(models.Model):
         return self.nombre_comercial if self.nombre_comercial else self.nombre_legal
 
 
-# 2. Modelo de Sucursal
-class Sucursal(models.Model):
+class Sucursal(OmniBaseModel, IntegrationFieldsMixin):
     sucursal_matriz = models.ForeignKey(
         "self",
         null=True,
@@ -81,8 +73,6 @@ class Sucursal(models.Model):
         on_delete=models.SET_NULL,
         verbose_name="Sucursal Matriz",
     )
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
     id_sucursal = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey(
         Empresa, on_delete=models.CASCADE, db_column="id_empresa", related_name="sucursales", verbose_name="Empresa"
@@ -92,25 +82,20 @@ class Sucursal(models.Model):
     direccion = models.TextField(null=True, blank=True, verbose_name="Dirección")
     telefono = models.CharField(max_length=20, null=True, blank=True, verbose_name="Teléfono")
     email_contacto = models.EmailField(null=True, blank=True, verbose_name="Email de Contacto")
-    ubicacion_gps_json = models.JSONField(
-        null=True, blank=True, verbose_name="Ubicación GPS"
-    )  # Coordenadas GPS de la sucursal.
-    activo = models.BooleanField(default=True, verbose_name="Activo")
-    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    ubicacion_gps_json = models.JSONField(null=True, blank=True, verbose_name="Ubicación GPS")
 
     class Meta:
         db_table = "sucursales"
         verbose_name = "Sucursal"
         verbose_name_plural = "Sucursales"
-        unique_together = (("id_empresa", "codigo_sucursal"),)  # Código de sucursal único por empresa
+        unique_together = (("id_empresa", "codigo_sucursal"),)
         ordering = ["id_empresa", "nombre"]
 
     def __str__(self):
         return f"{self.nombre} ({self.id_empresa.nombre_comercial if self.id_empresa.nombre_comercial else self.id_empresa.nombre_legal})"
 
 
-# 3. Modelo de Departamento (Organización interna de la empresa)
-class Departamento(models.Model):
+class Departamento(OmniBaseModel, IntegrationFieldsMixin):
     departamento_general = models.ForeignKey(
         "self",
         null=True,
@@ -119,23 +104,18 @@ class Departamento(models.Model):
         on_delete=models.SET_NULL,
         verbose_name="Dirección General",
     )
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
     id_departamento = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey(
         Empresa, on_delete=models.CASCADE, db_column="id_empresa", related_name="departamentos", verbose_name="Empresa"
     )
     nombre_departamento = models.CharField(max_length=100, verbose_name="Nombre de Departamento")
     descripcion = models.TextField(null=True, blank=True, verbose_name="Descripción")
-    activo = models.BooleanField(default=True, verbose_name="Activo")
-    # id_jefe_departamento = models.ForeignKey(Empleado, on_delete=models.SET_NULL, db_column='id_jefe_departamento', blank=True, null=True, related_name='departamentos_liderados', verbose_name="Jefe de Departamento")
-    # Nota: La FK a Empleado se añadirá cuando el módulo de rrhh esté implementado.
 
     class Meta:
         db_table = "departamentos"
         verbose_name = "Departamento"
         verbose_name_plural = "Departamentos"
-        unique_together = (("id_empresa", "nombre_departamento"),)  # Nombre de departamento único por empresa
+        unique_together = (("id_empresa", "nombre_departamento"),)
         ordering = ["id_empresa", "nombre_departamento"]
 
     def __str__(self):

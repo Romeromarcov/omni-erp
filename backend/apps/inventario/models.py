@@ -2,19 +2,18 @@ import uuid
 
 from django.db import models
 
+from apps.core.base_models import IntegrationFieldsMixin, OmniBaseModel, TimeStampedModel
 
-class UnidadMedida(models.Model):
+
+class UnidadMedida(OmniBaseModel, IntegrationFieldsMixin):
     id_unidad_medida = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
     nombre = models.CharField(max_length=50)
     abreviatura = models.CharField(max_length=10)
     tipo = models.CharField(
         max_length=50,
         choices=[("CANTIDAD", "Cantidad"), ("PESO", "Peso"), ("VOLUMEN", "Volumen"), ("LONGITUD", "Longitud")],
     )
-    activo = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.nombre} ({self.abreviatura})"
@@ -26,25 +25,25 @@ class UnidadMedida(models.Model):
         unique_together = [["id_empresa", "abreviatura"]]
 
 
-class CategoriaProducto(models.Model):
+class CategoriaProducto(OmniBaseModel, IntegrationFieldsMixin):
     id_categoria_producto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
     nombre_categoria = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
     id_categoria_padre = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
-    activo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nombre_categoria
 
+    class Meta:
+        db_table = "inventario_categoria_producto"
+        verbose_name = "Categoría de Producto"
+        verbose_name_plural = "Categorías de Producto"
 
-class Producto(models.Model):
+
+class Producto(OmniBaseModel, IntegrationFieldsMixin):
     id_producto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
     fecha_cierre_estimada = models.DateField(null=True, blank=True)
     nombre_producto = models.CharField(max_length=255)
@@ -76,8 +75,6 @@ class Producto(models.Model):
         related_name="producto_impuesto_compra",
         on_delete=models.SET_NULL,
     )
-    activo = models.BooleanField(default=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.nombre_producto
@@ -93,16 +90,12 @@ class Producto(models.Model):
         ]
 
 
-# MODELOS FALTANTES AGREGADOS - INVENTARIO
-
-
-class VarianteProducto(models.Model):
+class VarianteProducto(OmniBaseModel):
     id_variante = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_producto = models.ForeignKey("Producto", on_delete=models.CASCADE, related_name="variantes")
     codigo_variante = models.CharField(max_length=50, null=True, blank=True)
     atributos_json = models.JSONField(default=dict)
     sku = models.CharField(max_length=100, null=True, blank=True)
-    activo = models.BooleanField(default=True)
 
     class Meta:
         db_table = "inventario_variante_producto"
@@ -130,13 +123,13 @@ class StockActual(models.Model):
         db_table = "inventario_stock_actual"
         verbose_name = "Stock Actual"
         verbose_name_plural = "Stocks Actuales"
-        unique_together = ["id_producto", "id_variante", "id_almacen"]
+        unique_together = [["id_producto", "id_variante", "id_almacen"]]
 
     def __str__(self):
         return f"{self.id_producto.nombre_producto} - {self.cantidad_disponible}"
 
 
-class MovimientoInventario(models.Model):
+class MovimientoInventario(TimeStampedModel):
     TIPOS_MOVIMIENTO = [
         ("ENTRADA", "Entrada"),
         ("SALIDA", "Salida"),
@@ -169,7 +162,6 @@ class MovimientoInventario(models.Model):
         "core.Usuarios", on_delete=models.CASCADE, related_name="movimientos_inventario_registrados"
     )
     observaciones = models.TextField(null=True, blank=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "inventario_movimiento_inventario"
@@ -180,7 +172,7 @@ class MovimientoInventario(models.Model):
         return f"{self.tipo_movimiento} - {self.id_producto.nombre_producto}"
 
 
-class ConversionUnidadMedida(models.Model):
+class ConversionUnidadMedida(OmniBaseModel):
     id_conversion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="conversiones_unidad")
     id_producto = models.ForeignKey("Producto", on_delete=models.CASCADE, related_name="conversiones_unidad")
@@ -189,20 +181,18 @@ class ConversionUnidadMedida(models.Model):
         "UnidadMedida", on_delete=models.CASCADE, related_name="conversiones_destino"
     )
     factor_conversion = models.DecimalField(max_digits=18, decimal_places=8)
-    activo = models.BooleanField(default=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "inventario_conversion_unidad_medida"
         verbose_name = "Conversión de Unidad de Medida"
         verbose_name_plural = "Conversiones de Unidades de Medida"
-        unique_together = ["id_producto", "id_unidad_origen", "id_unidad_destino"]
+        unique_together = [["id_producto", "id_unidad_origen", "id_unidad_destino"]]
 
     def __str__(self):
         return f"{self.id_unidad_origen} -> {self.id_unidad_destino} (x{self.factor_conversion})"
 
 
-class StockConsignacionCliente(models.Model):
+class StockConsignacionCliente(TimeStampedModel):
     id_stock_consignacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="stock_consignacion_clientes"
@@ -226,7 +216,6 @@ class StockConsignacionCliente(models.Model):
         choices=[("ACTIVA", "Activa"), ("VENCIDA", "Vencida"), ("CERRADA", "Cerrada"), ("CANCELADA", "Cancelada")],
         default="ACTIVA",
     )
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "inventario_stock_consignacion_cliente"
@@ -237,7 +226,7 @@ class StockConsignacionCliente(models.Model):
         return f"Consignación {self.id_cliente} - {self.id_producto.nombre_producto}"
 
 
-class StockConsignacionProveedor(models.Model):
+class StockConsignacionProveedor(TimeStampedModel):
     id_stock_consignacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="stock_consignacion_proveedores"
@@ -269,7 +258,6 @@ class StockConsignacionProveedor(models.Model):
         choices=[("ACTIVA", "Activa"), ("VENCIDA", "Vencida"), ("CERRADA", "Cerrada"), ("CANCELADA", "Cancelada")],
         default="ACTIVA",
     )
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "inventario_stock_consignacion_proveedor"
