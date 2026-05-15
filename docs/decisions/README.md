@@ -15,6 +15,8 @@ Se crea un ADR cuando se toma una decisión que:
 | # | Título | Fecha | Estado |
 |---|--------|-------|--------|
 | 001 | PostgreSQL en Servidor + Offline-First en Clientes | 2026-05-10 | Aceptado |
+| 002 | Arquitectura Modular y Estrategia Wedge | 2026-05-14 | Aceptado |
+| 003 | Integration Hub Centralizado con MCP Bidireccional | 2026-05-14 | Aceptado |
 
 ## Cómo se escriben
 
