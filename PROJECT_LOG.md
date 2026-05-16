@@ -494,3 +494,38 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 - **Próximo:** CxC básico (aging, abonos), WS-2 (event store ventas→Redpanda), WS-3 (MCP finanzas), cierre Fase 0 DoD.
 
 ---
+
+## Sesión 9 — 2026-05-16
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** CxC básico (aging + abonos), WS-2 (eventos ventas/cobranza), WS-3 (MCP finanzas), cierre Fase 0 DoD.
+
+### Tareas completadas
+
+1. **CxC básico**:
+   - `cuentas_por_cobrar/services.py`: `AbonoError`, `_saldo_pendiente()`, `registrar_abono()` (`@transaction.atomic` + `select_for_update`), `calcular_aging()` con 5 tramos (corriente, 1-30, 31-60, 61-90, 90+).
+   - `cuentas_por_cobrar/views.py` reescrito: multi-tenant via `empresa__in=_empresas(request)`, action `aging` (validación 400/403), action `abonar`.
+   - `cuentas_por_cobrar/serializers.py`: campo `saldo_pendiente` (SerializerMethodField) + `prefetch_related("abonos")`.
+   - `config/urls.py`: `api/cxc/` wired.
+
+2. **WS-2 — Eventos en event store**:
+   - `ventas/services.py`: `confirmar_pedido()` emite `VentasEvents.PEDIDO_CONFIRMADO` vía `publish()`.
+   - `cuentas_por_cobrar/services.py`: `registrar_abono()` emite `CobranzaEvents.PAGO_PARCIAL` o `PAGO_TOTAL`.
+
+3. **WS-3 — MCP tools finanzas**:
+   - `core/mcp_server.py` refactorizado: funciones a nivel de módulo (siempre importables). `@mcp.tool()` registrado condicionalmente. Nuevas: `omni_get_cxc_aging`, `omni_get_stock_producto`, `omni_get_ventas_resumen`.
+
+4. **Tests** — `tests_api/test_cxc_ws2_mcp.py`: **17/17 PASSED** ✅
+
+### Suite completa
+
+- **184 passed, 2 failed** (pre-existentes: Redis no configurado en test env — no regresiones).
+
+### Fase 0 DoD: COMPLETA ✅
+
+- [x] Inventario básico, CRM, Fiscal venezolano, Ventas→stock+CxC
+- [x] CxC aging + abonos, WS-2 eventos, WS-3 MCP tools
+- [x] Multi-tenant isolation, event store, CapabilityToken auth
+
+---

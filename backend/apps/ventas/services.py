@@ -91,4 +91,20 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
             descripcion=f"Pedido {pedido.numero_pedido}",
         )
 
+    # Emitir evento WS-2
+    from apps.core.events import VentasEvents, publish
+
+    publish(
+        event_type=VentasEvents.PEDIDO_CONFIRMADO,
+        tenant_id=str(pedido.id_empresa_id),
+        payload={
+            "pedido_id": str(pedido.id_pedido),
+            "numero_pedido": pedido.numero_pedido,
+            "cliente_id": str(pedido.id_cliente_id),
+            "movimientos": [str(m.id_movimiento_inventario) for m in movimientos],
+            "cxc_id": str(cxc.pk) if cxc else None,
+        },
+        actor_id=str(usuario.pk),
+    )
+
     return {"movimientos": movimientos, "cxc": cxc}
