@@ -449,3 +449,48 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 - **Próximo:** Sub-fase 1.B — Mes 2: Núcleo común parte 1 (empresa, productos, clientes, proveedores, inventario, multimoneda).
 
 ---
+
+## Sesión 8 — 2026-05-15
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Sub-fase 1.B Semanas 6 y 7 — Inventario básico + CRM completo + Fiscal venezolano + Ventas integración.
+
+### Tareas completadas
+
+1. **Commit inventario (Semana 6)** — cerrar trabajo de sesión anterior no committeado:
+   - `services.py`: `registrar_movimiento()` con `@transaction.atomic`, 7 tipos de movimiento, `get_or_create + select_for_update` para race-condition safety.
+   - `delta_para_almacen()`: función pura para cálculo de kardex.
+   - Kardex endpoint: `GET /api/inventario/productos/{pk}/kardex/` con saldo corriente.
+   - 19 tests de inventario — todos passing.
+   - Fix imports Button en 6 componentes frontend.
+
+2. **CRM completo (Semana 7)**:
+   - `Cliente`: campos `tipo_cliente`, `limite_credito`, `dias_credito` (migration 0006).
+   - `ClienteViewSet`: `buscar_por_rif`, `historial_ventas`, `credito_disponible`.
+   - `ProveedorViewSet`: `buscar_por_rif`.
+
+3. **Fiscal venezolano mínimo**:
+   - Nuevos modelos `ConfiguracionFiscalEmpresa` + `TasaIVAEmpresa` (migration 0003 sobre fiscal app existente).
+   - `services.py` deterministas: `calcular_iva()`, `calcular_igtf()`, `calcular_impuestos_pedido()`.
+   - Tasas SENIAT 2024 como defaults; override por empresa si existe `TasaIVAEmpresa`.
+   - `METODOS_PAGO_IGTF`: DIVISA_EFECTIVO, DIVISA_TRANSFERENCIA, CRYPTO, PETRO.
+
+4. **Ventas integración**:
+   - `ventas/services.py`: `confirmar_pedido()` `@transaction.atomic` — descuenta stock via `registrar_movimiento(DESPACHO_VENTA)`, genera `CuentaPorCobrar` si tipo_cliente=CREDITO.
+   - `PedidoViewSet`: `POST /api/ventas/pedidos/{pk}/confirmar/`.
+
+5. **Tests**: 21 nuevos en `test_crm_fiscal_ventas.py` — **167 passed total**, 0 regresiones.
+
+### Commits
+
+- `ddff1dd`: feat(1b-semana6): inventario basico — registrar_movimiento, kardex, tests
+- `e3d5174`: feat(1b-semana7): CRM completo, Fiscal venezolano, Ventas integracion
+
+### Estado al cerrar
+
+- **167 passed, 2 failed** (pre-existentes: celery requiere Redis, storage test).
+- Sub-fase 1.B avanzada: inventario ✅, CRM ✅, fiscal mínimo ✅, ventas→stock+CxC ✅.
+- **Próximo:** CxC básico (aging, abonos), WS-2 (event store ventas→Redpanda), WS-3 (MCP finanzas), cierre Fase 0 DoD.
+
+---
