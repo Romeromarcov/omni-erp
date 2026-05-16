@@ -34,6 +34,21 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
     telefono = models.CharField(max_length=50, null=True, blank=True, validators=[validar_telefono])
     email = models.EmailField(null=True, blank=True)
     contacto = models.CharField(max_length=100, null=True, blank=True)
+    tipo_cliente = models.CharField(
+        max_length=10,
+        choices=[("CONTADO", "Contado"), ("CREDITO", "Crédito")],
+        default="CONTADO",
+    )
+    limite_credito = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0,
+        help_text="Límite de crédito aprobado. 0 = sin límite definido (requiere tipo_cliente=CREDITO).",
+    )
+    dias_credito = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Días de plazo de crédito.",
+    )
 
     class Meta:
         ordering = ["razon_social"]

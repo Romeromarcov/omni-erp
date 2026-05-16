@@ -1,26 +1,12 @@
-from rest_framework import routers
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-from .views import (
-    ConfiguracionImpuestoViewSet,
-    ConfiguracionRetencionViewSet,
-    ContribucionEmpresaActivaViewSet,
-    ContribucionParafiscalViewSet,
-    EmpresaContribucionParafiscalViewSet,
-    ImpuestoEmpresaActivaViewSet,
-    ImpuestoViewSet,
-    RetencionEmpresaActivaViewSet,
-    RetencionViewSet,
-)
+from .views import ConfiguracionFiscalEmpresaViewSet, TasaIVAEmpresaViewSet
 
-router = routers.DefaultRouter()
-router.register(r"impuestos", ImpuestoViewSet)
-router.register(r"configuracion-impuestos", ConfiguracionImpuestoViewSet)
-router.register(r"retenciones", RetencionViewSet)
-router.register(r"contribuciones-parafiscales", ContribucionParafiscalViewSet)
-router.register(r"impuestos-empresa-activa", ImpuestoEmpresaActivaViewSet)
-router.register(r"retenciones-empresa-activa", RetencionEmpresaActivaViewSet)
-router.register(r"contribuciones-empresa-activa", ContribucionEmpresaActivaViewSet)
-router.register(r"empresa-contribuciones-parafiscales", EmpresaContribucionParafiscalViewSet)
-router.register(r"configuracion-retenciones", ConfiguracionRetencionViewSet)
+router = DefaultRouter()
+router.register(r"configuracion-fiscal", ConfiguracionFiscalEmpresaViewSet)
+router.register(r"tasas-iva", TasaIVAEmpresaViewSet)
 
-urlpatterns = router.urls
+urlpatterns = [
+    path("", include(router.urls)),
+]

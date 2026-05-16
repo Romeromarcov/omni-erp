@@ -1,70 +1,55 @@
-from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
-from .models import (
-    ConfiguracionImpuesto,
-    ConfiguracionRetencion,
-    ContribucionEmpresaActiva,
-    ContribucionParafiscal,
-    EmpresaContribucionParafiscal,
-    Impuesto,
-    ImpuestoEmpresaActiva,
-    Retencion,
-    RetencionEmpresaActiva,
-)
-from .serializers import (
-    ConfiguracionImpuestoSerializer,
-    ConfiguracionRetencionSerializer,
-    ContribucionEmpresaActivaSerializer,
-    ContribucionParafiscalSerializer,
-    EmpresaContribucionParafiscalSerializer,
-    ImpuestoEmpresaActivaSerializer,
-    ImpuestoSerializer,
-    RetencionEmpresaActivaSerializer,
-    RetencionSerializer,
-)
+from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+
+from .models import ConfiguracionFiscalEmpresa, TasaIVAEmpresa
+from .serializers import ConfiguracionFiscalEmpresaSerializer, TasaIVAEmpresaSerializer
+from .services import calcular_impuestos_pedido
 
 
-class ImpuestoViewSet(viewsets.ModelViewSet):
-    queryset = Impuesto.objects.all()
-    serializer_class = ImpuestoSerializer
+def _empresas(request):
+    return get_empresas_visible(request.user)
 
 
-class ConfiguracionImpuestoViewSet(viewsets.ModelViewSet):
-    queryset = ConfiguracionImpuesto.objects.all()
-    serializer_class = ConfiguracionImpuestoSerializer
+class ConfiguracionFiscalEmpresaViewSet(BaseModelViewSet):
+    queryset = ConfiguracionFiscalEmpresa.objects.all()
+    serializer_class = ConfiguracionFiscalEmpresaSerializer
+
+    def get_queryset(self):
+        return ConfiguracionFiscalEmpresa.objects.filter(id_empresa__in=_empresas(self.request))
 
 
-class RetencionViewSet(viewsets.ModelViewSet):
-    queryset = Retencion.objects.all()
-    serializer_class = RetencionSerializer
+class TasaIVAEmpresaViewSet(BaseModelViewSet):
+    queryset = TasaIVAEmpresa.objects.all()
+    serializer_class = TasaIVAEmpresaSerializer
 
+    def get_queryset(self):
+        return TasaIVAEmpresa.objects.filter(id_empresa__in=_empresas(self.request))
 
-class ContribucionParafiscalViewSet(viewsets.ModelViewSet):
-    queryset = ContribucionParafiscal.objects.all()
-    serializer_class = ContribucionParafiscalSerializer
+    @action(detail=False, methods=["post"], url_path="calcular")
+    def calcular(self, request):
+        """
+        POST /api/fiscal/impuestos/calcular/
+        Body: {"lineas": [{"subtotal": 100, "tipo_iva": "GENERAL"}], "metodo_pago": "EFECTIVO_BS", "empresa_id": "..."}
+        """
+        from decimal import Decimal
 
+        lineas = request.data.get("lineas", [])
+        metodo_pago = request.data.get("metodo_pago", "EFECTIVO_BS")
+        empresa_id = request.data.get("empresa_id")
 
-class ImpuestoEmpresaActivaViewSet(viewsets.ModelViewSet):
-    queryset = ImpuestoEmpresaActiva.objects.all()
-    serializer_class = ImpuestoEmpresaActivaSerializer
+        empresa = None
+        if empresa_id:
+            from apps.core.models import Empresa
+            try:
+                empresa = Empresa.objects.get(pk=empresa_id, id__in=_empresas(request))
+            except Empresa.DoesNotExist:
+                pass
 
-
-class RetencionEmpresaActivaViewSet(viewsets.ModelViewSet):
-    queryset = RetencionEmpresaActiva.objects.all()
-    serializer_class = RetencionEmpresaActivaSerializer
-
-
-class ContribucionEmpresaActivaViewSet(viewsets.ModelViewSet):
-    queryset = ContribucionEmpresaActiva.objects.all()
-    serializer_class = ContribucionEmpresaActivaSerializer
-
-
-class EmpresaContribucionParafiscalViewSet(viewsets.ModelViewSet):
-    queryset = EmpresaContribucionParafiscal.objects.all()
-    serializer_class = EmpresaContribucionParafiscalSerializer
-
-
-class ConfiguracionRetencionViewSet(viewsets.ModelViewSet):
-    queryset = ConfiguracionRetencion.objects.all()
-    serializer_class = ConfiguracionRetencionSerializer
+        resultado = calcular_impuestos_pedido(
+            [{"subtotal": Decimal(str(l["subtotal"])), "tipo_iva": l.get("tipo_iva", "GENERAL")} for l in lineas],
+            metodo_pago=metodo_pago,
+            empresa=empresa,
+        )
+        return Response({k: str(v) if hasattr(v, "quantize") else v for k, v in resultado.items()})

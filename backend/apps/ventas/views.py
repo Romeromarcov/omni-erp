@@ -2,8 +2,11 @@ import logging
 
 from django.db import models, transaction
 from django.utils import timezone
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from apps.core.viewsets import BaseModelViewSet
 
@@ -505,6 +508,53 @@ class PedidoViewSet(viewsets.ModelViewSet):
             if instance and hasattr(instance, "numero_pedido"):
                 response.data["numero_pedido"] = instance.numero_pedido
         return response
+
+    @action(detail=True, methods=["post"], url_path="confirmar")
+    def confirmar(self, request, pk=None):
+        """
+        POST /api/ventas/pedidos/{pk}/confirmar/
+        Body: {"almacen_id": "uuid", "generar_cxc": true|false (opcional)}
+
+        Cambia estado a APROBADO, descuenta stock e (opcionalmente) genera CxC.
+        """
+        from apps.almacenes.models import Almacen
+        from .services import PedidoConfirmacionError, confirmar_pedido
+
+        pedido = self.get_object()
+        almacen_id = request.data.get("almacen_id")
+        if not almacen_id:
+            raise ValidationError({"almacen_id": "Este campo es requerido."})
+
+        try:
+            almacen = Almacen.objects.get(pk=almacen_id, id_empresa=pedido.id_empresa)
+        except Almacen.DoesNotExist:
+            raise ValidationError({"almacen_id": "Almacén no encontrado en esta empresa."})
+
+        generar_cxc = request.data.get("generar_cxc")
+        if generar_cxc is not None:
+            generar_cxc = bool(generar_cxc)
+
+        try:
+            resultado = confirmar_pedido(
+                pedido=pedido,
+                almacen=almacen,
+                usuario=request.user,
+                generar_cxc=generar_cxc,
+            )
+        except PedidoConfirmacionError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        return Response(
+            {
+                "pedido_id": str(pedido.id_pedido),
+                "numero_pedido": pedido.numero_pedido,
+                "estado": pedido.estado,
+                "movimientos_creados": len(resultado["movimientos"]),
+                "cxc_generada": resultado["cxc"] is not None,
+                "cxc_id": str(resultado["cxc"].pk) if resultado["cxc"] else None,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class DetallePedidoViewSet(viewsets.ModelViewSet):

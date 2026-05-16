@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 
@@ -180,3 +182,58 @@ class ConfiguracionRetencion(models.Model):
 
     def __str__(self):
         return f"Retención {self.impuesto.nombre} ({self.empresa}) {self.porcentaje}%"
+
+
+# ── Modelos fiscales venezolanos (IVA / IGTF) ─────────────────────────────────
+
+
+class ConfiguracionFiscalEmpresa(models.Model):
+    """Parámetros fiscales globales de una empresa (IVA, IGTF)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.OneToOneField(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="configuracion_fiscal",
+    )
+    contribuyente_iva = models.BooleanField(default=True)
+    aplica_igtf = models.BooleanField(default=True)
+    tasa_igtf = models.DecimalField(max_digits=5, decimal_places=4, default="0.03")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "fiscal_configuracion_empresa"
+
+    def __str__(self):
+        return f"Fiscal {self.id_empresa}"
+
+
+class TasaIVAEmpresa(models.Model):
+    """Tasas de IVA configuradas por empresa (GENERAL/REDUCIDO/EXENTO)."""
+
+    TIPOS = [
+        ("GENERAL", "General"),
+        ("REDUCIDO", "Reducido"),
+        ("EXENTO", "Exento"),
+        ("ADICIONAL", "Adicional"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="tasas_iva",
+    )
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    nombre = models.CharField(max_length=50)
+    tasa = models.DecimalField(max_digits=7, decimal_places=6)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "fiscal_tasa_iva_empresa"
+        unique_together = [["id_empresa", "tipo"]]
+
+    def __str__(self):
+        return f"{self.nombre} ({float(self.tasa) * 100:.0f}%)"
