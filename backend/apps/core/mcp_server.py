@@ -33,6 +33,8 @@ import os
 import uuid
 from typing import Any
 
+from django.db import models
+
 import django
 
 # Asegurar que Django esté inicializado cuando se importa este módulo
@@ -452,6 +454,89 @@ def omni_get_ventas_resumen(
     }
 
 
+def omni_buscar_contacto(
+    capability_token: str,
+    empresa_id: str,
+    query: str = "",
+    rol: str | None = None,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """
+    Busca contactos unificados por nombre, RIF, cédula o email.
+
+    Args:
+        capability_token: Token de autenticación MCP.
+        empresa_id:       UUID de la empresa.
+        query:            Texto libre para buscar en nombre, RIF, cédula, email.
+        rol:              Filtrar por rol: 'cliente', 'proveedor', 'empleado', 'usuario'.
+                          Si None, devuelve todos.
+        limit:            Máximo de resultados (default 20, máx 100).
+
+    Returns:
+        Lista de contactos con campos esenciales.
+    """
+    from apps.core.models import Contacto, Empresa
+
+    context = _resolve_token(capability_token)
+    _require_scope(context, "contactos:read")
+    assert context is not None  # noqa: S101 — checked by _require_scope
+
+    try:
+        empresa = Empresa.objects.get(id_empresa=empresa_id)
+    except Empresa.DoesNotExist:
+        raise PermissionError(f"Empresa {empresa_id} no encontrada.")
+
+    qs = Contacto.objects.filter(id_empresa=empresa, activo=True)
+
+    if query:
+        qs = qs.filter(
+            models.Q(nombre__icontains=query)
+            | models.Q(apellido__icontains=query)
+            | models.Q(nombre_comercial__icontains=query)
+            | models.Q(rif__icontains=query)
+            | models.Q(cedula__icontains=query)
+            | models.Q(email__icontains=query)
+        )
+
+    if rol:
+        campo = f"es_{rol}"
+        if hasattr(Contacto, campo):
+            qs = qs.filter(**{campo: True})
+
+    resultados = []
+    for c in qs.select_related("lista_precio")[: min(limit, 100)]:
+        resultados.append(
+            {
+                "id_contacto": str(c.id_contacto),
+                "nombre": str(c),
+                "tipo_persona": c.tipo_persona,
+                "rif": c.rif,
+                "cedula": c.cedula,
+                "email": c.email,
+                "telefono": c.telefono,
+                "roles": {
+                    "cliente": c.es_cliente,
+                    "proveedor": c.es_proveedor,
+                    "empleado": c.es_empleado,
+                    "usuario": c.es_usuario,
+                },
+                "tipo_credito": c.tipo_credito,
+                "limite_credito": str(c.limite_credito),
+                "lista_precio": c.lista_precio.codigo if c.lista_precio else None,
+            }
+        )
+
+    logger.info(
+        "omni_buscar_contacto | actor=%s | tenant=%s | query=%r | rol=%s | resultados=%d",
+        context["actor_id"],
+        context["tenant_id"],
+        query,
+        rol,
+        len(resultados),
+    )
+    return resultados
+
+
 # ── Registrar herramientas con MCP cuando el SDK esté disponible ─────────────
 
 if MCP_AVAILABLE and mcp is not None:
@@ -462,3 +547,4 @@ if MCP_AVAILABLE and mcp is not None:
     omni_get_cxc_aging = mcp.tool()(omni_get_cxc_aging)
     omni_get_stock_producto = mcp.tool()(omni_get_stock_producto)
     omni_get_ventas_resumen = mcp.tool()(omni_get_ventas_resumen)
+    omni_buscar_contacto = mcp.tool()(omni_buscar_contacto)
