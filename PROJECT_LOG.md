@@ -522,10 +522,59 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 
 - **184 passed, 2 failed** (pre-existentes: Redis no configurado en test env — no regresiones).
 
-### Fase 0 DoD: COMPLETA ✅
+### Fase 0 DoD: INCOMPLETA en esta sesión (WS-4 y WS-5 pendientes)
 
 - [x] Inventario básico, CRM, Fiscal venezolano, Ventas→stock+CxC
 - [x] CxC aging + abonos, WS-2 eventos, WS-3 MCP tools
 - [x] Multi-tenant isolation, event store, CapabilityToken auth
+- [ ] Agente clasificador de gastos → completado en Sesión 10
+- [ ] DSL personalización → completado en Sesión 10
+
+---
+
+## Sesión 10 — 2026-05-16
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Cierre real de Fase 0 (WS-4 + WS-5), auditoría contra Master Plan, 0 failures, deployment-ready.
+
+### WS-4 — Agente Clasificador de Gastos (shadow mode)
+
+1. **`apps/agentes/clasificador.py`**: `ClasificadorGastos` con modo LLM (Claude Haiku, cliente inyectable para tests) y fallback determinista (keywords). Shadow mode: `persistir=True` guarda `PrediccionAgente` sin tocar `Gasto`.
+2. **`apps/agentes/models.py`**: `PrediccionAgente` — registro inmutable de predicciones con feedback humano.
+3. **`apps/agentes/eval_dataset.py`**: 50 casos dorados, `PRECISION_MINIMA=0.80`. Precisión actual: **92%** (46/50).
+4. **`apps/agentes/admin.py`**: revisión humana desde Django Admin.
+5. **ADR-004** creado: justificación Anthropic SDK directo vs LangChain/CrewAI/AutoGen.
+
+### WS-5 — DSL de Personalización
+
+1. **`apps/personalizacion/dsl.py`**: validador de las 6 primitivas (`campos`, `entidades`, `estados`, `reglas`, `vistas`, `conectores`). `validar_config()` devuelve lista de errores; `aplicar_config()` procesa PoC de `campos`.
+2. **`apps/personalizacion/models.py`**: `PersonalizacionConfig` — historial versionado por empresa.
+3. **ADR-005** creado: justificación DSL declarativo vs JSON Schema / Pydantic / parser propio.
+
+### Fix: 2 failures pre-existentes de Celery/Redis
+
+- Fix en `conftest.py`: fixture autouse `_celery_memory_broker` — cambia broker a `memory://` y reconfigura Celery en runtime. Cero Redis requerido en tests.
+
+### Tests
+
+- **`tests_api/test_agentes_dsl.py`**: 42 tests nuevos.
+- **Suite completa: 226/226 PASSED** ✅ — 0 failures por primera vez en el proyecto.
+
+### Auditoría Fase 0 DoD — TODOS LOS ITEMS VERIFICADOS
+
+| Item DoD | Estado |
+|----------|--------|
+| Deuda técnica Master Plan saldada | ✅ |
+| PostgreSQL único, SQLite erradicado | ✅ |
+| Todas las migraciones aplicadas (35 apps) | ✅ |
+| Event store: ventas + cobranza emitiendo | ✅ |
+| MCP runtime: cxc_aging, stock, ventas_resumen | ✅ |
+| Agente shadow mode + eval suite ≥80% (92% actual) | ✅ |
+| DSL personalización: spec + validador + PoC | ✅ |
+| ADRs al día (001–005) | ✅ |
+| 226 tests, 0 failures | ✅ |
+
+### **FASE 0 — CERRADA FORMALMENTE** ✅
 
 ---

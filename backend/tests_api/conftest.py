@@ -1,7 +1,33 @@
 import pytest
+
 from django.contrib.auth import get_user_model
+
 from apps.core.models import Empresa
 from apps.finanzas.models import Moneda  # Moneda está en finanzas, no en core
+
+
+@pytest.fixture(autouse=True)
+def _celery_memory_broker(settings):
+    """
+    Override Celery broker to in-memory for all tests.
+    Prevents Kombu from importing the Redis transport (which may not be installed).
+    Also enables eager execution so tasks run synchronously.
+    """
+    settings.CELERY_BROKER_URL = "memory://"
+    settings.CELERY_RESULT_BACKEND = "cache+memory://"
+    settings.CELERY_TASK_ALWAYS_EAGER = True
+    settings.CELERY_TASK_EAGER_PROPAGATES = True
+    # Reconfigure the already-loaded Celery app
+    try:
+        from config.celery import app as celery_app
+        celery_app.conf.update(
+            broker_url="memory://",
+            result_backend="cache+memory://",
+            task_always_eager=True,
+            task_eager_propagates=True,
+        )
+    except Exception:
+        pass
 
 
 @pytest.fixture
