@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { DispositivoService } from '../services/dispositivoService';
 import type { DispositivoInfo } from '../types/dispositivos';
-import { Button } from './Button';
 
 interface DeviceActionModalProps {
   dispositivoInfo: DispositivoInfo;
@@ -160,42 +159,40 @@ export const DeviceActionModal: React.FC<DeviceActionModalProps> = ({
         <div className="mt-6 flex space-x-3">
           {dispositivoInfo.accion === 'preguntar_caja' && (
             <>
-              <Button
+              <button
                 onClick={handleCrearCaja}
                 disabled={isLoading || !nombreCaja.trim()}
-                className="flex-1"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Creando...' : 'Crear Caja y Abrir Sesión'}
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={handleNoPreguntar}
                 disabled={isLoading}
-                variant="secondary"
-                className="flex-1"
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Procesando...' : 'No Preguntar Más'}
-              </Button>
+              </button>
             </>
           )}
 
           {dispositivoInfo.accion === 'abrir_sesion' && (
-            <Button
+            <button
               onClick={handleAbrirSesion}
               disabled={isLoading}
-              className="w-full"
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Abriendo Sesión...' : 'Abrir Sesión'}
-            </Button>
+            </button>
           )}
 
-          <Button
+          <button
             onClick={onClose}
             disabled={isLoading}
-            variant="secondary"
-            className="px-4"
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
-          </Button>
+          </button>
         </div>
 
         <div className="mt-4 text-xs text-gray-500">

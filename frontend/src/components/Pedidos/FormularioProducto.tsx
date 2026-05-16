@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '../Button';
+import { Button } from '@mui/material';
 import type { Producto } from '../../services/productosService';
 import type { PedidoDetalleForm } from './TablaProductos';
 
@@ -121,7 +121,7 @@ const FormularioProducto: React.FC<FormularioProductoProps> = ({ productos, deta
   <input name="precio_unitario" type="number" min="0.01" step="0.01" value={detalleForm.precio_unitario} onChange={onChange} placeholder="Precio" style={{ width: 80 }} />
   <input name="descuento_porcentaje" type="number" min="0" max="100" step="0.01" value={detalleForm.descuento_porcentaje || ''} onChange={onChange} placeholder="% Desc." style={{ width: 80 }} />
   <textarea name="comentarios" value={detalleForm.comentarios || ''} onChange={onChange} placeholder="Comentarios (opcional)" style={{ width: 180, minHeight: 40, resize: 'vertical' }} maxLength={500} />
-  <Button type="button" variant="primary" onClick={onAdd}>Agregar</Button>
+  <Button type="button" variant="contained" onClick={onAdd}>Agregar</Button>
     </div>
   );
 };

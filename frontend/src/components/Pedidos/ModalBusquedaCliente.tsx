@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import ModalBusqueda from '../ModalBusqueda';
 import type { Cliente } from '../../services/clientesService';
 import { buscarClientes } from '../../services/clientesService';
-import { Button } from '../Button';
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 
 interface ModalBusquedaClienteProps {
   open: boolean;
@@ -46,7 +45,8 @@ const ModalBusquedaCliente: React.FC<ModalBusquedaClienteProps> = ({ open, idEmp
           </Box>
           <Button
             type="button"
-            variant="primary"
+            variant="contained"
+            size="small"
             onClick={(e) => {
               e.stopPropagation();
               onSelect(cli);

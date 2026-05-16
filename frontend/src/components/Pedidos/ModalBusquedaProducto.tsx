@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import ModalBusqueda from '../ModalBusqueda';
 import type { Producto } from '../../services/productosService';
-import { Button } from '../Button';
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 
 interface ModalBusquedaProductoProps {
   open: boolean;
@@ -45,7 +44,8 @@ const ModalBusquedaProducto: React.FC<ModalBusquedaProductoProps> = ({ open, pro
           </Box>
           <Button
             type="button"
-            variant="primary"
+            variant="contained"
+            size="small"
             onClick={(e) => {
               e.stopPropagation();
               onSelect(prod);

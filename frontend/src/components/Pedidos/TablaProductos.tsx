@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from '../Button';
+import { Button } from '@mui/material';
 import type { Producto } from '../../services/productosService';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 
@@ -59,7 +59,7 @@ const TablaProductos: React.FC<TablaProductosProps> = ({ detalles, productos, on
                 </Box>
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outlined"
                   onClick={() => onRemove(idx)}
                 >
                   Eliminar
@@ -129,7 +129,7 @@ const TablaProductos: React.FC<TablaProductosProps> = ({ detalles, productos, on
                 <TableCell align="right">{(montoDesc * cantidad).toFixed(2)}</TableCell>
                 <TableCell align="right">{total.toFixed(2)}</TableCell>
                 <TableCell>
-                  <Button type="button" variant="secondary" onClick={() => onRemove(idx)}>Eliminar</Button>
+                  <Button type="button" variant="outlined" onClick={() => onRemove(idx)}>Eliminar</Button>
                 </TableCell>
               </TableRow>
             );
