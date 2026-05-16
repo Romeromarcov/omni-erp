@@ -268,11 +268,15 @@ class TestServiciosFiscales:
 
 @pytest.mark.django_db
 class TestConfirmarPedido:
-    def test_confirmar_descuenta_stock(
+    def test_confirmar_reserva_stock_sin_mover_fisico(
         self, pedido_con_detalle, almacen_a, producto, empresa_a, user_a, stock_inicial
     ):
+        """confirmar_pedido solo reserva (cantidad_comprometida), no mueve stock físico."""
         from apps.inventario.models import StockActual
-        stock_antes = StockActual.objects.get(id_producto=producto, id_almacen=almacen_a).cantidad_disponible
+
+        stock_antes = StockActual.objects.get(id_producto=producto, id_almacen=almacen_a)
+        disponible_antes = stock_antes.cantidad_disponible
+        comprometida_antes = stock_antes.cantidad_comprometida
 
         client = APIClient()
         client.force_authenticate(user=user_a)
@@ -283,10 +287,13 @@ class TestConfirmarPedido:
         )
         assert resp.status_code == 200
         assert resp.data["estado"] == "APROBADO"
-        assert resp.data["movimientos_creados"] == 1
+        assert resp.data["reservas_creadas"] == 1
 
-        stock_despues = StockActual.objects.get(id_producto=producto, id_almacen=almacen_a).cantidad_disponible
-        assert stock_antes - stock_despues == Decimal("10")
+        stock_despues = StockActual.objects.get(id_producto=producto, id_almacen=almacen_a)
+        # Stock físico NO cambia en confirmación
+        assert stock_despues.cantidad_disponible == disponible_antes
+        # Reserva aumenta en la cantidad del pedido (10 unidades del fixture)
+        assert stock_despues.cantidad_comprometida - comprometida_antes == Decimal("10")
 
     def test_confirmar_genera_cxc_para_cliente_credito(
         self, empresa_a, cliente_credito, almacen_a, producto, user_a, stock_inicial

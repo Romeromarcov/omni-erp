@@ -1,69 +1,82 @@
 """
-Lógica de negocio para confirmar pedidos.
+Lógica de negocio del ciclo de ventas.
 
-confirmar_pedido() — cambia estado a APROBADO, descuenta stock via registrar_movimiento,
-                     y genera CuentaPorCobrar si el cliente es de crédito.
+Flujo correcto (R-CODE-11 en emitir_factura_fiscal):
+
+  confirmar_pedido()      → APROBADO + reserva cantidad_comprometida (sin mover stock físico)
+  entregar_nota_venta()   → ENTREGADA + DESPACHO_VENTA (mueve stock físico, libera reserva)
+                            + genera CuentaPorCobrar si no existe
+  emitir_factura_fiscal() → EMITIDA + AsientoContable automático (R-CODE-11)
 """
 
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
 
-from apps.inventario.services import MovimientoInvalidoError, StockInsuficienteError, registrar_movimiento
+from apps.contabilidad.services import AsientoError, generar_asiento
+from apps.inventario.services import (
+    MovimientoInvalidoError,
+    ReservaInsuficienteError,
+    StockInsuficienteError,
+    liberar_reserva,
+    registrar_movimiento,
+    reservar_stock,
+)
 
 
-class PedidoConfirmacionError(Exception):
+# ── Excepciones de dominio ────────────────────────────────────────────────────
+
+
+class VentaError(Exception):
     pass
+
+
+# Alias para compatibilidad con código existente
+PedidoConfirmacionError = VentaError
+
+
+# ── confirmar_pedido ──────────────────────────────────────────────────────────
 
 
 @transaction.atomic
 def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict:
     """
-    Confirma un pedido: descuenta stock y opcionalmente genera CxC.
+    Aprueba el pedido y reserva stock (cantidad_comprometida).
+    NO crea MovimientoInventario — el stock físico sale en entregar_nota_venta().
 
     Args:
-        pedido:        instancia Pedido en estado PENDIENTE o ENVIADO
-        almacen:       instancia Almacen desde donde se despacha
-        usuario:       instancia Usuarios que confirma
-        generar_cxc:   None = auto (sigue tipo_cliente); True/False = forzar
+        pedido:      Instancia Pedido en estado PENDIENTE o ENVIADO.
+        almacen:     Instancia Almacen de donde se despachará.
+        usuario:     Instancia Usuarios que confirma.
+        generar_cxc: None = auto (sigue tipo_cliente); True/False = forzar.
 
     Returns:
-        {
-            "movimientos": [MovimientoInventario, ...],
-            "cxc": CuentaPorCobrar | None,
-        }
+        {"reservas": [StockActual, ...], "cxc": CuentaPorCobrar | None}
     """
     if pedido.estado not in ("PENDIENTE", "ENVIADO"):
-        raise PedidoConfirmacionError(
-            f"Solo se pueden confirmar pedidos en estado PENDIENTE o ENVIADO. Estado actual: {pedido.estado}"
+        raise VentaError(
+            f"Solo se confirman pedidos PENDIENTE o ENVIADO. Estado actual: {pedido.estado}"
         )
 
     detalles = list(pedido.detalles.select_related("id_producto"))
     if not detalles:
-        raise PedidoConfirmacionError("El pedido no tiene líneas de detalle.")
+        raise VentaError("El pedido no tiene líneas de detalle.")
 
-    movimientos = []
+    reservas = []
     for detalle in detalles:
         try:
-            mov = registrar_movimiento(
+            stock = reservar_stock(
                 empresa=pedido.id_empresa,
-                fecha_hora_movimiento=timezone.now(),
-                tipo_movimiento="DESPACHO_VENTA",
                 producto=detalle.id_producto,
+                variante=None,
+                almacen=almacen,
                 cantidad=detalle.cantidad,
-                almacen_origen=almacen,
-                documento_origen_id=pedido.id_pedido,
-                nombre_modelo_origen="Pedido",
-                usuario=usuario,
-                observaciones=f"Despacho pedido {pedido.numero_pedido}",
             )
         except StockInsuficienteError as exc:
-            raise PedidoConfirmacionError(str(exc)) from exc
-        except MovimientoInvalidoError as exc:
-            raise PedidoConfirmacionError(str(exc)) from exc
-
-        movimientos.append(mov)
+            raise VentaError(str(exc)) from exc
+        reservas.append(stock)
 
     pedido.estado = "APROBADO"
     pedido.save(update_fields=["estado"])
@@ -73,25 +86,20 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
     debe_generar = generar_cxc if generar_cxc is not None else (cliente.tipo_cliente == "CREDITO")
 
     if debe_generar:
-        from datetime import timedelta
-
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
         subtotal = sum(d.subtotal for d in detalles)
         dias = cliente.dias_credito or 30
-        fecha_vencimiento = timezone.now().date() + timedelta(days=dias)
-
         cxc = CuentaPorCobrar.objects.create(
             cliente=cliente,
             empresa=pedido.id_empresa,
             monto=subtotal,
             fecha_emision=timezone.now().date(),
-            fecha_vencimiento=fecha_vencimiento,
+            fecha_vencimiento=timezone.now().date() + timedelta(days=dias),
             estado="pendiente",
             descripcion=f"Pedido {pedido.numero_pedido}",
         )
 
-    # Emitir evento WS-2
     from apps.core.events import VentasEvents, publish
 
     publish(
@@ -101,10 +109,150 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
             "pedido_id": str(pedido.id_pedido),
             "numero_pedido": pedido.numero_pedido,
             "cliente_id": str(pedido.id_cliente_id),
-            "movimientos": [str(m.id_movimiento_inventario) for m in movimientos],
             "cxc_id": str(cxc.pk) if cxc else None,
         },
         actor_id=str(usuario.pk),
     )
 
+    return {"reservas": reservas, "cxc": cxc}
+
+
+# ── entregar_nota_venta ───────────────────────────────────────────────────────
+
+
+@transaction.atomic
+def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
+    """
+    Despacha la NotaVenta: mueve stock físico, libera reservas, genera CxC si no existe.
+
+    Precondiciones:
+      - nota_venta.estado == 'BORRADOR'
+      - El Pedido origen (si existe) debe estar en estado APROBADO.
+
+    Returns:
+        {"movimientos": [MovimientoInventario, ...], "cxc": CuentaPorCobrar | None}
+    """
+    if nota_venta.estado != "BORRADOR":
+        raise VentaError(
+            f"Solo se entregan notas en estado BORRADOR. Estado actual: {nota_venta.estado}"
+        )
+
+    pedido = getattr(nota_venta, "id_pedido_origen", None)
+    if pedido and pedido.estado != "APROBADO":
+        raise VentaError(
+            f"El pedido origen debe estar APROBADO para poder entregar. Estado: {pedido.estado}"
+        )
+
+    detalles = list(nota_venta.detalles.select_related("id_producto"))
+    if not detalles:
+        raise VentaError("La nota de venta no tiene líneas de detalle.")
+
+    movimientos = []
+    for detalle in detalles:
+        # Liberar reserva creada en confirmar_pedido (best-effort: puede no existir si
+        # la venta fue directa sin pedido previo)
+        try:
+            liberar_reserva(
+                empresa=nota_venta.id_empresa,
+                producto=detalle.id_producto,
+                variante=None,
+                almacen=almacen,
+                cantidad=detalle.cantidad,
+            )
+        except (ReservaInsuficienteError, Exception):
+            pass  # Sin pedido previo no hay reserva que liberar
+
+        try:
+            mov = registrar_movimiento(
+                empresa=nota_venta.id_empresa,
+                fecha_hora_movimiento=timezone.now(),
+                tipo_movimiento="DESPACHO_VENTA",
+                producto=detalle.id_producto,
+                cantidad=detalle.cantidad,
+                almacen_origen=almacen,
+                documento_origen_id=nota_venta.id_nota_venta,
+                nombre_modelo_origen="NotaVenta",
+                usuario=usuario,
+                observaciones=f"Entrega nota {nota_venta.numero_nota}",
+            )
+        except (StockInsuficienteError, MovimientoInvalidoError) as exc:
+            raise VentaError(str(exc)) from exc
+        movimientos.append(mov)
+
+    nota_venta.estado = "ENTREGADA"
+    nota_venta.save(update_fields=["estado"])
+
+    # Generar CxC si no viene de un pedido que ya la creó
+    cxc = None
+    tiene_cxc_de_pedido = pedido is not None and getattr(pedido, "id_cliente", None)
+    if not tiene_cxc_de_pedido:
+        from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
+        cliente = nota_venta.id_cliente
+        subtotal = sum(d.subtotal for d in detalles)
+        dias = getattr(cliente, "dias_credito", None) or 30
+        cxc = CuentaPorCobrar.objects.create(
+            cliente=cliente,
+            empresa=nota_venta.id_empresa,
+            monto=subtotal,
+            fecha_emision=timezone.now().date(),
+            fecha_vencimiento=timezone.now().date() + timedelta(days=dias),
+            estado="pendiente",
+            descripcion=f"Nota de venta {nota_venta.numero_nota}",
+        )
+
     return {"movimientos": movimientos, "cxc": cxc}
+
+
+# ── emitir_factura_fiscal ─────────────────────────────────────────────────────
+
+
+@transaction.atomic
+def emitir_factura_fiscal(nota_venta, numero_control: str, numero_factura: str, moneda) -> dict:
+    """
+    Crea la FacturaFiscal desde la NotaVenta y genera el asiento contable (R-CODE-11).
+
+    Precondiciones:
+      - nota_venta.estado == 'ENTREGADA'
+
+    Returns:
+        {"factura": FacturaFiscal, "asiento": AsientoContable}
+    """
+    from apps.ventas.models import FacturaFiscal
+
+    if nota_venta.estado != "ENTREGADA":
+        raise VentaError(
+            f"Solo se facturan notas en estado ENTREGADA. Estado actual: {nota_venta.estado}"
+        )
+
+    detalles = list(nota_venta.detalles.select_related("id_producto"))
+    subtotal = sum(d.subtotal for d in detalles)
+    tasa_iva = Decimal("0.12")
+    monto_iva = (subtotal * tasa_iva).quantize(Decimal("0.01"))
+    total = subtotal + monto_iva
+
+    factura = FacturaFiscal.objects.create(
+        id_empresa=nota_venta.id_empresa,
+        id_cliente=nota_venta.id_cliente,
+        id_nota_venta_origen=nota_venta,
+        numero_control=numero_control,
+        numero_factura=numero_factura,
+        fecha_emision=timezone.now().date(),
+        base_imponible=subtotal,
+        monto_iva=monto_iva,
+        monto_total=total,
+        id_moneda=moneda,
+        estado="EMITIDA",
+    )
+
+    nota_venta.convertido_a_factura = True
+    nota_venta.id_factura_resultante = factura
+    nota_venta.estado = "FACTURADA"
+    nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado"])
+
+    try:
+        asiento = generar_asiento("FACTURA_VENTA", factura, factura.id_empresa)
+    except AsientoError as exc:
+        raise VentaError(f"Error generando asiento contable: {exc}") from exc
+
+    return {"factura": factura, "asiento": asiento}

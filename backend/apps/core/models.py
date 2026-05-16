@@ -53,6 +53,10 @@ class Empresa(OmniBaseModel, IntegrationFieldsMixin):
     pais_nombre = models.CharField(max_length=100, null=True, blank=True, verbose_name="Nombre del País")
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
     fecha_cierre_estimada = models.DateField(null=True, blank=True)
+    contabilidad_auto_aprobar = models.BooleanField(
+        default=False,
+        help_text="Si True, los asientos contables generados automáticamente se aprueban de inmediato.",
+    )
 
     class Meta:
         db_table = "empresas"

@@ -549,7 +549,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
                 "pedido_id": str(pedido.id_pedido),
                 "numero_pedido": pedido.numero_pedido,
                 "estado": pedido.estado,
-                "movimientos_creados": len(resultado["movimientos"]),
+                "reservas_creadas": len(resultado["reservas"]),
                 "cxc_generada": resultado["cxc"] is not None,
                 "cxc_id": str(resultado["cxc"].pk) if resultado["cxc"] else None,
             },

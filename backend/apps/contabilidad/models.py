@@ -1,6 +1,5 @@
 import uuid
 
-from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
@@ -60,3 +59,47 @@ class DetalleAsiento(models.Model):
 
     def __str__(self):
         return str(self.id_asiento)
+
+
+class MapeoContable(models.Model):
+    """
+    Configuración de cuentas contables para cada tipo de asiento automático.
+    Una fila por (empresa, tipo_asiento). Sin esta fila, generar_asiento() falla.
+    """
+
+    TIPOS_ASIENTO = [
+        ("FACTURA_VENTA", "Factura de Venta"),
+        ("FACTURA_COMPRA", "Factura de Compra"),
+        ("RECEPCION_MERCANCIA", "Recepción de Mercancía"),
+        ("AJUSTE_INVENTARIO", "Ajuste de Inventario"),
+        ("SALIDA_INTERNA", "Salida Interna / Requisición"),
+        ("PAGO_CXC", "Pago de Cuenta por Cobrar"),
+        ("PAGO_CXP", "Pago de Cuenta por Pagar"),
+    ]
+
+    id_mapeo = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="mapeos_contables")
+    tipo_asiento = models.CharField(max_length=30, choices=TIPOS_ASIENTO)
+    cuenta_debe = models.ForeignKey(
+        "PlanCuentas", on_delete=models.PROTECT, related_name="mapeos_debe",
+        help_text="Cuenta que va al Debe en este tipo de asiento."
+    )
+    cuenta_haber = models.ForeignKey(
+        "PlanCuentas", on_delete=models.PROTECT, related_name="mapeos_haber",
+        help_text="Cuenta que va al Haber en este tipo de asiento."
+    )
+    descripcion_plantilla = models.CharField(
+        max_length=255, default="{tipo} - {numero}",
+        help_text="Plantilla de descripción. Use {tipo}, {numero}."
+    )
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "contabilidad_mapeo_contable"
+        unique_together = [["id_empresa", "tipo_asiento"]]
+        verbose_name = "Mapeo Contable"
+        verbose_name_plural = "Mapeos Contables"
+
+    def __str__(self):
+        return f"{self.get_tipo_asiento_display()} — {self.id_empresa}"

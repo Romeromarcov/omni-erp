@@ -52,18 +52,59 @@ class DetalleOrdenCompra(models.Model):
 
 class RecepcionMercancia(models.Model):
     id_recepcion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="recepciones_mercancia")
+    id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name="recepciones")
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     fecha_recepcion = models.DateField()
+    monto_total = models.DecimalField(max_digits=18, decimal_places=4, default=0)
     observaciones = models.TextField(null=True, blank=True)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = "compras_recepcion_mercancia"
+        verbose_name = "Recepción de Mercancía"
+        verbose_name_plural = "Recepciones de Mercancía"
+
+    def __str__(self):
+        return f"Recepción {self.id_recepcion!s:.8} — OC {self.id_orden_compra.numero_orden}"
+
+
+class DetalleRecepcionMercancia(models.Model):
+    ESTADO_CHOICES = [
+        ("CONFORME", "Conforme"),
+        ("DEFECTUOSO", "Defectuoso"),
+        ("INCOMPLETO", "Incompleto"),
+        ("DAÑADO", "Dañado"),
+    ]
+
+    id_detalle_recepcion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_recepcion = models.ForeignKey(RecepcionMercancia, on_delete=models.CASCADE, related_name="detalles")
+    id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="detalles_recepcion")
+    cantidad_esperada = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    cantidad_recibida = models.DecimalField(max_digits=18, decimal_places=4)
+    costo_unitario = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    subtotal = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    estado_mercancia = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="CONFORME")
+    observaciones = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "compras_detalle_recepcion_mercancia"
+        verbose_name = "Detalle de Recepción"
+        verbose_name_plural = "Detalles de Recepción"
+
+    def __str__(self):
+        return f"{self.id_producto.nombre_producto} × {self.cantidad_recibida}"
+
 
 class FacturaCompra(models.Model):
     id_factura_compra = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="facturas_compra")
+    id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name="facturas")
+    id_recepcion = models.ForeignKey(
+        RecepcionMercancia, on_delete=models.SET_NULL, null=True, blank=True, related_name="facturas"
+    )
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     numero_factura = models.CharField(max_length=50)
@@ -72,6 +113,12 @@ class FacturaCompra(models.Model):
     observaciones = models.TextField(null=True, blank=True)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "compras_factura_compra"
+        verbose_name = "Factura de Compra"
+        verbose_name_plural = "Facturas de Compra"
+        unique_together = [["id_empresa", "numero_factura"]]
 
     def __str__(self):
         return self.numero_factura

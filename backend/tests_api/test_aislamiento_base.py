@@ -7,11 +7,13 @@ datos de Empresa B.
 
 Si alguno de estos tests falla, hay un leak de datos entre tenants.
 """
+
 import pytest
+
 from django.urls import reverse
 from rest_framework.test import APIClient
-from apps.crm.models import Cliente
 
+from apps.crm.models import Cliente
 
 URL_CLIENTES = "/api/crm/clientes/"
 
@@ -43,9 +45,7 @@ class TestAislamientoClientes:
     Ref: skill omni-multi-tenant-isolation, sección 'Tests de aislamiento obligatorios'.
     """
 
-    def test_listado_solo_devuelve_clientes_de_empresa_propia(
-        self, user_a, user_b, cliente_a, cliente_b
-    ):
+    def test_listado_solo_devuelve_clientes_de_empresa_propia(self, user_a, user_b, cliente_a, cliente_b):
         """
         Usuario A lista clientes → solo ve el cliente de su empresa.
         No debe ver el cliente de Empresa B aunque existe en la DB.
@@ -66,16 +66,12 @@ class TestAislamientoClientes:
 
         ids_recibidos = {str(r["id_cliente"]) for r in resultados}
 
-        assert str(cliente_a.id_cliente) in ids_recibidos, (
-            "El cliente propio de Empresa A no aparece en el listado."
-        )
-        assert str(cliente_b.id_cliente) not in ids_recibidos, (
-            "LEAK: el cliente de Empresa B aparece en el listado de Empresa A."
-        )
+        assert str(cliente_a.id_cliente) in ids_recibidos, "El cliente propio de Empresa A no aparece en el listado."
+        assert (
+            str(cliente_b.id_cliente) not in ids_recibidos
+        ), "LEAK: el cliente de Empresa B aparece en el listado de Empresa A."
 
-    def test_get_cliente_de_otra_empresa_devuelve_404(
-        self, user_a, cliente_a, cliente_b
-    ):
+    def test_get_cliente_de_otra_empresa_devuelve_404(self, user_a, cliente_a, cliente_b):
         """
         Usuario A intenta obtener el detalle de un cliente de Empresa B → 404.
         No debe recibir 200 ni 403 (que revelaría que el objeto existe).
@@ -90,9 +86,7 @@ class TestAislamientoClientes:
             f"al acceder a cliente de Empresa B. Esperado: 404."
         )
 
-    def test_patch_cliente_de_otra_empresa_devuelve_404(
-        self, user_a, cliente_a, cliente_b
-    ):
+    def test_patch_cliente_de_otra_empresa_devuelve_404(self, user_a, cliente_a, cliente_b):
         """
         Usuario A intenta modificar un cliente de Empresa B → 404.
         El objeto no debe ser modificado y tampoco debe revelarse que existe.
@@ -113,6 +107,6 @@ class TestAislamientoClientes:
 
         # Verificar que el objeto no fue modificado
         cliente_b.refresh_from_db()
-        assert cliente_b.razon_social == "Cliente de Beta C.A.", (
-            "CRÍTICO: el nombre del cliente de Empresa B fue modificado desde Empresa A."
-        )
+        assert (
+            cliente_b.razon_social == "Cliente de Beta C.A."
+        ), "CRÍTICO: el nombre del cliente de Empresa B fue modificado desde Empresa A."

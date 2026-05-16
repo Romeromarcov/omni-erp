@@ -24,6 +24,13 @@ TIPOS_AJUSTE = frozenset({"AJUSTE"})
 ALL_TIPOS = TIPOS_ENTRADA | TIPOS_SALIDA | TIPOS_TRANSFERENCIA | TIPOS_AJUSTE
 
 
+# ── Excepciones adicionales ───────────────────────────────────────────────────
+
+
+class ReservaInsuficienteError(Exception):
+    pass
+
+
 # ── Excepciones de dominio ────────────────────────────────────────────────────
 
 
@@ -85,6 +92,59 @@ def delta_para_almacen(movimiento: MovimientoInventario, almacen_id) -> Decimal:
     if tipo in TIPOS_AJUSTE and destino == str_id:
         return movimiento.cantidad  # signed (positive = entrada, negative = salida)
     return Decimal("0")
+
+
+# ── Reservas de stock (sin movimiento de inventario) ─────────────────────────
+
+
+@transaction.atomic
+def reservar_stock(empresa, producto, variante, almacen, cantidad: Decimal) -> StockActual:
+    """
+    Incrementa cantidad_comprometida sin crear MovimientoInventario.
+    Verifica que haya suficiente stock disponible no comprometido.
+    Se usa en confirmar_pedido() — el stock sale físicamente sólo en la entrega.
+    """
+    cantidad = Decimal(str(cantidad))
+    stock, _ = StockActual.objects.get_or_create(
+        id_producto=producto,
+        id_variante=variante,
+        id_almacen=almacen,
+        defaults={"id_empresa": empresa, "cantidad_disponible": Decimal("0")},
+    )
+    stock = StockActual.objects.select_for_update().get(pk=stock.pk)
+
+    libre = stock.cantidad_disponible - stock.cantidad_comprometida
+    if libre < cantidad:
+        raise StockInsuficienteError(
+            f"Stock libre insuficiente en '{almacen}' para '{producto}'. "
+            f"Disponible: {stock.cantidad_disponible}, Comprometido: {stock.cantidad_comprometida}, "
+            f"Libre: {libre}, Solicitado: {cantidad}"
+        )
+    stock.cantidad_comprometida += cantidad
+    stock.save(update_fields=["cantidad_comprometida", "fecha_ultima_actualizacion"])
+    return stock
+
+
+@transaction.atomic
+def liberar_reserva(empresa, producto, variante, almacen, cantidad: Decimal) -> StockActual:
+    """
+    Reduce cantidad_comprometida. Se usa en entregar_nota_venta() justo antes
+    de crear el MovimientoInventario que descuenta cantidad_disponible.
+    """
+    cantidad = Decimal(str(cantidad))
+    stock = StockActual.objects.select_for_update().get(
+        id_producto=producto,
+        id_variante=variante,
+        id_almacen=almacen,
+    )
+    if stock.cantidad_comprometida < cantidad:
+        raise ReservaInsuficienteError(
+            f"Reserva insuficiente para liberar. Comprometido: {stock.cantidad_comprometida}, "
+            f"Liberando: {cantidad}"
+        )
+    stock.cantidad_comprometida -= cantidad
+    stock.save(update_fields=["cantidad_comprometida", "fecha_ultima_actualizacion"])
+    return stock
 
 
 # ── Función principal ─────────────────────────────────────────────────────────

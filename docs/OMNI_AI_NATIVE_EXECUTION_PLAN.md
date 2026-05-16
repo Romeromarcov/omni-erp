@@ -117,6 +117,9 @@ Los flujos críticos son: crear venta + generar factura + descontar stock + asen
 ### R-CODE-10: Prohibido `null=True, blank=True` en campos lógicamente obligatorios
 Si un campo debe tener valor (FK obligatoria, monto requerido, fecha requerida), no se hace opcional para "evitar errores en migración". Se hace obligatorio y la migración resuelve los datos heredados.
 
+### R-CODE-11: Todo movimiento contable genera su asiento automáticamente
+Todo módulo que genere una transacción con contrapartida contable (aprobación de factura, recepción de mercancía, pago, devolución, ajuste de inventario, nómina, etc.) debe crear automáticamente el `AsientoContable` correspondiente dentro de la misma transacción DB (`@transaction.atomic`). El asiento se crea en estado `BORRADOR` y se auto-aprueba si la empresa tiene `contabilidad_auto_aprobar=True`. Si el asiento no puede crearse, la transacción principal falla. La contabilidad no es opcional, no es eventual, no se difiere a un proceso batch. Sin esto, no hay merge para ningún módulo con impacto contable.
+
 ## 2.2 Reglas de proceso
 
 ### R-PROC-1: Una sola fuente de verdad por dominio
@@ -317,31 +320,71 @@ Si las cuatro respuestas te dejan tranquilo, aprueba. Si alguna te deja incómod
 
 ### 4.4.2 Trabajo concreto
 
-**Heredado del Master Plan (completar):**
-- `ventas` con todas las integraciones (inventario, fiscal, CxC, contabilidad básica).
-- `inventario`: movimientos, stock por sucursal, kardex, lotes.
-- `fiscal` Venezuela: IVA, IGTF, retenciones, libros SENIAT, factura fiscal PDF.
-- `reportes`: plantillas PDF de factura, cotización, nota de entrega, recibo.
-- `notificaciones`: in-app, email, WhatsApp Business API.
-- `compras`: ciclo solicitud → OC → recepción.
-- `crm`: clientes con búsqueda RIF, historial, límite de crédito.
-- `cuentas_por_cobrar`: aging, estado de cuenta, abonos.
-- `saas_core` mínimo: planes, suscripciones, expiración.
+**M1 — Contactos Unificados (Migración Strangler Fig):**
+- Nuevo modelo `Contacto` en `apps/core`: una sola entidad con roles booleanos (`es_cliente`, `es_proveedor`, `es_empleado`, `es_usuario`).
+- Migración gradual: `Cliente` y `Proveedor` existentes adquieren FK a `Contacto`; datos migrados; vistas deprecadas.
+- Empleado también se enlaza a `Contacto` para unificar identidad.
 
-**Nuevo (AI-nativo):**
-- Agente de personalización Capa 1 (preferencias) y Capa 2 (configuración de negocio): el usuario habla, el agente aplica.
-- Agentes operativos en modo "sugerir":
-  - Clasificador de gastos.
-  - Estratega de cobranza diaria.
-  - Conciliador bancario asistido.
-  - Sugeridor de reorden de inventario.
-- Sandbox espejo por tenant funcional.
-- Primer paquete de localización: `vzla-localization-pack` v1, con todo lo fiscal venezolano encapsulado y versionado.
+**M2 — Ciclo de Ventas Correcto (Ventas + Inventario + CxC):**
+- Cotización: no afecta stock.
+- Pedido (aprobación): reserva `cantidad_comprometida` — NO descuenta stock físico.
+- NotaVenta / OrdenEntrega (entrega): descuenta stock físico, genera `MovimientoInventario(tipo=DESPACHO_VENTA)`, genera `CuentaCobrar` automáticamente.
+- FacturaFiscal (emisión): genera `AsientoContable` (R-CODE-11). NO es la que mueve stock.
+- Corrección de `confirmar_pedido()` en `ventas/services.py` — eliminar DESPACHO_VENTA incorrecto.
+
+**M3 — Ciclo de Compras Completo:**
+- Servicios faltantes: `aprobar_orden_compra()`, `registrar_recepcion()`, `registrar_factura_compra()`.
+- RecepcionMercancia → `MovimientoInventario(tipo=ENTRADA_COMPRA)` + `CuentaPagar` automática.
+- FacturaCompra aprobada → `AsientoContable` automático (R-CODE-11).
+
+**M4 — Listas de Precios:**
+- Modelos `ListaPrecio` y `DetallePrecio` en `apps/finanzas` o `apps/ventas`.
+- Múltiples listas por empresa. Lista 1 = precio de referencia, siempre visible en documentos CxC.
+- Aplicación en cotización/pedido según lista asignada al cliente o seleccionada manualmente.
+
+**M5 — Control de Salidas de Inventario:**
+- Salida de stock solo vía: (a) NotaVenta/OrdenEntrega desde ventas, (b) AjusteInventario, (c) RequisicionInterna.
+- `RequisicionInterna`: modelo separado de `RequisicionCompra`, para asignación a empleados, muestras, obsequios, consumo interno.
+- Validación en `MovimientoInventario.save()` que rechaza tipo SALIDA sin documento origen válido.
+
+**M6 — Flujos Configurables por Empresa:**
+- `ConfiguracionFlujoDocumentos`: por empresa y tipo de documento, define qué pasos son obligatorios vs. opcionales (ej.: empresa puede saltarse Cotización e ir directo a Pedido).
+- Integración en transiciones de estado de ventas y compras.
+
+**M7 — Asientos Contables Automáticos (R-CODE-11 en práctica):**
+- Servicio `contabilidad/services.py → generar_asiento(tipo, documento, empresa)`.
+- Implementar para: FacturaFiscal, FacturaCompra, RecepcionMercancia, AjusteInventario, Pago/Abono CxC/CxP, RequisicionInterna con costo.
+- Tests end-to-end que verifican que cada flujo genera su asiento dentro de la misma transacción.
+
+**M8 — Módulo Fiscal Venezuela:**
+- IVA (12%), IGTF (3% divisas), retenciones IVA (75%/100%) e ISLR.
+- Libros de compras y ventas SENIAT (formato TXT y PDF).
+- Factura fiscal PDF con todos los campos legales. Numeración correlativa por empresa.
+
+**M9 — Agentes Operativos Fase 1:**
+- Agente de personalización Capa 1 (preferencias) y Capa 2 (config de negocio).
+- Estratega de cobranza diaria (sugerir contacto, monto, canal).
+- Sugeridor de reorden de inventario.
+- Conciliador bancario asistido.
+- Todos en shadow mode / "sugerir" — sin auto-ejecución en Fase 1.
+
+**M10 — Infraestructura de Soporte:**
+- `reportes`: PDF de factura, cotización, nota de entrega, estado de cuenta CxC.
+- `notificaciones`: in-app + email. WhatsApp en Fase 2.
+- `saas_core` mínimo: planes, suscripciones, expiración, límite de tenants.
+- `vzla-localization-pack` v1 como módulo instalable versionado.
 
 ### 4.4.3 Definition of Done de Fase 1
 
-- [ ] Cliente design partner real, pagando, operando diariamente, durante al menos 4 semanas continuas.
-- [ ] Ciclo end-to-end funcional: cotización → pedido → factura fiscal → descuento de stock → asiento contable → saldo CxC → cobranza con agente sugiriendo.
+- [ ] Cliente design partner real, pagando, operando diariamente durante al menos 4 semanas continuas.
+- [ ] Ciclo ventas end-to-end correcto: cotización → pedido (reserva stock) → entrega (descuenta stock + genera CxC) → factura fiscal (genera asiento) → cobranza con agente sugiriendo.
+- [ ] Ciclo compras end-to-end: OC → recepción (entrada stock + genera CxP + asiento) → factura compra (asiento) → pago (asiento).
+- [ ] Contacto unificado: un solo registro puede ser cliente, proveedor, empleado simultáneamente. Migración de datos sin pérdida.
+- [ ] Listas de precios funcionando: múltiples listas, Lista 1 como referencia visible en todos los documentos CxC.
+- [ ] Control de inventario: salida solo por vía válida (entrega venta, ajuste, requisición interna). Test que intente salida inválida y falle.
+- [ ] R-CODE-11 cumplido en todos los módulos con impacto contable: tests end-to-end verifican asiento creado en misma transacción.
+- [ ] Flujos configurables: al menos cotización y pedido tienen pasos opcionales configurables por empresa.
+- [ ] Módulo fiscal Venezuela: IVA, IGTF, retenciones, libros SENIAT, factura fiscal PDF con numeración correlativa.
 - [ ] Agente de personalización aplicando cambios de Capa 1-2 sin intervención técnica humana.
 - [ ] Al menos 4 agentes operativos en producción en modo "sugerir", con métricas de aceptación humana ≥ 60%.
 - [ ] `vzla-localization-pack` v1: documentado, versionado, instalable como módulo.
@@ -603,6 +646,7 @@ Auto-checklist obligatorio que debe estar en la descripción del PR:
 - [ ] R-CODE-8 (sin secretos): [confirmado]
 - [ ] R-CODE-9 (tests integración): [tests añadidos/actualizados]
 - [ ] R-CODE-10 (no null=True en obligatorios): [N/A o confirmado]
+- [ ] R-CODE-11 (asiento contable automático): [N/A — módulo sin impacto contable / o: AsientoContable creado en misma transacción, test end-to-end incluido]
 
 ### Eventos emitidos / consumidos (si aplica)
 - [Listar eventos nuevos o modificados]

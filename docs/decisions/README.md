@@ -19,6 +19,7 @@ Se crea un ADR cuando se toma una decisión que:
 | 003 | Integration Hub Centralizado con MCP Bidireccional | 2026-05-14 | Aceptado |
 | 004 | Stack Agéntico — Anthropic SDK + Orquestación Propia + Shadow Mode | 2026-05-16 | Aceptado |
 | 005 | DSL de Personalización Declarativo — 6 Primitivas YAML/JSON | 2026-05-16 | Aceptado |
+| 006 | Asientos Contables Automáticos Obligatorios (R-CODE-11) | 2026-05-16 | Aceptado |
 
 ## Cómo se escriben
 
