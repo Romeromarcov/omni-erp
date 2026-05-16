@@ -27,6 +27,14 @@ class Empleado(models.Model):
     cargo = models.ForeignKey(Cargo, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_ingreso = models.DateField()
     activo = models.BooleanField(default=True)
+    # Enlace al Contacto unificado (strangler fig — nullable durante transición)
+    contacto = models.OneToOneField(
+        "core.Contacto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="empleado",
+    )
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} ({self.cedula})"

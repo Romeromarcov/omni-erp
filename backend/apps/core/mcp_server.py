@@ -481,6 +481,9 @@ def omni_buscar_contacto(
     _require_scope(context, "contactos:read")
     assert context is not None  # noqa: S101 — checked by _require_scope
 
+    if str(empresa_id) != context["empresa_id"]:
+        raise PermissionError("El token no pertenece a la empresa solicitada.")
+
     try:
         empresa = Empresa.objects.get(id_empresa=empresa_id)
     except Empresa.DoesNotExist:

@@ -221,3 +221,24 @@ class DispositivoSerializer(BaseModelSerializer):
         if request and request.user:
             validated_data["creado_por"] = request.user
         return super().create(validated_data)
+
+
+# ── Contacto ──────────────────────────────────────────────────────────────────
+
+from .models import Contacto  # noqa: E402
+
+
+class ContactoSerializer(BaseModelSerializer):
+    nombre_completo = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Contacto
+        fields = [
+            "id_contacto", "id_empresa", "tipo_persona",
+            "nombre", "apellido", "nombre_comercial", "nombre_completo",
+            "rif", "cedula", "email", "telefono", "direccion_fiscal",
+            "es_cliente", "es_proveedor", "es_empleado", "es_usuario",
+            "tipo_credito", "limite_credito", "dias_credito", "lista_precio",
+            "dias_pago", "usuario", "activo", "fecha_creacion",
+        ]
+        read_only_fields = ["id_contacto", "id_empresa", "fecha_creacion"]

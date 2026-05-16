@@ -50,6 +50,15 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
         help_text="Días de plazo de crédito.",
     )
 
+    # Enlace al Contacto unificado (strangler fig — nullable durante transición)
+    contacto = models.OneToOneField(
+        "core.Contacto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cliente",
+    )
+
     class Meta:
         ordering = ["razon_social"]
         unique_together = [["id_empresa", "rif"]]

@@ -138,6 +138,7 @@ class MovimientoInventario(TimeStampedModel):
         ("CONSUMO_PRODUCCION", "Consumo Producción"),
         ("RECEPCION_COMPRA", "Recepción Compra"),
         ("DESPACHO_VENTA", "Despacho Venta"),
+        ("SALIDA_INTERNA", "Salida Interna"),
     ]
 
     id_movimiento_inventario = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -266,3 +267,70 @@ class StockConsignacionProveedor(TimeStampedModel):
 
     def __str__(self):
         return f"Consignación {self.id_proveedor} - {self.id_producto.nombre_producto}"
+
+
+# ── M5: Requisiciones Internas ────────────────────────────────────────────────
+
+
+class RequisicionInterna(OmniBaseModel):
+    ESTADOS = [
+        ("BORRADOR", "Borrador"),
+        ("APROBADA", "Aprobada"),
+        ("DESPACHADA", "Despachada"),
+        ("CANCELADA", "Cancelada"),
+    ]
+
+    id_requisicion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="requisiciones_internas")
+    numero_requisicion = models.CharField(max_length=30)
+    id_almacen_origen = models.ForeignKey(
+        "almacenes.Almacen", on_delete=models.PROTECT, related_name="requisiciones_origen"
+    )
+    id_departamento_destino = models.ForeignKey(
+        "core.Departamento", on_delete=models.SET_NULL, null=True, blank=True, related_name="requisiciones_recibidas"
+    )
+    solicitado_por = models.ForeignKey(
+        "core.Usuarios", on_delete=models.PROTECT, related_name="requisiciones_internas_solicitadas"
+    )
+    aprobado_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="requisiciones_internas_aprobadas",
+    )
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="BORRADOR")
+    fecha_solicitud = models.DateField(auto_now_add=True)
+    fecha_aprobacion = models.DateField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "inventario_requisicion_interna"
+        verbose_name = "Requisición Interna"
+        verbose_name_plural = "Requisiciones Internas"
+        unique_together = [["id_empresa", "numero_requisicion"]]
+
+    def __str__(self):
+        return f"REQ-{self.numero_requisicion} [{self.estado}]"
+
+
+class DetalleRequisicion(models.Model):
+    id_detalle = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_requisicion = models.ForeignKey(
+        RequisicionInterna, on_delete=models.CASCADE, related_name="detalles"
+    )
+    id_producto = models.ForeignKey("Producto", on_delete=models.PROTECT, related_name="detalles_requisicion_interna")
+    id_variante = models.ForeignKey(
+        "VarianteProducto", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    cantidad_solicitada = models.DecimalField(max_digits=18, decimal_places=4)
+    cantidad_despachada = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+
+    class Meta:
+        db_table = "inventario_detalle_requisicion"
+        verbose_name = "Detalle de Requisición"
+        verbose_name_plural = "Detalles de Requisición"
+        unique_together = [["id_requisicion", "id_producto"]]
+
+    def __str__(self):
+        return f"{self.id_requisicion} | {self.id_producto.nombre_producto} x{self.cantidad_solicitada}"

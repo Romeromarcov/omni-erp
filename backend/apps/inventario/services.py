@@ -17,11 +17,14 @@ from .models import MovimientoInventario, StockActual
 # ── Clasificación de tipos de movimiento ─────────────────────────────────────
 
 TIPOS_ENTRADA = frozenset({"ENTRADA", "RECEPCION_COMPRA"})
-TIPOS_SALIDA = frozenset({"SALIDA", "DESPACHO_VENTA", "CONSUMO_PRODUCCION"})
+TIPOS_SALIDA = frozenset({"SALIDA", "DESPACHO_VENTA", "CONSUMO_PRODUCCION", "SALIDA_INTERNA"})
 TIPOS_TRANSFERENCIA = frozenset({"TRANSFERENCIA"})
 TIPOS_AJUSTE = frozenset({"AJUSTE"})
 
 ALL_TIPOS = TIPOS_ENTRADA | TIPOS_SALIDA | TIPOS_TRANSFERENCIA | TIPOS_AJUSTE
+
+# Salidas que REQUIEREN un documento origen válido (M5 — control de salidas)
+TIPOS_SALIDA_CONTROLADA = frozenset({"SALIDA_INTERNA"})
 
 
 # ── Excepciones adicionales ───────────────────────────────────────────────────
@@ -202,6 +205,25 @@ def registrar_movimiento(
     if tipo not in TIPOS_AJUSTE and cantidad <= 0:
         raise MovimientoInvalidoError("La cantidad debe ser mayor a cero.")
 
+    # ── Validar documento origen para salidas controladas (M5) ───────────────
+    if tipo in TIPOS_SALIDA_CONTROLADA:
+        if not documento_origen_id:
+            raise MovimientoInvalidoError(
+                f"El tipo '{tipo}' requiere un documento_origen_id (RequisicionInterna)."
+            )
+        from .models import RequisicionInterna
+
+        try:
+            req = RequisicionInterna.objects.get(id_requisicion=documento_origen_id, id_empresa=empresa)
+        except RequisicionInterna.DoesNotExist:
+            raise MovimientoInvalidoError(
+                f"RequisicionInterna '{documento_origen_id}' no existe."
+            )
+        if req.estado != "APROBADA":
+            raise MovimientoInvalidoError(
+                f"La requisición debe estar APROBADA para despachar. Estado actual: {req.estado}"
+            )
+
     # ── Persistir movimiento ──────────────────────────────────────────────────
     movimiento = MovimientoInventario.objects.create(
         id_empresa=empresa,
@@ -234,3 +256,79 @@ def registrar_movimiento(
         _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
 
     return movimiento
+
+
+# ── despachar_requisicion_interna (M5) ───────────────────────────────────────
+
+
+class RequisicionError(Exception):
+    pass
+
+
+@transaction.atomic
+def aprobar_requisicion(requisicion, aprobado_por) -> None:
+    """
+    Aprueba una RequisicionInterna en estado BORRADOR.
+    Solo cambia el estado; no mueve stock.
+    """
+    from datetime import date
+
+    if requisicion.estado != "BORRADOR":
+        raise RequisicionError(
+            f"Solo se aprueban requisiciones en BORRADOR. Estado: {requisicion.estado}"
+        )
+    requisicion.estado = "APROBADA"
+    requisicion.aprobado_por = aprobado_por
+    requisicion.fecha_aprobacion = date.today()
+    requisicion.save(update_fields=["estado", "aprobado_por", "fecha_aprobacion"])
+
+
+@transaction.atomic
+def despachar_requisicion_interna(requisicion, usuario) -> list:
+    """
+    Despacha una RequisicionInterna APROBADA:
+      - Por cada línea crea un MovimientoInventario tipo SALIDA_INTERNA.
+      - Actualiza cantidad_despachada en cada DetalleRequisicion.
+      - Transiciona la requisición a DESPACHADA.
+
+    Returns:
+        Lista de MovimientoInventario creados.
+    """
+    from django.utils import timezone
+
+    if requisicion.estado != "APROBADA":
+        raise RequisicionError(
+            f"Solo se despachan requisiciones APROBADAS. Estado: {requisicion.estado}"
+        )
+
+    detalles = list(requisicion.detalles.select_related("id_producto", "id_variante"))
+    if not detalles:
+        raise RequisicionError("La requisición no tiene líneas de detalle.")
+
+    movimientos = []
+    for detalle in detalles:
+        try:
+            mov = registrar_movimiento(
+                empresa=requisicion.id_empresa,
+                fecha_hora_movimiento=timezone.now(),
+                tipo_movimiento="SALIDA_INTERNA",
+                producto=detalle.id_producto,
+                variante=detalle.id_variante,
+                cantidad=detalle.cantidad_solicitada,
+                almacen_origen=requisicion.id_almacen_origen,
+                documento_origen_id=requisicion.id_requisicion,
+                nombre_modelo_origen="RequisicionInterna",
+                usuario=usuario,
+                observaciones=f"Despacho requisición {requisicion.numero_requisicion}",
+            )
+        except (StockInsuficienteError, MovimientoInvalidoError) as exc:
+            raise RequisicionError(str(exc)) from exc
+
+        detalle.cantidad_despachada = detalle.cantidad_solicitada
+        detalle.save(update_fields=["cantidad_despachada"])
+        movimientos.append(mov)
+
+    requisicion.estado = "DESPACHADA"
+    requisicion.save(update_fields=["estado"])
+
+    return movimientos

@@ -23,6 +23,7 @@ router.register(r"departamentos", core_viewsets.DepartamentoViewSet)
 router.register(r"dispositivos", core_viewsets.DispositivoViewSet)
 router.register(r"roles", core_viewsets.RolesViewSet)
 router.register(r"permisos", core_viewsets.PermisosViewSet)
+router.register(r"contactos", core_viewsets.ContactoViewSet)
 
 urlpatterns = [
     # Custom endpoints que deben tener prioridad sobre el router

@@ -551,3 +551,58 @@ class DetalleNotaCreditoFiscal(models.Model):
 
     def __str__(self):
         return f"{self.id_nota_credito_fiscal.numero_nota_credito} - {self.id_producto.nombre_producto}"
+
+
+# ── Listas de Precios (M4) ────────────────────────────────────────────────────
+
+
+class ListaPrecio(models.Model):
+    """
+    Lista de precios por empresa. Lista con es_referencia=True es la Lista 1 —
+    siempre visible en documentos CxC como precio de referencia.
+    """
+
+    id_lista = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="listas_precio")
+    nombre = models.CharField(max_length=100)
+    codigo = models.CharField(max_length=20, help_text="Código corto, ej: LISTA1, LISTA2, MAYOREO")
+    es_referencia = models.BooleanField(
+        default=False,
+        help_text="Lista 1: precio base visible en todos los documentos CxC.",
+    )
+    id_moneda = models.ForeignKey("finanzas.Moneda", on_delete=models.CASCADE, related_name="listas_precio")
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ventas_lista_precio"
+        unique_together = [["id_empresa", "codigo"]]
+        verbose_name = "Lista de Precios"
+        verbose_name_plural = "Listas de Precios"
+
+    def __str__(self):
+        return f"{self.nombre} ({self.codigo})"
+
+
+class DetallePrecio(models.Model):
+    """
+    Precio de un producto en una lista. Soporta vigencia por fechas.
+    """
+
+    id_detalle = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_lista = models.ForeignKey(ListaPrecio, on_delete=models.CASCADE, related_name="detalles")
+    id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="precios_lista")
+    precio = models.DecimalField(max_digits=18, decimal_places=4)
+    precio_minimo = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    vigente_desde = models.DateField(null=True, blank=True)
+    vigente_hasta = models.DateField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "ventas_detalle_precio"
+        unique_together = [["id_lista", "id_producto"]]
+        verbose_name = "Detalle de Precio"
+        verbose_name_plural = "Detalles de Precio"
+
+    def __str__(self):
+        return f"{self.id_producto.nombre_producto} @ {self.id_lista.codigo}: {self.precio}"

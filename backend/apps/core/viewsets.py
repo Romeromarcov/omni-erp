@@ -370,3 +370,38 @@ class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet)
 
     def get_queryset(self):
         return super().get_queryset()  # solo filtro activo, no por empresa
+
+
+# ── ContactoViewSet ───────────────────────────────────────────────────────────
+
+from .models import Contacto  # noqa: E402
+from .serializers import ContactoSerializer  # noqa: E402
+
+
+class ContactoViewSet(ActiveFilterMixin, BaseModelViewSet):
+    """
+    CRUD de Contactos unificados.
+    Filtros disponibles: ?es_cliente=true, ?es_proveedor=true, ?es_empleado=true
+    Búsqueda: ?search=<rif|nombre|email>
+    """
+
+    queryset = Contacto.objects.select_related("id_empresa", "lista_precio", "usuario").order_by("nombre")
+    serializer_class = ContactoSerializer
+    search_fields = ["nombre", "apellido", "nombre_comercial", "rif", "cedula", "email"]
+    ordering_fields = ["nombre", "rif", "fecha_creacion"]
+
+    def get_queryset(self):
+        empresas = get_empresas_visible(self.request.user)
+        qs = super().get_queryset().filter(id_empresa__in=empresas)
+        for rol in ("es_cliente", "es_proveedor", "es_empleado", "es_usuario"):
+            val = self.request.query_params.get(rol)
+            if val is not None:
+                qs = qs.filter(**{rol: val.lower() in ("true", "1", "yes")})
+        return qs
+
+    def perform_create(self, serializer):
+        empresa = get_empresas_visible(self.request.user).first()
+        if not empresa:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        serializer.save(id_empresa=empresa)

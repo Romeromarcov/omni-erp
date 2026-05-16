@@ -3,16 +3,17 @@ Lógica de negocio del ciclo de ventas.
 
 Flujo correcto (R-CODE-11 en emitir_factura_fiscal):
 
+  obtener_precio()        → resuelve precio de un producto según lista del contacto o Lista 1
   confirmar_pedido()      → APROBADO + reserva cantidad_comprometida (sin mover stock físico)
   entregar_nota_venta()   → ENTREGADA + DESPACHO_VENTA (mueve stock físico, libera reserva)
                             + genera CuentaPorCobrar si no existe
   emitir_factura_fiscal() → EMITIDA + AsientoContable automático (R-CODE-11)
 """
 
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.contabilidad.services import AsientoError, generar_asiento
@@ -24,6 +25,65 @@ from apps.inventario.services import (
     registrar_movimiento,
     reservar_stock,
 )
+
+
+# ── obtener_precio (M4) ───────────────────────────────────────────────────────
+
+
+def obtener_precio(producto, empresa, contacto=None, fecha: date | None = None) -> Decimal:
+    """
+    Resuelve el precio de un producto para un contacto/empresa en una fecha.
+
+    Prioridad:
+      1. Lista asignada al contacto (contacto.lista_precio), si existe y tiene el producto.
+      2. Lista de referencia de la empresa (es_referencia=True), si tiene el producto.
+      3. precio_venta_sugerido del producto.
+
+    Args:
+        producto:  Instancia de inventario.Producto.
+        empresa:   Instancia de core.Empresa.
+        contacto:  Instancia de core.Contacto (opcional). Si es None, usa Lista 1 directamente.
+        fecha:     Fecha de vigencia. Si None, usa hoy.
+
+    Returns:
+        Decimal con el precio resuelto.
+    """
+    from apps.ventas.models import DetallePrecio
+
+    hoy = fecha or date.today()
+
+    def _precio_en_lista(lista_precio):
+        qs = DetallePrecio.objects.filter(
+            id_lista=lista_precio,
+            id_producto=producto,
+            activo=True,
+        ).filter(
+            models.Q(vigente_desde__isnull=True) | models.Q(vigente_desde__lte=hoy)
+        ).filter(
+            models.Q(vigente_hasta__isnull=True) | models.Q(vigente_hasta__gte=hoy)
+        )
+        dp = qs.first()
+        return dp.precio if dp else None
+
+    # 1. Lista del contacto
+    if contacto is not None:
+        lista_contacto = getattr(contacto, "lista_precio", None)
+        if lista_contacto:
+            precio = _precio_en_lista(lista_contacto)
+            if precio is not None:
+                return precio
+
+    # 2. Lista de referencia (Lista 1)
+    from apps.ventas.models import ListaPrecio
+
+    lista_ref = ListaPrecio.objects.filter(id_empresa=empresa, es_referencia=True, activo=True).first()
+    if lista_ref:
+        precio = _precio_en_lista(lista_ref)
+        if precio is not None:
+            return precio
+
+    # 3. Fallback: precio sugerido del producto
+    return Decimal(str(producto.precio_venta_sugerido))
 
 
 # ── Excepciones de dominio ────────────────────────────────────────────────────
@@ -245,14 +305,16 @@ def emitir_factura_fiscal(nota_venta, numero_control: str, numero_factura: str, 
         estado="EMITIDA",
     )
 
-    nota_venta.convertido_a_factura = True
-    nota_venta.id_factura_resultante = factura
-    nota_venta.estado = "FACTURADA"
-    nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado"])
-
     try:
         asiento = generar_asiento("FACTURA_VENTA", factura, factura.id_empresa)
     except AsientoError as exc:
         raise VentaError(f"Error generando asiento contable: {exc}") from exc
+
+    # State transition happens after the asiento succeeds — if asiento fails the
+    # entire @transaction.atomic rolls back, so nota_venta never reaches FACTURADA.
+    nota_venta.convertido_a_factura = True
+    nota_venta.id_factura_resultante = factura
+    nota_venta.estado = "FACTURADA"
+    nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado"])
 
     return {"factura": factura, "asiento": asiento}

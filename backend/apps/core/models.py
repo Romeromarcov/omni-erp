@@ -672,3 +672,89 @@ class CapabilityToken(OmniBaseModel):
         """Actualiza ultimo_uso sin disparar auto_now de fecha_actualizacion."""
         self.ultimo_uso = timezone.now()
         self.save(update_fields=["ultimo_uso"])
+
+
+# ── Contacto Unificado ────────────────────────────────────────────────────────
+
+
+class Contacto(OmniBaseModel):
+    """
+    Entidad central de identidad (patrón Odoo).
+    Un solo registro puede ser cliente, proveedor, empleado y usuario simultáneamente.
+    Reemplaza gradualmente a Cliente, Proveedor y Empleado mediante strangler fig.
+    """
+
+    TIPO_PERSONA = [("NATURAL", "Persona Natural"), ("JURIDICA", "Persona Jurídica")]
+
+    id_contacto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="contactos")
+
+    # Identidad
+    tipo_persona = models.CharField(max_length=10, choices=TIPO_PERSONA, default="JURIDICA")
+    nombre = models.CharField(max_length=255, help_text="Nombre o Razón Social")
+    apellido = models.CharField(max_length=255, blank=True, default="")
+    nombre_comercial = models.CharField(max_length=255, blank=True, default="")
+    rif = models.CharField(max_length=20, blank=True, default="")
+    cedula = models.CharField(max_length=20, blank=True, default="")
+
+    # Contacto
+    email = models.EmailField(blank=True, default="")
+    telefono = models.CharField(max_length=50, blank=True, default="")
+    direccion_fiscal = models.TextField(blank=True, default="")
+
+    # Roles booleanos
+    es_cliente = models.BooleanField(default=False)
+    es_proveedor = models.BooleanField(default=False)
+    es_empleado = models.BooleanField(default=False)
+    es_usuario = models.BooleanField(default=False)
+
+    # Campos de cliente
+    tipo_credito = models.CharField(
+        max_length=10,
+        choices=[("CONTADO", "Contado"), ("CREDITO", "Crédito")],
+        default="CONTADO",
+    )
+    limite_credito = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    dias_credito = models.PositiveSmallIntegerField(default=0)
+    lista_precio = models.ForeignKey(
+        "ventas.ListaPrecio",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contactos",
+    )
+
+    # Campos de proveedor
+    dias_pago = models.PositiveSmallIntegerField(default=30)
+
+    # Enlace opcional a usuario Django
+    usuario = models.OneToOneField(
+        "Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contacto",
+    )
+
+    class Meta:
+        db_table = "core_contacto"
+        verbose_name = "Contacto"
+        verbose_name_plural = "Contactos"
+        indexes = [
+            models.Index(fields=["id_empresa", "es_cliente"]),
+            models.Index(fields=["id_empresa", "es_proveedor"]),
+            models.Index(fields=["rif"]),
+        ]
+
+    def __str__(self):
+        if self.nombre_comercial:
+            return self.nombre_comercial
+        if self.tipo_persona == "NATURAL":
+            return f"{self.nombre} {self.apellido}".strip()
+        return self.nombre
+
+    @property
+    def nombre_completo(self) -> str:
+        if self.tipo_persona == "NATURAL":
+            return f"{self.nombre} {self.apellido}".strip()
+        return self.nombre_comercial or self.nombre
