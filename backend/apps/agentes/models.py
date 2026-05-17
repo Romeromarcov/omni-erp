@@ -11,6 +11,9 @@ class PrediccionAgente(models.Model):
 
     AGENTE_CHOICES = [
         ("clasificador_gastos", "Clasificador de Gastos"),
+        ("cobranza_estratega", "Estratega de Cobranza"),
+        ("reorden_sugeridor", "Sugeridor de Reorden"),
+        ("personalizacion_capa2", "Personalización Capa 2"),
     ]
     RESULTADO_CHOICES = [
         ("aceptada", "Aceptada por humano"),
