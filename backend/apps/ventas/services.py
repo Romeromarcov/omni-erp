@@ -17,6 +17,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from apps.contabilidad.services import AsientoError, generar_asiento
+from apps.core.services import FlujoError, verificar_paso_flujo  # noqa: F401 — re-exported for callers
 from apps.inventario.services import (
     MovimientoInvalidoError,
     ReservaInsuficienteError,
@@ -120,6 +121,10 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
             f"Solo se confirman pedidos PENDIENTE o ENVIADO. Estado actual: {pedido.estado}"
         )
 
+    # M6: verificar que la COTIZACION previa fue completada si está configurada como obligatoria.
+    cotizacion_cumplida = hasattr(pedido, "id_cotizacion_id") and pedido.id_cotizacion_id is not None
+    verificar_paso_flujo(pedido.id_empresa, "VENTAS", "COTIZACION", cotizacion_cumplida)
+
     detalles = list(pedido.detalles.select_related("id_producto"))
     if not detalles:
         raise VentaError("El pedido no tiene líneas de detalle.")
@@ -197,7 +202,11 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
             f"Solo se entregan notas en estado BORRADOR. Estado actual: {nota_venta.estado}"
         )
 
+    # M6: verificar que el PEDIDO previo fue completado si está configurado como obligatorio.
     pedido = getattr(nota_venta, "id_pedido_origen", None)
+    pedido_cumplido = pedido is not None and pedido.estado == "APROBADO"
+    verificar_paso_flujo(nota_venta.id_empresa, "VENTAS", "PEDIDO", pedido_cumplido)
+
     if pedido and pedido.estado != "APROBADO":
         raise VentaError(
             f"El pedido origen debe estar APROBADO para poder entregar. Estado: {pedido.estado}"

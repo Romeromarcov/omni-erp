@@ -758,3 +758,74 @@ class Contacto(OmniBaseModel):
         if self.tipo_persona == "NATURAL":
             return f"{self.nombre} {self.apellido}".strip()
         return self.nombre_comercial or self.nombre
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# M6: Configuración de flujo de documentos por empresa
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class ConfiguracionFlujoDocumentos(OmniBaseModel):
+    """
+    Permite a cada empresa definir qué pasos del ciclo ventas/compras son
+    obligatorios y en qué orden deben ejecutarse.
+
+    Ejemplo de uso:
+        - VENTAS / COTIZACION / obligatorio=False / orden=1
+        - VENTAS / PEDIDO      / obligatorio=True  / orden=2
+        - VENTAS / NOTA_ENTREGA/ obligatorio=True  / orden=3
+        - VENTAS / FACTURA     / obligatorio=True  / orden=4
+
+    Si 'obligatorio=False' el paso puede omitirse; si no existe registro para
+    un paso, se asume obligatorio (comportamiento conservador).
+    """
+
+    TIPO_DOCUMENTO = [
+        ("VENTAS", "Ciclo de Ventas"),
+        ("COMPRAS", "Ciclo de Compras"),
+    ]
+
+    PASOS_VENTAS = [
+        ("COTIZACION", "Cotización"),
+        ("PEDIDO", "Pedido / Nota de Venta"),
+        ("NOTA_ENTREGA", "Nota de Entrega"),
+        ("FACTURA", "Factura Fiscal"),
+    ]
+
+    PASOS_COMPRAS = [
+        ("SOLICITUD", "Solicitud de Compra"),
+        ("ORDEN_COMPRA", "Orden de Compra"),
+        ("RECEPCION", "Recepción de Mercancía"),
+        ("FACTURA_COMPRA", "Factura de Compra"),
+    ]
+
+    PASOS = PASOS_VENTAS + PASOS_COMPRAS
+
+    id_configuracion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name="configuraciones_flujo",
+        db_index=True,
+    )
+    tipo_documento = models.CharField(max_length=10, choices=TIPO_DOCUMENTO)
+    paso = models.CharField(max_length=20, choices=PASOS)
+    obligatorio = models.BooleanField(
+        default=True,
+        help_text="Si es False, este paso puede omitirse en el flujo.",
+    )
+    orden = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Orden relativo de ejecución dentro del tipo de documento.",
+    )
+
+    class Meta:
+        db_table = "core_configuracion_flujo_documentos"
+        unique_together = [["id_empresa", "tipo_documento", "paso"]]
+        ordering = ["tipo_documento", "orden"]
+        verbose_name = "Configuración de Flujo de Documentos"
+        verbose_name_plural = "Configuraciones de Flujo de Documentos"
+
+    def __str__(self):
+        estado = "obligatorio" if self.obligatorio else "opcional"
+        return f"{self.id_empresa} | {self.tipo_documento} | {self.paso} ({estado}, orden {self.orden})"

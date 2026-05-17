@@ -225,7 +225,24 @@ class DispositivoSerializer(BaseModelSerializer):
 
 # ── Contacto ──────────────────────────────────────────────────────────────────
 
-from .models import Contacto  # noqa: E402
+from .models import ConfiguracionFlujoDocumentos, Contacto  # noqa: E402
+
+
+class ConfiguracionFlujoDocumentosSerializer(BaseModelSerializer):
+    class Meta:
+        model = ConfiguracionFlujoDocumentos
+        fields = [
+            "id_configuracion",
+            "id_empresa",
+            "tipo_documento",
+            "paso",
+            "obligatorio",
+            "orden",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = ["id_configuracion", "id_empresa", "fecha_creacion", "fecha_actualizacion"]
 
 
 class ContactoSerializer(BaseModelSerializer):

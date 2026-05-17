@@ -372,10 +372,46 @@ class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet)
         return super().get_queryset()  # solo filtro activo, no por empresa
 
 
-# ── ContactoViewSet ───────────────────────────────────────────────────────────
+# ── ConfiguracionFlujoDocumentosViewSet ───────────────────────────────────────
 
-from .models import Contacto  # noqa: E402
-from .serializers import ContactoSerializer  # noqa: E402
+from .models import ConfiguracionFlujoDocumentos, Contacto  # noqa: E402
+from .serializers import ConfiguracionFlujoDocumentosSerializer, ContactoSerializer  # noqa: E402
+
+
+class ConfiguracionFlujoDocumentosViewSet(ActiveFilterMixin, BaseModelViewSet):
+    """
+    CRUD de la configuración de flujo de documentos por empresa.
+
+    Filtros disponibles:
+      - ?tipo_documento=VENTAS|COMPRAS
+      - ?empresa=<uuid>
+
+    Cada empresa tiene hasta 8 registros (4 pasos ventas + 4 pasos compras).
+    Si no existe un registro para un paso, la lógica de negocio asume 'obligatorio=True'.
+    """
+
+    queryset = ConfiguracionFlujoDocumentos.objects.select_related("id_empresa").order_by("tipo_documento", "orden")
+    serializer_class = ConfiguracionFlujoDocumentosSerializer
+    search_fields = []
+    ordering_fields = ["tipo_documento", "paso", "orden"]
+
+    def get_queryset(self):
+        empresas = get_empresas_visible(self.request.user)
+        qs = super().get_queryset().filter(id_empresa__in=empresas)
+        tipo = self.request.query_params.get("tipo_documento")
+        if tipo:
+            qs = qs.filter(tipo_documento=tipo)
+        return qs
+
+    def perform_create(self, serializer):
+        empresa = get_empresas_visible(self.request.user).first()
+        if not empresa:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        serializer.save(id_empresa=empresa)
+
+
+# ── ContactoViewSet ───────────────────────────────────────────────────────────
 
 
 class ContactoViewSet(ActiveFilterMixin, BaseModelViewSet):
