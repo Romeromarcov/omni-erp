@@ -829,3 +829,119 @@ class ConfiguracionFlujoDocumentos(OmniBaseModel):
     def __str__(self):
         estado = "obligatorio" if self.obligatorio else "opcional"
         return f"{self.id_empresa} | {self.tipo_documento} | {self.paso} ({estado}, orden {self.orden})"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# M10-T4: Notificaciones in-app
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class Notificacion(models.Model):
+    """
+    Notificación in-app para usuarios del sistema.
+
+    Almacena alertas generadas por el sistema (agentes, flujos, vencimientos)
+    que el frontend puede consultar via polling o SSE.
+    """
+
+    TIPO_CHOICES = [
+        ("INFO", "Información"),
+        ("ALERTA", "Alerta"),
+        ("ADVERTENCIA", "Advertencia"),
+        ("ERROR", "Error"),
+        ("EXITO", "Éxito"),
+        ("COBRANZA", "Cobranza"),
+        ("INVENTARIO", "Inventario"),
+        ("SISTEMA", "Sistema"),
+    ]
+
+    id_notificacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey(
+        "Empresa",
+        on_delete=models.CASCADE,
+        related_name="notificaciones",
+    )
+    id_usuario = models.ForeignKey(
+        "Usuarios",
+        on_delete=models.CASCADE,
+        related_name="notificaciones",
+        null=True,
+        blank=True,
+        help_text="Si None, la notificación es para todos los usuarios de la empresa.",
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="INFO")
+    titulo = models.CharField(max_length=200)
+    mensaje = models.TextField()
+    leida = models.BooleanField(default=False, db_index=True)
+    fecha_lectura = models.DateTimeField(null=True, blank=True)
+    url_accion = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="URL relativa de la acción vinculada (ej. /compras/ordenes/123/).",
+    )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Datos adicionales para el frontend (ids de referencia, etc.).",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha_expiracion = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Si se establece, la notificación se oculta después de esta fecha.",
+    )
+
+    class Meta:
+        db_table = "core_notificacion"
+        ordering = ["-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "id_usuario", "leida"]),
+            models.Index(fields=["id_empresa", "tipo", "fecha_creacion"]),
+        ]
+        verbose_name = "Notificación"
+        verbose_name_plural = "Notificaciones"
+
+    def __str__(self):
+        return f"[{self.tipo}] {self.titulo}"
+
+    def marcar_leida(self):
+        from django.utils import timezone
+        self.leida = True
+        self.fecha_lectura = timezone.now()
+        self.save(update_fields=["leida", "fecha_lectura"])
+
+
+def crear_notificacion(
+    empresa,
+    titulo: str,
+    mensaje: str,
+    tipo: str = "INFO",
+    usuario=None,
+    url_accion: str = "",
+    metadata: dict = None,
+) -> "Notificacion":
+    """
+    Helper para crear notificaciones desde cualquier parte del sistema.
+
+    Args:
+        empresa:    instancia de Empresa.
+        titulo:     Título breve de la notificación.
+        mensaje:    Cuerpo del mensaje.
+        tipo:       Tipo de notificación (INFO, ALERTA, etc.).
+        usuario:    Instancia de Usuarios (opcional; si None = broadcast empresa).
+        url_accion: URL relativa de acción vinculada.
+        metadata:   Dict con datos adicionales.
+
+    Returns:
+        Instancia de Notificacion creada.
+    """
+    return Notificacion.objects.create(
+        id_empresa=empresa,
+        id_usuario=usuario,
+        tipo=tipo,
+        titulo=titulo,
+        mensaje=mensaje,
+        url_accion=url_accion,
+        metadata=metadata or {},
+    )
