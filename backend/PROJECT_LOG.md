@@ -665,3 +665,50 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 - **Próximo:** Deuda técnica (PROJECT_LOG restaurado, data migration Strangler Fig), luego CxP completo y multimoneda.
 
 ---
+
+## Sesión 13 — 2026-05-16
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Resolver deuda técnica pendiente (restaurar PROJECT_LOG, revisar Sub-fase 1.B), luego implementar los ítems faltantes.
+
+### Tareas completadas
+
+1. **PROJECT_LOG.md restaurado y actualizado**:
+   - Restaurado desde git history (`git show fba5804:PROJECT_LOG.md`) — contenía Sessions 1-8.
+   - Appendeadas Sessions 9, 10, y 11-12 (Fase 1) con contenido completo.
+   - Commit: `c40096e`.
+
+2. **CxP — Cuentas por Pagar ciclo completo** (Sub-fase 1.B pendiente):
+   - `AbonoCxP` model con FK a `CuentaPorPagar` (migration `0003_add_abono_cxp`).
+   - `registrar_abono_cxp()`: atómico, `select_for_update`, actualiza `monto_pendiente`, transiciona PARCIAL/PAGADA.
+   - `calcular_aging_cxp()`: 5 tramos idénticos al patrón CxC.
+   - `CuentaPorPagarViewSet`: fix R-CODE-1, acciones `abonar/` y `aging/`.
+   - `AbonoCxPViewSet`: endpoint `/abonos-cxp/` con filtro cross-tenant.
+   - Fix colateral: `compras/0006_rename_facturacompra_table.py` — `AlterModelTable` que faltaba en la cadena de migraciones original.
+   - **20 tests** — 285 total, 0 fallos.
+
+3. **Multimoneda — conversión de monedas** (Sub-fase 1.B pendiente):
+   - `obtener_tasa_cambio()` en `finanzas/services.py`: prioridad empresa-específica → BCV global → fallback 30 días. Acepta instancias `Moneda` o código ISO. Tasa identidad para misma moneda.
+   - `convertir_monto()`: multiplica por `valor_tasa`, redondea a 4 decimales (ROUND_HALF_UP), valida monto no negativo.
+   - **18 tests** — 303 total, 0 fallos.
+
+### Incidentes
+
+- Bug de fecha en tests de aging: `date.today()` en fixtures diverge de `timezone.now().date()` en servicios cuando UTC ≠ hora local. Corregido usando `timezone.now().date()` en todos los fixtures de prueba.
+- `FacturaCompra._meta.db_table = "compras_factura_compra"` pero migration 0001 creó la tabla sin `db_table` → nombre real era `compras_facturacompra`. Corregido con `AlterModelTable` en migration 0006.
+
+### Commits
+
+- `c40096e`: docs: restore PROJECT_LOG.md and append sessions 9-12 (Fase 1 M1-M7)
+- `8be86c9`: feat(1b-cxp): CxP ciclo completo — AbonoCxP, registrar_abono_cxp, calcular_aging_cxp
+- `fc63cf7`: feat(1b-multimoneda): obtener_tasa_cambio() y convertir_monto() en finanzas/services
+
+### Estado al cerrar
+
+- **303 passed, 0 fallos** ✅.
+- **Sub-fase 1.B: COMPLETA** — inventario, CRM, fiscal VE, ventas, CxC, WS-2/3/4/5, CxP, multimoneda.
+- Rama pusheada: `chore/diagnostico-inicial` @ `fc63cf7`.
+- **Próximo:** Sub-fase 1.C o Fase 2 según Master Plan. Pendientes de Fase 1: M6 (Flujos Configurables), M8 (Módulo Fiscal completo), M9 (Agentes Operativos), M10 (Infraestructura SaaS).
+
+---
