@@ -292,31 +292,9 @@ class DetalleOfertaProveedor(models.Model):
         return f"{self.id_oferta.numero_oferta} - {self.id_producto.nombre_producto}"
 
 
-class DetalleRecepcionMercancia(models.Model):
-    id_detalle_recepcion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_recepcion = models.ForeignKey("RecepcionMercancia", related_name="detalles", on_delete=models.CASCADE)
-    id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="detalles_recepcion")
-    cantidad_esperada = models.DecimalField(max_digits=18, decimal_places=4)
-    cantidad_recibida = models.DecimalField(max_digits=18, decimal_places=4)
-    estado_mercancia = models.CharField(
-        max_length=20,
-        choices=[
-            ("CONFORME", "Conforme"),
-            ("DEFECTUOSO", "Defectuoso"),
-            ("INCOMPLETO", "Incompleto"),
-            ("DAÑADO", "Dañado"),
-        ],
-        default="CONFORME",
-    )
-    observaciones = models.TextField(null=True, blank=True)
-
-    class Meta:
-        db_table = "compras_detalle_recepcion_mercancia"
-        verbose_name = "Detalle de Recepción"
-        verbose_name_plural = "Detalles de Recepción"
-
-    def __str__(self):
-        return f"{self.id_recepcion.id_recepcion} - {self.id_producto.nombre_producto}"
+# DetalleRecepcionMercancia is defined earlier in this file (around line 74).
+# The duplicate definition was removed; the canonical one above includes
+# costo_unitario and subtotal (added via migration 0004).
 
 
 class DetalleFacturaCompra(models.Model):

@@ -32,7 +32,13 @@ class CuentaPorPagar(models.Model):
     id_cxp = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_proveedor = models.ForeignKey("proveedores.Proveedor", on_delete=models.CASCADE)
-    id_factura_compra = models.ForeignKey("compras.FacturaCompra", on_delete=models.CASCADE)
+    id_factura_compra = models.ForeignKey(
+        "compras.FacturaCompra",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="cuentas_por_pagar",
+    )
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)

@@ -172,6 +172,15 @@ class MovimientoInventario(TimeStampedModel):
     def __str__(self):
         return f"{self.tipo_movimiento} - {self.id_producto.nombre_producto}"
 
+    @property
+    def monto_total(self):
+        """Valor contable del movimiento: |cantidad| × costo_unitario.
+        Usado por generar_asiento() para extraer el monto del documento."""
+        from decimal import Decimal
+        if self.costo_unitario_movimiento:
+            return abs(self.cantidad) * self.costo_unitario_movimiento
+        return Decimal("0")
+
 
 class ConversionUnidadMedida(OmniBaseModel):
     id_conversion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

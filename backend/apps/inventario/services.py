@@ -255,6 +255,16 @@ def registrar_movimiento(
     elif tipo in TIPOS_AJUSTE:
         _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
 
+    # ── M5-T4: Asiento contable para ajustes de inventario (R-CODE-11) ──────
+    if tipo in TIPOS_AJUSTE and movimiento.monto_total > 0:
+        try:
+            from apps.contabilidad.services import MapeoContableNoEncontrado, generar_asiento
+            generar_asiento("AJUSTE_INVENTARIO", movimiento, empresa)
+        except MapeoContableNoEncontrado:
+            # No hay mapeo contable configurado → el movimiento se registra igual,
+            # pero sin asiento. El contador debe configurar el mapeo para activarlo.
+            pass
+
     return movimiento
 
 

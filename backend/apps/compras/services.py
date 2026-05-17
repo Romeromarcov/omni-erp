@@ -13,7 +13,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
-from apps.contabilidad.services import AsientoError, generar_asiento
+from apps.contabilidad.services import AsientoError, MapeoContableNoEncontrado, generar_asiento
 from apps.inventario.services import MovimientoInvalidoError, StockInsuficienteError, registrar_movimiento
 
 
@@ -126,8 +126,11 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
         observaciones=f"Recepción OC {orden_compra.numero_orden}",
     )
 
+    asiento = None
     try:
         asiento = generar_asiento("RECEPCION_MERCANCIA", recepcion, empresa)
+    except MapeoContableNoEncontrado:
+        pass  # permissive: no mapeo configured → recepcion proceeds without asiento
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de recepción: {exc}") from exc
 
@@ -159,8 +162,11 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None)
         monto_total=recepcion.monto_total,
     )
 
+    asiento = None
     try:
         asiento = generar_asiento("FACTURA_COMPRA", factura, empresa)
+    except MapeoContableNoEncontrado:
+        pass  # permissive: no mapeo configured → factura proceeds without asiento
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de factura compra: {exc}") from exc
 
