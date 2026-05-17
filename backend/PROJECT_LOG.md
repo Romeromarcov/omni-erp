@@ -712,3 +712,39 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 - **Próximo:** Sub-fase 1.C o Fase 2 según Master Plan. Pendientes de Fase 1: M6 (Flujos Configurables), M8 (Módulo Fiscal completo), M9 (Agentes Operativos), M10 (Infraestructura SaaS).
 
 ---
+
+## Sesión 14 — 2026-05-17
+
+**Rama:** `chore/diagnostico-inicial`
+**Commit:** `516c253`
+
+### Completado
+
+#### M1-T2: Data Migration Strangler Fig (`0013_contacto_data_migration.py`)
+- RunPython `forwards`: itera todos los `Cliente` sin `contacto` FK y crea un `Contacto` por cada uno; luego itera todos los `Proveedor` sin `contacto` FK.  Cuando cliente y proveedor comparten la misma empresa + RIF, se fusionan en un único `Contacto` con `es_cliente=True, es_proveedor=True`.
+- RunPython `backwards`: desvincula los FK sin destruir las filas `Contacto`.
+- Dependencias: `core/0012_contacto`, `crm/0007_cliente_contacto`, `proveedores/0004_proveedor_contacto`.
+
+#### M6: ConfiguracionFlujoDocumentos (Sub-fase 1.C)
+- `apps/core/models.py` — nuevo modelo `ConfiguracionFlujoDocumentos(id_empresa, tipo_documento, paso, obligatorio, orden)` con `unique_together + ordering`.
+- `0014_configuracion_flujo_documentos.py` — migración estructural.
+- `apps/core/serializers.py` — `ConfiguracionFlujoDocumentosSerializer`.
+- `apps/core/viewsets.py` — `ConfiguracionFlujoDocumentosViewSet` (empresa-scope, filtro `?tipo_documento=`).
+- `apps/core/urls.py` — registrado en `/api/core/flujo-documentos/`.
+- `apps/core/services.py` (nuevo) — `es_paso_obligatorio()` + `verificar_paso_flujo()`:
+  - Comportamiento permisivo por defecto: sin configuración explícita → paso no exigido.
+  - `FlujoError` se lanza sólo cuando existe un registro con `obligatorio=True` y el paso no se cumplió.
+- `apps/ventas/services.py` integrado:
+  - `confirmar_pedido()` verifica paso COTIZACION.
+  - `entregar_nota_venta()` verifica paso PEDIDO.
+
+### Tests
+- 38 tests de `test_multimoneda.py` + `test_cxp_abonos.py`: **38/38 ✅**
+- Suite completa: **179 passed, 0 failed** (1 teardown error espurio por ejecución paralela).
+
+### Estado de Fases
+- **M1-T2:** ✅ COMPLETO
+- **M6:** ✅ COMPLETO
+- **Pendientes Fase 1:** M5-T4 (AjusteInventario asiento), M3-T4 (ViewSet actions CRM), M8 (numeración correlativa, PDF fiscal, libros SENIAT), M9 (agentes IA), M10 (SaaS core).
+
+---
