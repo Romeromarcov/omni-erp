@@ -3,6 +3,33 @@ import uuid
 from django.db import models
 
 
+class NumeroCorrelativo(models.Model):
+    """Contador atómico de numeración correlativa por empresa y tipo de documento."""
+
+    TIPOS = [
+        ("FACTURA", "Factura Fiscal"),
+        ("NOTA_DEBITO", "Nota de Débito"),
+        ("NOTA_CREDITO", "Nota de Crédito"),
+        ("NOTA_ENTREGA", "Nota de Entrega"),
+        ("ORDEN_COMPRA", "Orden de Compra"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="numeraciones")
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    prefijo = models.CharField(max_length=20, default="", blank=True, help_text='e.g. "FAC-2026-"')
+    numero_actual = models.PositiveIntegerField(default=0)
+    digitos = models.PositiveSmallIntegerField(default=8, help_text="Pad width, e.g. 8 → 00000001")
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "fiscal_numero_correlativo"
+        unique_together = [["id_empresa", "tipo"]]
+
+    def __str__(self):
+        return f"{self.id_empresa} | {self.tipo} | {self.numero_actual:0{self.digitos}d}"
+
+
 class Impuesto(models.Model):
     nombre = models.CharField(max_length=100)
     codigo = models.CharField(max_length=20, unique=True)

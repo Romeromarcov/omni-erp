@@ -7,6 +7,8 @@ Las tasas se leen de ConfiguracionImpuesto; si no existe, se usan defaults.
 
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.db import transaction
+
 
 # ── Tasas por defecto (SENIAT 2024) ──────────────────────────────────────────
 
@@ -199,4 +201,102 @@ def calcular_impuestos_pedido(lineas: list, metodo_pago: str = "EFECTIVO_BS", em
         "total_iva": total_iva,
         "igtf": igtf,
         "total": igtf["total_con_igtf"],
+    }
+
+
+# ── M8: Numeración correlativa y cálculo de impuestos por empresa ─────────────
+
+
+def siguiente_numero(empresa, tipo: str) -> str:
+    """
+    Returns next formatted correlative number for empresa+tipo, guaranteed unique.
+    Uses select_for_update() to prevent race conditions.
+    Creates the NumeroCorrelativo row if it doesn't exist yet (get_or_create + lock).
+    """
+    from .models import NumeroCorrelativo
+
+    with transaction.atomic():
+        # First get_or_create without lock (can't lock non-existent row)
+        config, _ = NumeroCorrelativo.objects.get_or_create(
+            id_empresa=empresa,
+            tipo=tipo,
+            defaults={"numero_actual": 0, "digitos": 8},
+        )
+        # Now lock the existing row
+        config = NumeroCorrelativo.objects.select_for_update().get(pk=config.pk)
+        config.numero_actual += 1
+        config.save(update_fields=["numero_actual", "fecha_actualizacion"])
+        return f"{config.prefijo}{config.numero_actual:0{config.digitos}d}"
+
+
+def calcular_impuestos(subtotal: Decimal, empresa, moneda=None) -> dict:
+    """
+    Calcula IVA e IGTF para un subtotal dado la configuración de la empresa.
+
+    Args:
+        subtotal: base imponible
+        empresa: instancia Empresa
+        moneda: instancia Moneda o None (IGTF solo aplica si moneda no es VES/BS)
+
+    Returns:
+        {
+            "base_imponible": Decimal,
+            "tasa_iva": Decimal,
+            "monto_iva": Decimal,
+            "tasa_igtf": Decimal,
+            "monto_igtf": Decimal,
+            "total": Decimal,
+        }
+    """
+    from .models import ConfiguracionFiscalEmpresa, TasaIVAEmpresa
+
+    subtotal = Decimal(str(subtotal))
+
+    # Get empresa fiscal config (or use defaults)
+    try:
+        config = ConfiguracionFiscalEmpresa.objects.get(id_empresa=empresa)
+        contribuyente_iva = config.contribuyente_iva
+        aplica_igtf = config.aplica_igtf
+        tasa_igtf_cfg = Decimal(str(config.tasa_igtf))
+    except ConfiguracionFiscalEmpresa.DoesNotExist:
+        contribuyente_iva = True
+        aplica_igtf = False
+        tasa_igtf_cfg = TASA_IGTF_DEFAULT
+
+    # Get IVA rate — GENERAL first, fallback to default
+    try:
+        tasa_iva_obj = TasaIVAEmpresa.objects.get(id_empresa=empresa, tipo="GENERAL", activo=True)
+        tasa_iva = Decimal(str(tasa_iva_obj.tasa))
+    except TasaIVAEmpresa.DoesNotExist:
+        tasa_iva = TASA_IVA_GENERAL if contribuyente_iva else TASA_IVA_EXENTO
+
+    # Get IGTF rate for return value
+    try:
+        tasa_iva_reducido_obj = TasaIVAEmpresa.objects.get(id_empresa=empresa, tipo="REDUCIDO", activo=True)
+        _tasa_reducido = Decimal(str(tasa_iva_reducido_obj.tasa))  # noqa: F841 — available for callers
+    except TasaIVAEmpresa.DoesNotExist:
+        _tasa_reducido = TASA_IVA_REDUCIDO
+
+    # Compute IVA
+    monto_iva = (subtotal * tasa_iva).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    # Compute IGTF — only if applies and moneda is not VES/bolivar
+    moneda_es_bolivar = False
+    if moneda is not None:
+        codigo = getattr(moneda, "codigo_iso", "") or ""
+        moneda_es_bolivar = codigo.upper() in ("VES", "BS", "VEF", "VEB")
+
+    tasa_igtf_efectiva = Decimal("0")
+    monto_igtf = Decimal("0")
+    if aplica_igtf and moneda is not None and not moneda_es_bolivar:
+        tasa_igtf_efectiva = tasa_igtf_cfg
+        monto_igtf = (subtotal * tasa_igtf_efectiva).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    return {
+        "base_imponible": subtotal,
+        "tasa_iva": tasa_iva,
+        "monto_iva": monto_iva,
+        "tasa_igtf": tasa_igtf_efectiva,
+        "monto_igtf": monto_igtf,
+        "total": subtotal + monto_iva + monto_igtf,
     }

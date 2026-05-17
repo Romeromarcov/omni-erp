@@ -277,16 +277,23 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
 
 
 @transaction.atomic
-def emitir_factura_fiscal(nota_venta, numero_control: str, numero_factura: str, moneda) -> dict:
+def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura: str = None, moneda=None) -> dict:
     """
     Crea la FacturaFiscal desde la NotaVenta y genera el asiento contable (R-CODE-11).
 
     Precondiciones:
       - nota_venta.estado == 'ENTREGADA'
 
+    Args:
+        nota_venta: instancia NotaVenta en estado ENTREGADA
+        numero_control: opcional — si None, se genera automáticamente
+        numero_factura: opcional — si None, se genera automáticamente
+        moneda: instancia Moneda (requerida si no hay moneda en la nota)
+
     Returns:
         {"factura": FacturaFiscal, "asiento": AsientoContable}
     """
+    from apps.fiscal.services import calcular_impuestos, siguiente_numero
     from apps.ventas.models import FacturaFiscal
 
     if nota_venta.estado != "ENTREGADA":
@@ -294,14 +301,28 @@ def emitir_factura_fiscal(nota_venta, numero_control: str, numero_factura: str, 
             f"Solo se facturan notas en estado ENTREGADA. Estado actual: {nota_venta.estado}"
         )
 
+    empresa = nota_venta.id_empresa
+
+    # Auto-generate correlative numbers if not provided
+    if numero_factura is None:
+        numero_factura = siguiente_numero(empresa, "FACTURA")
+    if numero_control is None:
+        numero_control = siguiente_numero(empresa, "NOTA_ENTREGA")
+
+    # Resolve moneda — fall back to empresa base currency
+    if moneda is None:
+        moneda = getattr(empresa, "id_moneda_base", None)
+
     detalles = list(nota_venta.detalles.select_related("id_producto"))
     subtotal = sum(d.subtotal for d in detalles)
-    tasa_iva = Decimal("0.12")
-    monto_iva = (subtotal * tasa_iva).quantize(Decimal("0.01"))
-    total = subtotal + monto_iva
+
+    # Use calcular_impuestos for proper IVA/IGTF computation
+    impuestos = calcular_impuestos(subtotal, empresa, moneda)
+    monto_iva = impuestos["monto_iva"]
+    total = impuestos["total"]
 
     factura = FacturaFiscal.objects.create(
-        id_empresa=nota_venta.id_empresa,
+        id_empresa=empresa,
         id_cliente=nota_venta.id_cliente,
         id_nota_venta_origen=nota_venta,
         numero_control=numero_control,

@@ -590,6 +590,24 @@ class FacturaFiscalViewSet(viewsets.ModelViewSet):
             "-fecha_emision", "-fecha_creacion"
         )
 
+    @action(detail=True, methods=["get"], url_path="pdf")
+    def pdf(self, request, pk=None):
+        """GET /api/ventas/facturas-fiscales/{id}/pdf/ — devuelve el PDF de la factura."""
+        from django.http import HttpResponse
+        from apps.fiscal.pdf_factura import generar_pdf_factura
+
+        factura = self.get_object()
+        try:
+            pdf_bytes = generar_pdf_factura(factura)
+        except ImportError as exc:
+            return Response({"error": str(exc)}, status=503)
+
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'attachment; filename="factura_{factura.numero_factura}.pdf"'
+        )
+        return response
+
 
 class DetalleFacturaFiscalViewSet(viewsets.ModelViewSet):
     queryset = DetalleFacturaFiscal.objects.all()
