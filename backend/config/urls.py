@@ -60,6 +60,9 @@ urlpatterns = [
     path("api/fiscal/", include("apps.fiscal.urls")),
     path("api/cxc/", include("apps.cuentas_por_cobrar.urls")),
     path("api/gestion-documental/", include("apps.gestion_documental.urls")),
+    path("api/contabilidad/", include("apps.contabilidad.urls")),
+    path("api/agentes/", include("apps.agentes.urls")),
+    path("api/saas/", include("apps.saas.urls")),
 ]
 
 if settings.DEBUG:

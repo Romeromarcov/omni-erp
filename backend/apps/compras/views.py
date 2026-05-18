@@ -62,6 +62,10 @@ class DetalleOrdenCompraViewSet(BaseModelViewSet):
     queryset = DetalleOrdenCompra.objects.all()
     serializer_class = DetalleOrdenCompraSerializer
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleOrdenCompra.objects.filter(id_orden_compra__id_empresa__in=_empresas(self.request))
+
 
 class RecepcionMercanciaViewSet(BaseModelViewSet):
     queryset = RecepcionMercancia.objects.all()
@@ -201,6 +205,10 @@ class DetalleRequisicionCompraViewSet(BaseModelViewSet):
     queryset = DetalleRequisicionCompra.objects.all()
     serializer_class = DetalleRequisicionCompraSerializer
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleRequisicionCompra.objects.filter(id_requisicion__id_empresa__in=_empresas(self.request))
+
 
 class SolicitudCotizacionViewSet(BaseModelViewSet):
     queryset = SolicitudCotizacion.objects.all()
@@ -215,22 +223,48 @@ class DetalleSolicitudCotizacionViewSet(BaseModelViewSet):
     queryset = DetalleSolicitudCotizacion.objects.all()
     serializer_class = DetalleSolicitudCotizacionSerializer
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleSolicitudCotizacion.objects.filter(
+            id_solicitud_cotizacion__id_empresa__in=_empresas(self.request)
+        )
+
 
 class OfertaProveedorViewSet(BaseModelViewSet):
     queryset = OfertaProveedor.objects.all()
     serializer_class = OfertaProveedorSerializer
+
+    def get_queryset(self):
+        # R-CODE-1 via SolicitudCotizacion parent
+        return OfertaProveedor.objects.filter(
+            id_solicitud_cotizacion__id_empresa__in=_empresas(self.request)
+        )
 
 
 class DetalleOfertaProveedorViewSet(BaseModelViewSet):
     queryset = DetalleOfertaProveedor.objects.all()
     serializer_class = DetalleOfertaProveedorSerializer
 
+    def get_queryset(self):
+        # R-CODE-1 via OfertaProveedor → SolicitudCotizacion
+        return DetalleOfertaProveedor.objects.filter(
+            id_oferta__id_solicitud_cotizacion__id_empresa__in=_empresas(self.request)
+        )
+
 
 class DetalleRecepcionMercanciaViewSet(BaseModelViewSet):
     queryset = DetalleRecepcionMercancia.objects.all()
     serializer_class = DetalleRecepcionMercanciaSerializer
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleRecepcionMercancia.objects.filter(id_recepcion__id_empresa__in=_empresas(self.request))
+
 
 class DetalleFacturaCompraViewSet(BaseModelViewSet):
     queryset = DetalleFacturaCompra.objects.all()
     serializer_class = DetalleFacturaCompraSerializer
+
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleFacturaCompra.objects.filter(id_factura_compra__id_empresa__in=_empresas(self.request))

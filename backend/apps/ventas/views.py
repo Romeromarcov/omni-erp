@@ -8,9 +8,14 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.core.viewsets import BaseModelViewSet
+from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 logger = logging.getLogger(__name__)
+
+
+def _empresas(request):
+    """Shortcut: devuelve empresas visibles para el usuario del request."""
+    return get_empresas_visible(request.user)
 from .models import (
     Cotizacion,
     DetalleCotizacion,
@@ -562,17 +567,29 @@ class DetallePedidoViewSet(viewsets.ModelViewSet):
     serializer_class = DetallePedidoSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetallePedido.objects.filter(id_pedido__id_empresa__in=_empresas(self.request))
+
 
 class NotaVentaViewSet(viewsets.ModelViewSet):
     queryset = NotaVenta.objects.all()
     serializer_class = NotaVentaSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # R-CODE-1
+        return NotaVenta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_creacion")
+
 
 class DetalleNotaVentaViewSet(viewsets.ModelViewSet):
     queryset = DetalleNotaVenta.objects.all()
     serializer_class = DetalleNotaVentaSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleNotaVenta.objects.filter(id_nota_venta__id_empresa__in=_empresas(self.request))
 
 
 class FacturaFiscalViewSet(viewsets.ModelViewSet):
@@ -614,6 +631,10 @@ class DetalleFacturaFiscalViewSet(viewsets.ModelViewSet):
     serializer_class = DetalleFacturaFiscalSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleFacturaFiscal.objects.filter(id_factura__id_empresa__in=_empresas(self.request))
+
 
 class NotaCreditoVentaViewSet(viewsets.ModelViewSet):
     queryset = NotaCreditoVenta.objects.all()
@@ -635,6 +656,10 @@ class DetalleNotaCreditoVentaViewSet(viewsets.ModelViewSet):
     queryset = DetalleNotaCreditoVenta.objects.all()
     serializer_class = DetalleNotaCreditoVentaSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleNotaCreditoVenta.objects.filter(id_nota_credito__id_empresa__in=_empresas(self.request))
 
 
 class DevolucionVentaViewSet(viewsets.ModelViewSet):
@@ -658,6 +683,10 @@ class DetalleDevolucionVentaViewSet(viewsets.ModelViewSet):
     serializer_class = DetalleDevolucionVentaSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleDevolucionVenta.objects.filter(id_devolucion__id_empresa__in=_empresas(self.request))
+
 
 class CotizacionViewSet(viewsets.ModelViewSet):
     queryset = Cotizacion.objects.all()
@@ -680,6 +709,10 @@ class DetalleCotizacionViewSet(viewsets.ModelViewSet):
     serializer_class = DetalleCotizacionSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleCotizacion.objects.filter(id_cotizacion__id_empresa__in=_empresas(self.request))
+
 
 class NotaCreditoFiscalViewSet(viewsets.ModelViewSet):
     queryset = NotaCreditoFiscal.objects.all()
@@ -701,3 +734,9 @@ class DetalleNotaCreditoFiscalViewSet(viewsets.ModelViewSet):
     queryset = DetalleNotaCreditoFiscal.objects.all()
     serializer_class = DetalleNotaCreditoFiscalSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleNotaCreditoFiscal.objects.filter(
+            id_nota_credito_fiscal__id_empresa__in=_empresas(self.request)
+        )

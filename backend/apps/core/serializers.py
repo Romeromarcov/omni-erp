@@ -129,8 +129,9 @@ class UsuariosSerializer(BaseModelSerializer):
     class Meta:
         model = Usuarios
         fields = "__all__"
-        # Si quieres limitar los campos, puedes usar:
-        # fields = ['id', 'username', 'email', 'empresas', 'sucursales', ...]
+        extra_kwargs = {
+            "password": {"write_only": True},  # S#6 — never expose hash in responses
+        }
 
 
 class RolesSerializer(BaseModelSerializer):
