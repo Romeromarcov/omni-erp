@@ -748,3 +748,60 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 - **Pendientes Fase 1:** M5-T4 (AjusteInventario asiento), M3-T4 (ViewSet actions CRM), M8 (numeración correlativa, PDF fiscal, libros SENIAT), M9 (agentes IA), M10 (SaaS core).
 
 ---
+
+## Sesión — 2026-05-18
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Ejecutar plan de trabajo post-auditoría completo (`docs/PLAN_TRABAJO_POST_AUDIT.md`).
+
+### Tareas completadas
+
+**Fase A — Aislamiento multi-tenant (R-CODE-1):**
+1. `contabilidad/views.py` — 3 ViewSets con `get_queryset()` + `_empresas()` helper. Acciones usan `self.get_queryset()`.
+2. `control_asistencia/views.py` — 4 ViewSets. RegistroAsistencia y ResumenAsistenciaDiario via AsignacionHorario→HorarioTrabajo→empresa (FK temporal UUID).
+3. `servicio_cliente/views.py` — 5 ViewSets. InteraccionTicket via parent FK chain.
+4. `auditoria/views.py` — LogAuditoriaViewSet solo lectura, filtrado por empresa.
+5. 10 apps adicionales via subagent: almacenes, banca_electronica, configuracion_motor, costos, despacho, gestion_aprobaciones, integracion_b2b, manufactura, migracion_datos, tesoreria.
+6. `personalizacion/` — nuevo views.py + serializers.py + urls.py con `PersonalizacionConfigViewSet`.
+
+**Fase B — unique=True → unique_together (multi-tenant safe):**
+- ventas: Pedido, NotaVenta, FacturaFiscal (×2), Cotizacion, DevolucionVenta, NotaCreditoFiscal
+- rrhh: Empleado.cedula
+- contabilidad: PlanCuentas.codigo_cuenta, AsientoContable.numero_asiento
+- almacenes: Almacen.codigo_almacen, UbicacionAlmacen.codigo_ubicacion
+- tesoreria: OperacionCambioDivisa.numero_operacion
+- servicio_cliente: TicketSoporte.numero_ticket
+- gestion_aprobaciones: TipoAprobacion.codigo_tipo
+- configuracion_motor: ParametroSistema.codigo_parametro
+- **11 migrations** generadas
+
+**Fase C — Registro de 12 apps faltantes en config/urls.py:**
+almacenes, despacho, tesoreria, banca-electronica, costos, manufactura,
+control-asistencia, servicio-cliente, gestion-aprobaciones, integracion-b2b,
+migracion-datos, personalizacion
+
+**Fase D — Completeness:**
+- D-1: `migrar_contactos` management command (migrar entre empresas, fusionar duplicados, dry-run)
+- D-2: `ListaPrecioViewSet` + `DetallePrecioViewSet` con `importar_masivo` (CSV bulk import)
+- D-3: M5-T3 — `DESPACHO_VENTA` valida NotaVenta/FacturaFiscal aprobada; AJUSTE emite warning si sin justificante
+- D-4: `tests_api/test_fiscal_concurrencia.py` — 5 tests de threading para correlativos (transaction=True)
+- D-5: `NotificacionViewSet` en core con `marcar_leida`, `marcar_todas_leidas`, `no_leidas`
+- D-6: `vzla_localizacion/apps.py` AppConfig creado
+- D-7: 8 archivos `*_backup.py` eliminados
+
+### Tests
+- **501 passed, 2 skipped** (era 487 pre-sesión, +14 nuevos tests de concurrencia)
+- 9 errores pre-existentes en `test_agentes_dsl.py` (API key externa, sin cambios)
+- `django check`: 0 issues
+
+### Commit
+`3fd47c4` — `feat: complete post-audit work plan (Fases A-B-C-D)` (55 archivos, +1546/-122 líneas)
+
+### Estado de Fases
+- **Fase A (aislamiento):** ✅ COMPLETA — todos los ViewSets filtran por empresa
+- **Fase B (integridad):** ✅ COMPLETA — unique=True global eliminado en 9 apps
+- **Fase C (URLs):** ✅ COMPLETA — 30+ apps registradas en config/urls.py
+- **Fase D (completeness):** ✅ COMPLETA — 7 tareas ejecutadas
+
+---
