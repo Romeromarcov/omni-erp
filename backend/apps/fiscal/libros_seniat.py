@@ -32,7 +32,8 @@ def generar_libro_ventas_txt(empresa, fecha_inicio, fecha_fin) -> str:
     lineas = []
     for f in facturas:
         cliente = f.id_cliente
-        rif_receptor = getattr(cliente, "identificador_fiscal", "") or ""
+        # CRM Cliente uses 'rif' field; fall back to identificador_fiscal for compatibility
+        rif_receptor = getattr(cliente, "rif", "") or getattr(cliente, "identificador_fiscal", "") or ""
         linea = "|".join([
             rif_emisor,
             rif_receptor,

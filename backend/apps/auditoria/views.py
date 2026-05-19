@@ -16,4 +16,4 @@ class LogAuditoriaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1 — logs de auditoría solo visibles dentro de la propia empresa
         empresas = get_empresas_visible(self.request.user)
-        return LogAuditoria.objects.filter(id_empresa__in=empresas).order_by("-fecha_hora_log")
+        return LogAuditoria.objects.filter(id_empresa__in=empresas).order_by("-fecha_hora_accion")
