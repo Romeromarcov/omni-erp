@@ -18,7 +18,7 @@ class CategoriaTicket(models.Model):
 class TicketSoporte(models.Model):
     id_ticket = models.UUIDField(primary_key=True, default=uuid.uuid4)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    numero_ticket = models.CharField(max_length=50, unique=True)
+    numero_ticket = models.CharField(max_length=50)
     asunto = models.CharField(max_length=255)
     descripcion = models.TextField()
     # id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, null=True, blank=True)  # Temporalmente comentado
@@ -47,6 +47,12 @@ class TicketSoporte(models.Model):
     fecha_ultima_actualizacion = models.DateTimeField(auto_now=True)
     fecha_cierre = models.DateTimeField(null=True, blank=True)
     sla_vencimiento = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "servicio_cliente_ticket_soporte"
+        verbose_name = "Ticket de Soporte"
+        verbose_name_plural = "Tickets de Soporte"
+        unique_together = [["id_empresa", "numero_ticket"]]
 
     def __str__(self):
         return str(self.asunto)

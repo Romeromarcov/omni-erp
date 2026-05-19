@@ -1,24 +1,36 @@
 from django.db.models import Sum
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from apps.core.viewsets import get_empresas_visible
 
 from .models import AsientoContable, DetalleAsiento, PlanCuentas
 from .serializers import AsientoContableSerializer, DetalleAsientoSerializer, PlanCuentasSerializer
 
 
+def _empresas(request):
+    return get_empresas_visible(request.user)
+
+
 class PlanCuentasViewSet(viewsets.ModelViewSet):
     queryset = PlanCuentas.objects.all()
     serializer_class = PlanCuentasSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["tipo_cuenta", "naturaleza", "activo", "id_empresa"]
     search_fields = ["codigo_cuenta", "nombre_cuenta"]
     ordering_fields = ["codigo_cuenta", "nombre_cuenta", "fecha_creacion"]
     ordering = ["codigo_cuenta"]
 
+    def get_queryset(self):
+        # R-CODE-1
+        return PlanCuentas.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=["get"])
     def activos(self, request):
         """Obtiene solo las cuentas activas"""
-        cuentas_activas = self.queryset.filter(activo=True)
+        cuentas_activas = self.get_queryset().filter(activo=True)
         serializer = self.get_serializer(cuentas_activas, many=True)
         return Response(serializer.data)
 
@@ -26,10 +38,11 @@ class PlanCuentasViewSet(viewsets.ModelViewSet):
     def por_tipo(self, request):
         """Obtiene cuentas agrupadas por tipo"""
         tipo = request.query_params.get("tipo", None)
+        qs = self.get_queryset()
         if tipo:
-            cuentas = self.queryset.filter(tipo_cuenta=tipo, activo=True)
+            cuentas = qs.filter(tipo_cuenta=tipo, activo=True)
         else:
-            cuentas = self.queryset.filter(activo=True)
+            cuentas = qs.filter(activo=True)
 
         serializer = self.get_serializer(cuentas, many=True)
         return Response(serializer.data)
@@ -38,10 +51,15 @@ class PlanCuentasViewSet(viewsets.ModelViewSet):
 class AsientoContableViewSet(viewsets.ModelViewSet):
     queryset = AsientoContable.objects.all()
     serializer_class = AsientoContableSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["estado_asiento", "id_empresa", "fecha_asiento"]
     search_fields = ["numero_asiento", "descripcion"]
     ordering_fields = ["fecha_asiento", "numero_asiento", "fecha_creacion"]
     ordering = ["-fecha_asiento"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        return AsientoContable.objects.filter(id_empresa__in=_empresas(self.request))
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):
@@ -133,6 +151,11 @@ class AsientoContableViewSet(viewsets.ModelViewSet):
 class DetalleAsientoViewSet(viewsets.ModelViewSet):
     queryset = DetalleAsiento.objects.all()
     serializer_class = DetalleAsientoSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["id_asiento", "id_cuenta_contable"]
     ordering_fields = ["fecha_creacion"]
     ordering = ["fecha_creacion"]
+
+    def get_queryset(self):
+        # R-CODE-1 via parent AsientoContable
+        return DetalleAsiento.objects.filter(id_asiento__id_empresa__in=_empresas(self.request))

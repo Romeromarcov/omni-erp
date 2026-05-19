@@ -374,8 +374,12 @@ class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet)
 
 # ── ConfiguracionFlujoDocumentosViewSet ───────────────────────────────────────
 
-from .models import ConfiguracionFlujoDocumentos, Contacto  # noqa: E402
-from .serializers import ConfiguracionFlujoDocumentosSerializer, ContactoSerializer  # noqa: E402
+from .models import ConfiguracionFlujoDocumentos, Contacto, Notificacion  # noqa: E402
+from .serializers import (  # noqa: E402
+    ConfiguracionFlujoDocumentosSerializer,
+    ContactoSerializer,
+    NotificacionSerializer,
+)
 
 
 class ConfiguracionFlujoDocumentosViewSet(ActiveFilterMixin, BaseModelViewSet):
@@ -441,3 +445,53 @@ class ContactoViewSet(ActiveFilterMixin, BaseModelViewSet):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(id_empresa=empresa)
+
+
+# ── NotificacionViewSet ───────────────────────────────────────────────────────
+
+
+class NotificacionViewSet(BaseModelViewSet):
+    """
+    CRUD de Notificaciones in-app.
+
+    Filtra por empresa y usuario del autenticado.
+    Incluye acciones: marcar_leida, marcar_todas_leidas, no_leidas.
+    """
+
+    queryset = Notificacion.objects.all()
+    serializer_class = NotificacionSerializer
+    filterset_fields = ["leida", "tipo", "id_empresa", "id_usuario"]
+    search_fields = ["titulo", "mensaje"]
+    ordering_fields = ["fecha_creacion", "leida"]
+    ordering = ["-fecha_creacion"]
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresa y usuario (o broadcast id_usuario=None)
+        from django.db import models as django_models
+
+        empresas = get_empresas_visible(self.request.user)
+        usuario = self.request.user
+        return Notificacion.objects.filter(id_empresa__in=empresas).filter(
+            django_models.Q(id_usuario=usuario) | django_models.Q(id_usuario__isnull=True)
+        )
+
+    @action(detail=True, methods=["post"])
+    def marcar_leida(self, request, pk=None):
+        """Marca una notificación como leída."""
+        notificacion = self.get_object()
+        notificacion.marcar_leida()  # usa el método del modelo que actualiza fecha_lectura
+        serializer = self.get_serializer(notificacion)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["post"])
+    def marcar_todas_leidas(self, request):
+        """Marca todas las notificaciones no leídas del usuario como leídas."""
+        count = self.get_queryset().filter(leida=False).update(leida=True)
+        return Response({"marcadas_leidas": count})
+
+    @action(detail=False, methods=["get"])
+    def no_leidas(self, request):
+        """Obtiene conteo y listado de notificaciones no leídas."""
+        qs = self.get_queryset().filter(leida=False)
+        serializer = self.get_serializer(qs, many=True)
+        return Response({"count": qs.count(), "notificaciones": serializer.data})

@@ -4,7 +4,10 @@ from django.db.models import Avg, Count, Q
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from apps.core.viewsets import get_empresas_visible
 
 from .models import BaseConocimientoArticulo, CategoriaTicket, FeedbackCliente, InteraccionTicket, TicketSoporte
 from .serializers import (
@@ -16,23 +19,27 @@ from .serializers import (
 )
 
 
+def _empresas(request):
+    return get_empresas_visible(request.user)
+
+
 class CategoriaTicketViewSet(viewsets.ModelViewSet):
     queryset = CategoriaTicket.objects.all()
     serializer_class = CategoriaTicketSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["activo", "id_empresa"]
     search_fields = ["nombre_categoria", "descripcion"]
     ordering_fields = ["nombre_categoria"]
     ordering = ["nombre_categoria"]
 
+    def get_queryset(self):
+        # R-CODE-1
+        return CategoriaTicket.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=["get"])
     def activas(self, request):
         """Obtiene categorías activas"""
-        empresa_id = request.query_params.get("empresa_id")
-        filters = {"activo": True}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        categorias_activas = self.queryset.filter(**filters)
+        categorias_activas = self.get_queryset().filter(activo=True)
         serializer = self.get_serializer(categorias_activas, many=True)
         return Response(serializer.data)
 
@@ -60,6 +67,7 @@ class CategoriaTicketViewSet(viewsets.ModelViewSet):
 class TicketSoporteViewSet(viewsets.ModelViewSet):
     queryset = TicketSoporte.objects.all()
     serializer_class = TicketSoporteSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = [
         "estado_ticket",
         "prioridad",
@@ -72,19 +80,19 @@ class TicketSoporteViewSet(viewsets.ModelViewSet):
     ordering_fields = ["fecha_apertura", "fecha_ultima_actualizacion", "prioridad"]
     ordering = ["-fecha_apertura"]
 
+    def get_queryset(self):
+        # R-CODE-1
+        return TicketSoporte.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=["get"])
     def abiertos(self, request):
         """Obtiene tickets abiertos"""
-        empresa_id = request.query_params.get("empresa_id")
         agente_id = request.query_params.get("agente_id")
-
         filters = {"estado_ticket__in": ["ABIERTO", "ASIGNADO", "EN_PROGRESO", "ESCALADO"]}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
         if agente_id:
             filters["id_agente_asignado_temp"] = agente_id
 
-        tickets_abiertos = self.queryset.filter(**filters)
+        tickets_abiertos = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(tickets_abiertos, many=True)
         return Response(serializer.data)
 
@@ -92,16 +100,10 @@ class TicketSoporteViewSet(viewsets.ModelViewSet):
     def por_prioridad(self, request):
         """Obtiene tickets filtrados por prioridad"""
         prioridad = request.query_params.get("prioridad")
-        empresa_id = request.query_params.get("empresa_id")
-
         if not prioridad:
             return Response({"error": "Debe especificar la prioridad"}, status=status.HTTP_400_BAD_REQUEST)
 
-        filters = {"prioridad": prioridad}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        tickets = self.queryset.filter(**filters)
+        tickets = self.get_queryset().filter(prioridad=prioridad)
         serializer = self.get_serializer(tickets, many=True)
         return Response(serializer.data)
 
@@ -201,16 +203,13 @@ class TicketSoporteViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def dashboard(self, request):
         """Obtiene métricas para dashboard de servicio al cliente"""
-        empresa_id = request.query_params.get("empresa_id")
         agente_id = request.query_params.get("agente_id")
 
         filters = {}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
         if agente_id:
             filters["id_agente_asignado_temp"] = agente_id
 
-        queryset = self.queryset.filter(**filters)
+        queryset = self.get_queryset().filter(**filters)
 
         # Métricas generales
         total_tickets = queryset.count()
@@ -258,10 +257,15 @@ class TicketSoporteViewSet(viewsets.ModelViewSet):
 class InteraccionTicketViewSet(viewsets.ModelViewSet):
     queryset = InteraccionTicket.objects.all()
     serializer_class = InteraccionTicketSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["id_ticket", "tipo_interaccion", "id_usuario_interactor_temp"]
     search_fields = ["contenido"]
     ordering_fields = ["fecha_hora_interaccion"]
     ordering = ["fecha_hora_interaccion"]
+
+    def get_queryset(self):
+        # R-CODE-1 via TicketSoporte → id_empresa
+        return InteraccionTicket.objects.filter(id_ticket__id_empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["post"])
     def agregar_comentario(self, request):
@@ -291,24 +295,25 @@ class InteraccionTicketViewSet(viewsets.ModelViewSet):
 class BaseConocimientoArticuloViewSet(viewsets.ModelViewSet):
     queryset = BaseConocimientoArticulo.objects.all()
     serializer_class = BaseConocimientoArticuloSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["activo", "visibilidad", "id_categoria_ticket", "id_empresa"]
     search_fields = ["titulo", "contenido", "palabras_clave"]
     ordering_fields = ["titulo", "fecha_publicacion", "fecha_ultima_revision"]
     ordering = ["-fecha_ultima_revision"]
 
+    def get_queryset(self):
+        # R-CODE-1
+        return BaseConocimientoArticulo.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=["get"])
     def publicos(self, request):
         """Obtiene artículos públicos"""
-        empresa_id = request.query_params.get("empresa_id")
         categoria_id = request.query_params.get("categoria_id")
-
         filters = {"activo": True, "visibilidad": "PUBLICA"}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
         if categoria_id:
             filters["id_categoria_ticket"] = categoria_id
 
-        articulos = self.queryset.filter(**filters)
+        articulos = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(articulos, many=True)
         return Response(serializer.data)
 
@@ -316,17 +321,11 @@ class BaseConocimientoArticuloViewSet(viewsets.ModelViewSet):
     def buscar(self, request):
         """Busca artículos por palabras clave"""
         query = request.query_params.get("q")
-        empresa_id = request.query_params.get("empresa_id")
-
         if not query:
             return Response({"error": "Debe especificar una consulta de búsqueda"}, status=status.HTTP_400_BAD_REQUEST)
 
-        filters = {"activo": True}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
         # Buscar en título, contenido y palabras clave
-        articulos = self.queryset.filter(**filters).filter(
+        articulos = self.get_queryset().filter(activo=True).filter(
             Q(titulo__icontains=query) | Q(contenido__icontains=query) | Q(palabras_clave__icontains=query)
         )
 
@@ -347,27 +346,29 @@ class BaseConocimientoArticuloViewSet(viewsets.ModelViewSet):
 class FeedbackClienteViewSet(viewsets.ModelViewSet):
     queryset = FeedbackCliente.objects.all()
     serializer_class = FeedbackClienteSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["tipo_feedback", "id_empresa", "id_cliente_temp", "id_ticket_origen", "calificacion"]
     search_fields = ["comentarios"]
     ordering_fields = ["fecha_feedback", "calificacion"]
     ordering = ["-fecha_feedback"]
 
+    def get_queryset(self):
+        # R-CODE-1
+        return FeedbackCliente.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=["get"])
     def estadisticas_satisfaccion(self, request):
         """Obtiene estadísticas de satisfacción del cliente"""
-        empresa_id = request.query_params.get("empresa_id")
         fecha_desde = request.query_params.get("fecha_desde")
         fecha_hasta = request.query_params.get("fecha_hasta")
 
         filters = {"tipo_feedback": "ENCUESTA_SATISFACCION", "calificacion__isnull": False}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
         if fecha_desde:
             filters["fecha_feedback__date__gte"] = fecha_desde
         if fecha_hasta:
             filters["fecha_feedback__date__lte"] = fecha_hasta
 
-        feedback = self.queryset.filter(**filters)
+        feedback = self.get_queryset().filter(**filters)
 
         if not feedback.exists():
             return Response({"total_respuestas": 0, "calificacion_promedio": 0, "distribución_calificaciones": {}})
@@ -396,23 +397,13 @@ class FeedbackClienteViewSet(viewsets.ModelViewSet):
         if not tipo:
             return Response({"error": "Debe especificar el tipo de feedback"}, status=status.HTTP_400_BAD_REQUEST)
 
-        filters = {"tipo_feedback": tipo}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        feedback = self.queryset.filter(**filters)
+        feedback = self.get_queryset().filter(tipo_feedback=tipo)
         serializer = self.get_serializer(feedback, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def quejas_sugerencias(self, request):
         """Obtiene quejas y sugerencias"""
-        empresa_id = request.query_params.get("empresa_id")
-
-        filters = {"tipo_feedback__in": ["QUEJA", "SUGERENCIA"]}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        feedback = self.queryset.filter(**filters)
+        feedback = self.get_queryset().filter(tipo_feedback__in=["QUEJA", "SUGERENCIA"])
         serializer = self.get_serializer(feedback, many=True)
         return Response(serializer.data)

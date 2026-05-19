@@ -41,7 +41,7 @@ class OperacionCambioDivisa(models.Model):
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="operaciones_cambio")
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
-    numero_operacion = models.CharField(max_length=50, unique=True)
+    numero_operacion = models.CharField(max_length=50)
     fecha_operacion = models.DateTimeField()
     tipo_operacion = models.CharField(max_length=20, choices=[("COMPRA", "Compra"), ("VENTA", "Venta")])
     moneda_origen = models.ForeignKey("finanzas.Moneda", on_delete=models.CASCADE, related_name="operaciones_origen")
@@ -99,6 +99,7 @@ class OperacionCambioDivisa(models.Model):
         db_table = "tesoreria_operacion_cambio_divisa"
         verbose_name = "Operación de Cambio de Divisa"
         verbose_name_plural = "Operaciones de Cambio de Divisa"
+        unique_together = [["empresa", "numero_operacion"]]
 
     def __str__(self):
         return f"{self.numero_operacion} - {self.tipo_operacion}: {self.monto_origen} {self.moneda_origen} -> {self.monto_destino} {self.moneda_destino}"

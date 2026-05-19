@@ -14,8 +14,10 @@ from .models import (
     DetalleNotaCreditoVenta,
     DetalleNotaVenta,
     DetallePedido,
+    DetallePrecio,
     DevolucionVenta,
     FacturaFiscal,
+    ListaPrecio,
     NotaCreditoFiscal,
     NotaCreditoVenta,
     NotaVenta,
@@ -421,3 +423,17 @@ class DetalleNotaCreditoFiscalSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotaCreditoFiscal
         fields = "__all__"
+
+
+class ListaPrecioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ListaPrecio
+        fields = "__all__"
+        read_only_fields = ["id_lista", "fecha_creacion"]
+
+
+class DetallePrecioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetallePrecio
+        fields = "__all__"
+        read_only_fields = ["id_detalle"]

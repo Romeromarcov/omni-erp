@@ -6,7 +6,7 @@ from django.db import models
 class PlanCuentas(models.Model):
     id_cuenta_contable = models.UUIDField(primary_key=True, default=uuid.uuid4)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    codigo_cuenta = models.CharField(max_length=50, unique=True)
+    codigo_cuenta = models.CharField(max_length=50)
     nombre_cuenta = models.CharField(max_length=255)
     tipo_cuenta = models.CharField(
         max_length=50,
@@ -25,6 +25,12 @@ class PlanCuentas(models.Model):
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = "contabilidad_plan_cuentas"
+        verbose_name = "Plan de Cuentas"
+        verbose_name_plural = "Planes de Cuentas"
+        unique_together = [["id_empresa", "codigo_cuenta"]]
+
     def __str__(self):
         return str(self.nombre_cuenta)
 
@@ -33,7 +39,7 @@ class AsientoContable(models.Model):
     id_asiento = models.UUIDField(primary_key=True, default=uuid.uuid4)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     fecha_asiento = models.DateField()
-    numero_asiento = models.CharField(max_length=100, unique=True)
+    numero_asiento = models.CharField(max_length=100)
     descripcion = models.TextField()
     id_documento_origen = models.UUIDField(null=True, blank=True)
     nombre_modelo_origen = models.CharField(max_length=100, null=True, blank=True)
@@ -43,6 +49,12 @@ class AsientoContable(models.Model):
     # id_usuario_registro = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE)  # Temporalmente comentado
     id_usuario_registro_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "contabilidad_asiento_contable"
+        verbose_name = "Asiento Contable"
+        verbose_name_plural = "Asientos Contables"
+        unique_together = [["id_empresa", "numero_asiento"]]
 
     def __str__(self):
         return str(self.numero_asiento)

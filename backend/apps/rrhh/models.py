@@ -23,7 +23,7 @@ class Empleado(models.Model):
     documento_json = models.JSONField(null=True, blank=True)
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
-    cedula = models.CharField(max_length=20, unique=True)
+    cedula = models.CharField(max_length=20)
     cargo = models.ForeignKey(Cargo, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_ingreso = models.DateField()
     activo = models.BooleanField(default=True)
@@ -35,6 +35,12 @@ class Empleado(models.Model):
         blank=True,
         related_name="empleado",
     )
+
+    class Meta:
+        db_table = "rrhh_empleado"
+        verbose_name = "Empleado"
+        verbose_name_plural = "Empleados"
+        unique_together = [["empresa", "cedula"]]
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} ({self.cedula})"

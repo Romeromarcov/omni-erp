@@ -28,7 +28,7 @@ class Pedido(models.Model):
     documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
     fecha_cierre_estimada = models.DateField(null=True, blank=True)
-    numero_pedido = models.CharField(max_length=50, unique=True)
+    numero_pedido = models.CharField(max_length=50)
     fecha_pedido = models.DateField()
     estado = models.CharField(
         max_length=30,
@@ -53,6 +53,7 @@ class Pedido(models.Model):
         verbose_name = "Pedido"
         verbose_name_plural = "Pedidos"
         ordering = ["-fecha_pedido"]
+        unique_together = [["id_empresa", "numero_pedido"]]
         indexes = [
             models.Index(fields=["id_empresa", "estado"]),
             models.Index(fields=["fecha_pedido"]),
@@ -92,7 +93,7 @@ class NotaVenta(models.Model):
 
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
-    numero_nota = models.CharField(max_length=50, unique=True)
+    numero_nota = models.CharField(max_length=50)
     fecha_nota = models.DateField()
     estado = models.CharField(
         max_length=30,
@@ -116,6 +117,7 @@ class NotaVenta(models.Model):
         verbose_name = "Nota de Venta"
         verbose_name_plural = "Notas de Venta"
         ordering = ["-fecha_nota"]
+        unique_together = [["id_empresa", "numero_nota"]]
         indexes = [
             models.Index(fields=["id_empresa", "estado"]),
         ]
@@ -150,9 +152,9 @@ class FacturaFiscal(models.Model):
 
     # Campos fiscales específicos
     numero_control = models.CharField(
-        max_length=50, unique=True, help_text="Número de control compartido con notas de crédito"
+        max_length=50, help_text="Número de control compartido con notas de crédito"
     )
-    numero_factura = models.CharField(max_length=50, unique=True, help_text="Número individual de la factura")
+    numero_factura = models.CharField(max_length=50, help_text="Número individual de la factura")
     fecha_emision = models.DateField()
     fecha_vencimiento = models.DateField(null=True, blank=True)
 
@@ -190,6 +192,7 @@ class FacturaFiscal(models.Model):
         db_table = "ventas_factura_fiscal"
         verbose_name = "Factura Fiscal"
         verbose_name_plural = "Facturas Fiscales"
+        unique_together = [["id_empresa", "numero_factura"], ["id_empresa", "numero_control"]]
 
     def __str__(self):
         return f"{self.numero_factura} (Control: {self.numero_control})"
@@ -210,7 +213,7 @@ class Cotizacion(models.Model):
 
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
-    numero_cotizacion = models.CharField(max_length=50, unique=True)
+    numero_cotizacion = models.CharField(max_length=50)
     fecha_cotizacion = models.DateField()
     fecha_vencimiento = models.DateField()
     estado = models.CharField(
@@ -236,6 +239,7 @@ class Cotizacion(models.Model):
         db_table = "ventas_cotizacion"
         verbose_name = "Cotización"
         verbose_name_plural = "Cotizaciones"
+        unique_together = [["id_empresa", "numero_cotizacion"]]
 
     def __str__(self):
         return self.numero_cotizacion
@@ -308,7 +312,7 @@ class NotaCreditoVenta(models.Model):
     id_factura_origen = models.ForeignKey(
         "FacturaFiscal", on_delete=models.CASCADE, null=True, blank=True, related_name="notas_credito_venta"
     )
-    numero_nota_credito = models.CharField(max_length=50, unique=True)
+    numero_nota_credito = models.CharField(max_length=50)
     fecha_emision = models.DateField()
     motivo = models.CharField(
         max_length=20,
@@ -334,6 +338,7 @@ class NotaCreditoVenta(models.Model):
         db_table = "ventas_nota_credito_venta"
         verbose_name = "Nota de Crédito de Venta"
         verbose_name_plural = "Notas de Crédito de Venta"
+        unique_together = [["id_empresa", "numero_nota_credito"]]
 
     def __str__(self):
         return self.numero_nota_credito
@@ -380,7 +385,7 @@ class DevolucionVenta(models.Model):
         "NotaCreditoVenta", on_delete=models.SET_NULL, null=True, blank=True, related_name="devolucion_origen"
     )
 
-    numero_devolucion = models.CharField(max_length=50, unique=True)
+    numero_devolucion = models.CharField(max_length=50)
     fecha_devolucion = models.DateField()
     motivo_devolucion = models.CharField(
         max_length=20,
@@ -413,6 +418,7 @@ class DevolucionVenta(models.Model):
         db_table = "ventas_devolucion_venta"
         verbose_name = "Devolución de Venta"
         verbose_name_plural = "Devoluciones de Venta"
+        unique_together = [["id_empresa", "numero_devolucion"]]
 
     def __str__(self):
         return self.numero_devolucion
@@ -469,7 +475,7 @@ class NotaCreditoFiscal(models.Model):
     )
     numero_control = models.CharField(max_length=50, help_text="Número de control compartido con la factura")
     numero_nota_credito = models.CharField(
-        max_length=50, unique=True, help_text="Número individual de la nota de crédito"
+        max_length=50, help_text="Número individual de la nota de crédito"
     )
 
     fecha_emision = models.DateField()
@@ -517,6 +523,7 @@ class NotaCreditoFiscal(models.Model):
         db_table = "ventas_nota_credito_fiscal"
         verbose_name = "Nota de Crédito Fiscal"
         verbose_name_plural = "Notas de Crédito Fiscal"
+        unique_together = [["id_empresa", "numero_nota_credito"]]
 
     def __str__(self):
         return f"{self.numero_nota_credito} (Control: {self.numero_control})"

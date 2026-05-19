@@ -25,8 +25,10 @@ from .models import (
     DetalleNotaCreditoVenta,
     DetalleNotaVenta,
     DetallePedido,
+    DetallePrecio,
     DevolucionVenta,
     FacturaFiscal,
+    ListaPrecio,
     NotaCreditoFiscal,
     NotaCreditoVenta,
     NotaVenta,
@@ -41,8 +43,10 @@ from .serializers import (
     DetalleNotaCreditoVentaSerializer,
     DetalleNotaVentaSerializer,
     DetallePedidoSerializer,
+    DetallePrecioSerializer,
     DevolucionVentaSerializer,
     FacturaFiscalSerializer,
+    ListaPrecioSerializer,
     NotaCreditoFiscalSerializer,
     NotaCreditoVentaSerializer,
     NotaVentaSerializer,
@@ -740,3 +744,110 @@ class DetalleNotaCreditoFiscalViewSet(viewsets.ModelViewSet):
         return DetalleNotaCreditoFiscal.objects.filter(
             id_nota_credito_fiscal__id_empresa__in=_empresas(self.request)
         )
+
+
+class ListaPrecioViewSet(viewsets.ModelViewSet):
+    queryset = ListaPrecio.objects.all()
+    serializer_class = ListaPrecioSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["activo", "es_referencia", "id_empresa"]
+    search_fields = ["nombre", "codigo"]
+    ordering_fields = ["nombre", "codigo", "fecha_creacion"]
+    ordering = ["codigo"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        return ListaPrecio.objects.filter(id_empresa__in=_empresas(self.request))
+
+    @action(detail=True, methods=["post"], url_path="importar-masivo")
+    def importar_masivo(self, request, pk=None):
+        """
+        Importa precios masivamente desde un CSV.
+
+        Formato esperado del CSV:
+            codigo_producto,precio,precio_minimo,vigente_desde,vigente_hasta
+            PROD-001,15.50,12.00,2026-01-01,2026-12-31
+        """
+        import csv
+        import io
+
+        lista = self.get_object()
+        archivo = request.FILES.get("archivo")
+
+        if not archivo:
+            return Response(
+                {"error": "Debe adjuntar un archivo CSV en el campo 'archivo'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from apps.inventario.models import Producto
+
+        content = archivo.read().decode("utf-8-sig")
+        reader = csv.DictReader(io.StringIO(content))
+
+        creados = 0
+        actualizados = 0
+        errores = []
+
+        for idx, row in enumerate(reader, start=2):  # start=2 porque fila 1 es cabecera
+            codigo = (row.get("codigo_producto") or "").strip()
+            if not codigo:
+                errores.append({"fila": idx, "error": "codigo_producto vacío"})
+                continue
+
+            try:
+                producto = Producto.objects.get(codigo_producto=codigo, id_empresa=lista.id_empresa)
+            except Producto.DoesNotExist:
+                errores.append({"fila": idx, "error": f"Producto '{codigo}' no encontrado en esta empresa"})
+                continue
+            except Exception as exc:
+                errores.append({"fila": idx, "error": str(exc)})
+                continue
+
+            try:
+                precio = float(row.get("precio", 0) or 0)
+                precio_minimo = float(row.get("precio_minimo", 0) or 0)
+                vigente_desde = row.get("vigente_desde") or None
+                vigente_hasta = row.get("vigente_hasta") or None
+
+                detalle, created = DetallePrecio.objects.update_or_create(
+                    id_lista=lista,
+                    id_producto=producto,
+                    defaults={
+                        "precio": precio,
+                        "precio_minimo": precio_minimo,
+                        "vigente_desde": vigente_desde,
+                        "vigente_hasta": vigente_hasta,
+                        "activo": True,
+                    },
+                )
+                if created:
+                    creados += 1
+                else:
+                    actualizados += 1
+            except Exception as exc:
+                errores.append({"fila": idx, "error": str(exc)})
+
+        return Response(
+            {
+                "lista": str(lista),
+                "creados": creados,
+                "actualizados": actualizados,
+                "errores": errores,
+                "total_errores": len(errores),
+            },
+            status=status.HTTP_200_OK if not errores else status.HTTP_207_MULTI_STATUS,
+        )
+
+
+class DetallePrecioViewSet(viewsets.ModelViewSet):
+    queryset = DetallePrecio.objects.all()
+    serializer_class = DetallePrecioSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["activo", "id_lista", "id_producto"]
+    ordering_fields = ["id_lista", "id_producto"]
+    ordering = ["id_lista"]
+
+    def get_queryset(self):
+        # R-CODE-1 via ListaPrecio → id_empresa
+        return DetallePrecio.objects.filter(id_lista__id_empresa__in=_empresas(self.request))

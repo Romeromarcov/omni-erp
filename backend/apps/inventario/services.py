@@ -26,6 +26,12 @@ ALL_TIPOS = TIPOS_ENTRADA | TIPOS_SALIDA | TIPOS_TRANSFERENCIA | TIPOS_AJUSTE
 # Salidas que REQUIEREN un documento origen válido (M5 — control de salidas)
 TIPOS_SALIDA_CONTROLADA = frozenset({"SALIDA_INTERNA"})
 
+# M5-T3: tipos que requieren documento de venta aprobado
+TIPOS_DESPACHO_VENTA = frozenset({"DESPACHO_VENTA"})
+
+# M5-T3: tipos de ajuste que requieren documento_origen_id como justificante
+TIPOS_AJUSTE_CONTROLADO = frozenset({"AJUSTE"})
+
 
 # ── Excepciones adicionales ───────────────────────────────────────────────────
 
@@ -223,6 +229,47 @@ def registrar_movimiento(
             raise MovimientoInvalidoError(
                 f"La requisición debe estar APROBADA para despachar. Estado actual: {req.estado}"
             )
+
+    # ── M5-T3: Validar documento de venta para DESPACHO_VENTA ────────────────
+    if tipo in TIPOS_DESPACHO_VENTA:
+        if not documento_origen_id:
+            raise MovimientoInvalidoError(
+                "DESPACHO_VENTA requiere un documento_origen_id (NotaVenta o FacturaFiscal)."
+            )
+        from apps.ventas.models import FacturaFiscal, NotaVenta
+
+        nota = NotaVenta.objects.filter(id_nota_venta=documento_origen_id, id_empresa=empresa).first()
+        factura = FacturaFiscal.objects.filter(id_factura=documento_origen_id, id_empresa=empresa).first()
+
+        if not nota and not factura:
+            raise MovimientoInvalidoError(
+                f"El documento_origen_id '{documento_origen_id}' no corresponde a ninguna "
+                "NotaVenta o FacturaFiscal activa en esta empresa."
+            )
+
+        # Validar estado del documento de venta
+        if nota and nota.estado not in ("CONFIRMADA", "APROBADA", "PENDIENTE_DESPACHO"):
+            raise MovimientoInvalidoError(
+                f"La NotaVenta debe estar en estado CONFIRMADA / APROBADA / PENDIENTE_DESPACHO "
+                f"para hacer un despacho. Estado actual: {nota.estado}"
+            )
+        if factura and factura.estado not in ("EMITIDA", "PENDIENTE_DESPACHO"):
+            raise MovimientoInvalidoError(
+                f"La FacturaFiscal debe estar en estado EMITIDA para hacer un despacho. "
+                f"Estado actual: {factura.estado}"
+            )
+
+    # ── M5-T3: Advertencia para AJUSTE sin justificante ──────────────────────
+    if tipo in TIPOS_AJUSTE_CONTROLADO and not documento_origen_id:
+        import logging as _logging
+        _logging.getLogger(__name__).warning(
+            "AJUSTE de inventario registrado sin documento_origen_id. "
+            "Se recomienda referenciar una autorización o justificante. "
+            "Empresa=%s Producto=%s Cantidad=%s",
+            empresa,
+            producto,
+            cantidad,
+        )
 
     # ── Persistir movimiento ──────────────────────────────────────────────────
     movimiento = MovimientoInventario.objects.create(

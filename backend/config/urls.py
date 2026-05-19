@@ -63,6 +63,19 @@ urlpatterns = [
     path("api/contabilidad/", include("apps.contabilidad.urls")),
     path("api/agentes/", include("apps.agentes.urls")),
     path("api/saas/", include("apps.saas.urls")),
+    # Fase C — apps registradas
+    path("api/almacenes/", include("apps.almacenes.urls")),
+    path("api/despacho/", include("apps.despacho.urls")),
+    path("api/tesoreria/", include("apps.tesoreria.urls")),
+    path("api/banca-electronica/", include("apps.banca_electronica.urls")),
+    path("api/costos/", include("apps.costos.urls")),
+    path("api/manufactura/", include("apps.manufactura.urls")),
+    path("api/control-asistencia/", include("apps.control_asistencia.urls")),
+    path("api/servicio-cliente/", include("apps.servicio_cliente.urls")),
+    path("api/gestion-aprobaciones/", include("apps.gestion_aprobaciones.urls")),
+    path("api/integracion-b2b/", include("apps.integracion_b2b.urls")),
+    path("api/migracion-datos/", include("apps.migracion_datos.urls")),
+    path("api/personalizacion/", include("apps.personalizacion.urls")),
 ]
 
 if settings.DEBUG:

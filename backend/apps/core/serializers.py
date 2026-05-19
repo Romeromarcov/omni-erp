@@ -260,3 +260,13 @@ class ContactoSerializer(BaseModelSerializer):
             "dias_pago", "usuario", "activo", "fecha_creacion",
         ]
         read_only_fields = ["id_contacto", "id_empresa", "fecha_creacion"]
+
+
+from .models import Notificacion  # noqa: E402
+
+
+class NotificacionSerializer(BaseModelSerializer):
+    class Meta:
+        model = Notificacion
+        fields = "__all__"
+        read_only_fields = ["id_notificacion", "fecha_creacion"]

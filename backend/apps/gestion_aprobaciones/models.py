@@ -8,11 +8,17 @@ from apps.core.models import Empresa, Roles, Usuarios
 class TipoAprobacion(models.Model):
     id_tipo_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
-    codigo_tipo = models.CharField(max_length=50, unique=True)
+    codigo_tipo = models.CharField(max_length=50)
     nombre_tipo = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
     modulo_origen = models.CharField(max_length=50)
     activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "gestion_aprobaciones_tipo_aprobacion"
+        verbose_name = "Tipo de Aprobación"
+        verbose_name_plural = "Tipos de Aprobación"
+        unique_together = [["id_empresa", "codigo_tipo"]]
 
 
 class FlujoAprobacion(models.Model):

@@ -10,8 +10,10 @@ from .views import (
     DetalleNotaCreditoVentaViewSet,
     DetalleNotaVentaViewSet,
     DetallePedidoViewSet,
+    DetallePrecioViewSet,
     DevolucionVentaViewSet,
     FacturaFiscalViewSet,
+    ListaPrecioViewSet,
     NotaCreditoFiscalViewSet,
     NotaCreditoVentaViewSet,
     NotaVentaViewSet,
@@ -33,6 +35,8 @@ router.register(r"cotizaciones", CotizacionViewSet)
 router.register(r"detalles-cotizacion", DetalleCotizacionViewSet)
 router.register(r"notas-credito-fiscal", NotaCreditoFiscalViewSet)
 router.register(r"detalles-nota-credito-fiscal", DetalleNotaCreditoFiscalViewSet)
+router.register(r"listas-precio", ListaPrecioViewSet)
+router.register(r"detalles-precio", DetallePrecioViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

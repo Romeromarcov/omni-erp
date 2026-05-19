@@ -4,7 +4,10 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from apps.core.viewsets import get_empresas_visible
 
 from .models import AsignacionHorario, HorarioTrabajo, RegistroAsistencia, ResumenAsistenciaDiario
 from .serializers import (
@@ -15,23 +18,27 @@ from .serializers import (
 )
 
 
+def _empresas(request):
+    return get_empresas_visible(request.user)
+
+
 class HorarioTrabajoViewSet(viewsets.ModelViewSet):
     queryset = HorarioTrabajo.objects.all()
     serializer_class = HorarioTrabajoSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["activo", "id_empresa"]
     search_fields = ["nombre_horario", "descripcion"]
     ordering_fields = ["nombre_horario", "total_horas_semanales"]
     ordering = ["nombre_horario"]
 
+    def get_queryset(self):
+        # R-CODE-1
+        return HorarioTrabajo.objects.filter(id_empresa__in=_empresas(self.request))
+
     @action(detail=False, methods=["get"])
     def activos(self, request):
         """Obtiene horarios activos"""
-        empresa_id = request.query_params.get("empresa_id")
-        filters = {"activo": True}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        horarios_activos = self.queryset.filter(**filters)
+        horarios_activos = self.get_queryset().filter(activo=True)
         serializer = self.get_serializer(horarios_activos, many=True)
         return Response(serializer.data)
 
@@ -59,9 +66,14 @@ class HorarioTrabajoViewSet(viewsets.ModelViewSet):
 class AsignacionHorarioViewSet(viewsets.ModelViewSet):
     queryset = AsignacionHorario.objects.all()
     serializer_class = AsignacionHorarioSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["activo", "id_empleado_temp", "id_horario"]
     ordering_fields = ["fecha_inicio", "fecha_fin"]
     ordering = ["-fecha_inicio"]
+
+    def get_queryset(self):
+        # R-CODE-1 via HorarioTrabajo → id_empresa
+        return AsignacionHorario.objects.filter(id_horario__id_empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["get"])
     def activas(self, request):
@@ -71,7 +83,7 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
         if empleado_id:
             filters["id_empleado_temp"] = empleado_id
 
-        asignaciones_activas = self.queryset.filter(**filters)
+        asignaciones_activas = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(asignaciones_activas, many=True)
         return Response(serializer.data)
 
@@ -82,7 +94,7 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
         if not empleado_id:
             return Response({"error": "Debe especificar el ID del empleado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        asignaciones = self.queryset.filter(id_empleado_temp=empleado_id)
+        asignaciones = self.get_queryset().filter(id_empleado_temp=empleado_id)
         serializer = self.get_serializer(asignaciones, many=True)
         return Response(serializer.data)
 
@@ -109,10 +121,21 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
 class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
     queryset = RegistroAsistencia.objects.all()
     serializer_class = RegistroAsistenciaSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["id_empleado_temp", "tipo_marcado", "metodo_marcado"]
     search_fields = ["observaciones"]
     ordering_fields = ["fecha_hora_marcado"]
     ordering = ["-fecha_hora_marcado"]
+
+    def get_queryset(self):
+        # R-CODE-1 — filtrado via UUIDs de empleados de las empresas visibles.
+        # NOTA: id_empleado FK está comentado temporalmente (usa id_empleado_temp UUID).
+        # Cuando se restaure la FK real, cambiar a: filter(id_empleado__empresa__in=...)
+        empresas = _empresas(self.request)
+        empleados_ids = AsignacionHorario.objects.filter(
+            id_horario__id_empresa__in=empresas
+        ).values_list("id_empleado_temp", flat=True).distinct()
+        return RegistroAsistencia.objects.filter(id_empleado_temp__in=empleados_ids)
 
     @action(detail=False, methods=["post"])
     def marcar_asistencia(self, request):
@@ -156,7 +179,7 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
         if fecha_fin:
             filters["fecha_hora_marcado__date__lte"] = fecha_fin
 
-        registros = self.queryset.filter(**filters)
+        registros = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(registros, many=True)
         return Response(serializer.data)
 
@@ -170,7 +193,7 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
         if empleado_id:
             filters["id_empleado_temp"] = empleado_id
 
-        registros = self.queryset.filter(**filters)
+        registros = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(registros, many=True)
         return Response(serializer.data)
 
@@ -178,9 +201,18 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
 class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
     queryset = ResumenAsistenciaDiario.objects.all()
     serializer_class = ResumenAsistenciaDiarioSerializer
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["id_empleado_temp", "fecha", "es_ausencia", "estado_revision"]
     ordering_fields = ["fecha", "horas_trabajadas_netas"]
     ordering = ["-fecha"]
+
+    def get_queryset(self):
+        # R-CODE-1 — misma estrategia que RegistroAsistencia via AsignacionHorario
+        empresas = _empresas(self.request)
+        empleados_ids = AsignacionHorario.objects.filter(
+            id_horario__id_empresa__in=empresas
+        ).values_list("id_empleado_temp", flat=True).distinct()
+        return ResumenAsistenciaDiario.objects.filter(id_empleado_temp__in=empleados_ids)
 
     @action(detail=False, methods=["post"])
     def generar_resumen_diario(self, request):
@@ -286,7 +318,7 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
         if fecha_hasta:
             filters["fecha__lte"] = fecha_hasta
 
-        resumenes = self.queryset.filter(**filters)
+        resumenes = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(resumenes, many=True)
         return Response(serializer.data)
 
@@ -300,7 +332,7 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
         if not empleado_id:
             return Response({"error": "Debe especificar el ID del empleado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        resumenes = self.queryset.filter(id_empleado_temp=empleado_id, fecha__year=año, fecha__month=mes)
+        resumenes = self.get_queryset().filter(id_empleado_temp=empleado_id, fecha__year=año, fecha__month=mes)
 
         # Calcular estadísticas
         total_dias = resumenes.count()
