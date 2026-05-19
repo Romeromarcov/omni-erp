@@ -805,3 +805,77 @@ migracion-datos, personalizacion
 - **Fase D (completeness):** ✅ COMPLETA — 7 tareas ejecutadas
 
 ---
+
+## Sesión — 2026-05-19
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Implementar tests de aislamiento para 14 módulos, alcanzar ≥550 tests, implementar DoD completo de M1, M4, M5, M8, M10.
+
+### Tareas completadas
+
+**Tests de aislamiento multi-tenant (11 módulos nuevos):**
+- `tests_api/test_aislamiento_modulos.py` — 32 tests de aislamiento (list/GET/PATCH 404) para:
+  contabilidad (PlanCuentas), auditoria (LogAuditoria, solo lectura), control_asistencia (HorarioTrabajo),
+  servicio_cliente (CategoriaTicket), almacenes (Almacen), manufactura (CentroTrabajo),
+  gestion_aprobaciones (TipoAprobacion), integracion_b2b (ConfiguracionIntegracion),
+  banca_electronica (CuentaBancariaEmpresa), personalizacion (PersonalizacionConfig), tesoreria (Caja).
+- 3 módulos omitidos por FK obligatorios complejos: costos, despacho, migracion_datos.
+
+**DoD M1 — Contactos Unificados:**
+- `tests_api/test_m1_contactos.py` — 6 tests: contacto multi-rol (cliente+proveedor simultáneo),
+  strangler fig FK validado, búsqueda por RIF en clienteViewSet, aislamiento por empresa.
+
+**DoD M4 — Listas de Precios:**
+- `tests_api/test_m4_listas_precio.py` — 8 tests: `obtener_precio()` con lista asignada al contacto,
+  fallback a Lista 1 (es_referencia=True), fallback a precio_venta_sugerido, vigencia temporal
+  (vigente_desde/vigente_hasta), importar_masivo endpoint.
+
+**DoD M5 — Control Salidas Inventario:**
+- `tests_api/test_m5_salidas_inventario.py` — 7 tests: DESPACHO_VENTA sin doc → 400,
+  DESPACHO_VENTA con NotaVenta BORRADOR → 400, DESPACHO_VENTA con FacturaFiscal EMITIDA → OK,
+  AJUSTE sin justificante se registra (no error), despachar_requisicion_interna smoke test.
+
+**DoD M8 — Fiscal Venezolano:**
+- `tests_api/test_m8_fiscal_completo.py` — 13 tests: libro ventas TXT en formato SENIAT
+  (8 columnas pipe-delimited: RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE|IVA|TOTAL),
+  filtrado por rango de fechas, IVA calculable (default 16%, configurable 12%), IGTF 3% en divisas USD,
+  sin IGTF en VES.
+
+**DoD M10 — Infraestructura SaaS:**
+- `tests_api/test_m10_infrastructure.py` — 14 tests: NotificacionViewSet aislamiento por usuario/empresa,
+  `marcar_leida` action (→ 200, leida=True, fecha_lectura set), otra empresa → 404,
+  SaasMiddleware: inactivo pasa todo, rutas excluidas siempre pasan, activo sin suscripción → 402,
+  activo con suscripción activa → 200, anónimo siempre pasa.
+
+### Bugs corregidos
+
+- **`apps/auditoria/views.py`**: `order_by("-fecha_hora_log")` → `order_by("-fecha_hora_accion")` (campo real del modelo).
+- **`apps/fiscal/libros_seniat.py`**: `getattr(cliente, "identificador_fiscal", "")` → intenta `rif` primero con fallback a `identificador_fiscal` (campo real en `Cliente` del CRM).
+
+### Resultado
+
+- **585 passed, 2 skipped** ✅ (objetivo ≥550 superado: +84 tests nuevos desde 501).
+- **0 fallos**.
+
+### Commit
+
+`699844f` — `test(post-audit): DoD completo M1/M4/M5/M8/M10 + aislamiento 11 módulos (585 tests)`
+(8 archivos, +2458 líneas)
+
+### Estado de Módulos Fase 1
+
+| Módulo | DoD | Tests |
+|--------|-----|-------|
+| M1 Contactos Unificados | ✅ COMPLETO | ✅ |
+| M2 Ciclo Ventas | ✅ COMPLETO | ✅ |
+| M3 Ciclo Compras | ✅ COMPLETO | ✅ |
+| M4 Listas de Precios | ✅ COMPLETO | ✅ |
+| M5 Control Salidas | ✅ COMPLETO | ✅ |
+| M6 Flujos Configurables | ✅ COMPLETO | ✅ |
+| M7 Asientos Automáticos | ✅ COMPLETO | ✅ |
+| M8 Fiscal VZ | ✅ COMPLETO | ✅ |
+| M9 Agentes IA | ⚠️ Parcial (DSL/clasificador shadow) | ✅ |
+| M10 SaaS Core | ✅ COMPLETO | ✅ |
+
+---
