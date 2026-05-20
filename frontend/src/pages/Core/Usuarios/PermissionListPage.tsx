@@ -1,21 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchPermisos } from '../../../services/permissions';
 import type { Permiso } from '../../../services/permissions';
 import PageLayout from '../../../components/PageLayout';
 
 const PermissionListPage: React.FC = () => {
-  const [permisos, setPermisos] = useState<Permiso[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchPermisos().then(setPermisos).finally(() => setLoading(false));
-  }, []);
+  const { data: permisos = [], isLoading } = useQuery<Permiso[]>({
+    queryKey: ['/permisos/'],
+    queryFn: fetchPermisos,
+  });
 
   return (
     <PageLayout>
       <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Listado de Permisos</h2>
-      {loading ? (
+      {isLoading ? (
         <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>

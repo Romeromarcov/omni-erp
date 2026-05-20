@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
@@ -13,38 +14,42 @@ interface Departamento {
 const DepartmentDetailPage: React.FC = () => {
   const { id_departamento } = useParams<{ id_departamento: string }>();
   const navigate = useNavigate();
-  const [departamento, setDepartamento] = useState<Departamento | null>(null);
+  const queryClient = useQueryClient();
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState<Departamento | null>(null);
-  const [loading, setLoading] = useState(false);
+
+  const { data: departamento, isLoading } = useQuery<Departamento>({
+    queryKey: ['/core/departamentos/', id_departamento],
+    queryFn: () => get<Departamento>(`/core/departamentos/${id_departamento}/`),
+    enabled: !!id_departamento,
+  });
 
   useEffect(() => {
-    setLoading(true);
-    get<Departamento>(`/core/departamentos/${id_departamento}/`)
-      .then(data => {
-        setDepartamento(data);
-        setForm(data);
-      })
-      .finally(() => setLoading(false));
-  }, [id_departamento]);
+    if (departamento) {
+      setForm(departamento);
+    }
+  }, [departamento]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form) return;
-    setLoading(true);
-    try {
-      await put(`/core/departamentos/${id_departamento}/`, { ...form } as Record<string, unknown>);
-      setDepartamento(form);
+  const updateMutation = useMutation({
+    mutationFn: (data: Departamento) => put<Departamento>(`/core/departamentos/${id_departamento}/`, data as Record<string, unknown>),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/core/departamentos/', id_departamento] });
+      queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });
       setEdit(false);
       alert('Departamento actualizado');
-    } catch {
+    },
+    onError: () => {
       alert('Error al actualizar');
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    updateMutation.mutate(form);
   };
 
-  if (loading) return <p>Cargando...</p>;
+  if (isLoading) return <p>Cargando...</p>;
   if (!departamento) return <p>No encontrado</p>;
 
   return (

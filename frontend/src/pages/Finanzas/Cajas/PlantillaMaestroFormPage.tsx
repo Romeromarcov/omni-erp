@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPlantillaMaestro, updatePlantillaMaestro, getPlantillasMaestro } from '../../../services/plantillasService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
@@ -21,6 +22,7 @@ const PlantillaMaestroFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState({
     nombre: '',
@@ -30,33 +32,32 @@ const PlantillaMaestroFormPage: React.FC = () => {
     activa: true,
   });
 
-  const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([]);
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
-  const loadData = useCallback(async () => {
-    try {
-      const [metodos, monedasData] = await Promise.all([
-        fetchMetodosPagoEmpresaActivos(idEmpresa),
-        fetchMonedasEmpresaActivas(idEmpresa)
-      ]);
-      setMetodosPago(metodos as MetodoPago[]);
-      setMonedas(monedasData as Moneda[]);
-    } catch (err) {
-      console.error('Error cargando datos:', err);
-    }
-  }, [idEmpresa]);
+  const { data: metodosPago = [] } = useQuery<MetodoPago[]>({
+    queryKey: ['/finanzas/metodos-pago-empresa-activas/', idEmpresa],
+    queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa) as Promise<MetodoPago[]>,
+    enabled: !!idEmpresa,
+  });
 
-  const loadPlantilla = useCallback(async (plantillaId: string) => {
-    try {
-      setLoading(true);
-      const plantillas = await getPlantillasMaestro(idEmpresa);
-      const plantilla = plantillas.find(p => p.id_plantilla === plantillaId);
+  const { data: monedas = [] } = useQuery<Moneda[]>({
+    queryKey: ['/finanzas/monedas-empresa-activas/', idEmpresa],
+    queryFn: () => fetchMonedasEmpresaActivas(idEmpresa) as Promise<Moneda[]>,
+    enabled: !!idEmpresa,
+  });
+
+  const { data: plantillasData } = useQuery({
+    queryKey: ['/finanzas/plantillas-maestro-cajas/', idEmpresa],
+    queryFn: () => getPlantillasMaestro(idEmpresa),
+    enabled: isEditing && !!idEmpresa,
+  });
+
+  useEffect(() => {
+    if (isEditing && id && plantillasData) {
+      const plantilla = plantillasData.find(p => p.id_plantilla === id);
       if (plantilla) {
         setForm({
           nombre: plantilla.nombre,
@@ -66,68 +67,44 @@ const PlantillaMaestroFormPage: React.FC = () => {
           activa: plantilla.activa,
         });
       }
-    } catch (err) {
-      setError('Error al cargar la plantilla');
+    }
+  }, [isEditing, id, plantillasData]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      const data = { ...form, id_empresa: idEmpresa };
+      if (isEditing && id) {
+        return updatePlantillaMaestro(id, data);
+      }
+      return createPlantillaMaestro(data as Parameters<typeof createPlantillaMaestro>[0]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/plantillas-maestro-cajas/', idEmpresa] });
+      setSuccess(isEditing ? 'Plantilla actualizada exitosamente' : 'Plantilla creada exitosamente');
+      setTimeout(() => {
+        navigate('/finanzas/plantillas-maestro');
+      }, 1500);
+    },
+    onError: (err) => {
+      setError('Error al guardar la plantilla');
       console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [idEmpresa]);
+    },
+  });
 
-  useEffect(() => {
-    loadData();
-    if (isEditing && id) {
-      loadPlantilla(id);
-    }
-  }, [id, isEditing, loadData, loadPlantilla]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nombre.trim()) {
       setError('El nombre es obligatorio');
       return;
     }
-
-    try {
-      setSaving(true);
-      setError('');
-      setSuccess('');
-
-      const data = {
-        ...form,
-        id_empresa: idEmpresa,
-      };
-
-      if (isEditing && id) {
-        await updatePlantillaMaestro(id, data);
-        setSuccess('Plantilla actualizada exitosamente');
-      } else {
-        await createPlantillaMaestro(data);
-        setSuccess('Plantilla creada exitosamente');
-      }
-
-      setTimeout(() => {
-        navigate('/finanzas/plantillas-maestro');
-      }, 1500);
-    } catch (err) {
-      setError('Error al guardar la plantilla');
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    setError('');
+    setSuccess('');
+    saveMutation.mutate();
   };
 
   const handleChange = (field: string, value: string | boolean | string[]) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
-
-  if (loading) {
-    return (
-      <PageLayout>
-        <Typography>Cargando...</Typography>
-      </PageLayout>
-    );
-  }
 
   return (
     <PageLayout>
@@ -230,8 +207,8 @@ const PlantillaMaestroFormPage: React.FC = () => {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+              <Button type="submit" disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
               </Button>
             </Box>
           </Box>

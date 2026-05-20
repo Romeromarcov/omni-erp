@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put, post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import type { TipoDocumento } from '../../../types/configuracion';
@@ -8,7 +9,7 @@ import { Button } from '@mui/material';
 const TipoDocumentoDetailPage: React.FC = () => {
   const { id_tipo_documento } = useParams<{ id_tipo_documento: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<TipoDocumento>>({
     codigo: '',
     nombre: '',
@@ -21,30 +22,37 @@ const TipoDocumentoDetailPage: React.FC = () => {
 
   const isEditing = !!id_tipo_documento;
 
+  const { data: existingData } = useQuery<TipoDocumento>({
+    queryKey: ['/configuracion_motor/tipos-documento/', id_tipo_documento],
+    queryFn: () => get<TipoDocumento>(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`),
+    enabled: isEditing,
+  });
+
   useEffect(() => {
-    if (isEditing) {
-      get(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`)
-        .then((data) => setFormData(data as TipoDocumento))
-        .catch(() => navigate('/configuracion/tipos-documento'));
+    if (existingData) {
+      setFormData(existingData);
     }
-  }, [id_tipo_documento, isEditing, navigate]);
+  }, [existingData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
+  const saveMutation = useMutation({
+    mutationFn: (data: Partial<TipoDocumento>) => {
       if (isEditing) {
-        await put(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`, formData);
-      } else {
-        await post('/configuracion_motor/tipos-documento/', formData);
+        return put<TipoDocumento>(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`, data as Record<string, unknown>);
       }
+      return post<TipoDocumento>('/configuracion_motor/tipos-documento/', data as Record<string, unknown>);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/configuracion_motor/tipos-documento/'] });
       navigate('/configuracion/tipos-documento');
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error saving tipo documento:', error);
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveMutation.mutate(formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -54,6 +62,8 @@ const TipoDocumentoDetailPage: React.FC = () => {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
   };
+
+  const loading = saveMutation.isPending;
 
   return (
     <PageLayout>

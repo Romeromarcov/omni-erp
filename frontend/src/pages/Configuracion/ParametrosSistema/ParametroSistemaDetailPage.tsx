@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put, post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import type { ParametroSistema } from '../../../types/configuracion';
@@ -8,7 +9,7 @@ import { Button } from '@mui/material';
 const ParametroSistemaDetailPage: React.FC = () => {
   const { id_parametro } = useParams<{ id_parametro: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<ParametroSistema>>({
     nombre_parametro: '',
     codigo_parametro: '',
@@ -20,30 +21,37 @@ const ParametroSistemaDetailPage: React.FC = () => {
 
   const isEditing = !!id_parametro;
 
+  const { data: existingData } = useQuery<ParametroSistema>({
+    queryKey: ['/configuracion_motor/parametros-sistema/', id_parametro],
+    queryFn: () => get<ParametroSistema>(`/configuracion_motor/parametros-sistema/${id_parametro}/`),
+    enabled: isEditing,
+  });
+
   useEffect(() => {
-    if (isEditing) {
-      get(`/configuracion_motor/parametros-sistema/${id_parametro}/`)
-        .then((data) => setFormData(data as ParametroSistema))
-        .catch(() => navigate('/configuracion/parametros-sistema'));
+    if (existingData) {
+      setFormData(existingData);
     }
-  }, [id_parametro, isEditing, navigate]);
+  }, [existingData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
+  const saveMutation = useMutation({
+    mutationFn: (data: Partial<ParametroSistema>) => {
       if (isEditing) {
-        await put(`/configuracion_motor/parametros-sistema/${id_parametro}/`, formData);
-      } else {
-        await post('/configuracion_motor/parametros-sistema/', formData);
+        return put<ParametroSistema>(`/configuracion_motor/parametros-sistema/${id_parametro}/`, data as Record<string, unknown>);
       }
+      return post<ParametroSistema>('/configuracion_motor/parametros-sistema/', data as Record<string, unknown>);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/configuracion_motor/parametros-sistema/'] });
       navigate('/configuracion/parametros-sistema');
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error saving parametro sistema:', error);
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveMutation.mutate(formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -53,6 +61,8 @@ const ParametroSistemaDetailPage: React.FC = () => {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
   };
+
+  const loading = saveMutation.isPending;
 
   return (
     <PageLayout>

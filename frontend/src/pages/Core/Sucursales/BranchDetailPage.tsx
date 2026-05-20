@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import { Button } from '@mui/material';
@@ -20,45 +21,49 @@ const BranchDetailPage: React.FC = () => {
   const { id_sucursal } = useParams<{ id_sucursal: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const isEditRoute = location.pathname.endsWith('/edit');
-  const [sucursal, setSucursal] = useState<Sucursal | null>(null);
   const [edit, setEdit] = useState(isEditRoute);
   const [form, setForm] = useState<Sucursal | null>(null);
-  const [loading, setLoading] = useState(false);
+
+  const { data: sucursal, isLoading } = useQuery<Sucursal>({
+    queryKey: ['/core/sucursales/', id_sucursal],
+    queryFn: () => get<Sucursal>(`/core/sucursales/${id_sucursal}/`),
+    enabled: !!id_sucursal,
+  });
 
   useEffect(() => {
-    setLoading(true);
-    get<Sucursal>(`/core/sucursales/${id_sucursal}/`)
-      .then(data => {
-        setSucursal(data);
-        setForm(data);
-      })
-      .finally(() => setLoading(false));
-  }, [id_sucursal]);
+    if (sucursal) {
+      setForm(sucursal);
+    }
+  }, [sucursal]);
 
   useEffect(() => {
     setEdit(isEditRoute);
   }, [isEditRoute]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form) return;
-    setLoading(true);
-    try {
-      await put(`/core/sucursales/${id_sucursal}/`, { ...form } as Record<string, unknown>);
-      setSucursal(form);
+  const updateMutation = useMutation({
+    mutationFn: (data: Sucursal) => put<Sucursal>(`/core/sucursales/${id_sucursal}/`, data as Record<string, unknown>),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/core/sucursales/', id_sucursal] });
+      queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });
       setEdit(false);
       alert('Sucursal actualizada');
-    } catch {
+    },
+    onError: () => {
       alert('Error al actualizar');
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    updateMutation.mutate(form);
   };
 
-if (loading) return (
-  <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>
-);
+  if (isLoading) return (
+    <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>
+  );
   if (!sucursal) return (
     <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>No encontrada</div></PageLayout>
   );

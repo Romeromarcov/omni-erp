@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getEmpresaId } from '../../../utils/empresa';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
@@ -15,27 +16,32 @@ const DepartmentCreatePage: React.FC = () => {
   let { id_empresa } = useParams<{ id_empresa: string }>();
   if (!id_empresa) id_empresa = getEmpresaId() || '';
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState<Departamento>({
     nombre_departamento: '',
     descripcion: '',
     activo: true,
     id_empresa: id_empresa || '',
   });
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await post('/core/departamentos/', { ...form } as Record<string, unknown>);
+  const createMutation = useMutation({
+    mutationFn: (data: Departamento) => post<Departamento>('/core/departamentos/', data as Record<string, unknown>),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });
       alert('Departamento creado');
       navigate(`/empresas/${id_empresa}/departamentos`);
-    } catch {
+    },
+    onError: () => {
       alert('Error al crear departamento');
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMutation.mutate(form);
   };
+
+  const loading = createMutation.isPending;
 
   return (
     <PageLayout maxWidth={480}>

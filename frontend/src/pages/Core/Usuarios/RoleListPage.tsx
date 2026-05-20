@@ -1,74 +1,43 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchRoles } from '../../../services/roles';
 import { fetchEmpresas } from '../../../services/empresas';
 import type { Rol } from '../../../services/roles';
+import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
+import type { Empresa } from '../../../services/empresas';
 
 // Define types for API responses
-type Empresa = {
+type EmpresaWithOptional = {
   id_empresa: string;
   nombre_legal?: string;
   nombre?: string;
 };
 
-type RolEmpresa = string | Empresa | null;
+type RolEmpresa = string | EmpresaWithOptional | null;
 
 type RolWithEmpresa = Omit<Rol, 'id_empresa'> & { id_empresa: RolEmpresa };
 
+type RolApiResponse = RolWithEmpresa[] | { results: RolWithEmpresa[] };
+type EmpresaApiResponse = Empresa[] | { results: Empresa[] };
+
 
 const RoleListPage: React.FC = () => {
-
-  const [roles, setRoles] = useState<RolWithEmpresa[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      fetchRoles(),
-      fetchEmpresas()
-    ])
-      .then(([rolesData, empresasData]: [unknown, unknown]) => {
-        let rolesArr: RolWithEmpresa[] = [];
-        if (Array.isArray(rolesData)) rolesArr = rolesData as RolWithEmpresa[];
-        else if (
-          rolesData &&
-          typeof rolesData === 'object' &&
-          rolesData !== null &&
-          'results' in rolesData &&
-          Array.isArray((rolesData as { results?: unknown }).results)
-        ) {
-          rolesArr = (rolesData as { results: RolWithEmpresa[] }).results;
-        }
-        setRoles(rolesArr);
-        let empresasArr: Empresa[] = [];
-        if (Array.isArray(empresasData)) empresasArr = empresasData as Empresa[];
-        else if (
-          empresasData &&
-          typeof empresasData === 'object' &&
-          empresasData !== null &&
-          'results' in empresasData &&
-          Array.isArray((empresasData as { results?: unknown }).results)
-        ) {
-          empresasArr = (empresasData as { results: Empresa[] }).results;
-        }
-        setEmpresas(empresasArr);
-      })
-      .catch(err => {
-        setRoles([]);
-        setEmpresas([]);
-        try {
-          const msg = JSON.parse(err.message)?.detail || err.message;
-          setError(msg);
-        } catch {
-          setError(err.message);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: roles = [], isLoading: loadingRoles, isError: errorRoles } = useQuery<RolApiResponse, Error, RolWithEmpresa[]>({
+    queryKey: ['/core/roles/'],
+    queryFn: fetchRoles as () => Promise<RolApiResponse>,
+    select: toList,
+  });
+
+  const { data: empresas = [], isLoading: loadingEmpresas } = useQuery<EmpresaApiResponse, Error, Empresa[]>({
+    queryKey: ['/core/empresas/'],
+    queryFn: fetchEmpresas as () => Promise<EmpresaApiResponse>,
+    select: toList,
+  });
+
+  const loading = loadingRoles || loadingEmpresas;
 
   const filteredRoles = roles.filter(r =>
     (r.nombre_rol?.toLowerCase() || '').includes(search.toLowerCase()) ||
@@ -79,7 +48,7 @@ const RoleListPage: React.FC = () => {
   const empresaNombreDict = useMemo(() => {
     const dict: Record<string, string> = {};
     empresas.forEach(e => {
-      dict[e.id_empresa] = e.nombre_legal || e.nombre || '';
+      dict[e.id_empresa] = e.nombre_legal || '';
     });
     return dict;
   }, [empresas]);
@@ -102,8 +71,8 @@ const RoleListPage: React.FC = () => {
       </div>
       {loading ? (
         <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
-      ) : error ? (
-        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32, fontWeight: 500 }}>{error}</div>
+      ) : errorRoles ? (
+        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32, fontWeight: 500 }}>Error al cargar roles</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', background: '#f6fafd', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
@@ -129,7 +98,7 @@ const RoleListPage: React.FC = () => {
                     <td style={{ padding: '10px 8px' }}>{r.activo ? <span style={{ color: '#1976d2', fontWeight: 600 }}>Sí</span> : <span style={{ color: '#d32f2f', fontWeight: 600 }}>No</span>}</td>
                     <td style={{ padding: '10px 8px' }}>{
                       (typeof r.id_empresa === 'object' && r.id_empresa !== null)
-                        ? ((r.id_empresa as Empresa).nombre_legal || (r.id_empresa as Empresa).nombre || '-')
+                        ? ((r.id_empresa as EmpresaWithOptional).nombre_legal || (r.id_empresa as EmpresaWithOptional).nombre || '-')
                         : (typeof r.id_empresa === 'string' && empresaNombreDict[r.id_empresa])
                           ? empresaNombreDict[r.id_empresa]
                           : '-'

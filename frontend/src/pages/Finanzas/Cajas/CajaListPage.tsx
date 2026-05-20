@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageLayout from '../../../components/PageLayout';
+import { useQuery } from '@tanstack/react-query';
 import { getCajas } from '../../../services/cajaService';
+import { toList } from '../../../utils/api';
 import { Button, TextField } from '@mui/material';
 
 type Caja = {
@@ -15,29 +17,19 @@ type Caja = {
   tipo_caja_display?: string;
 };
 
+type CajaApiResponse = Caja[] | { results: Caja[] };
+
 const CajaListPage: React.FC = () => {
   const { id_empresa } = useParams<{ id_empresa: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<Caja[]>([]);
   const [filters, setFilters] = useState<{ sucursal: string; moneda: string; activo: string }>({ sucursal: '', moneda: '', activo: '' });
-  const [loading, setLoading] = useState(false);
 
-
-  useEffect(() => {
-    if (!id_empresa) return;
-    setLoading(true);
-    getCajas(id_empresa, filters)
-      .then((result) => {
-        if (Array.isArray(result)) {
-          setData(result as Caja[]);
-        } else if (result && typeof result === 'object' && 'results' in result && Array.isArray((result as { results: Caja[] }).results)) {
-          setData((result as { results: Caja[] }).results);
-        } else {
-          setData([]);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [id_empresa, filters]);
+  const { data: data = [], isLoading } = useQuery<CajaApiResponse, Error, Caja[]>({
+    queryKey: ['/finanzas/cajas/', id_empresa, filters],
+    queryFn: () => getCajas(id_empresa!, filters) as Promise<CajaApiResponse>,
+    select: toList,
+    enabled: !!id_empresa,
+  });
 
   if (!id_empresa) {
     return (
@@ -77,7 +69,7 @@ const CajaListPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr><td colSpan={6} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             ) : data.length === 0 ? (
               <tr><td colSpan={6} style={{ textAlign: 'center' }}>No hay cajas registradas.</td></tr>

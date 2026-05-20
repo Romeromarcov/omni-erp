@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica, type CajaVirtual, type Datafono } from '../../../services/cajasFisicasService';
 import { Alert, Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -11,75 +12,55 @@ import StopIcon from '@mui/icons-material/Stop';
 
 const CajasFisicasListPage: React.FC = () => {
   const navigate = useNavigate();
-  const [cajasFisicas, setCajasFisicas] = useState<CajaFisica[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
+  const queryClient = useQueryClient();
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
-  const loadCajasFisicas = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await cajasFisicasService.getCajasFisicas({
-        empresa: idEmpresa,
-        page_size: 100 // Cargar todas por ahora
-      });
-      
-      setCajasFisicas(response.results);
-    } catch (err) {
-      setError('Error al cargar las cajas físicas');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [idEmpresa]);
+  const { data: cajasFisicasData, isLoading, isError } = useQuery({
+    queryKey: ['/finanzas/cajas-fisicas/', idEmpresa],
+    queryFn: () => cajasFisicasService.getCajasFisicas({ empresa: idEmpresa, page_size: 100 }),
+    enabled: !!idEmpresa,
+  });
 
-  useEffect(() => {
-    if (idEmpresa) {
-      loadCajasFisicas();
-    }
-  }, [idEmpresa, loadCajasFisicas]);
+  const cajasFisicas: CajaFisica[] = cajasFisicasData?.results || [];
+  const error = isError ? 'Error al cargar las cajas físicas' : '';
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Está seguro de que desea eliminar esta caja física?')) {
-      return;
-    }
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => cajasFisicasService.deleteCajaFisica(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
+    },
+  });
 
-    try {
-      await cajasFisicasService.deleteCajaFisica(id);
-      await loadCajasFisicas(); // Recargar la lista
-    } catch (err) {
-      setError('Error al eliminar la caja física');
-      console.error(err);
-    }
+  const abrirSesionMutation = useMutation({
+    mutationFn: (id: string) => cajasFisicasService.abrirSesion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
+    },
+    onError: () => alert('Error al abrir la sesión de caja'),
+  });
+
+  const cerrarSesionMutation = useMutation({
+    mutationFn: ({ id, notas }: { id: string; notas: string }) => cajasFisicasService.cerrarSesion(id, notas),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
+    },
+    onError: () => alert('Error al cerrar la sesión de caja'),
+  });
+
+  const handleDelete = (id: string) => {
+    if (!window.confirm('¿Está seguro de que desea eliminar esta caja física?')) return;
+    deleteMutation.mutate(id);
   };
 
-  const handleAbrirSesion = async (id: string, nombre: string) => {
-    if (!window.confirm(`¿Está seguro de que desea abrir la sesión de la caja "${nombre}"?`)) {
-      return;
-    }
-
-    try {
-      await cajasFisicasService.abrirSesion(id);
-      await loadCajasFisicas(); // Recargar la lista
-    } catch (err) {
-      setError('Error al abrir la sesión de caja');
-      console.error(err);
-    }
+  const handleAbrirSesion = (id: string, nombre: string) => {
+    if (!window.confirm(`¿Está seguro de que desea abrir la sesión de la caja "${nombre}"?`)) return;
+    abrirSesionMutation.mutate(id);
   };
 
-  const handleCerrarSesion = async (id: string) => {
+  const handleCerrarSesion = (id: string) => {
     const notas = prompt('Notas para el cierre de sesión (opcional):');
-    if (notas === null) return; // Usuario canceló
-
-    try {
-      await cajasFisicasService.cerrarSesion(id, notas);
-      await loadCajasFisicas(); // Recargar la lista
-    } catch (err) {
-      setError('Error al cerrar la sesión de caja');
-      console.error(err);
-    }
+    if (notas === null) return;
+    cerrarSesionMutation.mutate({ id, notas });
   };
 
   return (
@@ -114,7 +95,7 @@ const CajasFisicasListPage: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {loading ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center">
                     Cargando...
