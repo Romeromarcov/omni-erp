@@ -1,0 +1,38 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error al cargar los datos",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "search": "Buscar...",
+    "new": "Nuevo",
+    "back": "Volver",
+    "yes": "Sí",
+    "no": "No",
+    "actions": "Acciones",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "noResults": "No se encontraron resultados",
+    "confirmDelete": "¿Está seguro de eliminar este registro?",
+    "success": "Guardado exitosamente",
+    "errorSave": "Error al guardar"
+  },
+  "nav": {
+    "dashboard": "Panel Principal",
+    "empresas": "Empresas",
+    "sucursales": "Sucursales",
+    "usuarios": "Usuarios",
+    "finanzas": "Finanzas",
+    "ventas": "Ventas",
+    "configuracion": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "loginError": "Credenciales incorrectas"
+  }
+}

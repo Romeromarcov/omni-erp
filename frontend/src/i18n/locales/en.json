@@ -1,0 +1,38 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error loading data",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search...",
+    "new": "New",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noResults": "No results found",
+    "confirmDelete": "Are you sure you want to delete this record?",
+    "success": "Saved successfully",
+    "errorSave": "Error saving"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "empresas": "Companies",
+    "sucursales": "Branches",
+    "usuarios": "Users",
+    "finanzas": "Finance",
+    "ventas": "Sales",
+    "configuracion": "Configuration",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "loginError": "Invalid credentials"
+  }
+}
