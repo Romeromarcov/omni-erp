@@ -101,3 +101,7 @@ jobs:
       - name: ESLint
         working-directory: frontend
         run: npm run lint
+
+      - name: Vitest unit tests
+        working-directory: frontend
+        run: npm test -- --run
