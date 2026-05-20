@@ -33,7 +33,6 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
     direccion = models.TextField(null=True, blank=True)
     telefono = models.CharField(max_length=50, null=True, blank=True, validators=[validar_telefono])
     email = models.EmailField(null=True, blank=True)
-    contacto = models.CharField(max_length=100, null=True, blank=True)
     tipo_cliente = models.CharField(
         max_length=10,
         choices=[("CONTADO", "Contado"), ("CREDITO", "Crédito")],

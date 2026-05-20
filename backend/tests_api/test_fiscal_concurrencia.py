@@ -12,6 +12,7 @@ import threading
 from collections import Counter
 
 import pytest
+from django.db import connections
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -138,6 +139,10 @@ class TestCorrelativoConcurrencia:
             h.start()
         for h in hilos:
             h.join(timeout=10)
+
+        # Cerrar conexiones de threads para evitar el warning "DB en uso" al teardown
+        for conn in connections.all():
+            conn.close()
 
         assert not errores, f"Errores en hilos: {errores}"
         assert len(resultados) == N_HILOS, f"Se esperaban {N_HILOS} resultados, hay {len(resultados)}"
