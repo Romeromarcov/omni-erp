@@ -18,6 +18,9 @@ boto3==1.43.6
 django-celery-beat==2.9.0
 django-celery-results==2.6.0
 
+# ── PDF generation ──────────────────────────────────────────────────────────
+reportlab==4.5.1
+
 # ── AI-nativas: MCP + Event Store ───────────────────────────────────────────
 mcp>=1.9.0
 confluent-kafka>=2.6.0

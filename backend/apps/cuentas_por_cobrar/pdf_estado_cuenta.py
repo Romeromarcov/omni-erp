@@ -53,8 +53,8 @@ def generar_pdf_estado_cuenta(empresa, cliente, fecha_corte: date = None) -> byt
     story = []
 
     # ── Encabezado ────────────────────────────────────────────────────────────
-    story.append(Paragraph(f"<b>{empresa.nombre_empresa}</b>", styles["Title"]))
-    story.append(Paragraph(f"RIF: {getattr(empresa, 'rif', 'N/A')}", styles["Normal"]))
+    story.append(Paragraph(f"<b>{getattr(empresa, 'nombre_legal', str(empresa))}</b>", styles["Title"]))
+    story.append(Paragraph(f"RIF: {getattr(empresa, 'identificador_fiscal', 'N/A')}", styles["Normal"]))
     story.append(Spacer(1, 0.3 * cm))
 
     story.append(Paragraph("<b>ESTADO DE CUENTA</b>", styles["Heading1"]))

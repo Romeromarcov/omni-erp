@@ -51,13 +51,9 @@ class PeriodoNominaViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def abiertos(self, request):
-        """Obtiene períodos en estado abierto"""
-        empresa_id = request.query_params.get("empresa_id")
-        filters = {"estado": "ABIERTO", "activo": True}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        periodos_abiertos = self.queryset.filter(**filters)
+        """Obtiene períodos en estado abierto de las empresas propias"""
+        # R-CODE-1: get_queryset() ya aplica filtro de empresa; nunca self.queryset
+        periodos_abiertos = self.get_queryset().filter(estado="ABIERTO", activo=True)
         serializer = self.get_serializer(periodos_abiertos, many=True)
         return Response(serializer.data)
 
@@ -92,41 +88,28 @@ class ConceptoNominaViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def por_tipo(self, request):
-        """Obtiene conceptos filtrados por tipo"""
+        """Obtiene conceptos filtrados por tipo de las empresas propias"""
+        # R-CODE-1: get_queryset() ya aplica filtro de empresa; nunca self.queryset
+        qs = self.get_queryset().filter(activo=True)
         tipo = request.query_params.get("tipo")
-        empresa_id = request.query_params.get("empresa_id")
-
-        filters = {"activo": True}
         if tipo:
-            filters["tipo_concepto"] = tipo
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        conceptos = self.queryset.filter(**filters)
-        serializer = self.get_serializer(conceptos, many=True)
+            qs = qs.filter(tipo_concepto=tipo)
+        serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def devengados(self, request):
-        """Obtiene conceptos de tipo devengado"""
-        empresa_id = request.query_params.get("empresa_id")
-        filters = {"tipo_concepto": "DEVENGADO", "activo": True}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        conceptos = self.queryset.filter(**filters)
+        """Obtiene conceptos de tipo devengado de las empresas propias"""
+        # R-CODE-1: get_queryset() ya aplica filtro de empresa
+        conceptos = self.get_queryset().filter(tipo_concepto="DEVENGADO", activo=True)
         serializer = self.get_serializer(conceptos, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def deducciones(self, request):
-        """Obtiene conceptos de tipo deducción"""
-        empresa_id = request.query_params.get("empresa_id")
-        filters = {"tipo_concepto": "DEDUCCION", "activo": True}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        conceptos = self.queryset.filter(**filters)
+        """Obtiene conceptos de tipo deducción de las empresas propias"""
+        # R-CODE-1: get_queryset() ya aplica filtro de empresa
+        conceptos = self.get_queryset().filter(tipo_concepto="DEDUCCION", activo=True)
         serializer = self.get_serializer(conceptos, many=True)
         return Response(serializer.data)
 
@@ -138,6 +121,10 @@ class ProcesoNominaViewSet(viewsets.ModelViewSet):
     search_fields = ["numero_proceso"]
     ordering_fields = ["fecha_proceso", "numero_proceso", "total_neto"]
     ordering = ["-fecha_proceso"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        return ProcesoNomina.objects.filter(id_empresa__in=_empresas(self.request))
 
     @action(detail=True, methods=["post"])
     def procesar(self, request, pk=None):
@@ -202,6 +189,11 @@ class NominaViewSet(viewsets.ModelViewSet):
     ordering_fields = ["fecha_calculo", "total_neto", "sueldo_base"]
     ordering = ["-fecha_calculo"]
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar via FK chain Nomina → ProcesoNomina → empresa
+        empresas = _empresas(self.request)
+        return Nomina.objects.filter(id_proceso_nomina__id_empresa__in=empresas)
+
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):
         """Aprueba una nómina individual"""
@@ -240,6 +232,13 @@ class DetalleNominaViewSet(viewsets.ModelViewSet):
     ordering_fields = ["valor_total"]
     ordering = ["id_concepto_nomina__codigo_concepto"]
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar via FK chain DetalleNomina → Nomina → ProcesoNomina → empresa
+        empresas = _empresas(self.request)
+        return DetalleNomina.objects.filter(
+            id_nomina__id_proceso_nomina__id_empresa__in=empresas
+        )
+
 
 class ProcesoNominaExtrasalarialViewSet(viewsets.ModelViewSet):
     queryset = ProcesoNominaExtrasalarial.objects.all()
@@ -248,6 +247,10 @@ class ProcesoNominaExtrasalarialViewSet(viewsets.ModelViewSet):
     search_fields = ["numero_proceso"]
     ordering_fields = ["fecha_proceso", "total_monto"]
     ordering = ["-fecha_proceso"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        return ProcesoNominaExtrasalarial.objects.filter(id_empresa__in=_empresas(self.request))
 
     @action(detail=True, methods=["post"])
     def procesar(self, request, pk=None):
@@ -294,6 +297,13 @@ class NominaExtrasalarialViewSet(viewsets.ModelViewSet):
     search_fields = ["id_empleado__nombre", "id_empleado__apellido"]
     ordering_fields = ["fecha_calculo", "monto_neto"]
     ordering = ["-fecha_calculo"]
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar via FK chain → ProcesoNominaExtrasalarial → empresa
+        empresas = _empresas(self.request)
+        return NominaExtrasalarial.objects.filter(
+            id_proceso_extrasalarial__id_empresa__in=empresas
+        )
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):

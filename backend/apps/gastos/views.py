@@ -81,13 +81,12 @@ class GastoViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def resumen_por_categoria(self, request):
         """Obtiene resumen de gastos por categoría"""
-        empresa_id = request.query_params.get("empresa_id")
-        if not empresa_id:
-            return Response({"error": "Debe especificar el ID de la empresa"}, status=status.HTTP_400_BAD_REQUEST)
-
-        gastos = self.queryset.filter(
-            id_empresa=empresa_id, estado_gasto__in=["APROBADO", "REEMBOLSADO", "CONTABILIZADO"]
+        # R-CODE-1: siempre parte de get_queryset() que ya filtra por empresa propia
+        gastos = self.get_queryset().filter(
+            estado_gasto__in=["APROBADO", "REEMBOLSADO", "CONTABILIZADO"]
         ).select_related("id_categoria_gasto")
+
+        empresa_id = request.query_params.get("empresa_id")
 
         # Agrupar por categoría
         resumen = {}
@@ -113,13 +112,9 @@ class GastoViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def pendientes_aprobacion(self, request):
-        """Obtiene gastos pendientes de aprobación"""
-        empresa_id = request.query_params.get("empresa_id")
-        filters = {"estado_gasto": "PENDIENTE_APROBACION"}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        gastos_pendientes = self.queryset.filter(**filters)
+        """Obtiene gastos pendientes de aprobación de las empresas propias"""
+        # R-CODE-1: get_queryset() ya aplica filtro de empresa; nunca self.queryset
+        gastos_pendientes = self.get_queryset().filter(estado_gasto="PENDIENTE_APROBACION")
         serializer = self.get_serializer(gastos_pendientes, many=True)
         return Response(serializer.data)
 

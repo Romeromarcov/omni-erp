@@ -40,8 +40,8 @@ def generar_pdf_nota_entrega(despacho) -> bytes:
     empresa = despacho.id_empresa
 
     # ── Encabezado ────────────────────────────────────────────────────────────
-    story.append(Paragraph(f"<b>{empresa.nombre_empresa}</b>", styles["Title"]))
-    story.append(Paragraph(f"RIF: {getattr(empresa, 'rif', 'N/A')}", styles["Normal"]))
+    story.append(Paragraph(f"<b>{getattr(empresa, 'nombre_legal', str(empresa))}</b>", styles["Title"]))
+    story.append(Paragraph(f"RIF: {getattr(empresa, 'identificador_fiscal', 'N/A')}", styles["Normal"]))
     story.append(Spacer(1, 0.5 * cm))
 
     story.append(Paragraph("<b>NOTA DE ENTREGA</b>", styles["Heading1"]))
