@@ -1,41 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pedidoService } from '../../../services/ventas';
 import type { Pedido } from '../../../types/ventas';
 import { Button } from '@mui/material';
 
 const PedidosListPage: React.FC = () => {
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadPedidos();
-  }, []);
+  const { data: pedidos = [], isLoading } = useQuery<Pedido[]>({
+    queryKey: ['pedidos'],
+    queryFn: () => pedidoService.getAll() as Promise<Pedido[]>,
+  });
 
-  const loadPedidos = async () => {
-    setLoading(true);
-    try {
-      const data = await pedidoService.getAll();
-      setPedidos(data);
-    } catch (error) {
-      console.error('Error loading pedidos:', error);
-      setPedidos([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const convertirMutation = useMutation({
+    mutationFn: (pedidoId: string) => pedidoService.convertirANotaVenta(pedidoId, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+    },
+    onError: () => {
+      alert('Error al convertir el pedido a nota de venta');
+    },
+  });
 
-  const handleConvertirANotaVenta = async (pedido: Pedido) => {
+  const handleConvertirANotaVenta = (pedido: Pedido) => {
     if (!pedido.convertido_a_nota_venta) {
-      try {
-        await pedidoService.convertirANotaVenta(pedido.id_pedido, {});
-        await loadPedidos(); // Recargar la lista
-      } catch (error) {
-        console.error('Error convirtiendo pedido a nota de venta:', error);
-        alert('Error al convertir el pedido a nota de venta');
-      }
+      convertirMutation.mutate(pedido.id_pedido);
     }
   };
 
@@ -46,7 +38,7 @@ const PedidosListPage: React.FC = () => {
         <Button variant="contained" onClick={() => navigate('new')}>Nuevo Pedido</Button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div>Cargando pedidos...</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
@@ -118,6 +110,7 @@ const PedidosListPage: React.FC = () => {
                       {!pedido.convertido_a_nota_venta && pedido.estado === 'APROBADO' && (
                         <Button
                           variant="contained"
+                          disabled={convertirMutation.isPending}
                           onClick={() => handleConvertirANotaVenta(pedido)}
                         >
                           Convertir a Nota Venta

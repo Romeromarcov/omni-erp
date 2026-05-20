@@ -45,6 +45,11 @@ class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
     serializer_class = SesionCajaFisicaSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return SesionCajaFisica.objects.filter(empresa__in=get_empresas_visible(self.request.user))
+
     def perform_create(self, serializer):
         # Usar el método de clase para abrir sesión con validaciones
         caja_fisica_id = self.request.data.get("caja_fisica_principal")
@@ -131,6 +136,11 @@ from .models import Datafono
 class DatafonoViewSet(BaseModelViewSet):
     queryset = Datafono.objects.all()
     # serializer_class = DatafonoSerializer  # Si tienes un serializer, descomenta esto
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return Datafono.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
 
     @action(detail=True, methods=["post"], url_path="cierre")
     def cierre_datafono(self, request, pk=None):
@@ -252,6 +262,15 @@ class MonedaViewSet(BaseModelViewSet):
 class TasaCambioViewSet(BaseModelViewSet):
     queryset = TasaCambio.objects.all()
     serializer_class = TasaCambioSerializer
+
+    def get_queryset(self):
+        # R-CODE-1: tasas globales (BCV) son visibles para todos (id_empresa nulo),
+        # las específicas se filtran por empresa visible del usuario.
+        from django.db.models import Q
+        from apps.core.viewsets import get_empresas_visible
+        return TasaCambio.objects.filter(
+            Q(id_empresa__isnull=True) | Q(id_empresa__in=get_empresas_visible(self.request.user))
+        )
 
 
 from rest_framework import status
@@ -439,6 +458,11 @@ class MovimientoCajaBancoViewSet(BaseModelViewSet):
     queryset = MovimientoCajaBanco.objects.all()
     serializer_class = MovimientoCajaBancoSerializer
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return MovimientoCajaBanco.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+
 
 class CajaViewSet(BaseModelViewSet):
     queryset = Caja.objects.select_related("moneda", "empresa", "sucursal", "caja_fisica")
@@ -574,6 +598,11 @@ class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
 
     queryset = CuentaBancariaEmpresa.objects.all()
     serializer_class = CuentaBancariaEmpresaSerializer
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
 
 
 class MonedaEmpresaActivaViewSet(BaseModelViewSet):
