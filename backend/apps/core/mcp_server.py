@@ -15,15 +15,29 @@ Arranque del servidor MCP:
   python manage.py run_mcp_server           (stdio, para Claude Desktop)
   python manage.py run_mcp_server --sse     (SSE, para clientes HTTP)
 
-Herramientas disponibles (v0 — solo lectura):
+Herramientas disponibles (v1):
+  Núcleo / CRM
   - omni_ping              : health check
   - omni_get_empresas      : lista empresas del tenant
   - omni_get_clientes      : lista clientes de una empresa
-  - omni_get_productos     : lista productos de una empresa
+  - omni_buscar_cliente    : busca clientes por nombre, RIF o email
+  - omni_buscar_contacto   : busca contactos unificados
+
+  CxC
   - omni_get_saldo_cliente : saldo CxC de un cliente específico
   - omni_get_cxc_aging     : aging de saldos por cobrar
-  - omni_get_stock_producto: stock disponible de un producto
+
+  Inventario
+  - omni_get_stock_producto              : stock disponible de un producto
+  - omni_registrar_movimiento_inventario : registra ENTRADA / SALIDA / TRANSFERENCIA
+
+  Ventas
   - omni_get_ventas_resumen: resumen de ventas (pedidos aprobados)
+  - omni_crear_pedido      : crea un pedido de venta
+  - omni_get_pedidos       : lista pedidos de una empresa
+
+  Fiscal
+  - omni_get_correlativo_fiscal: siguiente número correlativo fiscal
 """
 
 from __future__ import annotations
@@ -454,6 +468,347 @@ def omni_get_ventas_resumen(
     }
 
 
+def omni_crear_pedido(
+    capability_token: str,
+    empresa_id: str,
+    cliente_id: str,
+    productos: list[dict],
+) -> dict[str, Any]:
+    """
+    Crea un pedido de venta.
+
+    Scope requerido: `ventas:write`
+
+    Args:
+        capability_token: Token con scope `ventas:write`.
+        empresa_id:       ID de la empresa.
+        cliente_id:       ID del cliente.
+        productos:        Lista de líneas: [{"id_producto": "uuid", "cantidad": 1, "precio_unitario": "100.00"}]
+
+    Returns:
+        dict con numero_pedido, id_pedido, estado.
+    """
+    from decimal import Decimal  # noqa: PLC0415
+
+    from django.db import transaction  # noqa: PLC0415
+    from django.utils import timezone  # noqa: PLC0415
+
+    from apps.ventas.models import DetallePedido, Pedido  # noqa: PLC0415
+
+    context = _resolve_token(capability_token)
+    _require_scope(context, "ventas:write")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    if not productos:
+        raise ValueError("Se requiere al menos un producto.")
+
+    try:
+        with transaction.atomic():
+            # Generar número de pedido: PED-YYYYMMDD-HHMMSS
+            ts = timezone.now().strftime("%Y%m%d-%H%M%S")
+            numero_pedido = f"PED-{ts}"
+
+            pedido = Pedido.objects.create(
+                id_empresa_id=empresa_id,
+                id_cliente_id=cliente_id,
+                numero_pedido=numero_pedido,
+                fecha_pedido=timezone.now().date(),
+                estado="PENDIENTE",
+            )
+
+            for linea in productos:
+                cantidad = Decimal(str(linea["cantidad"]))
+                precio_unitario = Decimal(str(linea["precio_unitario"]))
+                DetallePedido.objects.create(
+                    id_pedido=pedido,
+                    id_producto_id=linea["id_producto"],
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
+                    subtotal=cantidad * precio_unitario,
+                )
+
+        logger.info(
+            "omni_crear_pedido | actor=%s | tenant=%s | pedido=%s | lineas=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            numero_pedido,
+            len(productos),
+        )
+        return {
+            "id_pedido": str(pedido.id_pedido),
+            "numero_pedido": pedido.numero_pedido,
+            "estado": pedido.estado,
+            "cantidad_lineas": len(productos),
+        }
+    except Exception as exc:
+        logger.exception("omni_crear_pedido | error: %s", exc)
+        return {"error": str(exc)}
+
+
+def omni_get_pedidos(
+    capability_token: str,
+    empresa_id: str,
+    estado: str = "",
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """
+    Retorna pedidos de una empresa, opcionalmente filtrados por estado.
+
+    Scope requerido: `ventas:read`
+
+    Args:
+        capability_token: Token con scope `ventas:read`.
+        empresa_id:       ID de la empresa.
+        estado:           Filtrar por estado (PENDIENTE, ENVIADO, APROBADO, RECHAZADO, ANULADO). Vacío = todos.
+        limit:            Máximo de resultados (default 20, máx 100).
+
+    Returns:
+        Lista de pedidos con id, numero, cliente, fecha, estado.
+    """
+    from apps.ventas.models import Pedido  # noqa: PLC0415
+
+    context = _resolve_token(capability_token)
+    _require_scope(context, "ventas:read")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    try:
+        limit = min(limit, 100)
+        qs = Pedido.objects.filter(id_empresa=empresa_id, activo=True).select_related("id_cliente")
+        if estado:
+            qs = qs.filter(estado=estado)
+
+        pedidos = qs.order_by("-fecha_pedido")[:limit]
+
+        logger.info(
+            "omni_get_pedidos | actor=%s | tenant=%s | empresa=%s | estado=%s | count=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            empresa_id,
+            estado or "todos",
+            len(pedidos),
+        )
+        return [
+            {
+                "id_pedido": str(p.id_pedido),
+                "numero_pedido": p.numero_pedido,
+                "cliente": p.id_cliente.razon_social,
+                "fecha_pedido": str(p.fecha_pedido),
+                "estado": p.estado,
+            }
+            for p in pedidos
+        ]
+    except Exception as exc:
+        logger.exception("omni_get_pedidos | error: %s", exc)
+        return [{"error": str(exc)}]
+
+
+def omni_registrar_movimiento_inventario(
+    capability_token: str,
+    empresa_id: str,
+    producto_id: str,
+    tipo: str,
+    cantidad: str,
+    almacen_destino_id: str = "",
+    almacen_origen_id: str = "",
+) -> dict[str, Any]:
+    """
+    Registra un movimiento de inventario.
+
+    Scope requerido: `inventario:write`
+
+    Args:
+        capability_token:   Token con scope `inventario:write`.
+        empresa_id:         ID de la empresa.
+        producto_id:        ID del producto.
+        tipo:               Tipo de movimiento: ENTRADA | SALIDA | TRANSFERENCIA.
+        cantidad:           Cantidad del movimiento (string decimal).
+        almacen_destino_id: ID del almacén destino (requerido para ENTRADA y TRANSFERENCIA).
+        almacen_origen_id:  ID del almacén origen (requerido para SALIDA y TRANSFERENCIA).
+
+    Returns:
+        dict con id_movimiento, tipo, cantidad.
+    """
+    from decimal import Decimal  # noqa: PLC0415
+
+    from django.utils import timezone  # noqa: PLC0415
+
+    from apps.inventario.models import MovimientoInventario  # noqa: PLC0415
+
+    context = _resolve_token(capability_token)
+    _require_scope(context, "inventario:write")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    TIPOS_VALIDOS = {"ENTRADA", "SALIDA", "TRANSFERENCIA"}
+    if tipo not in TIPOS_VALIDOS:
+        return {"error": f"tipo '{tipo}' inválido. Válidos: {sorted(TIPOS_VALIDOS)}"}
+
+    try:
+        movimiento = MovimientoInventario.objects.create(
+            id_empresa_id=empresa_id,
+            fecha_hora_movimiento=timezone.now(),
+            tipo_movimiento=tipo,
+            id_producto_id=producto_id,
+            cantidad=Decimal(cantidad),
+            id_almacen_origen_id=almacen_origen_id or None,
+            id_almacen_destino_id=almacen_destino_id or None,
+            id_usuario_registro_id=context["actor_id"].replace("mcp-token:", ""),
+        )
+
+        logger.info(
+            "omni_registrar_movimiento_inventario | actor=%s | tenant=%s | tipo=%s | producto=%s | cantidad=%s",
+            context["actor_id"],
+            context["tenant_id"],
+            tipo,
+            producto_id,
+            cantidad,
+        )
+        return {
+            "id_movimiento": str(movimiento.id_movimiento_inventario),
+            "tipo": movimiento.tipo_movimiento,
+            "cantidad": str(movimiento.cantidad),
+            "empresa_id": empresa_id,
+        }
+    except Exception as exc:
+        logger.exception("omni_registrar_movimiento_inventario | error: %s", exc)
+        return {"error": str(exc)}
+
+
+def omni_get_correlativo_fiscal(
+    capability_token: str,
+    empresa_id: str,
+    tipo_documento: str,
+) -> dict[str, Any]:
+    """
+    Retorna el siguiente número correlativo fiscal para un tipo de documento.
+
+    Scope requerido: `fiscal:read`
+
+    Args:
+        capability_token: Token con scope `fiscal:read`.
+        empresa_id:       ID de la empresa.
+        tipo_documento:   FACTURA | NOTA_CREDITO | NOTA_DEBITO
+
+    Returns:
+        dict con tipo_documento, numero_actual, siguiente_numero, prefijo, numero_formateado.
+    """
+    from apps.fiscal.models import NumeroCorrelativo  # noqa: PLC0415
+
+    context = _resolve_token(capability_token)
+    _require_scope(context, "fiscal:read")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    TIPOS_VALIDOS = {"FACTURA", "NOTA_CREDITO", "NOTA_DEBITO"}
+    if tipo_documento not in TIPOS_VALIDOS:
+        return {"error": f"tipo_documento '{tipo_documento}' inválido. Válidos: {sorted(TIPOS_VALIDOS)}"}
+
+    try:
+        correlativo = NumeroCorrelativo.objects.get(
+            id_empresa=empresa_id,
+            tipo=tipo_documento,
+        )
+        siguiente = correlativo.numero_actual + 1
+        formateado = f"{correlativo.prefijo}{siguiente:0{correlativo.digitos}d}"
+
+        logger.info(
+            "omni_get_correlativo_fiscal | actor=%s | tenant=%s | tipo=%s | siguiente=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            tipo_documento,
+            siguiente,
+        )
+        return {
+            "tipo_documento": tipo_documento,
+            "empresa_id": empresa_id,
+            "numero_actual": correlativo.numero_actual,
+            "siguiente_numero": siguiente,
+            "prefijo": correlativo.prefijo,
+            "numero_formateado": formateado,
+        }
+    except NumeroCorrelativo.DoesNotExist:
+        return {
+            "error": f"No existe configuración de correlativo para tipo '{tipo_documento}' en la empresa {empresa_id}."
+        }
+    except Exception as exc:
+        logger.exception("omni_get_correlativo_fiscal | error: %s", exc)
+        return {"error": str(exc)}
+
+
+def omni_buscar_cliente(
+    capability_token: str,
+    empresa_id: str,
+    termino: str,
+) -> list[dict[str, Any]]:
+    """
+    Busca clientes por nombre, RIF o email.
+
+    Scope requerido: `crm:read`
+
+    Args:
+        capability_token: Token con scope `crm:read`.
+        empresa_id:       ID de la empresa.
+        termino:          Texto a buscar en razon_social, nombre_comercial, rif o email.
+
+    Returns:
+        Lista de clientes coincidentes.
+    """
+    from django.db.models import Q  # noqa: PLC0415
+
+    from apps.crm.models import Cliente  # noqa: PLC0415
+
+    context = _resolve_token(capability_token)
+    _require_scope(context, "crm:read")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    try:
+        qs = Cliente.objects.filter(
+            id_empresa=empresa_id,
+            activo=True,
+        ).filter(
+            Q(razon_social__icontains=termino)
+            | Q(nombre_comercial__icontains=termino)
+            | Q(rif__icontains=termino)
+            | Q(email__icontains=termino)
+        )[:50]
+
+        logger.info(
+            "omni_buscar_cliente | actor=%s | tenant=%s | termino=%r | count=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            termino,
+            len(qs),
+        )
+        return [
+            {
+                "id_cliente": str(c.id_cliente),
+                "razon_social": c.razon_social,
+                "nombre_comercial": c.nombre_comercial or "",
+                "rif": c.rif,
+                "email": c.email or "",
+                "telefono": c.telefono or "",
+                "tipo_cliente": c.tipo_cliente,
+            }
+            for c in qs
+        ]
+    except Exception as exc:
+        logger.exception("omni_buscar_cliente | error: %s", exc)
+        return [{"error": str(exc)}]
+
+
 def omni_buscar_contacto(
     capability_token: str,
     empresa_id: str,
@@ -551,3 +906,9 @@ if MCP_AVAILABLE and mcp is not None:
     omni_get_stock_producto = mcp.tool()(omni_get_stock_producto)
     omni_get_ventas_resumen = mcp.tool()(omni_get_ventas_resumen)
     omni_buscar_contacto = mcp.tool()(omni_buscar_contacto)
+    # ── Herramientas extendidas (v1) ──────────────────────────────────────────
+    omni_crear_pedido = mcp.tool()(omni_crear_pedido)
+    omni_get_pedidos = mcp.tool()(omni_get_pedidos)
+    omni_registrar_movimiento_inventario = mcp.tool()(omni_registrar_movimiento_inventario)
+    omni_get_correlativo_fiscal = mcp.tool()(omni_get_correlativo_fiscal)
+    omni_buscar_cliente = mcp.tool()(omni_buscar_cliente)

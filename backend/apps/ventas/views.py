@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models, transaction
 from django.utils import timezone
@@ -151,10 +152,11 @@ def crear_transaccion_financiera_pago(pago, usuario):
                 .first()
             )
             if tasa_base:
-                monto_base_empresa = float(pago.monto) / float(tasa_base.valor_tasa)
+                monto_base_empresa = Decimal(str(pago.monto)) / Decimal(str(tasa_base.valor_tasa))
             else:
                 # Fallback: usar la tasa del pago
-                monto_base_empresa = float(pago.monto) / float(pago.tasa) if pago.tasa > 0 else float(pago.monto)
+                tasa_pago = Decimal(str(pago.tasa)) if pago.tasa else Decimal("0")
+                monto_base_empresa = Decimal(str(pago.monto)) / tasa_pago if tasa_pago > 0 else Decimal(str(pago.monto))
 
         # Calcular monto_moneda_pais
         if moneda_pago == moneda_pais:
@@ -167,10 +169,11 @@ def crear_transaccion_financiera_pago(pago, usuario):
                 .first()
             )
             if tasa_pais:
-                monto_moneda_pais = float(pago.monto) * float(tasa_pais.valor_tasa)
+                monto_moneda_pais = Decimal(str(pago.monto)) * Decimal(str(tasa_pais.valor_tasa))
             else:
                 # Fallback: usar la tasa del pago
-                monto_moneda_pais = float(pago.monto) * float(pago.tasa) if pago.tasa > 0 else float(pago.monto)
+                tasa_pago = Decimal(str(pago.tasa)) if pago.tasa else Decimal("0")
+                monto_moneda_pais = Decimal(str(pago.monto)) * tasa_pago if tasa_pago > 0 else Decimal(str(pago.monto))
 
         logger.debug(f"Montos calculados correctamente:")
         logger.debug(f"  Monto transacción: {pago.monto} {moneda_pago}")
@@ -805,8 +808,8 @@ class ListaPrecioViewSet(viewsets.ModelViewSet):
                 continue
 
             try:
-                precio = float(row.get("precio", 0) or 0)
-                precio_minimo = float(row.get("precio_minimo", 0) or 0)
+                precio = Decimal(str(row.get("precio", 0) or 0))
+                precio_minimo = Decimal(str(row.get("precio_minimo", 0) or 0))
                 vigente_desde = row.get("vigente_desde") or None
                 vigente_hasta = row.get("vigente_hasta") or None
 

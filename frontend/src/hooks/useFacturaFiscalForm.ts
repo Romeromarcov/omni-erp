@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { DetalleFacturaFiscal } from '../types/ventas';
 import { get } from '../services/api';
 import { pagosService } from '../services/pagosService';
@@ -58,38 +59,47 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
   };
 
   // Load existing factura fiscal
+  const { data: facturaData, isLoading: isLoadingFactura } = useQuery({
+    queryKey: ['facturas-fiscales', facturaId],
+    queryFn: () => get(`/ventas/facturas-fiscales/${facturaId}/`) as Promise<Record<string, unknown>>,
+    enabled: !!facturaId,
+  });
+
   useEffect(() => {
-    if (!facturaId) return;
-    base.setLoading(true);
-    get(`/ventas/facturas-fiscales/${facturaId}/`)
-      .then((factura: Record<string, unknown>) => {
-        setForm({
-          numero_factura: String(factura.numero_factura || ''),
-          fecha_emision: String(factura.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
-          id_empresa: String(factura.id_empresa || getEmpresaId() || ''),
-          id_sucursal: localStorage.getItem('id_sucursal') || '',
-          id_cliente: String((factura.id_cliente as Record<string, unknown>)?.id_cliente || ''),
-          id_caja: String(factura.id_caja || ''),
-          id_vendedor: String(factura.id_vendedor || ''),
-          observaciones: String(factura.observaciones || ''),
-        });
-        if (Array.isArray(factura.detalles)) {
-          base.setDetalles(
-            (factura.detalles as DetalleFacturaFiscal[]).map(d => ({
-              id_producto: String((d as unknown as Record<string, unknown>).id_producto || ''),
-              cantidad: String(d.cantidad ?? 0),
-              precio_unitario: String(d.precio_unitario ?? 0),
-              descuento_porcentaje: String((d as unknown as { descuento_porcentaje?: number }).descuento_porcentaje ?? ''),
-              sku: '',
-              producto: '',
-            }))
-          );
-        }
-      })
-      .catch(() => base.setError('Error al cargar la factura fiscal'))
-      .finally(() => base.setLoading(false));
+    if (isLoadingFactura) {
+      base.setLoading(true);
+      return;
+    }
+    if (!facturaData) {
+      if (!isLoadingFactura) base.setLoading(false);
+      return;
+    }
+    const factura = facturaData;
+    setForm({
+      numero_factura: String(factura.numero_factura || ''),
+      fecha_emision: String(factura.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+      id_empresa: String(factura.id_empresa || getEmpresaId() || ''),
+      id_sucursal: localStorage.getItem('id_sucursal') || '',
+      id_cliente: String((factura.id_cliente as Record<string, unknown>)?.id_cliente || ''),
+      id_caja: String(factura.id_caja || ''),
+      id_vendedor: String(factura.id_vendedor || ''),
+      observaciones: String(factura.observaciones || ''),
+    });
+    if (Array.isArray(factura.detalles)) {
+      base.setDetalles(
+        (factura.detalles as DetalleFacturaFiscal[]).map(d => ({
+          id_producto: String((d as unknown as Record<string, unknown>).id_producto || ''),
+          cantidad: String(d.cantidad ?? 0),
+          precio_unitario: String(d.precio_unitario ?? 0),
+          descuento_porcentaje: String((d as unknown as { descuento_porcentaje?: number }).descuento_porcentaje ?? ''),
+          sku: '',
+          producto: '',
+        }))
+      );
+    }
+    base.setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facturaId]);
+  }, [facturaData, isLoadingFactura]);
 
   const submitFacturaFiscal = async (pagosToSend?: Pago[]) => {
     base.setLoading(true);

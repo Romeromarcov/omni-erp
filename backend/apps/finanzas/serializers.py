@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from apps.core.models import Sucursal
@@ -498,7 +500,7 @@ class TransaccionFinancieraSerializer(serializers.ModelSerializer):
                     .first()
                 )
                 if tasa:
-                    monto_moneda_pais = float(monto_transaccion) * float(tasa.valor_tasa)
+                    monto_moneda_pais = Decimal(str(monto_transaccion)) * Decimal(str(tasa.valor_tasa))
             validated_data["monto_moneda_pais"] = monto_moneda_pais
 
         # Crear la transacción financiera

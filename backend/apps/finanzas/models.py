@@ -271,6 +271,7 @@ class Caja(models.Model):
         db_table = "finanzas_caja_virtual"
         verbose_name = "Caja Virtual"
         verbose_name_plural = "Cajas Virtuales"
+        ordering = ["empresa", "nombre"]
 
     def __str__(self):
         return f"{self.nombre} (Virtual - {self.get_tipo_caja_display()}) - {self.moneda.codigo_iso}"
@@ -561,6 +562,7 @@ class CuentaBancariaEmpresa(models.Model):
         db_table = "finanzas_cuenta_bancaria_empresa"
         verbose_name = "Cuenta Bancaria Empresa"
         verbose_name_plural = "Cuentas Bancarias Empresa"
+        ordering = ["id_empresa", "nombre_banco"]
 
     def __str__(self):
         return f"{self.nombre_banco} - {self.numero_cuenta}"

@@ -1,5 +1,5 @@
 """
-DSL de Personalización de Omni ERP — Spec v1.
+DSL de Personalización de Omni ERP — Spec v1 (runtime completo).
 
 Un PersonalizacionConfig es un documento YAML/dict con seis primitivas.
 Cada primitiva es declarativa, versionable y reversible.
@@ -33,8 +33,12 @@ Aplicación (PoC):
 
 from __future__ import annotations
 
+import logging
+import threading
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+logger = logging.getLogger("omni.dsl")
 
 
 # ── Primitiva 1: campos ───────────────────────────────────────────────────────
@@ -243,21 +247,28 @@ def validar_config(config: dict[str, Any]) -> list[str]:
     return errores
 
 
-# ── Aplicador (PoC — primitiva 'campos') ─────────────────────────────────────
+# ── Aplicador (runtime completo) ──────────────────────────────────────────────
 
 def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     """
-    Aplica un PersonalizacionConfig a una empresa.
+    Aplica un PersonalizacionConfig a una empresa y persiste la configuración
+    en PersonalizacionConfig, desactivando la versión anterior.
 
-    PoC Fase 0: solo procesa la primitiva 'campos'.
-    - Renombrar: guarda alias en PersonalizacionConfig.metadatos.
-    - Ocultar: marca campo como oculto en metadatos.
-    - Requerir: marca campo como requerido en metadatos.
-    - Agregar: registra campo extra en metadatos (sin migración DB).
+    Primitivas procesadas:
+    - campos     : persiste metadatos de alias, visibilidad y obligatoriedad.
+    - entidades  : persiste definición de entidades personalizadas.
+    - estados    : persiste estados extra de workflow.
+    - reglas     : persiste reglas de validación ejecutables en runtime.
+    - vistas     : persiste preferencias de columnas/filtros.
+    - conectores : registra webhooks por evento_origen en DB.
 
     Returns:
-        dict con { "aplicadas": [str], "advertencias": [str] }
+        dict con { "aplicadas": [str], "advertencias": [str], "version": int }
     """
+    from django.utils import timezone  # noqa: PLC0415
+
+    from .models import PersonalizacionConfig  # noqa: PLC0415
+
     errores = validar_config(config)
     if errores:
         raise ValueError(f"Config inválido: {errores}")
@@ -265,23 +276,265 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     aplicadas: list[str] = []
     advertencias: list[str] = []
 
+    # ── Construir el resultado de aplicación ──────────────────────────────────
+    resultado: dict[str, Any] = {"campos": {}, "conectores": []}
+
+    # Primitiva: campos
     campos = config.get("campos", [])
     for c in campos:
         entidad = c["entidad"]
         campo = c["campo"]
         accion = c["accion"]
+        clave = f"{entidad}.{campo}"
 
-        desc = f"{accion} {entidad}.{campo}"
-        aplicadas.append(desc)
+        if clave not in resultado["campos"]:
+            resultado["campos"][clave] = {}
 
-        if accion not in ("renombrar", "ocultar", "requerir", "agregar"):
-            advertencias.append(f"{desc}: accion no implementada en PoC")
+        if accion == "renombrar":
+            resultado["campos"][clave]["alias"] = c.get("nuevo_nombre")
+        elif accion == "ocultar":
+            resultado["campos"][clave]["oculto"] = True
+        elif accion == "requerir":
+            resultado["campos"][clave]["requerido"] = True
+        elif accion == "agregar":
+            resultado["campos"][clave]["tipo_extra"] = c.get("tipo")
+            resultado["campos"][clave]["opciones"] = c.get("opciones", [])
 
-    for primitiva in ("entidades", "estados", "reglas", "vistas", "conectores"):
+        aplicadas.append(f"{accion} {clave}")
+
+    # Primitivas declarativas (persistidas tal cual en config_dict)
+    for primitiva in ("entidades", "estados", "reglas", "vistas"):
         if primitiva in config:
-            advertencias.append(
-                f"Primitiva '{primitiva}' registrada (implementación completa en Fase 1)"
-            )
-            aplicadas.append(f"registrado:{primitiva}")
+            aplicadas.append(f"registrado:{primitiva} ({len(config[primitiva])} items)")
 
-    return {"aplicadas": aplicadas, "advertencias": advertencias}
+    # Primitiva: conectores — extraer para indexado rápido
+    conectores = config.get("conectores", [])
+    for conector in conectores:
+        resultado["conectores"].append({
+            "nombre": conector["nombre"],
+            "url": conector["url"],
+            "metodo": conector.get("metodo", "POST"),
+            "evento_origen": conector["evento_origen"],
+            "headers": conector.get("headers", {}),
+            "mapeo_campos": conector.get("mapeo_campos", {}),
+        })
+        aplicadas.append(f"conector:{conector['nombre']} → {conector['evento_origen']}")
+
+    # ── Calcular siguiente versión ────────────────────────────────────────────
+    ultima = (
+        PersonalizacionConfig.objects.filter(id_empresa=empresa)
+        .order_by("-version")
+        .values_list("version", flat=True)
+        .first()
+    )
+    nueva_version = (ultima or 0) + 1
+
+    # Desactivar versiones anteriores
+    PersonalizacionConfig.objects.filter(id_empresa=empresa, activo=True).update(activo=False)
+
+    # Persistir nueva versión
+    PersonalizacionConfig.objects.create(
+        id_empresa=empresa,
+        version=nueva_version,
+        config_yaml="",  # el caller puede setear el YAML original si lo desea
+        config_dict=config,
+        activo=True,
+        fecha_aplicacion=timezone.now(),
+        resultado_aplicacion={
+            "aplicadas": aplicadas,
+            "advertencias": advertencias,
+            "version": nueva_version,
+            "metadatos_campos": resultado["campos"],
+            "conectores_indexados": resultado["conectores"],
+        },
+    )
+
+    logger.info(
+        "aplicar_config | empresa=%s | version=%d | primitivas=%s",
+        empresa,
+        nueva_version,
+        list(config.keys()),
+    )
+
+    return {
+        "aplicadas": aplicadas,
+        "advertencias": advertencias,
+        "version": nueva_version,
+    }
+
+
+# ── Runtime de reglas ─────────────────────────────────────────────────────────
+
+def get_config_activa(empresa) -> dict[str, Any]:
+    """
+    Retorna el config DSL activo para una empresa, o {} si no tiene.
+
+    Args:
+        empresa: instancia de Empresa o ID de empresa.
+
+    Returns:
+        dict con las primitivas del DSL, o {} si no hay config activa.
+    """
+    from .models import PersonalizacionConfig  # noqa: PLC0415
+
+    try:
+        config_obj = PersonalizacionConfig.objects.filter(
+            id_empresa=empresa,
+            activo=True,
+        ).order_by("-version").first()
+
+        if config_obj is None:
+            return {}
+
+        return config_obj.config_dict or {}
+    except Exception as exc:
+        logger.warning("get_config_activa | empresa=%s | error: %s", empresa, exc)
+        return {}
+
+
+def ejecutar_reglas(entidad_nombre: str, instancia, empresa) -> list[str]:
+    """
+    Ejecuta las reglas de validación DSL para una instancia de modelo.
+
+    Operadores soportados:
+    - mayor_que    : campo > valor
+    - menor_que    : campo < valor
+    - igual_a      : campo == valor
+    - distinto_de  : campo != valor
+    - requerido_si : si campo_condicion == valor_condicion, campo no puede ser None/''
+
+    Args:
+        entidad_nombre: Nombre de la entidad DSL (ej: "Pedido", "Cliente").
+        instancia:      Instancia del modelo Django a validar.
+        empresa:        Instancia de Empresa (para cargar su config activa).
+
+    Returns:
+        Lista de mensajes de error. Vacía si la instancia pasa todas las reglas.
+    """
+    config = get_config_activa(empresa)
+    reglas = config.get("reglas", [])
+
+    # Filtrar solo las reglas para esta entidad
+    reglas_entidad = [r for r in reglas if r.get("entidad") == entidad_nombre]
+    if not reglas_entidad:
+        return []
+
+    errores: list[str] = []
+
+    for regla in reglas_entidad:
+        campo = regla.get("campo", "")
+        operador = regla.get("operador", "")
+        valor = regla.get("valor")
+        mensaje = regla.get("mensaje_error", f"Regla DSL fallida: {campo}")
+
+        try:
+            valor_campo = getattr(instancia, campo, None)
+
+            if operador == "mayor_que":
+                if valor_campo is None or not (valor_campo > valor):
+                    errores.append(mensaje)
+
+            elif operador == "menor_que":
+                if valor_campo is None or not (valor_campo < valor):
+                    errores.append(mensaje)
+
+            elif operador == "igual_a":
+                if valor_campo != valor:
+                    errores.append(mensaje)
+
+            elif operador == "distinto_de":
+                if valor_campo == valor:
+                    errores.append(mensaje)
+
+            elif operador == "requerido_si":
+                # Estructura esperada: {campo_condicion, valor_condicion}
+                campo_condicion = regla.get("campo_condicion", "")
+                valor_condicion = regla.get("valor_condicion")
+                if campo_condicion:
+                    valor_cond_actual = getattr(instancia, campo_condicion, None)
+                    if valor_cond_actual == valor_condicion:
+                        # La condición se cumple: el campo no puede ser None/''
+                        if valor_campo is None or valor_campo == "":
+                            errores.append(mensaje)
+
+        except (TypeError, AttributeError) as exc:
+            logger.warning(
+                "ejecutar_reglas | entidad=%s | campo=%s | operador=%s | error=%s",
+                entidad_nombre,
+                campo,
+                operador,
+                exc,
+            )
+            # Regla mal configurada: no bloquear, solo advertir en log
+
+    return errores
+
+
+# ── Disparador de conectores (webhooks) ───────────────────────────────────────
+
+def _enviar_webhook(url: str, metodo: str, payload: dict, headers: dict) -> None:
+    """Envía el webhook en background. Fallos son silenciosos (solo log)."""
+    try:
+        import urllib.request  # noqa: PLC0415
+        import json  # noqa: PLC0415
+
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json", **headers},
+            method=metodo.upper(),
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            status = resp.status
+        logger.info("_enviar_webhook | url=%s | status=%d", url, status)
+    except Exception as exc:
+        logger.warning("_enviar_webhook | url=%s | error=%s", url, exc)
+
+
+def disparar_conectores(evento_origen: str, payload: dict, empresa) -> None:
+    """
+    Dispara webhooks de conectores configurados para este evento.
+    Ejecuta los envíos en hilos separados para no bloquear el request.
+
+    Args:
+        evento_origen: Identificador del evento (ej: "ventas.pedido.confirmado").
+        payload:       Datos a enviar en el cuerpo del webhook.
+        empresa:       Instancia de Empresa para cargar su config activa.
+    """
+    config = get_config_activa(empresa)
+    conectores = config.get("conectores", [])
+
+    # Filtrar conectores suscritos a este evento
+    conectores_match = [c for c in conectores if c.get("evento_origen") == evento_origen]
+
+    if not conectores_match:
+        return
+
+    for conector in conectores_match:
+        url = conector.get("url", "")
+        metodo = conector.get("metodo", "POST")
+        headers = conector.get("headers", {})
+
+        # Aplicar mapeo de campos si existe
+        mapeo = conector.get("mapeo_campos", {})
+        if mapeo:
+            payload_final = {destino: payload.get(origen) for origen, destino in mapeo.items()}
+        else:
+            payload_final = dict(payload)
+
+        # Disparar en background con threading (no requiere Celery)
+        hilo = threading.Thread(
+            target=_enviar_webhook,
+            args=(url, metodo, payload_final, headers),
+            daemon=True,
+            name=f"webhook-{conector.get('nombre', 'anon')}-{evento_origen}",
+        )
+        hilo.start()
+
+        logger.info(
+            "disparar_conectores | evento=%s | conector=%s | url=%s",
+            evento_origen,
+            conector.get("nombre"),
+            url,
+        )

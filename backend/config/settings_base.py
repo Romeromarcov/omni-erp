@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     "apps.agentes",
     "apps.personalizacion",
     "apps.saas",
+    # Event Store
+    "apps.eventos",
 ]
 
 MIDDLEWARE = [
@@ -258,6 +260,11 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "omni.eventos": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
     },
 }
 
@@ -347,3 +354,15 @@ CELERY_TASK_TIME_LIMIT = 600  # 10 min (hard kill)
 
 # Beat — schedule de tareas periódicas
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# ── Event Store (Redpanda/Kafka) ───────────────────────────────────────────────
+# Dejar KAFKA_BROKER_URL vacío para deshabilitar (degradación graceful a log).
+# En producción: KAFKA_BROKER_URL=redpanda:9092
+KAFKA_BROKER_URL = os.environ.get("KAFKA_BROKER_URL", "")  # vacío = deshabilitado
+KAFKA_TOPIC_PREFIX = os.environ.get("KAFKA_TOPIC_PREFIX", "omni")
+KAFKA_PRODUCER_CONFIG = {
+    "bootstrap.servers": KAFKA_BROKER_URL,
+    "client.id": "omni-erp-producer",
+    "acks": "all",  # máxima durabilidad
+    "retries": 3,
+}
