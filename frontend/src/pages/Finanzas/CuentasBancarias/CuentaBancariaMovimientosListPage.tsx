@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { getMovimientosCuentaBancaria } from '../../../services/cuentaBancariaService';
+import { toList } from '../../../utils/api';
 import { Button, TextField } from '@mui/material';
 
 // Ajusta los campos según el serializer de movimientos de cuenta bancaria
@@ -25,30 +27,14 @@ interface MovimientoCuentaBancaria {
 const CuentaBancariaMovimientosListPage: React.FC = () => {
   const { id_cuenta } = useParams<{ id_cuenta: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<MovimientoCuentaBancaria[]>([]);
   const [filters, setFilters] = useState({ fecha_inicio: '', fecha_fin: '', tipo: '', moneda: '', concepto: '', referencia: '', usuario: '' });
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!id_cuenta) return;
-    setLoading(true);
-    getMovimientosCuentaBancaria(id_cuenta, filters)
-      .then(result => {
-        if (Array.isArray(result)) {
-          setData(result);
-        } else if (
-          result &&
-          typeof result === 'object' &&
-          'results' in result &&
-          Array.isArray((result as { results: MovimientoCuentaBancaria[] }).results)
-        ) {
-          setData((result as { results: MovimientoCuentaBancaria[] }).results);
-        } else {
-          setData([]);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [id_cuenta, filters]);
+  const { data = [], isLoading: loading } = useQuery<unknown, Error, MovimientoCuentaBancaria[]>({
+    queryKey: [`/finanzas/movimientos-cuenta-bancaria/${id_cuenta}/`, filters],
+    queryFn: () => getMovimientosCuentaBancaria(id_cuenta!, filters),
+    select: toList,
+    enabled: !!id_cuenta,
+  });
 
   // Extraer info de la cuenta si hay datos
   const cuentaNombre = data[0]?.cuenta_bancaria_nombre || '-';

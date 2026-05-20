@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchMonedasInfoMetodoPago } from '../../../services/monedasInfoMetodoPago';
 import type { MonedasInfoMetodoPago } from '../../../services/monedasInfoMetodoPago';
 import { useParams, useNavigate } from 'react-router-dom';
 import { get } from '../../../services/api';
+import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 import { updateMonedasMetodoPagoEmpresaActiva, fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { Button } from '@mui/material';
@@ -32,79 +34,63 @@ const MetodoPagoDetailPage: React.FC = () => {
   type Empresa = { id: string; nombre_comercial: string };
   const user: User = (window as unknown as { user?: User }).user || { es_superusuario_innova: false };
   const empresas: Empresa[] = React.useMemo(() => (window as unknown as { empresas?: Empresa[] }).empresas || [], []);
-  const [metodo, setMetodo] = useState<MetodoPagoDetail | null>(null);
   const [editMonedas, setEditMonedas] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [metodoEmpresaActivaId, setMetodoEmpresaActivaId] = useState<string | null>(null);
+  const [localMonedas, setLocalMonedas] = useState<string[]>([]);
 
-  // Monedas y monedasInfo para el selector avanzado
-  const [monedas, setMonedas] = useState<{ id: string; nombre: string; codigo_iso: string }[]>([]);
-  const [monedasInfo, setMonedasInfo] = useState<MonedasInfoMetodoPago>({ asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] });
+  const { data: metodo, isLoading: loading } = useQuery<MetodoPagoDetail>({
+    queryKey: [`/finanzas/metodos-pago/${id_metodo_pago}/`],
+    queryFn: () => get(`/finanzas/metodos-pago/${id_metodo_pago}/`) as Promise<MetodoPagoDetail>,
+    enabled: !!id_metodo_pago,
+  });
+
   useEffect(() => {
-    // Siempre cargar todas las monedas disponibles para el selector
-    import('../../../services/monedas').then(({ fetchMonedas }) => {
-      fetchMonedas().then((todas) => {
-        setMonedas(todas.map(m => ({ id: m.id_moneda, nombre: m.nombre, codigo_iso: m.codigo_iso })));
-      });
-    });
-    // Si hay método y empresa, cargar info extra
-    if (metodo && metodo.id_metodo_pago && metodo.empresa && metodo.tipo_metodo) {
-      fetchMonedasInfoMetodoPago(metodo.id_metodo_pago, metodo.empresa).then(info => {
-        setMonedasInfo(info);
-      }).catch(() => {
-        setMonedasInfo({ asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] });
-      });
-    } else {
-      setMonedasInfo({ asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] });
-    }
+    if (metodo?.monedas) setLocalMonedas(metodo.monedas);
   }, [metodo]);
 
-  // Obtener el id de la relación MetodoPagoEmpresaActiva para el método actual
-  useEffect(() => {
-    if (metodo && metodo.id_metodo_pago && metodo.empresa) {
-      // Tipar correctamente la respuesta
-      fetchMetodosPagoEmpresaActivos(metodo.empresa as string).then((data) => {
-        type MetodoPagoEmpresaActiva = { id: string; metodo_pago: string };
-        let rel: MetodoPagoEmpresaActiva | undefined;
-        if (Array.isArray(data)) {
-          rel = data.find((m: MetodoPagoEmpresaActiva) => m.metodo_pago === metodo.id_metodo_pago);
-        } else if (data && Array.isArray((data as { results?: unknown }).results)) {
-          rel = (data as { results: MetodoPagoEmpresaActiva[] }).results.find((m) => m.metodo_pago === metodo.id_metodo_pago);
-        }
-        setMetodoEmpresaActivaId(rel?.id || null);
-      });
-    } else {
-      setMetodoEmpresaActivaId(null);
-    }
-  }, [metodo]);
+  const { data: todasMonedas = [] } = useQuery<{ id_moneda: string; nombre: string; codigo_iso: string }[]>({
+    queryKey: ['/finanzas/monedas/'],
+    queryFn: async () => {
+      const { fetchMonedas } = await import('../../../services/monedas');
+      return fetchMonedas();
+    },
+  });
 
-  // (Si necesitas validación fuzzy, puedes restaurar aquí el hook de metodosExistentes)
-  useEffect(() => {
-    get(`/finanzas/metodos-pago/${id_metodo_pago}/`)
-      .then((data) => setMetodo(data as MetodoPagoDetail))
-      .catch(() => setError('Error al cargar método de pago'))
-      .finally(() => setLoading(false));
-  }, [id_metodo_pago]);
+  const monedas = todasMonedas.map(m => ({ id: m.id_moneda, nombre: m.nombre, codigo_iso: m.codigo_iso }));
+
+  const { data: monedasInfo = { asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] } } = useQuery<MonedasInfoMetodoPago>({
+    queryKey: [`/finanzas/monedas-info/${metodo?.id_metodo_pago}/${metodo?.empresa}/`],
+    queryFn: () => fetchMonedasInfoMetodoPago(metodo!.id_metodo_pago, metodo!.empresa!),
+    enabled: !!(metodo?.id_metodo_pago && metodo?.empresa && metodo?.tipo_metodo),
+  });
+
+  const { data: metodoEmpresaActivaId = null } = useQuery<string | null>({
+    queryKey: [`/finanzas/metodos-pago-empresa-activos/${metodo?.empresa}/`, metodo?.id_metodo_pago],
+    queryFn: async () => {
+      type MetodoPagoEmpresaActiva = { id: string; metodo_pago: string };
+      const data = await fetchMetodosPagoEmpresaActivos(metodo!.empresa as string);
+      const list = toList<MetodoPagoEmpresaActiva>(data as unknown);
+      const rel = list.find(m => m.metodo_pago === metodo!.id_metodo_pago);
+      return rel?.id || null;
+    },
+    enabled: !!(metodo?.id_metodo_pago && metodo?.empresa),
+  });
+
+  const updateMonedasMutation = useMutation({
+    mutationFn: () => updateMonedasMetodoPagoEmpresaActiva(metodoEmpresaActivaId!, localMonedas),
+    onSuccess: () => setEditMonedas(false),
+    onError: () => setError('Error al actualizar monedas asociadas'),
+  });
 
   // Guardar solo monedas asociadas para la empresa activa
-  const handleUpdateMonedas = async (e: React.FormEvent) => {
+  const handleUpdateMonedas = (e: React.FormEvent) => {
     e.preventDefault();
     if (!metodo || !metodoEmpresaActivaId) return;
     setError('');
-    setLoading(true);
-    try {
-      await updateMonedasMetodoPagoEmpresaActiva(metodoEmpresaActivaId, metodo.monedas || []);
-      setEditMonedas(false);
-    } catch {
-      setError('Error al actualizar monedas asociadas');
-    } finally {
-      setLoading(false);
-    }
+    updateMonedasMutation.mutate();
   };
 
   if (loading) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
-  if (error) return <PageLayout><div style={{ textAlign: 'center', color: 'red', padding: 32 }}>{error}</div></PageLayout>;
   if (!metodo) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>No encontrado</div></PageLayout>;
 
   return (

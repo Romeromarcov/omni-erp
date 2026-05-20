@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { facturaFiscalService } from '../../../services/ventas';
 import type { FacturaFiscal } from '../../../types/ventas';
@@ -8,35 +9,32 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 const FacturasFiscalesListPage: React.FC = () => {
   const navigate = useNavigate();
-  const [facturas, setFacturas] = useState<FacturaFiscal[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedFactura, setSelectedFactura] = useState<FacturaFiscal | null>(null);
 
-  useEffect(() => {
-    // Verificar si el usuario está autenticado antes de cargar datos
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('Usuario no autenticado. Redirigiendo al login...');
-      window.location.href = '/login';
-      return;
-    }
-    loadFacturas();
-  }, []);
+  const { data: facturas = [], isLoading: loading, isError } = useQuery<FacturaFiscal[]>({
+    queryKey: ['/ventas/facturas-fiscales/'],
+    queryFn: () => facturaFiscalService.getAll(),
+  });
 
-  const loadFacturas = async () => {
-    setLoading(true);
-    try {
-      const data = await facturaFiscalService.getAll();
-      setFacturas(data);
-    } catch (err) {
-      setError('Error al cargar las facturas fiscales');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = isError ? 'Error al cargar las facturas fiscales' : null;
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => facturaFiscalService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/facturas-fiscales/'] });
+    },
+    onError: () => alert('Error al eliminar la factura fiscal'),
+  });
+
+  const generarNotaCreditoMutation = useMutation({
+    mutationFn: (id: string) => facturaFiscalService.generarNotaCredito(id, 'DEVOLUCION', {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/facturas-fiscales/'] });
+    },
+    onError: () => alert('Error al crear la nota de crédito'),
+  });
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -72,28 +70,16 @@ const FacturasFiscalesListPage: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (selectedFactura && window.confirm('¿Está seguro de que desea eliminar esta factura fiscal?')) {
-      try {
-        await facturaFiscalService.delete(selectedFactura.id_factura);
-        await loadFacturas();
-      } catch (error) {
-        console.error('Error eliminando factura fiscal:', error);
-        alert('Error al eliminar la factura fiscal');
-      }
+      deleteMutation.mutate(selectedFactura.id_factura);
     }
     handleMenuClose();
   };
 
-  const handleCrearNotaCredito = async () => {
+  const handleCrearNotaCredito = () => {
     if (selectedFactura) {
-      try {
-        await facturaFiscalService.generarNotaCredito(selectedFactura.id_factura, 'DEVOLUCION', {});
-        await loadFacturas();
-      } catch (error) {
-        console.error('Error creando nota de crédito:', error);
-        alert('Error al crear la nota de crédito');
-      }
+      generarNotaCreditoMutation.mutate(selectedFactura.id_factura);
     }
     handleMenuClose();
   };

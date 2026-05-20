@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { notaCreditoFiscalService } from '../../../services/ventas';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
@@ -8,27 +9,23 @@ import SearchIcon from '@mui/icons-material/Search';
 
 const NotasCreditoFiscalListPage: React.FC = () => {
   const navigate = useNavigate();
-  const [notasCredito, setNotasCredito] = useState<NotaCreditoFiscal[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadNotasCredito();
-  }, []);
+  const { data: notasCredito = [], isLoading: loading, isError } = useQuery<NotaCreditoFiscal[]>({
+    queryKey: ['/ventas/notas-credito-fiscal/'],
+    queryFn: () => notaCreditoFiscalService.getAll(),
+  });
 
-  const loadNotasCredito = async () => {
-    setLoading(true);
-    try {
-      const data = await notaCreditoFiscalService.getAll();
-      setNotasCredito(data);
-    } catch (err) {
-      setError('Error al cargar las notas de crédito fiscal');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = isError ? 'Error al cargar las notas de crédito fiscal' : null;
+
+  const aplicarMutation = useMutation({
+    mutationFn: (id: string) => notaCreditoFiscalService.aplicar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-credito-fiscal/'] });
+    },
+    onError: () => alert('Error al aplicar la nota de crédito fiscal'),
+  });
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -45,14 +42,8 @@ const NotasCreditoFiscalListPage: React.FC = () => {
     nota.id_cliente?.rif?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAplicar = async (id: string) => {
-    try {
-      await notaCreditoFiscalService.aplicar(id);
-      await loadNotasCredito(); // Recargar la lista
-    } catch (error) {
-      console.error('Error aplicando nota de crédito fiscal:', error);
-      alert('Error al aplicar la nota de crédito fiscal');
-    }
+  const handleAplicar = (id: string) => {
+    aplicarMutation.mutate(id);
   };
 
   if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;

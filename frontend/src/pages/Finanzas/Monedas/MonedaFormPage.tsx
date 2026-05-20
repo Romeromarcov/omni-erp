@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { post, get } from '../../../services/api';
+import { toList } from '../../../utils/api';
 import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
 import type { Moneda } from './MonedaListPage';
 import PageLayout from '../../../components/PageLayout';
@@ -21,17 +23,25 @@ const defaultMoneda: Partial<Moneda> = {
 const MonedaFormPage: React.FC = () => {
   const [moneda, setMoneda] = useState<Partial<Moneda>>(defaultMoneda);
   const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [monedasExistentes, setMonedasExistentes] = useState<Moneda[]>([]);
-
-  useEffect(() => {
-    get('/finanzas/monedas/?limit=1000').then((res) => {
-      if (Array.isArray(res)) setMonedasExistentes(res);
-      else if (res && Array.isArray((res as { results: Moneda[] }).results)) setMonedasExistentes((res as { results: Moneda[] }).results);
-      else setMonedasExistentes([]);
-    }).catch(() => setMonedasExistentes([]));
-  }, []);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: monedasExistentes = [] } = useQuery<unknown, Error, Moneda[]>({
+    queryKey: ['/finanzas/monedas/?limit=1000'],
+    queryFn: () => get('/finanzas/monedas/?limit=1000'),
+    select: toList,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => post('/finanzas/monedas/', payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/monedas/'] });
+      navigate('/finanzas/monedas');
+    },
+    onError: () => setError('Error al crear moneda'),
+  });
+
+  const saving = createMutation.isPending;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setMoneda({ ...moneda, [e.target.name]: e.target.value });
@@ -41,7 +51,7 @@ const MonedaFormPage: React.FC = () => {
     setMoneda({ ...moneda, [e.target.name]: e.target.checked });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     // Validación fuzzy de duplicados antes de enviar
@@ -50,7 +60,6 @@ const MonedaFormPage: React.FC = () => {
       setError(`Ya existe una moneda similar: "${similar.nombre}" (${similar.codigo_iso})`);
       return;
     }
-    setSaving(true);
     // Formatea la fecha correctamente
     const payload = {
       ...moneda,
@@ -60,14 +69,7 @@ const MonedaFormPage: React.FC = () => {
             : null)
         : null,
     };
-    try {
-      await post('/finanzas/monedas/', payload);
-      navigate('/finanzas/monedas');
-    } catch {
-      setError('Error al crear moneda');
-    } finally {
-      setSaving(false);
-    }
+    createMutation.mutate(payload as Record<string, unknown>);
   };
 
   return (

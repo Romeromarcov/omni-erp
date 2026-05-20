@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
 import PageLayout from '../../../components/PageLayout';
@@ -7,6 +8,7 @@ import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';

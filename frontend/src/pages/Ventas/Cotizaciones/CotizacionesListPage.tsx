@@ -1,41 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cotizacionService } from '../../../services/ventas';
 import type { Cotizacion } from '../../../types/ventas';
 import { Button } from '@mui/material';
 
 const CotizacionesListPage: React.FC = () => {
-  const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadCotizaciones();
-  }, []);
+  const { data: cotizaciones = [], isLoading: loading } = useQuery<Cotizacion[]>({
+    queryKey: ['/ventas/cotizaciones/'],
+    queryFn: () => cotizacionService.getAll(),
+  });
 
-  const loadCotizaciones = async () => {
-    setLoading(true);
-    try {
-      const data = await cotizacionService.getAll();
-      setCotizaciones(data);
-    } catch (error) {
-      console.error('Error loading cotizaciones:', error);
-      setCotizaciones([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const convertirMutation = useMutation({
+    mutationFn: (id: string) => cotizacionService.convertirAPedido(id, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/cotizaciones/'] });
+    },
+    onError: () => alert('Error al convertir la cotización a pedido'),
+  });
 
-  const handleConvertirAPedido = async (cotizacion: Cotizacion) => {
+  const handleConvertirAPedido = (cotizacion: Cotizacion) => {
     if (!cotizacion.convertido_a_pedido) {
-      try {
-        await cotizacionService.convertirAPedido(cotizacion.id_cotizacion, {});
-        await loadCotizaciones(); // Recargar la lista
-      } catch (error) {
-        console.error('Error convirtiendo cotización a pedido:', error);
-        alert('Error al convertir la cotización a pedido');
-      }
+      convertirMutation.mutate(cotizacion.id_cotizacion);
     }
   };
 

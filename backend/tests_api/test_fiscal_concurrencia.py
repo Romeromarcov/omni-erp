@@ -133,16 +133,16 @@ class TestCorrelativoConcurrencia:
             except Exception as exc:
                 with lock:
                     errores.append(str(exc))
+            finally:
+                # Cada hilo cierra su propia conexión (thread-local) antes de salir
+                from django.db import connection as _conn
+                _conn.close()
 
         hilos = [threading.Thread(target=obtener_numero) for _ in range(N_HILOS)]
         for h in hilos:
             h.start()
         for h in hilos:
             h.join(timeout=10)
-
-        # Cerrar conexiones de threads para evitar el warning "DB en uso" al teardown
-        for conn in connections.all():
-            conn.close()
 
         assert not errores, f"Errores en hilos: {errores}"
         assert len(resultados) == N_HILOS, f"Se esperaban {N_HILOS} resultados, hay {len(resultados)}"
@@ -170,6 +170,10 @@ class TestCorrelativoConcurrencia:
                     resultados.append(num)
             except Exception:
                 pass
+            finally:
+                # Cada hilo cierra su propia conexión (thread-local) antes de salir
+                from django.db import connection as _conn
+                _conn.close()
 
         hilos = [threading.Thread(target=obtener_numero) for _ in range(N_HILOS)]
         for h in hilos:

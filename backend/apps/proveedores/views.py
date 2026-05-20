@@ -34,7 +34,15 @@ class ContactoProveedorViewSet(BaseModelViewSet):
     queryset = ContactoProveedor.objects.all()
     serializer_class = ContactoProveedorSerializer
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar vía FK id_proveedor → id_empresa
+        return ContactoProveedor.objects.filter(id_proveedor__id_empresa__in=_empresas(self.request))
+
 
 class CuentaBancariaProveedorViewSet(BaseModelViewSet):
     queryset = CuentaBancariaProveedor.objects.all()
     serializer_class = CuentaBancariaProveedorSerializer
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar vía FK id_proveedor → id_empresa
+        return CuentaBancariaProveedor.objects.filter(id_proveedor__id_empresa__in=_empresas(self.request))

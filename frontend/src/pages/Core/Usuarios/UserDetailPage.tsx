@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsuarios } from '../../../services/users';
 import type { Usuario } from '../../../services/users';
 import { fetchUsuarioRoles } from '../../../services/usuarioRoles';
@@ -8,9 +9,7 @@ import PageLayout from '../../../components/PageLayout';
 
 const UserDetailPage: React.FC = () => {
   const { id_empresa, id } = useParams<{ id_empresa: string; id: string }>();
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [usuarioRoles, setUsuarioRoles] = useState<UsuarioRol[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [form, setForm] = useState<{ first_name: string; last_name: string; email: string; empresas: string[]; sucursales: string[]; departamentos: string[] }>({ first_name: '', last_name: '', email: '', empresas: [], sucursales: [], departamentos: [] });
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
@@ -20,113 +19,99 @@ const UserDetailPage: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
-  const [sucursales, setSucursales] = useState<{ id_sucursal: string; nombre: string }[]>([]);
-  const [empresas, setEmpresas] = useState<{ id_empresa: string; nombre_legal: string; nombre_comercial?: string }[]>([]);
-  const [departamentos, setDepartamentos] = useState<{ id_departamento: string; nombre_departamento: string }[]>([]);
   // Quitar validación de admin, todos pueden editar
 
-  useEffect(() => {
-    setLoading(true);
+  function safeJsonFetch(url: string, options: RequestInit = {}) {
+    return fetch(url, options).then(async r => {
+      const rawText = await r.text();
+      if (!r.ok) {
+        throw new Error(`Error en ${url}: status ${r.status} - ${rawText.slice(0, 100)}`);
+      }
+      try {
+        return JSON.parse(rawText);
+      } catch {
+        throw new Error(`Respuesta no es JSON en ${url}: ${rawText.slice(0, 100)}`);
+      }
+    });
+  }
+
+  function getHeaders(): HeadersInit {
     let token = localStorage.getItem('token') || '';
     token = token.trim().replace(/^"|"$/g, '').replace(/\n/g, '');
-    const headers: HeadersInit = {};
-    if (token) {
-      (headers as Record<string, string>).Authorization = `Bearer ${token}`;
-    }
-    function safeJsonFetch(url: string, options: RequestInit = {}) {
-      return fetch(url, options).then(async r => {
-        const rawText = await r.text();
-        if (!r.ok) {
-          throw new Error(`Error en ${url}: status ${r.status} - ${rawText.slice(0, 100)}`);
-        }
-        try {
-          return JSON.parse(rawText);
-        } catch {
-          throw new Error(`Respuesta no es JSON en ${url}: ${rawText.slice(0, 100)}`);
-        }
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+  }
+
+  const { data: allData, isLoading: loading } = useQuery({
+    queryKey: ['/api/core/usuarios-detalle/', id, id_empresa],
+    queryFn: async () => {
+      const headers = getHeaders();
+      const [usuariosRaw, usuarioRolesData, empresasDataRaw, sucursalesDataRaw, departamentosDataRaw] = await Promise.all([
+        fetchUsuarios(id_empresa),
+        fetchUsuarioRoles(id || ''),
+        safeJsonFetch('/api/core/empresas/', { headers }),
+        safeJsonFetch('/api/core/sucursales/', { headers }),
+        safeJsonFetch('/api/core/departamentos/', { headers })
+      ]);
+      let usuarios: Usuario[] = [];
+      if (Array.isArray(usuariosRaw)) usuarios = usuariosRaw;
+      else if (usuariosRaw && typeof usuariosRaw === 'object' && 'results' in usuariosRaw && Array.isArray((usuariosRaw as { results?: unknown }).results)) {
+        usuarios = (usuariosRaw as { results: Usuario[] }).results;
+      }
+      let empresasData: { id_empresa: string; nombre_legal: string; nombre_comercial?: string }[] = [];
+      if (Array.isArray(empresasDataRaw)) empresasData = empresasDataRaw;
+      else if (empresasDataRaw && typeof empresasDataRaw === 'object' && 'results' in empresasDataRaw && Array.isArray((empresasDataRaw as { results?: unknown }).results)) {
+        empresasData = (empresasDataRaw as { results: typeof empresasData }).results;
+      }
+      let sucursalesData: { id_sucursal: string; nombre: string }[] = [];
+      if (Array.isArray(sucursalesDataRaw)) sucursalesData = sucursalesDataRaw;
+      else if (sucursalesDataRaw && typeof sucursalesDataRaw === 'object' && 'results' in sucursalesDataRaw && Array.isArray((sucursalesDataRaw as { results?: unknown }).results)) {
+        sucursalesData = (sucursalesDataRaw as { results: typeof sucursalesData }).results;
+      }
+      let departamentosData: { id_departamento: string; nombre_departamento: string }[] = [];
+      if (Array.isArray(departamentosDataRaw)) departamentosData = departamentosDataRaw;
+      else if (departamentosDataRaw && typeof departamentosDataRaw === 'object' && 'results' in departamentosDataRaw && Array.isArray((departamentosDataRaw as { results?: unknown }).results)) {
+        departamentosData = (departamentosDataRaw as { results: typeof departamentosData }).results;
+      }
+      const user = usuarios.find(u => u.id === id) || null;
+      return { usuario: user, usuarioRoles: usuarioRolesData as UsuarioRol[], empresas: empresasData, sucursales: sucursalesData, departamentos: departamentosData };
+    },
+    enabled: !!id,
+  });
+
+  const usuario = allData?.usuario ?? null;
+  const usuarioRoles = allData?.usuarioRoles ?? [];
+  const empresas = allData?.empresas ?? [];
+  const sucursales = allData?.sucursales ?? [];
+  const departamentos = allData?.departamentos ?? [];
+
+  // Sync form when usuario loads
+  useEffect(() => {
+    if (usuario) {
+      setForm({
+        first_name: usuario.first_name,
+        last_name: usuario.last_name,
+        email: usuario.email,
+        empresas: Array.isArray(usuario.empresas) ? usuario.empresas.map(e => typeof e === 'string' ? e : String(e.id_empresa)) : [],
+        sucursales: Array.isArray(usuario.sucursales) ? usuario.sucursales.map(s => typeof s === 'string' ? s : String(s.id_sucursal)) : [],
+        departamentos: Array.isArray(usuario.departamentos) ? usuario.departamentos.map(d => typeof d === 'string' ? d : String(d.id_departamento)) : []
       });
     }
-    Promise.all([
-      fetchUsuarios(id_empresa),
-      fetchUsuarioRoles(id || ''),
-      safeJsonFetch('/api/core/empresas/', { headers }),
-      safeJsonFetch('/api/core/sucursales/', { headers }),
-      safeJsonFetch('/api/core/departamentos/', { headers })
-    ])
-      .then(async ([usuariosRaw, usuarioRoles, empresasDataRaw, sucursalesDataRaw, departamentosDataRaw]) => {
-        // Normalizar usuarios
-        let usuarios: Usuario[] = [];
-        if (Array.isArray(usuariosRaw)) usuarios = usuariosRaw;
-        else if (
-          usuariosRaw &&
-          typeof usuariosRaw === 'object' &&
-          usuariosRaw !== null &&
-          'results' in usuariosRaw &&
-          Array.isArray((usuariosRaw as { results?: unknown }).results)
-        ) {
-          usuarios = (usuariosRaw as { results: Usuario[] }).results;
-        }
-        // Normalizar empresas
-        let empresasData: { id_empresa: string; nombre_legal: string; nombre_comercial?: string }[] = [];
-        if (Array.isArray(empresasDataRaw)) empresasData = empresasDataRaw;
-        else if (
-          empresasDataRaw &&
-          typeof empresasDataRaw === 'object' &&
-          empresasDataRaw !== null &&
-          'results' in empresasDataRaw &&
-          Array.isArray((empresasDataRaw as { results?: unknown }).results)
-        ) {
-          empresasData = (empresasDataRaw as { results: typeof empresasData }).results;
-        }
-        // Normalizar sucursales
-        let sucursalesData: { id_sucursal: string; nombre: string }[] = [];
-        if (Array.isArray(sucursalesDataRaw)) sucursalesData = sucursalesDataRaw;
-        else if (
-          sucursalesDataRaw &&
-          typeof sucursalesDataRaw === 'object' &&
-          sucursalesDataRaw !== null &&
-          'results' in sucursalesDataRaw &&
-          Array.isArray((sucursalesDataRaw as { results?: unknown }).results)
-        ) {
-          sucursalesData = (sucursalesDataRaw as { results: typeof sucursalesData }).results;
-        }
-        // Normalizar departamentos
-        let departamentosData: { id_departamento: string; nombre_departamento: string }[] = [];
-        if (Array.isArray(departamentosDataRaw)) departamentosData = departamentosDataRaw;
-        else if (
-          departamentosDataRaw &&
-          typeof departamentosDataRaw === 'object' &&
-          departamentosDataRaw !== null &&
-          'results' in departamentosDataRaw &&
-          Array.isArray((departamentosDataRaw as { results?: unknown }).results)
-        ) {
-          departamentosData = (departamentosDataRaw as { results: typeof departamentosData }).results;
-        }
-        const user = usuarios.find(u => u.id === id) || null;
-        setUsuario(user);
-        setUsuarioRoles(usuarioRoles);
-        setEmpresas(empresasData);
-        setSucursales(sucursalesData);
-        setDepartamentos(departamentosData);
-        if (user) {
-          setForm({
-            first_name: user.first_name,
-            last_name: user.last_name,
-            email: user.email,
-            empresas: Array.isArray(user.empresas) ? user.empresas.map(e => typeof e === 'string' ? e : String(e.id_empresa)) : [],
-            sucursales: Array.isArray(user.sucursales) ? user.sucursales.map(s => typeof s === 'string' ? s : String(s.id_sucursal)) : [],
-            departamentos: Array.isArray(user.departamentos) ? user.departamentos.map(d => typeof d === 'string' ? d : String(d.id_departamento)) : []
-          });
-        }
-      })
-      .catch(error => {
-        setLoading(false);
-        // Mostrar el error en pantalla y consola
-        console.error('Error cargando datos:', error);
-        alert(`Error cargando datos: ${error.message}`);
-      })
-      .finally(() => setLoading(false));
-  }, [id, id_empresa]);
+  }, [usuario]);
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!usuario) return;
+      const { updateUsuario } = await import('../../../services/users');
+      await updateUsuario(usuario.id, { first_name: form.first_name, last_name: form.last_name, email: form.email, empresas: form.empresas, sucursales: form.sucursales, departamentos: form.departamentos });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/core/usuarios-detalle/', id, id_empresa] });
+      alert('Usuario actualizado correctamente');
+    },
+    onError: () => alert('Error al actualizar usuario'),
+  });
 
   if (loading) return <p>Cargando...</p>;
   if (!usuario) return <p>Usuario no encontrado</p>;
@@ -213,69 +198,8 @@ const UserDetailPage: React.FC = () => {
         <button
           type="button"
           style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}
-          onClick={async () => {
-            if (!usuario) return;
-            try {
-              const { updateUsuario } = await import('../../../services/users');
-              await updateUsuario(usuario.id, {
-                first_name: form.first_name,
-                last_name: form.last_name,
-                email: form.email,
-                empresas: form.empresas,
-                sucursales: form.sucursales,
-                departamentos: form.departamentos
-              });
-              // Volver a cargar los datos del usuario y sus asignaciones
-              setLoading(true);
-              let token = localStorage.getItem('token') || '';
-              token = token.trim().replace(/^"|"$/g, '').replace(/\n/g, '');
-              const headers: HeadersInit = {};
-              if (token) {
-                (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-              }
-              function safeJsonFetch(url: string, options: RequestInit = {}): Promise<unknown> {
-                return fetch(url, options).then(async r => {
-                  const rawText = await r.text();
-                  if (!r.ok) {
-                    throw new Error(`Error en ${url}: status ${r.status} - ${rawText.slice(0, 100)}`);
-                  }
-                  try {
-                    return JSON.parse(rawText);
-                  } catch {
-                    throw new Error(`Respuesta no es JSON en ${url}: ${rawText.slice(0, 100)}`);
-                  }
-                });
-              }
-              const [usuarios, usuarioRoles, empresasData, sucursalesData, departamentosData] = await Promise.all([
-                fetchUsuarios(id_empresa),
-                fetchUsuarioRoles(id || ''),
-                safeJsonFetch('/api/core/empresas/', { headers }),
-                safeJsonFetch('/api/core/sucursales/', { headers }),
-                safeJsonFetch('/api/core/departamentos/', { headers })
-              ]);
-              const user = usuarios.find(u => u.id === id) || null;
-              setUsuario(user);
-              setUsuarioRoles(usuarioRoles);
-              setEmpresas(empresasData as { id_empresa: string; nombre_legal: string; nombre_comercial?: string }[]);
-              setSucursales(sucursalesData as { id_sucursal: string; nombre: string }[]);
-              setDepartamentos(departamentosData as { id_departamento: string; nombre_departamento: string }[]);
-              if (user) {
-                setForm({
-                  first_name: user.first_name,
-                  last_name: user.last_name,
-                  email: user.email,
-                  empresas: user.empresas ? user.empresas.map(e => String(e.id_empresa)) : [],
-                  sucursales: user.sucursales ? user.sucursales.map(s => String(s.id_sucursal)) : [],
-                  departamentos: user.departamentos ? user.departamentos.map(d => String(d.id_departamento)) : []
-                });
-              }
-              setLoading(false);
-              alert('Usuario actualizado correctamente');
-            } catch {
-              setLoading(false);
-              alert('Error al actualizar usuario');
-            }
-          }}
+          onClick={() => updateMutation.mutate()}
+          disabled={updateMutation.isPending}
         >Guardar cambios</button>
       </form>
       <h4 style={{ marginTop: 32, color: '#1a237e', fontWeight: 600, fontSize: 18 }}>Roles asignados</h4>

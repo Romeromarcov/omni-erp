@@ -175,7 +175,15 @@ class VinculoDocumentoViewSet(BaseModelViewSet):
     queryset = VinculoDocumento.objects.all()
     serializer_class = VinculoDocumentoSerializer
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar vía FK id_documento → id_empresa
+        return VinculoDocumento.objects.filter(id_documento__id_empresa__in=_empresas(self.request))
+
 
 class PermisoDocumentoViewSet(BaseModelViewSet):
     queryset = PermisoDocumento.objects.all()
     serializer_class = PermisoDocumentoSerializer
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar vía FK id_documento → id_empresa
+        return PermisoDocumento.objects.filter(id_documento__id_empresa__in=_empresas(self.request))

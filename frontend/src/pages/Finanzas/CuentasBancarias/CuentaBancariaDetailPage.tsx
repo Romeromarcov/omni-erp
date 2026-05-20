@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { getCuentaBancariaDetail, updateCuentaBancaria } from '../../../services/cuentaBancariaService';
 import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
+import { toList } from '../../../utils/api';
 import { Button, TextField } from '@mui/material';
 
 interface CuentaBancaria {
@@ -26,6 +28,7 @@ type MetodoPagoEmpresaActiva = {
 const CuentaBancariaDetailPage: React.FC = () => {
   const { id_cuenta } = useParams<{ id_cuenta: string }>();
   const navigate = useNavigate();
+  const empresaId = localStorage.getItem('id_empresa') || '';
   const [form, setForm] = useState<CuentaBancaria>({
     nombre_banco: '',
     tipo_cuenta: '',
@@ -34,50 +37,49 @@ const CuentaBancariaDetailPage: React.FC = () => {
     activo: true,
     metodos_pago: [],
   });
-  const [metodosPago, setMetodosPago] = useState<MetodoPagoEmpresaActiva[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!id_cuenta) return;
-    setLoading(true);
-    (async () => {
-      try {
-        const data = await getCuentaBancariaDetail(id_cuenta) as CuentaBancaria;
-        setForm({
-          nombre_banco: data?.nombre_banco || '',
-          tipo_cuenta: data?.tipo_cuenta || '',
-          numero_cuenta: data?.numero_cuenta || '',
-          id_moneda: data?.id_moneda || '',
-          activo: data?.activo !== undefined ? data.activo : true,
-          metodos_pago: Array.isArray(data?.metodos_pago) ? data.metodos_pago : [],
-        });
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id_cuenta]);
+  const { data: cuentaData, isLoading } = useQuery<CuentaBancaria>({
+    queryKey: [`/finanzas/cuentas-bancarias/${id_cuenta}/`],
+    queryFn: () => getCuentaBancariaDetail(id_cuenta!) as Promise<CuentaBancaria>,
+    enabled: !!id_cuenta,
+  });
 
   useEffect(() => {
-    fetchMonedas().then(setMonedas);
-    // Obtener métodos de pago activos
-    const empresa = localStorage.getItem('id_empresa') || '';
-    if (empresa) {
-      fetchMetodosPagoEmpresaActivos(empresa).then((res) => {
-        if (Array.isArray(res)) setMetodosPago(res);
-        else if (
-          res &&
-          typeof res === 'object' &&
-          !Array.isArray(res) &&
-          'results' in res &&
-          Array.isArray((res as { results?: MetodoPagoEmpresaActiva[] }).results)
-        ) {
-          setMetodosPago((res as { results: MetodoPagoEmpresaActiva[] }).results);
-        } else setMetodosPago([]);
+    if (cuentaData) {
+      setForm({
+        nombre_banco: cuentaData?.nombre_banco || '',
+        tipo_cuenta: cuentaData?.tipo_cuenta || '',
+        numero_cuenta: cuentaData?.numero_cuenta || '',
+        id_moneda: cuentaData?.id_moneda || '',
+        activo: cuentaData?.activo !== undefined ? cuentaData.activo : true,
+        metodos_pago: Array.isArray(cuentaData?.metodos_pago) ? cuentaData.metodos_pago : [],
       });
     }
-  }, []);
+  }, [cuentaData]);
+
+  const { data: monedas = [] } = useQuery<Moneda[], Error, Moneda[]>({
+    queryKey: ['/finanzas/monedas/'],
+    queryFn: () => fetchMonedas(),
+  });
+
+  const { data: metodosPago = [] } = useQuery<unknown, Error, MetodoPagoEmpresaActiva[]>({
+    queryKey: [`/finanzas/metodos-pago-empresa-activos/${empresaId}/`],
+    queryFn: () => fetchMetodosPagoEmpresaActivos(empresaId),
+    select: toList,
+    enabled: !!empresaId,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => {
+      const id_empresa = localStorage.getItem('id_empresa') || '';
+      return updateCuentaBancaria(id_cuenta!, { ...form, metodos_pago: form.metodos_pago, id_empresa });
+    },
+    onSuccess: () => navigate(-1),
+    onError: () => setError('Error al actualizar la cuenta bancaria'),
+  });
+
+  const loading = isLoading || updateMutation.isPending;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
@@ -93,20 +95,11 @@ const CuentaBancariaDetailPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id_cuenta) return;
-    setLoading(true);
     setError('');
-    try {
-      const id_empresa = localStorage.getItem('id_empresa') || '';
-      await updateCuentaBancaria(id_cuenta, { ...form, metodos_pago: form.metodos_pago, id_empresa });
-      navigate(-1);
-    } catch {
-      setError('Error al actualizar la cuenta bancaria');
-    } finally {
-      setLoading(false);
-    }
+    updateMutation.mutate();
   };
 
   return (

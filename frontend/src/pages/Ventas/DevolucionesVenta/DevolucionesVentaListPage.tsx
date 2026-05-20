@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { devolucionVentaService } from '../../../services/ventas';
 import type { DevolucionVenta } from '../../../types/ventas';
@@ -8,27 +9,23 @@ import SearchIcon from '@mui/icons-material/Search';
 
 const DevolucionesVentaListPage: React.FC = () => {
   const navigate = useNavigate();
-  const [devoluciones, setDevoluciones] = useState<DevolucionVenta[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadDevoluciones();
-  }, []);
+  const { data: devoluciones = [], isLoading: loading, isError } = useQuery<DevolucionVenta[]>({
+    queryKey: ['/ventas/devoluciones-venta/'],
+    queryFn: () => devolucionVentaService.getAll(),
+  });
 
-  const loadDevoluciones = async () => {
-    setLoading(true);
-    try {
-      const data = await devolucionVentaService.getAll();
-      setDevoluciones(data);
-    } catch (err) {
-      setError('Error al cargar las devoluciones');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = isError ? 'Error al cargar las devoluciones' : null;
+
+  const procesarMutation = useMutation({
+    mutationFn: (id: string) => devolucionVentaService.procesar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/devoluciones-venta/'] });
+    },
+    onError: () => alert('Error al procesar la devolución'),
+  });
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -47,14 +44,8 @@ const DevolucionesVentaListPage: React.FC = () => {
     devolucion.motivo_devolucion?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleProcesar = async (id: string) => {
-    try {
-      await devolucionVentaService.procesar(id);
-      await loadDevoluciones(); // Recargar la lista
-    } catch (error) {
-      console.error('Error procesando devolución:', error);
-      alert('Error al procesar la devolución');
-    }
+  const handleProcesar = (id: string) => {
+    procesarMutation.mutate(id);
   };
 
   if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;

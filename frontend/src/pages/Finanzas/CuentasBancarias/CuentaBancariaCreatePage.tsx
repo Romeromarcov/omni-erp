@@ -1,11 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { createCuentaBancaria } from '../../../services/cuentaBancariaService';
 import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
+import { toList } from '../../../utils/api';
 import { Button, TextField } from '@mui/material';
+
+type MetodoPagoEmpresaActiva = {
+  id: string;
+  metodo_pago: string; // UUID
+  nombre?: string;
+  metodo_pago_nombre?: string;
+  nombre_metodo?: string;
+};
 
 const CuentaBancariaCreatePage: React.FC = () => {
   const { id_empresa } = useParams<{ id_empresa: string }>();
@@ -18,36 +28,28 @@ const CuentaBancariaCreatePage: React.FC = () => {
     activo: true,
     metodos_pago: [] as string[],
   });
-  type MetodoPagoEmpresaActiva = {
-    id: string;
-    metodo_pago: string; // UUID
-    nombre?: string;
-    metodo_pago_nombre?: string;
-    nombre_metodo?: string;
-  };
-  const [metodosPago, setMetodosPago] = useState<MetodoPagoEmpresaActiva[]>([]);
-  // const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (id_empresa) {
-      fetchMonedas().then(setMonedas);
-      fetchMetodosPagoEmpresaActivos(id_empresa).then((res) => {
-        if (Array.isArray(res)) setMetodosPago(res);
-        else if (
-          res &&
-          typeof res === 'object' &&
-          !Array.isArray(res) &&
-          'results' in res &&
-          Array.isArray((res as { results?: MetodoPagoEmpresaActiva[] }).results)
-        ) {
-          setMetodosPago((res as { results: MetodoPagoEmpresaActiva[] }).results);
-        } else setMetodosPago([]);
-      });
-    }
-  }, [id_empresa]);
+  const { data: monedas = [] } = useQuery<Moneda[], Error, Moneda[]>({
+    queryKey: ['/finanzas/monedas/'],
+    queryFn: () => fetchMonedas(),
+    enabled: !!id_empresa,
+  });
+
+  const { data: metodosPago = [] } = useQuery<unknown, Error, MetodoPagoEmpresaActiva[]>({
+    queryKey: [`/finanzas/metodos-pago-empresa-activos/${id_empresa}/`],
+    queryFn: () => fetchMetodosPagoEmpresaActivos(id_empresa!),
+    select: toList,
+    enabled: !!id_empresa,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (payload: typeof form & { id_empresa: string }) => createCuentaBancaria(payload.id_empresa, payload),
+    onSuccess: () => navigate(-1),
+    onError: () => setError('Error al crear la cuenta bancaria'),
+  });
+
+  const loading = createMutation.isPending;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
@@ -66,21 +68,8 @@ const CuentaBancariaCreatePage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id_empresa) return;
-    setLoading(true);
     setError('');
-    try {
-      const payload = {
-        ...form,
-        id_empresa,
-        metodos_pago: form.metodos_pago,
-      };
-      await createCuentaBancaria(id_empresa, payload);
-      navigate(-1);
-    } catch {
-      setError('Error al crear la cuenta bancaria');
-    } finally {
-      setLoading(false);
-    }
+    createMutation.mutate({ ...form, id_empresa, metodos_pago: form.metodos_pago });
   };
 
   return (

@@ -104,7 +104,15 @@ class ContactoClienteViewSet(BaseModelViewSet):
     queryset = ContactoCliente.objects.all()
     serializer_class = ContactoClienteSerializer
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresa a través del FK id_cliente → id_empresa
+        return ContactoCliente.objects.filter(id_empresa__in=_empresas(self.request))
+
 
 class DireccionClienteViewSet(BaseModelViewSet):
     queryset = DireccionCliente.objects.all()
     serializer_class = DireccionClienteSerializer
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresa a través del FK id_cliente → id_empresa
+        return DireccionCliente.objects.filter(id_empresa__in=_empresas(self.request))

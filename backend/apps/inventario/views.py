@@ -165,6 +165,10 @@ class VarianteProductoViewSet(BaseModelViewSet):
     queryset = VarianteProducto.objects.all()
     serializer_class = VarianteProductoSerializer
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar vía FK id_producto → id_empresa
+        return VarianteProducto.objects.filter(id_producto__id_empresa__in=_empresas(self.request))
+
 
 # ── Stock ─────────────────────────────────────────────────────────────────────
 

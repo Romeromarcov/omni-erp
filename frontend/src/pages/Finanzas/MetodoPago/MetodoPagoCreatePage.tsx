@@ -9,10 +9,12 @@ interface MonedaEmpresaActivaApi {
   es_base: boolean;
 }
 import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import type { MonedasInfoMetodoPago } from '../../../services/monedasInfoMetodoPago';
 import { useParams, useNavigate } from 'react-router-dom';
 import { post, get } from '../../../services/api';
+import { toList } from '../../../utils/api';
 import { findSimilarMetodoPago } from '../../../utils/fuzzyDuplicate';
 import PageLayout from '../../../components/PageLayout';
 import { Button } from '@mui/material';
@@ -46,8 +48,9 @@ const MetodoPagoCreatePage: React.FC = () => {
     monedas: [] as string[],
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [metodosExistentes, setMetodosExistentes] = useState<Array<{
+  const [monedasInfo] = useState<MonedasInfoMetodoPago>({ asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] });
+
+  type MetodoPagoExistente = {
     id_metodo_pago: string;
     nombre_metodo: string;
     tipo_metodo: string;
@@ -56,52 +59,30 @@ const MetodoPagoCreatePage: React.FC = () => {
     es_publico?: boolean;
     empresa?: string | null;
     monedas?: string[];
-  }>>([]);
-  const [monedas, setMonedas] = useState<Array<{ id: string; nombre: string; codigo_iso: string }>>([]);
-  const [monedasInfo, setMonedasInfo] = useState<MonedasInfoMetodoPago>({ asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] });
-  // Cargar monedas activas de la empresa
-  // Cargar monedas sugeridas/obligatorias según tipo_metodo y empresa
-  useEffect(() => {
-    if (form.tipo_metodo && form.empresa) {
-      // Solo cargar las monedas activas de la empresa
-      fetchMonedasEmpresaActivas(form.empresa).then((data) => {
-        let monedasActivas: MonedaEmpresaActivaApi[] = [];
-        if (Array.isArray(data)) {
-          monedasActivas = (data as MonedaEmpresaActivaApi[]).filter(m => m.activa);
-        } else if (data && Array.isArray((data as { results?: unknown }).results)) {
-          monedasActivas = (data as { results: MonedaEmpresaActivaApi[] }).results.filter(m => m.activa);
-        }
-        setMonedas(monedasActivas.map(m => ({
-          id: m.moneda,
-          nombre: m.moneda_nombre,
-          codigo_iso: m.moneda_codigo_iso
-        })));
-      }).catch(() => {
-        setMonedas([]);
-      });
-      setMonedasInfo({ asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] });
-    } else {
-      setMonedas([]);
-      setMonedasInfo({ asociadas: [], activas_empresa: [], sugeridas: [], obligatorias: [] });
-    }
-  }, [form.tipo_metodo, form.empresa]);
-  useEffect(() => {
-    get('/finanzas/metodos-pago/?limit=1000').then((res: unknown) => {
-      if (Array.isArray(res)) setMetodosExistentes(res);
-      else if (res && typeof res === 'object' && 'results' in res && Array.isArray((res as { results: unknown }).results)) {
-        setMetodosExistentes((res as { results: Array<{
-          id_metodo_pago: string;
-          nombre_metodo: string;
-          tipo_metodo: string;
-          activo: boolean;
-          es_generico?: boolean;
-          es_publico?: boolean;
-          empresa?: string | null;
-          monedas?: string[];
-        }> }).results);
-      } else setMetodosExistentes([]);
-    }).catch(() => setMetodosExistentes([]));
-  }, []);
+  };
+
+  const { data: metodosExistentes = [] } = useQuery<unknown, Error, MetodoPagoExistente[]>({
+    queryKey: ['/finanzas/metodos-pago/?limit=1000'],
+    queryFn: () => get('/finanzas/metodos-pago/?limit=1000'),
+    select: toList,
+  });
+
+  const { data: monedasRaw = [] } = useQuery<unknown, Error, MonedaEmpresaActivaApi[]>({
+    queryKey: [`/finanzas/monedas-empresa-activas/${form.empresa}/`],
+    queryFn: () => fetchMonedasEmpresaActivas(form.empresa),
+    select: toList,
+    enabled: !!(form.tipo_metodo && form.empresa),
+  });
+
+  const monedas = monedasRaw.filter(m => m.activa).map(m => ({ id: m.moneda, nombre: m.moneda_nombre, codigo_iso: m.moneda_codigo_iso }));
+
+  const createMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => post('/finanzas/metodos-pago/', payload),
+    onSuccess: () => navigate(-1),
+    onError: () => setError('Error al crear método de pago'),
+  });
+
+  const loading = createMutation.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,28 +93,20 @@ const MetodoPagoCreatePage: React.FC = () => {
       setError(`Ya existe un método de pago similar: "${similar.nombre_metodo}" (${similar.tipo_metodo})`);
       return;
     }
-    setLoading(true);
-    try {
-      const payload = {
-        nombre_metodo: form.nombre_metodo,
-        tipo_metodo: form.tipo_metodo,
-        activo: form.activo,
-        referencia_externa: form.referencia_externa || '',
-        documento_json: form.documento_json ? JSON.parse(form.documento_json) : null,
-        monedas: form.monedas,
-        ...(user.es_superusuario_innova && {
-          es_generico: form.es_generico,
-          es_publico: form.es_publico,
-          empresa: form.empresa || null,
-        })
-      };
-      await post('/finanzas/metodos-pago/', payload);
-      navigate(-1);
-    } catch {
-      setError('Error al crear método de pago');
-    } finally {
-      setLoading(false);
-    }
+    const payload: Record<string, unknown> = {
+      nombre_metodo: form.nombre_metodo,
+      tipo_metodo: form.tipo_metodo,
+      activo: form.activo,
+      referencia_externa: form.referencia_externa || '',
+      documento_json: form.documento_json ? JSON.parse(form.documento_json) : null,
+      monedas: form.monedas,
+      ...(user.es_superusuario_innova && {
+        es_generico: form.es_generico,
+        es_publico: form.es_publico,
+        empresa: form.empresa || null,
+      })
+    };
+    createMutation.mutate(payload);
   };
 
   return (

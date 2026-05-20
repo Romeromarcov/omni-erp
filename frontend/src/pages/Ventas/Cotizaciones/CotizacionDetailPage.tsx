@@ -1,5 +1,6 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
 import type { Pago as PagoFinanzas } from '../../../services/pagosService';
@@ -9,6 +10,7 @@ import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
 import type { Producto } from '../../../services/productosService';
+import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -48,47 +50,31 @@ interface CotizacionAPI {
 const CotizacionDetailPage: React.FC = () => {
   const { id_cotizacion } = useParams<{ id_cotizacion: string }>();
   const navigate = useNavigate();
-  const [cotizacion, setCotizacion] = useState<CotizacionAPI | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
+  const queryClient = useQueryClient();
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
   const [pagoError, setPagoError] = useState('');
   const [descuentoGeneral, setDescuentoGeneral] = useState('');
 
-  useEffect(() => {
-    if (!id_cotizacion) return;
-    setLoading(true);
-    get<CotizacionAPI>(`/ventas/cotizaciones/${id_cotizacion}/`)
-      .then(res => {
-        setCotizacion(res);
-        loadPagos(id_cotizacion);
-      })
-      .catch(() => setCotizacion(null))
-      .finally(() => setLoading(false));
-  }, [id_cotizacion]);
+  const { data: cotizacion = null, isLoading: loading } = useQuery<CotizacionAPI | null>({
+    queryKey: [`/ventas/cotizaciones/${id_cotizacion}/`],
+    queryFn: () => get<CotizacionAPI>(`/ventas/cotizaciones/${id_cotizacion}/`),
+    enabled: !!id_cotizacion,
+  });
 
-  const loadPagos = async (cotizacionId: string) => {
-    try {
-      const pagosData = await pagosService.getPagos({ tipo_documento: 'COTIZACION', id_documento: cotizacionId });
-      setPagos(pagosData);
-    } catch {
-      setPagos([]);
-    }
-  };
+  const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
+    queryKey: [`/finanzas/pagos/?tipo_documento=COTIZACION&id_documento=${id_cotizacion}`],
+    queryFn: () => pagosService.getPagos({ tipo_documento: 'COTIZACION', id_documento: id_cotizacion! }),
+    enabled: !!id_cotizacion,
+  });
 
-  useEffect(() => {
-    if (cotizacion?.id_empresa && cotizacion.id_empresa.id_empresa) {
-      fetchProductos(cotizacion.id_empresa.id_empresa)
-        .then((res) => {
-          if (Array.isArray(res)) setProductos(res);
-          else if (res && Array.isArray((res as { results: Producto[] }).results)) setProductos((res as { results: Producto[] }).results);
-          else setProductos([]);
-        })
-        .catch(() => setProductos([]));
-    }
-  }, [cotizacion?.id_empresa]);
+  const empresaId = cotizacion?.id_empresa?.id_empresa;
+  const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
+    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryFn: () => fetchProductos(empresaId!),
+    select: toList,
+    enabled: !!empresaId,
+  });
 
   function mapDetalles(detalles: CotizacionDetalleAPI[]) {
     return detalles.map(det => ({
@@ -139,9 +125,7 @@ const CotizacionDetailPage: React.FC = () => {
       }
       setPagoSuccess('Pagos registrados exitosamente.');
       setShowPagoModal(false);
-      if (id_cotizacion) {
-        loadPagos(id_cotizacion);
-      }
+      queryClient.invalidateQueries({ queryKey: [`/finanzas/pagos/?tipo_documento=COTIZACION&id_documento=${id_cotizacion}`] });
       setTimeout(() => setPagoSuccess(''), 3000);
     } catch {
       setPagoError('Error al registrar los pagos. Intente nuevamente.');

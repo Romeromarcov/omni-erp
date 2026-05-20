@@ -1,41 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notaVentaService } from '../../../services/ventas';
 import type { NotaVenta } from '../../../types/ventas';
 import { Button } from '@mui/material';
 
 const NotasVentaListPage: React.FC = () => {
-  const [notasVenta, setNotasVenta] = useState<NotaVenta[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadNotasVenta();
-  }, []);
+  const { data: notasVenta = [], isLoading: loading } = useQuery<NotaVenta[]>({
+    queryKey: ['/ventas/notas-venta/'],
+    queryFn: () => notaVentaService.getAll(),
+  });
 
-  const loadNotasVenta = async () => {
-    setLoading(true);
-    try {
-      const data = await notaVentaService.getAll();
-      setNotasVenta(data);
-    } catch (error) {
-      console.error('Error loading notas de venta:', error);
-      setNotasVenta([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const convertirMutation = useMutation({
+    mutationFn: (id: string) => notaVentaService.convertirAFactura(id, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-venta/'] });
+    },
+    onError: () => alert('Error al convertir la nota de venta a factura'),
+  });
 
-  const handleConvertirAFactura = async (notaVenta: NotaVenta) => {
+  const handleConvertirAFactura = (notaVenta: NotaVenta) => {
     if (!notaVenta.convertido_a_factura) {
-      try {
-        await notaVentaService.convertirAFactura(notaVenta.id_nota_venta, {});
-        await loadNotasVenta(); // Recargar la lista
-      } catch (error) {
-        console.error('Error convirtiendo nota de venta a factura:', error);
-        alert('Error al convertir la nota de venta a factura');
-      }
+      convertirMutation.mutate(notaVenta.id_nota_venta);
     }
   };
 

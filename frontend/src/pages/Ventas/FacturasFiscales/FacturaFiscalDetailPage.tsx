@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
 import PageLayout from '../../../components/PageLayout';
@@ -7,6 +8,7 @@ import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
 import type { Producto } from '../../../services/productosService';
+import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -45,49 +47,32 @@ interface FacturaFiscal {
 
 const FacturaFiscalDetailPage: React.FC = () => {
   const { id_factura } = useParams();
-  const [factura, setFactura] = useState<FacturaFiscal | null>(null);
-  const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
   const [pagoError, setPagoError] = useState('');
-  const navigate = useNavigate();
 
-  const loadPagos = async (facturaId: string) => {
-    try {
-      const pagosData = await pagosService.getPagosByTipoDocumento('FACTURA_FISCAL', facturaId);
-      setPagos(pagosData);
-    } catch (error) {
-      console.error('Error al cargar pagos:', error);
-    }
-  };
+  const { data: factura = null, isLoading: loading } = useQuery<FacturaFiscal | null>({
+    queryKey: [`/ventas/facturas-fiscales/${id_factura}/`],
+    queryFn: () => get<FacturaFiscal>(`/ventas/facturas-fiscales/${id_factura}/`),
+    enabled: !!id_factura,
+  });
 
-  useEffect(() => {
-    if (!id_factura) return;
-    setLoading(true);
-    get<FacturaFiscal>(`/ventas/facturas-fiscales/${id_factura}/`)
-      .then(res => {
-        setFactura(res);
-        // Cargar pagos de la factura
-        loadPagos(id_factura);
-      })
-      .catch(() => setFactura(null))
-      .finally(() => setLoading(false));
-  }, [id_factura]);
+  const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
+    queryKey: [`/finanzas/pagos/?tipo_documento=FACTURA_FISCAL&id_documento=${id_factura}`],
+    queryFn: () => pagosService.getPagosByTipoDocumento('FACTURA_FISCAL', id_factura!),
+    enabled: !!id_factura,
+  });
 
-  useEffect(() => {
-    if (factura?.id_empresa && factura.id_empresa.id_empresa) {
-      fetchProductos(factura.id_empresa.id_empresa)
-        .then((res) => {
-          if (Array.isArray(res)) setProductos(res);
-          else if (res && Array.isArray((res as { results: Producto[] }).results)) setProductos((res as { results: Producto[] }).results);
-          else setProductos([]);
-        })
-        .catch(() => setProductos([]));
-    }
-  }, [factura?.id_empresa]);
+  const empresaId = factura?.id_empresa?.id_empresa;
+  const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
+    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryFn: () => fetchProductos(empresaId!),
+    select: toList,
+    enabled: !!empresaId,
+  });
 
   function mapDetalles(detalles: FacturaFiscalDetalle[]) {
     return detalles.map(det => ({
@@ -146,11 +131,7 @@ const FacturaFiscalDetailPage: React.FC = () => {
 
       setPagoSuccess('Pagos registrados exitosamente.');
       setShowPagoModal(false);
-
-      // Recargar los pagos para mostrar los nuevos
-      if (id_factura) {
-        loadPagos(id_factura);
-      }
+      queryClient.invalidateQueries({ queryKey: [`/finanzas/pagos/?tipo_documento=FACTURA_FISCAL&id_documento=${id_factura}`] });
 
       // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => setPagoSuccess(''), 3000);

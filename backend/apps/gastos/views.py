@@ -170,12 +170,8 @@ class ReembolsoGastoViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def pendientes_pago(self, request):
-        """Obtiene reembolsos pendientes de pago"""
-        empresa_id = request.query_params.get("empresa_id")
-        filters = {"estado_reembolso": "PENDIENTE"}
-        if empresa_id:
-            filters["id_empresa"] = empresa_id
-
-        reembolsos_pendientes = self.queryset.filter(**filters)
+        """Obtiene reembolsos pendientes de pago (solo empresa propia — R-CODE-1)."""
+        # R-CODE-1: get_queryset() ya filtra por empresa visible; nunca self.queryset
+        reembolsos_pendientes = self.get_queryset().filter(estado_reembolso="PENDIENTE")
         serializer = self.get_serializer(reembolsos_pendientes, many=True)
         return Response(serializer.data)

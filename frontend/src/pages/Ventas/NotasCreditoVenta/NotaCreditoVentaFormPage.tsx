@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { notaCreditoVentaService } from '../../../services/ventas';
 import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
+import { toList } from '../../../utils/api';
 import type { NotaCreditoVenta, DetalleNotaCreditoVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
 import type { Producto } from '../../../services/productosService';
@@ -15,7 +17,9 @@ import AddIcon from '@mui/icons-material/Add';
 const NotaCreditoVentaFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEditing = Boolean(id);
+  const empresaId = getEmpresaId() || '1';
 
   const [formData, setFormData] = useState<Partial<NotaCreditoVenta>>({
     fecha_emision: new Date().toISOString().split('T')[0],
@@ -24,48 +28,29 @@ const NotaCreditoVentaFormPage: React.FC = () => {
     detalles: []
   });
 
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { data: clientes = [] } = useQuery<unknown, Error, Cliente[]>({
+    queryKey: [`/ventas/clientes/?id_empresa=${empresaId}`],
+    queryFn: () => fetchClientes(empresaId),
+    select: toList,
+  });
+
+  const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
+    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryFn: () => fetchProductos(empresaId),
+    select: toList,
+  });
+
+  const { data: notaCreditoData, isLoading: loading } = useQuery<NotaCreditoVenta>({
+    queryKey: [`/ventas/notas-credito-venta/${id}/`],
+    queryFn: () => notaCreditoVentaService.getById(id!),
+    enabled: isEditing && !!id,
+  });
+
   useEffect(() => {
-    loadData();
-    if (isEditing && id) {
-      loadNotaCredito(id);
-    }
-  }, [id, isEditing]);
-
-  const loadData = async () => {
-    try {
-      // TODO: Obtener empresa del contexto/usuario
-      const empresaId = getEmpresaId() || '1'; // Fallback a '1' si no hay empresa
-      const [clientesData, productosData] = await Promise.all([
-        fetchClientes(empresaId),
-        fetchProductos(empresaId)
-      ]);
-      const clientes = Array.isArray(clientesData) ? clientesData : clientesData.results || [];
-      const productos = Array.isArray(productosData) ? productosData : productosData.results || [];
-      setClientes(clientes);
-      setProductos(productos);
-    } catch (err) {
-      console.error('Error cargando datos:', err);
-    }
-  };
-
-  const loadNotaCredito = async (notaCreditoId: string) => {
-    setLoading(true);
-    try {
-      const data = await notaCreditoVentaService.getById(notaCreditoId);
-      setFormData(data);
-    } catch (err) {
-      setError('Error al cargar la nota de crédito');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (notaCreditoData) setFormData(notaCreditoData);
+  }, [notaCreditoData]);
 
   const handleInputChange = (field: keyof NotaCreditoVenta, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -130,22 +115,26 @@ const NotaCreditoVentaFormPage: React.FC = () => {
     setFormData(prev => ({ ...prev, monto_total: total }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
+  const saveMutation = useMutation({
+    mutationFn: (data: Partial<NotaCreditoVenta>) => {
       if (isEditing && id) {
-        await notaCreditoVentaService.update(id, formData);
+        return notaCreditoVentaService.update(id, data);
       } else {
-        await notaCreditoVentaService.create(formData);
+        return notaCreditoVentaService.create(data);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-credito-venta/'] });
       navigate('/ventas/notas-credito-venta');
-    } catch (err) {
-      setError('Error al guardar la nota de crédito');
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    },
+    onError: () => setError('Error al guardar la nota de crédito'),
+  });
+
+  const saving = saveMutation.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveMutation.mutate(formData);
   };
 
   if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;

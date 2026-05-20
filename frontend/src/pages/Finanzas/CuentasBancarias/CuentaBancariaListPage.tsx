@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { getCuentasBancarias } from '../../../services/cuentaBancariaService';
+import { toList } from '../../../utils/api';
 import { Button, TextField } from '@mui/material';
 
 type CuentaBancaria = {
@@ -17,25 +19,14 @@ type CuentaBancaria = {
 const CuentaBancariaListPage: React.FC = () => {
   const { id_empresa } = useParams<{ id_empresa: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<CuentaBancaria[]>([]);
   const [filters, setFilters] = useState<{ banco: string; moneda: string; activo: string }>({ banco: '', moneda: '', activo: '' });
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!id_empresa) return;
-    setLoading(true);
-    getCuentasBancarias(id_empresa, filters)
-      .then((result) => {
-        if (Array.isArray(result)) {
-          setData(result as CuentaBancaria[]);
-        } else if (result && typeof result === 'object' && 'results' in result && Array.isArray((result as { results: CuentaBancaria[] }).results)) {
-          setData((result as { results: CuentaBancaria[] }).results);
-        } else {
-          setData([]);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [id_empresa, filters]);
+  const { data = [], isLoading: loading } = useQuery<unknown, Error, CuentaBancaria[]>({
+    queryKey: [`/finanzas/cuentas-bancarias/${id_empresa}/`, filters],
+    queryFn: () => getCuentasBancarias(id_empresa!, filters),
+    select: toList,
+    enabled: !!id_empresa,
+  });
 
   if (!id_empresa) {
     return (

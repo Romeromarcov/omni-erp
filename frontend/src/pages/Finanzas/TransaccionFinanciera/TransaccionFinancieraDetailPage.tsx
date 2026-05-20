@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { getTransaccionFinancieraDetail, printTransaccionFinanciera } from '../../../services/transaccionFinancieraService';
 import PageLayout from '../../../components/PageLayout';
 import { Button, Paper } from '@mui/material';
@@ -31,13 +32,12 @@ type TransaccionFinancieraDetail = {
 const TransaccionFinancieraDetailPage: React.FC = () => {
   const { id_transaccion } = useParams<{ id_transaccion: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<TransaccionFinancieraDetail | null>(null);
-  // const [editMode, setEditMode] = useState(false);
 
-  useEffect(() => {
-    if (!id_transaccion) return; // Evita el fetch si no hay ID
-    getTransaccionFinancieraDetail(id_transaccion).then(result => setData(result as TransaccionFinancieraDetail));
-  }, [id_transaccion]);
+  const { data, isLoading } = useQuery<TransaccionFinancieraDetail>({
+    queryKey: [`/finanzas/transacciones-financieras/${id_transaccion}/`],
+    queryFn: () => getTransaccionFinancieraDetail(id_transaccion!) as Promise<TransaccionFinancieraDetail>,
+    enabled: !!id_transaccion,
+  });
 
   if (!id_transaccion) {
     return (
@@ -49,7 +49,7 @@ const TransaccionFinancieraDetailPage: React.FC = () => {
     );
   }
 
-  if (!data) return <PageLayout><h2 style={{ marginBottom: 16 }}>Detalle de Transacción Financiera</h2><div>Cargando...</div></PageLayout>;
+  if (isLoading || !data) return <PageLayout><h2 style={{ marginBottom: 16 }}>Detalle de Transacción Financiera</h2><div>Cargando...</div></PageLayout>;
 
   return (
     <PageLayout>

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { notaCreditoVentaService } from '../../../services/ventas';
 import type { NotaCreditoVenta } from '../../../types/ventas';
@@ -8,28 +9,23 @@ import { Alert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableCont
 const NotaCreditoVentaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [notaCredito, setNotaCredito] = useState<NotaCreditoVenta | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (id) {
-      loadNotaCredito(id);
-    }
-  }, [id]);
+  const { data: notaCredito = null, isLoading: loading, isError } = useQuery<NotaCreditoVenta | null>({
+    queryKey: [`/ventas/notas-credito-venta/${id}/`],
+    queryFn: () => notaCreditoVentaService.getById(id!),
+    enabled: !!id,
+  });
 
-  const loadNotaCredito = async (notaCreditoId: string) => {
-    setLoading(true);
-    try {
-      const data = await notaCreditoVentaService.getById(notaCreditoId);
-      setNotaCredito(data);
-    } catch (err) {
-      setError('Error al cargar la nota de crédito');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = isError ? 'Error al cargar la nota de crédito' : null;
+
+  const aplicarMutation = useMutation({
+    mutationFn: (notaCreditoId: string) => notaCreditoVentaService.aplicar(notaCreditoId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/ventas/notas-credito-venta/${id}/`] });
+    },
+    onError: () => alert('Error al aplicar la nota de crédito'),
+  });
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -40,15 +36,9 @@ const NotaCreditoVentaDetailPage: React.FC = () => {
     }
   };
 
-  const handleAplicar = async () => {
+  const handleAplicar = () => {
     if (notaCredito && notaCredito.estado !== 'APLICADA') {
-      try {
-        await notaCreditoVentaService.aplicar(notaCredito.id_nota_credito);
-        await loadNotaCredito(notaCredito.id_nota_credito); // Recargar
-      } catch (error) {
-        console.error('Error aplicando nota de crédito:', error);
-        alert('Error al aplicar la nota de crédito');
-      }
+      aplicarMutation.mutate(notaCredito.id_nota_credito);
     }
   };
 
