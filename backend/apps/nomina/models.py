@@ -1,10 +1,11 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
 
 class PeriodoNomina(models.Model):
-    id_periodo_nomina = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_periodo_nomina = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="periodos_nomina")
     nombre_periodo = models.CharField(max_length=100)
     fecha_inicio = models.DateField()
@@ -33,7 +34,7 @@ class PeriodoNomina(models.Model):
 
 
 class ConceptoNomina(models.Model):
-    id_concepto_nomina = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_concepto_nomina = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="conceptos_nomina")
     codigo_concepto = models.CharField(max_length=20)
     nombre_concepto = models.CharField(max_length=100)
@@ -74,7 +75,7 @@ class ConceptoNomina(models.Model):
 
 
 class ProcesoNomina(models.Model):
-    id_proceso_nomina = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_proceso_nomina = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="procesos_nomina")
     id_periodo_nomina = models.ForeignKey("PeriodoNomina", on_delete=models.CASCADE, related_name="procesos")
     numero_proceso = models.CharField(max_length=50)
@@ -107,7 +108,7 @@ class ProcesoNomina(models.Model):
 
 
 class Nomina(models.Model):
-    id_nomina = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_nomina = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_proceso_nomina = models.ForeignKey("ProcesoNomina", on_delete=models.CASCADE, related_name="nominas")
     id_empleado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE, related_name="nominas")
     sueldo_base = models.DecimalField(max_digits=18, decimal_places=4)
@@ -135,7 +136,7 @@ class Nomina(models.Model):
 
 
 class DetalleNomina(models.Model):
-    id_detalle_nomina = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_nomina = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_nomina = models.ForeignKey("Nomina", on_delete=models.CASCADE, related_name="detalles")
     id_concepto_nomina = models.ForeignKey("ConceptoNomina", on_delete=models.CASCADE, related_name="detalles_nomina")
     cantidad = models.DecimalField(max_digits=18, decimal_places=4, default=1.00)
@@ -153,7 +154,7 @@ class DetalleNomina(models.Model):
 
 
 class ProcesoNominaExtrasalarial(models.Model):
-    id_proceso_extrasalarial = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_proceso_extrasalarial = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="procesos_extrasalarial")
     numero_proceso = models.CharField(max_length=50)
     tipo_proceso = models.CharField(
@@ -195,7 +196,7 @@ class ProcesoNominaExtrasalarial(models.Model):
 
 
 class NominaExtrasalarial(models.Model):
-    id_nomina_extrasalarial = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_nomina_extrasalarial = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_proceso_extrasalarial = models.ForeignKey(
         "ProcesoNominaExtrasalarial", on_delete=models.CASCADE, related_name="nominas_extrasalarial"
     )

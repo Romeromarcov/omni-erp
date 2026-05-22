@@ -1,10 +1,11 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
 
 class PlanCuentas(models.Model):
-    id_cuenta_contable = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_cuenta_contable = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     codigo_cuenta = models.CharField(max_length=50)
     nombre_cuenta = models.CharField(max_length=255)
@@ -36,7 +37,7 @@ class PlanCuentas(models.Model):
 
 
 class AsientoContable(models.Model):
-    id_asiento = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_asiento = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     fecha_asiento = models.DateField()
     numero_asiento = models.CharField(max_length=100)
@@ -61,7 +62,7 @@ class AsientoContable(models.Model):
 
 
 class DetalleAsiento(models.Model):
-    id_detalle_asiento = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_detalle_asiento = models.UUIDField(primary_key=True, default=uuid7)
     id_asiento = models.ForeignKey("AsientoContable", on_delete=models.CASCADE)
     id_cuenta_contable = models.ForeignKey("PlanCuentas", on_delete=models.CASCADE)
     debe = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
@@ -89,7 +90,7 @@ class MapeoContable(models.Model):
         ("PAGO_CXP", "Pago de Cuenta por Pagar"),
     ]
 
-    id_mapeo = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_mapeo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="mapeos_contables")
     tipo_asiento = models.CharField(max_length=30, choices=TIPOS_ASIENTO)
     cuenta_debe = models.ForeignKey(

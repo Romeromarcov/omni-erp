@@ -1,0 +1,100 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Volver",
+    "search": "Buscar",
+    "add": "Agregar",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No",
+    "status": "Estado",
+    "date": "Fecha",
+    "amount": "Monto",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "actions": "Acciones",
+    "noData": "No hay datos disponibles.",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "pedidos": {
+    "title": "Pedidos",
+    "new": "Nuevo Pedido",
+    "number": "Número de Pedido",
+    "date": "Fecha del Pedido",
+    "client": "Cliente",
+    "status": {
+      "PENDIENTE": "Pendiente",
+      "ENVIADO": "Enviado",
+      "APROBADO": "Aprobado",
+      "RECHAZADO": "Rechazado",
+      "ANULADO": "Anulado"
+    },
+    "noOrders": "No hay pedidos registrados.",
+    "details": "Detalles del Pedido",
+    "addPayment": "Agregar Pago",
+    "payments": "Pagos",
+    "noPayments": "No hay pagos registrados para este pedido."
+  },
+  "facturas": {
+    "title": "Facturas Fiscales",
+    "new": "Nueva Factura",
+    "number": "Número de Factura",
+    "controlNumber": "Número de Control",
+    "date": "Fecha de Emisión",
+    "status": {
+      "EMITIDA": "Emitida",
+      "ANULADA": "Anulada"
+    },
+    "noInvoices": "No hay facturas registradas.",
+    "total": "Total de la Factura",
+    "iva": "IVA"
+  },
+  "notasVenta": {
+    "title": "Notas de Venta",
+    "new": "Nueva Nota de Venta",
+    "number": "Número de Nota",
+    "date": "Fecha de la Nota",
+    "status": {
+      "BORRADOR": "Borrador",
+      "ENTREGADA": "Entregada",
+      "ANULADA": "Anulada"
+    },
+    "noNotes": "No hay notas de venta registradas."
+  },
+  "pagos": {
+    "title": "Registrar Pago",
+    "method": "Método de Pago",
+    "currency": "Moneda",
+    "amount": "Monto",
+    "reference": "Referencia",
+    "rate": "Tasa de Cambio",
+    "addLine": "Agregar Línea de Pago",
+    "removeLine": "Eliminar",
+    "total": "Total a Pagar",
+    "paid": "Total Pagado",
+    "change": "Vuelto",
+    "confirm": "Confirmar Pago",
+    "cancel": "Cancelar",
+    "success": "Pagos registrados exitosamente.",
+    "error": "Error al registrar los pagos. Intente nuevamente.",
+    "creditNotes": "Notas de Crédito Disponibles",
+    "applyCreditNote": "Aplicar Nota de Crédito"
+  },
+  "products": {
+    "product": "Producto",
+    "sku": "SKU",
+    "quantity": "Cantidad",
+    "unitPrice": "Precio Unitario",
+    "discount": "Descuento (%)",
+    "subtotal": "Subtotal",
+    "comments": "Comentarios",
+    "remove": "Eliminar",
+    "noProducts": "No hay productos en este pedido."
+  }
+}

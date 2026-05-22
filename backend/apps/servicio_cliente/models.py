@@ -1,11 +1,12 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class CategoriaTicket(models.Model):
-    id_categoria_ticket = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_categoria_ticket = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre_categoria = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -16,7 +17,7 @@ class CategoriaTicket(models.Model):
 
 
 class TicketSoporte(models.Model):
-    id_ticket = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_ticket = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     numero_ticket = models.CharField(max_length=50)
     asunto = models.CharField(max_length=255)
@@ -59,7 +60,7 @@ class TicketSoporte(models.Model):
 
 
 class InteraccionTicket(models.Model):
-    id_interaccion = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_interaccion = models.UUIDField(primary_key=True, default=uuid7)
     id_ticket = models.ForeignKey("TicketSoporte", on_delete=models.CASCADE)
     fecha_hora_interaccion = models.DateTimeField(auto_now_add=True)
     tipo_interaccion = models.CharField(
@@ -83,7 +84,7 @@ class InteraccionTicket(models.Model):
 
 
 class BaseConocimientoArticulo(models.Model):
-    id_articulo = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_articulo = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255)
     contenido = models.TextField()
@@ -99,7 +100,7 @@ class BaseConocimientoArticulo(models.Model):
 
 
 class FeedbackCliente(models.Model):
-    id_feedback = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_feedback = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     # id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, null=True, blank=True)  # Temporalmente comentado
     id_cliente_temp = models.UUIDField(null=True, blank=True)  # Campo temporal

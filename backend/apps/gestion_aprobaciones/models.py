@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -6,7 +7,7 @@ from apps.core.models import Empresa, Roles, Usuarios
 
 
 class TipoAprobacion(models.Model):
-    id_tipo_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_tipo_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     codigo_tipo = models.CharField(max_length=50)
     nombre_tipo = models.CharField(max_length=100)
@@ -22,7 +23,7 @@ class TipoAprobacion(models.Model):
 
 
 class FlujoAprobacion(models.Model):
-    id_flujo_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_flujo_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_tipo_aprobacion = models.ForeignKey(TipoAprobacion, on_delete=models.CASCADE)
     orden_etapa = models.IntegerField()
     nombre_etapa = models.CharField(max_length=100)
@@ -34,7 +35,7 @@ class FlujoAprobacion(models.Model):
 
 
 class SolicitudAprobacion(models.Model):
-    id_solicitud_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_solicitud_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_tipo_aprobacion = models.ForeignKey(TipoAprobacion, on_delete=models.CASCADE)
     id_entidad_origen = models.UUIDField()
     nombre_modelo_origen = models.CharField(max_length=100)
@@ -47,7 +48,7 @@ class SolicitudAprobacion(models.Model):
 
 
 class RegistroAprobacion(models.Model):
-    id_registro_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_registro_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_solicitud_aprobacion = models.ForeignKey(SolicitudAprobacion, on_delete=models.CASCADE)
     id_flujo_aprobacion_etapa = models.ForeignKey(FlujoAprobacion, on_delete=models.CASCADE)
     id_usuario_aprobador = models.ForeignKey(Usuarios, on_delete=models.CASCADE)

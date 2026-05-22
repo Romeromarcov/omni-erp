@@ -306,6 +306,10 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     for primitiva in ("entidades", "estados", "reglas", "vistas"):
         if primitiva in config:
             aplicadas.append(f"registrado:{primitiva} ({len(config[primitiva])} items)")
+            advertencias.append(
+                f"primitiva '{primitiva}' registrada en config pero aún no aplicada "
+                f"por el runtime (PoC aplica solo 'campos' y 'conectores') — activar en Fase 1"
+            )
 
     # Primitiva: conectores — extraer para indexado rápido
     conectores = config.get("conectores", [])

@@ -1,5 +1,6 @@
 # apps/core/models.py
 import uuid
+from apps.core.uuid import uuid7
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -22,7 +23,7 @@ class Empresa(OmniBaseModel, IntegrationFieldsMixin):
         on_delete=models.SET_NULL,
         verbose_name="Empresa Matriz",
     )
-    id_empresa = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_empresa = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     nombre_legal = models.CharField(max_length=255, verbose_name="Nombre Legal")
     nombre_comercial = models.CharField(max_length=255, null=True, blank=True, verbose_name="Nombre Comercial")
     identificador_fiscal = models.CharField(max_length=20, blank=True, null=True)
@@ -77,7 +78,7 @@ class Sucursal(OmniBaseModel, IntegrationFieldsMixin):
         on_delete=models.SET_NULL,
         verbose_name="Sucursal Matriz",
     )
-    id_sucursal = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_sucursal = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         Empresa, on_delete=models.CASCADE, db_column="id_empresa", related_name="sucursales", verbose_name="Empresa"
     )
@@ -108,7 +109,7 @@ class Departamento(OmniBaseModel, IntegrationFieldsMixin):
         on_delete=models.SET_NULL,
         verbose_name="Dirección General",
     )
-    id_departamento = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_departamento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         Empresa, on_delete=models.CASCADE, db_column="id_empresa", related_name="departamentos", verbose_name="Empresa"
     )
@@ -135,7 +136,7 @@ class Usuarios(AbstractUser):
     # Hereda campos como username, email, first_name, last_name, is_staff, is_active, date_joined, etc.
     # Sobreescribimos el campo id para usar UUIDField como PK
     id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
+        primary_key=True, default=uuid7, editable=False
     )  # Usamos 'id' como PK para AbstractUser
     empresas = models.ManyToManyField(Empresa, related_name="usuarios")
     # Eliminamos el campo 'id_rol' directo aquí, ya que se maneja con la tabla intermedia UsuarioRoles
@@ -235,7 +236,7 @@ class Roles(OmniBaseModel, IntegrationFieldsMixin):
             referencia_externa, documento_json (IntegrationFieldsMixin)
     """
 
-    id_rol = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_rol = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         Empresa,
         on_delete=models.CASCADE,
@@ -270,7 +271,7 @@ class Permisos(OmniBaseModel, IntegrationFieldsMixin):
             referencia_externa, documento_json (IntegrationFieldsMixin)
     """
 
-    id_permiso = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_permiso = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     # id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, db_column='id_empresa', blank=True, null=True, related_name='permisos_empresa', verbose_name="Empresa (Opcional)") # Permisos pueden ser globales o por empresa
     # El esquema original no tenía id_empresa para Permisos, lo mantendremos así por ahora.
     codigo_permiso = models.CharField(
@@ -293,7 +294,7 @@ class Permisos(OmniBaseModel, IntegrationFieldsMixin):
 # 7. Modelo de Relación Rol-Permiso (Muchos a Muchos) (Actualizado)
 # Asocia permisos específicos a roles.
 class RolPermisos(models.Model):
-    id_rol_permiso = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_rol_permiso = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_rol = models.ForeignKey(
         Roles, on_delete=models.CASCADE, db_column="id_rol", related_name="permisos_asignados", verbose_name="Rol"
     )
@@ -320,7 +321,7 @@ class RolPermisos(models.Model):
 # 8. Modelo de Relación Usuario-Rol (Muchos a Muchos) (Actualizado)
 # Asocia usuarios a roles. Un usuario puede tener múltiples roles.
 class UsuarioRoles(models.Model):
-    id_usuario_rol = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_usuario_rol = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_usuario = models.ForeignKey(
         Usuarios,
         on_delete=models.CASCADE,
@@ -347,7 +348,7 @@ class UsuarioRoles(models.Model):
 # 9. Modelo de Registro de Auditoría (Actualizado)
 # Registra acciones importantes realizadas en el sistema para trazabilidad.
 class RegistroAuditoria(models.Model):
-    id_log_auditoria = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # PK, UUIDField
+    id_log_auditoria = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # PK, UUIDField
     id_empresa = models.ForeignKey(
         Empresa,
         on_delete=models.CASCADE,
@@ -424,7 +425,7 @@ class Dispositivo(models.Model):
     Permite detectar automáticamente dispositivos y asociarlos con cajas físicas.
     """
 
-    id_dispositivo = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_dispositivo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
 
     # Identificación única del dispositivo
     fingerprint = models.CharField(
@@ -595,7 +596,7 @@ class CapabilityToken(OmniBaseModel):
 
     # El token en sí: UUID aleatorio, se usa como API key
     token = models.UUIDField(
-        default=uuid.uuid4,
+        default=uuid7,
         unique=True,
         editable=False,
         verbose_name="Token",
@@ -686,7 +687,7 @@ class Contacto(OmniBaseModel):
 
     TIPO_PERSONA = [("NATURAL", "Persona Natural"), ("JURIDICA", "Persona Jurídica")]
 
-    id_contacto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_contacto = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="contactos")
 
     # Identidad
@@ -801,7 +802,7 @@ class ConfiguracionFlujoDocumentos(OmniBaseModel):
 
     PASOS = PASOS_VENTAS + PASOS_COMPRAS
 
-    id_configuracion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_configuracion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         Empresa,
         on_delete=models.CASCADE,
@@ -855,7 +856,7 @@ class Notificacion(models.Model):
         ("SISTEMA", "Sistema"),
     ]
 
-    id_notificacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_notificacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "Empresa",
         on_delete=models.CASCADE,

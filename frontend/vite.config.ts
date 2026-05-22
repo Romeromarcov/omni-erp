@@ -1,12 +1,12 @@
-/// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // BACKEND_URL puede venir del entorno:
 //   - Local dev:  no se setea → default localhost:8000
 //   - Docker dev: se setea como http://backend:8000 en docker-compose.yml
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8000'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const backendUrl: string = (globalThis as any).process?.env?.BACKEND_URL ?? 'http://localhost:8000'
 
 // https://vite.dev/config/
 export default defineConfig({

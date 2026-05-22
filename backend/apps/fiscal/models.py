@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -14,7 +15,7 @@ class NumeroCorrelativo(models.Model):
         ("ORDEN_COMPRA", "Orden de Compra"),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="numeraciones")
     tipo = models.CharField(max_length=20, choices=TIPOS)
     prefijo = models.CharField(max_length=20, default="", blank=True, help_text='e.g. "FAC-2026-"')
@@ -217,7 +218,7 @@ class ConfiguracionRetencion(models.Model):
 class ConfiguracionFiscalEmpresa(models.Model):
     """Parámetros fiscales globales de una empresa (IVA, IGTF)."""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.OneToOneField(
         "core.Empresa",
         on_delete=models.CASCADE,
@@ -246,7 +247,7 @@ class TasaIVAEmpresa(models.Model):
         ("ADICIONAL", "Adicional"),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa",
         on_delete=models.CASCADE,

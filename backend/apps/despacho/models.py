@@ -1,10 +1,11 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
 
 class Despacho(models.Model):
-    id_despacho = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_despacho = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="despachos")
     numero_despacho = models.CharField(max_length=50, unique=True)
     id_pedido = models.ForeignKey(
@@ -50,7 +51,7 @@ class Despacho(models.Model):
 
 
 class DetalleDespacho(models.Model):
-    id_detalle_despacho = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_despacho = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_despacho = models.ForeignKey("Despacho", on_delete=models.CASCADE, related_name="detalles")
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="detalles_despacho")
     cantidad_despachada = models.DecimalField(max_digits=18, decimal_places=4)

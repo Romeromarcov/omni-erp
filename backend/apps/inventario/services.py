@@ -21,7 +21,13 @@ TIPOS_SALIDA = frozenset({"SALIDA", "DESPACHO_VENTA", "CONSUMO_PRODUCCION", "SAL
 TIPOS_TRANSFERENCIA = frozenset({"TRANSFERENCIA"})
 TIPOS_AJUSTE = frozenset({"AJUSTE"})
 
-ALL_TIPOS = TIPOS_ENTRADA | TIPOS_SALIDA | TIPOS_TRANSFERENCIA | TIPOS_AJUSTE
+# Tipos informativos (S0.H): registran un evento sin alterar cantidad_disponible.
+# RESERVA_VENTA: creado en confirmar_pedido() como audit trail de la reserva.
+# El stock comprometido ya fue incrementado por reservar_stock(); este movimiento
+# es solo para trazabilidad y reportes.
+TIPOS_INFORMATIVO = frozenset({"RESERVA_VENTA"})
+
+ALL_TIPOS = TIPOS_ENTRADA | TIPOS_SALIDA | TIPOS_TRANSFERENCIA | TIPOS_AJUSTE | TIPOS_INFORMATIVO
 
 # Salidas que REQUIEREN un documento origen válido (M5 — control de salidas)
 TIPOS_SALIDA_CONTROLADA = frozenset({"SALIDA_INTERNA"})
@@ -205,6 +211,9 @@ def registrar_movimiento(
     elif tipo in TIPOS_AJUSTE:
         if not almacen_destino:
             raise MovimientoInvalidoError("AJUSTE requiere id_almacen_destino.")
+    elif tipo in TIPOS_INFORMATIVO:
+        # Tipos informativos no requieren almacén; solo registran el evento.
+        pass
     else:
         raise MovimientoInvalidoError(f"Tipo de movimiento desconocido: '{tipo}'.")
 
@@ -301,6 +310,9 @@ def registrar_movimiento(
 
     elif tipo in TIPOS_AJUSTE:
         _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
+
+    # TIPOS_INFORMATIVO (RESERVA_VENTA): solo registra el evento, sin alterar StockActual.
+    # La reserva ya fue reflejada en cantidad_comprometida por reservar_stock().
 
     # ── M5-T4: Asiento contable para ajustes de inventario (R-CODE-11) ──────
     if tipo in TIPOS_AJUSTE and movimiento.monto_total > 0:

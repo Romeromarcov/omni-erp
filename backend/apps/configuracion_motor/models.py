@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -6,7 +7,7 @@ from apps.core.models import Empresa
 
 
 class TipoDocumento(models.Model):
-    id_tipo_documento = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_tipo_documento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     codigo = models.CharField(max_length=20, unique=True)
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -17,7 +18,7 @@ class TipoDocumento(models.Model):
 
 
 class ParametroSistema(models.Model):
-    id_parametro = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_parametro = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(Empresa, null=True, blank=True, on_delete=models.CASCADE)
     nombre_parametro = models.CharField(max_length=100)
     codigo_parametro = models.CharField(max_length=50)
@@ -36,7 +37,7 @@ class ParametroSistema(models.Model):
 
 
 class CatalogoValor(models.Model):
-    id_catalogo_valor = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_catalogo_valor = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     codigo_catalogo = models.CharField(max_length=50)
     valor = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)

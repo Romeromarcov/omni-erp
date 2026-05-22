@@ -143,6 +143,7 @@ class TestCorrelativoConcurrencia:
             h.start()
         for h in hilos:
             h.join(timeout=10)
+        connections.close_all()
 
         assert not errores, f"Errores en hilos: {errores}"
         assert len(resultados) == N_HILOS, f"Se esperaban {N_HILOS} resultados, hay {len(resultados)}"
@@ -180,6 +181,7 @@ class TestCorrelativoConcurrencia:
             h.start()
         for h in hilos:
             h.join(timeout=10)
+        connections.close_all()
 
         # Verificar que son N únicos en el rango 1..N
         nums_int = sorted(int(r) for r in resultados)

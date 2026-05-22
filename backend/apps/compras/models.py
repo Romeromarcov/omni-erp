@@ -1,10 +1,11 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
 
 class OrdenCompra(models.Model):
-    id_orden_compra = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_orden_compra = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_proveedor = models.ForeignKey("proveedores.Proveedor", on_delete=models.CASCADE)
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
@@ -41,7 +42,7 @@ class OrdenCompra(models.Model):
 
 
 class DetalleOrdenCompra(models.Model):
-    id_detalle_orden_compra = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_orden_compra = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_orden_compra = models.ForeignKey(OrdenCompra, related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
@@ -51,7 +52,7 @@ class DetalleOrdenCompra(models.Model):
 
 
 class RecepcionMercancia(models.Model):
-    id_recepcion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_recepcion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="recepciones_mercancia")
     id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name="recepciones")
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
@@ -79,7 +80,7 @@ class DetalleRecepcionMercancia(models.Model):
         ("DAÑADO", "Dañado"),
     ]
 
-    id_detalle_recepcion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_recepcion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_recepcion = models.ForeignKey(RecepcionMercancia, on_delete=models.CASCADE, related_name="detalles")
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="detalles_recepcion")
     cantidad_esperada = models.DecimalField(max_digits=18, decimal_places=4, default=0)
@@ -99,7 +100,7 @@ class DetalleRecepcionMercancia(models.Model):
 
 
 class FacturaCompra(models.Model):
-    id_factura_compra = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_factura_compra = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="facturas_compra")
     id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name="facturas")
     id_recepcion = models.ForeignKey(
@@ -125,7 +126,7 @@ class FacturaCompra(models.Model):
 
 
 class RequisicionCompra(models.Model):
-    id_requisicion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_requisicion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="requisiciones_compra")
     numero_requisicion = models.CharField(max_length=50)
     fecha_requisicion = models.DateField()
@@ -168,7 +169,7 @@ class RequisicionCompra(models.Model):
 
 
 class DetalleRequisicionCompra(models.Model):
-    id_detalle_requisicion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_requisicion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_requisicion = models.ForeignKey("RequisicionCompra", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_requisicion"
@@ -188,7 +189,7 @@ class DetalleRequisicionCompra(models.Model):
 
 
 class SolicitudCotizacion(models.Model):
-    id_solicitud_cotizacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_solicitud_cotizacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="solicitudes_cotizacion")
     numero_solicitud = models.CharField(max_length=50)
     fecha_solicitud = models.DateField()
@@ -218,7 +219,7 @@ class SolicitudCotizacion(models.Model):
 
 
 class DetalleSolicitudCotizacion(models.Model):
-    id_detalle_solicitud = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_solicitud = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_solicitud_cotizacion = models.ForeignKey(
         "SolicitudCotizacion", related_name="detalles", on_delete=models.CASCADE
     )
@@ -239,7 +240,7 @@ class DetalleSolicitudCotizacion(models.Model):
 
 
 class OfertaProveedor(models.Model):
-    id_oferta = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_oferta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_solicitud_cotizacion = models.ForeignKey(
         "SolicitudCotizacion", on_delete=models.CASCADE, related_name="ofertas"
     )
@@ -274,7 +275,7 @@ class OfertaProveedor(models.Model):
 
 
 class DetalleOfertaProveedor(models.Model):
-    id_detalle_oferta = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_oferta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_oferta = models.ForeignKey("OfertaProveedor", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="detalles_oferta")
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
@@ -298,7 +299,7 @@ class DetalleOfertaProveedor(models.Model):
 
 
 class DetalleFacturaCompra(models.Model):
-    id_detalle_factura = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_factura = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_factura_compra = models.ForeignKey("FacturaCompra", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_factura_compra"

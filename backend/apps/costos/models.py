@@ -1,10 +1,11 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
 
 class CostoProduccion(models.Model):
-    id_costo_produccion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_costo_produccion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="costos_produccion")
     id_orden_produccion = models.ForeignKey(
         "manufactura.OrdenProduccion", on_delete=models.CASCADE, related_name="costos"
@@ -37,7 +38,7 @@ class CostoProduccion(models.Model):
 
 
 class CostoEstandarProducto(models.Model):
-    id_costo_estandar = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_costo_estandar = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="costos_estandar")
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="costos_estandar")
     tipo_costo = models.CharField(
@@ -66,7 +67,7 @@ class CostoEstandarProducto(models.Model):
 
 
 class AnalisisVariacionCosto(models.Model):
-    id_analisis_variacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_analisis_variacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="analisis_variacion_costos")
     id_orden_produccion = models.ForeignKey(
         "manufactura.OrdenProduccion", on_delete=models.CASCADE, related_name="analisis_variacion"

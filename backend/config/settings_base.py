@@ -366,3 +366,30 @@ KAFKA_PRODUCER_CONFIG = {
     "acks": "all",  # máxima durabilidad
     "retries": 3,
 }
+
+# ── MCP Agent Capabilities ─────────────────────────────────────────────────────
+# Controla qué módulos se registran en el servidor MCP y con qué scopes.
+# Los module_paths se importan automáticamente al iniciar mcp_server.py.
+# Para añadir un módulo: agregar su ruta a module_paths.
+MCP_AGENT_CAPABILITIES: dict = {
+    "server_name": "omni-erp",
+    "server_version": "0.1.0",
+    "module_paths": [
+        "apps.ventas.mcp",
+        "apps.inventario.mcp",
+        "apps.finanzas.mcp",
+    ],
+    "scopes": {
+        "core:read": "Lectura de empresas y clientes",
+        "crm:read": "Lectura del CRM (clientes, contactos)",
+        "ventas:read": "Lectura de pedidos, cotizaciones, facturas",
+        "ventas:write": "Creación y modificación de pedidos",
+        "inventario:read": "Consulta de stock y movimientos",
+        "inventario:write": "Registro de movimientos de inventario",
+        "finanzas:read": "Consulta de pagos, cajas, monedas",
+        "finanzas:write": "Registro de pagos y movimientos de caja",
+        "fiscal:read": "Consulta de correlativos fiscales",
+        "fiscal:write": "Emisión de documentos fiscales",
+        "*": "Acceso completo (solo uso interno)",
+    },
+}

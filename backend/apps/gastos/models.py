@@ -1,11 +1,12 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class CategoriaGasto(models.Model):
-    id_categoria_gasto = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_categoria_gasto = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre_categoria = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -16,7 +17,7 @@ class CategoriaGasto(models.Model):
 
 
 class Gasto(models.Model):
-    id_gasto = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_gasto = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     fecha_gasto = models.DateField()
     descripcion = models.TextField()
@@ -44,7 +45,7 @@ class Gasto(models.Model):
 
 
 class ReembolsoGasto(models.Model):
-    id_reembolso = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_reembolso = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_gasto = models.ForeignKey("Gasto", on_delete=models.CASCADE)
     # id_empleado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE)  # Temporalmente comentado

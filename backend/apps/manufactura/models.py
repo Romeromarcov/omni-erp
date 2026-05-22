@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -7,11 +8,11 @@ from apps.inventario.models import Producto
 
 class ListaMateriales(models.Model):
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, null=True, blank=True)
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
+    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    documento_json = models.JSONField(blank=True, default=dict)
     producto_final = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="listas_materiales")
     nombre = models.CharField(max_length=255)
-    descripcion = models.TextField(blank=True, null=True)
+    descripcion = models.TextField(blank=True, default='')
 
     def __str__(self):
         return self.nombre
@@ -19,10 +20,10 @@ class ListaMateriales(models.Model):
 
 class RutaProduccion(models.Model):
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, null=True, blank=True)
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
+    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    documento_json = models.JSONField(blank=True, default=dict)
     nombre = models.CharField(max_length=255)
-    descripcion = models.TextField(blank=True, null=True)
+    descripcion = models.TextField(blank=True, default='')
 
     def __str__(self):
         return self.nombre
@@ -34,9 +35,9 @@ class OrdenProduccion(models.Model):
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(blank=True, null=True)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, null=True, blank=True)
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
-    tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
+    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    documento_json = models.JSONField(blank=True, default=dict)
+    tipo_operacion = models.CharField(max_length=50, blank=True, default='')
     fecha_cierre_estimada = models.DateField(null=True, blank=True)
     estado = models.CharField(
         max_length=20,
@@ -51,15 +52,15 @@ class OrdenProduccion(models.Model):
     )
     lista_materiales = models.ForeignKey(ListaMateriales, on_delete=models.SET_NULL, null=True, blank=True)
     ruta_produccion = models.ForeignKey(RutaProduccion, on_delete=models.SET_NULL, null=True, blank=True)
-    observaciones = models.TextField(blank=True, null=True)
+    observaciones = models.TextField(blank=True, default='')
 
     def __str__(self):
         return f"OP-{self.id} {self.producto} ({self.estado})"
 
 
 class ConsumoMaterial(models.Model):
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
+    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    documento_json = models.JSONField(blank=True, default=dict)
     orden_produccion = models.ForeignKey(OrdenProduccion, on_delete=models.CASCADE, related_name="consumos")
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=12, decimal_places=2)
@@ -69,8 +70,8 @@ class ConsumoMaterial(models.Model):
 
 
 class ProduccionTerminada(models.Model):
-    referencia_externa = models.CharField(max_length=100, null=True, blank=True)
-    documento_json = models.JSONField(null=True, blank=True)
+    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    documento_json = models.JSONField(blank=True, default=dict)
     orden_produccion = models.ForeignKey(
         OrdenProduccion, on_delete=models.CASCADE, related_name="produccion_terminada"
     )
@@ -82,7 +83,7 @@ class ProduccionTerminada(models.Model):
 
 
 class ListaMaterialesDetalle(models.Model):
-    id_detalle_lista = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_lista = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_lista_materiales = models.ForeignKey("ListaMateriales", on_delete=models.CASCADE, related_name="detalles")
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_lista_materiales"
@@ -92,7 +93,7 @@ class ListaMaterialesDetalle(models.Model):
         "inventario.UnidadMedida", on_delete=models.CASCADE, related_name="detalles_lista_materiales"
     )
     es_opcional = models.BooleanField(default=False)
-    observaciones = models.TextField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, default='')
 
     class Meta:
         db_table = "manufactura_lista_materiales_detalle"
@@ -104,11 +105,11 @@ class ListaMaterialesDetalle(models.Model):
 
 
 class CentroTrabajo(models.Model):
-    id_centro_trabajo = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_centro_trabajo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="centros_trabajo")
     codigo_centro = models.CharField(max_length=50)
     nombre_centro = models.CharField(max_length=100)
-    descripcion = models.TextField(null=True, blank=True)
+    descripcion = models.TextField(blank=True, default='')
     tipo_centro = models.CharField(
         max_length=20,
         choices=[
@@ -135,11 +136,11 @@ class CentroTrabajo(models.Model):
 
 
 class OperacionProduccion(models.Model):
-    id_operacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_operacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="operaciones_produccion")
     codigo_operacion = models.CharField(max_length=50)
     nombre_operacion = models.CharField(max_length=100)
-    descripcion = models.TextField(null=True, blank=True)
+    descripcion = models.TextField(blank=True, default='')
     tiempo_estandar_minutos = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -155,14 +156,14 @@ class OperacionProduccion(models.Model):
 
 
 class RutaProduccionDetalle(models.Model):
-    id_detalle_ruta = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_ruta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_ruta_produccion = models.ForeignKey("RutaProduccion", on_delete=models.CASCADE, related_name="detalles")
     id_operacion = models.ForeignKey("OperacionProduccion", on_delete=models.CASCADE, related_name="detalles_ruta")
     id_centro_trabajo = models.ForeignKey("CentroTrabajo", on_delete=models.CASCADE, related_name="detalles_ruta")
     numero_secuencia = models.IntegerField()
     tiempo_preparacion_minutos = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     tiempo_operacion_minutos = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
-    observaciones = models.TextField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, default='')
 
     class Meta:
         db_table = "manufactura_ruta_produccion_detalle"
@@ -175,7 +176,7 @@ class RutaProduccionDetalle(models.Model):
 
 
 class RegistroOperacion(models.Model):
-    id_registro = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_registro = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_orden_produccion = models.ForeignKey(
         "OrdenProduccion", on_delete=models.CASCADE, related_name="registros_operacion"
     )
@@ -196,7 +197,7 @@ class RegistroOperacion(models.Model):
         ],
         default="INICIADO",
     )
-    observaciones = models.TextField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, default='')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

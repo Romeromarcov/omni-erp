@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.conf import settings
 from django.db import models
@@ -8,7 +9,7 @@ from django.utils import timezone
 
 
 class Moneda(models.Model):
-    id_moneda = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_moneda = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     TIPO_MONEDA_CHOICES = [
         ("fiat", "Fiat"),
         ("crypto", "Cripto"),
@@ -48,7 +49,7 @@ class Moneda(models.Model):
 
 # Modelo para métodos de pago activos por empresa
 class MetodoPagoEmpresaActiva(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="metodos_pago_activos")
     metodo_pago = models.ForeignKey("MetodoPago", on_delete=models.CASCADE, related_name="empresas_activas")
     activa = models.BooleanField(default=True)
@@ -56,14 +57,14 @@ class MetodoPagoEmpresaActiva(models.Model):
 
 # Modelo para monedas activas por empresa
 class MonedaEmpresaActiva(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="monedas_activas")
     moneda = models.ForeignKey("Moneda", on_delete=models.CASCADE, related_name="empresas_activas")
     activa = models.BooleanField(default=True)
 
 
 class TasaCambio(models.Model):
-    id_tasa_cambio = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_tasa_cambio = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa",
         on_delete=models.CASCADE,
@@ -94,7 +95,7 @@ class TasaCambio(models.Model):
 
 
 class MetodoPago(models.Model):
-    id_metodo_pago = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_metodo_pago = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     empresa = models.ForeignKey(
         "core.Empresa",
         null=True,
@@ -145,7 +146,7 @@ class TransaccionFinanciera(models.Model):
         ("EGRESO", "Egreso"),
     ]
 
-    id_transaccion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_transaccion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="transacciones_financieras")
     fecha_hora_transaccion = models.DateTimeField()
     tipo_transaccion = models.CharField(max_length=20, choices=TIPOS_TRANSACCION)
@@ -234,7 +235,7 @@ class Caja(models.Model):
         ("OTRO", "Otro Virtual"),
     ]
 
-    id_caja = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_caja = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="cajas_virtuales", null=True, blank=True
     )
@@ -372,7 +373,7 @@ class CajaFisica(models.Model):
         ("OTRO", "Otro"),
     ]
 
-    id_caja_fisica = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_caja_fisica = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="cajas_fisicas", null=True, blank=True
     )
@@ -462,7 +463,7 @@ class CajaFisica(models.Model):
 
 # Modelo para asociar cajas físicas a usuarios
 class CajaFisicaUsuario(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     usuario = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE, related_name="cajas_fisicas_asignadas")
     caja_fisica = models.ForeignKey("CajaFisica", on_delete=models.CASCADE, related_name="usuarios_asignados")
     es_predeterminada = models.BooleanField(
@@ -491,7 +492,7 @@ class CajaFisicaUsuario(models.Model):
 
 # Modelo para asociar cajas virtuales a usuarios
 class CajaVirtualUsuario(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     usuario = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE, related_name="cajas_virtuales_asignadas")
     caja_virtual = models.ForeignKey("Caja", on_delete=models.CASCADE, related_name="usuarios_virtuales_asignados")
     es_predeterminada = models.BooleanField(
@@ -511,7 +512,7 @@ class CajaVirtualUsuario(models.Model):
 
 # Modelo para asociar cajas a usuarios (LEGACY - mantener por compatibilidad)
 class CajaUsuario(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     usuario = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE, related_name="cajas_asignadas")
     caja = models.ForeignKey("Caja", on_delete=models.CASCADE, related_name="usuarios_asignados")
     es_predeterminada = models.BooleanField(
@@ -548,7 +549,7 @@ class CuentaBancariaEmpresa(models.Model):
         ("CREDITO", "Crédito"),
     ]
 
-    id_cuenta_bancaria = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_cuenta_bancaria = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="cuentas_bancarias_finanzas")
     nombre_banco = models.CharField(max_length=100)
     numero_cuenta = models.CharField(max_length=50, unique=True)
@@ -673,7 +674,7 @@ class Datafono(models.Model):
             "mensaje": "Cierre realizado correctamente.",
         }
 
-    id_datafono = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_datafono = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="datafonos")
     id_sucursal = models.ForeignKey("core.Sucursal", on_delete=models.CASCADE, related_name="datafonos")
     # Campo eliminado: id_caja - ahora solo se asocia a caja física
@@ -732,7 +733,7 @@ class SesionDatafono(models.Model):
         ("CONCILIADA", "Conciliada"),
     ]
 
-    id_sesion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_sesion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     datafono = models.ForeignKey("Datafono", on_delete=models.CASCADE, related_name="sesiones")
     usuario_apertura = models.ForeignKey(
         "core.Usuarios", on_delete=models.CASCADE, related_name="sesiones_datafono_abiertas"
@@ -796,7 +797,7 @@ class TransaccionDatafono(models.Model):
         ("CONCILIADO", "Conciliado"),
     ]
 
-    id_transaccion_datafono = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_transaccion_datafono = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_datafono = models.ForeignKey("Datafono", on_delete=models.CASCADE, related_name="transacciones_datafono")
     sesion_datafono = models.ForeignKey(
         "SesionDatafono", on_delete=models.CASCADE, null=True, blank=True, related_name="transacciones_datafono"
@@ -847,7 +848,7 @@ class DepositoDatafono(models.Model):
         ("CONCILIADO", "Conciliado"),
     ]
 
-    id_deposito = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_deposito = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     datafono = models.ForeignKey("Datafono", on_delete=models.CASCADE, related_name="depositos")
     sesion_datafono = models.ForeignKey("SesionDatafono", on_delete=models.CASCADE, related_name="depositos")
 
@@ -943,7 +944,7 @@ class MovimientoCajaBanco(models.Model):
         ("AJUSTE_NEGATIVO", "Ajuste Negativo"),
     ]
 
-    id_movimiento = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_movimiento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="movimientos_caja_banco")
     fecha_movimiento = models.DateField()
     hora_movimiento = models.TimeField()
@@ -1000,7 +1001,7 @@ class SesionCajaFisica(models.Model):
         ("PAUSADA", "Pausada"),
     ]
 
-    id_sesion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_sesion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     caja_fisica = models.ForeignKey("CajaFisica", on_delete=models.CASCADE, related_name="sesiones")
     usuario = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE, related_name="sesiones_caja_fisica")
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="sesiones_caja_fisica")
@@ -1184,7 +1185,7 @@ class PlantillaMaestroCajasVirtuales(models.Model):
     Se aplica automáticamente a todas las cajas físicas y empleados autorizados.
     """
 
-    id_plantilla_maestro = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_plantilla_maestro = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="plantilla_maestro_cajas")
 
     nombre = models.CharField(max_length=100, help_text="Nombre de la configuración maestra")
@@ -1294,7 +1295,7 @@ class CajaVirtualAuto(models.Model):
     Se mantienen sincronizadas automáticamente con sus plantillas.
     """
 
-    id_caja_virtual = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_caja_virtual = models.UUIDField(primary_key=True, default=uuid7, editable=False)
 
     # Asociación: puede ser con caja física O con empleado (para vendedores móviles)
     caja_fisica = models.ForeignKey(
@@ -1370,7 +1371,7 @@ class CajaMetodoPagoOverride(models.Model):
     Anula las configuraciones de las plantillas maestras.
     """
 
-    id_override = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_override = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     caja_fisica = models.ForeignKey("CajaFisica", on_delete=models.CASCADE, related_name="metodo_pago_overrides")
     metodo_pago = models.ForeignKey("MetodoPago", on_delete=models.CASCADE, related_name="caja_overrides")
     sucursal = models.ForeignKey("core.Sucursal", on_delete=models.CASCADE, related_name="metodo_pago_overrides")
@@ -1632,7 +1633,7 @@ class Pago(models.Model):
     ]
 
     # Campos básicos
-    id_pago = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_pago = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="pagos")
 
     # Clasificación del pago

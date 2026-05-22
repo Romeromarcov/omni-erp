@@ -1,5 +1,6 @@
 import re
 import uuid
+from apps.core.uuid import uuid7
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -25,7 +26,7 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
     RIF único por empresa (no globalmente) para soportar multi-tenant.
     """
 
-    id_cliente = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_cliente = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="clientes")
     razon_social = models.CharField(max_length=255)
     nombre_comercial = models.CharField(max_length=255, null=True, blank=True)
@@ -67,7 +68,7 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
 
 
 class ContactoCliente(OmniBaseModel):
-    id_contacto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_contacto = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="contactos_cliente")
     id_cliente = models.ForeignKey("Cliente", on_delete=models.CASCADE, related_name="contactos")
     nombre_contacto = models.CharField(max_length=100)
@@ -98,7 +99,7 @@ class DireccionCliente(OmniBaseModel):
         ("OTRA", "Otra"),
     ]
 
-    id_direccion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_direccion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="direcciones_cliente")
     id_cliente = models.ForeignKey("Cliente", on_delete=models.CASCADE, related_name="direcciones")
     tipo_direccion = models.CharField(max_length=20, choices=TIPOS_DIRECCION)

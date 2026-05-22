@@ -105,3 +105,68 @@ jobs:
       - name: Vitest unit tests
         working-directory: frontend
         run: npm test -- --run
+
+  # ──────────────────────────────────────────────────────────────
+  # Agent eval — Shadow mode quality gate (Sprint 0.F / CTF-003)
+  # Corre en cada PR que toca apps/agentes/**
+  # ──────────────────────────────────────────────────────────────
+  agent-eval:
+    name: "Agent Eval (shadow mode quality)"
+    runs-on: ubuntu-latest
+    # Solo correr si hay cambios en el módulo agentes
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.changed_files, 'backend/apps/agentes'))
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: omni_erp
+          POSTGRES_USER: omni_erp
+          POSTGRES_PASSWORD: omni_erp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      REDIS_URL: "redis://localhost:6379/0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Django migrations
+        working-directory: backend
+        run: python manage.py migrate --run-syncdb
+
+      - name: Run agent eval suite
+        working-directory: backend
+        run: |
+          python -m pytest tests_api/test_m9_agentes.py -v --tb=short \
+            -k "eval or agente or shadow" \
+            --no-header
+        # No --cov-fail-under aquí: el umbral de eval es de precisión, no cobertura

@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -11,7 +12,7 @@ class PersonalizacionConfig(models.Model):
     activa (activo=True) a la vez. Las anteriores se conservan para rollback.
     """
 
-    id_config = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_config = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, db_index=True)
     version = models.PositiveIntegerField(default=1)
     descripcion = models.CharField(max_length=200, blank=True)

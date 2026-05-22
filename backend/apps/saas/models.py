@@ -6,6 +6,7 @@ Suscripcion: Asocia una empresa a un plan con fechas de vigencia y estado.
 """
 
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 from django.utils import timezone
@@ -25,7 +26,7 @@ class Plan(models.Model):
         ("ENTERPRISE", "Enterprise"),
     ]
 
-    id_plan = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_plan = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     nombre = models.CharField(max_length=50, unique=True)
     nivel = models.CharField(max_length=20, choices=NIVEL_CHOICES, default="FREE")
     descripcion = models.TextField(blank=True, default="")
@@ -101,7 +102,7 @@ class Suscripcion(models.Model):
         ("ANUAL", "Anual"),
     ]
 
-    id_suscripcion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_suscripcion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa",
         on_delete=models.CASCADE,

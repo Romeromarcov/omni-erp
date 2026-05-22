@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -6,7 +7,7 @@ from apps.core.base_models import IntegrationFieldsMixin, OmniBaseModel, TimeSta
 
 
 class UnidadMedida(OmniBaseModel, IntegrationFieldsMixin):
-    id_unidad_medida = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_unidad_medida = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre = models.CharField(max_length=50)
     abreviatura = models.CharField(max_length=10)
@@ -26,7 +27,7 @@ class UnidadMedida(OmniBaseModel, IntegrationFieldsMixin):
 
 
 class CategoriaProducto(OmniBaseModel, IntegrationFieldsMixin):
-    id_categoria_producto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_categoria_producto = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre_categoria = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -42,7 +43,7 @@ class CategoriaProducto(OmniBaseModel, IntegrationFieldsMixin):
 
 
 class Producto(OmniBaseModel, IntegrationFieldsMixin):
-    id_producto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_producto = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
     fecha_cierre_estimada = models.DateField(null=True, blank=True)
@@ -91,7 +92,7 @@ class Producto(OmniBaseModel, IntegrationFieldsMixin):
 
 
 class VarianteProducto(OmniBaseModel):
-    id_variante = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_variante = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_producto = models.ForeignKey("Producto", on_delete=models.CASCADE, related_name="variantes")
     codigo_variante = models.CharField(max_length=50, null=True, blank=True)
     atributos_json = models.JSONField(default=dict)
@@ -107,7 +108,7 @@ class VarianteProducto(OmniBaseModel):
 
 
 class StockActual(models.Model):
-    id_stock_actual = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_stock_actual = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_producto = models.ForeignKey("Producto", on_delete=models.CASCADE)
     id_variante = models.ForeignKey("VarianteProducto", on_delete=models.CASCADE, null=True, blank=True)
@@ -139,9 +140,10 @@ class MovimientoInventario(TimeStampedModel):
         ("RECEPCION_COMPRA", "Recepción Compra"),
         ("DESPACHO_VENTA", "Despacho Venta"),
         ("SALIDA_INTERNA", "Salida Interna"),
+        ("RESERVA_VENTA", "Reserva de Venta"),  # informativo — audit trail de confirmar_pedido()
     ]
 
-    id_movimiento_inventario = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_movimiento_inventario = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="movimientos_inventario")
     fecha_hora_movimiento = models.DateTimeField()
     tipo_movimiento = models.CharField(max_length=50, choices=TIPOS_MOVIMIENTO)
@@ -183,7 +185,7 @@ class MovimientoInventario(TimeStampedModel):
 
 
 class ConversionUnidadMedida(OmniBaseModel):
-    id_conversion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_conversion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="conversiones_unidad")
     id_producto = models.ForeignKey("Producto", on_delete=models.CASCADE, related_name="conversiones_unidad")
     id_unidad_origen = models.ForeignKey("UnidadMedida", on_delete=models.CASCADE, related_name="conversiones_origen")
@@ -203,7 +205,7 @@ class ConversionUnidadMedida(OmniBaseModel):
 
 
 class StockConsignacionCliente(TimeStampedModel):
-    id_stock_consignacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_stock_consignacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="stock_consignacion_clientes"
     )
@@ -237,7 +239,7 @@ class StockConsignacionCliente(TimeStampedModel):
 
 
 class StockConsignacionProveedor(TimeStampedModel):
-    id_stock_consignacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_stock_consignacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="stock_consignacion_proveedores"
     )
@@ -289,7 +291,7 @@ class RequisicionInterna(OmniBaseModel):
         ("CANCELADA", "Cancelada"),
     ]
 
-    id_requisicion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_requisicion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="requisiciones_internas")
     numero_requisicion = models.CharField(max_length=30)
     id_almacen_origen = models.ForeignKey(
@@ -324,7 +326,7 @@ class RequisicionInterna(OmniBaseModel):
 
 
 class DetalleRequisicion(models.Model):
-    id_detalle = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_requisicion = models.ForeignKey(
         RequisicionInterna, on_delete=models.CASCADE, related_name="detalles"
     )

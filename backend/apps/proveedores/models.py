@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -10,7 +11,7 @@ class Proveedor(OmniBaseModel):
     Proveedor del negocio. RIF único por empresa para soportar multi-tenant.
     """
 
-    id_proveedor = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_proveedor = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="proveedores")
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
@@ -40,7 +41,7 @@ class Proveedor(OmniBaseModel):
 
 
 class ContactoProveedor(OmniBaseModel):
-    id_contacto = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_contacto = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_proveedor = models.ForeignKey("Proveedor", on_delete=models.CASCADE, related_name="contactos")
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
@@ -61,7 +62,7 @@ class ContactoProveedor(OmniBaseModel):
 
 
 class CuentaBancariaProveedor(OmniBaseModel):
-    id_cuenta_bancaria = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_cuenta_bancaria = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_proveedor = models.ForeignKey("Proveedor", on_delete=models.CASCADE, related_name="cuentas_bancarias")
     nombre_banco = models.CharField(max_length=100)
     numero_cuenta = models.CharField(max_length=50)

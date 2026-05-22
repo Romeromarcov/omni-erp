@@ -912,3 +912,60 @@ if MCP_AVAILABLE and mcp is not None:
     omni_registrar_movimiento_inventario = mcp.tool()(omni_registrar_movimiento_inventario)
     omni_get_correlativo_fiscal = mcp.tool()(omni_get_correlativo_fiscal)
     omni_buscar_cliente = mcp.tool()(omni_buscar_cliente)
+
+
+# ── Auto-discovery: registrar herramientas de módulos (MCP_AGENT_CAPABILITIES) ─
+#
+# Cualquier módulo apps.<modulo>.mcp que exporte MCP_TOOLS = [{"fn": ..., "name": ..., "scope": ...}]
+# queda registrado aquí automáticamente.
+#
+# Para añadir un módulo al servidor MCP, agregar su ruta a MCP_MODULE_PATHS
+# en settings.py como parte de MCP_AGENT_CAPABILITIES["module_paths"].
+
+_MCP_DEFAULT_MODULE_PATHS = [
+    "apps.ventas.mcp",
+    "apps.inventario.mcp",
+    "apps.finanzas.mcp",
+]
+
+
+def _autodiscover_module_tools(module_paths: list[str] | None = None) -> dict[str, Any]:
+    """
+    Importa los módulos MCP por-módulo y registra sus herramientas en el servidor.
+
+    Returns:
+        dict mapping name → fn para todas las herramientas descubiertas.
+    """
+    import importlib  # noqa: PLC0415
+
+    paths = module_paths or _MCP_DEFAULT_MODULE_PATHS
+    discovered: dict[str, Any] = {}
+
+    for module_path in paths:
+        try:
+            mod = importlib.import_module(module_path)
+        except ImportError as exc:
+            logger.warning("mcp_autodiscover: no se pudo importar %s: %s", module_path, exc)
+            continue
+
+        tools: list[dict] = getattr(mod, "MCP_TOOLS", [])
+        for tool_def in tools:
+            fn = tool_def["fn"]
+            name = tool_def["name"]
+            discovered[name] = fn
+            if MCP_AVAILABLE and mcp is not None:
+                try:
+                    mcp.tool()(fn)
+                    logger.debug("mcp_autodiscover: registrado %s desde %s", name, module_path)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "mcp_autodiscover: error registrando %s desde %s: %s",
+                        name, module_path, exc,
+                    )
+
+    logger.info("mcp_autodiscover: %d herramientas adicionales registradas", len(discovered))
+    return discovered
+
+
+# Ejecutar auto-discovery al importar el módulo
+_DISCOVERED_TOOLS: dict[str, Any] = _autodiscover_module_tools()

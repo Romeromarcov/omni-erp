@@ -8,7 +8,7 @@ Uso para NUEVOS modelos:
     from apps.core.base_models import OmniBaseModel, IntegrationFieldsMixin
 
     class MiModelo(OmniBaseModel, IntegrationFieldsMixin):
-        id_mi_modelo = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        id_mi_modelo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
         id_empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE)
         # ...
 
@@ -169,7 +169,7 @@ class OmniBaseModel(TimeStampedModel, SoftDeleteModel):
 
     Uso mínimo:
         class MiEntidad(OmniBaseModel):
-            id_entidad = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+            id_entidad = models.UUIDField(primary_key=True, default=uuid7, editable=False)
             id_empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE)
             ...
 

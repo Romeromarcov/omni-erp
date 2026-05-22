@@ -1,4 +1,5 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
@@ -47,7 +48,7 @@ class Empleado(models.Model):
 
 
 class Beneficio(models.Model):
-    id_beneficio = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_beneficio = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="beneficios")
     nombre_beneficio = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -80,7 +81,7 @@ class Beneficio(models.Model):
 
 
 class BeneficioEmpleado(models.Model):
-    id_beneficio_empleado = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_beneficio_empleado = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empleado = models.ForeignKey("Empleado", on_delete=models.CASCADE, related_name="beneficios")
     id_beneficio = models.ForeignKey("Beneficio", on_delete=models.CASCADE, related_name="asignaciones")
     fecha_inicio = models.DateField()
@@ -105,7 +106,7 @@ class BeneficioEmpleado(models.Model):
 
 
 class TipoLicencia(models.Model):
-    id_tipo_licencia = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_tipo_licencia = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="tipos_licencia")
     nombre_tipo = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -125,7 +126,7 @@ class TipoLicencia(models.Model):
 
 
 class LicenciaEmpleado(models.Model):
-    id_licencia = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_licencia = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empleado = models.ForeignKey("Empleado", on_delete=models.CASCADE, related_name="licencias")
     id_tipo_licencia = models.ForeignKey("TipoLicencia", on_delete=models.CASCADE, related_name="licencias")
     fecha_inicio = models.DateField()

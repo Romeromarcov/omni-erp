@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
@@ -8,6 +8,7 @@ import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+import type { Produto } from '../../../services/productosService';
 import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
@@ -16,7 +17,7 @@ import type { Pago as PagoFinanzas } from '../../../services/pagosService';
 
 interface PedidoDetalle {
   id_detalle_pedido: string;
-  id_producto: { nombre_producto: string };
+  id_producto: { id_producto?: string; nombre_producto: string };
   cantidad: string;
   precio_unitario: string;
   subtotal: string;
@@ -43,7 +44,7 @@ const PedidoDetailPage: React.FC = () => {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
   const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<PedidoDetalleForm[]>([]);
+  const [productos, setProductos] = useState<Produto[]>([]);
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
@@ -76,8 +77,8 @@ const PedidoDetailPage: React.FC = () => {
     if (pedido?.id_empresa && pedido.id_empresa.id_empresa) {
       fetchProductos(pedido.id_empresa.id_empresa)
         .then((res) => {
-          if (Array.isArray(res)) setProductos(res as PedidoDetalleForm[]);
-          else if (res && Array.isArray((res as { results: PedidoDetalleForm[] }).results)) setProductos((res as { results: PedidoDetalleForm[] }).results);
+          if (Array.isArray(res)) setProductos(res as Produto[]);
+          else if (res && Array.isArray((res as { results: Produto[] }).results)) setProductos((res as { results: Produto[] }).results);
           else setProductos([]);
         })
         .catch(() => setProductos([]));

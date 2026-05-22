@@ -1,10 +1,11 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
 
 class Almacen(models.Model):
-    id_almacen = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_almacen = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre_almacen = models.CharField(max_length=100)
     codigo_almacen = models.CharField(max_length=20)
@@ -39,7 +40,7 @@ class UbicacionAlmacen(models.Model):
         ("DESPACHO", "Despacho"),
     ]
 
-    id_ubicacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_ubicacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="ubicaciones_almacen")
     id_almacen = models.ForeignKey("Almacen", on_delete=models.CASCADE, related_name="ubicaciones")
     codigo_ubicacion = models.CharField(max_length=50)

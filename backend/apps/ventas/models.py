@@ -1,10 +1,11 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.db import models
 
 
 class Pedido(models.Model):
-    id_pedido = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_pedido = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE)
     id_caja_fisica = models.ForeignKey(
@@ -61,7 +62,7 @@ class Pedido(models.Model):
 
 
 class DetallePedido(models.Model):
-    id_detalle_pedido = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_pedido = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_pedido = models.ForeignKey(Pedido, related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
@@ -79,7 +80,7 @@ class DetallePedido(models.Model):
 
 
 class NotaVenta(models.Model):
-    id_nota_venta = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_nota_venta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE)
     # Enlaces entre documentos
@@ -124,7 +125,7 @@ class NotaVenta(models.Model):
 
 
 class DetalleNotaVenta(models.Model):
-    id_detalle_nota_venta = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_nota_venta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_nota_venta = models.ForeignKey(NotaVenta, related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
@@ -142,7 +143,7 @@ class DetalleNotaVenta(models.Model):
 
 
 class FacturaFiscal(models.Model):
-    id_factura = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_factura = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE)
     # Enlaces entre documentos
@@ -199,7 +200,7 @@ class FacturaFiscal(models.Model):
 
 
 class Cotizacion(models.Model):
-    id_cotizacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_cotizacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="cotizaciones")
     id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, related_name="cotizaciones")
     # Enlaces entre documentos
@@ -246,7 +247,7 @@ class Cotizacion(models.Model):
 
 
 class DetalleCotizacion(models.Model):
-    id_detalle_cotizacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_cotizacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_cotizacion = models.ForeignKey("Cotizacion", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_cotizacion"
@@ -275,7 +276,7 @@ class DetalleCotizacion(models.Model):
 
 
 class DetalleFacturaFiscal(models.Model):
-    id_detalle_factura = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_factura = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_factura = models.ForeignKey("FacturaFiscal", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_factura_fiscal"
@@ -306,7 +307,7 @@ class DetalleFacturaFiscal(models.Model):
 
 
 class NotaCreditoVenta(models.Model):
-    id_nota_credito = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_nota_credito = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="notas_credito_venta")
     id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, related_name="notas_credito")
     id_factura_origen = models.ForeignKey(
@@ -345,7 +346,7 @@ class NotaCreditoVenta(models.Model):
 
 
 class DetalleNotaCreditoVenta(models.Model):
-    id_detalle_nota_credito = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_nota_credito = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_nota_credito = models.ForeignKey("NotaCreditoVenta", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_nota_credito"
@@ -374,7 +375,7 @@ class DetalleNotaCreditoVenta(models.Model):
 
 
 class DevolucionVenta(models.Model):
-    id_devolucion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_devolucion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="devoluciones_venta")
     id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, related_name="devoluciones")
     id_factura_origen = models.ForeignKey(
@@ -425,7 +426,7 @@ class DevolucionVenta(models.Model):
 
 
 class DetalleDevolucionVenta(models.Model):
-    id_detalle_devolucion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_devolucion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_devolucion = models.ForeignKey("DevolucionVenta", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_devolucion"
@@ -465,7 +466,7 @@ class DetalleDevolucionVenta(models.Model):
 
 
 class NotaCreditoFiscal(models.Model):
-    id_nota_credito_fiscal = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_nota_credito_fiscal = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE)
 
@@ -530,7 +531,7 @@ class NotaCreditoFiscal(models.Model):
 
 
 class DetalleNotaCreditoFiscal(models.Model):
-    id_detalle_nota_credito = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle_nota_credito = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_nota_credito_fiscal = models.ForeignKey("NotaCreditoFiscal", related_name="detalles", on_delete=models.CASCADE)
     id_producto = models.ForeignKey(
         "inventario.Producto", on_delete=models.CASCADE, related_name="detalles_nota_credito_fiscal"
@@ -569,7 +570,7 @@ class ListaPrecio(models.Model):
     siempre visible en documentos CxC como precio de referencia.
     """
 
-    id_lista = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_lista = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="listas_precio")
     nombre = models.CharField(max_length=100)
     codigo = models.CharField(max_length=20, help_text="Código corto, ej: LISTA1, LISTA2, MAYOREO")
@@ -596,7 +597,7 @@ class DetallePrecio(models.Model):
     Precio de un producto en una lista. Soporta vigencia por fechas.
     """
 
-    id_detalle = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_detalle = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_lista = models.ForeignKey(ListaPrecio, on_delete=models.CASCADE, related_name="detalles")
     id_producto = models.ForeignKey("inventario.Producto", on_delete=models.CASCADE, related_name="precios_lista")
     precio = models.DecimalField(max_digits=18, decimal_places=4)

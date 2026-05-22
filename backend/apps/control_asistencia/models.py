@@ -1,11 +1,12 @@
 import uuid
+from apps.core.uuid import uuid7
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class HorarioTrabajo(models.Model):
-    id_horario = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_horario = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre_horario = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -18,7 +19,7 @@ class HorarioTrabajo(models.Model):
 
 
 class AsignacionHorario(models.Model):
-    id_asignacion_horario = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_asignacion_horario = models.UUIDField(primary_key=True, default=uuid7)
     # id_empleado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE)  # Temporalmente comentado
     id_empleado_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
     id_horario = models.ForeignKey("HorarioTrabajo", on_delete=models.CASCADE)
@@ -31,7 +32,7 @@ class AsignacionHorario(models.Model):
 
 
 class RegistroAsistencia(models.Model):
-    id_registro_asistencia = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_registro_asistencia = models.UUIDField(primary_key=True, default=uuid7)
     # id_empleado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE)  # Temporalmente comentado
     id_empleado_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
     fecha_hora_marcado = models.DateTimeField()
@@ -63,7 +64,7 @@ class RegistroAsistencia(models.Model):
 
 
 class ResumenAsistenciaDiario(models.Model):
-    id_resumen_diario = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_resumen_diario = models.UUIDField(primary_key=True, default=uuid7)
     # id_empleado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE)  # Temporalmente comentado
     id_empleado_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
     fecha = models.DateField()

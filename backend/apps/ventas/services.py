@@ -143,6 +143,24 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
             raise VentaError(str(exc)) from exc
         reservas.append(stock)
 
+        # Sprint 0.H: crear MovimientoInventario(tipo=RESERVA_VENTA) como audit trail.
+        # No altera cantidad_disponible — solo registra que el stock fue comprometido.
+        try:
+            registrar_movimiento(
+                empresa=pedido.id_empresa,
+                fecha_hora_movimiento=timezone.now(),
+                tipo_movimiento="RESERVA_VENTA",
+                producto=detalle.id_producto,
+                cantidad=detalle.cantidad,
+                documento_origen_id=pedido.id_pedido,
+                nombre_modelo_origen="Pedido",
+                usuario=usuario,
+                observaciones=f"Reserva pedido {pedido.numero_pedido}",
+            )
+        except Exception:  # noqa: BLE001
+            # La reserva de stock ya se hizo; el movimiento de audit es best-effort.
+            pass
+
     pedido.estado = "APROBADO"
     pedido.save(update_fields=["estado"])
 
