@@ -578,3 +578,85 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 ### **FASE 0 — CERRADA FORMALMENTE** ✅
 
 ---
+
+## Sesión 11 — 2026-05-22
+
+**Rama:** `chore/diagnostico-inicial`
+**Commit inicial:** `5bc2087` | **Commit final:** `de3ddb4` | **Tag:** `v0.1.0-phase0-complete`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Cierre de 8 sprints (0.A–0.H) para alcanzar 100% DoD de Fase 0 según `OMNI_AI_NATIVE_EXECUTION_PLAN.md §4.3.3`.
+
+### Pre-sprint: Correcciones de bloqueo
+
+1. **`PedidoDetailPage.tsx`** — Corregida interfaz `PedidoDetalle.id_producto` (inner type faltaba `id_producto?: string`); solucionado problema de encoding UTF-8 usando Python `open()` directo.
+2. **`apps/personalizacion/dsl.py`** — `aplicar_config()`: añadida advertencia para primitivas no-PoC (`entidades`, `estados`, `reglas`, `vistas`). Corrige `test_aplicar_primitivas_no_poc_genera_advertencia`.
+3. **`tests_api/test_fiscal_concurrencia.py`** — Añadido `connections.close_all()` tras joins de threads para evitar corrupción de DB de test en archivos subsiguientes.
+4. **`frontend/vite.config.ts`** — Import cambiado a `vitest/config`; `process.env` reemplazado por `(globalThis as any).process?.env?.BACKEND_URL`.
+
+### Sprint 0.A — R-CODE-3 + R-CODE-10
+
+- Verificados `print()` — solo en docstrings; ningún cambio en código de producción requerido.
+- **`apps/manufactura/models.py`**: eliminados 19 `null=True` excedentes en CharField/TextField/JSONField (R-CODE-10). `default=''` en strings, `default=dict` en JSON.
+- **`apps/manufactura/migrations/0003_fix_nullable_string_fields.py`**: 19 `AlterField` — ListaMateriales, RutaProduccion, OrdenProduccion, ConsumoMaterial, ProduccionTerminada, CentroTrabajo, OperacionProduccion, RutaProduccionDetalle, RegistroOperacion.
+
+### Sprint 0.B — CTFs
+
+- **`docs/ctf/CTF-001.md`**: R-CODE-11 asientos contables automáticos — vence 2026-08-01, propietario: finanzas.
+- **`docs/ctf/CTF-002.md`**: DSL runtime para entidades/estados/reglas/vistas — vence 2026-08-01, propietario: personalizacion.
+- **`docs/ctf/CTF-003.md`**: Agent eval suite en CI — vence 2026-09-01, propietario: agentes.
+- **`docs/ctf/CTF-004.md`**: Manufactura multi-tenancy (empresa FK null=True) — vence 2026-07-01, propietario: manufactura.
+- **`docs/ctf/README.md`**: documentación del proceso CTF (R-PROC-6).
+
+### Sprint 0.C — UUIDv7 (R-CODE-5)
+
+- **`apps/core/uuid.py`** creado: implementación RFC 9562 `uuid7()` — 48-bit Unix ms | version 7 | rand_a | rand_b, pura stdlib Python (sin dependencia externa `uuid7`).
+- **29 archivos `models.py`** actualizados via script Python batch: `from apps.core.uuid import uuid7`, `default=uuid.uuid4` → `default=uuid7`. Incluye `apps/core/base_models.py` y todos los módulos de negocio.
+
+### Sprint 0.D — Tests y cobertura
+
+- **`tests_api/test_aislamiento_gestion_documental.py`**: aislamiento de carpetas y documentos — list solo empresa propia, GET/PATCH ajeno devuelve 404. 5 tests.
+- **`tests_api/test_e2e_flujos_ventas.py`**: 5 flujos e2e completos — Cotizacion→Pedido→NotaVenta, NotaVenta→FacturaFiscal, pagos mixtos, anulación pedido, sesion caja.
+- **`backend/pytest.ini`**: `--cov=apps --cov-fail-under=30 --cov-report=term-missing:skip-covered` añadido a `addopts`.
+
+### Sprint 0.E — MCP por módulo
+
+- **`apps/ventas/mcp.py`**: tools `ventas_get_cotizacion`, `ventas_get_notas_venta`, `ventas_get_facturas`. Exporta `MCP_TOOLS`.
+- **`apps/inventario/mcp.py`**: tools `inventario_get_productos`, `inventario_get_stock_resumen`, `inventario_get_alertas_stock`. Exporta `MCP_TOOLS`.
+- **`apps/finanzas/mcp.py`**: tools `finanzas_get_pagos`, `finanzas_get_saldo_caja`, `finanzas_get_metodos_pago`. Exporta `MCP_TOOLS`.
+- **`apps/core/mcp_server.py`**: añadida auto-discovery `_autodiscover_module_tools()` que importa todos los módulos de `_MCP_DEFAULT_MODULE_PATHS` y registra sus `MCP_TOOLS` en el servidor FastMCP.
+- **`config/settings_base.py`**: añadido `MCP_AGENT_CAPABILITIES` dict con `server_name`, `server_version`, `module_paths` y `scopes`.
+
+### Sprint 0.F — Shadow mode agents
+
+- **`apps/agentes/models.py`**: añadidos `NivelAutonomia` (TextChoices: SOMBRA/SUGERENCIA/AUTONOMO) y `ConfigAgente` (umbral_confianza_minimo, max_acciones_por_dia, config_extra, activo, unique_together empresa+agente).
+- **`apps/agentes/base.py`** creado: `OmniAgente` base class con `procesar()`, `_analizar()`, `_ejecutar()`, `_get_config()`, `_persistir()`. Dataclasses `Prediccion` y `ResultadoAccion`. Lógica de shadow mode: solo ejecuta si `nivel=AUTONOMO` y `confianza >= umbral`.
+- **`apps/agentes/migrations/0002_nivelautonomia_configagente.py`**: CreateModel ConfigAgente.
+- **`.github/workflows/ci.yml`**: añadido job `agent-eval` que corre `test_m9_agentes.py -k "eval or agente or shadow"` con servicio PostgreSQL.
+
+### Sprint 0.G — i18n ventas
+
+- **`frontend/src/i18n.ts`** creado: inicialización i18next con `initReactI18next`, locale `es`, fallback `es`.
+- **`frontend/src/locales/es.json`** creado: secciones `common`, `pedidos`, `facturas`, `notasVenta`, `pagos`, `products`.
+- `useTranslation` hook añadido a `PedidosListPage.tsx`, `FacturasFiscalesListPage.tsx`, `NotasVentaListPage.tsx`.
+- `ModalPago.tsx` ya estaba dividido en subcomponentes — verificado, sin cambios necesarios.
+
+### Sprint 0.H — RESERVA_VENTA audit trail (confirmar_pedido)
+
+- **`apps/inventario/models.py`**: añadido `("RESERVA_VENTA", "Reserva de Venta")` a `TIPOS_MOVIMIENTO`.
+- **`apps/inventario/services.py`**: añadido `TIPOS_INFORMATIVO = frozenset({"RESERVA_VENTA"})`, actualizado `ALL_TIPOS`; rama `elif tipo in TIPOS_INFORMATIVO: pass` en validación de almacén; comentario en sección de actualización de stock.
+- **`apps/inventario/migrations/0006_add_reserva_venta_tipo_movimiento.py`**: `AlterField` con lista de choices actualizada (8 tipos + RESERVA_VENTA).
+- **`apps/ventas/services.py`** — `confirmar_pedido()`: añadida creación de `MovimientoInventario(tipo=RESERVA_VENTA)` como audit trail de reserva (best-effort, dentro de `try/except Exception`). No altera `cantidad_disponible`; la reserva ya se refleja en `cantidad_comprometida` por `reservar_stock()`.
+
+### Resumen de cambios
+
+- **59 archivos** modificados/creados — 2479 inserciones, 177 eliminaciones.
+- **Commit:** `de3ddb4` — `feat(phase0): complete Phase 0 DoD — Sprints 0.A through 0.H`
+- **Tag:** `v0.1.0-phase0-complete`
+
+### Estado al cerrar
+
+- **Fase 0 DoD: 100%** ✅ — todos los ítems de `OMNI_AI_NATIVE_EXECUTION_PLAN.md §4.3.3` cumplidos.
+- Deuda técnica activa documentada en `docs/ctf/` (CTF-001 a CTF-004) con fechas de vencimiento y propietarios asignados.
+- **Próximo:** Fase 1 — módulos de negocio avanzados, CTF-001 (asientos automáticos), CTF-004 (manufactura multi-tenant).
+
+---
