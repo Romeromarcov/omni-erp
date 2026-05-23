@@ -472,7 +472,7 @@ def omni_crear_pedido(
     capability_token: str,
     empresa_id: str,
     cliente_id: str,
-    productos: List[Dict[str, Any]],
+    productos: list,
 ) -> Dict[str, Any]:
     """
     Crea un pedido de venta.
@@ -813,7 +813,7 @@ def omni_buscar_contacto(
     capability_token: str,
     empresa_id: str,
     query: str = "",
-    rol: Optional[str] = None,
+    rol: str = "",
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
     """
