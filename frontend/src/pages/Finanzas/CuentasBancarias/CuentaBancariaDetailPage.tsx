@@ -106,7 +106,7 @@ const CuentaBancariaDetailPage: React.FC = () => {
     <PageLayout>
       <h2 style={{ marginBottom: 16 }}>Detalle de Cuenta Bancaria</h2>
       <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
-        <TextField fullWidth label="Banco" name="nombre_banco" value={form.nombre_banco} onChange={handleChange} required />
+        <TextField fullWidth label="Banco" name="nombre_banco" value={form.nombre_banco} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Tipo de Cuenta</label>
         <select name="tipo_cuenta" value={form.tipo_cuenta} onChange={handleChange} required style={{ width: '100%', marginBottom: 16, padding: 8 }}>
           <option value="">Seleccione un tipo</option>
@@ -114,7 +114,7 @@ const CuentaBancariaDetailPage: React.FC = () => {
           <option value="CORRIENTE">Corriente</option>
           <option value="CREDITO">Crédito</option>
         </select>
-        <TextField fullWidth label="Número de Cuenta" name="numero_cuenta" value={form.numero_cuenta} onChange={handleChange} required />
+        <TextField fullWidth label="Número de Cuenta" name="numero_cuenta" value={form.numero_cuenta} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Moneda</label>
         <select name="id_moneda" value={form.id_moneda} onChange={handleChange} required style={{ width: '100%', marginBottom: 16, padding: 8 }}>
           <option value="">Seleccione una moneda</option>

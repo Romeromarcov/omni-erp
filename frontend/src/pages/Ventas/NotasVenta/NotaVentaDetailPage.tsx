@@ -52,7 +52,7 @@ const NotaVentaDetailPage: React.FC = () => {
 
   const { data: notaVenta = null, isLoading: loading } = useQuery<NotaVentaDetail | null>({
     queryKey: [`/ventas/notas-venta/${id}/`],
-    queryFn: () => notaVentaService.getById(id!) as Promise<NotaVentaDetail>,
+    queryFn: () => notaVentaService.getById(id!) as unknown as Promise<NotaVentaDetail>,
     enabled: !!id,
   });
 

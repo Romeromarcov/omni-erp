@@ -33,7 +33,7 @@ const BranchCreatePage: React.FC = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Sucursal) => post<Sucursal>('/core/sucursales/', data as Record<string, unknown>),
+    mutationFn: (data: Sucursal) => post<Sucursal>('/core/sucursales/', data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });
       alert('Sucursal creada');

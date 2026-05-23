@@ -150,9 +150,9 @@ def caja_fisica_a(db, empresa_a):
     from apps.finanzas.models import CajaFisica
 
     return CajaFisica.objects.create(
-        id_empresa=empresa_a,
+        empresa=empresa_a,
         nombre="Caja 01 E2E",
-        codigo="CAJA-E2E-01",
+        identificador_dispositivo="e2e-test-device-001",
     )
 
 
@@ -383,7 +383,7 @@ class TestE2ESesionCaja:
 
         payload = {
             "id_empresa": str(empresa_a.id_empresa),
-            "id_caja_fisica": str(caja_fisica_a.id_caja),
+            "id_caja_fisica": str(caja_fisica_a.id_caja_fisica),
             "fecha_apertura": str(date.today()),
             "monto_apertura": "500.00",
             "id_moneda": str(moneda_usd.id_moneda),

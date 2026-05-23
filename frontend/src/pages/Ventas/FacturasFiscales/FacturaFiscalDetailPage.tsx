@@ -16,9 +16,11 @@ import type { Pago as PagoFinanzas } from '../../../services/pagosService';
 
 interface FacturaFiscalDetalle {
   id_detalle_factura: string;
-  id_producto: { nombre_producto: string };
+  id_producto?: { id_producto?: string; sku?: string; nombre_producto: string } | null;
+  producto?: string;
   cantidad: string;
   precio_unitario: string;
+  descuento_porcentaje?: string;
   subtotal: string;
   observaciones?: string;
 }

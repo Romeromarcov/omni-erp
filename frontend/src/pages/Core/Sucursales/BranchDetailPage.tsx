@@ -43,7 +43,7 @@ const BranchDetailPage: React.FC = () => {
   }, [isEditRoute]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: Sucursal) => put<Sucursal>(`/core/sucursales/${id_sucursal}/`, data as Record<string, unknown>),
+    mutationFn: (data: Sucursal) => put<Sucursal>(`/core/sucursales/${id_sucursal}/`, data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/', id_sucursal] });
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });

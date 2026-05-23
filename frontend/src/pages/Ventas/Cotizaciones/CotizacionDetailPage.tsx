@@ -81,11 +81,11 @@ const CotizacionDetailPage: React.FC = () => {
       id_producto: det.id_producto?.id_producto || '',
       sku: det.id_producto?.sku || '',
       producto: det.id_producto?.nombre_producto || det.producto || '',
-      cantidad: det.cantidad,
-      precio_unitario: det.precio_unitario,
-      descuento_porcentaje: det.descuento_porcentaje || '0',
+      cantidad: det.cantidad.toString(),
+      precio_unitario: det.precio_unitario.toString(),
+      descuento_porcentaje: (det.descuento_porcentaje || '0').toString(),
       comentarios: det.observaciones || '',
-      subtotal: det.subtotal || '',
+      subtotal: (det.subtotal || '').toString(),
     }));
   }
 

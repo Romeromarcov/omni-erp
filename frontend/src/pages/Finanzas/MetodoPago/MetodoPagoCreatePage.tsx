@@ -8,7 +8,7 @@ interface MonedaEmpresaActivaApi {
   activa: boolean;
   es_base: boolean;
 }
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import type { MonedasInfoMetodoPago } from '../../../services/monedasInfoMetodoPago';

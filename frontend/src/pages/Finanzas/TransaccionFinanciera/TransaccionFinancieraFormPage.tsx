@@ -299,14 +299,14 @@ const TransaccionFinancieraFormPage: React.FC = () => {
         </select>
 
         {/* Moneda base (readonly) */}
-        <TextField fullWidth label="Moneda Base" name="moneda_base" value={monedaBase} readOnly style={{ marginBottom: 16 }} />
+        <TextField fullWidth label="Moneda Base" name="moneda_base" value={monedaBase} InputProps={{ readOnly: true }} style={{ marginBottom: 16 }} />
 
         {/* Tasa de cambio (editable, validada) */}
-        <TextField fullWidth label="Tasa de Cambio" name="tasa_cambio" type="number" value={tasaCambio} onChange={handleTasaCambio} required min="0.0001" step="0.0001" style={{ marginBottom: 16 }} />
+        <TextField fullWidth label="Tasa de Cambio" name="tasa_cambio" type="number" value={tasaCambio} onChange={handleTasaCambio} required inputProps={{ min: "0.0001", step: "0.0001" }} style={{ marginBottom: 16 }} />
         {tasaError && <div style={{ color: 'red', marginBottom: 8 }}>{tasaError}</div>}
 
         {/* Monto base (readonly, auto-calculado) */}
-        <TextField fullWidth label="Monto Base" name="monto_base" value={montoBase} readOnly style={{ marginBottom: 16 }} />
+        <TextField fullWidth label="Monto Base" name="monto_base" value={montoBase} InputProps={{ readOnly: true }} style={{ marginBottom: 16 }} />
 
         <TextField fullWidth label="Referencia" name="referencia_pago" value={form.referencia_pago} onChange={handleChange} />
         <TextField fullWidth label="Descripción" name="descripcion" value={form.descripcion} onChange={handleChange} />

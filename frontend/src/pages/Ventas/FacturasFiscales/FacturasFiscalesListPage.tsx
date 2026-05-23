@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
@@ -9,7 +8,6 @@ import { Alert, Box, Button, Chip, IconButton, Menu, MenuItem, Paper, Table, Tab
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 const FacturasFiscalesListPage: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

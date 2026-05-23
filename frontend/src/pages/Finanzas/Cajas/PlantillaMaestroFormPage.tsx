@@ -39,13 +39,13 @@ const PlantillaMaestroFormPage: React.FC = () => {
 
   const { data: metodosPago = [] } = useQuery<MetodoPago[]>({
     queryKey: ['/finanzas/metodos-pago-empresa-activas/', idEmpresa],
-    queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa) as Promise<MetodoPago[]>,
+    queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa) as unknown as Promise<MetodoPago[]>,
     enabled: !!idEmpresa,
   });
 
   const { data: monedas = [] } = useQuery<Moneda[]>({
     queryKey: ['/finanzas/monedas-empresa-activas/', idEmpresa],
-    queryFn: () => fetchMonedasEmpresaActivas(idEmpresa) as Promise<Moneda[]>,
+    queryFn: () => fetchMonedasEmpresaActivas(idEmpresa) as unknown as Promise<Moneda[]>,
     enabled: !!idEmpresa,
   });
 

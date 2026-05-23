@@ -91,6 +91,18 @@ def user_b(db, empresa_b):
 
 
 @pytest.fixture
+def caja_fisica_a(db, empresa_a):
+    """CajaFisica para Empresa A — usada en tests de sesión de caja."""
+    from apps.finanzas.models import CajaFisica
+
+    return CajaFisica.objects.create(
+        empresa=empresa_a,
+        nombre="Caja Principal Test",
+        identificador_dispositivo="test-device-001",
+    )
+
+
+@pytest.fixture
 def test_user(db, empresa_a, moneda_usd):
     """Fixture legacy — mantiene compatibilidad con código anterior."""
     User = get_user_model()

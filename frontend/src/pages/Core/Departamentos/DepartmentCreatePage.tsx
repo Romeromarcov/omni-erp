@@ -25,7 +25,7 @@ const DepartmentCreatePage: React.FC = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Departamento) => post<Departamento>('/core/departamentos/', data as Record<string, unknown>),
+    mutationFn: (data: Departamento) => post<Departamento>('/core/departamentos/', data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });
       alert('Departamento creado');

@@ -45,7 +45,7 @@ const CajaCreatePage: React.FC = () => {
 
   const { data: metodosPago = [] } = useQuery<MetodoPagoEmpresaActiva[]>({
     queryKey: ['/finanzas/metodos-pago-empresa-activas/', id_empresa],
-    queryFn: () => fetchMetodosPagoEmpresaActivos(id_empresa!) as Promise<MetodoPagoEmpresaActiva[]>,
+    queryFn: () => fetchMetodosPagoEmpresaActivos(id_empresa!) as unknown as Promise<MetodoPagoEmpresaActiva[]>,
     enabled: !!id_empresa,
   });
 
@@ -87,7 +87,7 @@ const CajaCreatePage: React.FC = () => {
     <PageLayout>
       <h2 style={{ marginBottom: 16 }}>Crear Nueva Caja</h2>
       <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
-        <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange} required />
+        <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Tipo de Caja</label>
         <select name="tipo_caja" value={form.tipo_caja} onChange={handleChange} required style={{ width: '100%', marginBottom: 16, padding: 8 }}>
           <option value="">Seleccione un tipo</option>

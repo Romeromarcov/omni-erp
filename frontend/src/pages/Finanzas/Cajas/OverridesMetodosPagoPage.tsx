@@ -39,7 +39,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
 
   const { data: metodosPago = [] } = useQuery<MetodoPago[]>({
     queryKey: ['/finanzas/metodos-pago-empresa-activas/', idEmpresa],
-    queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa) as Promise<MetodoPago[]>,
+    queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa) as unknown as Promise<MetodoPago[]>,
     enabled: !!idEmpresa,
   });
 

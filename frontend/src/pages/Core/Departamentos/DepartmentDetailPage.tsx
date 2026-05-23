@@ -31,7 +31,7 @@ const DepartmentDetailPage: React.FC = () => {
   }, [departamento]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: Departamento) => put<Departamento>(`/core/departamentos/${id_departamento}/`, data as Record<string, unknown>),
+    mutationFn: (data: Departamento) => put<Departamento>(`/core/departamentos/${id_departamento}/`, data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/', id_departamento] });
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });

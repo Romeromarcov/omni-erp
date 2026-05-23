@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { DetalleFacturaFiscal } from '../types/ventas';
 import { get } from '../services/api';
@@ -182,6 +182,9 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
     }
   };
 
+  const handleClienteManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    void base.handleClienteManualKeyDown(e, (id) => setForm(f => ({ ...f, id_cliente: id })));
+
   return {
     form,
     setForm,
@@ -189,5 +192,6 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
     numeroFacturaCreado,
     submitFacturaFiscal,
     ...base,
+    handleClienteManualKeyDown,
   };
 };

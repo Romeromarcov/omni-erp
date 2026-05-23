@@ -136,10 +136,10 @@ const MetodoPagoDetailPage: React.FC = () => {
           <label style={{ fontWeight: 500 }}>Monedas asociadas
             <select
               multiple
-              value={metodo.monedas || []}
+              value={localMonedas}
               onChange={e => {
                 const options = Array.from(e.target.selectedOptions).map(opt => opt.value);
-                setMetodo({ ...metodo, monedas: options });
+                setLocalMonedas(options);
               }}
               style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', background: '#f6fafd', marginTop: 4, minHeight: 60 }}
             >

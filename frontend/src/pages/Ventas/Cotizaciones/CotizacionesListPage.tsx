@@ -94,7 +94,7 @@ const CotizacionesListPage: React.FC = () => {
                     )}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'right' }}>
-                    {cotizacion.monto_total.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                    {(cotizacion.monto_total ?? 0).toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>

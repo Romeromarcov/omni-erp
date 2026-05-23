@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Pedido, DetallePedido } from '../types/ventas';
 import { post, get, patch } from '../services/api';
@@ -172,6 +172,9 @@ export const usePedidoForm = (pedidoId?: string) => {
     }
   };
 
+  const handleClienteManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    void base.handleClienteManualKeyDown(e, (id) => setForm(f => ({ ...f, id_cliente: id })));
+
   return {
     form,
     setForm,
@@ -179,5 +182,6 @@ export const usePedidoForm = (pedidoId?: string) => {
     numeroPedidoCreado,
     submitPedido,
     ...base,
+    handleClienteManualKeyDown,
   };
 };
