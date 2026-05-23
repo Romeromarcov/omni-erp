@@ -10,14 +10,14 @@ Herramientas expuestas:
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.finanzas")
 
 _SCOPE = "finanzas"
 
 
-def _ctx(capability_token: str, scope: str) -> dict[str, Any]:
+def _ctx(capability_token: str, scope: str) -> Dict[str, Any]:
     from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
 
     context = _resolve_token(capability_token)
@@ -31,7 +31,7 @@ def finanzas_get_pagos(
     empresa_id: str,
     tipo_documento: str = "",
     limit: int = 50,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Lista pagos registrados de una empresa.
 
@@ -83,7 +83,7 @@ def finanzas_get_saldo_caja(
     capability_token: str,
     empresa_id: str,
     caja_id: str,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Retorna el saldo actual de una caja física específica.
 
@@ -118,7 +118,7 @@ def finanzas_get_saldo_caja(
     saldo_apertura = float(sesion_activa.monto_apertura) if sesion_activa else 0.0
 
     return {
-        "caja_id": str(caja.id_caja),
+        "caja_id": str(caja.id_caja_fisica),
         "nombre": caja.nombre,
         "activa": caja.activo,
         "sesion_activa": sesion_activa is not None,
@@ -128,7 +128,7 @@ def finanzas_get_saldo_caja(
 
 def finanzas_get_metodos_pago(
     capability_token: str,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Lista todos los métodos de pago disponibles en el sistema.
 
@@ -159,7 +159,7 @@ def finanzas_get_metodos_pago(
 # Auto-discovery
 # ─────────────────────────────────────────────────────────────────────────────
 
-MCP_TOOLS: list[dict[str, Any]] = [
+MCP_TOOLS: List[Dict[str, Any]] = [
     {
         "fn": finanzas_get_pagos,
         "name": "finanzas_get_pagos",

@@ -45,7 +45,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from django.db import models
 
@@ -86,7 +86,7 @@ else:
 
 # ── Helpers de autenticación ─────────────────────────────────────────────────
 
-def _resolve_token(capability_token: str) -> dict[str, Any] | None:
+def _resolve_token(capability_token: str) -> Optional[Dict[str, Any]]:
     """
     Valida un CapabilityToken y devuelve el contexto del tenant.
 
@@ -120,7 +120,7 @@ def _resolve_token(capability_token: str) -> dict[str, Any] | None:
     }
 
 
-def _require_scope(context: dict[str, Any] | None, scope: str) -> None:
+def _require_scope(context: Optional[Dict[str, Any]], scope: str) -> None:
     """Lanza PermissionError si el contexto no tiene el scope requerido."""
     if context is None:
         raise PermissionError("Token de capacidad inválido o expirado.")
@@ -130,7 +130,7 @@ def _require_scope(context: dict[str, Any] | None, scope: str) -> None:
 
 # ── Herramientas MCP (definidas a nivel de módulo para ser importables en tests) ─
 
-def omni_ping(capability_token: str) -> dict[str, Any]:
+def omni_ping(capability_token: str) -> Dict[str, Any]:
     """
     Health check del servidor Omni.
 
@@ -152,7 +152,7 @@ def omni_ping(capability_token: str) -> dict[str, Any]:
     }
 
 
-def omni_get_empresas(capability_token: str) -> list[dict[str, Any]]:
+def omni_get_empresas(capability_token: str) -> List[Dict[str, Any]]:
     """
     Lista las empresas visibles para el tenant del token.
 
@@ -197,7 +197,7 @@ def omni_get_clientes(
     empresa_id: str,
     buscar: str = "",
     limit: int = 50,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Lista los clientes de una empresa.
 
@@ -258,7 +258,7 @@ def omni_get_saldo_cliente(
     capability_token: str,
     empresa_id: str,
     cliente_id: str,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Devuelve el saldo pendiente de CxC de un cliente.
 
@@ -311,7 +311,7 @@ def omni_get_saldo_cliente(
 def omni_get_cxc_aging(
     capability_token: str,
     empresa_id: str,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Devuelve el reporte de antigüedad de saldos por cobrar de una empresa.
 
@@ -360,7 +360,7 @@ def omni_get_stock_producto(
     empresa_id: str,
     producto_id: str,
     almacen_id: str = "",
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Devuelve el stock disponible de un producto, opcionalmente por almacén.
 
@@ -413,7 +413,7 @@ def omni_get_ventas_resumen(
     empresa_id: str,
     fecha_desde: str = "",
     fecha_hasta: str = "",
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Devuelve un resumen de ventas (pedidos aprobados) de una empresa.
 
@@ -472,8 +472,8 @@ def omni_crear_pedido(
     capability_token: str,
     empresa_id: str,
     cliente_id: str,
-    productos: list[dict],
-) -> dict[str, Any]:
+    productos: List[Dict[str, Any]],
+) -> Dict[str, Any]:
     """
     Crea un pedido de venta.
 
@@ -553,7 +553,7 @@ def omni_get_pedidos(
     empresa_id: str,
     estado: str = "",
     limit: int = 20,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Retorna pedidos de una empresa, opcionalmente filtrados por estado.
 
@@ -616,7 +616,7 @@ def omni_registrar_movimiento_inventario(
     cantidad: str,
     almacen_destino_id: str = "",
     almacen_origen_id: str = "",
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Registra un movimiento de inventario.
 
@@ -686,7 +686,7 @@ def omni_get_correlativo_fiscal(
     capability_token: str,
     empresa_id: str,
     tipo_documento: str,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Retorna el siguiente número correlativo fiscal para un tipo de documento.
 
@@ -749,7 +749,7 @@ def omni_buscar_cliente(
     capability_token: str,
     empresa_id: str,
     termino: str,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Busca clientes por nombre, RIF o email.
 
@@ -813,9 +813,9 @@ def omni_buscar_contacto(
     capability_token: str,
     empresa_id: str,
     query: str = "",
-    rol: str | None = None,
+    rol: Optional[str] = None,
     limit: int = 20,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Busca contactos unificados por nombre, RIF, cédula o email.
 
@@ -929,7 +929,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
 ]
 
 
-def _autodiscover_module_tools(module_paths: list[str] | None = None) -> dict[str, Any]:
+def _autodiscover_module_tools(module_paths: Optional[List[str]] = None) -> Dict[str, Any]:
     """
     Importa los módulos MCP por-módulo y registra sus herramientas en el servidor.
 
@@ -939,7 +939,7 @@ def _autodiscover_module_tools(module_paths: list[str] | None = None) -> dict[st
     import importlib  # noqa: PLC0415
 
     paths = module_paths or _MCP_DEFAULT_MODULE_PATHS
-    discovered: dict[str, Any] = {}
+    discovered: Dict[str, Any] = {}
 
     for module_path in paths:
         try:
@@ -948,7 +948,7 @@ def _autodiscover_module_tools(module_paths: list[str] | None = None) -> dict[st
             logger.warning("mcp_autodiscover: no se pudo importar %s: %s", module_path, exc)
             continue
 
-        tools: list[dict] = getattr(mod, "MCP_TOOLS", [])
+        tools: List[Dict[str, Any]] = getattr(mod, "MCP_TOOLS", [])
         for tool_def in tools:
             fn = tool_def["fn"]
             name = tool_def["name"]
@@ -968,4 +968,4 @@ def _autodiscover_module_tools(module_paths: list[str] | None = None) -> dict[st
 
 
 # Ejecutar auto-discovery al importar el módulo
-_DISCOVERED_TOOLS: dict[str, Any] = _autodiscover_module_tools()
+_DISCOVERED_TOOLS: Dict[str, Any] = _autodiscover_module_tools()

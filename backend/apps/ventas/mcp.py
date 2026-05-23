@@ -15,7 +15,7 @@ Herramientas expuestas:
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.ventas")
 
@@ -27,7 +27,7 @@ _SCOPE = "ventas"
 # Helpers internos
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _ctx(capability_token: str, scope: str) -> dict[str, Any]:
+def _ctx(capability_token: str, scope: str) -> Dict[str, Any]:
     """Resuelve y valida token + scope. Lanza PermissionError si falla."""
     from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
 
@@ -46,7 +46,7 @@ def ventas_get_cotizacion(
     capability_token: str,
     empresa_id: str,
     cotizacion_id: str,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Recupera los detalles de una cotización específica.
 
@@ -102,7 +102,7 @@ def ventas_get_notas_venta(
     empresa_id: str,
     estado: str = "",
     limit: int = 20,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Lista notas de venta de una empresa.
 
@@ -150,7 +150,7 @@ def ventas_get_facturas(
     empresa_id: str,
     estado: str = "",
     limit: int = 20,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Lista facturas fiscales de una empresa.
 
@@ -199,7 +199,7 @@ def ventas_get_facturas(
 # Auto-discovery — exportar lista de herramientas
 # ─────────────────────────────────────────────────────────────────────────────
 
-MCP_TOOLS: list[dict[str, Any]] = [
+MCP_TOOLS: List[Dict[str, Any]] = [
     {
         "fn": ventas_get_cotizacion,
         "name": "ventas_get_cotizacion",
