@@ -40,6 +40,14 @@ class ListaMaterialesViewSet(BaseModelViewSet):
         # R-CODE-1 — el campo FK a empresa es "empresa" (no "id_empresa")
         return ListaMateriales.objects.filter(empresa__in=_empresas(self.request))
 
+    def perform_create(self, serializer):
+        # CTF-004: inyectar empresa automáticamente — el cliente no puede elegirla
+        empresa = _empresas(self.request).first()
+        if not empresa:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        serializer.save(empresa=empresa)
+
 
 class RutaProduccionViewSet(BaseModelViewSet):
     queryset = RutaProduccion.objects.all()
@@ -49,6 +57,14 @@ class RutaProduccionViewSet(BaseModelViewSet):
         # R-CODE-1 — el campo FK a empresa es "empresa" (no "id_empresa")
         return RutaProduccion.objects.filter(empresa__in=_empresas(self.request))
 
+    def perform_create(self, serializer):
+        # CTF-004: inyectar empresa automáticamente
+        empresa = _empresas(self.request).first()
+        if not empresa:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        serializer.save(empresa=empresa)
+
 
 class OrdenProduccionViewSet(BaseModelViewSet):
     queryset = OrdenProduccion.objects.all()
@@ -57,6 +73,14 @@ class OrdenProduccionViewSet(BaseModelViewSet):
     def get_queryset(self):
         # R-CODE-1 — el campo FK a empresa es "empresa" (no "id_empresa")
         return OrdenProduccion.objects.filter(empresa__in=_empresas(self.request))
+
+    def perform_create(self, serializer):
+        # CTF-004: inyectar empresa automáticamente
+        empresa = _empresas(self.request).first()
+        if not empresa:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        serializer.save(empresa=empresa)
 
 
 class ConsumoMaterialViewSet(BaseModelViewSet):

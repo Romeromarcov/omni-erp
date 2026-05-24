@@ -13,7 +13,7 @@ sin que la condición de cierre se cumpla, el item bloquea el siguiente hito.
 | CTF-001  | Asientos contables automáticos (R-CODE-11)      | 2026-08-01 | equipo-finanzas    | ABIERTO  |
 | CTF-002  | DSL runtime completo (entidades/estados/reglas) | 2026-08-01 | equipo-plataforma  | ABIERTO  |
 | CTF-003  | Shadow mode agents — eval suite en CI           | 2026-09-01 | equipo-agentes     | ABIERTO  |
-| CTF-004  | Multi-tenancy completo en manufactura           | 2026-07-01 | equipo-manufactura | ABIERTO  |
+| CTF-004  | Multi-tenancy completo en manufactura           | 2026-07-01 | equipo-manufactura | CERRADO  |
 
 ## Proceso
 

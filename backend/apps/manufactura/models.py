@@ -7,7 +7,7 @@ from apps.inventario.models import Producto
 
 
 class ListaMateriales(models.Model):
-    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, null=True, blank=True)
+    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     referencia_externa = models.CharField(max_length=100, blank=True, default='')
     documento_json = models.JSONField(blank=True, default=dict)
     producto_final = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="listas_materiales")
@@ -19,7 +19,7 @@ class ListaMateriales(models.Model):
 
 
 class RutaProduccion(models.Model):
-    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, null=True, blank=True)
+    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     referencia_externa = models.CharField(max_length=100, blank=True, default='')
     documento_json = models.JSONField(blank=True, default=dict)
     nombre = models.CharField(max_length=255)
@@ -34,7 +34,7 @@ class OrdenProduccion(models.Model):
     cantidad = models.DecimalField(max_digits=12, decimal_places=2)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(blank=True, null=True)
-    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, null=True, blank=True)
+    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     referencia_externa = models.CharField(max_length=100, blank=True, default='')
     documento_json = models.JSONField(blank=True, default=dict)
     tipo_operacion = models.CharField(max_length=50, blank=True, default='')

@@ -18,18 +18,24 @@ class ListaMaterialesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListaMateriales
         fields = "__all__"
+        # empresa se inyecta en perform_create desde request.user — R-CODE-1
+        read_only_fields = ["empresa"]
 
 
 class RutaProduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RutaProduccion
         fields = "__all__"
+        # empresa se inyecta en perform_create desde request.user — R-CODE-1
+        read_only_fields = ["empresa"]
 
 
 class OrdenProduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrdenProduccion
         fields = "__all__"
+        # empresa se inyecta en perform_create desde request.user — R-CODE-1
+        read_only_fields = ["empresa"]
 
 
 class ConsumoMaterialSerializer(serializers.ModelSerializer):
