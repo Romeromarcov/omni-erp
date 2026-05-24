@@ -277,7 +277,7 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     advertencias: list[str] = []
 
     # ── Construir el resultado de aplicación ──────────────────────────────────
-    resultado: dict[str, Any] = {"campos": {}, "conectores": []}
+    resultado: dict[str, Any] = {"campos": {}, "conectores": [], "entidades": {}, "estados": [], "reglas": 0, "vistas": []}
 
     # Primitiva: campos
     campos = config.get("campos", [])
@@ -302,14 +302,59 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
 
         aplicadas.append(f"{accion} {clave}")
 
-    # Primitivas declarativas (persistidas tal cual en config_dict)
-    for primitiva in ("entidades", "estados", "reglas", "vistas"):
-        if primitiva in config:
-            aplicadas.append(f"registrado:{primitiva} ({len(config[primitiva])} items)")
-            advertencias.append(
-                f"primitiva '{primitiva}' registrada en config pero aún no aplicada "
-                f"por el runtime (PoC aplica solo 'campos' y 'conectores') — activar en Fase 1"
+    # Primitiva: entidades — persiste instancias EAV y registra la definición (CTF-002)
+    entidades = config.get("entidades", [])
+    if entidades:
+        from .models import EntidadInstancia  # noqa: PLC0415
+        for entidad_def in entidades:
+            nombre = entidad_def.get("nombre", "")
+            resultado.setdefault("entidades", {})[nombre] = {
+                "campos": [c.get("nombre") for c in entidad_def.get("campos", [])],
+                "definicion_almacenada": True,
+            }
+        aplicadas.append(f"entidades:{len(entidades)} definiciones almacenadas")
+
+    # Primitiva: estados — persiste estados personalizados en DB (CTF-002)
+    estados = config.get("estados", [])
+    if estados:
+        from .models import EstadoPersonalizado  # noqa: PLC0415
+        for estado_def in estados:
+            modelo = estado_def.get("modelo", "")
+            nombre = estado_def.get("nombre", "")
+            etiqueta = estado_def.get("etiqueta", nombre)
+            EstadoPersonalizado.objects.update_or_create(
+                id_empresa=empresa,
+                modelo=modelo,
+                nombre=nombre,
+                defaults={"etiqueta": etiqueta, "activo": True},
             )
+        aplicadas.append(f"estados:{len(estados)} estados personalizados registrados")
+        resultado["estados"] = [
+            {"modelo": e.get("modelo"), "nombre": e.get("nombre"), "etiqueta": e.get("etiqueta")}
+            for e in estados
+        ]
+
+    # Primitiva: reglas — se almacenan en config_dict y se ejecutan via ejecutar_reglas() (CTF-002)
+    reglas = config.get("reglas", [])
+    if reglas:
+        aplicadas.append(f"reglas:{len(reglas)} reglas registradas (runtime: ejecutar_reglas())")
+        resultado["reglas"] = len(reglas)
+
+    # Primitiva: vistas — persiste preferencias de columnas en DB (CTF-002)
+    vistas = config.get("vistas", [])
+    if vistas:
+        from .models import VistaPersonalizada  # noqa: PLC0415
+        for vista_def in vistas:
+            entidad = vista_def.get("entidad", "")
+            columnas = vista_def.get("columnas", [])
+            filtros = vista_def.get("filtros", {})
+            VistaPersonalizada.objects.update_or_create(
+                id_empresa=empresa,
+                entidad=entidad,
+                defaults={"columnas": columnas, "filtros": filtros, "activo": True},
+            )
+        aplicadas.append(f"vistas:{len(vistas)} preferencias de columnas almacenadas")
+        resultado["vistas"] = [v.get("entidad") for v in vistas]
 
     # Primitiva: conectores — extraer para indexado rápido
     conectores = config.get("conectores", [])
@@ -494,6 +539,164 @@ def _enviar_webhook(url: str, metodo: str, payload: dict, headers: dict) -> None
         logger.info("_enviar_webhook | url=%s | status=%d", url, status)
     except Exception as exc:
         logger.warning("_enviar_webhook | url=%s | error=%s", url, exc)
+
+
+# ── Runtime de entidades personalizadas (CTF-002) ────────────────────────────
+
+
+def crear_instancia_entidad(empresa, nombre_entidad: str, datos: dict):
+    """
+    Crea una instancia de una entidad personalizada definida en el DSL.
+
+    Args:
+        empresa:        Instancia de Empresa.
+        nombre_entidad: Nombre de la entidad DSL (ej: "Equipo").
+        datos:          Dict con los campos de la instancia.
+
+    Returns:
+        EntidadInstancia creada.
+
+    Raises:
+        ValueError: Si la entidad no está definida en el config DSL de la empresa.
+    """
+    from .models import EntidadInstancia  # noqa: PLC0415
+
+    config = get_config_activa(empresa)
+    entidades_def = config.get("entidades", [])
+    nombres_entidades = {e["nombre"] for e in entidades_def if "nombre" in e}
+
+    if entidades_def and nombre_entidad not in nombres_entidades:
+        raise ValueError(
+            f"Entidad '{nombre_entidad}' no está definida en el DSL de la empresa. "
+            f"Entidades disponibles: {sorted(nombres_entidades)}"
+        )
+
+    return EntidadInstancia.objects.create(
+        id_empresa=empresa,
+        nombre_entidad=nombre_entidad,
+        datos=datos,
+    )
+
+
+def listar_instancias_entidad(empresa, nombre_entidad: str):
+    """
+    Retorna un queryset de instancias activas de una entidad personalizada.
+
+    Args:
+        empresa:        Instancia de Empresa.
+        nombre_entidad: Nombre de la entidad DSL.
+
+    Returns:
+        QuerySet de EntidadInstancia.
+    """
+    from .models import EntidadInstancia  # noqa: PLC0415
+
+    return EntidadInstancia.objects.filter(
+        id_empresa=empresa,
+        nombre_entidad=nombre_entidad,
+        activo=True,
+    )
+
+
+# ── Runtime de estados personalizados (CTF-002) ───────────────────────────────
+
+
+def get_estados_personalizados(empresa, modelo: str) -> list[dict]:
+    """
+    Retorna la lista de estados personalizados activos para un modelo.
+
+    Se puede usar en serializers/views para ampliar el choices del modelo
+    con los estados definidos en el DSL.
+
+    Args:
+        empresa: Instancia de Empresa.
+        modelo:  Nombre del modelo Django (ej: "Pedido", "Gasto").
+
+    Returns:
+        Lista de dicts con {nombre, etiqueta} de cada estado personalizado.
+    """
+    from .models import EstadoPersonalizado  # noqa: PLC0415
+
+    return list(
+        EstadoPersonalizado.objects.filter(
+            id_empresa=empresa,
+            modelo=modelo,
+            activo=True,
+        ).values("nombre", "etiqueta")
+    )
+
+
+def es_estado_valido(empresa, modelo: str, estado: str, estados_base: list[str] | None = None) -> bool:
+    """
+    Verifica si un estado es válido para un modelo en una empresa.
+
+    Combina los estados base del modelo con los estados personalizados del DSL.
+
+    Args:
+        empresa:       Instancia de Empresa.
+        modelo:        Nombre del modelo Django.
+        estado:        Valor de estado a verificar.
+        estados_base:  Lista de estados nativos del modelo (ej: ["BORRADOR", "APROBADO"]).
+
+    Returns:
+        True si el estado es válido (base o personalizado).
+    """
+    if estados_base and estado in estados_base:
+        return True
+
+    custom = get_estados_personalizados(empresa, modelo)
+    return any(e["nombre"] == estado for e in custom)
+
+
+# ── Runtime de vistas personalizadas (CTF-002) ────────────────────────────────
+
+
+def get_columnas_vista(empresa, entidad: str) -> list[str]:
+    """
+    Retorna la lista de columnas configuradas para una vista personalizada.
+
+    Args:
+        empresa: Instancia de Empresa.
+        entidad: Nombre del listado/entidad (ej: "Cliente", "Pedido").
+
+    Returns:
+        Lista de nombres de columna. Vacía si no hay vista configurada.
+    """
+    from .models import VistaPersonalizada  # noqa: PLC0415
+
+    try:
+        vista = VistaPersonalizada.objects.get(
+            id_empresa=empresa,
+            entidad=entidad,
+            activo=True,
+        )
+        return vista.columnas or []
+    except VistaPersonalizada.DoesNotExist:
+        return []
+
+
+def get_filtros_vista(empresa, entidad: str) -> dict:
+    """
+    Retorna los filtros por defecto configurados para una vista.
+
+    Args:
+        empresa: Instancia de Empresa.
+        entidad: Nombre del listado/entidad.
+
+    Returns:
+        Dict de filtros. Vacío si no hay configuración.
+    """
+    from .models import VistaPersonalizada  # noqa: PLC0415
+
+    try:
+        vista = VistaPersonalizada.objects.get(
+            id_empresa=empresa,
+            entidad=entidad,
+            activo=True,
+        )
+        return vista.filtros or {}
+    except VistaPersonalizada.DoesNotExist:
+        return {}
 
 
 def disparar_conectores(evento_origen: str, payload: dict, empresa) -> None:
