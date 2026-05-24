@@ -107,41 +107,28 @@ jobs:
         run: npm test -- --run
 
   # ──────────────────────────────────────────────────────────────
-  # Agent eval — Shadow mode quality gate (Sprint 0.F / CTF-003)
-  # Corre en cada PR que toca apps/agentes/**
+  # Agent eval — Shadow mode quality gate (CTF-003)
+  # Corre siempre en main/PR; filtra por paths para no bloquear
+  # branches sin cambios en agentes.
+  # Criterio de cierre: precision@1 >= 80% en reorden y cobranza.
   # ──────────────────────────────────────────────────────────────
   agent-eval:
-    name: "Agent Eval (shadow mode quality)"
+    name: "Agent Eval — precision@1 ≥ 80% (CTF-003)"
     runs-on: ubuntu-latest
-    # Solo correr si hay cambios en el módulo agentes
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' &&
-       contains(github.event.pull_request.changed_files, 'backend/apps/agentes'))
 
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_DB: omni_erp
-          POSTGRES_USER: omni_erp
-          POSTGRES_PASSWORD: omni_erp_ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    # Sin postgres: los agentes usan fallback determinístico (sin BD).
+    # Si en el futuro se agrega persistencia, añadir el service aquí.
 
     env:
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      # Sin BD real: los eval tests no tocan la base de datos.
+      # Declaramos las vars para que Django settings no falle al importar.
       DB_HOST: localhost
       DB_PORT: "5432"
       DB_NAME: omni_erp
       DB_USER: omni_erp
       DB_PASSWORD: omni_erp_ci
-      DJANGO_ENV: dev
-      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
       REDIS_URL: "redis://localhost:6379/0"
 
     steps:
@@ -159,14 +146,12 @@ jobs:
         working-directory: backend
         run: pip install -r requirements.txt
 
-      - name: Django migrations
-        working-directory: backend
-        run: python manage.py migrate --run-syncdb
-
-      - name: Run agent eval suite
+      - name: Run eval suite (no-cov — umbral es precisión, no cobertura)
         working-directory: backend
         run: |
-          python -m pytest tests_api/test_m9_agentes.py -v --tb=short \
-            -k "eval or agente or shadow" \
-            --no-header
-        # No --cov-fail-under aquí: el umbral de eval es de precisión, no cobertura
+          python -m pytest tests_eval/ -v --tb=short --no-header \
+            --no-cov
+        # Criterio CTF-003: >= 80% precision@1 en reorden y cobranza.
+        # El umbral se verifica dentro de los tests mismos
+        # (test_precision_global / test_precision_global_prioridad /
+        #  test_precision_global_canal). Si alguno falla, el job falla.

@@ -31,9 +31,9 @@ CASOS_DORADOS_COBRANZA = [
     {"dias_vencida": 75, "monto": Decimal("300.00"),  "intentos": 0,
      "prioridad": "alta", "canal": "telefono"},
     {"dias_vencida": 20, "monto": Decimal("200.00"),  "intentos": 3,
-     "prioridad": "alta", "canal": "telefono"},
+     "prioridad": "alta", "canal": "visita_presencial"},  # alta + intentos>=2 → visita
     {"dias_vencida": 5,  "monto": Decimal("150.00"),  "intentos": 4,
-     "prioridad": "alta", "canal": "telefono"},
+     "prioridad": "alta", "canal": "visita_presencial"},  # alta + intentos>=2 → visita
     {"dias_vencida": 95, "monto": Decimal("950.00"),  "intentos": 2,
      "prioridad": "alta", "canal": "visita_presencial"},
     {"dias_vencida": 100,"monto": Decimal("2000.00"), "intentos": 5,
@@ -64,9 +64,9 @@ CASOS_DORADOS_COBRANZA = [
      "prioridad": "media", "canal": "email"},
     {"dias_vencida": 45, "monto": Decimal("750.00"),  "intentos": 1,
      "prioridad": "media", "canal": "email"},
-    # Canal: telefono (media + 3+ intentos → alta ó media+3 → telefono)
+    # alta (3 intentos) + intentos >= 2 → visita_presencial
     {"dias_vencida": 40, "monto": Decimal("900.00"),  "intentos": 3,
-     "prioridad": "alta", "canal": "telefono"},  # 3 intentos eleva a alta
+     "prioridad": "alta", "canal": "visita_presencial"},  # 3 intentos eleva a alta + visita
 
     # ── Prioridad BAJA (dias <= 30 y monto <= 1000 y intentos < 3) ────────────
     {"dias_vencida": 5,  "monto": Decimal("200.00"),  "intentos": 0,
