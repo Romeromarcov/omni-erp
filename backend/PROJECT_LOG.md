@@ -1001,3 +1001,64 @@ Faltaba: pie legal venezolano en factura, endpoint cotización PDF, endpoint est
 - [x] GET /api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_id}/pdf/ devuelve PDF
 
 ---
+
+## Sesión 21 — 2026-05-24 (Bloque IV — Sesión K: Libros SENIAT)
+
+**Rama:** `main`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Sesión K — Libros fiscales SENIAT: TXT pipe-delimited + PDF con ReportLab, modelo PeriodoFiscal para cierre de períodos.
+
+### Diagnóstico inicial
+
+Ya existían `apps/fiscal/libros_seniat.py` y `views_libros.py` con TXT básico sin cabecera.  
+Faltaba: cabecera en TXT, PDF del libro, soporte `?periodo=YYYY-MM`, aislamiento multi-tenant correcto, modelo PeriodoFiscal, endpoints de cierre.
+
+### Tareas completadas
+
+1. **`apps/fiscal/models.py` — `PeriodoFiscal` model:**
+   - Campos: `id_empresa`, `año`, `mes`, `cerrado`, `fecha_cierre`, `cerrado_por`.
+   - Método de clase `esta_cerrado()` para validación en servicios.
+   - `unique_together = [["id_empresa", "año", "mes"]]`.
+
+2. **`apps/fiscal/migrations/0005_periodo_fiscal.py`** — migración estructural del modelo.
+
+3. **`apps/fiscal/libros_seniat.py` — reescrito completamente:**
+   - Helper `_periodo_a_rango(periodo: str)` convierte `YYYY-MM` a `(date_inicio, date_fin)`.
+   - `generar_libro_ventas_txt()`: ahora incluye cabecera `RIF_EMISOR|...|TOTAL`.
+   - `generar_libro_compras_txt()`: ídem.
+   - `_build_libro_pdf()`: builder ReportLab compartido — tabla con totales, pie legal SENIAT (Art. 76 Ley IVA + Providencia SNAT/2011/0071).
+   - `generar_libro_ventas_pdf()` y `generar_libro_compras_pdf()`.
+
+4. **`apps/fiscal/views_libros.py` — reescrito completamente:**
+   - Multi-tenant: `_resolver_empresa()` valida con `get_empresas_visible()` → 404 si sin acceso.
+   - `_resolver_rango()`: acepta `?periodo=YYYY-MM` o `?desde=...&hasta=...`.
+   - `LibroVentasView` / `LibroComprasView` — TXT (mejorado).
+   - `LibroVentasPDFView` / `LibroComprasPDFView` — nuevas vistas PDF.
+   - `PeriodoFiscalView` — GET lista períodos de empresa.
+   - `CerrarPeriodoFiscalView` — POST cierra período (idempotente).
+
+5. **`apps/fiscal/urls.py` — actualizado:**
+   - `/api/fiscal/libro-ventas-pdf/` y `/api/fiscal/libro-compras-pdf/`.
+   - `/api/fiscal/periodos-fiscales/` y `/api/fiscal/periodos-fiscales/<año>/<mes>/cerrar/`.
+
+6. **`tests_api/test_sesion_k_libros_seniat.py`** — 28 tests:
+   - `TestLibroVentasTXT` (11): 200, content-type, cabecera correcta, líneas por factura, solo estados válidos, `?desde/hasta`, período inválido 400, empresa requerida 400, 401 sin auth, 404 cross-tenant.
+   - `TestLibroVentasPDF` (6): 200, content-type, magic `%PDF-`, bytes >1KB, 404 aislamiento, PDF vacío válido.
+   - `TestLibroCompras` (5): TXT 200, cabecera, PDF 200, magic, 404 aislamiento.
+   - `TestPeriodosFiscales` (6): lista 200, cerrar, idempotente, aparece en lista, 401 sin auth, 404 aislamiento.
+
+### Resultado
+
+- **28/28 tests pasando** (1 error transitorio por BD duplicada en ejecución paralela; corroborado en re-ejecución).
+- Suite total: **~740+ tests, 0 fallos**.
+
+### DoD Sesión K
+
+- [x] GET /api/fiscal/libro-ventas/?empresa=&periodo=YYYY-MM devuelve TXT SENIAT con cabecera
+- [x] GET /api/fiscal/libro-ventas-pdf/ devuelve PDF con totales y pie legal SENIAT
+- [x] GET /api/fiscal/libro-compras/ y libro-compras-pdf/ funcionan
+- [x] Solo facturas EMITIDA/PAGADA/VENCIDA aparecen (no borradores)
+- [x] Aislamiento multi-tenant: empresa ajena retorna 404
+- [x] PeriodoFiscal model + endpoint cerrar (idempotente)
+
+---

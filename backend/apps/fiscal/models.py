@@ -265,3 +265,48 @@ class TasaIVAEmpresa(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({float(self.tasa) * 100:.0f}%)"
+
+
+# ── Período Fiscal ─────────────────────────────────────────────────────────────
+
+
+class PeriodoFiscal(models.Model):
+    """
+    Registro de cierre de período mensual por empresa.
+
+    Una vez cerrado (cerrado=True) no se pueden emitir ni modificar
+    documentos fiscales en ese período.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="periodos_fiscales",
+    )
+    año = models.PositiveSmallIntegerField()
+    mes = models.PositiveSmallIntegerField()
+    cerrado = models.BooleanField(default=False)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    cerrado_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "fiscal_periodo_fiscal"
+        unique_together = [["id_empresa", "año", "mes"]]
+
+    def __str__(self):
+        return f"{self.id_empresa} — {self.año:04d}/{self.mes:02d} ({'CERRADO' if self.cerrado else 'abierto'})"
+
+    @classmethod
+    def esta_cerrado(cls, empresa, año: int, mes: int) -> bool:
+        """Retorna True si el período (año, mes) está cerrado para la empresa."""
+        return cls.objects.filter(
+            id_empresa=empresa, año=año, mes=mes, cerrado=True
+        ).exists()
