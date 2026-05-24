@@ -1,7 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { get, post } from '../../../services/api';
+import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 import { Button } from '@mui/material';
 
@@ -21,7 +23,6 @@ const TIPO_TASA = [
 const TasaCambioCreatePage: React.FC = () => {
   const { id_empresa } = useParams();
   const navigate = useNavigate();
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
   const [form, setForm] = useState({
     id_moneda_origen: '',
     id_moneda_destino: '',
@@ -31,33 +32,26 @@ const TasaCambioCreatePage: React.FC = () => {
     hora_tasa: '',
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    get(`/finanzas/monedas/?id_empresa=${id_empresa}`)
-      .then((res) => {
-        if (Array.isArray(res)) setMonedas(res);
-        else if (res && typeof res === 'object' && 'results' in res) setMonedas((res as { results: Moneda[] }).results);
-        else setMonedas([]);
-      })
-      .catch(() => setMonedas([]));
-  }, [id_empresa]);
+  const { data: monedas = [] } = useQuery<unknown, Error, Moneda[]>({
+    queryKey: [`/finanzas/monedas/?id_empresa=${id_empresa}`],
+    queryFn: () => get(`/finanzas/monedas/?id_empresa=${id_empresa}`),
+    select: toList,
+    enabled: !!id_empresa,
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const createMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => post('/finanzas/tasas-cambio/', payload),
+    onSuccess: () => navigate(-1),
+    onError: () => setError('Error al crear tasa de cambio'),
+  });
+
+  const loading = createMutation.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
-    try {
-      await post('/finanzas/tasas-cambio/', {
-        id_empresa,
-        ...form,
-      });
-      navigate(-1);
-    } catch {
-      setError('Error al crear tasa de cambio');
-    } finally {
-      setLoading(false);
-    }
+    createMutation.mutate({ id_empresa, ...form });
   };
 
   return (

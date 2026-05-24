@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { post, get } from '../../../services/api';
+import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 
 interface Empresa {
@@ -18,12 +20,7 @@ interface Moneda {
   codigo_iso: string;
 }
 
-interface MonedaPaginatedResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: Moneda[];
-}
+type MonedaApiResponse = Moneda[] | { results: Moneda[] };
 
 const CompanyCreatePage: React.FC = () => {
   const [empresa, setEmpresa] = useState<Empresa>({
@@ -34,21 +31,24 @@ const CompanyCreatePage: React.FC = () => {
     activo: true,
     id_moneda_base: '',
   });
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  useEffect(() => {
-    get<Moneda[] | MonedaPaginatedResponse>('/finanzas/monedas/activas/')
-      .then(data => {
-        if (Array.isArray(data)) {
-          setMonedas(data);
-        } else if (data && Array.isArray(data.results)) {
-          setMonedas(data.results);
-        } else {
-          setMonedas([]);
-        }
-      })
-      .catch(() => setMonedas([]));
-  }, []);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: monedas = [] } = useQuery<MonedaApiResponse, Error, Moneda[]>({
+    queryKey: ['/finanzas/monedas/activas/'],
+    queryFn: () => get<MonedaApiResponse>('/finanzas/monedas/activas/'),
+    select: toList,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Empresa) => post<Empresa>('/core/empresas/', { ...data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/core/empresas/'] });
+      alert('Empresa creada');
+      navigate('/empresas');
+    },
+    onError: () => alert('Error al crear empresa'),
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -61,12 +61,7 @@ const CompanyCreatePage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    post('/core/empresas/', { ...empresa })
-      .then(() => {
-        alert('Empresa creada');
-        navigate('/empresas');
-      })
-      .catch(() => alert('Error al crear empresa'));
+    createMutation.mutate(empresa);
   };
 
   return (
@@ -104,7 +99,7 @@ const CompanyCreatePage: React.FC = () => {
             ))}
           </select>
         </label>
-        <button type="submit" style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Crear empresa</button>
+        <button type="submit" disabled={createMutation.isPending} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Crear empresa</button>
       </form>
       <div style={{ marginTop: 28, textAlign: 'center' }}>
         <button type="button" onClick={() => navigate('/empresas')} style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}>Cancelar</button>

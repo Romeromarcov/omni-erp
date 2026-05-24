@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
 import PageLayout from '../../../components/PageLayout';
@@ -7,6 +7,8 @@ import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+
+type ProdutoItem = React.ComponentProps<typeof TablaProductos>['productos'][number];
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -14,7 +16,7 @@ import type { Pago as PagoFinanzas } from '../../../services/pagosService';
 
 interface PedidoDetalle {
   id_detalle_pedido: string;
-  id_producto: { nombre_producto: string };
+  id_producto: { id_producto?: string; nombre_producto: string };
   cantidad: string;
   precio_unitario: string;
   subtotal: string;
@@ -41,7 +43,7 @@ const PedidoDetailPage: React.FC = () => {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
   const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<PedidoDetalleForm[]>([]);
+  const [productos, setProductos] = useState<ProdutoItem[]>([]);
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
@@ -62,7 +64,7 @@ const PedidoDetailPage: React.FC = () => {
     setLoading(true);
     get(`/ventas/pedidos/${id_pedido}/`)
       .then((res) => {
-        setPedido(res);
+        setPedido(res as Pedido);
         // Cargar pagos del pedido
         loadPagos(id_pedido);
       })
@@ -74,8 +76,8 @@ const PedidoDetailPage: React.FC = () => {
     if (pedido?.id_empresa && pedido.id_empresa.id_empresa) {
       fetchProductos(pedido.id_empresa.id_empresa)
         .then((res) => {
-          if (Array.isArray(res)) setProductos(res as PedidoDetalleForm[]);
-          else if (res && Array.isArray((res as { results: PedidoDetalleForm[] }).results)) setProductos((res as { results: PedidoDetalleForm[] }).results);
+          if (Array.isArray(res)) setProductos(res as unknown as ProdutoItem[]);
+          else if (res && Array.isArray((res as unknown as { results: ProdutoItem[] }).results)) setProductos((res as unknown as { results: ProdutoItem[] }).results);
           else setProductos([]);
         })
         .catch(() => setProductos([]));
@@ -84,7 +86,7 @@ const PedidoDetailPage: React.FC = () => {
 
   function mapDetalles(detalles: PedidoDetalle[]): PedidoDetalleForm[] {
     return detalles.map(det => ({
-      id_producto: typeof det.id_producto === 'object' && det.id_producto ? det.id_producto.id_producto : '',
+      id_producto: typeof det.id_producto === 'object' && det.id_producto ? (det.id_producto.id_producto ?? '') : '',
       sku: '',
       producto: typeof det.id_producto === 'object' && det.id_producto ? det.id_producto.nombre_producto : '',
       cantidad: det.cantidad,

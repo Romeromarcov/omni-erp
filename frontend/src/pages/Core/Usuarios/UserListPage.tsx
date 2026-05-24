@@ -1,33 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { fetchUsuarios } from '../../../services/users';
-import type { Usuario } from '../../../services/users';
+import React, { useState } from 'react';
 import PageLayout from '../../../components/PageLayout';
+import type { Usuario } from '../../../services/users';
+import { useApiQuery } from '../../../hooks/useApiQuery';
+
+type UsuariosApiResponse = Usuario[] | { results: Usuario[] };
 
 const UserListPage: React.FC = () => {
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const id_empresa = localStorage.getItem('id_empresa');
 
-  useEffect(() => {
-    setLoading(true);
-    fetchUsuarios(id_empresa || undefined)
-      .then(res => {
-        let data: Usuario[] = [];
-        if (Array.isArray(res)) data = res;
-        else if (
-          res &&
-          typeof res === 'object' &&
-          res !== null &&
-          'results' in res &&
-          Array.isArray((res as { results?: unknown }).results)
-        ) {
-          data = (res as { results: Usuario[] }).results;
-        }
-        setUsuarios(data);
-      })
-      .finally(() => setLoading(false));
-  }, [id_empresa]);
+  const endpoint = `/core/usuarios/${id_empresa ? `?id_empresa=${id_empresa}` : ''}`;
+
+  const { data: usuarios = [], isLoading } = useApiQuery<UsuariosApiResponse>(endpoint, {
+    select: (raw): Usuario[] => {
+      if (Array.isArray(raw)) return raw;
+      if (raw && typeof raw === 'object' && 'results' in raw && Array.isArray(raw.results)) {
+        return raw.results;
+      }
+      return [];
+    },
+  });
+
+  const filtered = (usuarios as Usuario[]).filter(u =>
+    u.username.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase()) ||
+    (u.first_name && u.first_name.toLowerCase().includes(search.toLowerCase())) ||
+    (u.last_name && u.last_name.toLowerCase().includes(search.toLowerCase()))
+  );
 
   return (
     <PageLayout>
@@ -43,9 +42,12 @@ const UserListPage: React.FC = () => {
         <button
           onClick={() => window.location.href = `/empresas/${id_empresa}/usuarios/new`}
           style={{ fontWeight: 500, background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 15, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}
-        >+ Nuevo usuario</button>
+        >
+          + Nuevo usuario
+        </button>
       </div>
-      {loading ? (
+
+      {isLoading ? (
         <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
@@ -62,35 +64,35 @@ const UserListPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {usuarios.length === 0 ? (
+              {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', padding: 32, color: '#888' }}>No se encontraron usuarios.</td>
                 </tr>
               ) : (
-                usuarios
-                  .filter(u =>
-                    u.username.toLowerCase().includes(search.toLowerCase()) ||
-                    u.email.toLowerCase().includes(search.toLowerCase()) ||
-                    (u.first_name && u.first_name.toLowerCase().includes(search.toLowerCase())) ||
-                    (u.last_name && u.last_name.toLowerCase().includes(search.toLowerCase()))
-                  )
-                  .map(u => (
-                    <tr key={u.id} style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}>
-                      <td style={{ padding: '10px 8px' }}>{u.username}</td>
-                      <td style={{ padding: '10px 8px' }}>{u.email}</td>
-                      <td style={{ padding: '10px 8px' }}>{u.first_name}</td>
-                      <td style={{ padding: '10px 8px' }}>{u.last_name}</td>
-                      <td style={{ padding: '10px 8px' }}>{u.is_active ? <span style={{ color: '#1976d2', fontWeight: 600 }}>Sí</span> : <span style={{ color: '#d32f2f', fontWeight: 600 }}>No</span>}</td>
-                      <td style={{ padding: '10px 8px' }}>{u.fecha_ultimo_login ? new Date(u.fecha_ultimo_login).toLocaleString() : '-'}</td>
-                      <td style={{ padding: '10px 8px' }}>
-                        <button
-                          style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 500, cursor: 'pointer' }}
-                          onClick={() => window.location.href = `/empresas/${id_empresa}/usuarios/${u.id}`}
-                        >Ver/Editar</button>
-                        {/* <button style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 500, cursor: 'pointer' }}>Resetear contraseña</button> */}
-                      </td>
-                    </tr>
-                  ))
+                filtered.map(u => (
+                  <tr key={u.id} style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}>
+                    <td style={{ padding: '10px 8px' }}>{u.username}</td>
+                    <td style={{ padding: '10px 8px' }}>{u.email}</td>
+                    <td style={{ padding: '10px 8px' }}>{u.first_name}</td>
+                    <td style={{ padding: '10px 8px' }}>{u.last_name}</td>
+                    <td style={{ padding: '10px 8px' }}>
+                      {u.is_active
+                        ? <span style={{ color: '#1976d2', fontWeight: 600 }}>Sí</span>
+                        : <span style={{ color: '#d32f2f', fontWeight: 600 }}>No</span>}
+                    </td>
+                    <td style={{ padding: '10px 8px' }}>
+                      {u.fecha_ultimo_login ? new Date(u.fecha_ultimo_login).toLocaleString() : '-'}
+                    </td>
+                    <td style={{ padding: '10px 8px' }}>
+                      <button
+                        style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 500, cursor: 'pointer' }}
+                        onClick={() => window.location.href = `/empresas/${id_empresa}/usuarios/${u.id}`}
+                      >
+                        Ver/Editar
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

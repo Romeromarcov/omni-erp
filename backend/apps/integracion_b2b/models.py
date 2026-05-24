@@ -1,9 +1,13 @@
-from django.db import models
-from apps.core.models import Empresa
 import uuid
+from apps.core.uuid import uuid7
+
+from django.db import models
+
+from apps.core.models import Empresa
+
 
 class ConfiguracionIntegracion(models.Model):
-    id_configuracion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_configuracion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nombre_integracion = models.CharField(max_length=100)
     tipo_integracion = models.CharField(max_length=50)
@@ -13,8 +17,9 @@ class ConfiguracionIntegracion(models.Model):
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
+
 class LogIntegracion(models.Model):
-    id_log_integracion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_log_integracion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_configuracion = models.ForeignKey(ConfiguracionIntegracion, on_delete=models.CASCADE)
     fecha_hora = models.DateTimeField(auto_now_add=True)
     tipo_transaccion = models.CharField(max_length=50)
@@ -26,8 +31,9 @@ class LogIntegracion(models.Model):
     mensaje_error = models.TextField(null=True, blank=True)
     duracion_ms = models.IntegerField(null=True, blank=True)
 
+
 class MapeoCampo(models.Model):
-    id_mapeo_campo = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_mapeo_campo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_configuracion_integracion = models.ForeignKey(ConfiguracionIntegracion, on_delete=models.CASCADE)
     nombre_campo_interno = models.CharField(max_length=100)
     nombre_campo_externo = models.CharField(max_length=100)

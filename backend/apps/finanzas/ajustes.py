@@ -1,6 +1,9 @@
-from apps.finanzas.models import MovimientoCajaBanco, Caja, CajaFisica, CuentaBancariaEmpresa, Moneda
-from django.utils import timezone
 from decimal import Decimal
+
+from django.utils import timezone
+
+from apps.finanzas.models import Caja, CajaFisica, CuentaBancariaEmpresa, Moneda, MovimientoCajaBanco
+
 
 def crear_ajuste_caja_banco(
     empresa,
@@ -10,15 +13,15 @@ def crear_ajuste_caja_banco(
     caja_fisica=None,
     cuenta_bancaria=None,
     usuario=None,
-    motivo='',
-    tipo_ajuste='POSITIVO',
-    referencia=None
+    motivo="",
+    tipo_ajuste="POSITIVO",
+    referencia=None,
 ):
     """
     Crea un ajuste positivo o negativo en una caja (virtual o física) o banco.
     tipo_ajuste: 'POSITIVO' o 'NEGATIVO'
     """
-    tipo_movimiento = 'AJUSTE_POSITIVO' if tipo_ajuste == 'POSITIVO' else 'AJUSTE_NEGATIVO'
+    tipo_movimiento = "AJUSTE_POSITIVO" if tipo_ajuste == "POSITIVO" else "AJUSTE_NEGATIVO"
     now = timezone.now()
     movimiento = MovimientoCajaBanco.objects.create(
         id_empresa=empresa,

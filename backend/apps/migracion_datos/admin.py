@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import PlantillaMigracion, ProcesoMigracion, DetalleErrorMigracion
+
+from .models import DetalleErrorMigracion, PlantillaMigracion, ProcesoMigracion
 
 admin.site.register(PlantillaMigracion)
 admin.site.register(ProcesoMigracion)

@@ -1,11 +1,13 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 interface TasaOficialBCV {
   fecha_tasa: string;
   valor_tasa: string;
 }
 import { useParams, useNavigate } from 'react-router-dom';
 import { get } from '../../../services/api';
+import { toList, toCount } from '../../../utils/api';
 import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
 import PageLayout from '../../../components/PageLayout';
@@ -27,59 +29,40 @@ interface TasaCambio {
 }
 
 const TasaCambioListPage: React.FC = () => {
-  const [tasaOficial, setTasaOficial] = useState<TasaOficialBCV | null>(null);
-  const [loadingTasaOficial, setLoadingTasaOficial] = useState(true);
-  const [errorTasaOficial, setErrorTasaOficial] = useState('');
-  // Cargar tasa oficial BCV global USD/VES del día
-  useEffect(() => {
-    setLoadingTasaOficial(true);
-    get('/finanzas/tasa-oficial-bcv/?moneda_origen=USD&moneda_destino=VES')
-      .then((data) => {
-        setTasaOficial(data as TasaOficialBCV);
-        setErrorTasaOficial('');
-      })
-      .catch(() => {
-        setTasaOficial(null);
-        setErrorTasaOficial('No hay tasa oficial BCV registrada para hoy.');
-      })
-      .finally(() => setLoadingTasaOficial(false));
-  }, []);
   const { id_empresa } = useParams();
   const navigate = useNavigate();
-  const [tasas, setTasas] = useState<TasaCambio[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [filtros, setFiltros] = useState({ moneda_origen: '', moneda_destino: '', fecha: '' });
-  const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  // Cargar monedas para los dropdowns
-  useEffect(() => {
-    fetchMonedas().then(setMonedas);
-  }, []);
 
-  type TasaCambioApiResponse = { count: number; results: TasaCambio[] } | TasaCambio[];
-  useEffect(() => {
-    setLoading(true);
+  const { data: tasaOficial, isLoading: loadingTasaOficial, isError: errorTasaOficial } = useQuery<TasaOficialBCV>({
+    queryKey: ['/finanzas/tasa-oficial-bcv/?moneda_origen=USD&moneda_destino=VES'],
+    queryFn: () => get('/finanzas/tasa-oficial-bcv/?moneda_origen=USD&moneda_destino=VES') as Promise<TasaOficialBCV>,
+    retry: false,
+  });
+
+  const { data: monedas = [] } = useQuery<Moneda[], Error, Moneda[]>({
+    queryKey: ['/finanzas/monedas/'],
+    queryFn: () => fetchMonedas(),
+  });
+
+  const tasasUrl = (() => {
     let url = `/finanzas/tasas-cambio/?id_empresa=${id_empresa}&limit=${pageSize}&offset=${(page-1)*pageSize}&ordering=-fecha_tasa`;
     if (filtros.moneda_origen) url += `&id_moneda_origen=${filtros.moneda_origen}`;
     if (filtros.moneda_destino) url += `&id_moneda_destino=${filtros.moneda_destino}`;
     if (filtros.fecha) url += `&fecha_tasa=${filtros.fecha}`;
-    get(url)
-      .then(res => {
-        const data = res as TasaCambioApiResponse;
-        if (Array.isArray(data)) {
-          setTasas(data);
-          setCount(data.length);
-        } else {
-          setTasas(data.results);
-          setCount(data.count);
-        }
-      })
-      .catch(() => setError('Error al cargar tasas de cambio'))
-      .finally(() => setLoading(false));
-  }, [id_empresa, filtros, page, pageSize]);
+    return url;
+  })();
+
+  const { data: tasasRaw, isLoading: loading, isError } = useQuery({
+    queryKey: [tasasUrl],
+    queryFn: () => get(tasasUrl),
+    enabled: !!id_empresa,
+  });
+
+  const tasas = toList<TasaCambio>(tasasRaw as unknown);
+  const count = toCount(tasasRaw as unknown);
+  const error = isError ? 'Error al cargar tasas de cambio' : '';
 
   return (
     <PageLayout maxWidth={1100}>

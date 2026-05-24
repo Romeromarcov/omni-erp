@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import PageLayout from '../../../components/PageLayout';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOverridesMetodosPago, createOverrideMetodoPago, updateOverrideMetodoPago, deleteOverrideMetodoPago, type CajaMetodoPagoOverride } from '../../../services/plantillasService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchSucursales } from '../../../services/sucursales';
@@ -16,10 +17,7 @@ interface Sucursal {
 }
 
 const OverridesMetodosPagoPage: React.FC = () => {
-  const [overrides, setOverrides] = useState<CajaMetodoPagoOverride[]>([]);
-  const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([]);
-  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showDialog, setShowDialog] = useState(false);
@@ -33,36 +31,51 @@ const OverridesMetodosPagoPage: React.FC = () => {
 
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [overridesData, metodos, sucursalesData] = await Promise.all([
-        getOverridesMetodosPago(idEmpresa),
-        fetchMetodosPagoEmpresaActivos(idEmpresa),
-        fetchSucursales(idEmpresa)
-      ]);
-      setOverrides(overridesData);
-      setMetodosPago(metodos as MetodoPago[]);
-      setSucursales(sucursalesData);
-    } catch (err) {
-      setError('Error al cargar los datos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [idEmpresa]);
+  const { data: overrides = [], isLoading } = useQuery<CajaMetodoPagoOverride[]>({
+    queryKey: ['/finanzas/overrides-metodos-pago/', idEmpresa],
+    queryFn: () => getOverridesMetodosPago(idEmpresa),
+    enabled: !!idEmpresa,
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const { data: metodosPago = [] } = useQuery<MetodoPago[]>({
+    queryKey: ['/finanzas/metodos-pago-empresa-activas/', idEmpresa],
+    queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa) as unknown as Promise<MetodoPago[]>,
+    enabled: !!idEmpresa,
+  });
+
+  const { data: sucursales = [] } = useQuery<Sucursal[]>({
+    queryKey: ['/core/sucursales/', idEmpresa],
+    queryFn: () => fetchSucursales(idEmpresa) as Promise<Sucursal[]>,
+    enabled: !!idEmpresa,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteOverrideMetodoPago(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/overrides-metodos-pago/', idEmpresa] });
+      setSuccess('Override eliminado exitosamente');
+    },
+    onError: () => setError('Error al eliminar el override'),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      if (editingOverride) {
+        return updateOverrideMetodoPago(editingOverride.id_override, form);
+      }
+      return createOverrideMetodoPago(form);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/overrides-metodos-pago/', idEmpresa] });
+      setSuccess(editingOverride ? 'Override actualizado exitosamente' : 'Override creado exitosamente');
+      setShowDialog(false);
+    },
+    onError: () => setError('Error al guardar el override'),
+  });
 
   const handleCreate = () => {
     setEditingOverride(null);
-    setForm({
-      id_sucursal: '',
-      id_metodo_pago: '',
-      deshabilitado: true,
-    });
+    setForm({ id_sucursal: '', id_metodo_pago: '', deshabilitado: true });
     setShowDialog(true);
   };
 
@@ -76,52 +89,28 @@ const OverridesMetodosPagoPage: React.FC = () => {
     setShowDialog(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm('¿Está seguro de que desea eliminar este override?')) return;
-
-    try {
-      await deleteOverrideMetodoPago(id);
-      setSuccess('Override eliminado exitosamente');
-      loadData();
-    } catch (err) {
-      setError('Error al eliminar el override');
-      console.error(err);
-    }
+    deleteMutation.mutate(id);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!form.id_sucursal || !form.id_metodo_pago) {
       setError('Debe seleccionar sucursal y método de pago');
       return;
     }
-
-    try {
-      setError('');
-      setSuccess('');
-
-      if (editingOverride) {
-        await updateOverrideMetodoPago(editingOverride.id_override, form);
-        setSuccess('Override actualizado exitosamente');
-      } else {
-        await createOverrideMetodoPago(form);
-        setSuccess('Override creado exitosamente');
-      }
-
-      setShowDialog(false);
-      loadData();
-    } catch (err) {
-      setError('Error al guardar el override');
-      console.error(err);
-    }
+    setError('');
+    setSuccess('');
+    saveMutation.mutate();
   };
 
   const getSucursalNombre = (idSucursal: string) => {
-    const sucursal = (sucursales || []).find(s => s.id_sucursal === idSucursal);
+    const sucursal = sucursales.find(s => s.id_sucursal === idSucursal);
     return sucursal?.nombre || idSucursal;
   };
 
   const getMetodoPagoNombre = (idMetodoPago: string) => {
-    const metodo = (metodosPago || []).find(m => m.id_metodo_pago === idMetodoPago);
+    const metodo = metodosPago.find(m => m.id_metodo_pago === idMetodoPago);
     return metodo?.nombre || idMetodoPago;
   };
 
@@ -143,9 +132,9 @@ const OverridesMetodosPagoPage: React.FC = () => {
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
       <Paper sx={{ p: 2 }}>
-        {loading ? (
+        {isLoading ? (
           <Typography>Cargando...</Typography>
-        ) : (overrides || []).length === 0 ? (
+        ) : overrides.length === 0 ? (
           <Typography>No hay overrides configurados</Typography>
         ) : (
           <TableContainer>
@@ -160,7 +149,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(overrides || []).map((override) => (
+                {overrides.map((override) => (
                   <TableRow key={override.id_override}>
                     <TableCell>{getSucursalNombre(override.id_sucursal)}</TableCell>
                     <TableCell>{getMetodoPagoNombre(override.id_metodo_pago)}</TableCell>
@@ -174,18 +163,8 @@ const OverridesMetodosPagoPage: React.FC = () => {
                     <TableCell>{new Date(override.fecha_creacion).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="outlined"
-                          onClick={() => handleEdit(override)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          onClick={() => handleDelete(override.id_override)}
-                        >
-                          Eliminar
-                        </Button>
+                        <Button variant="outlined" onClick={() => handleEdit(override)}>Editar</Button>
+                        <Button variant="outlined" onClick={() => handleDelete(override.id_override)}>Eliminar</Button>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -209,7 +188,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
                 onChange={(e) => setForm(prev => ({ ...prev, id_sucursal: e.target.value }))}
                 label="Sucursal"
               >
-                {(sucursales || []).map((sucursal) => (
+                {sucursales.map((sucursal) => (
                   <MenuItem key={sucursal.id_sucursal} value={sucursal.id_sucursal}>
                     {sucursal.nombre}
                   </MenuItem>
@@ -224,7 +203,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
                 onChange={(e) => setForm(prev => ({ ...prev, id_metodo_pago: e.target.value }))}
                 label="Método de Pago"
               >
-                {(metodosPago || []).map((metodo) => (
+                {metodosPago.map((metodo) => (
                   <MenuItem key={metodo.id_metodo_pago} value={metodo.id_metodo_pago}>
                     {metodo.nombre}
                   </MenuItem>

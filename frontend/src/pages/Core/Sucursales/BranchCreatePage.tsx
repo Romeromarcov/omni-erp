@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getEmpresaId } from '../../../utils/empresa';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
@@ -19,6 +20,7 @@ const BranchCreatePage: React.FC = () => {
   let { id_empresa } = useParams<{ id_empresa: string }>();
   if (!id_empresa) id_empresa = getEmpresaId() || '';
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState<Sucursal>({
     nombre: '',
     codigo_sucursal: '',
@@ -29,21 +31,25 @@ const BranchCreatePage: React.FC = () => {
     activo: true,
     id_empresa: id_empresa || '',
   });
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await post('/core/sucursales/', { ...form } as Record<string, unknown>);
+  const createMutation = useMutation({
+    mutationFn: (data: Sucursal) => post<Sucursal>('/core/sucursales/', data as unknown as Record<string, unknown>),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });
       alert('Sucursal creada');
       navigate(`/empresas/${id_empresa}/sucursales`);
-    } catch {
+    },
+    onError: () => {
       alert('Error al crear sucursal');
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMutation.mutate(form);
   };
+
+  const loading = createMutation.isPending;
 
   return (
     <PageLayout maxWidth={480}>

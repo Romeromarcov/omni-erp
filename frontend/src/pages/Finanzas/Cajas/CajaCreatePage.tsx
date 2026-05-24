@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PageLayout from '../../../components/PageLayout';
-import { createCaja } from '../../../services/cajaService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createCaja, getCajaTipoChoices } from '../../../services/cajaService';
 import { fetchSucursales } from '../../../services/sucursales';
 import type { Sucursal } from '../../../services/sucursales';
 import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
-
-
-import { getCajaTipoChoices } from '../../../services/cajaService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { Button, TextField } from '@mui/material';
+
 type TipoCajaChoice = { value: string; display: string };
 
 type MetodoPagoEmpresaActiva = {
@@ -24,40 +23,47 @@ type MetodoPagoEmpresaActiva = {
 const CajaCreatePage: React.FC = () => {
   const { id_empresa } = useParams<{ id_empresa: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState({ nombre: '', sucursal: '', moneda: '', activa: true, tipo_caja: '', metodos_pago: [] as string[] });
-  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  const [tipoCajas, setTipoCajas] = useState<TipoCajaChoice[]>([]);
-  const [metodosPago, setMetodosPago] = useState<MetodoPagoEmpresaActiva[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (id_empresa) {
-      fetchSucursales(id_empresa).then(setSucursales);
-      fetchMonedas().then(setMonedas);
-      getCajaTipoChoices().then((choices) => setTipoCajas(choices as TipoCajaChoice[]));
-      fetchMetodosPagoEmpresaActivos(id_empresa).then((res) => {
-        // Puede venir paginado o como array directa
-        if (Array.isArray(res)) setMetodosPago(res);
-        else if (
-          res &&
-          typeof res === 'object' &&
-          !Array.isArray(res) &&
-          'results' in res &&
-          Array.isArray((res as { results?: MetodoPagoEmpresaActiva[] }).results)
-        ) {
-          setMetodosPago((res as { results: MetodoPagoEmpresaActiva[] }).results);
-        } else setMetodosPago([]);
-      });
-    }
-  }, [id_empresa]);
+  const { data: sucursales = [] } = useQuery<Sucursal[]>({
+    queryKey: ['/core/sucursales/', id_empresa],
+    queryFn: () => fetchSucursales(id_empresa!),
+    enabled: !!id_empresa,
+  });
+
+  const { data: monedas = [] } = useQuery<Moneda[]>({
+    queryKey: ['/finanzas/monedas/'],
+    queryFn: fetchMonedas,
+  });
+
+  const { data: tipoCajas = [] } = useQuery<TipoCajaChoice[]>({
+    queryKey: ['/finanzas/cajas/tipo-caja-choices/'],
+    queryFn: () => getCajaTipoChoices() as Promise<TipoCajaChoice[]>,
+  });
+
+  const { data: metodosPago = [] } = useQuery<MetodoPagoEmpresaActiva[]>({
+    queryKey: ['/finanzas/metodos-pago-empresa-activas/', id_empresa],
+    queryFn: () => fetchMetodosPagoEmpresaActivos(id_empresa!) as unknown as Promise<MetodoPagoEmpresaActiva[]>,
+    enabled: !!id_empresa,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () => createCaja(id_empresa!, { ...form, saldo_actual: 0.0, metodos_pago: form.metodos_pago }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas/'] });
+      navigate(-1);
+    },
+    onError: () => {
+      setError('Error al crear la caja');
+    },
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
     const { name, value, type } = target;
     if (target instanceof HTMLSelectElement && target.multiple) {
-      // Multiselect para metodos_pago
       const selected: string[] = Array.from(target.selectedOptions).map(opt => opt.value);
       setForm(f => ({ ...f, [name]: selected }));
     } else {
@@ -68,27 +74,20 @@ const CajaCreatePage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id_empresa) return;
-    setLoading(true);
     setError('');
-    try {
-      // Enviar metodos_pago como array de UUIDs
-      await createCaja(id_empresa, { ...form, saldo_actual: 0.0, metodos_pago: form.metodos_pago });
-      navigate(-1);
-    } catch {
-      setError('Error al crear la caja');
-    } finally {
-      setLoading(false);
-    }
+    createMutation.mutate();
   };
+
+  const loading = createMutation.isPending;
 
   return (
     <PageLayout>
       <h2 style={{ marginBottom: 16 }}>Crear Nueva Caja</h2>
       <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
-        <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange} required />
+        <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Tipo de Caja</label>
         <select name="tipo_caja" value={form.tipo_caja} onChange={handleChange} required style={{ width: '100%', marginBottom: 16, padding: 8 }}>
           <option value="">Seleccione un tipo</option>

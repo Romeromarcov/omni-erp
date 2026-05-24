@@ -1,6 +1,9 @@
-from apps.finanzas.models import MovimientoCajaBanco, Caja
 from decimal import Decimal
+
 from django.utils import timezone
+
+from apps.finanzas.models import Caja, MovimientoCajaBanco
+
 
 def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, referencia=None):
     """
@@ -13,15 +16,15 @@ def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, 
         id_empresa=origen.empresa,
         fecha_movimiento=ahora.date(),
         hora_movimiento=ahora.time(),
-        tipo_movimiento='TRANSFERENCIA_SALIDA',
+        tipo_movimiento="TRANSFERENCIA_SALIDA",
         monto=monto,
         id_moneda=origen.moneda,
-        concepto=f'Transferencia interna a caja {destino.nombre}',
+        concepto=f"Transferencia interna a caja {destino.nombre}",
         referencia=referencia,
         id_caja=origen,
         saldo_anterior=origen.saldo_actual,
         saldo_nuevo=origen.saldo_actual - monto,
-        id_usuario_registro=usuario
+        id_usuario_registro=usuario,
     )
     origen.saldo_actual -= monto
     origen.save()
@@ -29,15 +32,15 @@ def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, 
         id_empresa=destino.empresa,
         fecha_movimiento=ahora.date(),
         hora_movimiento=ahora.time(),
-        tipo_movimiento='TRANSFERENCIA_ENTRADA',
+        tipo_movimiento="TRANSFERENCIA_ENTRADA",
         monto=monto,
         id_moneda=destino.moneda,
-        concepto=f'Transferencia interna desde caja {origen.nombre}',
+        concepto=f"Transferencia interna desde caja {origen.nombre}",
         referencia=referencia,
         id_caja=destino,
         saldo_anterior=destino.saldo_actual,
         saldo_nuevo=destino.saldo_actual + monto,
-        id_usuario_registro=usuario
+        id_usuario_registro=usuario,
     )
     destino.saldo_actual += monto
     destino.save()

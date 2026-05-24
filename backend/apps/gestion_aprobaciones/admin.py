@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import TipoAprobacion, FlujoAprobacion, SolicitudAprobacion, RegistroAprobacion
+
+from .models import FlujoAprobacion, RegistroAprobacion, SolicitudAprobacion, TipoAprobacion
 
 admin.site.register(TipoAprobacion)
 admin.site.register(FlujoAprobacion)

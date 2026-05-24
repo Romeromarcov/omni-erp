@@ -1,5 +1,7 @@
 from django.test import TestCase
+
 from .models import CuentaPorCobrar
+
 
 class CuentaPorCobrarTestCase(TestCase):
     def setUp(self):

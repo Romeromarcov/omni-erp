@@ -1,97 +1,146 @@
-from .models import SesionCajaFisica, Caja, CajaFisica, PlantillaMaestroCajasVirtuales, CajaVirtualAuto, CajaMetodoPagoOverride, CajaUsuario, CajaFisicaUsuario, CajaVirtualUsuario, Datafono, TransaccionDatafono, SesionDatafono, DepositoDatafono, Pago
-from .serializers import SesionCajaFisicaSerializer, CajaFisicaSerializer, PlantillaMaestroCajasVirtualesSerializer, CajaVirtualAutoSerializer, CajaMetodoPagoOverrideSerializer, CajaUsuarioSerializer, CajaVirtualUsuarioSerializer, CajaFisicaUsuarioSerializer, DatafonoSerializer, TransaccionDatafonoSerializer, SesionDatafonoSerializer, DepositoDatafonoSerializer, PagoSerializer
-from apps.tesoreria.serializers import CajaSerializer
-from rest_framework import serializers, viewsets
+from django.db import models
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from apps.core.viewsets import BaseModelViewSet
 from rest_framework.response import Response
-from rest_framework import status
-from django.db import models
+
+from apps.core.viewsets import BaseModelViewSet
+from apps.tesoreria.serializers import CajaSerializer
+
+from .models import (
+    Caja,
+    CajaFisica,
+    CajaFisicaUsuario,
+    CajaMetodoPagoOverride,
+    CajaUsuario,
+    CajaVirtualAuto,
+    CajaVirtualUsuario,
+    Datafono,
+    DepositoDatafono,
+    Pago,
+    PlantillaMaestroCajasVirtuales,
+    SesionCajaFisica,
+    SesionDatafono,
+    TransaccionDatafono,
+)
+from .serializers import (
+    CajaFisicaSerializer,
+    CajaFisicaUsuarioSerializer,
+    CajaMetodoPagoOverrideSerializer,
+    CajaUsuarioSerializer,
+    CajaVirtualAutoSerializer,
+    CajaVirtualUsuarioSerializer,
+    DatafonoSerializer,
+    DepositoDatafonoSerializer,
+    PagoSerializer,
+    PlantillaMaestroCajasVirtualesSerializer,
+    SesionCajaFisicaSerializer,
+    SesionDatafonoSerializer,
+    TransaccionDatafonoSerializer,
+)
+
 
 class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
     queryset = SesionCajaFisica.objects.all()
     serializer_class = SesionCajaFisicaSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return SesionCajaFisica.objects.filter(empresa__in=get_empresas_visible(self.request.user))
+
     def perform_create(self, serializer):
         # Usar el método de clase para abrir sesión con validaciones
-        caja_fisica_id = self.request.data.get('caja_fisica_principal')
+        caja_fisica_id = self.request.data.get("caja_fisica_principal")
         if not caja_fisica_id:
-            raise serializers.ValidationError({"caja_fisica_principal": "Debe especificar la caja física para abrir la sesión"})
+            raise serializers.ValidationError(
+                {"caja_fisica_principal": "Debe especificar la caja física para abrir la sesión"}
+            )
 
         from .models import Caja
+
         try:
             caja_fisica = Caja.objects.get(id_caja=caja_fisica_id, es_fisica=True, activa=True)
         except Caja.DoesNotExist:
             raise serializers.ValidationError({"caja_fisica_principal": "Caja física no encontrada o no válida"})
 
-        observaciones = self.request.data.get('observaciones')
+        observaciones = self.request.data.get("observaciones")
         # Por defecto, usar el nuevo sistema de cajas virtuales automáticas
-        cargar_plantillas = self.request.data.get('cargar_plantillas_predeterminadas', False)  # Cambiado a False por defecto
-        cargar_automaticas = self.request.data.get('cargar_cajas_automaticas', True)  # Nuevo sistema por defecto
+        cargar_plantillas = self.request.data.get(
+            "cargar_plantillas_predeterminadas", False
+        )  # Cambiado a False por defecto
+        cargar_automaticas = self.request.data.get("cargar_cajas_automaticas", True)  # Nuevo sistema por defecto
 
         instance = SesionCajaFisica.abrir_sesion(
             usuario=self.request.user,
             caja_fisica=caja_fisica,
             observaciones=observaciones,
-            cargar_plantillas_predeterminadas=cargar_plantillas
+            cargar_plantillas_predeterminadas=cargar_plantillas,
         )
 
         # Si se solicita cargar cajas automáticas, forzar la carga
         if cargar_automaticas:
             instance.cargar_plantillas_predeterminadas()  # Ahora carga las automáticas
 
-    @action(detail=True, methods=['post'], url_path='cerrar')
+    @action(detail=True, methods=["post"], url_path="cerrar")
     def cerrar_sesion(self, request, pk=None):
         """
         Cierra la sesión de caja, realiza el cierre de todas las cajas asociadas y retorna el reporte.
         """
         sesion = self.get_object()
-        saldos_reales = request.data.get('saldos_reales', {})
-        hasta = request.data.get('hasta')
+        saldos_reales = request.data.get("saldos_reales", {})
+        hasta = request.data.get("hasta")
         usuario = request.user if request.user.is_authenticated else None
         resultados = sesion.cerrar_sesion(saldos_reales=saldos_reales, usuario=usuario, hasta=hasta)
-        return Response({
-            'sesion': SesionCajaFisicaSerializer(sesion).data,
-            'cierres': resultados
-        })
+        return Response({"sesion": SesionCajaFisicaSerializer(sesion).data, "cierres": resultados})
 
-    @action(detail=True, methods=['post'], url_path='transferir-entre-cajas')
+    @action(detail=True, methods=["post"], url_path="transferir-entre-cajas")
     def transferir_entre_cajas(self, request, pk=None):
         """
         Permite transferir saldo de una caja origen a una caja destino tras el cierre de sesión.
         """
         from apps.finanzas.utils_transferencias import transferencia_entre_cajas
+
         sesion = self.get_object()
-        caja_origen_id = request.data.get('caja_origen')
-        caja_destino_id = request.data.get('caja_destino')
-        monto = request.data.get('monto')
+        caja_origen_id = request.data.get("caja_origen")
+        caja_destino_id = request.data.get("caja_destino")
+        monto = request.data.get("monto")
         usuario = request.user if request.user.is_authenticated else None
         if not (caja_origen_id and caja_destino_id and monto):
-            return Response({'error': 'Debe indicar caja_origen, caja_destino y monto.'}, status=400)
+            return Response({"error": "Debe indicar caja_origen, caja_destino y monto."}, status=400)
         try:
             caja_origen = sesion.cajas.get(id_caja=caja_origen_id)
             caja_destino = sesion.cajas.get(id_caja=caja_destino_id)
         except Exception:
-            return Response({'error': 'Caja origen o destino no pertenece a la sesión.'}, status=400)
+            return Response({"error": "Caja origen o destino no pertenece a la sesión."}, status=400)
         mov_salida, mov_entrada = transferencia_entre_cajas(caja_origen, caja_destino, monto, usuario=usuario)
-        return Response({
-            'movimiento_salida_id': mov_salida.id_movimiento,
-            'movimiento_entrada_id': mov_entrada.id_movimiento,
-            'caja_origen': str(caja_origen),
-            'caja_destino': str(caja_destino),
-            'monto': monto
-        })
-from .models import Datafono
+        return Response(
+            {
+                "movimiento_salida_id": mov_salida.id_movimiento,
+                "movimiento_entrada_id": mov_entrada.id_movimiento,
+                "caja_origen": str(caja_origen),
+                "caja_destino": str(caja_destino),
+                "monto": monto,
+            }
+        )
 
+
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import status
+
+from .models import Datafono
+
 
 class DatafonoViewSet(BaseModelViewSet):
     queryset = Datafono.objects.all()
     # serializer_class = DatafonoSerializer  # Si tienes un serializer, descomenta esto
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return Datafono.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
 
     @action(detail=True, methods=["post"], url_path="cierre")
     def cierre_datafono(self, request, pk=None):
@@ -100,21 +149,24 @@ class DatafonoViewSet(BaseModelViewSet):
         Permite pasar una fecha/hora límite opcional (hasta) y usa el usuario autenticado.
         """
         datafono = self.get_object()
-        hasta = request.data.get('hasta')
+        hasta = request.data.get("hasta")
         usuario = request.user if request.user.is_authenticated else None
         from django.utils.dateparse import parse_datetime
+
         hasta_dt = parse_datetime(hasta) if hasta else None
         try:
             resultado = datafono.realizar_cierre(usuario=usuario, hasta=hasta_dt)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(resultado)
 
-from rest_framework import permissions
+
+# ViewSet para MetodoPagoEmpresaActiva
+from rest_framework import permissions, viewsets
+
 from .models import MetodoPagoEmpresaActiva
 from .serializers import MetodoPagoEmpresaActivaSerializer
-# ViewSet para MetodoPagoEmpresaActiva
-from rest_framework import viewsets, permissions
+
 
 class MetodoPagoEmpresaActivaViewSet(viewsets.ModelViewSet):
     queryset = MetodoPagoEmpresaActiva.objects.all()
@@ -123,50 +175,65 @@ class MetodoPagoEmpresaActivaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        empresa = self.request.query_params.get('empresa')
-        metodo_pago = self.request.query_params.get('metodo_pago')
+        empresa = self.request.query_params.get("empresa")
+        metodo_pago = self.request.query_params.get("metodo_pago")
         if empresa:
             qs = qs.filter(empresa=empresa)
         if metodo_pago:
             qs = qs.filter(metodo_pago=metodo_pago)
         return qs
-from rest_framework import viewsets
+
+
 from django.db import models
+from rest_framework import permissions, viewsets
+
+from apps.tesoreria.serializers import CajaSerializer
+
 from .models import (
-    Moneda, TasaCambio, MetodoPago, TransaccionFinanciera, MovimientoCajaBanco, Caja,
-    CuentaBancariaEmpresa, MonedaEmpresaActiva, CajaUsuario
+    Caja,
+    CajaUsuario,
+    CuentaBancariaEmpresa,
+    MetodoPago,
+    Moneda,
+    MonedaEmpresaActiva,
+    MovimientoCajaBanco,
+    TasaCambio,
+    TransaccionFinanciera,
 )
 from .serializers import (
-    MonedaSerializer, TasaCambioSerializer, MetodoPagoSerializer,
+    CajaUsuarioSerializer,
+    CuentaBancariaEmpresaSerializer,
+    MetodoPagoSerializer,
+    MonedaEmpresaActivaSerializer,
+    MonedaSerializer,
+    MovimientoCajaBancoSerializer,
+    TasaCambioSerializer,
     TransaccionFinancieraSerializer,
-    MovimientoCajaBancoSerializer, CuentaBancariaEmpresaSerializer,
-    MonedaEmpresaActivaSerializer, CajaUsuarioSerializer
 )
-from apps.tesoreria.serializers import CajaSerializer
-from rest_framework import permissions
+
 
 class MonedaViewSet(BaseModelViewSet):
     from rest_framework.decorators import action
     from rest_framework.response import Response
 
-    @action(detail=False, methods=['get'], url_path='activas')
+    @action(detail=False, methods=["get"], url_path="activas")
     def activas(self, request):
         user = request.user
-        if getattr(user, 'es_superusuario_omni', False):
+        if getattr(user, "es_superusuario_omni", False):
             queryset = Moneda.objects.all()
         else:
             empresas_usuario = user.empresas.all()
             monedas_visibles = Moneda.objects.filter(
-                models.Q(es_generica=True)
-                | models.Q(es_publica=True)
-                | models.Q(empresa__in=empresas_usuario)
+                models.Q(es_generica=True) | models.Q(es_publica=True) | models.Q(empresa__in=empresas_usuario)
             ).distinct()
             if not empresas_usuario.exists():
                 queryset = monedas_visibles
             else:
                 empresa = empresas_usuario.first()
                 activas_ids = set(
-                    MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list('moneda_id', flat=True)
+                    MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list(
+                        "moneda_id", flat=True
+                    )
                 )
                 queryset = monedas_visibles.filter(id_moneda__in=activas_ids)
         page = self.paginate_queryset(queryset)
@@ -182,38 +249,49 @@ class MonedaViewSet(BaseModelViewSet):
     def get_queryset(self):
         user = self.request.user
         # Superusuario Omni ERP ve todas
-        if getattr(user, 'es_superusuario_omni', False):
+        if getattr(user, "es_superusuario_omni", False):
             return Moneda.objects.all()
         empresas_usuario = user.empresas.all()
         # Monedas visibles (genéricas, públicas, propias)
         monedas_visibles = Moneda.objects.filter(
-            models.Q(es_generica=True)
-            | models.Q(es_publica=True)
-            | models.Q(empresa__in=empresas_usuario)
+            models.Q(es_generica=True) | models.Q(es_publica=True) | models.Q(empresa__in=empresas_usuario)
         ).distinct()
         return monedas_visibles
+
 
 class TasaCambioViewSet(BaseModelViewSet):
     queryset = TasaCambio.objects.all()
     serializer_class = TasaCambioSerializer
 
+    def get_queryset(self):
+        # R-CODE-1: tasas globales (BCV) son visibles para todos (id_empresa nulo),
+        # las específicas se filtran por empresa visible del usuario.
+        from django.db.models import Q
+        from apps.core.viewsets import get_empresas_visible
+        return TasaCambio.objects.filter(
+            Q(id_empresa__isnull=True) | Q(id_empresa__in=get_empresas_visible(self.request.user))
+        )
+
+
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import status
+
 from apps.core.models import Empresa
+
 
 class MetodoPagoViewSet(BaseModelViewSet):
 
     def get_object(self):
         # Permitir reutilizar métodos de pago de cualquier empresa
-        if hasattr(self, 'action') and self.action == 'reutilizar':
+        if hasattr(self, "action") and self.action == "reutilizar":
             return MetodoPago.objects.get(id_metodo_pago=self.kwargs[self.lookup_field])
         return super().get_object()
 
     queryset = MetodoPago.objects.all()
     serializer_class = MetodoPagoSerializer
-    lookup_field = 'id_metodo_pago'
-    lookup_value_regex = '[0-9a-f-]{36}'
+    lookup_field = "id_metodo_pago"
+    lookup_value_regex = "[0-9a-f-]{36}"
 
     def get_queryset(self):
         """
@@ -221,23 +299,21 @@ class MetodoPagoViewSet(BaseModelViewSet):
         Incluye métodos genéricos, públicos y de la(s) empresa(s) del usuario.
         """
         user = self.request.user
-        if getattr(user, 'es_superusuario_omni', False):
+        if getattr(user, "es_superusuario_omni", False):
             return MetodoPago.objects.all()
         empresas_usuario = user.empresas.all()
         metodos_visibles = MetodoPago.objects.filter(
-            models.Q(es_generico=True)
-            | models.Q(es_publico=True)
-            | models.Q(empresa__in=empresas_usuario)
+            models.Q(es_generico=True) | models.Q(es_publico=True) | models.Q(empresa__in=empresas_usuario)
         ).distinct()
         return metodos_visibles
 
-    @action(detail=False, methods=['get'], url_path='buscar_reutilizar')
+    @action(detail=False, methods=["get"], url_path="buscar_reutilizar")
     def buscar_reutilizar(self, request):
         """
         Devuelve métodos de pago reutilizables (de otras empresas, genéricos o públicos) para la empresa actual.
         Marca con 'aplicado' los que ya están en la empresa actual (por nombre y tipo).
         """
-        id_empresa_actual = request.query_params.get('id_empresa_actual')
+        id_empresa_actual = request.query_params.get("id_empresa_actual")
         empresas_excluir = []
         if id_empresa_actual:
             empresas_excluir.append(id_empresa_actual)
@@ -248,59 +324,57 @@ class MetodoPagoViewSet(BaseModelViewSet):
         )
         if id_empresa_actual:
             queryset = queryset.exclude(empresa=id_empresa_actual)
-        nombre_metodo = request.query_params.get('nombre_metodo')
-        tipo_metodo = request.query_params.get('tipo_metodo')
+        nombre_metodo = request.query_params.get("nombre_metodo")
+        tipo_metodo = request.query_params.get("tipo_metodo")
         if nombre_metodo:
             queryset = queryset.filter(nombre_metodo__icontains=nombre_metodo)
         if tipo_metodo:
             queryset = queryset.filter(tipo_metodo=tipo_metodo)
         page = self.paginate_queryset(queryset)
         serializer_context = self.get_serializer_context()
-        serializer_context['id_empresa_actual'] = id_empresa_actual
+        serializer_context["id_empresa_actual"] = id_empresa_actual
         if page is not None:
             serializer = self.get_serializer(page, many=True, context=serializer_context)
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True, context=serializer_context)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], url_path='reutilizar')
+    @action(detail=True, methods=["post"], url_path="reutilizar")
     def reutilizar(self, request, *args, **kwargs):
         """
         Asocia el método de pago existente a la empresa indicada (sin copiar, solo crea la relación).
         Si ya existe para esa empresa, retorna error.
         """
         metodo = self.get_object()
-        id_empresa = request.data.get('id_empresa')
+        id_empresa = request.data.get("id_empresa")
         if not id_empresa:
-            return Response({'detail': 'id_empresa es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "id_empresa es requerido."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             empresa = Empresa.objects.get(id_empresa=id_empresa)
         except Empresa.DoesNotExist:
-            return Response({'detail': 'Empresa no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Empresa no encontrada."}, status=status.HTTP_404_NOT_FOUND)
         # Validación fuzzy robusta: rapidfuzz ratio, distancia Levenshtein, substring y normalización de acentos
-        from rapidfuzz.fuzz import ratio
-        from rapidfuzz.distance import Levenshtein
         import unicodedata
+
+        from rapidfuzz.distance import Levenshtein
+        from rapidfuzz.fuzz import ratio
+
         def normalizar(s):
-            s = s.lower().replace(' ', '')
-            s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+            s = s.lower().replace(" ", "")
+            s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
             return s
+
         nombre_actual = normalizar(metodo.nombre_metodo)
-        metodos_existentes = MetodoPago.objects.filter(
-            empresa=empresa,
-            tipo_metodo=metodo.tipo_metodo
-        )
+        metodos_existentes = MetodoPago.objects.filter(empresa=empresa, tipo_metodo=metodo.tipo_metodo)
         for mp in metodos_existentes:
             nombre_db = normalizar(mp.nombre_metodo)
             sim = ratio(nombre_actual, nombre_db)
             dist = Levenshtein.distance(nombre_actual, nombre_db)
-            if (
-                sim >= 55 or
-                dist <= 3 or
-                nombre_actual in nombre_db or
-                nombre_db in nombre_actual
-            ):
-                return Response({'detail': f"Ya existe un método de pago similar ('{mp.nombre_metodo}') para esta empresa."}, status=status.HTTP_409_CONFLICT)
+            if sim >= 55 or dist <= 3 or nombre_actual in nombre_db or nombre_db in nombre_actual:
+                return Response(
+                    {"detail": f"Ya existe un método de pago similar ('{mp.nombre_metodo}') para esta empresa."},
+                    status=status.HTTP_409_CONFLICT,
+                )
         # Asociar (crear nuevo registro con los mismos datos, pero empresa diferente)
         nuevo = MetodoPago.objects.create(
             empresa=empresa,
@@ -310,42 +384,51 @@ class MetodoPagoViewSet(BaseModelViewSet):
             referencia_externa=metodo.referencia_externa,
             documento_json=metodo.documento_json,
             es_generico=False,
-            es_publico=False
+            es_publico=False,
         )
         serializer = self.get_serializer(nuevo)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['get'], url_path='monedas_info')
+    @action(detail=True, methods=["get"], url_path="monedas_info")
     def monedas_info(self, request, pk=None):
         """
         Devuelve las monedas asociadas, sugeridas y obligatorias para el método de pago y la empresa indicada (por query param o usuario).
         """
         metodo = self.get_object()
-        empresa_id = request.query_params.get('empresa')
+        empresa_id = request.query_params.get("empresa")
         empresa = None
         if empresa_id:
             from apps.core.models import Empresa
+
             empresa = Empresa.objects.filter(id_empresa=empresa_id).first()
-        if not empresa and hasattr(request.user, 'empresas'):
+        if not empresa and hasattr(request.user, "empresas"):
             empresa = request.user.empresas.first() if request.user.empresas.exists() else None
         # Monedas asociadas globalmente
         asociadas = metodo.monedas.all()
         # Monedas activas para la empresa
-        activas = MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list('moneda_id', flat=True) if empresa else []
+        activas = (
+            MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list("moneda_id", flat=True)
+            if empresa
+            else []
+        )
         # Sugeridas: todas las públicas y las privadas de la empresa
         sugeridas = Moneda.objects.filter(models.Q(es_publica=True) | models.Q(empresa=empresa))
         # Obligatorias: si es efectivo, todas las fiat públicas
         obligatorias = []
-        if metodo.tipo_metodo == 'EFECTIVO':
-            obligatorias = list(Moneda.objects.filter(tipo_moneda='fiat', es_publica=True))
-        elif metodo.tipo_metodo == 'CHEQUE':
-            obligatorias = list(Moneda.objects.filter(tipo_moneda='fiat', es_publica=True))
-        return Response({
-            'asociadas': [m.id_moneda for m in asociadas],
-            'activas_empresa': list(activas),
-            'sugeridas': [m.id_moneda for m in sugeridas],
-            'obligatorias': [m.id_moneda for m in obligatorias],
-        })
+        if metodo.tipo_metodo == "EFECTIVO":
+            obligatorias = list(Moneda.objects.filter(tipo_moneda="fiat", es_publica=True))
+        elif metodo.tipo_metodo == "CHEQUE":
+            obligatorias = list(Moneda.objects.filter(tipo_moneda="fiat", es_publica=True))
+        return Response(
+            {
+                "asociadas": [m.id_moneda for m in asociadas],
+                "activas_empresa": list(activas),
+                "sugeridas": [m.id_moneda for m in sugeridas],
+                "obligatorias": [m.id_moneda for m in obligatorias],
+            }
+        )
+
+
 class TransaccionFinancieraViewSet(BaseModelViewSet):
     queryset = TransaccionFinanciera.objects.all()
     serializer_class = TransaccionFinancieraSerializer
@@ -355,20 +438,19 @@ class TransaccionFinancieraViewSet(BaseModelViewSet):
         # El serializer ya crea el MovimientoCajaBanco automáticamente
         serializer.save()
 
-
     def get_queryset(self):
         user = self.request.user
         # Superusuario ve todas
-        if getattr(user, 'es_superusuario_omni', False):
+        if getattr(user, "es_superusuario_omni", False):
             return TransaccionFinanciera.objects.all()
         empresas_usuario = user.empresas.all()
         # Filtrar por empresa si se pasa id_empresa como query param
-        id_empresa = self.request.query_params.get('id_empresa')
+        id_empresa = self.request.query_params.get("id_empresa")
         qs = TransaccionFinanciera.objects.all()
         if id_empresa:
             qs = qs.filter(empresa_id=id_empresa)
         elif empresas_usuario.exists():
-            qs = qs.filter(empresa_id__in=empresas_usuario.values_list('id_empresa', flat=True))
+            qs = qs.filter(empresa_id__in=empresas_usuario.values_list("id_empresa", flat=True))
         return qs
 
 
@@ -376,18 +458,23 @@ class MovimientoCajaBancoViewSet(BaseModelViewSet):
     queryset = MovimientoCajaBanco.objects.all()
     serializer_class = MovimientoCajaBancoSerializer
 
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return MovimientoCajaBanco.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+
 
 class CajaViewSet(BaseModelViewSet):
-    queryset = Caja.objects.select_related('moneda', 'empresa', 'sucursal', 'caja_fisica')
+    queryset = Caja.objects.select_related("moneda", "empresa", "sucursal", "caja_fisica")
     serializer_class = CajaSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
         # Filtrar por empresas del usuario, salvo que sea superusuario
         user = self.request.user
-        if not getattr(user, 'es_superusuario_omni', False):
-            empresas_usuario = getattr(user, 'empresas', None)
-            if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        if not getattr(user, "es_superusuario_omni", False):
+            empresas_usuario = getattr(user, "empresas", None)
+            if empresas_usuario and hasattr(empresas_usuario, "all"):
                 queryset = queryset.filter(empresa__in=empresas_usuario.all())
         return queryset
 
@@ -398,17 +485,18 @@ class CajaViewSet(BaseModelViewSet):
         Recibe el saldo real contado y opcionalmente una fecha/hora límite.
         """
         from django.utils.dateparse import parse_datetime
+
         caja = self.get_object()
-        saldo_real = request.data.get('saldo_real')
-        hasta = request.data.get('hasta')
+        saldo_real = request.data.get("saldo_real")
+        hasta = request.data.get("hasta")
         usuario = request.user if request.user.is_authenticated else None
         if saldo_real is None:
-            return Response({'error': 'Debe enviar el saldo_real contado.'}, status=400)
+            return Response({"error": "Debe enviar el saldo_real contado."}, status=400)
         hasta_dt = parse_datetime(hasta) if hasta else None
         try:
             resultado = caja.realizar_cierre(saldo_real=saldo_real, usuario=usuario, hasta=hasta_dt)
         except Exception as e:
-            return Response({'error': str(e)}, status=400)
+            return Response({"error": str(e)}, status=400)
         return Response(resultado)
 
     @action(detail=False, methods=["get"], url_path="tipo-caja-choices")
@@ -417,10 +505,8 @@ class CajaViewSet(BaseModelViewSet):
         Devuelve las opciones disponibles para el campo tipo_caja.
         """
         from .models import Caja
-        return Response([
-            {"value": value, "display": display}
-            for value, display in Caja.TIPO_CAJA_CHOICES
-        ])
+
+        return Response([{"value": value, "display": display} for value, display in Caja.TIPO_CAJA_CHOICES])
 
     @action(detail=True, methods=["get"], url_path="movimientos-caja-banco")
     def movimientos_caja_banco(self, request, pk=None):
@@ -460,6 +546,7 @@ class CajaViewSet(BaseModelViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = MovimientoCajaBancoSerializer(qs, many=True)
         return Response(serializer.data)
+
     queryset = Caja.objects.all()
     serializer_class = CajaSerializer
 
@@ -467,6 +554,7 @@ class CajaViewSet(BaseModelViewSet):
 class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
     from rest_framework.decorators import action
     from rest_framework.response import Response
+
     from .models import MovimientoCajaBanco
     from .serializers import MovimientoCajaBancoSerializer
 
@@ -507,8 +595,14 @@ class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = MovimientoCajaBancoSerializer(qs, many=True)
         return Response(serializer.data)
+
     queryset = CuentaBancariaEmpresa.objects.all()
     serializer_class = CuentaBancariaEmpresaSerializer
+
+    def get_queryset(self):
+        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
+        from apps.core.viewsets import get_empresas_visible
+        return CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
 
 
 class MonedaEmpresaActivaViewSet(BaseModelViewSet):
@@ -519,28 +613,28 @@ class MonedaEmpresaActivaViewSet(BaseModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['request'] = self.request
+        context["request"] = self.request
         return context
 
     def get_queryset(self):
         user = self.request.user
         qs = MonedaEmpresaActiva.objects.all()
         # Superusuario Omni ERP puede ver todas, pero aún se permite filtrar por query params
-        if not getattr(user, 'es_superusuario_omni', False):
+        if not getattr(user, "es_superusuario_omni", False):
             empresas = user.empresas.all()
             qs = qs.filter(empresa__in=empresas)
 
         # Filtros por query params
-        empresa_param = self.request.query_params.get('empresa')
+        empresa_param = self.request.query_params.get("empresa")
         if empresa_param:
             qs = qs.filter(empresa=empresa_param)
-        activa_param = self.request.query_params.get('activa')
+        activa_param = self.request.query_params.get("activa")
         if activa_param is not None:
             # acepta 'true'/'false' o '1'/'0'
             val = str(activa_param).strip().lower()
-            if val in ('1', 'true', 't', 'yes', 'y'):
+            if val in ("1", "true", "t", "yes", "y"):
                 qs = qs.filter(activa=True)
-            elif val in ('0', 'false', 'f', 'no', 'n'):
+            elif val in ("0", "false", "f", "no", "n"):
                 qs = qs.filter(activa=False)
         return qs
 
@@ -555,9 +649,9 @@ class CajaUsuarioViewSet(viewsets.ModelViewSet):
         """
         Filtra las cajas asignadas al usuario actual.
         """
-        return CajaUsuario.objects.filter(usuario=self.request.user).select_related('caja')
+        return CajaUsuario.objects.filter(usuario=self.request.user).select_related("caja")
 
-    @action(detail=True, methods=['post'], url_path='crear-caja-virtual')
+    @action(detail=True, methods=["post"], url_path="crear-caja-virtual")
     def crear_caja_virtual(self, request, pk=None):
         """
         Crea una caja virtual dentro de la sesión activa.
@@ -566,33 +660,26 @@ class CajaUsuarioViewSet(viewsets.ModelViewSet):
         sesion = self.get_object()
 
         # Validar que la sesión esté abierta
-        if sesion.estado != 'ABIERTA':
+        if sesion.estado != "ABIERTA":
             return Response(
                 {"error": "No se pueden crear cajas virtuales en una sesión cerrada"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        nombre = request.data.get('nombre')
-        monedas_ids = request.data.get('monedas', [])
-        metodos_pago_ids = request.data.get('metodos_pago', [])
+        nombre = request.data.get("nombre")
+        monedas_ids = request.data.get("monedas", [])
+        metodos_pago_ids = request.data.get("metodos_pago", [])
 
         if not nombre:
             return Response(
-                {"error": "Debe especificar un nombre para la caja virtual"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Debe especificar un nombre para la caja virtual"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             caja_virtual = sesion.crear_caja_virtual(
-                nombre=nombre,
-                monedas_ids=monedas_ids,
-                metodos_pago_ids=metodos_pago_ids,
-                usuario=request.user
+                nombre=nombre, monedas_ids=monedas_ids, metodos_pago_ids=metodos_pago_ids, usuario=request.user
             )
-            return Response({
-                "mensaje": f"Caja virtual '{nombre}' creada exitosamente",
-                "caja_virtual": caja_virtual
-            })
+            return Response({"mensaje": f"Caja virtual '{nombre}' creada exitosamente", "caja_virtual": caja_virtual})
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -607,7 +694,7 @@ class CajaVirtualUsuarioViewSet(viewsets.ModelViewSet):
         """
         Filtra las cajas virtuales asignadas al usuario actual.
         """
-        return CajaVirtualUsuario.objects.filter(usuario=self.request.user).select_related('caja_virtual')
+        return CajaVirtualUsuario.objects.filter(usuario=self.request.user).select_related("caja_virtual")
 
 
 # ViewSet para CajaFisicaUsuario
@@ -620,7 +707,7 @@ class CajaFisicaUsuarioViewSet(viewsets.ModelViewSet):
         """
         Filtra las cajas físicas asignadas al usuario actual.
         """
-        return CajaFisicaUsuario.objects.filter(usuario=self.request.user).select_related('caja_fisica')
+        return CajaFisicaUsuario.objects.filter(usuario=self.request.user).select_related("caja_fisica")
 
 
 class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
@@ -633,15 +720,17 @@ class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
         user = self.request.user
 
         # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        empresas_usuario = getattr(user, "empresas", None)
+        if empresas_usuario and hasattr(empresas_usuario, "all"):
             queryset = queryset.filter(empresa__in=empresas_usuario.all())
 
         return queryset
+
 
 from .models import PlantillaMaestroCajasVirtuales
 from .serializers import PlantillaMaestroCajasVirtualesSerializer
 
+
 class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
     queryset = PlantillaMaestroCajasVirtuales.objects.all()
     serializer_class = PlantillaMaestroCajasVirtualesSerializer
@@ -652,13 +741,13 @@ class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
         user = self.request.user
 
         # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        empresas_usuario = getattr(user, "empresas", None)
+        if empresas_usuario and hasattr(empresas_usuario, "all"):
             queryset = queryset.filter(empresa__in=empresas_usuario.all())
 
         return queryset
 
-    @action(detail=True, methods=['post'], url_path='sincronizar')
+    @action(detail=True, methods=["post"], url_path="sincronizar")
     def sincronizar(self, request, pk=None):
         """
         Fuerza la sincronización de todas las cajas virtuales basadas en esta plantilla.
@@ -666,9 +755,7 @@ class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
         plantilla = self.get_object()
         plantilla.sincronizar_cajas_virtuales()
 
-        return Response({
-            "mensaje": f"Sincronización completada para plantilla {plantilla.nombre}"
-        })
+        return Response({"mensaje": f"Sincronización completada para plantilla {plantilla.nombre}"})
 
 
 class CajaVirtualAutoViewSet(BaseModelViewSet):
@@ -681,11 +768,11 @@ class CajaVirtualAutoViewSet(BaseModelViewSet):
         user = self.request.user
 
         # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        empresas_usuario = getattr(user, "empresas", None)
+        if empresas_usuario and hasattr(empresas_usuario, "all"):
             queryset = queryset.filter(
-                models.Q(caja_fisica__empresa__in=empresas_usuario.all()) |
-                models.Q(plantilla_maestro__empresa__in=empresas_usuario.all())
+                models.Q(caja_fisica__empresa__in=empresas_usuario.all())
+                | models.Q(plantilla_maestro__empresa__in=empresas_usuario.all())
             )
 
         return queryset
@@ -701,8 +788,8 @@ class CajaMetodoPagoOverrideViewSet(BaseModelViewSet):
         user = self.request.user
 
         # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        empresas_usuario = getattr(user, "empresas", None)
+        if empresas_usuario and hasattr(empresas_usuario, "all"):
             queryset = queryset.filter(caja_fisica__empresa__in=empresas_usuario.all())
 
         return queryset
@@ -710,21 +797,22 @@ class CajaMetodoPagoOverrideViewSet(BaseModelViewSet):
 
 # --- ViewSets para Datafono ---
 
+
 class DatafonoViewSet(BaseModelViewSet):
     queryset = Datafono.objects.all()
     serializer_class = DatafonoSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        id_empresa = self.request.query_params.get('id_empresa')
-        id_caja_fisica = self.request.query_params.get('id_caja_fisica')
+        id_empresa = self.request.query_params.get("id_empresa")
+        id_caja_fisica = self.request.query_params.get("id_caja_fisica")
         if id_empresa:
             queryset = queryset.filter(id_empresa=id_empresa)
         if id_caja_fisica:
             queryset = queryset.filter(id_caja_fisica=id_caja_fisica)
         return queryset
 
-    @action(detail=True, methods=['post'], url_path='cerrar-sesion')
+    @action(detail=True, methods=["post"], url_path="cerrar-sesion")
     def cerrar_sesion_datafono(self, request, pk=None):
         """
         Cierra la sesión activa del datafono y crea un depósito consolidado.
@@ -737,18 +825,18 @@ class DatafonoViewSet(BaseModelViewSet):
         try:
             deposito = cerrar_sesion_datafono(datafono, usuario)
             serializer = DepositoDatafonoSerializer(deposito)
-            return Response({
-                'success': True,
-                'message': 'Sesión cerrada y depósito creado exitosamente',
-                'deposito': serializer.data
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "success": True,
+                    "message": "Sesión cerrada y depósito creado exitosamente",
+                    "deposito": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
         except ValueError as e:
-            return Response({
-                'success': False,
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'], url_path='registrar-pago')
+    @action(detail=True, methods=["post"], url_path="registrar-pago")
     def registrar_pago_tarjeta(self, request, pk=None):
         """
         Registra un pago con tarjeta en el datafono.
@@ -759,18 +847,22 @@ class DatafonoViewSet(BaseModelViewSet):
         usuario = request.user
 
         # Validar datos requeridos
-        monto = request.data.get('monto')
-        referencia = request.data.get('referencia_bancaria')
-        transaccion_financiera_id = request.data.get('id_transaccion_financiera_origen')
+        monto = request.data.get("monto")
+        referencia = request.data.get("referencia_bancaria")
+        transaccion_financiera_id = request.data.get("id_transaccion_financiera_origen")
 
         if not all([monto, referencia, transaccion_financiera_id]):
-            return Response({
-                'success': False,
-                'message': 'Se requieren: monto, referencia_bancaria, id_transaccion_financiera_origen'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "success": False,
+                    "message": "Se requieren: monto, referencia_bancaria, id_transaccion_financiera_origen",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             from .models import TransaccionFinanciera
+
             transaccion_financiera = TransaccionFinanciera.objects.get(id_transaccion=transaccion_financiera_id)
 
             transaccion = registrar_pago_tarjeta(
@@ -778,26 +870,21 @@ class DatafonoViewSet(BaseModelViewSet):
                 monto=monto,
                 referencia=referencia,
                 transaccion_financiera=transaccion_financiera,
-                usuario=usuario
+                usuario=usuario,
             )
 
             serializer = TransaccionDatafonoSerializer(transaccion)
-            return Response({
-                'success': True,
-                'message': 'Pago registrado exitosamente',
-                'transaccion': serializer.data
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {"success": True, "message": "Pago registrado exitosamente", "transaccion": serializer.data},
+                status=status.HTTP_201_CREATED,
+            )
 
         except TransaccionFinanciera.DoesNotExist:
-            return Response({
-                'success': False,
-                'message': 'Transacción financiera no encontrada'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"success": False, "message": "Transacción financiera no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
         except ValueError as e:
-            return Response({
-                'success': False,
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TransaccionDatafonoViewSet(BaseModelViewSet):
@@ -808,8 +895,8 @@ class TransaccionDatafonoViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         # Filtrar por empresas del usuario
         user = self.request.user
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        empresas_usuario = getattr(user, "empresas", None)
+        if empresas_usuario and hasattr(empresas_usuario, "all"):
             queryset = queryset.filter(id_datafono__id_empresa__in=empresas_usuario.all())
         return queryset
 
@@ -822,8 +909,8 @@ class SesionDatafonoViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         # Filtrar por empresas del usuario
         user = self.request.user
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        empresas_usuario = getattr(user, "empresas", None)
+        if empresas_usuario and hasattr(empresas_usuario, "all"):
             queryset = queryset.filter(datafono__id_empresa__in=empresas_usuario.all())
         return queryset
 
@@ -836,12 +923,12 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         # Filtrar por empresas del usuario
         user = self.request.user
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        empresas_usuario = getattr(user, "empresas", None)
+        if empresas_usuario and hasattr(empresas_usuario, "all"):
             queryset = queryset.filter(datafono__id_empresa__in=empresas_usuario.all())
         return queryset
 
-    @action(detail=True, methods=['post'], url_path='conciliar')
+    @action(detail=True, methods=["post"], url_path="conciliar")
     def conciliar_deposito(self, request, pk=None):
         """
         Conciliar un depósito con un movimiento bancario recibido.
@@ -851,62 +938,53 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
         deposito = self.get_object()
         usuario = request.user
 
-        movimiento_banco_id = request.data.get('id_movimiento_banco')
+        movimiento_banco_id = request.data.get("id_movimiento_banco")
         if not movimiento_banco_id:
-            return Response({
-                'success': False,
-                'message': 'Se requiere id_movimiento_banco'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"success": False, "message": "Se requiere id_movimiento_banco"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             from .models import MovimientoCajaBanco
+
             movimiento_banco = MovimientoCajaBanco.objects.get(id_movimiento=movimiento_banco_id)
 
             deposito = conciliar_deposito_datafono(deposito, movimiento_banco, usuario)
 
             serializer = DepositoDatafonoSerializer(deposito)
-            return Response({
-                'success': True,
-                'message': 'Depósito conciliado exitosamente',
-                'deposito': serializer.data
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {"success": True, "message": "Depósito conciliado exitosamente", "deposito": serializer.data},
+                status=status.HTTP_200_OK,
+            )
 
         except MovimientoCajaBanco.DoesNotExist:
-            return Response({
-                'success': False,
-                'message': 'Movimiento bancario no encontrado'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"success": False, "message": "Movimiento bancario no encontrado"}, status=status.HTTP_404_NOT_FOUND
+            )
         except ValueError as e:
-            return Response({
-                'success': False,
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['get'], url_path='pendientes')
+    @action(detail=False, methods=["get"], url_path="pendientes")
     def depositos_pendientes(self, request):
         """
         Obtener depósitos pendientes de conciliación.
         """
         from .models import obtener_depositos_pendientes
 
-        datafono_id = request.query_params.get('datafono_id')
+        datafono_id = request.query_params.get("datafono_id")
         datafono = None
         if datafono_id:
             try:
                 datafono = Datafono.objects.get(id_datafono=datafono_id)
             except Datafono.DoesNotExist:
-                return Response({
-                    'success': False,
-                    'message': 'Datafono no encontrado'
-                }, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"success": False, "message": "Datafono no encontrado"}, status=status.HTTP_404_NOT_FOUND
+                )
 
         depositos = obtener_depositos_pendientes(datafono)
         serializer = self.get_serializer(depositos, many=True)
 
-        return Response({
-            'success': True,
-            'depositos': serializer.data
-        }, status=status.HTTP_200_OK)
+        return Response({"success": True, "depositos": serializer.data}, status=status.HTTP_200_OK)
 
 
 class CajaFisicaViewSet(BaseModelViewSet):
@@ -917,9 +995,9 @@ class CajaFisicaViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         # Filtrar por empresas del usuario, salvo que sea superusuario
         user = self.request.user
-        if not getattr(user, 'es_superusuario_omni', False):
-            empresas_usuario = getattr(user, 'empresas', None)
-            if empresas_usuario and hasattr(empresas_usuario, 'all'):
+        if not getattr(user, "es_superusuario_omni", False):
+            empresas_usuario = getattr(user, "empresas", None)
+            if empresas_usuario and hasattr(empresas_usuario, "all"):
                 queryset = queryset.filter(empresa__in=empresas_usuario.all())
         return queryset
 
@@ -929,6 +1007,7 @@ class CajaFisicaViewSet(BaseModelViewSet):
 
         # Crear transacción financiera
         from .models import TransaccionFinanciera
+
         transaccion = TransaccionFinanciera.objects.create(
             id_empresa=pago.id_empresa,
             fecha_hora_transaccion=pago.fecha_pago,
@@ -939,27 +1018,28 @@ class CajaFisicaViewSet(BaseModelViewSet):
             monto_base_empresa=pago.monto,
             id_metodo_pago=pago.id_metodo_pago,
             referencia_pago=pago.referencia,
-            descripcion=f'Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}',
+            descripcion=f"Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}",
             tipo_documento_asociado=pago.tipo_documento,
             nro_documento_asociado=str(pago.id_documento),
             id_caja=pago.id_caja_virtual,
             id_cuenta_bancaria=pago.id_cuenta_bancaria,
-            id_usuario_registro=pago.id_usuario_registro
+            id_usuario_registro=pago.id_usuario_registro,
         )
 
         # Asociar la transacción financiera al pago
         pago.id_transaccion_financiera = transaccion
-        pago.save(update_fields=['id_transaccion_financiera'])
+        pago.save(update_fields=["id_transaccion_financiera"])
 
         # Si es pago con tarjeta, crear TransaccionDatafono
         if pago.id_datafono:
             from .models import TransaccionDatafono
+
             TransaccionDatafono.objects.create(
                 id_datafono=pago.id_datafono,
                 monto=pago.monto,
                 referencia_bancaria=pago.referencia,
                 id_transaccion_financiera_origen=transaccion,  # Usar la transacción ya creada
-                id_usuario_registro=pago.id_usuario_registro
+                id_usuario_registro=pago.id_usuario_registro,
             )
 
         # Crear movimiento de caja/banco si corresponde
@@ -971,9 +1051,10 @@ class CajaFisicaViewSet(BaseModelViewSet):
                 saldo_anterior = pago.id_cuenta_bancaria.saldo_actual
 
             # Determinar el tipo de movimiento (INGRESO/EGRESO)
-            tipo_movimiento = 'INGRESO' if pago.tipo_operacion == 'INGRESO' else 'EGRESO'
+            tipo_movimiento = "INGRESO" if pago.tipo_operacion == "INGRESO" else "EGRESO"
 
             from .models import MovimientoCajaBanco
+
             movimiento = MovimientoCajaBanco.objects.create(
                 id_empresa=pago.id_empresa,
                 fecha_movimiento=pago.fecha_pago.date(),
@@ -981,12 +1062,12 @@ class CajaFisicaViewSet(BaseModelViewSet):
                 tipo_movimiento=tipo_movimiento,
                 monto=pago.monto,
                 id_moneda=pago.id_moneda,
-                concepto=f'{pago.tipo_operacion} - {pago.get_tipo_documento_display()}',
-                referencia=pago.referencia or f'Pago {pago.id_pago}',
+                concepto=f"{pago.tipo_operacion} - {pago.get_tipo_documento_display()}",
+                referencia=pago.referencia or f"Pago {pago.id_pago}",
                 id_caja=pago.id_caja_virtual,
                 id_cuenta_bancaria=pago.id_cuenta_bancaria,
                 saldo_anterior=saldo_anterior,
-                saldo_nuevo=saldo_anterior + (pago.monto if tipo_movimiento == 'INGRESO' else -pago.monto),
+                saldo_nuevo=saldo_anterior + (pago.monto if tipo_movimiento == "INGRESO" else -pago.monto),
                 id_usuario_registro=pago.id_usuario_registro,
             )
 
@@ -998,23 +1079,19 @@ class CajaFisicaViewSet(BaseModelViewSet):
                 pago.id_cuenta_bancaria.saldo_actual = movimiento.saldo_nuevo
                 pago.id_cuenta_bancaria.save()
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def tipos_documento(self, request):
         """Retorna los tipos de documento disponibles"""
         from .models import Pago
-        return Response([
-            {'value': choice[0], 'label': choice[1]}
-            for choice in Pago.TIPO_DOCUMENTO_CHOICES
-        ])
 
-    @action(detail=False, methods=['get'])
+        return Response([{"value": choice[0], "label": choice[1]} for choice in Pago.TIPO_DOCUMENTO_CHOICES])
+
+    @action(detail=False, methods=["get"])
     def tipos_operacion(self, request):
         """Retorna los tipos de operación disponibles"""
         from .models import Pago
-        return Response([
-            {'value': choice[0], 'label': choice[1]}
-            for choice in Pago.TIPO_OPERACION_CHOICES
-        ])
+
+        return Response([{"value": choice[0], "label": choice[1]} for choice in Pago.TIPO_OPERACION_CHOICES])
 
     @action(detail=False, methods=["get"], url_path="tipo-caja-choices", permission_classes=[])
     def tipo_caja_choices(self, request):
@@ -1022,41 +1099,31 @@ class CajaFisicaViewSet(BaseModelViewSet):
         Devuelve las opciones disponibles para el campo tipo_caja.
         """
         from .models import CajaFisica
-        return Response([
-            {"value": value, "display": display}
-            for value, display in CajaFisica.TIPO_CAJA_CHOICES
-        ])
+
+        return Response([{"value": value, "display": display} for value, display in CajaFisica.TIPO_CAJA_CHOICES])
+
 
 class PagoViewSet(BaseModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        # Filtrar por empresas del usuario
-        user = self.request.user
-        empresas_usuario = getattr(user, 'empresas', None)
-        if empresas_usuario and hasattr(empresas_usuario, 'all'):
-            queryset = queryset.filter(id_empresa__in=empresas_usuario.all())
-        return queryset
+        # R-CODE-1: usar get_empresas_visible para incluir subsidiarias y
+        # garantizar aislamiento simétrico con los demás módulos.
+        from apps.core.viewsets import get_empresas_visible
 
-    @action(detail=False, methods=['get'])
+        return Pago.objects.filter(id_empresa__in=get_empresas_visible(self.request.user)).order_by("-fecha_pago")
+
+    @action(detail=False, methods=["get"])
     def tipos_documento(self, request):
         """Retorna los tipos de documento disponibles"""
         from .models import Pago
-        return Response([
-            {'value': choice[0], 'label': choice[1]}
-            for choice in Pago.TIPO_DOCUMENTO_CHOICES
-        ])
 
-    @action(detail=False, methods=['get'])
+        return Response([{"value": choice[0], "label": choice[1]} for choice in Pago.TIPO_DOCUMENTO_CHOICES])
+
+    @action(detail=False, methods=["get"])
     def tipos_operacion(self, request):
         """Retorna los tipos de operación disponibles"""
         from .models import Pago
-        return Response([
-            {'value': choice[0], 'label': choice[1]}
-            for choice in Pago.TIPO_OPERACION_CHOICES
-        ])
 
-
-
+        return Response([{"value": choice[0], "label": choice[1]} for choice in Pago.TIPO_OPERACION_CHOICES])

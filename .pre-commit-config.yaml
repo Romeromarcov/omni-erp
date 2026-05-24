@@ -1,0 +1,55 @@
+# Pre-commit hooks para Omni ERP
+# Docs: https://pre-commit.com
+# Ejecutar manualmente: pre-commit run --all-files
+repos:
+
+  # ── Hooks generales de seguridad y limpieza ─────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '^.*\.md$'
+      - id: end-of-file-fixer
+        exclude: '^.*\.md$'
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'master']
+
+  # ── Python — Black (formateo) ────────────────────────────────────────────────
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3
+        exclude: '^backend/apps/.*/migrations/.*\.py$'
+
+  # ── Python — isort (imports) ─────────────────────────────────────────────────
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+        exclude: '^backend/apps/.*/migrations/.*\.py$'
+
+  # ── Python — Flake8 (linting, solo verifica, no formatea) ───────────────────
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.2.0
+    hooks:
+      - id: flake8
+        additional_dependencies: [flake8-bugbear, flake8-comprehensions]
+        exclude: '^backend/apps/.*/migrations/.*\.py$'
+
+  # ── Frontend — ESLint (TypeScript / React) ───────────────────────────────────
+  - repo: local
+    hooks:
+      - id: eslint-frontend
+        name: ESLint (frontend)
+        language: node
+        entry: bash -c 'cd frontend && npm run lint -- --max-warnings=0'
+        files: '^frontend/src/.*\.(ts|tsx)$'
+        pass_filenames: false

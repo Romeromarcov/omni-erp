@@ -1,16 +1,14 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import (
-    TipoAprobacionViewSet, FlujoAprobacionViewSet,
-    SolicitudAprobacionViewSet, RegistroAprobacionViewSet
-)
+
+from .views import FlujoAprobacionViewSet, RegistroAprobacionViewSet, SolicitudAprobacionViewSet, TipoAprobacionViewSet
 
 router = DefaultRouter()
-router.register(r'tipos-aprobacion', TipoAprobacionViewSet)
-router.register(r'flujos-aprobacion', FlujoAprobacionViewSet)
-router.register(r'solicitudes-aprobacion', SolicitudAprobacionViewSet)
-router.register(r'registros-aprobacion', RegistroAprobacionViewSet)
+router.register(r"tipos-aprobacion", TipoAprobacionViewSet)
+router.register(r"flujos-aprobacion", FlujoAprobacionViewSet)
+router.register(r"solicitudes-aprobacion", SolicitudAprobacionViewSet)
+router.register(r"registros-aprobacion", RegistroAprobacionViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

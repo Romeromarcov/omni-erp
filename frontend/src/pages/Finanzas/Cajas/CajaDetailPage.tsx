@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageLayout from '../../../components/PageLayout';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCajaDetail, updateCaja, getCajaTipoChoices } from '../../../services/cajaService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchSucursales } from '../../../services/sucursales';
@@ -31,54 +32,69 @@ type TipoCajaChoice = { value: string; display: string };
 const CajaDetailPage: React.FC = () => {
   const { id_caja } = useParams<{ id_caja: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState<Caja>({ nombre: '', sucursal: '', moneda: '', activa: true, tipo_caja: '', metodos_pago: [] });
-  const [tipoCajas, setTipoCajas] = useState<TipoCajaChoice[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  const [metodosPago, setMetodosPago] = useState<MetodoPagoEmpresaActiva[]>([]);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!id_caja) return;
-    setLoading(true);
-    (async () => {
-      try {
-        const data = await getCajaDetail(id_caja) as Caja;
-        setForm({
-          nombre: data?.nombre || '',
-          sucursal: data?.sucursal || '',
-          moneda: data?.moneda || '',
-          activa: data?.activa !== undefined ? data.activa : true,
-          tipo_caja: data?.tipo_caja || '',
-          metodos_pago: Array.isArray(data?.metodos_pago) ? data.metodos_pago : [],
-        });
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id_caja]);
+  const empresa = localStorage.getItem('id_empresa') || '';
+
+  const { data: cajaData } = useQuery<Caja>({
+    queryKey: ['/finanzas/cajas/', id_caja],
+    queryFn: () => getCajaDetail(id_caja!) as Promise<Caja>,
+    enabled: !!id_caja,
+  });
 
   useEffect(() => {
-    // Obtener sucursales, monedas, tipos de caja y métodos de pago para los selects
-    const empresa = localStorage.getItem('id_empresa') || '';
-    if (empresa) {
-      fetchSucursales(empresa).then(setSucursales);
-      fetchMonedas().then(setMonedas);
-      getCajaTipoChoices().then((choices) => setTipoCajas(choices as TipoCajaChoice[]));
-      fetchMetodosPagoEmpresaActivos(empresa).then((res) => {
-        if (Array.isArray(res)) setMetodosPago(res);
-        else if (res && typeof res === 'object' && Array.isArray((res as { results?: MetodoPagoEmpresaActiva[] }).results)) setMetodosPago((res as { results: MetodoPagoEmpresaActiva[] }).results);
-        else setMetodosPago([]);
+    if (cajaData) {
+      setForm({
+        nombre: cajaData?.nombre || '',
+        sucursal: cajaData?.sucursal || '',
+        moneda: cajaData?.moneda || '',
+        activa: cajaData?.activa !== undefined ? cajaData.activa : true,
+        tipo_caja: cajaData?.tipo_caja || '',
+        metodos_pago: Array.isArray(cajaData?.metodos_pago) ? cajaData.metodos_pago : [],
       });
     }
-  }, []);
+  }, [cajaData]);
+
+  const { data: sucursales = [] } = useQuery<Sucursal[]>({
+    queryKey: ['/core/sucursales/', empresa],
+    queryFn: () => fetchSucursales(empresa),
+    enabled: !!empresa,
+  });
+
+  const { data: monedas = [] } = useQuery<Moneda[]>({
+    queryKey: ['/finanzas/monedas/'],
+    queryFn: fetchMonedas,
+  });
+
+  const { data: tipoCajas = [] } = useQuery<TipoCajaChoice[]>({
+    queryKey: ['/finanzas/cajas/tipo-caja-choices/'],
+    queryFn: () => getCajaTipoChoices() as Promise<TipoCajaChoice[]>,
+  });
+
+  const { data: metodosPago = [] } = useQuery<MetodoPagoEmpresaActiva[]>({
+    queryKey: ['/finanzas/metodos-pago-empresa-activas/', empresa],
+    queryFn: () => fetchMetodosPagoEmpresaActivos(empresa) as unknown as Promise<MetodoPagoEmpresaActiva[]>,
+    enabled: !!empresa,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => updateCaja(id_caja!, { ...form, metodos_pago: form.metodos_pago }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas/', id_caja] });
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas/'] });
+      navigate(-1);
+    },
+    onError: () => {
+      setError('Error al actualizar la caja');
+    },
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
     const { name, value, type } = target;
     if (target instanceof HTMLSelectElement && target.multiple) {
-      // Multiselect para metodos_pago
       const selected: string[] = Array.from(target.selectedOptions).map(opt => opt.value);
       setForm(f => ({ ...f, [name]: selected }));
     } else {
@@ -90,26 +106,20 @@ const CajaDetailPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id_caja) return;
-    setLoading(true);
     setError('');
-    try {
-      await updateCaja(id_caja, { ...form, metodos_pago: form.metodos_pago });
-      navigate(-1);
-    } catch {
-      setError('Error al actualizar la caja');
-    } finally {
-      setLoading(false);
-    }
+    updateMutation.mutate();
   };
+
+  const loading = updateMutation.isPending;
 
   return (
     <PageLayout>
       <h2 style={{ marginBottom: 16 }}>Detalle/Edición de Caja</h2>
       <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
-        <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange} required />
+        <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Tipo de Caja</label>
         <select name="tipo_caja" value={form.tipo_caja} onChange={handleChange} required style={{ width: '100%', marginBottom: 16, padding: 8 }}>
           <option value="">Seleccione un tipo</option>

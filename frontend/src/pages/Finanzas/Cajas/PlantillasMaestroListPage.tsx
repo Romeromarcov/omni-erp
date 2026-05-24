@@ -1,44 +1,33 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPlantillasMaestro, togglePlantillaMaestroActiva, type PlantillaMaestroCajasVirtuales } from '../../../services/plantillasService';
 import { Alert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 
 const PlantillasMaestroListPage: React.FC = () => {
   const navigate = useNavigate();
-  const [plantillas, setPlantillas] = useState<PlantillaMaestroCajasVirtuales[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
+  const queryClient = useQueryClient();
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
-  const loadPlantillas = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getPlantillasMaestro(idEmpresa);
-      setPlantillas(data);
-    } catch (err) {
-      setError('Error al cargar las plantillas');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [idEmpresa]);
+  const { data: plantillas = [], isLoading, isError } = useQuery<PlantillaMaestroCajasVirtuales[]>({
+    queryKey: ['/finanzas/plantillas-maestro-cajas/', idEmpresa],
+    queryFn: () => getPlantillasMaestro(idEmpresa),
+    enabled: !!idEmpresa,
+  });
 
-  useEffect(() => {
-    if (idEmpresa) {
-      loadPlantillas();
-    }
-  }, [idEmpresa, loadPlantillas]);
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, activa }: { id: string; activa: boolean }) => togglePlantillaMaestroActiva(id, activa),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/plantillas-maestro-cajas/', idEmpresa] });
+    },
+    onError: (err) => {
+      console.error('Error al cambiar el estado de la plantilla', err);
+    },
+  });
 
-  const handleToggleActiva = async (id: string, actualmenteActiva: boolean) => {
-    try {
-      await togglePlantillaMaestroActiva(id, !actualmenteActiva);
-      await loadPlantillas(); // Recargar la lista
-    } catch (err) {
-      setError('Error al cambiar el estado de la plantilla');
-      console.error(err);
-    }
+  const handleToggleActiva = (id: string, actualmenteActiva: boolean) => {
+    toggleMutation.mutate({ id, activa: !actualmenteActiva });
   };
 
   return (
@@ -50,10 +39,10 @@ const PlantillasMaestroListPage: React.FC = () => {
         </Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {isError && <Alert severity="error" sx={{ mb: 2 }}>Error al cargar las plantillas</Alert>}
 
       <Paper sx={{ p: 2 }}>
-        {loading ? (
+        {isLoading ? (
           <Typography>Cargando...</Typography>
         ) : plantillas.length === 0 ? (
           <Typography>No hay plantillas configuradas</Typography>

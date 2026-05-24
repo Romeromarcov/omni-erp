@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put } from '../../../services/api';
+import { toList } from '../../../utils/api';
 import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
 import type { Moneda } from './MonedaListPage';
 import PageLayout from '../../../components/PageLayout';
@@ -8,26 +10,64 @@ import PageLayout from '../../../components/PageLayout';
 const MonedaDetailPage: React.FC = () => {
   const { id_moneda } = useParams<{ id_moneda: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [moneda, setMoneda] = useState<Moneda | null>(null);
   const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [monedasExistentes, setMonedasExistentes] = useState<Moneda[]>([]);
-  // Cargar todas las monedas para validación fuzzy (excepto la actual)
-  useEffect(() => {
-    get('/finanzas/monedas/?limit=1000').then((res) => {
-      if (Array.isArray(res)) setMonedasExistentes(res);
-      else if (res && Array.isArray((res as any).results)) setMonedasExistentes((res as any).results);
-      else setMonedasExistentes([]);
-    }).catch(() => setMonedasExistentes([]));
-  }, []);
+
+  const { data: monedaData, isLoading } = useQuery<Moneda>({
+    queryKey: [`/finanzas/monedas/${id_moneda}/`],
+    queryFn: () => get<Moneda>(`/finanzas/monedas/${id_moneda}/`),
+    enabled: !!id_moneda,
+  });
 
   useEffect(() => {
-    if (id_moneda) {
-      get<Moneda>(`/finanzas/monedas/${id_moneda}/`)
-        .then(setMoneda)
-        .catch(() => setError('No se pudo cargar la moneda'));
-    }
-  }, [id_moneda]);
+    if (monedaData) setMoneda(monedaData);
+  }, [monedaData]);
+
+  const { data: monedasExistentes = [] } = useQuery<unknown, Error, Moneda[]>({
+    queryKey: ['/finanzas/monedas/?limit=1000'],
+    queryFn: () => get('/finanzas/monedas/?limit=1000'),
+    select: toList,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => put(`/finanzas/monedas/${id_moneda}/`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/monedas/'] });
+      navigate('/finanzas/monedas');
+    },
+    onError: (err: unknown) => {
+      console.error(err);
+      let backendMsg = '';
+      let foundGenericError = false;
+      if (
+        typeof err === 'object' && err !== null &&
+        'response' in err &&
+        typeof (err as { response?: { data?: unknown } }).response === 'object' &&
+        (err as { response?: { data?: unknown } }).response !== null &&
+        'data' in (err as { response: { data?: unknown } }).response!
+      ) {
+        const data = (err as { response: { data: unknown } }).response.data;
+        const checkMsg = (val: unknown): boolean => {
+          if (!val) return false;
+          if (typeof val === 'string') return val.toLowerCase().includes('no puede modificar una moneda genérica');
+          if (typeof val === 'object') {
+            return Object.values(val).some(checkMsg);
+          }
+          return false;
+        };
+        foundGenericError = checkMsg(data);
+        backendMsg = typeof data === 'string' ? data : JSON.stringify(data);
+      }
+      if (foundGenericError) {
+        setError('No es posible modificar las monedas generales del sistema.');
+      } else {
+        setError(backendMsg || 'Error al actualizar moneda');
+      }
+    },
+  });
+
+  const saving = updateMutation.isPending;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     if (!moneda) return;
@@ -39,7 +79,7 @@ const MonedaDetailPage: React.FC = () => {
     setMoneda({ ...moneda, [e.target.name]: e.target.checked });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!moneda) return;
     setError('');
@@ -50,7 +90,6 @@ const MonedaDetailPage: React.FC = () => {
       setError(`Ya existe una moneda similar: "${similar.nombre}" (${similar.codigo_iso})`);
       return;
     }
-    setSaving(true);
     // Prepara el payload para cumplir con los tipos del modelo
     type MonedaPayload = Partial<Omit<Moneda, 'referencia_externa' | 'tipo_operacion' | 'fecha_cierre_estimada'> & {
       referencia_externa: string | null;
@@ -74,44 +113,10 @@ const MonedaDetailPage: React.FC = () => {
       referencia_externa: moneda.referencia_externa !== '' ? moneda.referencia_externa : null,
       tipo_operacion: moneda.tipo_operacion !== '' ? moneda.tipo_operacion : null,
     };
-    try {
-      await put(`/finanzas/monedas/${id_moneda}/`, payload);
-      navigate('/finanzas/monedas');
-    } catch (err) {
-      console.error(err);
-      let backendMsg = '';
-      let foundGenericError = false;
-      if (
-        typeof err === 'object' && err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: unknown } }).response === 'object' &&
-        (err as { response?: { data?: unknown } }).response !== null &&
-        'data' in (err as { response: { data?: unknown } }).response!
-      ) {
-        const data = (err as { response: { data: unknown } }).response.data;
-        // Buscar mensaje de moneda genérica en cualquier formato
-        const checkMsg = (val: unknown): boolean => {
-          if (!val) return false;
-          if (typeof val === 'string') return val.toLowerCase().includes('no puede modificar una moneda genérica');
-          if (typeof val === 'object') {
-            return Object.values(val).some(checkMsg);
-          }
-          return false;
-        };
-        foundGenericError = checkMsg(data);
-        backendMsg = typeof data === 'string' ? data : JSON.stringify(data);
-      }
-      if (foundGenericError) {
-        setError('No es posible modificar las monedas generales del sistema.');
-      } else {
-        setError(backendMsg || 'Error al actualizar moneda');
-      }
-    } finally {
-      setSaving(false);
-    }
+    updateMutation.mutate(payload as Record<string, unknown>);
   };
 
-  if (!moneda) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
+  if (isLoading || !moneda) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
 
   return (
     <PageLayout maxWidth={480}>

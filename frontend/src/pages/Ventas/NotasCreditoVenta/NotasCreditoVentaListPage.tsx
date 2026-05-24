@@ -1,40 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notaCreditoVentaService } from '../../../services/ventas';
 import type { NotaCreditoVenta } from '../../../types/ventas';
 import { Button } from '@mui/material';
 
 const NotasCreditoVentaListPage: React.FC = () => {
-  const [notasCredito, setNotasCredito] = useState<NotaCreditoVenta[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadNotasCredito();
-  }, []);
+  const { data: notasCredito = [], isLoading: loading } = useQuery<NotaCreditoVenta[]>({
+    queryKey: ['/ventas/notas-credito-venta/'],
+    queryFn: () => notaCreditoVentaService.getAll(),
+  });
 
-  const loadNotasCredito = async () => {
-    setLoading(true);
-    try {
-      const data = await notaCreditoVentaService.getAll();
-      setNotasCredito(data);
-    } catch (error) {
-      console.error('Error loading notas de crédito de venta:', error);
-      setNotasCredito([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const aplicarMutation = useMutation({
+    mutationFn: (id: string) => notaCreditoVentaService.aplicar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-credito-venta/'] });
+    },
+    onError: () => alert('Error al aplicar la nota de crédito'),
+  });
 
-  const handleAplicar = async (notaCredito: NotaCreditoVenta) => {
-    try {
-      await notaCreditoVentaService.aplicar(notaCredito.id_nota_credito);
-      await loadNotasCredito(); // Recargar la lista
-    } catch (error) {
-      console.error('Error aplicando nota de crédito:', error);
-      alert('Error al aplicar la nota de crédito');
-    }
+  const handleAplicar = (notaCredito: NotaCreditoVenta) => {
+    aplicarMutation.mutate(notaCredito.id_nota_credito);
   };
 
   const getEstadoColor = (estado: string) => {

@@ -1,3 +1,6 @@
+// Route config files export a factory function (non-component) alongside inline components.
+// react-refresh/only-export-components is a dev-HMR concern; does not affect production.
+/* eslint-disable react-refresh/only-export-components */
 import { Route, Navigate } from 'react-router-dom';
 import DashboardUserPage from '../pages/Core/Login/DashboardUserPage';
 import RoleListPage from '../pages/Core/Usuarios/RoleListPage';

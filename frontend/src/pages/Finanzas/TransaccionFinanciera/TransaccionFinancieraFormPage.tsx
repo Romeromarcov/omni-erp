@@ -15,10 +15,12 @@ interface TasaBCVResponse {
 }
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 // import { createTransaccion } from '../../../services/transaccionFinancieraService';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
+import { toList } from '../../../utils/api';
 import { Button, TextField } from '@mui/material';
 
 
@@ -50,10 +52,6 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   // Obtener automáticamente el UUID de la empresa principal del usuario autenticado
   const [idEmpresa, setIdEmpresa] = useState<string>('');
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-
-  const [monedas, setMonedas] = useState<MonedaEmpresaActiva[]>([]);
-  const [metodosPago, setMetodosPago] = useState<MetodoPagoEmpresaActiva[]>([]);
   const [monedaBase, setMonedaBase] = useState('');
   const [tasaCambio, setTasaCambio] = useState('');
   const [tasaBCV, setTasaBCV] = useState<number | null>(null);
@@ -88,32 +86,31 @@ const TransaccionFinancieraFormPage: React.FC = () => {
     });
   }, []);
 
+  const { data: monedasRaw = [] } = useQuery<unknown, Error, MonedaEmpresaActiva[]>({
+    queryKey: [`/finanzas/monedas-empresa-activas/${idEmpresa}/`],
+    queryFn: () => fetchMonedasEmpresaActivas(idEmpresa),
+    select: toList,
+    enabled: !!idEmpresa,
+  });
+
+  const monedas = monedasRaw.filter((m: MonedaEmpresaActiva) => m.activa);
+
   useEffect(() => {
-    if (!idEmpresa) return;
-    fetchMonedasEmpresaActivas(idEmpresa)
-      .then((data) => {
-        const monedasData: MonedaEmpresaActiva[] = Array.isArray(data) ? data
-          : Array.isArray((data as { results?: unknown }).results) ? (data as { results: MonedaEmpresaActiva[] }).results : [];
-        const activas = monedasData.filter((m: MonedaEmpresaActiva) => m.activa);
-        setMonedas(activas);
-        const base = activas.find((m: MonedaEmpresaActiva) => m.es_base);
-        setMonedaBase(base ? base.moneda_nombre : (activas[0]?.moneda_nombre || ''));
-      })
-      .catch((err) => {
-        console.error('Error al consultar monedas activas:', err);
-        setMonedas([]);
-      });
-    fetchMetodosPagoEmpresaActivos(idEmpresa)
-      .then((data) => {
-        const metodosData: MetodoPagoEmpresaActiva[] = Array.isArray(data) ? data
-          : Array.isArray((data as { results?: unknown }).results) ? (data as { results: MetodoPagoEmpresaActiva[] }).results : [];
-        setMetodosPago(metodosData.filter((m: MetodoPagoEmpresaActiva) => m.activa));
-      })
-      .catch((err) => {
-        console.error('Error al consultar métodos de pago activos:', err);
-        setMetodosPago([]);
-      });
-  }, [idEmpresa]);
+    if (monedas.length > 0) {
+      const base = monedas.find((m: MonedaEmpresaActiva) => m.es_base);
+      setMonedaBase(base ? base.moneda_nombre : (monedas[0]?.moneda_nombre || ''));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monedasRaw]);
+
+  const { data: metodosPagoRaw = [] } = useQuery<unknown, Error, MetodoPagoEmpresaActiva[]>({
+    queryKey: [`/finanzas/metodos-pago-empresa-activos/${idEmpresa}/`],
+    queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa),
+    select: toList,
+    enabled: !!idEmpresa,
+  });
+
+  const metodosPago = metodosPagoRaw.filter((m: MetodoPagoEmpresaActiva) => m.activa);
 
   useEffect(() => {
     if (!idEmpresa || !form.id_moneda_transaccion || !form.fecha_hora_transaccion) return;
@@ -199,95 +196,75 @@ const TransaccionFinancieraFormPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    // Aquí iría la lógica para registrar la transacción
-    // Por ahora solo navega atrás para evitar error de compilación
-    setTasaError('');
-    try {
-      // Obtener el id del usuario autenticado desde localStorage
+  const createMutation = useMutation({
+    mutationFn: async () => {
       const usuarioId = localStorage.getItem('id_usuario') || '';
-      // Obtener id_moneda_pais_empresa e id_moneda_base desde la empresa (requiere get)
-      let idMonedaPaisEmpresa = '';
-      let idMonedaBase = '';
-      let nombreMonedaPais = '';
-      try {
-        const { get, post } = await import('../../../services/api');
-  const empresaData: EmpresaData = await get(`/core/empresas/${idEmpresa}/`);
-  idMonedaPaisEmpresa = empresaData.id_moneda_pais || '';
-  idMonedaBase = empresaData.id_moneda_base || '';
-  nombreMonedaPais = empresaData.moneda_pais_nombre || '';
+      const { get, post } = await import('../../../services/api');
+      const empresaData: EmpresaData = await get(`/core/empresas/${idEmpresa}/`);
+      const idMonedaPaisEmpresa = empresaData.id_moneda_pais || '';
+      const idMonedaBase = empresaData.id_moneda_base || '';
+      const nombreMonedaPais = empresaData.moneda_pais_nombre || '';
 
-        // Calcular monto_moneda_pais según las reglas:
-        // SI moneda_transacción = moneda_pais ENTONCES monto_pais = monto_transacción
-        // SI NO monto_pais = monto_transaccion * tasa_cambio
-        let montoMonedaPais = '';
-        const montoTransaccionNum = parseFloat(form.monto_transaccion);
-        const tasaNum = parseFloat(tasaCambio);
-        
-        // Buscar la moneda de transacción para comparar con moneda país
-        const monedaTransaccion = monedas.find(m => m.moneda === form.id_moneda_transaccion);
-        const nombreMonedaTransaccion = monedaTransaccion?.moneda_nombre || '';
-        
-        if (nombreMonedaTransaccion && nombreMonedaPais && nombreMonedaTransaccion === nombreMonedaPais) {
-          // Moneda de transacción es igual a moneda país
-          if (!isNaN(montoTransaccionNum)) {
-            montoMonedaPais = montoTransaccionNum.toFixed(2);
-          }
-        } else {
-          // Monedas diferentes: monto_pais = monto_transaccion * tasa_cambio
-          if (!isNaN(montoTransaccionNum) && !isNaN(tasaNum) && tasaNum > 0) {
-            montoMonedaPais = (montoTransaccionNum * tasaNum).toFixed(2);
-          }
-        }
+      let montoMonedaPais = '';
+      const montoTransaccionNum = parseFloat(form.monto_transaccion);
+      const tasaNum = parseFloat(tasaCambio);
+      const monedaTransaccion = monedas.find(m => m.moneda === form.id_moneda_transaccion);
+      const nombreMonedaTransaccion = monedaTransaccion?.moneda_nombre || '';
 
-        // Construir el payload para la API con los nombres y valores correctos
-        const payload = {
-          fecha_hora_transaccion: form.fecha_hora_transaccion,
-          tipo_transaccion: (form.tipo_transaccion || '').toUpperCase(),
-          monto_transaccion: form.monto_transaccion,
-          id_moneda_transaccion: form.id_moneda_transaccion,
-          id_metodo_pago: form.id_metodo_pago,
-          referencia_pago: form.referencia_pago,
-          descripcion: form.descripcion,
-          tasa_cambio: tasaCambio,
-          monto_base: montoBase,
-          id_empresa: idEmpresa,
-          id_usuario_registro: usuarioId,
-          id_moneda_base: idMonedaBase,
-          id_moneda_pais_empresa: idMonedaPaisEmpresa,
-          monto_moneda_pais: montoMonedaPais,
-          id_caja: form.id_caja,
-          id_cuenta_bancaria: form.id_cuenta_bancaria,
-          tipo_documento_asociado: form.tipo_documento_asociado,
-          nro_documento_asociado: form.nro_documento_asociado,
-        };
-        // Usar el método post del servicio API
-        await post('/finanzas/transacciones-financieras/', payload);
-        // Si todo sale bien, navegar a la lista de transacciones
-        navigate(`/empresas/${idEmpresa}/transacciones-financieras`);
-  } catch (err) {
-        let errorMsg = 'Error al registrar transacción.';
-        if (isErrorWithDetailOrMessage(err)) {
-          if (typeof err.detail === 'string') {
-            errorMsg = err.detail;
-          } else if (typeof err.message === 'string') {
-            errorMsg = err.message;
-          }
+      if (nombreMonedaTransaccion && nombreMonedaPais && nombreMonedaTransaccion === nombreMonedaPais) {
+        if (!isNaN(montoTransaccionNum)) {
+          montoMonedaPais = montoTransaccionNum.toFixed(2);
         }
-        setTasaError(errorMsg);
-        setLoading(false);
-        return;
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setTasaError('Error inesperado: ' + err.message);
       } else {
-        setTasaError('Error inesperado.');
+        if (!isNaN(montoTransaccionNum) && !isNaN(tasaNum) && tasaNum > 0) {
+          montoMonedaPais = (montoTransaccionNum * tasaNum).toFixed(2);
+        }
       }
-    }
-    setLoading(false);
+
+      const payload = {
+        fecha_hora_transaccion: form.fecha_hora_transaccion,
+        tipo_transaccion: (form.tipo_transaccion || '').toUpperCase(),
+        monto_transaccion: form.monto_transaccion,
+        id_moneda_transaccion: form.id_moneda_transaccion,
+        id_metodo_pago: form.id_metodo_pago,
+        referencia_pago: form.referencia_pago,
+        descripcion: form.descripcion,
+        tasa_cambio: tasaCambio,
+        monto_base: montoBase,
+        id_empresa: idEmpresa,
+        id_usuario_registro: usuarioId,
+        id_moneda_base: idMonedaBase,
+        id_moneda_pais_empresa: idMonedaPaisEmpresa,
+        monto_moneda_pais: montoMonedaPais,
+        id_caja: form.id_caja,
+        id_cuenta_bancaria: form.id_cuenta_bancaria,
+        tipo_documento_asociado: form.tipo_documento_asociado,
+        nro_documento_asociado: form.nro_documento_asociado,
+      };
+      return post('/finanzas/transacciones-financieras/', payload);
+    },
+    onSuccess: () => {
+      navigate(`/empresas/${idEmpresa}/transacciones-financieras`);
+    },
+    onError: (err: unknown) => {
+      let errorMsg = 'Error al registrar transacción.';
+      if (isErrorWithDetailOrMessage(err)) {
+        if (typeof err.detail === 'string') {
+          errorMsg = err.detail;
+        } else if (typeof err.message === 'string') {
+          errorMsg = err.message;
+        }
+      }
+      setTasaError(errorMsg);
+    },
+  });
+
+  const loading = createMutation.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTasaError('');
+    createMutation.mutate();
   };
 
   return (
@@ -322,14 +299,14 @@ const TransaccionFinancieraFormPage: React.FC = () => {
         </select>
 
         {/* Moneda base (readonly) */}
-        <TextField fullWidth label="Moneda Base" name="moneda_base" value={monedaBase} readOnly style={{ marginBottom: 16 }} />
+        <TextField fullWidth label="Moneda Base" name="moneda_base" value={monedaBase} InputProps={{ readOnly: true }} style={{ marginBottom: 16 }} />
 
         {/* Tasa de cambio (editable, validada) */}
-        <TextField fullWidth label="Tasa de Cambio" name="tasa_cambio" type="number" value={tasaCambio} onChange={handleTasaCambio} required min="0.0001" step="0.0001" style={{ marginBottom: 16 }} />
+        <TextField fullWidth label="Tasa de Cambio" name="tasa_cambio" type="number" value={tasaCambio} onChange={handleTasaCambio} required inputProps={{ min: "0.0001", step: "0.0001" }} style={{ marginBottom: 16 }} />
         {tasaError && <div style={{ color: 'red', marginBottom: 8 }}>{tasaError}</div>}
 
         {/* Monto base (readonly, auto-calculado) */}
-        <TextField fullWidth label="Monto Base" name="monto_base" value={montoBase} readOnly style={{ marginBottom: 16 }} />
+        <TextField fullWidth label="Monto Base" name="monto_base" value={montoBase} InputProps={{ readOnly: true }} style={{ marginBottom: 16 }} />
 
         <TextField fullWidth label="Referencia" name="referencia_pago" value={form.referencia_pago} onChange={handleChange} />
         <TextField fullWidth label="Descripción" name="descripcion" value={form.descripcion} onChange={handleChange} />

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put } from '../../../services/api';
+import { toList } from '../../../utils/api';
 import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
 import { fetchEmpresas } from '../../../services/empresas';
@@ -26,52 +28,51 @@ interface TasaCambioDetail {
 const TasaCambioDetailPage: React.FC = () => {
   const { id_tasa_cambio } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [tasa, setTasa] = useState<TasaCambioDetail | null>(null);
   const [edit, setEdit] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
 
-  // Cargar monedas y empresas
-  useEffect(() => {
-    fetchMonedas().then(setMonedas);
-    fetchEmpresas().then(res => {
-      // Type guard para paginación
-      type PaginatedEmpresas = { results: Empresa[] };
-      function isPaginated(data: unknown): data is PaginatedEmpresas {
-        return !!data && typeof data === 'object' && Array.isArray((data as PaginatedEmpresas).results);
-      }
-      if (Array.isArray(res)) setEmpresas(res);
-      else if (isPaginated(res)) setEmpresas((res as PaginatedEmpresas).results);
-      else setEmpresas([]);
-    });
-  }, []);
+  const { data: tasaData, isLoading } = useQuery<TasaCambioDetail>({
+    queryKey: [`/finanzas/tasas-cambio/${id_tasa_cambio}/`],
+    queryFn: () => get(`/finanzas/tasas-cambio/${id_tasa_cambio}/`) as Promise<TasaCambioDetail>,
+    enabled: !!id_tasa_cambio,
+  });
 
   useEffect(() => {
-    get(`/finanzas/tasas-cambio/${id_tasa_cambio}/`)
-      .then((data) => setTasa(data as TasaCambioDetail))
-      .catch(() => setError('Error al cargar tasa de cambio'))
-      .finally(() => setLoading(false));
-  }, [id_tasa_cambio]);
+    if (tasaData) setTasa(tasaData);
+  }, [tasaData]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const { data: monedas = [] } = useQuery<Moneda[], Error, Moneda[]>({
+    queryKey: ['/finanzas/monedas/'],
+    queryFn: () => fetchMonedas(),
+  });
+
+  const { data: empresas = [] } = useQuery<unknown, Error, Empresa[]>({
+    queryKey: ['/core/empresas/'],
+    queryFn: () => fetchEmpresas(),
+    select: toList,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => put(`/finanzas/tasas-cambio/${id_tasa_cambio}/`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/finanzas/tasas-cambio/${id_tasa_cambio}/`] });
+      setEdit(false);
+    },
+    onError: () => setError('Error al actualizar tasa de cambio'),
+  });
+
+  const loading = isLoading || updateMutation.isPending;
+
+  const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tasa) return;
     setError('');
-    setLoading(true);
-    try {
-      await put(`/finanzas/tasas-cambio/${id_tasa_cambio}/`, tasa as unknown as Record<string, unknown>);
-      setEdit(false);
-    } catch {
-      setError('Error al actualizar tasa de cambio');
-    } finally {
-      setLoading(false);
-    }
+    updateMutation.mutate(tasa as unknown as Record<string, unknown>);
   };
 
-  if (loading) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
-  if (error) return <PageLayout><div style={{ textAlign: 'center', color: 'red', padding: 32 }}>{error}</div></PageLayout>;
+  if (isLoading) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
   if (!tasa) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>No encontrada</div></PageLayout>;
 
   // Helpers para mostrar nombres/códigos

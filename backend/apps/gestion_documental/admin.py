@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Carpeta, Documento, VinculoDocumento, PermisoDocumento
+
+from .models import Carpeta, Documento, PermisoDocumento, VinculoDocumento
 
 admin.site.register(Carpeta)
 admin.site.register(Documento)

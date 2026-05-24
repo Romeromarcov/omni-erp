@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { Cotizacion, DetalleCotizacion } from '../types/ventas';
 import { get } from '../services/api';
 import { pagosService } from '../services/pagosService';
 import { getEmpresaId } from '../utils/empresa';
 import type { Pago } from '../components/Pedidos/ModalPago';
 import { cotizacionService } from '../services/ventas';
-import { crearClienteConEmpresa } from '../services/clientesService';
 import {
   useDocumentoVentaBase,
-  type CajaUsuario,
 } from './useDocumentoVentaBase';
 
 interface CotizacionForm {
@@ -68,42 +67,51 @@ export const useCotizacionForm = (cotizacionId?: string) => {
   };
 
   // Load existing cotizacion
+  const { data: cotizacionData, isLoading: isLoadingCotizacion } = useQuery({
+    queryKey: ['cotizaciones', cotizacionId],
+    queryFn: () => get(`/ventas/cotizaciones/${cotizacionId}/`) as Promise<Cotizacion>,
+    enabled: !!cotizacionId,
+  });
+
   useEffect(() => {
-    if (!cotizacionId) return;
-    base.setLoading(true);
-    get(`/ventas/cotizaciones/${cotizacionId}/`)
-      .then((cotizacion: Cotizacion) => {
-        setForm({
-          numero_cotizacion: cotizacion.numero_cotizacion || '',
-          fecha_cotizacion: cotizacion.fecha_cotizacion?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
-          fecha_vencimiento: cotizacion.fecha_vencimiento?.slice(0, 10) ?? '',
-          estado: cotizacion.estado || 'BORRADOR',
-          id_empresa: cotizacion.id_empresa || getEmpresaId() || '',
-          id_sucursal: localStorage.getItem('id_sucursal') || '',
-          id_cliente: cotizacion.id_cliente?.id_cliente || '',
-          id_moneda: cotizacion.id_moneda || '',
-          id_caja: cotizacion.id_caja || '',
-          id_vendedor: cotizacion.id_vendedor || '',
-          observaciones: cotizacion.observaciones || '',
-          condiciones_comerciales: cotizacion.condiciones_comerciales || '',
-        });
-        if (cotizacion.detalles && Array.isArray(cotizacion.detalles)) {
-          base.setDetalles(
-            cotizacion.detalles.map((d: DetalleCotizacion) => ({
-              id_producto: d.id_producto || '',
-              cantidad: String(d.cantidad ?? 0),
-              precio_unitario: String(d.precio_unitario ?? 0),
-              descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
-              sku: (d as unknown as { sku?: string }).sku || '',
-              producto: (d as unknown as { producto?: string }).producto || '',
-            }))
-          );
-        }
-      })
-      .catch(() => base.setError('Error al cargar la cotización'))
-      .finally(() => base.setLoading(false));
+    if (isLoadingCotizacion) {
+      base.setLoading(true);
+      return;
+    }
+    if (!cotizacionData) {
+      if (!isLoadingCotizacion) base.setLoading(false);
+      return;
+    }
+    const cotizacion = cotizacionData;
+    setForm({
+      numero_cotizacion: cotizacion.numero_cotizacion || '',
+      fecha_cotizacion: cotizacion.fecha_cotizacion?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+      fecha_vencimiento: cotizacion.fecha_vencimiento?.slice(0, 10) ?? '',
+      estado: cotizacion.estado || 'BORRADOR',
+      id_empresa: cotizacion.id_empresa || getEmpresaId() || '',
+      id_sucursal: localStorage.getItem('id_sucursal') || '',
+      id_cliente: cotizacion.id_cliente?.id_cliente || '',
+      id_moneda: cotizacion.id_moneda || '',
+      id_caja: cotizacion.id_caja || '',
+      id_vendedor: cotizacion.id_vendedor || '',
+      observaciones: cotizacion.observaciones || '',
+      condiciones_comerciales: cotizacion.condiciones_comerciales || '',
+    });
+    if (cotizacion.detalles && Array.isArray(cotizacion.detalles)) {
+      base.setDetalles(
+        cotizacion.detalles.map((d: DetalleCotizacion) => ({
+          id_producto: d.id_producto || '',
+          cantidad: String(d.cantidad ?? 0),
+          precio_unitario: String(d.precio_unitario ?? 0),
+          descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
+          sku: (d as unknown as { sku?: string }).sku || '',
+          producto: (d as unknown as { producto?: string }).producto || '',
+        }))
+      );
+    }
+    base.setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cotizacionId]);
+  }, [cotizacionData, isLoadingCotizacion]);
 
   // Fetch next cotizacion number
   useEffect(() => {
@@ -198,6 +206,9 @@ export const useCotizacionForm = (cotizacionId?: string) => {
     }
   };
 
+  const handleClienteManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    void base.handleClienteManualKeyDown(e, (id) => setForm(f => ({ ...f, id_cliente: id })));
+
   return {
     form,
     setForm,
@@ -205,5 +216,6 @@ export const useCotizacionForm = (cotizacionId?: string) => {
     numeroCotizacionCreado,
     submitCotizacion,
     ...base,
+    handleClienteManualKeyDown,
   };
 };

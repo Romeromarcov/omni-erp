@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchAuditLogs } from '../../../services/auditoria';
 import { fetchEmpresas } from '../../../services/empresas';
 import { fetchUsuarios } from '../../../services/users';
@@ -22,12 +23,6 @@ export type AuditLog = {
 export type Empresa = { id_empresa: string; nombre_legal?: string; };
 
 const AuditLogListPage: React.FC = () => {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-
   // Filters
   const [filtroUsuario, setFiltroUsuario] = useState('');
   const [filtroTipoEvento, setFiltroTipoEvento] = useState('');
@@ -40,53 +35,40 @@ const AuditLogListPage: React.FC = () => {
 
   const [selectedEmpresa, setSelectedEmpresa] = useState<string>('');
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetchEmpresas()
-      .then(async (empresasData: unknown) => {
-        let empresasArr: Empresa[] = [];
-        if (Array.isArray(empresasData)) {
-          empresasArr = empresasData as Empresa[];
-        } else if (empresasData && Array.isArray((empresasData as { results?: unknown[] }).results)) {
-          empresasArr = (empresasData as { results: Empresa[] }).results;
-        }
-        setEmpresas(empresasArr);
-        let empresaId = selectedEmpresa || (empresasArr.length > 0 ? empresasArr[0].id_empresa : '');
-        // Elimina cualquier sufijo tipo ':1' que pueda venir del value del select
-        if (empresaId.includes(':')) empresaId = empresaId.split(':')[0];
-        setSelectedEmpresa(empresaId);
-        const [logsData, usuariosData] = await Promise.all([
-          fetchAuditLogs(),
-          fetchUsuarios(empresaId)
-        ]);
-        // Type guard for paginated response
-        const isPaginated = (data: unknown): data is { results: AuditLog[] } => {
-          return !!data && typeof data === 'object' && Array.isArray((data as { results?: unknown }).results);
-        };
-        if (Array.isArray(logsData)) {
-          setLogs(logsData as AuditLog[]);
-        } else if (isPaginated(logsData)) {
-          setLogs((logsData as { results: AuditLog[] }).results);
-        } else {
-          setLogs([]);
-          setError('La respuesta del servidor no es una lista de registros.');
-        }
-        setUsuarios((usuariosData || []) as Usuario[]);
-      })
-      .catch(err => {
-        setLogs([]);
-        setEmpresas([]);
-        setUsuarios([]);
-        try {
-          const msg = JSON.parse(err.message)?.detail || err.message;
-          setError(msg);
-        } catch {
-          setError(err.message);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [selectedEmpresa]);
+  const { data: empresasRaw = [], isLoading: loadingEmpresas } = useQuery({
+    queryKey: ['/core/empresas/'],
+    queryFn: fetchEmpresas,
+  });
+
+  const empresas: Empresa[] = Array.isArray(empresasRaw) ? empresasRaw : [];
+
+  // Set selectedEmpresa to first empresa when loaded
+  const efectiveEmpresa = selectedEmpresa || (empresas.length > 0 ? empresas[0].id_empresa : '');
+
+  const { data: logsRaw, isLoading: loadingLogs, isError: errorLogs, error } = useQuery({
+    queryKey: ['/auditoria/logs-auditoria/'],
+    queryFn: fetchAuditLogs,
+  });
+
+  const { data: usuariosRaw = [] } = useQuery({
+    queryKey: ['/core/usuarios/', efectiveEmpresa],
+    queryFn: () => fetchUsuarios(efectiveEmpresa),
+    enabled: !!efectiveEmpresa,
+  });
+
+  const logs: AuditLog[] = useMemo(() => {
+    if (!logsRaw) return [];
+    if (Array.isArray(logsRaw)) return logsRaw as AuditLog[];
+    if (logsRaw && typeof logsRaw === 'object' && Array.isArray((logsRaw as { results?: unknown }).results)) {
+      return (logsRaw as { results: AuditLog[] }).results;
+    }
+    return [];
+  }, [logsRaw]);
+
+  const usuarios: Usuario[] = Array.isArray(usuariosRaw) ? usuariosRaw : [];
+
+  const loading = loadingEmpresas || loadingLogs;
+  const errorMsg = errorLogs ? (error instanceof Error ? error.message : 'Error al cargar logs') : null;
 
   // Filtering logic
   const filteredLogs = useMemo(() => logs.filter(l => {
@@ -134,7 +116,7 @@ const AuditLogListPage: React.FC = () => {
       <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Registro de Auditoría</h2>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
         <select
-          value={selectedEmpresa}
+          value={selectedEmpresa || efectiveEmpresa}
           onChange={e => setSelectedEmpresa(e.target.value)}
           style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 180 }}
         >
@@ -154,8 +136,8 @@ const AuditLogListPage: React.FC = () => {
       </div>
       {loading ? (
         <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
-      ) : error ? (
-        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32, fontWeight: 500 }}>{error}</div>
+      ) : errorMsg ? (
+        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32, fontWeight: 500 }}>{errorMsg}</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', background: '#f6fafd', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>

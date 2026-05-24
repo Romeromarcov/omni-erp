@@ -1,0 +1,297 @@
+services:
+
+  # ─────────────────────────────────────────
+  # Base de datos — PostgreSQL 17
+  # ─────────────────────────────────────────
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: omni_erp
+      POSTGRES_USER: omni_erp
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+    volumes:
+      - omni_db_data:/var/lib/postgresql/data
+    ports:
+      # Host 5434 para no colisionar con instalaciones nativas (5432/5433)
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omni_erp -d omni_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ─────────────────────────────────────────
+  # Cache / broker — Redis 7
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - omni_redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # ─────────────────────────────────────────
+  # Backend — Django / uvicorn
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DJANGO_ENV: dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-docker-only-change-in-prod}
+      DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
+      # DB apunta al servicio interno, no al Postgres nativo del host
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+      # S3 / MinIO
+      USE_S3: "True"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-omni-erp}
+      S3_REGION: us-east-1
+      # Event Store — Redpanda/Kafka
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    volumes:
+      # Hot reload: el código fuente se monta en el contenedor
+      - ./backend:/app
+      # Evitar que el venv del host pise el del contenedor
+      - /app/.venv
+    ports:
+      - "8000:8000"
+    command: >
+      python -m uvicorn config.asgi:application
+        --host 0.0.0.0
+        --port 8000
+        --reload
+        --reload-dir /app
+
+  # ─────────────────────────────────────────
+  # Object Storage — MinIO (S3-compatible)
+  # ─────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin123}
+    volumes:
+      - omni_minio_data:/data
+    ports:
+      - "9000:9000"    # S3 API
+      - "9001:9001"    # Console UI → http://localhost:9001
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Crea el bucket inicial en MinIO al arrancar por primera vez
+  minio_init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minioadmin123} &&
+        mc mb --ignore-existing local/$${S3_BUCKET_NAME:-omni-erp} &&
+        mc anonymous set none local/$${S3_BUCKET_NAME:-omni-erp} &&
+        echo 'MinIO bucket creado correctamente.'
+      "
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin123}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-omni-erp}
+
+  # ─────────────────────────────────────────
+  # Celery — worker (procesa tareas)
+  # ─────────────────────────────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DJANGO_ENV: dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-docker-only-change-in-prod}
+      DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+      REDIS_URL: redis://redis:6379/0
+      # S3 / MinIO
+      USE_S3: "True"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-omni-erp}
+      S3_REGION: us-east-1
+      # Event Store — Redpanda/Kafka
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    command: >
+      python -m celery -A config worker
+        --loglevel=info
+        --concurrency=2
+        --queues=celery,auditoria
+        --hostname=worker@%h
+
+  # ─────────────────────────────────────────
+  # Celery Beat — scheduler de tareas periódicas
+  # ─────────────────────────────────────────
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_ENV: dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-docker-only-change-in-prod}
+      DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: ${DB_PASSWORD:-omni_erp_dev_2026}
+      REDIS_URL: redis://redis:6379/0
+      USE_S3: "True"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-omni-erp}
+      S3_REGION: us-east-1
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    command: >
+      python -m celery -A config beat
+        --loglevel=info
+        --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  # ─────────────────────────────────────────
+  # Event Store — Redpanda (Kafka-compatible)
+  # ─────────────────────────────────────────
+  # Redpanda es Kafka-compatible pero mucho más simple de operar.
+  # Expone la misma API Kafka; el código Python usa confluent-kafka.
+  # UI: http://localhost:8080 (Redpanda Console)
+  redpanda:
+    image: redpandadata/redpanda:v24.3.1
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --smp 1
+      - --memory 512M
+      - --mode dev-container
+      - --default-log-level=warn
+    volumes:
+      - omni_redpanda_data:/var/lib/redpanda/data
+    ports:
+      - "19092:19092"   # Kafka API (host → dev)
+      - "18082:18082"   # HTTP Proxy
+      - "18081:18081"   # Schema Registry
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Consola web de Redpanda — UI para explorar topics y mensajes
+  redpanda_console:
+    image: redpandadata/console:v2.8.3
+    restart: unless-stopped
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+    volumes:
+      - ./infra/redpanda/console-config.yml:/tmp/config.yml:ro
+    ports:
+      - "8080:8080"
+
+  # ─────────────────────────────────────────
+  # Frontend — React / Vite dev server
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
+      # El proxy de Vite redirige /api → backend (nombre del servicio Docker)
+      BACKEND_URL: http://backend:8000
+    volumes:
+      # Hot reload: montar src para que Vite detecte cambios
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      # Preservar node_modules del contenedor (no pisarlos con los del host)
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+
+volumes:
+  omni_db_data:
+    name: omni_db_data
+  omni_redis_data:
+    name: omni_redis_data
+  omni_minio_data:
+    name: omni_minio_data
+  omni_redpanda_data:
+    name: omni_redpanda_data

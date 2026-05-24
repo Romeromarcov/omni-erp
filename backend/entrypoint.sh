@@ -1,8 +1,9 @@
 #!/bin/sh
 set -e
 
-DB_HOST="${DB_HOST:-db}"
-DB_PORT="${DB_PORT:-5432}"
+# Exportar defaults para que Django los vea si no vienen del entorno
+export DB_HOST="${DB_HOST:-db}"
+export DB_PORT="${DB_PORT:-5432}"
 
 if [ -n "$DB_HOST" ]; then
     echo "Waiting for postgres at ${DB_HOST}:${DB_PORT}..."
@@ -22,8 +23,14 @@ fi
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 
-echo "Collecting static files..."
-python manage.py collectstatic --noinput
+# collectstatic solo en prod — en dev uvicorn sirve estáticos directamente
+# y el volume mount genera conflictos de permisos con el usuario no-root
+if [ "${DJANGO_ENV}" = "prod" ]; then
+    echo "Collecting static files..."
+    python manage.py collectstatic --noinput
+else
+    echo "Skipping collectstatic (DJANGO_ENV=${DJANGO_ENV:-dev})"
+fi
 
 echo "Starting server..."
 exec "$@"

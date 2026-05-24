@@ -1,19 +1,15 @@
-from rest_framework import routers
-from .views import (
-    ImpuestoViewSet, ConfiguracionImpuestoViewSet, RetencionViewSet, ContribucionParafiscalViewSet,
-    ImpuestoEmpresaActivaViewSet, RetencionEmpresaActivaViewSet, ContribucionEmpresaActivaViewSet,
-    EmpresaContribucionParafiscalViewSet, ConfiguracionRetencionViewSet
-)
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-router = routers.DefaultRouter()
-router.register(r'impuestos', ImpuestoViewSet)
-router.register(r'configuracion-impuestos', ConfiguracionImpuestoViewSet)
-router.register(r'retenciones', RetencionViewSet)
-router.register(r'contribuciones-parafiscales', ContribucionParafiscalViewSet)
-router.register(r'impuestos-empresa-activa', ImpuestoEmpresaActivaViewSet)
-router.register(r'retenciones-empresa-activa', RetencionEmpresaActivaViewSet)
-router.register(r'contribuciones-empresa-activa', ContribucionEmpresaActivaViewSet)
-router.register(r'empresa-contribuciones-parafiscales', EmpresaContribucionParafiscalViewSet)
-router.register(r'configuracion-retenciones', ConfiguracionRetencionViewSet)
+from .views import ConfiguracionFiscalEmpresaViewSet, TasaIVAEmpresaViewSet
+from .views_libros import LibroComprasView, LibroVentasView
 
-urlpatterns = router.urls
+router = DefaultRouter()
+router.register(r"configuracion-fiscal", ConfiguracionFiscalEmpresaViewSet)
+router.register(r"tasas-iva", TasaIVAEmpresaViewSet)
+
+urlpatterns = [
+    path("", include(router.urls)),
+    path("libro-ventas/", LibroVentasView.as_view(), name="libro-ventas"),
+    path("libro-compras/", LibroComprasView.as_view(), name="libro-compras"),
+]

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { NotaVenta, DetalleNotaVenta } from '../types/ventas';
 import { get } from '../services/api';
 import { pagosService } from '../services/pagosService';
@@ -58,39 +59,48 @@ export const useNotaVentaForm = (notaVentaId?: string) => {
   };
 
   // Load existing nota de venta
+  const { data: notaData, isLoading: isLoadingNota } = useQuery({
+    queryKey: ['notas-venta', notaVentaId],
+    queryFn: () => get(`/ventas/notas-venta/${notaVentaId}/`) as Promise<NotaVenta>,
+    enabled: !!notaVentaId,
+  });
+
   useEffect(() => {
-    if (!notaVentaId) return;
-    base.setLoading(true);
-    get(`/ventas/notas-venta/${notaVentaId}/`)
-      .then((nota: NotaVenta) => {
-        const n = nota as unknown as Record<string, unknown>;
-        setForm({
-          numero_nota_venta: String(n.numero_nota_venta || ''),
-          fecha_emision: String(n.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
-          id_empresa: String(n.id_empresa || getEmpresaId() || ''),
-          id_sucursal: localStorage.getItem('id_sucursal') || '',
-          id_cliente: String((n.id_cliente as Record<string, unknown>)?.id_cliente || ''),
-          id_caja: String(n.id_caja || ''),
-          id_vendedor: String(n.id_vendedor || ''),
-          observaciones: String(n.observaciones || ''),
-        });
-        if (Array.isArray(nota.detalles)) {
-          base.setDetalles(
-            nota.detalles.map((d: DetalleNotaVenta) => ({
-              id_producto: String((d as unknown as Record<string, unknown>).id_producto || ''),
-              cantidad: String(d.cantidad ?? 0),
-              precio_unitario: String(d.precio_unitario ?? 0),
-              descuento_porcentaje: '',
-              sku: '',
-              producto: '',
-            }))
-          );
-        }
-      })
-      .catch(() => base.setError('Error al cargar la nota de venta'))
-      .finally(() => base.setLoading(false));
+    if (isLoadingNota) {
+      base.setLoading(true);
+      return;
+    }
+    if (!notaData) {
+      if (!isLoadingNota) base.setLoading(false);
+      return;
+    }
+    const n = notaData as unknown as Record<string, unknown>;
+    const nota = notaData;
+    setForm({
+      numero_nota_venta: String(n.numero_nota_venta || ''),
+      fecha_emision: String(n.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+      id_empresa: String(n.id_empresa || getEmpresaId() || ''),
+      id_sucursal: localStorage.getItem('id_sucursal') || '',
+      id_cliente: String((n.id_cliente as Record<string, unknown>)?.id_cliente || ''),
+      id_caja: String(n.id_caja || ''),
+      id_vendedor: String(n.id_vendedor || ''),
+      observaciones: String(n.observaciones || ''),
+    });
+    if (Array.isArray(nota.detalles)) {
+      base.setDetalles(
+        nota.detalles.map((d: DetalleNotaVenta) => ({
+          id_producto: String((d as unknown as Record<string, unknown>).id_producto || ''),
+          cantidad: String(d.cantidad ?? 0),
+          precio_unitario: String(d.precio_unitario ?? 0),
+          descuento_porcentaje: '',
+          sku: '',
+          producto: '',
+        }))
+      );
+    }
+    base.setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notaVentaId]);
+  }, [notaData, isLoadingNota]);
 
   const submitNotaVenta = async (pagosToSend?: Pago[]) => {
     base.setLoading(true);
@@ -172,6 +182,9 @@ export const useNotaVentaForm = (notaVentaId?: string) => {
     }
   };
 
+  const handleClienteManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    void base.handleClienteManualKeyDown(e, (id) => setForm(f => ({ ...f, id_cliente: id })));
+
   return {
     form,
     setForm,
@@ -179,5 +192,6 @@ export const useNotaVentaForm = (notaVentaId?: string) => {
     numeroNotaVentaCreado,
     submitNotaVenta,
     ...base,
+    handleClienteManualKeyDown,
   };
 };

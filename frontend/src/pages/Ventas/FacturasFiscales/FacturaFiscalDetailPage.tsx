@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
 import PageLayout from '../../../components/PageLayout';
@@ -6,6 +7,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+import type { Producto } from '../../../services/productosService';
+import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -13,11 +16,20 @@ import type { Pago as PagoFinanzas } from '../../../services/pagosService';
 
 interface FacturaFiscalDetalle {
   id_detalle_factura: string;
-  id_producto: { nombre_producto: string };
+  id_producto?: { id_producto?: string; sku?: string; nombre_producto: string } | null;
+  producto?: string;
   cantidad: string;
   precio_unitario: string;
+  descuento_porcentaje?: string;
   subtotal: string;
   observaciones?: string;
+}
+
+interface ClienteInfoFactura {
+  razon_social?: string;
+  nombre?: string;
+  rif?: string;
+  telefono?: string;
 }
 
 interface FacturaFiscal {
@@ -29,7 +41,7 @@ interface FacturaFiscal {
   id_sucursal?: { id_sucursal: string; nombre: string };
   id_caja?: { id_caja: string; nombre: string };
   id_usuario?: { id: number; username: string; first_name: string; last_name: string };
-  id_cliente: { nombre: string };
+  id_cliente: ClienteInfoFactura;
   observaciones?: string;
   detalles: FacturaFiscalDetalle[];
   // pagos será cargado desde la nueva API
@@ -37,51 +49,34 @@ interface FacturaFiscal {
 
 const FacturaFiscalDetailPage: React.FC = () => {
   const { id_factura } = useParams();
-  const [factura, setFactura] = useState<FacturaFiscal | null>(null);
-  const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
   const [pagoError, setPagoError] = useState('');
-  const navigate = useNavigate();
 
-  const loadPagos = async (facturaId: string) => {
-    try {
-      const pagosData = await pagosService.getPagosByTipoDocumento('FACTURA_FISCAL', facturaId);
-      setPagos(pagosData);
-    } catch (error) {
-      console.error('Error al cargar pagos:', error);
-    }
-  };
+  const { data: factura = null, isLoading: loading } = useQuery<FacturaFiscal | null>({
+    queryKey: [`/ventas/facturas-fiscales/${id_factura}/`],
+    queryFn: () => get<FacturaFiscal>(`/ventas/facturas-fiscales/${id_factura}/`),
+    enabled: !!id_factura,
+  });
 
-  useEffect(() => {
-    if (!id_factura) return;
-    setLoading(true);
-    get(`/ventas/facturas-fiscales/${id_factura}/`)
-      .then((res: any) => {
-        setFactura(res);
-        // Cargar pagos de la factura
-        loadPagos(id_factura);
-      })
-      .catch(() => setFactura(null))
-      .finally(() => setLoading(false));
-  }, [id_factura]);
+  const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
+    queryKey: [`/finanzas/pagos/?tipo_documento=FACTURA_FISCAL&id_documento=${id_factura}`],
+    queryFn: () => pagosService.getPagosByTipoDocumento('FACTURA_FISCAL', id_factura!),
+    enabled: !!id_factura,
+  });
 
-  useEffect(() => {
-    if (factura?.id_empresa && factura.id_empresa.id_empresa) {
-      fetchProductos(factura.id_empresa.id_empresa)
-        .then((res) => {
-          if (Array.isArray(res)) setProductos(res);
-          else if (res && Array.isArray((res as { results: any[] }).results)) setProductos((res as { results: any[] }).results);
-          else setProductos([]);
-        })
-        .catch(() => setProductos([]));
-    }
-  }, [factura?.id_empresa]);
+  const empresaId = factura?.id_empresa?.id_empresa;
+  const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
+    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryFn: () => fetchProductos(empresaId!),
+    select: toList,
+    enabled: !!empresaId,
+  });
 
-  function mapDetalles(detalles: any[]): any[] {
+  function mapDetalles(detalles: FacturaFiscalDetalle[]) {
     return detalles.map(det => ({
       id_producto: det.id_producto?.id_producto || '',
       sku: det.id_producto?.sku || '',
@@ -94,7 +89,7 @@ const FacturaFiscalDetailPage: React.FC = () => {
     }));
   }
 
-  function getClienteInfo(cliente: any) {
+  function getClienteInfo(cliente: ClienteInfoFactura | null | undefined) {
     if (!cliente) return '-';
     const nombre = cliente.razon_social || cliente.nombre || '-';
     const rif = cliente.rif ? ` | RIF: ${cliente.rif}` : '';
@@ -138,11 +133,7 @@ const FacturaFiscalDetailPage: React.FC = () => {
 
       setPagoSuccess('Pagos registrados exitosamente.');
       setShowPagoModal(false);
-
-      // Recargar los pagos para mostrar los nuevos
-      if (id_factura) {
-        loadPagos(id_factura);
-      }
+      queryClient.invalidateQueries({ queryKey: [`/finanzas/pagos/?tipo_documento=FACTURA_FISCAL&id_documento=${id_factura}`] });
 
       // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => setPagoSuccess(''), 3000);

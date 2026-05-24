@@ -1,25 +1,31 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from .views import (
-    ListaMaterialesViewSet, RutaProduccionViewSet, OrdenProduccionViewSet,
-    ConsumoMaterialViewSet, ProduccionTerminadaViewSet,
-    ListaMaterialesDetalleViewSet, CentroTrabajoViewSet,
-    OperacionProduccionViewSet, RutaProduccionDetalleViewSet,
-    RegistroOperacionViewSet
+    CentroTrabajoViewSet,
+    ConsumoMaterialViewSet,
+    ListaMaterialesDetalleViewSet,
+    ListaMaterialesViewSet,
+    OperacionProduccionViewSet,
+    OrdenProduccionViewSet,
+    ProduccionTerminadaViewSet,
+    RegistroOperacionViewSet,
+    RutaProduccionDetalleViewSet,
+    RutaProduccionViewSet,
 )
 
 router = DefaultRouter()
-router.register(r'listas-materiales', ListaMaterialesViewSet)
-router.register(r'rutas-produccion', RutaProduccionViewSet)
-router.register(r'ordenes-produccion', OrdenProduccionViewSet)
-router.register(r'consumos-material', ConsumoMaterialViewSet)
-router.register(r'produccion-terminada', ProduccionTerminadaViewSet)
-router.register(r'listas-materiales-detalle', ListaMaterialesDetalleViewSet)
-router.register(r'centros-trabajo', CentroTrabajoViewSet)
-router.register(r'operaciones-produccion', OperacionProduccionViewSet)
-router.register(r'rutas-produccion-detalle', RutaProduccionDetalleViewSet)
-router.register(r'registros-operacion', RegistroOperacionViewSet)
+router.register(r"listas-materiales", ListaMaterialesViewSet)
+router.register(r"rutas-produccion", RutaProduccionViewSet)
+router.register(r"ordenes-produccion", OrdenProduccionViewSet)
+router.register(r"consumos-material", ConsumoMaterialViewSet)
+router.register(r"produccion-terminada", ProduccionTerminadaViewSet)
+router.register(r"listas-materiales-detalle", ListaMaterialesDetalleViewSet)
+router.register(r"centros-trabajo", CentroTrabajoViewSet)
+router.register(r"operaciones-produccion", OperacionProduccionViewSet)
+router.register(r"rutas-produccion-detalle", RutaProduccionDetalleViewSet)
+router.register(r"registros-operacion", RegistroOperacionViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

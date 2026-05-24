@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { getTransaccionesFinancieras, exportTransaccionesFinancieras } from '../../../services/transaccionFinancieraService';
+import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 import { Button, TextField } from '@mui/material';
 
@@ -32,33 +34,16 @@ type TransaccionFinanciera = {
 const TransaccionFinancieraListPage: React.FC = () => {
   const { id_empresa } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState<TransaccionFinanciera[]>([]);
-  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ tipo: '', moneda: '', metodo: '', usuario: '', fecha_inicio: '', fecha_fin: '' });
 
   const empresaIdToUse = id_empresa;
 
-  // Type guard para paginación
-  function isPaginated(data: unknown): data is { results: TransaccionFinanciera[] } {
-    return !!data && typeof data === 'object' && Array.isArray((data as { results?: unknown }).results);
-  }
-  useEffect(() => {
-    setLoading(true);
-    getTransaccionesFinancieras(empresaIdToUse, filters).then(result => {
-      if (Array.isArray(result)) {
-        setData(result);
-      } else if (isPaginated(result)) {
-        setData(result.results);
-      } else {
-        setData([]);
-      }
-    }).catch(error => {
-      console.error('Error fetching transacciones:', error);
-      setData([]);
-    }).finally(() => {
-      setLoading(false);
-    });
-  }, [empresaIdToUse, filters]);
+  const { data = [], isLoading: loading } = useQuery<unknown, Error, TransaccionFinanciera[]>({
+    queryKey: [`/finanzas/transacciones-financieras/${empresaIdToUse}/`, filters],
+    queryFn: () => getTransaccionesFinancieras(empresaIdToUse, filters),
+    select: toList,
+    enabled: !!empresaIdToUse,
+  });
 
   if (!empresaIdToUse) {
     return (

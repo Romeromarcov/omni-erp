@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { devolucionVentaService } from '../../../services/ventas';
 import type { DevolucionVenta } from '../../../types/ventas';
@@ -8,28 +9,23 @@ import { Alert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableCont
 const DevolucionVentaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [devolucion, setDevolucion] = useState<DevolucionVenta | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (id) {
-      loadDevolucion(id);
-    }
-  }, [id]);
+  const { data: devolucion = null, isLoading: loading, isError } = useQuery<DevolucionVenta | null>({
+    queryKey: [`/ventas/devoluciones-venta/${id}/`],
+    queryFn: () => devolucionVentaService.getById(id!),
+    enabled: !!id,
+  });
 
-  const loadDevolucion = async (devolucionId: string) => {
-    setLoading(true);
-    try {
-      const data = await devolucionVentaService.getById(devolucionId);
-      setDevolucion(data);
-    } catch (err) {
-      setError('Error al cargar la devolución');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = isError ? 'Error al cargar la devolución' : null;
+
+  const procesarMutation = useMutation({
+    mutationFn: (devolucionId: string) => devolucionVentaService.procesar(devolucionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/ventas/devoluciones-venta/${id}/`] });
+    },
+    onError: () => alert('Error al procesar la devolución'),
+  });
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -62,15 +58,9 @@ const DevolucionVentaDetailPage: React.FC = () => {
     }
   };
 
-  const handleProcesar = async () => {
+  const handleProcesar = () => {
     if (devolucion && devolucion.estado === 'PENDIENTE') {
-      try {
-        await devolucionVentaService.procesar(devolucion.id_devolucion);
-        await loadDevolucion(devolucion.id_devolucion); // Recargar
-      } catch (error) {
-        console.error('Error procesando devolución:', error);
-        alert('Error al procesar la devolución');
-      }
+      procesarMutation.mutate(devolucion.id_devolucion);
     }
   };
 

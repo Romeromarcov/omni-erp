@@ -1,6 +1,5 @@
 import React from 'react';
-import { Button } from './Button';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, ListItem, ListItemButton, Typography, Box } from '@mui/material';
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, ListItem, ListItemButton, Typography, Box } from '@mui/material';
 import './ModalBusqueda.css';
 
 interface ModalBusquedaProps<T> {
@@ -75,7 +74,7 @@ export function ModalBusqueda<T>({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button type="button" variant="secondary" onClick={onClose}>
+        <Button type="button" variant="outlined" onClick={onClose}>
           Cerrar
         </Button>
       </DialogActions>

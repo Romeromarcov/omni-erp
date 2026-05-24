@@ -1,9 +1,13 @@
-from django.db import models
-from apps.core.models import Empresa
 import uuid
+from apps.core.uuid import uuid7
+
+from django.db import models
+
+from apps.core.models import Empresa
+
 
 class TipoDocumento(models.Model):
-    id_tipo_documento = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_tipo_documento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     codigo = models.CharField(max_length=20, unique=True)
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -12,18 +16,28 @@ class TipoDocumento(models.Model):
     prefijo_correlativo = models.CharField(max_length=10, null=True, blank=True)
     ultimo_correlativo = models.IntegerField(default=0)
 
+
 class ParametroSistema(models.Model):
-    id_parametro = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_parametro = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(Empresa, null=True, blank=True, on_delete=models.CASCADE)
     nombre_parametro = models.CharField(max_length=100)
-    codigo_parametro = models.CharField(max_length=50, unique=True)
+    codigo_parametro = models.CharField(max_length=50)
     valor_parametro = models.TextField()
-    tipo_dato = models.CharField(max_length=20, choices=[('TEXTO','TEXTO'),('NUMERO','NUMERO'),('BOOLEANO','BOOLEANO'),('FECHA','FECHA')])
+    tipo_dato = models.CharField(
+        max_length=20, choices=[("TEXTO", "TEXTO"), ("NUMERO", "NUMERO"), ("BOOLEANO", "BOOLEANO"), ("FECHA", "FECHA")]
+    )
     descripcion = models.TextField(null=True, blank=True)
     activo = models.BooleanField(default=True)
 
+    class Meta:
+        db_table = "configuracion_motor_parametro_sistema"
+        verbose_name = "Parámetro del Sistema"
+        verbose_name_plural = "Parámetros del Sistema"
+        unique_together = [["id_empresa", "codigo_parametro"]]
+
+
 class CatalogoValor(models.Model):
-    id_catalogo_valor = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_catalogo_valor = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     codigo_catalogo = models.CharField(max_length=50)
     valor = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)

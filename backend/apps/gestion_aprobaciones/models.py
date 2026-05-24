@@ -1,18 +1,29 @@
-from django.db import models
-from apps.core.models import Empresa, Usuarios, Roles
 import uuid
+from apps.core.uuid import uuid7
+
+from django.db import models
+
+from apps.core.models import Empresa, Roles, Usuarios
+
 
 class TipoAprobacion(models.Model):
-    id_tipo_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_tipo_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
-    codigo_tipo = models.CharField(max_length=50, unique=True)
+    codigo_tipo = models.CharField(max_length=50)
     nombre_tipo = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
     modulo_origen = models.CharField(max_length=50)
     activo = models.BooleanField(default=True)
 
+    class Meta:
+        db_table = "gestion_aprobaciones_tipo_aprobacion"
+        verbose_name = "Tipo de Aprobación"
+        verbose_name_plural = "Tipos de Aprobación"
+        unique_together = [["id_empresa", "codigo_tipo"]]
+
+
 class FlujoAprobacion(models.Model):
-    id_flujo_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_flujo_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_tipo_aprobacion = models.ForeignKey(TipoAprobacion, on_delete=models.CASCADE)
     orden_etapa = models.IntegerField()
     nombre_etapa = models.CharField(max_length=100)
@@ -22,8 +33,9 @@ class FlujoAprobacion(models.Model):
     monto_maximo = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     activo = models.BooleanField(default=True)
 
+
 class SolicitudAprobacion(models.Model):
-    id_solicitud_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_solicitud_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_tipo_aprobacion = models.ForeignKey(TipoAprobacion, on_delete=models.CASCADE)
     id_entidad_origen = models.UUIDField()
     nombre_modelo_origen = models.CharField(max_length=100)
@@ -34,8 +46,9 @@ class SolicitudAprobacion(models.Model):
     fecha_ultima_actualizacion = models.DateTimeField(auto_now=True)
     etapa_actual_flujo = models.ForeignKey(FlujoAprobacion, null=True, blank=True, on_delete=models.SET_NULL)
 
+
 class RegistroAprobacion(models.Model):
-    id_registro_aprobacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_registro_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_solicitud_aprobacion = models.ForeignKey(SolicitudAprobacion, on_delete=models.CASCADE)
     id_flujo_aprobacion_etapa = models.ForeignKey(FlujoAprobacion, on_delete=models.CASCADE)
     id_usuario_aprobador = models.ForeignKey(Usuarios, on_delete=models.CASCADE)

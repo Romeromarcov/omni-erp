@@ -1,41 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { notaVentaService } from '../../../services/ventas';
 import type { NotaVenta } from '../../../types/ventas';
 import { Button } from '@mui/material';
 
 const NotasVentaListPage: React.FC = () => {
-  const [notasVenta, setNotasVenta] = useState<NotaVenta[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    loadNotasVenta();
-  }, []);
+  const { data: notasVenta = [], isLoading: loading } = useQuery<NotaVenta[]>({
+    queryKey: ['/ventas/notas-venta/'],
+    queryFn: () => notaVentaService.getAll(),
+  });
 
-  const loadNotasVenta = async () => {
-    setLoading(true);
-    try {
-      const data = await notaVentaService.getAll();
-      setNotasVenta(data);
-    } catch (error) {
-      console.error('Error loading notas de venta:', error);
-      setNotasVenta([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const convertirMutation = useMutation({
+    mutationFn: (id: string) => notaVentaService.convertirAFactura(id, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-venta/'] });
+    },
+    onError: () => alert(t('ventas.notasVenta.errorConvertir')),
+  });
 
-  const handleConvertirAFactura = async (notaVenta: NotaVenta) => {
+  const handleConvertirAFactura = (notaVenta: NotaVenta) => {
     if (!notaVenta.convertido_a_factura) {
-      try {
-        await notaVentaService.convertirAFactura(notaVenta.id_nota_venta, {});
-        await loadNotasVenta(); // Recargar la lista
-      } catch (error) {
-        console.error('Error convirtiendo nota de venta a factura:', error);
-        alert('Error al convertir la nota de venta a factura');
-      }
+      convertirMutation.mutate(notaVenta.id_nota_venta);
     }
   };
 
@@ -51,24 +43,24 @@ const NotasVentaListPage: React.FC = () => {
 
   return (
     <PageLayout>
-      <h2 style={{ marginBottom: 16 }}>Gestión de Notas de Venta</h2>
+      <h2 style={{ marginBottom: 16 }}>{t('ventas.notasVenta.title')}</h2>
       <div style={{ marginBottom: 16 }}>
-        <Button variant="contained" onClick={() => navigate('new')}>Nueva Nota de Venta</Button>
+        <Button variant="contained" onClick={() => navigate('new')}>{t('ventas.notasVenta.nuevo')}</Button>
       </div>
 
       {loading ? (
-        <div>Cargando notas de venta...</div>
+        <div>{t('ventas.notasVenta.cargando')}</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8f9fa' }}>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Número</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Fecha</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Estado</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Cliente</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Origen</th>
-                <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #dee2e6' }}>Acciones</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.numero')}</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.fecha')}</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.estado')}</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.cliente')}</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.origen')}</th>
+                <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.acciones')}</th>
               </tr>
             </thead>
             <tbody>
@@ -96,17 +88,17 @@ const NotasVentaListPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <span style={{ color: '#dc3545' }}>Cliente no encontrado</span>
+                      <span style={{ color: '#dc3545' }}>{t('ventas.tabla.clienteNoEncontrado')}</span>
                     )}
                   </td>
                   <td style={{ padding: '12px' }}>
                     {notaVenta.id_pedido_origen ? (
                       <span style={{ color: '#007bff', fontSize: '12px' }}>
-                        ✓ De Pedido
+                        {t('ventas.notasVenta.dePedido')}
                       </span>
                     ) : (
                       <span style={{ color: '#6c757d', fontSize: '12px' }}>
-                        Manual
+                        {t('ventas.tabla.manual')}
                       </span>
                     )}
                   </td>
@@ -116,25 +108,25 @@ const NotasVentaListPage: React.FC = () => {
                         variant="contained" color="secondary"
                         onClick={() => navigate(notaVenta.id_nota_venta)}
                       >
-                        Ver
+                        {t('ventas.tabla.ver')}
                       </Button>
                       <Button
                         variant="contained" color="secondary"
                         onClick={() => navigate(`${notaVenta.id_nota_venta}/edit`)}
                       >
-                        Editar
+                        {t('common.edit')}
                       </Button>
                       {!notaVenta.convertido_a_factura && notaVenta.estado === 'ENTREGADA' && (
                         <Button
                           variant="contained"
                           onClick={() => handleConvertirAFactura(notaVenta)}
                         >
-                          Convertir a Factura
+                          {t('ventas.notasVenta.convertirAFactura')}
                         </Button>
                       )}
                       {notaVenta.convertido_a_factura && (
                         <span style={{ color: '#28a745', fontSize: '12px' }}>
-                          ✓ Convertido
+                          {t('ventas.tabla.convertido')}
                         </span>
                       )}
                     </div>
@@ -146,7 +138,7 @@ const NotasVentaListPage: React.FC = () => {
 
           {notasVenta.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
-              No hay notas de venta registradas
+              {t('ventas.notasVenta.sinRegistros')}
             </div>
           )}
         </div>

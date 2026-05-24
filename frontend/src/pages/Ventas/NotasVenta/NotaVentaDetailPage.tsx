@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pagosService } from '../../../services/pagosService';
 import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Chip, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -41,49 +43,40 @@ interface NotaVentaDetail extends Omit<NotaVenta, 'id_empresa' | 'id_sucursal' |
 
 const NotaVentaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [notaVenta, setNotaVenta] = useState<NotaVentaDetail | null>(null);
-  const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<ProductoService[]>([]);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
   const [pagoError, setPagoError] = useState('');
-  const navigate = useNavigate();
 
-  const loadPagos = async (notaVentaId: string) => {
-    try {
-      const pagosData = await pagosService.getPagosNotaVenta(notaVentaId);
-      setPagos(pagosData);
-    } catch (error) {
-      console.error('Error al cargar pagos:', error);
-    }
-  };
+  const { data: notaVenta = null, isLoading: loading } = useQuery<NotaVentaDetail | null>({
+    queryKey: [`/ventas/notas-venta/${id}/`],
+    queryFn: () => notaVentaService.getById(id!) as unknown as Promise<NotaVentaDetail>,
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    notaVentaService.getById(id)
-      .then((res) => {
-        setNotaVenta(res as NotaVentaDetail);
-        // Cargar pagos de la nota de venta
-        loadPagos(id);
-      })
-      .catch(() => setNotaVenta(null))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
+    queryKey: [`/finanzas/pagos/?tipo_documento=NOTA_VENTA&id_documento=${id}`],
+    queryFn: () => pagosService.getPagosNotaVenta(id!),
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    if (notaVenta?.id_empresa && notaVenta.id_empresa.id_empresa) {
-      fetchProductos(notaVenta.id_empresa.id_empresa)
-        .then((res: ProductoService[] | { results: ProductoService[] }) => {
-          if (Array.isArray(res)) setProductos(res);
-          else if (res && Array.isArray(res.results)) setProductos(res.results);
-          else setProductos([]);
-        })
-        .catch(() => setProductos([]));
-    }
-  }, [notaVenta?.id_empresa]);
+  const empresaId = notaVenta?.id_empresa?.id_empresa;
+  const { data: productos = [] } = useQuery<unknown, Error, ProductoService[]>({
+    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryFn: () => fetchProductos(empresaId!),
+    select: toList,
+    enabled: !!empresaId,
+  });
+
+  const convertirMutation = useMutation({
+    mutationFn: (notaId: string) => notaVentaService.convertirAFactura(notaId, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/ventas/notas-venta/${id}/`] });
+    },
+    onError: () => alert('Error al convertir la nota de venta a factura'),
+  });
 
   function mapDetalles(detalles: Detalle[]): PedidoDetalleForm[] {
     return detalles.map(det => ({
@@ -151,11 +144,7 @@ const NotaVentaDetailPage: React.FC = () => {
 
       setPagoSuccess('Pagos registrados exitosamente.');
       setShowPagoModal(false);
-
-      // Recargar los pagos para mostrar los nuevos
-      if (id) {
-        loadPagos(id);
-      }
+      queryClient.invalidateQueries({ queryKey: [`/finanzas/pagos/?tipo_documento=NOTA_VENTA&id_documento=${id}`] });
 
       // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => setPagoSuccess(''), 3000);
@@ -164,27 +153,9 @@ const NotaVentaDetailPage: React.FC = () => {
     }
   };
 
-  const handleConvertirAFactura = async () => {
+  const handleConvertirAFactura = () => {
     if (notaVenta && !notaVenta.convertido_a_factura) {
-      try {
-        await notaVentaService.convertirAFactura(notaVenta.id_nota_venta, {});
-        await loadNotaVenta(notaVenta.id_nota_venta); // Recargar
-      } catch (error) {
-        console.error('Error convirtiendo nota de venta a factura:', error);
-        alert('Error al convertir la nota de venta a factura');
-      }
-    }
-  };
-
-  const loadNotaVenta = async (notaVentaId: string) => {
-    setLoading(true);
-    try {
-      const data = await notaVentaService.getById(notaVentaId);
-      setNotaVenta(data as NotaVentaDetail);
-    } catch (err) {
-      console.error('Error al cargar la nota de venta:', err);
-    } finally {
-      setLoading(false);
+      convertirMutation.mutate(notaVenta.id_nota_venta);
     }
   };
 

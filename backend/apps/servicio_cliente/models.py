@@ -1,9 +1,12 @@
 import uuid
-from django.db import models
+from apps.core.uuid import uuid7
+
 from django.contrib.auth.models import AbstractUser
+from django.db import models
+
 
 class CategoriaTicket(models.Model):
-    id_categoria_ticket = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_categoria_ticket = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre_categoria = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -12,10 +15,11 @@ class CategoriaTicket(models.Model):
     def __str__(self):
         return str(self.id_empresa)
 
+
 class TicketSoporte(models.Model):
-    id_ticket = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_ticket = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    numero_ticket = models.CharField(max_length=50, unique=True)
+    numero_ticket = models.CharField(max_length=50)
     asunto = models.CharField(max_length=255)
     descripcion = models.TextField()
     # id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, null=True, blank=True)  # Temporalmente comentado
@@ -23,8 +27,21 @@ class TicketSoporte(models.Model):
     # id_usuario_reporta = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE, null=True, blank=True)  # Temporalmente comentado
     id_usuario_reporta_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
     id_categoria_ticket = models.ForeignKey("CategoriaTicket", on_delete=models.CASCADE)
-    prioridad = models.CharField(max_length=20, choices=[("BAJA", "Baja"), ("MEDIA", "Media"), ("ALTA", "Alta"), ("URGENTE", "Urgente")])
-    estado_ticket = models.CharField(max_length=50, choices=[("ABIERTO", "Abierto"), ("ASIGNADO", "Asignado"), ("EN_PROGRESO", "En Progreso"), ("PENDIENTE_CLIENTE", "Pendiente Cliente"), ("RESUELTO", "Resuelto"), ("CERRADO", "Cerrado"), ("ESCALADO", "Escalado")])
+    prioridad = models.CharField(
+        max_length=20, choices=[("BAJA", "Baja"), ("MEDIA", "Media"), ("ALTA", "Alta"), ("URGENTE", "Urgente")]
+    )
+    estado_ticket = models.CharField(
+        max_length=50,
+        choices=[
+            ("ABIERTO", "Abierto"),
+            ("ASIGNADO", "Asignado"),
+            ("EN_PROGRESO", "En Progreso"),
+            ("PENDIENTE_CLIENTE", "Pendiente Cliente"),
+            ("RESUELTO", "Resuelto"),
+            ("CERRADO", "Cerrado"),
+            ("ESCALADO", "Escalado"),
+        ],
+    )
     # id_agente_asignado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE, null=True, blank=True)  # Temporalmente comentado
     id_agente_asignado_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
     fecha_apertura = models.DateTimeField(auto_now_add=True)
@@ -32,14 +49,31 @@ class TicketSoporte(models.Model):
     fecha_cierre = models.DateTimeField(null=True, blank=True)
     sla_vencimiento = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        db_table = "servicio_cliente_ticket_soporte"
+        verbose_name = "Ticket de Soporte"
+        verbose_name_plural = "Tickets de Soporte"
+        unique_together = [["id_empresa", "numero_ticket"]]
+
     def __str__(self):
         return str(self.asunto)
 
+
 class InteraccionTicket(models.Model):
-    id_interaccion = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_interaccion = models.UUIDField(primary_key=True, default=uuid7)
     id_ticket = models.ForeignKey("TicketSoporte", on_delete=models.CASCADE)
     fecha_hora_interaccion = models.DateTimeField(auto_now_add=True)
-    tipo_interaccion = models.CharField(max_length=50, choices=[("COMENTARIO", "Comentario"), ("EMAIL", "Email"), ("LLAMADA", "Llamada"), ("CAMBIO_ESTADO", "Cambio Estado"), ("ASIGNACION", "Asignación"), ("ADJUNTO", "Adjunto")])
+    tipo_interaccion = models.CharField(
+        max_length=50,
+        choices=[
+            ("COMENTARIO", "Comentario"),
+            ("EMAIL", "Email"),
+            ("LLAMADA", "Llamada"),
+            ("CAMBIO_ESTADO", "Cambio Estado"),
+            ("ASIGNACION", "Asignación"),
+            ("ADJUNTO", "Adjunto"),
+        ],
+    )
     # id_usuario_interactor = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE, null=True, blank=True)  # Temporalmente comentado
     id_usuario_interactor_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
     contenido = models.TextField()
@@ -48,8 +82,9 @@ class InteraccionTicket(models.Model):
     def __str__(self):
         return str(self.id_ticket)
 
+
 class BaseConocimientoArticulo(models.Model):
-    id_articulo = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_articulo = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255)
     contenido = models.TextField()
@@ -63,8 +98,9 @@ class BaseConocimientoArticulo(models.Model):
     def __str__(self):
         return str(self.titulo)
 
+
 class FeedbackCliente(models.Model):
-    id_feedback = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id_feedback = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     # id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, null=True, blank=True)  # Temporalmente comentado
     id_cliente_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
@@ -72,7 +108,15 @@ class FeedbackCliente(models.Model):
     fecha_feedback = models.DateTimeField(auto_now_add=True)
     calificacion = models.IntegerField(null=True, blank=True)
     comentarios = models.TextField(null=True, blank=True)
-    tipo_feedback = models.CharField(max_length=50, choices=[("ENCUESTA_SATISFACCION", "Encuesta Satisfacción"), ("SUGERENCIA", "Sugerencia"), ("QUEJA", "Queja"), ("OTRO", "Otro")])
+    tipo_feedback = models.CharField(
+        max_length=50,
+        choices=[
+            ("ENCUESTA_SATISFACCION", "Encuesta Satisfacción"),
+            ("SUGERENCIA", "Sugerencia"),
+            ("QUEJA", "Queja"),
+            ("OTRO", "Otro"),
+        ],
+    )
 
     def __str__(self):
         return str(self.id_empresa)

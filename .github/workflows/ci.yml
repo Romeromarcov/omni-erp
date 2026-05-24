@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+# Cancela runs anteriores del mismo branch/PR si llega uno nuevo
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Backend — Django check + pytest contra PostgreSQL real
+  # ──────────────────────────────────────────────────────────────
+  backend:
+    name: "Backend (Django + pytest)"
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: omni_erp
+          POSTGRES_USER: omni_erp
+          POSTGRES_PASSWORD: omni_erp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Variables de entorno para todos los steps del job
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      DJANGO_ENV: dev
+      # SECRET_KEY de CI: no es un secreto real, solo satisface el
+      # requerimiento de Django. No se usa en ningún contexto de producción.
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      # Celery: los tests usan ALWAYS_EAGER (sin broker real),
+      # pero settings necesita una URL válida.
+      REDIS_URL: "redis://localhost:6379/0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Django system check
+        working-directory: backend
+        run: python manage.py check
+
+      - name: Run tests
+        working-directory: backend
+        run: python -m pytest tests_api/ -v --tb=short --no-header
+
+  # ──────────────────────────────────────────────────────────────
+  # Frontend — TypeScript + ESLint
+  # ──────────────────────────────────────────────────────────────
+  frontend:
+    name: "Frontend (tsc + eslint)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Vitest unit tests
+        working-directory: frontend
+        run: npm test -- --run
+
+  # ──────────────────────────────────────────────────────────────
+  # Agent eval — Shadow mode quality gate (CTF-003)
+  # Corre siempre en main/PR; filtra por paths para no bloquear
+  # branches sin cambios en agentes.
+  # Criterio de cierre: precision@1 >= 80% en reorden y cobranza.
+  # ──────────────────────────────────────────────────────────────
+  agent-eval:
+    name: "Agent Eval — precision@1 ≥ 80% (CTF-003)"
+    runs-on: ubuntu-latest
+
+    # Sin postgres: los agentes usan fallback determinístico (sin BD).
+    # Si en el futuro se agrega persistencia, añadir el service aquí.
+
+    env:
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      # Sin BD real: los eval tests no tocan la base de datos.
+      # Declaramos las vars para que Django settings no falle al importar.
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      REDIS_URL: "redis://localhost:6379/0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Run eval suite (no-cov — umbral es precisión, no cobertura)
+        working-directory: backend
+        run: |
+          python -m pytest tests_eval/ -v --tb=short --no-header \
+            --no-cov
+        # Criterio CTF-003: >= 80% precision@1 en reorden y cobranza.
+        # El umbral se verifica dentro de los tests mismos
+        # (test_precision_global / test_precision_global_prioridad /
+        #  test_precision_global_canal). Si alguno falla, el job falla.

@@ -1,14 +1,13 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import (
-    ConfiguracionIntegracionViewSet, LogIntegracionViewSet, MapeoCampoViewSet
-)
+
+from .views import ConfiguracionIntegracionViewSet, LogIntegracionViewSet, MapeoCampoViewSet
 
 router = DefaultRouter()
-router.register(r'configuracion-integracion', ConfiguracionIntegracionViewSet)
-router.register(r'logs-integracion', LogIntegracionViewSet)
-router.register(r'mapeo-campos', MapeoCampoViewSet)
+router.register(r"configuracion-integracion", ConfiguracionIntegracionViewSet)
+router.register(r"logs-integracion", LogIntegracionViewSet)
+router.register(r"mapeo-campos", MapeoCampoViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

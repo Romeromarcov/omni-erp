@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put, post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import type { CatalogoValor } from '../../../types/configuracion';
@@ -8,7 +9,7 @@ import { Button } from '@mui/material';
 const CatalogoValorDetailPage: React.FC = () => {
   const { id_catalogo_valor } = useParams<{ id_catalogo_valor: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<CatalogoValor>>({
     codigo_catalogo: '',
     valor: '',
@@ -19,30 +20,37 @@ const CatalogoValorDetailPage: React.FC = () => {
 
   const isEditing = !!id_catalogo_valor;
 
+  const { data: existingData } = useQuery<CatalogoValor>({
+    queryKey: ['/configuracion_motor/catalogos-valor/', id_catalogo_valor],
+    queryFn: () => get<CatalogoValor>(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`),
+    enabled: isEditing,
+  });
+
   useEffect(() => {
-    if (isEditing) {
-      get(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`)
-        .then((data) => setFormData(data as CatalogoValor))
-        .catch(() => navigate('/configuracion/catalogos-valor'));
+    if (existingData) {
+      setFormData(existingData);
     }
-  }, [id_catalogo_valor, isEditing, navigate]);
+  }, [existingData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
+  const saveMutation = useMutation({
+    mutationFn: (data: Partial<CatalogoValor>) => {
       if (isEditing) {
-        await put(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`, formData);
-      } else {
-        await post('/configuracion_motor/catalogos-valor/', formData);
+        return put<CatalogoValor>(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`, data as Record<string, unknown>);
       }
+      return post<CatalogoValor>('/configuracion_motor/catalogos-valor/', data as Record<string, unknown>);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/configuracion_motor/catalogos-valor/'] });
       navigate('/configuracion/catalogos-valor');
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error saving catalogo valor:', error);
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveMutation.mutate(formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -52,6 +60,8 @@ const CatalogoValorDetailPage: React.FC = () => {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : (type === 'number' ? Number(value) : value)
     }));
   };
+
+  const loading = saveMutation.isPending;
 
   return (
     <PageLayout>

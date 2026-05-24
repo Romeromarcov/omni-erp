@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageLayout from '../../../components/PageLayout';
+import { useQuery } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica } from '../../../services/cajasFisicasService';
 import { Alert, Box, Button, Card, CardActions, CardContent, Chip, Divider, Paper, Typography } from '@mui/material';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -36,42 +37,24 @@ interface Datafono {
 const CajaFisicaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [cajaFisica, setCajaFisica] = useState<CajaFisica | null>(null);
-  const [cajasVirtuales, setCajasVirtuales] = useState<CajaVirtual[]>([]);
-  const [datafonos, setDatafonos] = useState<Datafono[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const loadCajaFisicaDetail = useCallback(async () => {
-    if (!id) return;
+  const { data: cajaFisica, isLoading, isError } = useQuery<CajaFisica>({
+    queryKey: ['/finanzas/cajas-fisicas/', id],
+    queryFn: () => cajasFisicasService.getCajaFisica(id!),
+    enabled: !!id,
+  });
 
-    try {
-      setLoading(true);
-      setError('');
+  const { data: cajasVirtuales = [] } = useQuery<CajaVirtual[]>({
+    queryKey: ['/finanzas/cajas-fisicas/', id, 'cajas-virtuales'],
+    queryFn: () => cajasFisicasService.getCajasVirtualesAsociadas(id!) as Promise<CajaVirtual[]>,
+    enabled: !!id,
+  });
 
-      // Cargar detalles de la caja física
-      const cajaData = await cajasFisicasService.getCajaFisica(id);
-      setCajaFisica(cajaData);
-
-      // Cargar cajas virtuales asociadas
-      const cajasVirtualesData = await cajasFisicasService.getCajasVirtualesAsociadas(id);
-      setCajasVirtuales(cajasVirtualesData);
-
-      // Cargar datafonos asociados
-      const datafonosData = await cajasFisicasService.getDatafonosAsociados(id);
-      setDatafonos(datafonosData);
-
-    } catch (err) {
-      setError('Error al cargar los detalles de la caja física');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    loadCajaFisicaDetail();
-  }, [loadCajaFisicaDetail]);
+  const { data: datafonos = [] } = useQuery<Datafono[]>({
+    queryKey: ['/finanzas/cajas-fisicas/', id, 'datafonos'],
+    queryFn: () => cajasFisicasService.getDatafonosAsociados(id!) as Promise<Datafono[]>,
+    enabled: !!id,
+  });
 
   const formatCurrency = (amount: number, currency: string = 'VES') => {
     return new Intl.NumberFormat('es-VE', {
@@ -86,7 +69,7 @@ const CajaFisicaDetailPage: React.FC = () => {
     return new Date(dateString).toLocaleString('es-VE');
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <PageLayout>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
@@ -96,7 +79,7 @@ const CajaFisicaDetailPage: React.FC = () => {
     );
   }
 
-  if (error || !cajaFisica) {
+  if (isError || !cajaFisica) {
     return (
       <PageLayout>
         <Box sx={{ mb: 2 }}>
@@ -107,7 +90,7 @@ const CajaFisicaDetailPage: React.FC = () => {
           </Button>
         </Box>
         <Alert severity="error">
-          {error || 'Caja física no encontrada'}
+          {isError ? 'Error al cargar los detalles de la caja física' : 'Caja física no encontrada'}
         </Alert>
       </PageLayout>
     );

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { createUsuario } from '../../../services/users';
 import PageLayout from '../../../components/PageLayout';
 import { getEmpresaId } from '../../../utils/empresa';
@@ -16,10 +17,24 @@ const UserCreatePage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [emailError, setEmailError] = useState('');
   const id_empresa = getEmpresaId() || undefined;
+
+  const createMutation = useMutation({
+    mutationFn: (data: typeof form & { id_empresa?: string }) => createUsuario(data),
+    onSuccess: () => {
+      setMessage('Usuario creado exitosamente');
+      setForm({ username: '', email: '', password: '', first_name: '', last_name: '', is_active: true, es_superusuario_innova: false });
+      setConfirmPassword('');
+      setEmailError('');
+    },
+    onError: () => {
+      setMessage('Error al crear usuario');
+    },
+  });
+
+  const loading = createMutation.isPending;
 
   const validateEmail = (email: string) => {
     // Simple regex for email validation
@@ -49,18 +64,7 @@ const UserCreatePage: React.FC = () => {
       setMessage('');
       return;
     }
-    setLoading(true);
-    try {
-      await createUsuario({ ...form, id_empresa });
-      setMessage('Usuario creado exitosamente');
-      setForm({ username: '', email: '', password: '', first_name: '', last_name: '', is_active: true, es_superusuario_innova: false });
-      setConfirmPassword('');
-      setEmailError('');
-    } catch {
-      setMessage('Error al crear usuario');
-    } finally {
-      setLoading(false);
-    }
+    createMutation.mutate({ ...form, id_empresa });
   };
 
   return (

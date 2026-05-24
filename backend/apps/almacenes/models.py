@@ -1,17 +1,26 @@
-from django.db import models
 import uuid
+from apps.core.uuid import uuid7
+
+from django.db import models
+
 
 class Almacen(models.Model):
-    id_almacen = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE)
+    id_almacen = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre_almacen = models.CharField(max_length=100)
-    codigo_almacen = models.CharField(max_length=20, unique=True)
+    codigo_almacen = models.CharField(max_length=20)
     direccion = models.TextField(null=True, blank=True)
-    id_sucursal = models.ForeignKey('core.Sucursal', null=True, blank=True, on_delete=models.SET_NULL)
+    id_sucursal = models.ForeignKey("core.Sucursal", null=True, blank=True, on_delete=models.SET_NULL)
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "almacenes_almacen"
+        verbose_name = "Almacén"
+        verbose_name_plural = "Almacenes"
+        unique_together = [["id_empresa", "codigo_almacen"]]
 
     def __str__(self):
         return self.nombre_almacen
@@ -19,22 +28,22 @@ class Almacen(models.Model):
 
 class UbicacionAlmacen(models.Model):
     TIPOS_UBICACION = [
-        ('ESTANTERIA', 'Estantería'),
-        ('PISO', 'Piso'),
-        ('REFRIGERADO', 'Refrigerado'),
-        ('CONGELADO', 'Congelado'),
-        ('EXTERIOR', 'Exterior'),
-        ('CUARENTENA', 'Cuarentena'),
-        ('DEVOLUCION', 'Devolución'),
-        ('PICKING', 'Picking'),
-        ('RECEPCION', 'Recepción'),
-        ('DESPACHO', 'Despacho'),
+        ("ESTANTERIA", "Estantería"),
+        ("PISO", "Piso"),
+        ("REFRIGERADO", "Refrigerado"),
+        ("CONGELADO", "Congelado"),
+        ("EXTERIOR", "Exterior"),
+        ("CUARENTENA", "Cuarentena"),
+        ("DEVOLUCION", "Devolución"),
+        ("PICKING", "Picking"),
+        ("RECEPCION", "Recepción"),
+        ("DESPACHO", "Despacho"),
     ]
 
-    id_ubicacion = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='ubicaciones_almacen')
-    id_almacen = models.ForeignKey('Almacen', on_delete=models.CASCADE, related_name='ubicaciones')
-    codigo_ubicacion = models.CharField(max_length=50, unique=True)
+    id_ubicacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="ubicaciones_almacen")
+    id_almacen = models.ForeignKey("Almacen", on_delete=models.CASCADE, related_name="ubicaciones")
+    codigo_ubicacion = models.CharField(max_length=50)
     nombre_ubicacion = models.CharField(max_length=100)
     tipo_ubicacion = models.CharField(max_length=20, choices=TIPOS_UBICACION)
     pasillo = models.CharField(max_length=10, null=True, blank=True)
@@ -51,10 +60,10 @@ class UbicacionAlmacen(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'almacenes_ubicacion_almacen'
-        verbose_name = 'Ubicación de Almacén'
-        verbose_name_plural = 'Ubicaciones de Almacén'
-        unique_together = ['id_almacen', 'codigo_ubicacion']
+        db_table = "almacenes_ubicacion_almacen"
+        verbose_name = "Ubicación de Almacén"
+        verbose_name_plural = "Ubicaciones de Almacén"
+        unique_together = [["id_almacen", "codigo_ubicacion"]]
 
     def __str__(self):
         return f"{self.id_almacen.nombre_almacen} - {self.codigo_ubicacion}"

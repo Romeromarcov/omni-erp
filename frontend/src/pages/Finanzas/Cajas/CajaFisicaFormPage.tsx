@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cajasFisicasService } from '../../../services/cajasFisicasService';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
+import type { MonedaEmpresaActiva } from '../../../services/monedasEmpresaActiva';
 import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Switch, TextField, Typography } from '@mui/material';
 
-interface Moneda {
-  id_moneda: string;
-  nombre: string;
-  simbolo: string;
-}
+type TipoCajaChoice = { value: string; display: string };
 
 const CajaFisicaFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { id, action } = useParams<{ id: string; action: string }>();
   const isEditing = action === 'editar' && !!id;
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState({
     nombre: '',
@@ -22,7 +21,6 @@ const CajaFisicaFormPage: React.FC = () => {
     descripcion: '',
     sucursal: '',
     moneda: '',
-    // Campos del dispositivo
     nombre_dispositivo: '',
     tipo_dispositivo: 'PC',
     identificador_dispositivo: '',
@@ -31,72 +29,48 @@ const CajaFisicaFormPage: React.FC = () => {
     activa: true,
   });
 
-  const [monedas, setMonedas] = useState<Moneda[]>([]);
-  const [tipoCajaChoices, setTipoCajaChoices] = useState<Array<{ value: string; display: string }>>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [monedasData, tipoChoices] = await Promise.all([
-        fetchMonedasEmpresaActivas(idEmpresa),
-        cajasFisicasService.getTipoCajaChoices()
-      ]);
-      setMonedas(Array.isArray(monedasData) ? monedasData : []);
-      setTipoCajaChoices(tipoChoices);
+  const { data: monedas = [] } = useQuery<MonedaEmpresaActiva[]>({
+    queryKey: ['/finanzas/monedas-empresa-activas/', idEmpresa],
+    queryFn: () => fetchMonedasEmpresaActivas(idEmpresa),
+    enabled: !!idEmpresa,
+  });
 
-      if (isEditing && id) {
-        const cajaData = await cajasFisicasService.getCajaFisica(id);
-        setForm({
-          nombre: cajaData.nombre,
-          tipo_caja: cajaData.tipo_caja,
-          descripcion: cajaData.descripcion || '',
-          sucursal: cajaData.sucursal || '',
-          moneda: cajaData.moneda || '',
-          // Campos del dispositivo
-          nombre_dispositivo: cajaData.nombre_dispositivo || '',
-          tipo_dispositivo: cajaData.tipo_dispositivo || 'PC',
-          identificador_dispositivo: cajaData.identificador_dispositivo || '',
-          descripcion_dispositivo: cajaData.descripcion_dispositivo || '',
-          requiere_sesion_activa: cajaData.requiere_sesion_activa,
-          activa: cajaData.activa,
-        });
-      }
-    } catch (err) {
-      setError('Error al cargar los datos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [idEmpresa, isEditing, id]);
+  const { data: tipoCajaChoices = [] } = useQuery<TipoCajaChoice[]>({
+    queryKey: ['/finanzas/cajas-fisicas/tipo-caja-choices'],
+    queryFn: () => cajasFisicasService.getTipoCajaChoices(),
+  });
+
+  const { data: cajaData, isLoading } = useQuery({
+    queryKey: ['/finanzas/cajas-fisicas/', id],
+    queryFn: () => cajasFisicasService.getCajaFisica(id!),
+    enabled: isEditing && !!id,
+  });
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!form.nombre.trim()) {
-      setError('El nombre es obligatorio');
-      return;
+    if (cajaData) {
+      setForm({
+        nombre: cajaData.nombre,
+        tipo_caja: cajaData.tipo_caja,
+        descripcion: cajaData.descripcion || '',
+        sucursal: cajaData.sucursal || '',
+        moneda: cajaData.moneda || '',
+        nombre_dispositivo: cajaData.nombre_dispositivo || '',
+        tipo_dispositivo: cajaData.tipo_dispositivo || 'PC',
+        identificador_dispositivo: cajaData.identificador_dispositivo || '',
+        descripcion_dispositivo: cajaData.descripcion_dispositivo || '',
+        requiere_sesion_activa: cajaData.requiere_sesion_activa,
+        activa: cajaData.activa,
+      });
     }
+  }, [cajaData]);
 
-    if (!form.moneda) {
-      setError('Debe seleccionar una moneda');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError('');
-      setSuccess('');
-
+  const saveMutation = useMutation({
+    mutationFn: () => {
       const dataToSend = {
         ...form,
         empresa: idEmpresa,
@@ -106,26 +80,37 @@ const CajaFisicaFormPage: React.FC = () => {
         estado_sesion_display: 'Cerrada',
         nombre_usuario_actual: undefined,
       };
-
       if (isEditing && id) {
-        await cajasFisicasService.updateCajaFisica(id, dataToSend);
-        setSuccess('Caja física actualizada correctamente');
-      } else {
-        await cajasFisicasService.createCajaFisica(dataToSend);
-        setSuccess('Caja física creada correctamente');
+        return cajasFisicasService.updateCajaFisica(id, dataToSend);
       }
-
-      // Redirigir después de un breve delay para mostrar el mensaje de éxito
+      return cajasFisicasService.createCajaFisica(dataToSend as Parameters<typeof cajasFisicasService.createCajaFisica>[0]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/'] });
+      setSuccess(isEditing ? 'Caja física actualizada correctamente' : 'Caja física creada correctamente');
       setTimeout(() => {
         navigate('/finanzas/cajas-fisicas');
       }, 1500);
-
-    } catch (err) {
+    },
+    onError: (err) => {
       setError(isEditing ? 'Error al actualizar la caja física' : 'Error al crear la caja física');
       console.error(err);
-    } finally {
-      setSaving(false);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nombre.trim()) {
+      setError('El nombre es obligatorio');
+      return;
     }
+    if (!form.moneda) {
+      setError('Debe seleccionar una moneda');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    saveMutation.mutate();
   };
 
   const handleChange = (field: string, value: string | boolean) => {
@@ -135,7 +120,7 @@ const CajaFisicaFormPage: React.FC = () => {
     }));
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <PageLayout>
         <Typography>Cargando...</Typography>
@@ -214,7 +199,7 @@ const CajaFisicaFormPage: React.FC = () => {
                 >
                   {monedas.map((moneda) => (
                     <MenuItem key={moneda.id_moneda} value={moneda.id_moneda}>
-                      {moneda.nombre} ({moneda.simbolo})
+                      {moneda.nombre} ({moneda.codigo_iso})
                     </MenuItem>
                   ))}
                 </TextField>
@@ -296,9 +281,9 @@ const CajaFisicaFormPage: React.FC = () => {
           <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
             <Button
               type="submit"
-              disabled={saving}
+              disabled={saveMutation.isPending}
             >
-              {saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+              {saveMutation.isPending ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
             </Button>
             <Button
               variant="outlined"

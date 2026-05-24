@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { Pedido, DetallePedido } from '../types/ventas';
 import { post, get, patch } from '../services/api';
 import { pagosService } from '../services/pagosService';
@@ -55,38 +56,47 @@ export const usePedidoForm = (pedidoId?: string) => {
   };
 
   // Load existing pedido
+  const { data: pedidoData, isLoading: isLoadingPedido } = useQuery({
+    queryKey: ['pedidos', pedidoId],
+    queryFn: () => get(`/ventas/pedidos/${pedidoId}/`) as Promise<Pedido>,
+    enabled: !!pedidoId,
+  });
+
   useEffect(() => {
-    if (!pedidoId) return;
-    base.setLoading(true);
-    get(`/ventas/pedidos/${pedidoId}/`)
-      .then((pedido: Pedido) => {
-        setForm({
-          numero_pedido: pedido.numero_pedido || '',
-          fecha_pedido: pedido.fecha_pedido?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
-          id_empresa: (pedido as unknown as { id_empresa: string }).id_empresa || getEmpresaId() || '',
-          id_sucursal: localStorage.getItem('id_sucursal') || '',
-          id_cliente: (pedido as unknown as { id_cliente: { id_cliente: string } }).id_cliente?.id_cliente || '',
-          id_caja: (pedido as unknown as { id_caja?: string }).id_caja || '',
-          id_vendedor: (pedido as unknown as { id_vendedor?: string }).id_vendedor || '',
-          observaciones: pedido.observaciones || '',
-        });
-        if (pedido.detalles && Array.isArray(pedido.detalles)) {
-          base.setDetalles(
-            pedido.detalles.map((d: DetallePedido) => ({
-              id_producto: (d as unknown as { id_producto: string }).id_producto || '',
-              cantidad: String(d.cantidad ?? 0),
-              precio_unitario: String(d.precio_unitario ?? 0),
-              descuento_porcentaje: String((d as unknown as { descuento_porcentaje?: number }).descuento_porcentaje ?? ''),
-              sku: (d as unknown as { sku?: string }).sku || '',
-              producto: (d as unknown as { producto?: string }).producto || '',
-            }))
-          );
-        }
-      })
-      .catch(() => base.setError('Error al cargar el pedido'))
-      .finally(() => base.setLoading(false));
+    if (isLoadingPedido) {
+      base.setLoading(true);
+      return;
+    }
+    if (!pedidoData) {
+      if (!isLoadingPedido) base.setLoading(false);
+      return;
+    }
+    const pedido = pedidoData;
+    setForm({
+      numero_pedido: pedido.numero_pedido || '',
+      fecha_pedido: pedido.fecha_pedido?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+      id_empresa: (pedido as unknown as { id_empresa: string }).id_empresa || getEmpresaId() || '',
+      id_sucursal: localStorage.getItem('id_sucursal') || '',
+      id_cliente: (pedido as unknown as { id_cliente: { id_cliente: string } }).id_cliente?.id_cliente || '',
+      id_caja: (pedido as unknown as { id_caja?: string }).id_caja || '',
+      id_vendedor: (pedido as unknown as { id_vendedor?: string }).id_vendedor || '',
+      observaciones: pedido.observaciones || '',
+    });
+    if (pedido.detalles && Array.isArray(pedido.detalles)) {
+      base.setDetalles(
+        pedido.detalles.map((d: DetallePedido) => ({
+          id_producto: (d as unknown as { id_producto: string }).id_producto || '',
+          cantidad: String(d.cantidad ?? 0),
+          precio_unitario: String(d.precio_unitario ?? 0),
+          descuento_porcentaje: String((d as unknown as { descuento_porcentaje?: number }).descuento_porcentaje ?? ''),
+          sku: (d as unknown as { sku?: string }).sku || '',
+          producto: (d as unknown as { producto?: string }).producto || '',
+        }))
+      );
+    }
+    base.setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pedidoId]);
+  }, [pedidoData, isLoadingPedido]);
 
   const submitPedido = async (pagosToSend?: Pago[]) => {
     base.setLoading(true);
@@ -162,6 +172,9 @@ export const usePedidoForm = (pedidoId?: string) => {
     }
   };
 
+  const handleClienteManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    void base.handleClienteManualKeyDown(e, (id) => setForm(f => ({ ...f, id_cliente: id })));
+
   return {
     form,
     setForm,
@@ -169,5 +182,6 @@ export const usePedidoForm = (pedidoId?: string) => {
     numeroPedidoCreado,
     submitPedido,
     ...base,
+    handleClienteManualKeyDown,
   };
 };

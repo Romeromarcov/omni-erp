@@ -1,9 +1,13 @@
-from django.db import models
-from apps.core.models import Empresa, Usuarios
 import uuid
+from apps.core.uuid import uuid7
+
+from django.db import models
+
+from apps.core.models import Empresa, Usuarios
+
 
 class LogAuditoria(models.Model):
-    id_log_auditoria = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id_log_auditoria = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     id_usuario = models.ForeignKey(Usuarios, null=True, blank=True, on_delete=models.SET_NULL)
     id_entidad_afectada = models.UUIDField(null=True, blank=True)

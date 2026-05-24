@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageLayout from '../../../components/PageLayout';
+import { useQuery } from '@tanstack/react-query';
 import { getMovimientosCaja } from '../../../services/cajaService';
+import { toList } from '../../../utils/api';
 import { Button, TextField } from '@mui/material';
 
 type MovimientoCaja = {
@@ -24,33 +26,19 @@ type MovimientoCaja = {
   usuario_registro_username?: string;
 };
 
+type MovimientoApiResponse = MovimientoCaja[] | { results: MovimientoCaja[] };
+
 const CajaMovimientosListPage: React.FC = () => {
   const { id_caja } = useParams<{ id_caja: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<MovimientoCaja[]>([]);
   const [filters, setFilters] = useState({ fecha_inicio: '', fecha_fin: '', tipo: '', moneda: '', concepto: '', referencia: '', usuario: '' });
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!id_caja) return;
-    setLoading(true);
-    getMovimientosCaja(id_caja, filters)
-      .then(result => {
-        if (Array.isArray(result)) {
-          setData(result);
-        } else if (
-          result &&
-          typeof result === 'object' &&
-          'results' in result &&
-          Array.isArray((result as { results: MovimientoCaja[] }).results)
-        ) {
-          setData((result as { results: MovimientoCaja[] }).results);
-        } else {
-          setData([]);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [id_caja, filters]);
+  const { data: data = [], isLoading } = useQuery<MovimientoApiResponse, Error, MovimientoCaja[]>({
+    queryKey: ['/finanzas/movimientos-caja/', id_caja, filters],
+    queryFn: () => getMovimientosCaja(id_caja!, filters) as Promise<MovimientoApiResponse>,
+    select: toList,
+    enabled: !!id_caja,
+  });
 
   // Extraer info de la caja si hay datos
   const cajaNombre = data[0]?.caja_nombre || '-';
@@ -101,7 +89,7 @@ const CajaMovimientosListPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr><td colSpan={11} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             ) : data.length === 0 ? (
               <tr><td colSpan={11} style={{ textAlign: 'center' }}>No hay movimientos registrados.</td></tr>

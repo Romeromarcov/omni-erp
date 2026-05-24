@@ -1,9 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createRol } from '../../../services/roles';
-import PageLayout from '../../../components/PageLayout';
 import { fetchEmpresas } from '../../../services/empresas';
 import type { Empresa } from '../../../services/empresas';
+import { toList } from '../../../utils/api';
+import PageLayout from '../../../components/PageLayout';
+
+type EmpresaApiResponse = Empresa[] | { results: Empresa[] };
 
 const RoleCreatePage: React.FC = () => {
   const [form, setForm] = useState({
@@ -12,48 +16,39 @@ const RoleCreatePage: React.FC = () => {
     activo: true,
     id_empresa: '',
   });
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [empresaSearch, setEmpresaSearch] = useState('');
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchEmpresas()
-      .then(res => {
-        let data: Empresa[] = [];
-        if (Array.isArray(res)) data = res;
-        else if (
-          res &&
-          typeof res === 'object' &&
-          res !== null &&
-          'results' in res &&
-          Array.isArray((res as { results?: unknown }).results)
-        ) {
-          data = (res as { results: Empresa[] }).results;
-        }
-        setEmpresas(data);
-      })
-      .catch(() => setEmpresas([]));
-  }, []);
+  const { data: empresas = [] } = useQuery<EmpresaApiResponse, Error, Empresa[]>({
+    queryKey: ['/core/empresas/'],
+    queryFn: fetchEmpresas as () => Promise<EmpresaApiResponse>,
+    select: toList,
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await createRol(form);
+  const createMutation = useMutation({
+    mutationFn: () => createRol(form),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/core/roles/'] });
       setMessage('Rol creado exitosamente');
       setForm({ nombre_rol: '', descripcion: '', activo: true, id_empresa: '' });
-    } catch {
+    },
+    onError: () => {
       setMessage('Error al crear rol');
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMutation.mutate();
   };
+
+  const loading = createMutation.isPending;
 
   return (
     <PageLayout>

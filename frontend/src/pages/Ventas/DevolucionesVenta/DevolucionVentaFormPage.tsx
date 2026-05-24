@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { devolucionVentaService } from '../../../services/ventas';
 import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
+import { toList } from '../../../utils/api';
 import type { DevolucionVenta, DetalleDevolucionVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
 import type { Producto } from '../../../services/productosService';
@@ -15,7 +17,9 @@ import AddIcon from '@mui/icons-material/Add';
 const DevolucionVentaFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEditing = Boolean(id);
+  const empresaId = getEmpresaId() || '1';
 
   const [formData, setFormData] = useState<Partial<DevolucionVenta>>({
     fecha_devolucion: new Date().toISOString().split('T')[0],
@@ -24,50 +28,33 @@ const DevolucionVentaFormPage: React.FC = () => {
     detalles: []
   });
 
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [productos, setProductos] = useState<Producto[]>([]);
   const [generarNotaCredito, setGenerarNotaCredito] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { data: clientes = [] } = useQuery<unknown, Error, Cliente[]>({
+    queryKey: [`/ventas/clientes/?id_empresa=${empresaId}`],
+    queryFn: () => fetchClientes(empresaId),
+    select: toList,
+  });
+
+  const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
+    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryFn: () => fetchProductos(empresaId),
+    select: toList,
+  });
+
+  const { data: devolucionData, isLoading: loading } = useQuery<DevolucionVenta>({
+    queryKey: [`/ventas/devoluciones-venta/${id}/`],
+    queryFn: () => devolucionVentaService.getById(id!),
+    enabled: isEditing && !!id,
+  });
+
   useEffect(() => {
-    loadData();
-    if (isEditing && id) {
-      loadDevolucion(id);
+    if (devolucionData) {
+      setFormData(devolucionData);
+      setGenerarNotaCredito(Boolean(devolucionData.id_nota_credito_generada));
     }
-  }, [id, isEditing]);
-
-  const loadData = async () => {
-    try {
-      // TODO: Obtener empresa del contexto/usuario
-      const empresaId = getEmpresaId() || '1'; // Fallback a '1' si no hay empresa
-      const [clientesData, productosData] = await Promise.all([
-        fetchClientes(empresaId),
-        fetchProductos(empresaId)
-      ]);
-      const clientes = Array.isArray(clientesData) ? clientesData : clientesData.results || [];
-      const productos = Array.isArray(productosData) ? productosData : productosData.results || [];
-      setClientes(clientes);
-      setProductos(productos);
-    } catch (err) {
-      console.error('Error cargando datos:', err);
-    }
-  };
-
-  const loadDevolucion = async (devolucionId: string) => {
-    setLoading(true);
-    try {
-      const data = await devolucionVentaService.getById(devolucionId);
-      setFormData(data);
-      setGenerarNotaCredito(Boolean(data.id_nota_credito_generada));
-    } catch (err) {
-      setError('Error al cargar la devolución');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [devolucionData]);
 
   const handleInputChange = (field: keyof DevolucionVenta, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -131,27 +118,26 @@ const DevolucionVentaFormPage: React.FC = () => {
     setFormData(prev => ({ ...prev, monto_total: total }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const submitData = {
-        ...formData,
-        generar_nota_credito: generarNotaCredito
-      };
-
+  const saveMutation = useMutation({
+    mutationFn: (submitData: Partial<DevolucionVenta> & { generar_nota_credito: boolean }) => {
       if (isEditing && id) {
-        await devolucionVentaService.update(id, submitData);
+        return devolucionVentaService.update(id, submitData);
       } else {
-        await devolucionVentaService.create(submitData);
+        return devolucionVentaService.create(submitData);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/ventas/devoluciones-venta/'] });
       navigate('/ventas/devoluciones-venta');
-    } catch (err) {
-      setError('Error al guardar la devolución');
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    },
+    onError: () => setError('Error al guardar la devolución'),
+  });
+
+  const saving = saveMutation.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveMutation.mutate({ ...formData, generar_nota_credito: generarNotaCredito });
   };
 
   if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;

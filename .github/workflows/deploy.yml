@@ -1,0 +1,172 @@
+name: CD — Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+# Solo un deploy a la vez
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Guard: solo desplegar si CI pasó (cuando se dispara desde workflow_run)
+  # ──────────────────────────────────────────────────────────────
+  check-ci:
+    name: "Verificar CI"
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.check.outputs.should-deploy }}
+    steps:
+      - name: Check CI status
+        id: check
+        run: |
+          # Si se disparó por push directo a main, siempre desplegar
+          # Si se disparó por workflow_run, verificar que CI pasó
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "CI no pasó — abortando deploy"
+          fi
+
+  # ──────────────────────────────────────────────────────────────
+  # Build del frontend
+  # ──────────────────────────────────────────────────────────────
+  build-frontend:
+    name: "Build Frontend"
+    runs-on: ubuntu-latest
+    needs: check-ci
+    if: needs.check-ci.outputs.should-deploy == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || '' }}
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ──────────────────────────────────────────────────────────────
+  # Deploy al servidor de producción vía SSH
+  # ──────────────────────────────────────────────────────────────
+  deploy:
+    name: "Deploy Production"
+    runs-on: ubuntu-latest
+    needs: [check-ci, build-frontend]
+    if: needs.check-ci.outputs.should-deploy == 'true'
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      # ── Configurar SSH ──────────────────────────────────────────
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # ── Subir frontend compilado ────────────────────────────────
+      - name: Upload frontend to server
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT || 22 }}" \
+            frontend/dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.FRONTEND_PATH || '/var/www/omni-erp/frontend' }}/
+
+      # ── Subir código backend y reiniciar ───────────────────────
+      - name: Deploy backend & restart services
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -p ${{ secrets.DEPLOY_PORT || 22 }} \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "set -euo pipefail
+            cd ${{ secrets.BACKEND_PATH || '/opt/omni-erp/backend' }}
+
+            # Actualizar código
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Activar virtualenv e instalar dependencias
+            source venv/bin/activate
+            pip install -r requirements.txt --quiet
+
+            # Migraciones
+            python manage.py migrate --noinput
+
+            # Colectar static (si aplica)
+            python manage.py collectstatic --noinput --clear
+
+            # Reiniciar Gunicorn / Uvicorn
+            sudo systemctl restart omni-erp-backend
+            echo 'Backend reiniciado OK'
+            "
+
+      - name: Verify deployment
+        run: |
+          # Esperar unos segundos para que el servicio levante
+          sleep 5
+          ssh -i ~/.ssh/deploy_key \
+            -p ${{ secrets.DEPLOY_PORT || 22 }} \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "curl -sf http://localhost:8000/api/health/ | python3 -c \"import sys,json; d=json.load(sys.stdin); assert d.get('status')=='ok', d\" && echo 'Health check OK'"
+        continue-on-error: true   # No bloquear si el endpoint de health aún no existe
+
+  # ──────────────────────────────────────────────────────────────
+  # Notificación (opcional — requiere SLACK_WEBHOOK en secrets)
+  # ──────────────────────────────────────────────────────────────
+  notify:
+    name: "Notificar deploy"
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always() && needs.check-ci.outputs.should-deploy == 'true'
+
+    steps:
+      - name: Slack notification
+        if: ${{ secrets.SLACK_WEBHOOK != '' }}
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ needs.deploy.result == 'success' && '✅' || '❌' }} Deploy omni-erp a producción: *${{ needs.deploy.result }}*\nCommit: `${{ github.sha }}` por @${{ github.actor }}\n${{ github.event.head_commit.message }}"
+            }
