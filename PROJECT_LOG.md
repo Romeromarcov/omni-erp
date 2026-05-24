@@ -827,3 +827,32 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 - BLOQUE II (Sesiones D–G) — **100% COMPLETADO**. Todos los CTFs cerrados.
 
 ---
+
+## Sesión 18 — 2026-05-24 (Bloque III — Sesión H: Tests módulos sin cobertura)
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Sesión H — Escribir tests para módulos con 0% de cobertura.
+
+### Tareas completadas
+
+1. **`tests_api/test_m6_compras.py`** (20 tests): Tests de integración completos para `apps/compras/services.py`:
+   - `TestAprobarOrdenCompra` (5): transiciones BORRADOR→APROBADA, ENVIADA→APROBADA, errores por estado inválido
+   - `TestRegistrarRecepcion` (9): crea recepcion, movimiento RECEPCION_COMPRA, CxP, stock, múltiples items, asiento con/sin mapeo
+   - `TestRegistrarFacturaCompra` (5): crea factura, asiento FACTURA_COMPRA con/sin mapeo, fecha personalizada, FK correctas
+   - `TestFlujoCompletoCompras` (1): flujo end-to-end BORRADOR→APROBADA→Recepción→Factura con asientos
+
+2. **`tests_api/test_m11_modelos_sin_cobertura.py`** (22 tests): Modelos con 0% coverage:
+   - `TestRRHHModelos` (7): Cargo, Empleado (unicidad cédula/empresa), Beneficio
+   - `TestNominaModelos` (6): PeriodoNomina (estados), ConceptoNomina (fijo/porcentaje, unicidad)
+   - `TestTesoreriaModelos` (3): OperacionCambioDivisa (COMPRA/VENTA, unicidad empresa+número)
+   - `TestDespachoModelo` (3): Despacho (estados, sin deps de Pedido/OC)
+   - `TestCostosModelos` (3): CostoEstandarProducto (tipos, vigencia)
+
+3. **Fix**: `AsientoContable.nombre_modelo_origen` (no `tipo_asiento`) para verificar tipo de asiento.
+
+### Resultado
+
+- 42/42 tests passing. BLOQUE III — **100% COMPLETADO**. Cobertura total tests_api/ → 70%+.
+
+---
