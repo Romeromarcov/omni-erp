@@ -20,6 +20,11 @@ django-celery-results==2.6.0
 
 # ── PDF generation ──────────────────────────────────────────────────────────
 reportlab==4.5.1
+# WeasyPrint (HTML→PDF, decisión A-019). Requiere pango/cairo en Linux:
+#   apt-get install libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1
+# En desarrollo local (Windows/macOS) instala directamente sin dependencias de sistema.
+# En CI/producción: usar la imagen Docker oficial que ya tiene las libs del sistema.
+# weasyprint==68.1  # Descomentar cuando CI incluya las libs del sistema
 
 # ── AI-nativas: MCP + Event Store ───────────────────────────────────────────
 mcp>=1.9.0

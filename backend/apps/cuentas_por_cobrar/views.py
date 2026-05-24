@@ -76,6 +76,51 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
             }
         )
 
+    @action(detail=False, methods=["get"], url_path="estado-cuenta/(?P<cliente_id>[^/.]+)/pdf")
+    def estado_cuenta_pdf(self, request, cliente_id=None):
+        """
+        GET /api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_id}/pdf/
+
+        Genera el PDF de estado de cuenta CxC de un cliente para la empresa activa del usuario.
+        Query param opcional: ?empresa=<uuid>
+        """
+        from django.http import HttpResponse
+        from apps.cuentas_por_cobrar.pdf_estado_cuenta import generar_pdf_estado_cuenta
+
+        # Resolver empresa (query param o primera empresa visible)
+        empresa_id = request.query_params.get("empresa")
+        empresas = list(_empresas(request))
+
+        if empresa_id:
+            empresa = next((e for e in empresas if str(e.id_empresa) == str(empresa_id)), None)
+            if empresa is None:
+                return Response({"error": "Empresa no encontrada o sin acceso."}, status=403)
+        else:
+            if not empresas:
+                return Response({"error": "Sin empresas accesibles."}, status=403)
+            empresa = empresas[0]
+
+        # Resolver cliente
+        try:
+            from apps.crm.models import Cliente
+            cliente = Cliente.objects.get(
+                pk=cliente_id,
+                id_empresa__in=[e.id_empresa for e in empresas],
+            )
+        except Exception:
+            return Response({"error": "Cliente no encontrado o sin acceso."}, status=404)
+
+        try:
+            pdf_bytes = generar_pdf_estado_cuenta(empresa, cliente)
+        except ImportError as exc:
+            return Response({"error": str(exc)}, status=503)
+
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'inline; filename="estado_cuenta_{cliente.rif}.pdf"'
+        )
+        return response
+
     @action(detail=True, methods=["post"], url_path="abonar")
     def abonar(self, request, pk=None):
         """

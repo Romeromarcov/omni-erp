@@ -710,6 +710,24 @@ class CotizacionViewSet(viewsets.ModelViewSet):
             "-fecha_cotizacion", "-fecha_creacion"
         )
 
+    @action(detail=True, methods=["get"], url_path="pdf")
+    def pdf(self, request, pk=None):
+        """GET /api/ventas/cotizaciones/{id}/pdf/ — devuelve el PDF de la cotización."""
+        from django.http import HttpResponse
+        from apps.ventas.pdf_cotizacion import generar_pdf_cotizacion
+
+        cotizacion = self.get_object()
+        try:
+            pdf_bytes = generar_pdf_cotizacion(cotizacion)
+        except ImportError as exc:
+            return Response({"error": str(exc)}, status=503)
+
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'inline; filename="cotizacion_{cotizacion.numero_cotizacion}.pdf"'
+        )
+        return response
+
 
 class DetalleCotizacionViewSet(viewsets.ModelViewSet):
     queryset = DetalleCotizacion.objects.all()

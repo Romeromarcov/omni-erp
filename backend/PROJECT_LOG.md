@@ -939,3 +939,65 @@ migracion-datos, personalizacion
 - [x] Tests: `test_notificacion_in_app_creada`, `test_notificacion_email_enviada`, `test_aislamiento_notificaciones`
 
 ---
+
+## Sesión 20 — 2026-05-24 (Bloque IV — Sesión J: Generación de PDF)
+
+**Rama:** `main`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Sesión J — Generación de documentos PDF legales venezolanos con ReportLab.
+
+### Diagnóstico inicial
+
+Ya existía código PDF con ReportLab:
+- `apps/fiscal/pdf_factura.py` — Factura Fiscal (básica, sin pie legal venezolano)
+- `apps/ventas/pdf_cotizacion.py` — Cotización (completa)
+- `apps/cuentas_por_cobrar/pdf_estado_cuenta.py` — Estado CxC (completa)
+- `GET /api/ventas/facturas-fiscales/{id}/pdf/` — ya en FacturaFiscalViewSet
+
+Faltaba: pie legal venezolano en factura, endpoint cotización PDF, endpoint estado cuenta CxC PDF, botón frontend.
+
+### Tareas completadas
+
+1. **`apps/fiscal/pdf_factura.py` — reescrito con campos legales venezolanos:**
+   - Layout A4 con encabezado empresa (nombre + RIF + dirección).
+   - Bloque fiscal: N° Control, N° Factura, Fecha.
+   - Bloque receptor: Razón Social cliente, RIF receptor, dirección.
+   - Tabla de líneas con columnas: #, Producto, Cant., P. Unitario, Subtotal.
+   - Bloque totales: Base Imponible, IVA con alícuota (%), Total.
+   - **Pie legal venezolano:** texto de conformidad con Ley del IVA + SENIAT, RIF emisor, aviso de penalización por falsificación.
+
+2. **`CotizacionViewSet.pdf` action** en `apps/ventas/views.py`:
+   - `@action(detail=True, methods=["get"], url_path="pdf")`
+   - `GET /api/ventas/cotizaciones/{id}/pdf/` → stream PDF con nombre de archivo.
+   - Multi-tenant: `get_object()` ya filtra por empresa del usuario.
+
+3. **`CuentaPorCobrarViewSet.estado_cuenta_pdf` action** en `apps/cuentas_por_cobrar/views.py`:
+   - `GET /api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_id}/pdf/`
+   - Resuelve empresa de las visibles del usuario.
+   - Aislamiento: verifica que el cliente pertenezca a la empresa accesible.
+
+4. **Frontend — `FacturaFiscalDetailPage.tsx`:**
+   - Botón "📄 Descargar PDF" que abre `window.open(url, '_blank')`.
+   - Usa `VITE_API_URL` configurado en el entorno.
+
+5. **`requirements.txt`:** Nota sobre WeasyPrint (decisión A-019) con instrucciones de instalación en Linux/CI. ReportLab sigue siendo el generador activo (ya instalado, sin deps de sistema).
+
+6. **`tests_api/test_sesion_j_pdf.py`** — 16 tests:
+   - `TestPDFFacturaFiscal` (6): 200, content-type, bytes >1KB, magic `%PDF-`, 404 ajena, 401 sin auth.
+   - `TestPDFCotizacion` (5): 200, content-type, bytes, magic, 404 ajena.
+   - `TestPDFEstadoCuenta` (5): 200, content-type, bytes, magic, 404 cliente ajeno.
+
+### Resultado
+
+- **16/16 tests nuevos pasando**.
+- Django check: 0 issues. tsc: 0 errores.
+
+### DoD Sesión J
+
+- [x] GET /api/ventas/facturas-fiscales/{id}/pdf/ devuelve PDF válido con campos legales venezolanos
+- [x] PDF pasa validación visual: RIF emisor, N° control, IVA calculado correctamente, pie legal
+- [x] Frontend muestra botón "PDF" funcional en FacturaFiscalDetailPage
+- [x] GET /api/ventas/cotizaciones/{id}/pdf/ devuelve PDF
+- [x] GET /api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_id}/pdf/ devuelve PDF
+
+---

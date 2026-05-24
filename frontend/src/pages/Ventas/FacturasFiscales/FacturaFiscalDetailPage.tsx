@@ -149,10 +149,19 @@ const FacturaFiscalDetailPage: React.FC = () => {
     }, 0);
   };
 
+  const handleDescargarPDF = () => {
+    if (!id_factura) return;
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    window.open(`${apiBase}/ventas/facturas-fiscales/${id_factura}/pdf/`, '_blank');
+  };
+
   return (
     <PageLayout>
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
         <Button variant="contained" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
+        <Button variant="outlined" color="primary" onClick={handleDescargarPDF}>
+          📄 Descargar PDF
+        </Button>
       </Box>
       {loading ? (
         <Typography>Cargando...</Typography>
