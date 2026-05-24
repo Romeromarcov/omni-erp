@@ -660,3 +660,83 @@ Continuar con Sub-fase 1.B o la siguiente tarea del orden aprobado.
 - **Próximo:** Fase 1 — módulos de negocio avanzados, CTF-001 (asientos automáticos), CTF-004 (manufactura multi-tenant).
 
 ---
+
+## Sesión 12 — 2026-05-23 (Bloque I — Sesión A: Fix CI)
+
+**Rama:** `chore/diagnostico-inicial`
+**Commit inicial:** `773a151` | **Commit final:** `e1ff6fd`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Cerrar Fase 0 formalmente — Sesión A del Bloque I: CI verde en PR #1.
+
+### Diagnóstico
+
+- CI PR #1 fallando en dos jobs: Backend (pytest) y Frontend (tsc + eslint).
+- **Job backend:** `pytest: unrecognized arguments: --cov=apps` — `pytest-cov` ausente en `requirements.txt`.
+- **Job frontend:** `tsc -b` fallando con errores en archivos MCP (FastMCP 1.27.x + PEP 563 incompatibility).
+
+### Causa raíz (FastMCP + PEP 563)
+
+`from __future__ import annotations` convierte TODAS las anotaciones de función en strings lazy (PEP 563). FastMCP 1.27.x inspecciona `param.annotation` via `inspect.signature()` y llama `issubclass("str", Context)` → `TypeError`. Fix definitivo: eliminar `from __future__ import annotations` de los 4 archivos MCP.
+
+### Correcciones aplicadas
+
+1. **`requirements.txt`**: añadido `pytest-cov==6.1.0`.
+2. **`apps/core/mcp_server.py`**: eliminado `from __future__ import annotations`; retorno types como bare `dict`/`list`.
+3. **`apps/ventas/mcp.py`**: ídem.
+4. **`apps/inventario/mcp.py`**: ídem.
+5. **`apps/finanzas/mcp.py`**: ídem + fix field `id_caja_fisica` (era `id_caja`) y `empresa=` (era `id_empresa=`) en fixture.
+6. **`tests_api/test_e2e_flujos_ventas.py`**: fixture `caja_fisica_a` con nombres correctos de campos.
+7. **Frontend:** corregidos errores TypeScript pre-existentes en `PedidoDetailPage.tsx` (4 hooks) y `utils/api.ts` (toList/toCount con `unknown`).
+
+### Resultado
+
+- pytest: **602 passed, 0 errors**, cobertura 69%.
+- tsc --noEmit: **0 errors**.
+- npm run build: **exit 0**.
+- CI PR #1: **✅ verde** (Backend ✅ · Frontend ✅ · Agent Eval ✅).
+
+---
+
+## Sesión 13 — 2026-05-23 (Bloque I — Sesiones B+C: i18n + Docs)
+
+**Rama:** `chore/diagnostico-inicial`
+**Commit B:** `34fa19c` | **Commit C:** pendiente (esta sesión)
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Sesión B — i18n completo + tests frontend. Sesión C — documentación actualizada + tag.
+
+### Sesión B — i18n completo + calidad frontend
+
+1. **`frontend/src/i18n/locales/es.json`**: namespace `ventas` añadido con 3 sub-namespaces:
+   - `ventas.tabla.*` — 12 claves compartidas (número, fecha, estado, cliente, origen, total, acciones, ver, manual, convertido, clienteNoEncontrado, verDetalles).
+   - `ventas.pedidos.*` — title, nuevo, cargando, sinRegistros, deCotizacion, convertirANotaVenta, errorConvertir.
+   - `ventas.facturas.*` — 12 claves incluyendo flujo de notas de crédito.
+   - `ventas.notasVenta.*` — title, nuevo, cargando, sinRegistros, dePedido, convertirAFactura, errorConvertir.
+2. **`frontend/src/i18n/locales/en.json`**: mismas claves en inglés.
+3. **3 páginas actualizadas** con `useTranslation()` + `t()`:
+   - `PedidosListPage.tsx`
+   - `FacturasFiscalesListPage.tsx`
+   - `NotasVentaListPage.tsx`
+4. **3 nuevos archivos de tests** (Vitest + Testing Library):
+   - `src/__tests__/PedidosListPage.test.tsx` — 6 tests.
+   - `src/__tests__/FacturasFiscalesListPage.test.tsx` — 6 tests.
+   - `src/__tests__/NotasVentaListPage.test.tsx` — 6 tests.
+5. **`src/test-setup.ts`**: inicialización de i18n con traducciones reales para que `t('clave')` devuelva strings en tests.
+6. **Suite total: 29 tests passing, 0 failures**.
+7. **npm run build exit 0** (tsc -b + vite build sin errores).
+
+### Sesión C — Actualización de documentación
+
+1. **`backend/README.md`**: reescrito con stack actual, comandos reales (pytest --cov), estructura de apps, descripción de multi-tenancy y CI.
+2. **`frontend/README.md`**: eliminado template Vite; reemplazado con documentación real del proyecto (stack, estructura, i18n, tests, CI).
+3. **`docs/OMNI_ERP_MASTER_PLAN.md`** § 2.1 Frontend: actualizados 4 campos (Estado server ✅, i18n ✅, PWA ✅, Tests ✅).
+4. **`docs/OMNI_ERP_MASTER_PLAN.md`** § 2.1 Infraestructura: CI/CD ✅.
+5. **`docs/OMNI_ERP_MASTER_PLAN.md`** § 2.4: marcados como `[x]` los ítems TanStack Query y Tests.
+6. **Tag `v0.1.0-phase0-complete`** movido al commit de cierre de Sesión C (HEAD actual).
+
+### Estado al cerrar Bloque I
+
+- Sesión A ✅ · Sesión B ✅ · Sesión C ✅
+- Bloque I (Cerrar Fase 0) — **100% COMPLETADO**
+- Próximo: Bloque II (CTF-004, CTF-001, CTF-002, CTF-003) — sin deps bloqueantes.
+
+---
