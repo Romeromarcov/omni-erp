@@ -34,5 +34,53 @@
     "username": "Usuario",
     "password": "Contraseña",
     "loginError": "Credenciales incorrectas"
+  },
+  "ventas": {
+    "tabla": {
+      "numero": "Número",
+      "fecha": "Fecha",
+      "estado": "Estado",
+      "cliente": "Cliente",
+      "origen": "Origen",
+      "total": "Total",
+      "acciones": "Acciones",
+      "ver": "Ver",
+      "manual": "Manual",
+      "convertido": "✓ Convertido",
+      "clienteNoEncontrado": "Cliente no encontrado",
+      "verDetalles": "Ver Detalles"
+    },
+    "pedidos": {
+      "title": "Gestión de Pedidos",
+      "nuevo": "Nuevo Pedido",
+      "cargando": "Cargando pedidos...",
+      "sinRegistros": "No hay pedidos registrados",
+      "deCotizacion": "✓ De Cotización",
+      "convertirANotaVenta": "Convertir a Nota Venta",
+      "errorConvertir": "Error al convertir el pedido a nota de venta"
+    },
+    "facturas": {
+      "title": "Facturas Fiscales",
+      "nuevo": "Nueva Factura Fiscal",
+      "cargando": "Cargando facturas fiscales...",
+      "errorCargar": "Error al cargar las facturas fiscales",
+      "sinRegistros": "No hay facturas fiscales registradas",
+      "sinRegistrosHint": "Crea tu primera factura fiscal haciendo clic en \"Nueva Factura Fiscal\"",
+      "origenNotaVenta": "Nota Venta",
+      "origenDirecta": "Directa",
+      "crearNotaCredito": "Crear Nota de Crédito",
+      "confirmEliminar": "¿Está seguro de que desea eliminar esta factura fiscal?",
+      "errorEliminar": "Error al eliminar la factura fiscal",
+      "errorNotaCredito": "Error al crear la nota de crédito"
+    },
+    "notasVenta": {
+      "title": "Gestión de Notas de Venta",
+      "nuevo": "Nueva Nota de Venta",
+      "cargando": "Cargando notas de venta...",
+      "sinRegistros": "No hay notas de venta registradas",
+      "dePedido": "✓ De Pedido",
+      "convertirAFactura": "Convertir a Factura",
+      "errorConvertir": "Error al convertir la nota de venta a factura"
+    }
   }
 }

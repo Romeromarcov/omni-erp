@@ -34,5 +34,53 @@
     "username": "Username",
     "password": "Password",
     "loginError": "Invalid credentials"
+  },
+  "ventas": {
+    "tabla": {
+      "numero": "Number",
+      "fecha": "Date",
+      "estado": "Status",
+      "cliente": "Customer",
+      "origen": "Origin",
+      "total": "Total",
+      "acciones": "Actions",
+      "ver": "View",
+      "manual": "Manual",
+      "convertido": "✓ Converted",
+      "clienteNoEncontrado": "Customer not found",
+      "verDetalles": "View Details"
+    },
+    "pedidos": {
+      "title": "Order Management",
+      "nuevo": "New Order",
+      "cargando": "Loading orders...",
+      "sinRegistros": "No orders registered",
+      "deCotizacion": "✓ From Quote",
+      "convertirANotaVenta": "Convert to Sales Note",
+      "errorConvertir": "Error converting order to sales note"
+    },
+    "facturas": {
+      "title": "Fiscal Invoices",
+      "nuevo": "New Fiscal Invoice",
+      "cargando": "Loading fiscal invoices...",
+      "errorCargar": "Error loading fiscal invoices",
+      "sinRegistros": "No fiscal invoices registered",
+      "sinRegistrosHint": "Create your first fiscal invoice by clicking \"New Fiscal Invoice\"",
+      "origenNotaVenta": "Sales Note",
+      "origenDirecta": "Direct",
+      "crearNotaCredito": "Create Credit Note",
+      "confirmEliminar": "Are you sure you want to delete this fiscal invoice?",
+      "errorEliminar": "Error deleting fiscal invoice",
+      "errorNotaCredito": "Error creating credit note"
+    },
+    "notasVenta": {
+      "title": "Sales Note Management",
+      "nuevo": "New Sales Note",
+      "cargando": "Loading sales notes...",
+      "sinRegistros": "No sales notes registered",
+      "dePedido": "✓ From Order",
+      "convertirAFactura": "Convert to Invoice",
+      "errorConvertir": "Error converting sales note to invoice"
+    }
   }
 }
