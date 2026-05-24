@@ -1,6 +1,7 @@
 import React from 'react';
 import { getEmpresaId } from '../../../utils/empresa';
 import { DashboardCard } from '../../../components/DashboardCard';
+import SugerenciasWidget from '../../../components/SugerenciasWidget';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Paper } from '@mui/material';
@@ -90,6 +91,9 @@ const DashboardUserPage: React.FC<DashboardPageProps> = ({ user, empresa, sucurs
               <button style={{ padding: '8px 16px', borderRadius: 6, background: '#e3f0ff', color: '#1976d2', border: 'none', cursor: 'pointer' }} disabled>Inventario</button>
               {/* Agrega más módulos aquí */}
             </div>
+          </Paper>
+          <Paper sx={{ p: 2 }}>
+            <SugerenciasWidget />
           </Paper>
         </div>
       </div>

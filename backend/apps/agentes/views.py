@@ -34,6 +34,49 @@ def _empresa_o_error(request):
     return empresas.first()
 
 
+# ── Helpers para sugerencias activas ──────────────────────────────────────────
+
+_TITULOS_AGENTE = {
+    "cobranza_estratega": "Cobranza",
+    "reorden_sugeridor": "Reorden de Stock",
+    "clasificador_gastos": "Clasificación de Gasto",
+    "personalizacion_capa2": "Personalización",
+}
+
+
+def _titulo_sugerencia(prediccion) -> str:
+    """Genera un título legible para la tarjeta de sugerencia."""
+    agente_label = _TITULOS_AGENTE.get(prediccion.agente, prediccion.agente)
+    if prediccion.agente == "cobranza_estratega":
+        cliente = prediccion.input_metadata.get("cliente_nombre", "")
+        monto = prediccion.input_monto
+        if cliente:
+            return f"Contactar a {cliente}" + (f" — ${monto}" if monto else "")
+        return f"Acción de cobranza requerida"
+    if prediccion.agente == "reorden_sugeridor":
+        producto = prediccion.input_metadata.get("nombre_producto", prediccion.input_texto or "")
+        if producto:
+            return f"Reponer: {producto[:40]}"
+        return "Reorden de inventario sugerido"
+    if prediccion.agente == "clasificador_gastos":
+        return f"Clasificar gasto: {prediccion.categoria_predicha}"
+    return f"Sugerencia — {agente_label}: {prediccion.categoria_predicha}"
+
+
+def _accion_para_sugerencia(prediccion) -> str:
+    """Retorna la URL de acción sugerida para navegar desde la tarjeta."""
+    meta = prediccion.input_metadata or {}
+    if prediccion.agente == "cobranza_estratega":
+        cxc_id = meta.get("cxc_id")
+        if cxc_id:
+            return f"/cxc/{cxc_id}/"
+    if prediccion.agente == "reorden_sugeridor":
+        prod_id = meta.get("producto_id")
+        if prod_id:
+            return f"/inventario/productos/{prod_id}/"
+    return ""
+
+
 class PrediccionAgenteViewSet(BaseModelViewSet):
     """
     CRUD de predicciones de agentes IA.
@@ -313,6 +356,97 @@ class PrediccionAgenteViewSet(BaseModelViewSet):
 
         metricas = ClasificadorGastos.metricas_empresa(str(empresa.pk))
         return Response(metricas)
+
+    @action(detail=False, methods=["get"], url_path="sugerencias-activas")
+    def sugerencias_activas(self, request):
+        """
+        GET /agentes/predicciones/sugerencias-activas/
+
+        Retorna las predicciones pendientes de revisión humana para la empresa del usuario.
+        Por defecto las últimas 10, ordenadas por confianza DESC.
+
+        Query params:
+          ?limite=N   — máximo de resultados (default 10, max 50)
+          ?agente=    — filtrar por nombre de agente
+        """
+        empresa = _empresa_o_error(request)
+        if not empresa:
+            return Response({"detail": "Sin empresa asignada."}, status=status.HTTP_403_FORBIDDEN)
+
+        limite = min(int(request.query_params.get("limite", 10)), 50)
+        agente_filtro = request.query_params.get("agente")
+
+        qs = PrediccionAgente.objects.filter(
+            id_empresa=empresa,
+            resultado_humano="pendiente",
+        )
+        if agente_filtro:
+            qs = qs.filter(agente=agente_filtro)
+
+        sugerencias = qs.order_by("-confianza", "-fecha_prediccion")[:limite]
+
+        data = []
+        for s in sugerencias:
+            accion = _accion_para_sugerencia(s)
+            data.append(
+                {
+                    "id": str(s.id_prediccion),
+                    "agente": s.agente,
+                    "titulo": _titulo_sugerencia(s),
+                    "descripcion": s.razonamiento or s.categoria_predicha,
+                    "categoria": s.categoria_predicha,
+                    "confianza": round(s.confianza, 3),
+                    "monto": str(s.input_monto) if s.input_monto else None,
+                    "metadata": s.input_metadata,
+                    "url_accion": accion,
+                    "fecha": s.fecha_prediccion.isoformat(),
+                }
+            )
+
+        return Response({"sugerencias": data, "total": len(data)})
+
+    @action(detail=True, methods=["post"], url_path="responder")
+    def responder(self, request, pk=None):
+        """
+        POST /agentes/predicciones/{pk}/responder/
+
+        Registra la respuesta humana a una sugerencia del agente.
+        Body: {"accion": "aceptar"|"rechazar", "comentario": "..."}
+
+        Retorna la predicción actualizada.
+        """
+        prediccion = self.get_object()
+
+        accion = request.data.get("accion")
+        if accion not in ("aceptar", "rechazar"):
+            return Response(
+                {"detail": "El campo 'accion' debe ser 'aceptar' o 'rechazar'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if prediccion.resultado_humano != "pendiente":
+            return Response(
+                {"detail": f"Esta sugerencia ya fue procesada: {prediccion.resultado_humano}."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        prediccion.resultado_humano = "aceptada" if accion == "aceptar" else "rechazada"
+        comentario = request.data.get("comentario", "")
+        if comentario:
+            meta = dict(prediccion.input_metadata or {})
+            meta["comentario_humano"] = comentario
+            prediccion.input_metadata = meta
+
+        prediccion.save(update_fields=["resultado_humano", "input_metadata"])
+
+        return Response(
+            {
+                "id": str(prediccion.id_prediccion),
+                "resultado_humano": prediccion.resultado_humano,
+                "agente": prediccion.agente,
+                "categoria": prediccion.categoria_predicha,
+            }
+        )
 
     @action(detail=True, methods=["patch"], url_path="evaluar")
     def evaluar(self, request, pk=None):

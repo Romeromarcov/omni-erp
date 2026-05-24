@@ -1062,3 +1062,46 @@ Faltaba: cabecera en TXT, PDF del libro, soporte `?periodo=YYYY-MM`, aislamiento
 - [x] PeriodoFiscal model + endpoint cerrar (idempotente)
 
 ---
+
+## Sesión 22 — 2026-05-24 (Bloque IV — Sesión L: UI Agentes/Sugerencias)
+
+**Rama:** `main`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Sesión L — Widget de sugerencias IA en dashboard con accept/reject + tarea Celery diaria.
+
+### Tareas completadas
+
+1. **`apps/agentes/tasks.py` — nuevo** (`generar_sugerencias_diarias`):
+   - Celery task que itera todas las empresas activas.
+   - Llama `CobranzaEstrategaAgent.analizar(persistir=True)` y `ReordenSugeridorAgent.analizar(persistir=True)`.
+   - Manejo de excepciones por empresa (best-effort, no corta el loop).
+   - Diseñado para correr a las 06:00 AM diariamente via Celery Beat.
+
+2. **`apps/agentes/views.py` — 2 nuevas acciones en `PrediccionAgenteViewSet`:**
+   - `GET /api/agentes/predicciones/sugerencias-activas/?limite=5&agente=` — retorna predicciones pendientes formateadas como tarjetas UI con `titulo`, `descripcion`, `confianza`, `url_accion`.
+   - `POST /api/agentes/predicciones/{pk}/responder/` — acepta `{"accion": "aceptar"|"rechazar"}`, cambia `resultado_humano`, retorna 409 si ya fue procesada.
+   - Helpers `_titulo_sugerencia()` y `_accion_para_sugerencia()` para generar textos legibles por agente.
+
+3. **`frontend/src/components/SugerenciasWidget.tsx` — nuevo:**
+   - Tarjetas MUI con chips de agente (Cobranza, Inventario, etc.), confianza %, monto.
+   - Botones "✓ Aceptar" (verde), "✗ Rechazar" (rojo), "Ver detalle →" (navega a url_accion).
+   - Estado loading/error manejados con `CircularProgress` y `Alert`.
+   - Actualización optimista: la tarjeta desaparece inmediatamente al responder.
+
+4. **`frontend/src/pages/Core/Login/DashboardUserPage.tsx`:**
+   - `<SugerenciasWidget />` integrado en un `<Paper>` al final del dashboard.
+   - Import añadido.
+
+### Tests
+
+- `tests_api/test_sesion_l_agentes_ui.py` — 18 tests:
+  - `TestSugerenciasActivas` (9): 200, estructura, solo pendientes, límite, filtro por agente, campos presentes, aislamiento, 401 sin auth.
+  - `TestResponder` (7): aceptar, rechazar, accion inválida 400, doble respuesta 409, no afecta otras, 404 ajena, 401 sin auth.
+  - `TestGenerarSugerenciasDiarias` (2): tarea sin excepción, idempotente.
+
+### Resultado
+
+- **18/18 tests pasando** ✅
+- tsc: 0 errores ✅
+
+---
