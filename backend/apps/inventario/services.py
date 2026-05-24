@@ -256,11 +256,15 @@ def registrar_movimiento(
                 "NotaVenta o FacturaFiscal activa en esta empresa."
             )
 
-        # Validar estado del documento de venta
-        if nota and nota.estado not in ("CONFIRMADA", "APROBADA", "PENDIENTE_DESPACHO"):
+        # Validar estado del documento de venta.
+        # NotaVenta pasa a ENTREGADA DESPUÉS del movimiento (ver entregar_nota_venta en services.py),
+        # por lo que el estado válido para DESPACHO_VENTA es BORRADOR.
+        # ENTREGADA/FACTURADA/ANULADA indican que el documento ya fue procesado.
+        _estados_validos_nota = {"BORRADOR", "CONFIRMADA", "APROBADA", "PENDIENTE_DESPACHO"}
+        if nota and nota.estado not in _estados_validos_nota:
             raise MovimientoInvalidoError(
-                f"La NotaVenta debe estar en estado CONFIRMADA / APROBADA / PENDIENTE_DESPACHO "
-                f"para hacer un despacho. Estado actual: {nota.estado}"
+                f"La NotaVenta no puede ser despachada en estado {nota.estado!r}. "
+                f"Estados válidos: {sorted(_estados_validos_nota)}"
             )
         if factura and factura.estado not in ("EMITIDA", "PENDIENTE_DESPACHO"):
             raise MovimientoInvalidoError(

@@ -16,7 +16,7 @@ from decimal import Decimal
 from django.db import models, transaction
 from django.utils import timezone
 
-from apps.contabilidad.services import AsientoError, generar_asiento
+from apps.contabilidad.services import AsientoError, MapeoContableNoEncontrado, generar_asiento
 from apps.core.services import FlujoError, verificar_paso_flujo  # noqa: F401 — re-exported for callers
 from apps.inventario.services import (
     MovimientoInvalidoError,
@@ -291,6 +291,54 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
     return {"movimientos": movimientos, "cxc": cxc}
 
 
+# ── confirmar_nota_venta ──────────────────────────────────────────────────────
+
+
+@transaction.atomic
+def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
+    """
+    Entrega la NotaVenta y genera el asiento contable NOTA_VENTA (R-CODE-11 — CTF-001).
+
+    El asiento registra:
+      DEBE  → Cuentas por Cobrar (CxC)
+      HABER → Ingresos por Ventas
+
+    El mapeo debe existir en Contabilidad → MapeoContable (tipo_asiento='NOTA_VENTA').
+    Si no existe, la entrega sigue adelante (best-effort) pero el asiento no se genera;
+    se adjunta 'asiento_error' en el resultado para trazabilidad.
+
+    Args:
+        nota_venta: instancia NotaVenta en estado BORRADOR
+        almacen:    almacén de despacho
+        usuario:    usuario que ejecuta la acción
+
+    Returns:
+        {"movimientos": [...], "cxc": ..., "asiento": AsientoContable | None, "asiento_error": str | None}
+    """
+    resultado = entregar_nota_venta(nota_venta, almacen, usuario)
+
+    asiento = None
+    asiento_error = None
+    try:
+        detalles = list(nota_venta.detalles.all())
+        subtotal = sum(d.subtotal for d in detalles)
+        asiento = generar_asiento(
+            "NOTA_VENTA",
+            nota_venta,
+            nota_venta.id_empresa,
+            monto=subtotal,
+        )
+    except MapeoContableNoEncontrado as exc:
+        # El mapeo es opcional en ambientes sin contabilidad configurada
+        asiento_error = str(exc)
+    except AsientoError as exc:
+        asiento_error = str(exc)
+
+    resultado["asiento"] = asiento
+    resultado["asiento_error"] = asiento_error
+    return resultado
+
+
 # ── emitir_factura_fiscal ─────────────────────────────────────────────────────
 
 
@@ -358,6 +406,23 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     except AsientoError as exc:
         raise VentaError(f"Error generando asiento contable: {exc}") from exc
 
+    # CTF-001: asiento separado para el IVA (si el monto de IVA es positivo)
+    asiento_iva = None
+    asiento_iva_error = None
+    if monto_iva > Decimal("0"):
+        try:
+            asiento_iva = generar_asiento(
+                "FACTURA_VENTA_IVA",
+                factura,
+                factura.id_empresa,
+                monto=monto_iva,
+            )
+        except MapeoContableNoEncontrado as exc:
+            # El mapeo IVA es opcional; no bloquea la emisión de la factura
+            asiento_iva_error = str(exc)
+        except AsientoError as exc:
+            asiento_iva_error = str(exc)
+
     # State transition happens after the asiento succeeds — if asiento fails the
     # entire @transaction.atomic rolls back, so nota_venta never reaches FACTURADA.
     nota_venta.convertido_a_factura = True
@@ -365,4 +430,9 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     nota_venta.estado = "FACTURADA"
     nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado"])
 
-    return {"factura": factura, "asiento": asiento}
+    return {
+        "factura": factura,
+        "asiento": asiento,
+        "asiento_iva": asiento_iva,
+        "asiento_iva_error": asiento_iva_error,
+    }

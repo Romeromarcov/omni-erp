@@ -27,6 +27,8 @@ from .models import AsientoContable, DetalleAsiento, MapeoContable
 TIPOS_ASIENTO = frozenset(
     {
         "FACTURA_VENTA",
+        "FACTURA_VENTA_IVA",   # CTF-001: asiento separado para el IVA
+        "NOTA_VENTA",          # CTF-001: asiento al confirmar nota de venta
         "FACTURA_COMPRA",
         "RECEPCION_MERCANCIA",
         "AJUSTE_INVENTARIO",
@@ -86,7 +88,7 @@ def _descripcion(plantilla: str, tipo: str, documento) -> str:
 
 
 @transaction.atomic
-def generar_asiento(tipo: str, documento, empresa=None) -> AsientoContable:
+def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal = None) -> AsientoContable:
     """
     Crea un AsientoContable con dos líneas (debe/haber) para el documento dado.
 
@@ -94,6 +96,7 @@ def generar_asiento(tipo: str, documento, empresa=None) -> AsientoContable:
         tipo:      Uno de TIPOS_ASIENTO.
         documento: Instancia del modelo origen (FacturaFiscal, RecepcionMercancia, etc.).
         empresa:   Instancia de Empresa. Si None, se infiere del documento.
+        monto:     Monto explícito. Si None, se infiere del documento (útil para IVA, etc.).
 
     Returns:
         AsientoContable creado (estado BORRADOR o APROBADO según empresa.contabilidad_auto_aprobar).
@@ -108,7 +111,10 @@ def generar_asiento(tipo: str, documento, empresa=None) -> AsientoContable:
     if empresa is None:
         empresa = _extraer_empresa(documento)
 
-    monto = _extraer_monto(documento)
+    if monto is None:
+        monto = _extraer_monto(documento)
+    else:
+        monto = Decimal(str(monto))
     if monto <= Decimal("0"):
         raise AsientoError(f"El monto del asiento debe ser mayor a cero. Obtenido: {monto}")
 

@@ -90,7 +90,7 @@ def cliente_legacy(db, empresa_a):
 
 @pytest.fixture
 def nota_venta_borrador(db, empresa_a, cliente_legacy):
-    """NotaVenta en estado BORRADOR (estado inválido para DESPACHO_VENTA)."""
+    """NotaVenta en estado FACTURADA (estado inválido para DESPACHO_VENTA — ya fue despachada)."""
     from apps.ventas.models import NotaVenta
     from django.utils import timezone
 
@@ -99,7 +99,7 @@ def nota_venta_borrador(db, empresa_a, cliente_legacy):
         id_cliente=cliente_legacy,
         numero_nota="NV-M5-001",
         fecha_nota=timezone.now().date(),
-        estado="BORRADOR",
+        estado="FACTURADA",  # Ya fue despachada — no se puede volver a despachar
     )
 
 
@@ -154,8 +154,8 @@ def test_despacho_venta_con_nota_en_estado_invalido_falla(
     empresa_a, producto, almacen, stock_disponible, user_a, nota_venta_borrador
 ):
     """
-    DESPACHO_VENTA con NotaVenta en estado BORRADOR lanza MovimientoInvalidoError
-    porque el estado válido es CONFIRMADA / APROBADA / PENDIENTE_DESPACHO.
+    DESPACHO_VENTA con NotaVenta en estado FACTURADA (ya despachada) lanza
+    MovimientoInvalidoError — no se puede despachar dos veces la misma nota.
     """
     from django.utils import timezone
 
