@@ -295,13 +295,20 @@ class TestDSLAplicador:
         resultado = aplicar_config(config, empresa_a)
         assert any("renombrar" in a for a in resultado["aplicadas"])
 
-    def test_aplicar_primitivas_no_poc_genera_advertencia(self, empresa_a):
+    def test_aplicar_primitivas_estados_procesa_sin_advertencia(self, empresa_a):
+        """CTF-002: estados se procesa en DB — ya no genera advertencia, aparece en 'aplicadas'."""
         from apps.personalizacion.dsl import aplicar_config
         config = {
             "estados": [{"modelo": "Gasto", "nombre": "X", "etiqueta": "X"}],
         }
         resultado = aplicar_config(config, empresa_a)
-        assert any("estados" in w for w in resultado["advertencias"])
+        # La primitiva debe aparecer en aplicadas (procesada), no en advertencias
+        assert any("estados" in a for a in resultado["aplicadas"]), (
+            f"Se esperaba 'estados' en aplicadas; aplicadas={resultado['aplicadas']}"
+        )
+        assert not any("estados" in w for w in resultado["advertencias"]), (
+            "La primitiva 'estados' no debe generar advertencia tras CTF-002"
+        )
 
     def test_aplicar_config_invalido_lanza_error(self, empresa_a):
         from apps.personalizacion.dsl import aplicar_config
