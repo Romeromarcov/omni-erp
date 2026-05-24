@@ -879,3 +879,63 @@ migracion-datos, personalizacion
 | M10 SaaS Core | ✅ COMPLETO | ✅ |
 
 ---
+
+## Sesión 19 — 2026-05-24 (Bloque IV — Sesión I: Módulo Notificaciones MVP)
+
+**Rama:** `main`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Sesión I — Módulo notificaciones MVP: in-app polling + email Celery + emisión automática en ventas.
+
+### Tareas completadas
+
+1. **`apps/notificaciones/` — nueva app completa:**
+   - `models.py`: `PlantillaNotificacion`, `EventoNotificacion`, `SuscripcionNotificacion`, `LogNotificacion`. La notificación in-app reutiliza `core.Notificacion` (ya existente con todos los campos necesarios).
+   - `services.py`: `emitir_notificacion(codigo_evento, empresa, usuario, contexto)` — crea Notificacion in-app vía `crear_notificacion()` y encola email via Celery si hay plantilla activa.
+   - `tasks.py`: `enviar_notificacion_email.delay(...)` — `send_mail` con plantilla HTML, reintentos automáticos (max_retries=3), log de entrega con estado.
+   - `serializers.py`: `NotificacionSerializer` sobre `core.Notificacion`.
+   - `views.py`: `NotificacionViewSet` — actions `mis-notificaciones` (últimas 20, filtro `?no_leidas=true`) y `marcar-leida`.
+   - `urls.py`: router con prefix `notificaciones/`.
+   - `admin.py`: modelos registrados.
+   - `migrations/0001_initial.py`: generada y aplicada.
+
+2. **Registro en settings/urls:**
+   - `apps.notificaciones` en `INSTALLED_APPS`.
+   - `api/notificaciones/` en `config/urls.py`.
+
+3. **Fix colateral — `apps/compras/migrations/0008_recepcionmercancia_id_empresa_not_null.py`:**
+   - `recepcionmercancia.id_empresa` fue añadido como `null=True` en 0004 pero el modelo ya era NOT NULL. Migración generada para alinear el estado.
+
+4. **Emisión automática en `apps/ventas/services.py`:**
+   - `confirmar_pedido()`: llama `emitir_notificacion("PEDIDO_CONFIRMADO", ...)` al vendedor al finalizar con éxito (best-effort, en `try/except`).
+
+5. **Emisión automática en `apps/finanzas/views.py`:**
+   - `PagoViewSet.perform_create()`: cuando `tipo_operacion == "INGRESO"`, emite `PAGO_RECIBIDO` al operador.
+
+6. **Frontend — `frontend/src/components/NotificationBell.tsx`:**
+   - Badge 🔔 en navbar con contador de no-leídas.
+   - Polling cada 30s a `GET /api/notificaciones/notificaciones/mis-notificaciones/?no_leidas=true`.
+   - Dropdown con lista de notificaciones + botón "Marcar leída" + "Ver detalle".
+   - Integrado en `ProtectedLayout` en `router.tsx`.
+   - tsc --noEmit: 0 errores.
+
+7. **`tests_api/test_sesion_i_notificaciones.py`** — 15 tests:
+   - `TestNotificacionInApp` (5): creación, título, tipo, url_accion, leida=False.
+   - `TestNotificacionEmail` (3): email enviado con plantilla, sin plantilla no crea log, sin email no crea log.
+   - `TestAislamientoNotificaciones` (1): usuario A no ve notificaciones de empresa B.
+   - `TestEndpointsNotificaciones` (6): GET 200, lista, filtro no_leídas, PATCH marcar-leída, 401 sin auth, 404 notif ajena.
+
+### Resultado
+
+- **15/15 tests nuevos pasando**.
+- Suite completa: **697 passed, 1 error** (error pre-existente: teardown concurrent test fiscal — no es regresión).
+- TypeScript frontend: 0 errores.
+- Django check: 0 issues.
+
+### DoD Sesión I
+
+- [x] Un usuario puede ver sus notificaciones sin leer en el navbar (badge + polling 30s)
+- [x] Confirmar pedido genera notificación in-app al vendedor
+- [x] Pago registrado genera notificación in-app + encola email Celery (requiere plantilla configurada en admin)
+- [x] Tests: `test_notificacion_in_app_creada`, `test_notificacion_email_enviada`, `test_aislamiento_notificaciones`
+
+---

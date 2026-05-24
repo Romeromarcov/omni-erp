@@ -1107,6 +1107,24 @@ class PagoViewSet(BaseModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
 
+    def perform_create(self, serializer):
+        pago = serializer.save()
+        if pago.tipo_operacion == "INGRESO":
+            try:
+                from apps.notificaciones.services import emitir_notificacion
+                emitir_notificacion(
+                    "PAGO_RECIBIDO",
+                    pago.id_empresa,
+                    self.request.user,
+                    {
+                        "monto": str(pago.monto),
+                        "moneda": str(pago.id_moneda),
+                        "numero_factura": str(pago.id_documento),
+                    },
+                )
+            except Exception:  # noqa: BLE001
+                pass  # notificación best-effort
+
     def get_queryset(self):
         # R-CODE-1: usar get_empresas_visible para incluir subsidiarias y
         # garantizar aislamiento simétrico con los demás módulos.

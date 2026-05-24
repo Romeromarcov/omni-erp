@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './pages/Core/Login/LoginPage';
 import SidebarMenu from './components/SidebarMenu';
+import NotificationBell from './components/NotificationBell';
 import { SidebarProvider, useSidebar } from './components/SidebarContext';
 import { useAuth } from './contexts/AuthContext';
 import { ventasRoutes } from './routes/ventasRoutes';
@@ -15,6 +16,9 @@ function ProtectedLayout() {
     <div style={{ display: 'flex' }}>
       <SidebarMenu />
       <div style={{ marginLeft, width: '100%', transition: 'margin-left 0.3s ease' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px', borderBottom: '1px solid #f0f0f0' }}>
+          <NotificationBell />
+        </div>
         <Outlet />
       </div>
     </div>

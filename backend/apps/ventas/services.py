@@ -197,6 +197,22 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
         actor_id=str(usuario.pk),
     )
 
+    # Notificación in-app al vendedor que confirmó el pedido
+    try:
+        from apps.notificaciones.services import emitir_notificacion
+        emitir_notificacion(
+            "PEDIDO_CONFIRMADO",
+            pedido.id_empresa,
+            usuario,
+            {
+                "numero_pedido": pedido.numero_pedido,
+                "nombre_cliente": str(pedido.id_cliente),
+            },
+            url_accion=f"/ventas/pedidos/{pedido.id_pedido}/",
+        )
+    except Exception:  # noqa: BLE001
+        pass  # La notificación es best-effort; no bloquea el flujo de venta
+
     return {"reservas": reservas, "cxc": cxc}
 
 

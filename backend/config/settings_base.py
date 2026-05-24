@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "apps.costos",
     "apps.agentes",
     "apps.personalizacion",
+    "apps.notificaciones",
     "apps.saas",
     # Event Store
     "apps.eventos",

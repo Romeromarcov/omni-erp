@@ -62,6 +62,7 @@ urlpatterns = [
     path("api/gestion-documental/", include("apps.gestion_documental.urls")),
     path("api/contabilidad/", include("apps.contabilidad.urls")),
     path("api/agentes/", include("apps.agentes.urls")),
+    path("api/notificaciones/", include("apps.notificaciones.urls")),
     path("api/saas/", include("apps.saas.urls")),
     # Fase C — apps registradas
     path("api/almacenes/", include("apps.almacenes.urls")),
