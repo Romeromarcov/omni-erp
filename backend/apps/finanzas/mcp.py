@@ -17,7 +17,7 @@ logger = logging.getLogger("omni.mcp.finanzas")
 _SCOPE = "finanzas"
 
 
-def _ctx(capability_token: str, scope: str) -> Dict[str, Any]:
+def _ctx(capability_token: str, scope: str) -> dict:
     from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
 
     context = _resolve_token(capability_token)
@@ -31,7 +31,7 @@ def finanzas_get_pagos(
     empresa_id: str,
     tipo_documento: str = "",
     limit: int = 50,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Lista pagos registrados de una empresa.
 
@@ -83,7 +83,7 @@ def finanzas_get_saldo_caja(
     capability_token: str,
     empresa_id: str,
     caja_id: str,
-) -> Dict[str, Any]:
+) -> dict:
     """
     Retorna el saldo actual de una caja física específica.
 
@@ -128,7 +128,7 @@ def finanzas_get_saldo_caja(
 
 def finanzas_get_metodos_pago(
     capability_token: str,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Lista todos los métodos de pago disponibles en el sistema.
 

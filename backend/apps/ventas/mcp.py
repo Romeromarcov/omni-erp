@@ -27,7 +27,7 @@ _SCOPE = "ventas"
 # Helpers internos
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _ctx(capability_token: str, scope: str) -> Dict[str, Any]:
+def _ctx(capability_token: str, scope: str) -> dict:
     """Resuelve y valida token + scope. Lanza PermissionError si falla."""
     from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
 
@@ -46,7 +46,7 @@ def ventas_get_cotizacion(
     capability_token: str,
     empresa_id: str,
     cotizacion_id: str,
-) -> Dict[str, Any]:
+) -> dict:
     """
     Recupera los detalles de una cotización específica.
 
@@ -102,7 +102,7 @@ def ventas_get_notas_venta(
     empresa_id: str,
     estado: str = "",
     limit: int = 20,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Lista notas de venta de una empresa.
 
@@ -150,7 +150,7 @@ def ventas_get_facturas(
     empresa_id: str,
     estado: str = "",
     limit: int = 20,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Lista facturas fiscales de una empresa.
 

@@ -130,7 +130,7 @@ def _require_scope(context: Optional[Dict[str, Any]], scope: str) -> None:
 
 # ── Herramientas MCP (definidas a nivel de módulo para ser importables en tests) ─
 
-def omni_ping(capability_token: str) -> Dict[str, Any]:
+def omni_ping(capability_token: str) -> dict:
     """
     Health check del servidor Omni.
 
@@ -152,7 +152,7 @@ def omni_ping(capability_token: str) -> Dict[str, Any]:
     }
 
 
-def omni_get_empresas(capability_token: str) -> List[Dict[str, Any]]:
+def omni_get_empresas(capability_token: str) -> list:
     """
     Lista las empresas visibles para el tenant del token.
 
@@ -197,7 +197,7 @@ def omni_get_clientes(
     empresa_id: str,
     buscar: str = "",
     limit: int = 50,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Lista los clientes de una empresa.
 
@@ -258,7 +258,7 @@ def omni_get_saldo_cliente(
     capability_token: str,
     empresa_id: str,
     cliente_id: str,
-) -> Dict[str, Any]:
+) -> dict:
     """
     Devuelve el saldo pendiente de CxC de un cliente.
 
@@ -311,7 +311,7 @@ def omni_get_saldo_cliente(
 def omni_get_cxc_aging(
     capability_token: str,
     empresa_id: str,
-) -> Dict[str, Any]:
+) -> dict:
     """
     Devuelve el reporte de antigüedad de saldos por cobrar de una empresa.
 
@@ -360,7 +360,7 @@ def omni_get_stock_producto(
     empresa_id: str,
     producto_id: str,
     almacen_id: str = "",
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Devuelve el stock disponible de un producto, opcionalmente por almacén.
 
@@ -413,7 +413,7 @@ def omni_get_ventas_resumen(
     empresa_id: str,
     fecha_desde: str = "",
     fecha_hasta: str = "",
-) -> Dict[str, Any]:
+) -> dict:
     """
     Devuelve un resumen de ventas (pedidos aprobados) de una empresa.
 
@@ -473,7 +473,7 @@ def omni_crear_pedido(
     empresa_id: str,
     cliente_id: str,
     productos: list,
-) -> Dict[str, Any]:
+) -> dict:
     """
     Crea un pedido de venta.
 
@@ -553,7 +553,7 @@ def omni_get_pedidos(
     empresa_id: str,
     estado: str = "",
     limit: int = 20,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Retorna pedidos de una empresa, opcionalmente filtrados por estado.
 
@@ -616,7 +616,7 @@ def omni_registrar_movimiento_inventario(
     cantidad: str,
     almacen_destino_id: str = "",
     almacen_origen_id: str = "",
-) -> Dict[str, Any]:
+) -> dict:
     """
     Registra un movimiento de inventario.
 
@@ -686,7 +686,7 @@ def omni_get_correlativo_fiscal(
     capability_token: str,
     empresa_id: str,
     tipo_documento: str,
-) -> Dict[str, Any]:
+) -> dict:
     """
     Retorna el siguiente número correlativo fiscal para un tipo de documento.
 
@@ -749,7 +749,7 @@ def omni_buscar_cliente(
     capability_token: str,
     empresa_id: str,
     termino: str,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Busca clientes por nombre, RIF o email.
 
@@ -815,7 +815,7 @@ def omni_buscar_contacto(
     query: str = "",
     rol: str = "",
     limit: int = 20,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Busca contactos unificados por nombre, RIF, cédula o email.
 
@@ -929,7 +929,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
 ]
 
 
-def _autodiscover_module_tools(module_paths: Optional[List[str]] = None) -> Dict[str, Any]:
+def _autodiscover_module_tools(module_paths: Optional[List[str]] = None) -> dict:
     """
     Importa los módulos MCP por-módulo y registra sus herramientas en el servidor.
 

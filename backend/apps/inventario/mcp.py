@@ -17,7 +17,7 @@ logger = logging.getLogger("omni.mcp.inventario")
 _SCOPE = "inventario"
 
 
-def _ctx(capability_token: str, scope: str) -> Dict[str, Any]:
+def _ctx(capability_token: str, scope: str) -> dict:
     from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
 
     context = _resolve_token(capability_token)
@@ -32,7 +32,7 @@ def inventario_get_productos(
     buscar: str = "",
     activos_solo: bool = True,
     limit: int = 50,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Lista productos de una empresa, con filtro opcional por nombre/SKU.
 
@@ -82,7 +82,7 @@ def inventario_get_stock_resumen(
     capability_token: str,
     empresa_id: str,
     almacen_id: str = "",
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Retorna el stock disponible de todos los productos de una empresa.
 
@@ -129,7 +129,7 @@ def inventario_get_stock_resumen(
 def inventario_get_alertas_stock(
     capability_token: str,
     empresa_id: str,
-) -> List[Dict[str, Any]]:
+) -> list:
     """
     Retorna productos cuyo stock disponible cayó por debajo del punto de reorden.
 
