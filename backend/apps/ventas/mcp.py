@@ -12,7 +12,6 @@ Herramientas expuestas:
   ventas_get_facturas     — lista facturas fiscales de una empresa
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List

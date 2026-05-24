@@ -7,7 +7,6 @@ Herramientas expuestas:
   inventario_get_alertas_stock — productos con stock bajo el punto de reorden
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List

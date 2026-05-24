@@ -40,7 +40,6 @@ Herramientas disponibles (v1):
   - omni_get_correlativo_fiscal: siguiente número correlativo fiscal
 """
 
-from __future__ import annotations
 
 import logging
 import os

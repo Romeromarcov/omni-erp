@@ -7,7 +7,6 @@ Herramientas expuestas:
   finanzas_get_metodos_pago   — lista métodos de pago disponibles
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List
