@@ -1,6 +1,7 @@
 from django.db import models
 
 from apps.core.models import Empresa
+from apps.core.uuid import uuid7
 from apps.finanzas.models import Caja, Moneda
 
 
@@ -103,3 +104,116 @@ class OperacionCambioDivisa(models.Model):
 
     def __str__(self):
         return f"{self.numero_operacion} - {self.tipo_operacion}: {self.monto_origen} {self.moneda_origen} -> {self.monto_destino} {self.moneda_destino}"
+
+
+# ── Conciliación Bancaria ─────────────────────────────────────────────────────
+
+
+class MovimientoBancario(models.Model):
+    """
+    Línea de extracto bancario importada desde el banco.
+
+    Representa un movimiento real en la cuenta bancaria del banco,
+    que será conciliado con los pagos/cobros registrados en el sistema.
+    """
+
+    TIPO_CHOICES = [
+        ("DEBITO", "Débito"),
+        ("CREDITO", "Crédito"),
+    ]
+    ESTADO_CHOICES = [
+        ("PENDIENTE", "Pendiente de conciliar"),
+        ("CONCILIADO", "Conciliado"),
+        ("DESCARTADO", "Descartado"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="movimientos_bancarios",
+    )
+    id_cuenta_bancaria = models.ForeignKey(
+        "finanzas.CuentaBancariaEmpresa",
+        on_delete=models.CASCADE,
+        related_name="movimientos_bancarios",
+    )
+    fecha_mov = models.DateField()
+    descripcion = models.CharField(max_length=300)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    monto = models.DecimalField(max_digits=18, decimal_places=2)
+    referencia = models.CharField(max_length=100, blank=True)
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default="PENDIENTE", db_index=True)
+    # FK al pago interno conciliado (null = no conciliado todavía)
+    id_pago_conciliado = models.ForeignKey(
+        "finanzas.Pago",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="movimientos_bancarios_conciliados",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    origen = models.CharField(
+        max_length=20,
+        choices=[("CSV", "Importado CSV"), ("MANUAL", "Registrado manualmente"), ("API", "API bancaria")],
+        default="MANUAL",
+    )
+
+    class Meta:
+        db_table = "tesoreria_movimiento_bancario"
+        ordering = ["-fecha_mov", "-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "estado"]),
+            models.Index(fields=["id_cuenta_bancaria", "fecha_mov"]),
+        ]
+
+    def __str__(self):
+        return f"{self.tipo} {self.monto} — {self.descripcion[:40]} ({self.estado})"
+
+
+class ConciliacionBancaria(models.Model):
+    """
+    Sesión de conciliación bancaria para un período y cuenta específicos.
+    """
+
+    ESTADO_CHOICES = [
+        ("ABIERTA", "Abierta"),
+        ("CERRADA", "Cerrada"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="conciliaciones_bancarias",
+    )
+    id_cuenta_bancaria = models.ForeignKey(
+        "finanzas.CuentaBancariaEmpresa",
+        on_delete=models.CASCADE,
+        related_name="conciliaciones",
+    )
+    periodo_inicio = models.DateField()
+    periodo_fin = models.DateField()
+    saldo_banco = models.DecimalField(max_digits=18, decimal_places=2, help_text="Saldo según extracto bancario")
+    saldo_libro = models.DecimalField(max_digits=18, decimal_places=2, help_text="Saldo según libros contables")
+    diferencia = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default="ABIERTA")
+    movimientos_conciliados = models.IntegerField(default=0)
+    movimientos_pendientes = models.IntegerField(default=0)
+    realizada_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    observaciones = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "tesoreria_conciliacion_bancaria"
+        ordering = ["-periodo_fin"]
+
+    def __str__(self):
+        return f"Conciliación {self.id_cuenta_bancaria} {self.periodo_inicio}→{self.periodo_fin} [{self.estado}]"

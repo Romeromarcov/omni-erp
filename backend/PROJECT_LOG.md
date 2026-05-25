@@ -1105,3 +1105,47 @@ Faltaba: cabecera en TXT, PDF del libro, soporte `?periodo=YYYY-MM`, aislamiento
 - tsc: 0 errores ✅
 
 ---
+
+## Sesión 23 — Sesión M: Tesorería + Conciliación Bancaria (2026-05-24)
+
+### Archivos creados / modificados
+
+1. **`apps/tesoreria/models.py`** — 2 modelos nuevos:
+   - `MovimientoBancario`: línea de extracto bancario (fecha, tipo DEBITO/CREDITO, monto, referencia, estado PENDIENTE/CONCILIADO/DESCARTADO, origen MANUAL/CSV/API). FK a `Pago` para el vínculo de conciliación.
+   - `ConciliacionBancaria`: sesión de conciliación bancaria (periodo, saldo_banco, saldo_libro, diferencia, contadores conciliados/pendientes, estado ABIERTA/CERRADA).
+
+2. **`apps/tesoreria/migrations/0004_movimiento_bancario_conciliacion.py`** — migración con:
+   - Dependencia correcta en `("finanzas", "0018_pago")` donde se crea el modelo `Pago`.
+   - Índices: `tesoreria_mov_empresa_estado_idx` y `tesoreria_mov_cuenta_fecha_idx`.
+
+3. **`apps/tesoreria/services.py`** — 6 funciones de negocio:
+   - `registrar_movimiento_bancario()`: validaciones de tipo, monto > 0, cuenta pertenece a empresa.
+   - `importar_extracto_csv()`: parseo CSV con cabecera `fecha,descripcion,tipo,monto,referencia`, manejo de errores por fila.
+   - `conciliar_automatico()`: matching automático CREDITO↔INGRESO por referencia exacta (prioridad 1) o monto+ventana de fecha ±tolerancia_dias (prioridad 2).
+   - `_buscar_pago_matching()`: helper interno; usa `fecha_pago__date__gte/lte` y `order_by("fecha_pago")`.
+   - `iniciar_conciliacion()`, `cerrar_conciliacion()`: gestión de sesión ConciliacionBancaria.
+
+4. **`apps/tesoreria/serializers.py`** — `MovimientoBancarioSerializer` y `ConciliacionBancariaSerializer`.
+
+5. **`apps/tesoreria/views.py`** — 2 ViewSets:
+   - `MovimientoBancarioViewSet`: CRUD + `@action importar-csv` (POST multipart) + `@action conciliar-auto` (POST).
+   - `ConciliacionBancariaViewSet`: CRUD + `@action cerrar` (POST).
+
+6. **`apps/tesoreria/urls.py`** — Registro de `movimientos-bancarios` y `conciliaciones-bancarias` en el router.
+
+### Tests
+
+- `tests_api/test_sesion_m_tesoreria.py` — 25 tests:
+  - `TestRegistrarMovimientoBancario` (4): crea movimiento, tipo inválido 400, monto cero 400, monto negativo 400.
+  - `TestImportarExtractoCSV` (2): importa filas válidas, cuenta filas con error.
+  - `TestConciliarAutomatico` (4): sin pagos cero conciliados, movimiento DEBITO no se concilia, sin movimientos retorna cero, devuelve dict correcto.
+  - `TestIniciarConciliacion` (4): crea sesión ABIERTA, calcula diferencia, contadores iniciales, múltiples sesiones.
+  - `TestCerrarConciliacion` (4): cambia estado a CERRADA, registra fecha_cierre, recalcula contadores, idempotente.
+  - `TestMovimientoBancarioViewSet` (4): lista filtrada por empresa, crea movimiento via API, importa CSV via API, concilia auto via API.
+  - `TestConciliacionBancariaViewSet` (3): crea conciliacion, cierra via API, filtro por empresa.
+
+### Resultado
+
+- **25/25 tests pasando** ✅
+
+---

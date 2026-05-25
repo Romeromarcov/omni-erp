@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Caja, MovimientoInternoFondo, OperacionCambioDivisa
+from .models import Caja, ConciliacionBancaria, MovimientoBancario, MovimientoInternoFondo, OperacionCambioDivisa
 
 
 class CajaSerializer(serializers.ModelSerializer):
@@ -180,3 +180,31 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
         )
 
         return operacion
+
+
+class MovimientoBancarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MovimientoBancario
+        fields = [
+            "id", "id_empresa", "id_cuenta_bancaria",
+            "fecha_mov", "descripcion", "tipo", "monto", "referencia",
+            "estado", "id_pago_conciliado", "origen", "fecha_creacion",
+        ]
+        read_only_fields = ["id", "estado", "id_pago_conciliado", "fecha_creacion"]
+
+
+class ConciliacionBancariaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConciliacionBancaria
+        fields = [
+            "id", "id_empresa", "id_cuenta_bancaria",
+            "periodo_inicio", "periodo_fin",
+            "saldo_banco", "saldo_libro", "diferencia",
+            "estado", "movimientos_conciliados", "movimientos_pendientes",
+            "realizada_por", "fecha_creacion", "fecha_cierre", "observaciones",
+        ]
+        read_only_fields = [
+            "id", "diferencia", "estado",
+            "movimientos_conciliados", "movimientos_pendientes",
+            "fecha_creacion", "fecha_cierre",
+        ]
