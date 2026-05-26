@@ -45,6 +45,12 @@ class PlanViewSet(BaseModelViewSet):
             raise PermissionDenied("Solo superusuarios Omni pueden crear planes.")
         serializer.save()
 
+    def perform_update(self, serializer):
+        if not getattr(self.request.user, "es_superusuario_omni", False):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Solo superusuarios Omni pueden modificar planes.")
+        serializer.save()
+
     def perform_destroy(self, instance):
         if not getattr(self.request.user, "es_superusuario_omni", False):
             from rest_framework.exceptions import PermissionDenied

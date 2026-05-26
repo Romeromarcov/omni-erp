@@ -393,11 +393,9 @@ class TestSaasMiddlewareInfrastructure:
 
         factory = RequestFactory()
         request = factory.get("/api/ventas/facturas/")
-        request.user = MagicMock(
-            is_authenticated=True,
-            id_empresa=empresa_m10,
-            pk="mock-user-pk",
-        )
+        # El middleware usa user.empresas.first() — mockear correctamente
+        request.user = MagicMock(is_authenticated=True, pk="mock-user-pk")
+        request.user.empresas.first.return_value = empresa_m10
 
         response = middleware(request)
         assert response.status_code == 402, (
@@ -430,11 +428,9 @@ class TestSaasMiddlewareInfrastructure:
 
         factory = RequestFactory()
         request = factory.get("/api/ventas/facturas/")
-        request.user = MagicMock(
-            is_authenticated=True,
-            id_empresa=empresa_m10,
-            pk="mock-user-pk",
-        )
+        # El middleware usa user.empresas.first() — mockear correctamente
+        request.user = MagicMock(is_authenticated=True, pk="mock-user-pk")
+        request.user.empresas.first.return_value = empresa_m10
 
         response = middleware(request)
         assert response.status_code == 200, (

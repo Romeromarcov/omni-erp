@@ -42,11 +42,16 @@ def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> st
     """
     Genera el libro de ventas en formato SENIAT TXT (pipe-delimited).
 
-    Cabecera:
+    Primera línea: cabecera de columnas.
+    Líneas siguientes: una por cada factura en el rango.
+
         RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL
+
+    Devuelve solo la cabecera si no hay facturas en el rango.
     """
     from apps.ventas.models import FacturaFiscal
 
+    cabecera = "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
     rif_emisor = _rif(empresa, "identificador_fiscal", "rif")
 
     facturas = (
@@ -60,7 +65,6 @@ def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> st
         .order_by("fecha_emision", "numero_control")
     )
 
-    cabecera = "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
     lineas = [cabecera]
     for f in facturas:
         cliente = f.id_cliente

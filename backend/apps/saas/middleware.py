@@ -86,7 +86,7 @@ class SuscripcionActivaMiddleware:
             from apps.saas.models import suscripcion_activa
 
             user = request.user
-            empresa = getattr(user, "id_empresa", None)
+            empresa = user.empresas.first() if hasattr(user, "empresas") else None
             if empresa is None:
                 return None  # usuario sin empresa → no verificar
 

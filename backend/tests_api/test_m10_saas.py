@@ -460,7 +460,7 @@ class TestSuscripcionMiddleware:
 
         factory = RequestFactory()
         request = factory.get("/api/ventas/")
-        request.user = MagicMock(is_authenticated=True, id_empresa=empresa_a)
+        request.user = MagicMock(is_authenticated=True)
 
         # Con SAAS_VERIFICAR_SUSCRIPCION=False (default) → permite todo
         get_response = MagicMock(return_value=MagicMock(status_code=200))
@@ -473,6 +473,162 @@ class TestSuscripcionMiddleware:
         from apps.saas.middleware import SuscripcionActivaMiddleware, RUTAS_EXCLUIDAS_DEFAULT
         assert "/admin/" in RUTAS_EXCLUIDAS_DEFAULT
         assert "/api/auth/" in RUTAS_EXCLUIDAS_DEFAULT
+
+
+@pytest.mark.django_db
+class TestSuscripcionMiddlewareActivo:
+    """
+    Middleware con SAAS_VERIFICAR_SUSCRIPCION=True.
+
+    Verifica que la corrección de id_empresa → empresas.first() funcione
+    correctamente: el middleware debe bloquear (402) cuando la empresa del
+    usuario tiene únicamente una suscripción vencida, y permitir el paso
+    cuando la suscripción está vigente o el usuario no tiene empresa.
+    """
+
+    @pytest.fixture
+    def plan_free(self, db):
+        from apps.saas.models import Plan
+        return Plan.objects.create(nombre="Free Middleware Test", nivel="FREE")
+
+    @staticmethod
+    def _middleware(get_response):
+        from apps.saas.middleware import SuscripcionActivaMiddleware
+        return SuscripcionActivaMiddleware(get_response)
+
+    # ------------------------------------------------------------------
+    # Caso principal solicitado: suscripción vencida → 402
+    # ------------------------------------------------------------------
+
+    def test_bloquea_cuando_suscripcion_vencida(self, user_a, empresa_a, plan_free):
+        """
+        Regresión: antes del fix, id_empresa siempre era None y el middleware
+        dejaba pasar sin verificar. Ahora debe detectar que la empresa sólo
+        tiene una suscripción vencida y retornar HTTP 402.
+        """
+        import json
+        from apps.saas.models import Suscripcion
+        from django.test import RequestFactory, override_settings
+
+        hoy = date.today()
+        Suscripcion.objects.create(
+            id_empresa=empresa_a,
+            id_plan=plan_free,
+            estado="ACTIVA",
+            fecha_inicio=hoy - timedelta(days=60),
+            fecha_fin=hoy - timedelta(days=1),  # venció ayer
+        )
+
+        factory = RequestFactory()
+        request = factory.get("/api/ventas/pedidos/")
+        request.user = user_a  # usuario real con empresas M2M
+
+        get_response = MagicMock(return_value=MagicMock(status_code=200))
+
+        with override_settings(SAAS_VERIFICAR_SUSCRIPCION=True):
+            middleware = self._middleware(get_response)
+            response = middleware(request)
+
+        assert response.status_code == 402
+        data = json.loads(response.content)
+        assert data["codigo"] == "SUSCRIPCION_REQUERIDA"
+        # El get_response nunca debe haberse llamado
+        get_response.assert_not_called()
+
+    # ------------------------------------------------------------------
+    # Caso complementario: suscripción vigente → pasa
+    # ------------------------------------------------------------------
+
+    def test_permite_cuando_suscripcion_vigente(self, user_a, empresa_a, plan_free):
+        """Empresa con suscripción ACTIVA dentro de fechas → 200."""
+        from apps.saas.models import Suscripcion
+        from django.test import RequestFactory, override_settings
+
+        hoy = date.today()
+        Suscripcion.objects.create(
+            id_empresa=empresa_a,
+            id_plan=plan_free,
+            estado="ACTIVA",
+            fecha_inicio=hoy - timedelta(days=5),
+            fecha_fin=hoy + timedelta(days=25),
+        )
+
+        factory = RequestFactory()
+        request = factory.get("/api/ventas/pedidos/")
+        request.user = user_a
+
+        get_response = MagicMock(return_value=MagicMock(status_code=200))
+
+        with override_settings(SAAS_VERIFICAR_SUSCRIPCION=True):
+            middleware = self._middleware(get_response)
+            response = middleware(request)
+
+        assert response.status_code == 200
+        get_response.assert_called_once()
+
+    # ------------------------------------------------------------------
+    # Caso borde: usuario sin empresa → pasa sin verificar
+    # ------------------------------------------------------------------
+
+    def test_permite_usuario_sin_empresa(self, db):
+        """Usuario sin empresa asociada no debe ser bloqueado."""
+        from django.contrib.auth import get_user_model
+        from django.test import RequestFactory, override_settings
+
+        User = get_user_model()
+        user_sin_empresa = User.objects.create_user(
+            username="user_sin_empresa_mw",
+            password="pass",
+            is_active=True,
+        )
+        # Sin user_sin_empresa.empresas.add(...) → queryset vacío
+
+        factory = RequestFactory()
+        request = factory.get("/api/ventas/pedidos/")
+        request.user = user_sin_empresa
+
+        get_response = MagicMock(return_value=MagicMock(status_code=200))
+
+        with override_settings(SAAS_VERIFICAR_SUSCRIPCION=True):
+            middleware = self._middleware(get_response)
+            response = middleware(request)
+
+        assert response.status_code == 200
+        get_response.assert_called_once()
+
+    # ------------------------------------------------------------------
+    # Caso borde: ruta excluida no se verifica aunque la suscrip. esté vencida
+    # ------------------------------------------------------------------
+
+    def test_excluye_ruta_api_auth_aunque_suscripcion_vencida(
+        self, user_a, empresa_a, plan_free
+    ):
+        """Rutas excluidas nunca llegan a _verificar_suscripcion."""
+        from apps.saas.models import Suscripcion
+        from django.test import RequestFactory, override_settings
+
+        hoy = date.today()
+        Suscripcion.objects.create(
+            id_empresa=empresa_a,
+            id_plan=plan_free,
+            estado="ACTIVA",
+            fecha_inicio=hoy - timedelta(days=60),
+            fecha_fin=hoy - timedelta(days=1),
+        )
+
+        factory = RequestFactory()
+        request = factory.get("/api/auth/login/")
+        request.user = user_a
+
+        get_response = MagicMock(return_value=MagicMock(status_code=200))
+
+        with override_settings(SAAS_VERIFICAR_SUSCRIPCION=True):
+            middleware = self._middleware(get_response)
+            response = middleware(request)
+
+        # Ruta excluida → siempre pasa
+        assert response.status_code == 200
+        get_response.assert_called_once()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
