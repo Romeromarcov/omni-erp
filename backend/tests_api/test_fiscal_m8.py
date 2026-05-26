@@ -393,9 +393,10 @@ class TestLibrosSENIAT:
         assert isinstance(resultado, str)
         assert len(resultado) > 0
         lineas = resultado.strip().split("\n")
-        assert len(lineas) == 1
+        # Línea 0 = cabecera, línea 1 = datos → 2 líneas en total
+        assert len(lineas) == 2
 
-        campos = lineas[0].split("|")
+        campos = lineas[1].split("|")  # índice 1: primera fila de datos
         assert len(campos) == 8, f"Esperados 8 campos, obtenidos {len(campos)}: {campos}"
 
         # Verify fields position
@@ -411,7 +412,8 @@ class TestLibrosSENIAT:
 
         fecha = timezone.now().date()
         resultado = generar_libro_ventas_txt(empresa_a, fecha, fecha)
-        assert resultado == ""
+        # Sin facturas devuelve solo la línea de cabecera (no string vacío)
+        assert resultado == "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
 
     def test_libro_ventas_multiples_facturas(self, empresa_a, moneda_usd):
         from apps.crm.models import Cliente
@@ -429,7 +431,8 @@ class TestLibrosSENIAT:
 
         resultado = generar_libro_ventas_txt(empresa_a, fecha, fecha)
         lineas = [l for l in resultado.split("\n") if l]
-        assert len(lineas) == 2
+        # Línea 0 = cabecera + 2 líneas de datos = 3 en total
+        assert len(lineas) == 3
 
     def test_libro_compras_retorna_string(self, empresa_a):
         from apps.fiscal.libros_seniat import generar_libro_compras_txt
