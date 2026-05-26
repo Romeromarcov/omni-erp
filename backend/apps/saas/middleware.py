@@ -106,6 +106,10 @@ class SuscripcionActivaMiddleware:
                     status=402,
                 )
         except Exception as exc:
-            logger.error("saas_middleware ERROR: %s", exc)
-            # En caso de error interno, permitir el paso (fail-open)
+            logger.error("saas_middleware ERROR: %s", exc, exc_info=True)
+            # BUG-06 — Decisión de política: fail-open (permitir el paso ante error interno).
+            # Justificación: disponibilidad > control de billing durante la fase de despliegue.
+            # El middleware está desactivado (SAAS_VERIFICAR_SUSCRIPCION=False) hasta que
+            # la lógica de suscripción esté completamente validada en staging.
+            # CUANDO SE ACTIVE: reevaluar si cambiar a fail-closed (503) para billing estricto.
         return None

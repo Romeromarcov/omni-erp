@@ -1093,7 +1093,7 @@ class CajaFisicaViewSet(BaseModelViewSet):
 
         return Response([{"value": choice[0], "label": choice[1]} for choice in Pago.TIPO_OPERACION_CHOICES])
 
-    @action(detail=False, methods=["get"], url_path="tipo-caja-choices", permission_classes=[])
+    @action(detail=False, methods=["get"], url_path="tipo-caja-choices")
     def tipo_caja_choices(self, request):
         """
         Devuelve las opciones disponibles para el campo tipo_caja.

@@ -1,9 +1,9 @@
 from django.db.models import Count, Sum
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.core.viewsets import get_empresas_visible
+from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import CategoriaGasto, Gasto, ReembolsoGasto
 from .serializers import CategoriaGastoSerializer, GastoSerializer, ReembolsoGastoSerializer
@@ -13,7 +13,7 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class CategoriaGastoViewSet(viewsets.ModelViewSet):
+class CategoriaGastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
     queryset = CategoriaGasto.objects.all()
     serializer_class = CategoriaGastoSerializer
     filterset_fields = ["activo", "id_empresa"]
@@ -33,7 +33,7 @@ class CategoriaGastoViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class GastoViewSet(viewsets.ModelViewSet):
+class GastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
     queryset = Gasto.objects.all()
     serializer_class = GastoSerializer
     filterset_fields = ["estado_gasto", "id_empresa", "id_categoria_gasto", "fecha_gasto"]
@@ -119,7 +119,7 @@ class GastoViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ReembolsoGastoViewSet(viewsets.ModelViewSet):
+class ReembolsoGastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
     queryset = ReembolsoGasto.objects.all()
     serializer_class = ReembolsoGastoSerializer
     filterset_fields = ["estado_reembolso", "id_empresa", "fecha_reembolso"]
