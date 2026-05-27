@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.gestion_documental",
     "apps.gestion_aprobaciones",
     "apps.integracion_b2b",
+    "apps.integration_hub",
     "apps.migracion_datos",
     "apps.despacho",
     "apps.costos",

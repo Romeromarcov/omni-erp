@@ -1,0 +1,70 @@
+[
+  {
+    "model": "integration_hub.conectorproveedor",
+    "pk": "00000000-0000-0000-0000-000000000001",
+    "fields": {
+      "codigo": "odoo",
+      "nombre": "Odoo",
+      "descripcion": "Integración con Odoo ERP (Community, Enterprise y SaaS). Soporta todas las versiones desde la 8 hasta la 18+. Conexión vía XML-RPC estándar.",
+      "icono_url": "/static/integration_hub/icons/odoo.svg",
+      "versiones_soportadas": ["8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18"],
+      "capacidades": ["contactos", "productos", "pedidos_venta", "pedidos_compra", "facturas_venta", "pagos", "inventario"],
+      "requiere_url": true,
+      "requiere_db": false,
+      "estado": "activo",
+      "activo": true,
+      "orden": 1
+    }
+  },
+  {
+    "model": "integration_hub.conectorproveedor",
+    "pk": "00000000-0000-0000-0000-000000000002",
+    "fields": {
+      "codigo": "sap_b1",
+      "nombre": "SAP Business One",
+      "descripcion": "Integración con SAP Business One vía Service Layer REST API.",
+      "icono_url": "/static/integration_hub/icons/sap.svg",
+      "versiones_soportadas": ["9.3", "10.0"],
+      "capacidades": ["contactos", "productos", "pedidos_venta", "pedidos_compra", "facturas_venta", "pagos"],
+      "requiere_url": true,
+      "requiere_db": true,
+      "estado": "proximamente",
+      "activo": true,
+      "orden": 2
+    }
+  },
+  {
+    "model": "integration_hub.conectorproveedor",
+    "pk": "00000000-0000-0000-0000-000000000003",
+    "fields": {
+      "codigo": "woocommerce",
+      "nombre": "WooCommerce",
+      "descripcion": "Integración con tiendas WooCommerce vía REST API. Sincroniza productos, pedidos y clientes.",
+      "icono_url": "/static/integration_hub/icons/woocommerce.svg",
+      "versiones_soportadas": ["3.x", "4.x", "5.x", "6.x", "7.x", "8.x"],
+      "capacidades": ["contactos", "productos", "pedidos_venta"],
+      "requiere_url": true,
+      "requiere_db": false,
+      "estado": "proximamente",
+      "activo": true,
+      "orden": 3
+    }
+  },
+  {
+    "model": "integration_hub.conectorproveedor",
+    "pk": "00000000-0000-0000-0000-000000000004",
+    "fields": {
+      "codigo": "shopify",
+      "nombre": "Shopify",
+      "descripcion": "Integración con Shopify vía Admin API. Sincroniza catálogo, pedidos e inventario.",
+      "icono_url": "/static/integration_hub/icons/shopify.svg",
+      "versiones_soportadas": ["2023-01", "2023-04", "2023-07", "2023-10", "2024-01"],
+      "capacidades": ["contactos", "productos", "pedidos_venta", "inventario"],
+      "requiere_url": true,
+      "requiere_db": false,
+      "estado": "proximamente",
+      "activo": true,
+      "orden": 4
+    }
+  }
+]

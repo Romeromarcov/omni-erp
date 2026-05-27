@@ -8,6 +8,7 @@ import { ventasRoutes } from './routes/ventasRoutes';
 import { finanzasRoutes } from './routes/finanzasRoutes';
 import { coreRoutes } from './routes/coreRoutes';
 import { configuracionRoutes } from './routes/configuracionRoutes';
+import { integracionesRoutes } from './routes/integracionesRoutes';
 
 function ProtectedLayout() {
   const { isCollapsed, isMobile } = useSidebar();
@@ -40,6 +41,7 @@ export default function AppRouter() {
               {ventasRoutes()}
               {finanzasRoutes()}
               {configuracionRoutes()}
+              {integracionesRoutes()}
             </Route>
           )}
 

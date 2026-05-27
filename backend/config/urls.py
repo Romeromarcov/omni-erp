@@ -75,6 +75,7 @@ urlpatterns = [
     path("api/servicio-cliente/", include("apps.servicio_cliente.urls")),
     path("api/gestion-aprobaciones/", include("apps.gestion_aprobaciones.urls")),
     path("api/integracion-b2b/", include("apps.integracion_b2b.urls")),
+    path("api/integration-hub/", include("apps.integration_hub.urls")),
     path("api/migracion-datos/", include("apps.migracion_datos.urls")),
     path("api/personalizacion/", include("apps.personalizacion.urls")),
 ]
