@@ -401,6 +401,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     # Use calcular_impuestos for proper IVA/IGTF computation
     impuestos = calcular_impuestos(subtotal, empresa, moneda)
     monto_iva = impuestos["monto_iva"]
+    monto_igtf = impuestos["monto_igtf"]
     total = impuestos["total"]
 
     factura = FacturaFiscal.objects.create(
@@ -412,6 +413,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
         fecha_emision=timezone.now().date(),
         base_imponible=subtotal,
         monto_iva=monto_iva,
+        monto_igtf=monto_igtf,
         monto_total=total,
         id_moneda=moneda,
         estado="EMITIDA",
@@ -446,9 +448,36 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     nota_venta.estado = "FACTURADA"
     nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado"])
 
+    # GAP-01: Create CuentaPorCobrar for the full invoice total
+    from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+    from datetime import timedelta
+
+    cliente = nota_venta.id_cliente
+    dias_credito = getattr(cliente, "dias_credito", None) or 30
+    fecha_emision = factura.fecha_emision
+    cxc = CuentaPorCobrar.objects.create(
+        cliente=cliente,
+        empresa=empresa,
+        monto=total,
+        fecha_emision=fecha_emision,
+        fecha_vencimiento=fecha_emision + timedelta(days=dias_credito),
+        estado="pendiente",
+        referencia_externa=factura.numero_factura,
+        tipo_operacion="FACTURA_VENTA",
+        descripcion=f"Factura Fiscal {factura.numero_factura}",
+        documento_json={
+            "id_factura": str(factura.id_factura),
+            "base_imponible": str(subtotal),
+            "monto_iva": str(monto_iva),
+            "monto_igtf": str(monto_igtf),
+            "monto_total": str(total),
+        },
+    )
+
     return {
         "factura": factura,
         "asiento": asiento,
         "asiento_iva": asiento_iva,
         "asiento_iva_error": asiento_iva_error,
+        "cxc": cxc,
     }

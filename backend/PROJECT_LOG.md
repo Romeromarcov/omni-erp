@@ -1149,3 +1149,92 @@ Faltaba: cabecera en TXT, PDF del libro, soporte `?periodo=YYYY-MM`, aislamiento
 - **25/25 tests pasando** ✅
 
 ---
+
+## Sesión 24 — Semana 1 + Semana 2 del PLAN_TRABAJO_COMPLETO (2026-05-26)
+
+**Rama:** `fix/audit-session-bugs-and-docs`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** Ejecutar todas las tareas de Semana 1 (SEC-02, SEC-04, SEC-05, SEC-06, BUG-03, BUG-06, TD-04, TEST-02, TEST-04, TD-07) y Semana 2 (GAP-01 + TEST-03). Commit y push al finalizar.
+
+---
+
+### Semana 1 — Tareas completadas
+
+#### SEC-02 — Endpoint tipo-caja-choices público eliminado
+- `apps/finanzas/views.py`: removido `permission_classes=[]` del `@action` `tipo_caja_choices`.
+
+#### SEC-04 — Error messages sanitizados en auth_views
+- `apps/core/auth_views.py`: reemplazado `str(e)` en todos los bloques `except` por mensajes genéricos. `exc_info=True` agregado a todos los `logger.error`. Afectó 5 puntos (lineas ~199, 227, 234, 512, 562).
+
+#### SEC-05 — Swagger/ReDoc solo en DEBUG
+- `config/urls.py`: movidos los paths `api/docs/` y `api/redoc/` dentro de `if settings.DEBUG:`.
+
+#### SEC-06 — Guard CORS en producción
+- `config/settings_prod.py`: añadido bloque que lanza `ValueError` si `CORS_ALLOW_ALL_ORIGINS=True`.
+
+#### BUG-03 — Aislamiento multi-tenant en gastos/
+- `apps/gastos/views.py`: `CategoriaGastoViewSet`, `GastoViewSet` y `ReembolsoGastoViewSet` migrados de `viewsets.ModelViewSet` a `BaseModelViewSet` (que aplica `IsAuthenticated` + filtrado por empresa automáticamente).
+
+#### BUG-06 — Política fail-open documentada en SaaS middleware
+- `apps/saas/middleware.py`: bloque `except` documentado con comentario explícito de política (fail-open durante fase de despliegue; reevaluar al activar `SAAS_VERIFICAR_SUSCRIPCION=True`).
+
+#### TD-04 — Coverage threshold elevada
+- `pytest.ini`: `--cov-fail-under` subido de 30 a 71 (cobertura real al momento: 71.64%).
+
+#### TEST-02 + TEST-04 — Suite autenticación y aislamiento gastos
+- `tests_api/test_auth_completo.py` creado con 24 tests:
+  - `TestLoginCredenciales` (4), `TestUsuarioInactivo` (2), `TestLogoutBlacklist` (2), `TestRefreshToken` (3), `TestCambioPassword` (4), `TestAislamientoGastos` (7), `TestAislamientoReembolsos` (2).
+- Todos 24 pasando en 142 s.
+
+#### Correcciones previas (arranque)
+- `tests_api/test_m8_fiscal_completo.py` y `tests_api/test_fiscal_m8.py`: 8 tests actualizados para el header row de SENIAT TXT (introducido en Sesión K).
+
+#### TD-07 — PROJECT_LOG actualizado
+- Esta misma entrada (Semana 1) incorporada al log.
+
+---
+
+### Semana 2 — GAP-01 + TEST-03
+
+**Auditoría previa:** `emitir_factura_fiscal()` ya conectaba `calcular_impuestos()` y `generar_asiento()`. Faltaban: (1) persistir `monto_igtf` en `FacturaFiscal`, (2) crear `CuentaPorCobrar` con el total de la factura.
+
+#### GAP-01 — Conectar emitir_factura_fiscal con calcular_impuestos + generar_asiento + CxC
+
+**`apps/ventas/models.py`**
+- Agregado campo `monto_igtf = DecimalField(max_digits=18, decimal_places=4, default=0.00)` a `FacturaFiscal`.
+
+**`apps/ventas/migrations/0012_facturafiscal_monto_igtf.py`** (nuevo)
+- Migración que agrega el campo `monto_igtf` a la tabla `ventas_factura_fiscal`.
+
+**`apps/ventas/services.py`** — `emitir_factura_fiscal()`
+- Extrae `monto_igtf` del resultado de `calcular_impuestos()` y lo pasa al `FacturaFiscal.objects.create()`.
+- Crea `CuentaPorCobrar` después de la transición de estado de la nota de venta:
+  - `monto` = `total` (monto_total de la factura)
+  - `fecha_vencimiento` = `fecha_emision + timedelta(dias=cliente.dias_credito or 30)`
+  - `referencia_externa` = `factura.numero_factura`
+  - `tipo_operacion` = `"FACTURA_VENTA"`
+  - `documento_json` = dict con base_imponible, monto_iva, monto_igtf, monto_total
+- El retorno del servicio incluye la clave `"cxc"`.
+
+#### TEST-03 — E2E ciclo de venta completo
+
+**`tests_api/test_e2e_ciclo_venta.py`** (nuevo, 13 tests)
+- `TestCicloVentaCompleto` (1): ciclo BORRADOR→ENTREGADA→FACTURADA en un solo test.
+- `TestIVACalculado` (3): monto_iva ≥ 0, monto_igtf persistido (GAP-01), monto_total = base+iva+igtf.
+- `TestAsientoContableCreado` (2): asiento FACTURA_VENTA creado + balanceado; sin mapeo levanta VentaError.
+- `TestCuentaPorCobrarCreada` (7): monto correcto, referencia_externa, tipo_operacion, empresa, estado pendiente, fecha_vencimiento > fecha_emision, persistida en BD.
+
+**Resultado:** 13/13 tests pasando ✅ (80 s).
+
+---
+
+### Resumen de archivos afectados
+
+| Archivo | Cambio |
+|---|---|
+| `apps/ventas/models.py` | +1 campo `monto_igtf` en `FacturaFiscal` |
+| `apps/ventas/services.py` | +`monto_igtf` en create, +CxC creation, `"cxc"` en return dict |
+| `apps/ventas/migrations/0012_facturafiscal_monto_igtf.py` | Nuevo |
+| `tests_api/test_e2e_ciclo_venta.py` | Nuevo (13 tests) |
+
+---

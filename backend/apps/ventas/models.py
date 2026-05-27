@@ -162,6 +162,7 @@ class FacturaFiscal(models.Model):
     # Montos
     base_imponible = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
     monto_iva = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
+    monto_igtf = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
     monto_total = models.DecimalField(max_digits=18, decimal_places=4)
 
     # Moneda e impuestos
