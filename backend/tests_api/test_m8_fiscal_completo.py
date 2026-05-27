@@ -97,9 +97,14 @@ class TestGenerarLibroVentasTxtFormato:
         assert len(resultado) > 0, "El resultado no debe estar vacío"
 
         lineas = [l for l in resultado.split("\n") if l.strip()]
-        assert len(lineas) == 1, f"Debe haber exactamente 1 línea, hay {len(lineas)}"
+        # La primera línea es siempre la cabecera → 1 cabecera + 1 datos = 2
+        assert len(lineas) == 2, f"Debe haber 1 cabecera + 1 línea de datos, hay {len(lineas)}"
 
-        campos = lineas[0].split("|")
+        # Verificar cabecera
+        assert lineas[0] == "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
+
+        # Verificar columnas de la línea de datos
+        campos = lineas[1].split("|")
         assert len(campos) == 8, (
             f"Deben ser 8 columnas (RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE|IVA|TOTAL), "
             f"se obtuvieron {len(campos)}: {campos}"
@@ -113,7 +118,8 @@ class TestGenerarLibroVentasTxtFormato:
 
         resultado = generar_libro_ventas_txt(empresa_fiscal, fecha, fecha)
         lineas = [l for l in resultado.split("\n") if l.strip()]
-        campos = lineas[0].split("|")
+        # lineas[0] es la cabecera; lineas[1] es la primera fila de datos
+        campos = lineas[1].split("|")
 
         # Posición 0: RIF emisor (empresa)
         assert campos[0] == "J-55555555-5", f"Columna 0 debe ser RIF emisor, es: {campos[0]}"
@@ -137,7 +143,10 @@ class TestGenerarLibroVentasTxtFormato:
 
         fecha = timezone.now().date()
         resultado = generar_libro_ventas_txt(empresa_fiscal, fecha, fecha)
-        assert resultado == "", "Sin facturas debe retornar string vacío"
+        # Sin facturas retorna solo la cabecera (no string vacío)
+        assert resultado == "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL", (
+            "Sin facturas debe retornar solo la línea de cabecera"
+        )
 
     def test_multiples_facturas_multiples_lineas(self, empresa_fiscal, cliente_m8_test, moneda_usd_m8):
         from apps.fiscal.libros_seniat import generar_libro_ventas_txt
@@ -149,7 +158,8 @@ class TestGenerarLibroVentasTxtFormato:
 
         resultado = generar_libro_ventas_txt(empresa_fiscal, fecha, fecha)
         lineas = [l for l in resultado.split("\n") if l.strip()]
-        assert len(lineas) == 3, f"Debe haber 3 líneas (una por factura), hay {len(lineas)}"
+        # La primera línea es la cabecera → 1 cabecera + 3 datos = 4
+        assert len(lineas) == 4, f"Debe haber 1 cabecera + 3 líneas de datos, hay {len(lineas)}"
 
     def test_facturas_fuera_de_rango_excluidas(self, empresa_fiscal, cliente_m8_test, moneda_usd_m8):
         from apps.fiscal.libros_seniat import generar_libro_ventas_txt
@@ -164,9 +174,11 @@ class TestGenerarLibroVentasTxtFormato:
             "CTRL-OUT-001", "FAC-OUT-001", hace_60_dias
         )
 
-        # Consultar solo el rango de hoy
+        # Consultar solo el rango de hoy — no hay facturas en ese rango, solo cabecera
         resultado = generar_libro_ventas_txt(empresa_fiscal, hoy, hoy)
-        assert resultado == "", "No deben incluirse facturas fuera del rango de fechas"
+        assert resultado == "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL", (
+            "No deben incluirse facturas fuera del rango de fechas; solo la cabecera"
+        )
 
     def test_libro_compras_retorna_string(self, empresa_fiscal):
         from apps.fiscal.libros_seniat import generar_libro_compras_txt

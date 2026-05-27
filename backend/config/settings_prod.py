@@ -5,6 +5,15 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
 
 # CORS — solo orígenes explícitos en producción
 CORS_ALLOW_ALL_ORIGINS = False
+
+# Guardia de seguridad SEC-06: si por cualquier motivo CORS_ALLOW_ALL_ORIGINS
+# termina siendo True (ej: settings_base cargado con DEBUG=True accidentalmente),
+# esta línea detiene el arranque del servidor en lugar de silenciosamente abrir CORS.
+if CORS_ALLOW_ALL_ORIGINS:
+    raise ValueError(
+        "CORS_ALLOW_ALL_ORIGINS=True no está permitido en producción. "
+        "Verifique que DEBUG=False y que settings_prod.py esté siendo cargado correctamente."
+    )
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if origin.strip()
 ]

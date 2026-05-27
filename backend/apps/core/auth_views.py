@@ -197,8 +197,8 @@ def login_view(request):
                                 sesion_abierta = True
 
                             except Exception as e:
-                                logger.error(f"Error abriendo sesión automáticamente: {e}")
-                                dispositivo_info["error_sesion"] = str(e)
+                                logger.error(f"Error abriendo sesión automáticamente: {e}", exc_info=True)
+                                dispositivo_info["error_sesion"] = "No se pudo abrir la sesión automáticamente."
 
                         # Si se debe abrir sesión (modal)
                         elif accion_info["accion"] == "abrir_sesion":
@@ -225,15 +225,15 @@ def login_view(request):
                                 sesion_abierta = True
 
                             except Exception as e:
-                                logger.error(f"Error abriendo sesión automáticamente: {e}")
-                                dispositivo_info["error_sesion"] = str(e)
+                                logger.error(f"Error abriendo sesión automáticamente: {e}", exc_info=True)
+                                dispositivo_info["error_sesion"] = "No se pudo abrir la sesión automáticamente."
 
                     else:
                         logger.warning(f"Usuario {username} no tiene empresa o sucursal asignada")
 
                 except Exception as e:
-                    logger.error(f"Error procesando dispositivo: {e}")
-                    dispositivo_info = {"error": f"Error procesando dispositivo: {str(e)}"}
+                    logger.error(f"Error procesando dispositivo: {e}", exc_info=True)
+                    dispositivo_info = {"error": "Error interno al procesar el dispositivo."}
 
             response_data = {"access": str(refresh.access_token), "refresh": str(refresh), "user": user_data}
 
@@ -510,9 +510,10 @@ def dispositivo_accion_view(request):
             )
 
         except Exception as e:
-            logger.error(f"Error creando caja física: {e}")
+            logger.error(f"Error creando caja física: {e}", exc_info=True)
             return Response(
-                {"error": f"Error creando caja física: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": "Error interno al crear la caja física. Contacte al administrador."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     elif accion == "no_preguntar_caja":
@@ -560,9 +561,10 @@ def dispositivo_accion_view(request):
             )
 
         except Exception as e:
-            logger.error(f"Error abriendo sesión: {e}")
+            logger.error(f"Error abriendo sesión: {e}", exc_info=True)
             return Response(
-                {"error": f"Error abriendo sesión: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": "Error interno al abrir la sesión. Contacte al administrador."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     else:
