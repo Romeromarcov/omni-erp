@@ -58,14 +58,14 @@ export interface JobSincronizacion {
   tipo_entidad: string;
   direccion: string;
   estado: 'pendiente' | 'en_progreso' | 'completado' | 'completado_con_errores' | 'fallido';
-  total: number;
+  total_registros: number;
   procesados: number;
   creados: number;
   actualizados: number;
   omitidos: number;
   fallidos: number;
   iniciado_en: string;
-  finalizado_en: string | null;
+  completado_en: string | null;
   duracion_segundos: number | null;
 }
 

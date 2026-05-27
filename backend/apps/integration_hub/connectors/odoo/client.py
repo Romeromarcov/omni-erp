@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 import re
-import threading
 import xmlrpc.client
 from datetime import datetime, date
 from typing import Any
@@ -61,7 +60,6 @@ class OdooXMLRPCClient:
         self._user = user.strip()
         self._api_key = api_key  # No loguear
         self._timeout = timeout
-        self._lock = threading.Lock()
 
         # Construir base URL
         if not self._host.startswith(("http://", "https://")):
