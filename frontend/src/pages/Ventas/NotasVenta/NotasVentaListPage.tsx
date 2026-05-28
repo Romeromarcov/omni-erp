@@ -1,21 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { notaVentaService } from '../../../services/ventas';
 import type { NotaVenta } from '../../../types/ventas';
+import type { PaginatedResponse } from '../../../services/ventas';
 import { Button } from '@mui/material';
+import Pagination from '../../../components/Pagination';
+
+const PAGE_SIZE = 20;
 
 const NotasVentaListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const [page, setPage] = useState(1);
 
-  const { data: notasVenta = [], isLoading: loading } = useQuery<NotaVenta[]>({
-    queryKey: ['/ventas/notas-venta/'],
-    queryFn: () => notaVentaService.getAll(),
+  const { data, isLoading: loading } = useQuery<PaginatedResponse<NotaVenta>>({
+    queryKey: ['/ventas/notas-venta/', page],
+    queryFn: () => notaVentaService.getAllPaginated(page, PAGE_SIZE),
   });
+
+  const notasVenta = data?.results ?? [];
+  const count = data?.count ?? 0;
 
   const convertirMutation = useMutation({
     mutationFn: (id: string) => notaVentaService.convertirAFactura(id, {}),
@@ -141,6 +149,13 @@ const NotasVentaListPage: React.FC = () => {
               {t('ventas.notasVenta.sinRegistros')}
             </div>
           )}
+
+          <Pagination
+            page={page}
+            count={count}
+            pageSize={PAGE_SIZE}
+            onChange={(p) => { setPage(p); window.scrollTo(0, 0); }}
+          />
         </div>
       )}
     </PageLayout>

@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cotizacionService } from '../../../services/ventas';
 import type { Cotizacion } from '../../../types/ventas';
+import type { PaginatedResponse } from '../../../services/ventas';
 import { Button } from '@mui/material';
+import Pagination from '../../../components/Pagination';
+
+const PAGE_SIZE = 20;
 
 const CotizacionesListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
 
-  const { data: cotizaciones = [], isLoading: loading } = useQuery<Cotizacion[]>({
-    queryKey: ['/ventas/cotizaciones/'],
-    queryFn: () => cotizacionService.getAll(),
+  const { data, isLoading: loading } = useQuery<PaginatedResponse<Cotizacion>>({
+    queryKey: ['/ventas/cotizaciones/', page],
+    queryFn: () => cotizacionService.getAllPaginated(page, PAGE_SIZE),
   });
+
+  const cotizaciones = data?.results ?? [];
+  const count = data?.count ?? 0;
 
   const convertirMutation = useMutation({
     mutationFn: (id: string) => cotizacionService.convertirAPedido(id, {}),
@@ -135,6 +143,13 @@ const CotizacionesListPage: React.FC = () => {
               No hay cotizaciones registradas
             </div>
           )}
+
+          <Pagination
+            page={page}
+            count={count}
+            pageSize={PAGE_SIZE}
+            onChange={(p) => { setPage(p); window.scrollTo(0, 0); }}
+          />
         </div>
       )}
     </PageLayout>

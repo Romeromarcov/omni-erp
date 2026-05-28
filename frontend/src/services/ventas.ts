@@ -29,7 +29,7 @@ interface PagoData {
 }
 
 // Tipos para respuestas paginadas
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
@@ -52,6 +52,17 @@ class BaseVentasService<T> {
     }
     // Handle direct array responses
     return Array.isArray(response) ? response : [];
+  }
+
+  async getAllPaginated(page = 1, pageSize = 20): Promise<PaginatedResponse<T>> {
+    const response = await get<PaginatedResponse<T> | T[]>(
+      `/${this.endpoint}/?page=${page}&page_size=${pageSize}`
+    );
+    if (response && typeof response === 'object' && 'results' in response) {
+      return response as PaginatedResponse<T>;
+    }
+    const arr = Array.isArray(response) ? response : [];
+    return { count: arr.length, next: null, previous: null, results: arr };
   }
 
   async getById(id: string): Promise<T> {

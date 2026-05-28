@@ -10,6 +10,7 @@ import { coreRoutes } from './routes/coreRoutes';
 import { configuracionRoutes } from './routes/configuracionRoutes';
 import { integracionesRoutes } from './routes/integracionesRoutes';
 import { inventarioRoutes } from './routes/inventarioRoutes';
+import { fiscalRoutes } from './routes/fiscalRoutes';
 
 function ProtectedLayout() {
   const { isCollapsed, isMobile } = useSidebar();
@@ -44,6 +45,7 @@ export default function AppRouter() {
               {configuracionRoutes()}
               {integracionesRoutes()}
               {inventarioRoutes()}
+              {fiscalRoutes()}
             </Route>
           )}
 

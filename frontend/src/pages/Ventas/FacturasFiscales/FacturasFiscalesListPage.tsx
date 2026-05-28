@@ -5,8 +5,12 @@ import { useTranslation } from 'react-i18next';
 import PageLayout from '../../../components/PageLayout';
 import { facturaFiscalService } from '../../../services/ventas';
 import type { FacturaFiscal } from '../../../types/ventas';
+import type { PaginatedResponse } from '../../../services/ventas';
 import { Alert, Box, Button, Chip, IconButton, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import Pagination from '../../../components/Pagination';
+
+const PAGE_SIZE = 20;
 
 const FacturasFiscalesListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,11 +18,15 @@ const FacturasFiscalesListPage: React.FC = () => {
   const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedFactura, setSelectedFactura] = useState<FacturaFiscal | null>(null);
+  const [page, setPage] = useState(1);
 
-  const { data: facturas = [], isLoading: loading, isError } = useQuery<FacturaFiscal[]>({
-    queryKey: ['/ventas/facturas-fiscales/'],
-    queryFn: () => facturaFiscalService.getAll(),
+  const { data, isLoading: loading, isError } = useQuery<PaginatedResponse<FacturaFiscal>>({
+    queryKey: ['/ventas/facturas-fiscales/', page],
+    queryFn: () => facturaFiscalService.getAllPaginated(page, PAGE_SIZE),
   });
+
+  const facturas = data?.results ?? [];
+  const count = data?.count ?? 0;
 
   const error = isError ? t('ventas.facturas.errorCargar') : null;
 
@@ -179,6 +187,13 @@ const FacturasFiscalesListPage: React.FC = () => {
           </Box>
         )}
       </Paper>
+
+      <Pagination
+        page={page}
+        count={count}
+        pageSize={PAGE_SIZE}
+        onChange={(p) => { setPage(p); window.scrollTo(0, 0); }}
+      />
 
       <Menu
         anchorEl={anchorEl}

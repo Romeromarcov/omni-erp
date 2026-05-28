@@ -140,11 +140,22 @@ const SidebarMenu: React.FC = () => {
               </li>
               <li>
                 <details>
+                  <summary title="Fiscal">Fiscal</summary>
+                  <ul style={{ paddingLeft: 16 }}>
+                    <li><Link to="/configuracion/fiscal" onClick={isMobile ? closeMobile : undefined} title="Configuración Fiscal">Configuración</Link></li>
+                    <li><Link to="/fiscal/libro-ventas" onClick={isMobile ? closeMobile : undefined} title="Libro de Ventas">Libro de Ventas</Link></li>
+                    <li><Link to="/fiscal/libro-compras" onClick={isMobile ? closeMobile : undefined} title="Libro de Compras">Libro de Compras</Link></li>
+                  </ul>
+                </details>
+              </li>
+              <li>
+                <details>
                   <summary title="Configuración">Configuración</summary>
                   <ul style={{ paddingLeft: 16 }}>
                     <li><Link to="/configuracion/tipos-documento" onClick={isMobile ? closeMobile : undefined} title="Tipos de Documento">Tipos de Documento</Link></li>
                     <li><Link to="/configuracion/parametros-sistema" onClick={isMobile ? closeMobile : undefined} title="Parámetros del Sistema">Parámetros del Sistema</Link></li>
                     <li><Link to="/configuracion/catalogos-valor" onClick={isMobile ? closeMobile : undefined} title="Catálogos de Valor">Catálogos de Valor</Link></li>
+                    <li><Link to="/configuracion/fiscal" onClick={isMobile ? closeMobile : undefined} title="Configuración Fiscal">Configuración Fiscal</Link></li>
                   </ul>
                 </details>
               </li>

@@ -1488,3 +1488,118 @@ Implementado rate limiting de 5 solicitudes/minuto por IP en ambos endpoints de 
 - Rama: `chore/diagnostico-inicial`
 
 ---
+
+## Sesión 27 — 2026-05-28
+
+**Rama:** `main`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Semana 5 — GAP-07 (UI Fiscal) + GAP-08 (Paginación frontend)
+
+### Tareas completadas
+
+#### GAP-07 — UI de Fiscal (3 páginas React)
+
+**`frontend/src/services/fiscalService.ts`** (nuevo):
+- `configuracionFiscalService.getByEmpresa/update/create()` → `/api/fiscal/configuracion-fiscal/`
+- `tasaIVAService.getByEmpresa/update/create()` → `/api/fiscal/tasas-iva/`
+- `libroService.fetchLibroVentasTxt/fetchLibroComprasTxt()` → parsea respuesta TXT pipe-delimited en `LibroEntry[]`
+- `libroService.downloadLibroVentasTxt/downloadLibroComprasTxt()` → descarga autenticada con `fetch` + `URL.createObjectURL`
+
+**`frontend/src/pages/Fiscal/ConfiguracionFiscalPage.tsx`** (nuevo):
+- Ruta: `/configuracion/fiscal`
+- Formulario: contribuyente IVA (checkbox), aplica IGTF (checkbox), alícuota IGTF (decimal)
+- Tabla de tasas IVA (GENERAL/REDUCIDO/EXENTO/ADICIONAL) con tasa % y estado
+- Create/Update según si existe configuración previa para la empresa
+
+**`frontend/src/pages/Fiscal/LibroVentasPage.tsx`** (nuevo):
+- Ruta: `/fiscal/libro-ventas`
+- Selector de período (type=month), botón Consultar, botón Exportar TXT
+- Cards: total facturas, base imponible, IVA, total
+- Tabla con columnas RIF emisor/receptor, fecha, nro. control, nro. factura, base, IVA, total
+- Fila de totales al pie de tabla
+
+**`frontend/src/pages/Fiscal/LibroComprasPage.tsx`** (nuevo):
+- Misma estructura que LibroVentasPage pero para libro de compras
+
+**`frontend/src/routes/fiscalRoutes.tsx`** (nuevo):
+- Rutas: `/configuracion/fiscal`, `/fiscal/libro-ventas`, `/fiscal/libro-compras`
+
+**`frontend/src/router.tsx`** (modificado): +`{fiscalRoutes()}`
+
+**`frontend/src/components/SidebarMenu.tsx`** (modificado): sección Fiscal con Configuración, Libro de Ventas, Libro de Compras
+
+**DoD GAP-07:** ✅ — Existe UI de configuración fiscal + libros SENIAT con exportación TXT.
+
+---
+
+#### GAP-08 — Paginación frontend
+
+**`frontend/src/components/Pagination.tsx`** (nuevo):
+- Componente reutilizable con botones prev/next/páginas, ellipsis para muchas páginas
+- Props: `page`, `count`, `pageSize`, `onChange`
+- No renderiza si solo hay 1 página
+
+**`frontend/src/services/ventas.ts`** (modificado):
+- `PaginatedResponse<T>` exportada (antes `interface` interna)
+- `BaseVentasService.getAllPaginated(page, pageSize)` → devuelve `PaginatedResponse<T>` con `count`, `next`, `previous`, `results`
+
+**Páginas actualizadas con paginación:**
+
+| Página | Servicio |
+|---|---|
+| `CotizacionesListPage` | `cotizacionService.getAllPaginated()` |
+| `PedidosListPage` | `pedidoService.getAllPaginated()` |
+| `NotasVentaListPage` | `notaVentaService.getAllPaginated()` |
+| `FacturasFiscalesListPage` | `facturaFiscalService.getAllPaginated()` |
+
+Cada página usa `useState(1)` para el número de página y renderiza `<Pagination>` al pie de la tabla.
+
+**DoD GAP-08:** ✅ — Las 4 tablas principales de ventas tienen paginación funcional.
+
+---
+
+#### Nuevos tests (Semana 5)
+
+| Archivo | Tests |
+|---|---|
+| `ConfiguracionFiscalPage.test.tsx` | 8 |
+| `LibroFiscalPages.test.tsx` | 9 |
+| `Pagination.test.tsx` | 9 |
+
+**`npx vitest run`: 92 passed, 0 failed** (13 archivos) ✅
+**`npx tsc --noEmit`: 0 errores** ✅
+
+---
+
+### Resumen de archivos afectados (Semana 5)
+
+| Archivo | Cambio |
+|---|---|
+| `frontend/src/services/fiscalService.ts` | Nuevo |
+| `frontend/src/pages/Fiscal/ConfiguracionFiscalPage.tsx` | Nuevo |
+| `frontend/src/pages/Fiscal/LibroVentasPage.tsx` | Nuevo |
+| `frontend/src/pages/Fiscal/LibroComprasPage.tsx` | Nuevo |
+| `frontend/src/routes/fiscalRoutes.tsx` | Nuevo |
+| `frontend/src/components/Pagination.tsx` | Nuevo |
+| `frontend/src/router.tsx` | +`fiscalRoutes()` |
+| `frontend/src/components/SidebarMenu.tsx` | +sección Fiscal |
+| `frontend/src/services/ventas.ts` | +`getAllPaginated`, export `PaginatedResponse` |
+| `frontend/src/pages/Ventas/Cotizaciones/CotizacionesListPage.tsx` | +paginación |
+| `frontend/src/pages/Ventas/Pedidos/PedidosListPage.tsx` | +paginación |
+| `frontend/src/pages/Ventas/NotasVenta/NotasVentaListPage.tsx` | +paginación |
+| `frontend/src/pages/Ventas/FacturasFiscales/FacturasFiscalesListPage.tsx` | +paginación |
+| `frontend/src/__tests__/ConfiguracionFiscalPage.test.tsx` | Nuevo (8 tests) |
+| `frontend/src/__tests__/LibroFiscalPages.test.tsx` | Nuevo (9 tests) |
+| `frontend/src/__tests__/Pagination.test.tsx` | Nuevo (9 tests) |
+| `backend/PROJECT_LOG.md` | +Sesión 27 |
+
+### Estado al cerrar
+
+- **GAP-07:** ✅ COMPLETO — Configuración fiscal + Libro Ventas + Libro Compras con exportación TXT.
+- **GAP-08:** ✅ COMPLETO — Paginación en 4 tablas de ventas, componente Pagination reutilizable.
+- **Semana 5: COMPLETA** ✅
+- TypeScript: 0 errores.
+- Vitest: 92/92 passed.
+- Rama: `main`
+
+---
