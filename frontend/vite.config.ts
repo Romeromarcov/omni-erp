@@ -62,6 +62,11 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'src/test-setup.ts'],
+      thresholds: {
+        branches: 60,
+        functions: 60,
+        lines: 60,
+      },
     },
   },
 })

@@ -1380,3 +1380,111 @@ Implementado rate limiting de 5 solicitudes/minuto por IP en ambos endpoints de 
 | `backend/tests_api/test_sec07_rate_limiting.py` | Nuevo (9 tests) |
 
 ---
+
+## Sesión 26 — 2026-05-28
+
+**Rama:** `chore/diagnostico-inicial`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Semana 4 — GAP-06 (4 páginas UI inventario) + TEST-05 (Vitest coverage gate 60%)
+
+### Tareas completadas
+
+#### GAP-06 — UI de Inventario (4 páginas React)
+
+**`frontend/src/services/inventarioService.ts`** (nuevo):
+- Interfaces: `StockActual`, `ProductoInventario`, `MovimientoInventario`.
+- `stockActualService.getAll()` → `GET /api/inventario/stock-actual/`
+- `stockActualService.getBajoMinimo()` → `GET /api/inventario/stock-actual/?bajo_minimo=true`
+- `productoInventarioService.getAll/getById/getKardex()` → endpoints `/api/inventario/productos-inventario/`
+- `movimientoService.registrarAjuste()` → `POST /api/inventario/movimientos-inventario/`
+
+**`frontend/src/pages/Inventario/InventarioDashboardPage.tsx`** (nuevo):
+- 4 KPI cards: total SKUs, alertas, críticos, unidades totales.
+- Tabla de alertas con badges SIN STOCK / BAJO.
+- Botones "Ver stock completo" y "Registrar ajuste".
+
+**`frontend/src/pages/Inventario/StockActualPage.tsx`** (nuevo):
+- Tabla completa de stock con filtros: texto de producto, almacén (dropdown), solo alertas (checkbox).
+- Badges NORMAL / BAJO / SIN STOCK por fila.
+- Botones Kardex y Ajuste por fila.
+
+**`frontend/src/pages/Inventario/KardexPage.tsx`** (nuevo):
+- Parámetro URL `productoId`.
+- Filtro de rango de fechas (default: 6 meses atrás → hoy).
+- Cards de resumen: total entradas, total salidas, saldo neto.
+- Tabla de movimientos con badges de tipo (color-coded).
+
+**`frontend/src/pages/Inventario/AjusteInventarioPage.tsx`** (nuevo):
+- Formulario: producto, almacén, tipo (ENTRADA/SALIDA), cantidad, costo unitario, fecha, observaciones.
+- Muestra stock actual al seleccionar producto + almacén.
+- Invalida `stock-actual-all` y `kardex` en onSuccess.
+
+**`frontend/src/routes/inventarioRoutes.tsx`** (nuevo):
+- Rutas: `/inventario`, `/inventario/stock`, `/inventario/kardex/:productoId`, `/inventario/ajustes`.
+
+**`frontend/src/router.tsx`** (modificado): agregado `{inventarioRoutes()}`.
+
+**`frontend/src/components/SidebarMenu.tsx`** (modificado): sección Inventario con Dashboard, Stock Actual, Ajuste Manual.
+
+**DoD GAP-06:** ✅ — 4 páginas implementadas, rutas conectadas, sidebar actualizado.
+
+---
+
+#### TEST-05 — Vitest coverage gate
+
+**Nuevos archivos de test:**
+
+| Archivo | Tests |
+|---|---|
+| `frontend/src/__tests__/InventarioDashboardPage.test.tsx` | 8 |
+| `frontend/src/__tests__/StockActualPage.test.tsx` | 10 |
+| `frontend/src/__tests__/KardexPage.test.tsx` | 8 |
+| `frontend/src/__tests__/AjusteInventarioPage.test.tsx` | 9 |
+
+**Cobertura de los tests:**
+- Estado de carga (loading state)
+- Renderizado de headings y KPIs
+- Badges NORMAL / BAJO / SIN STOCK
+- Filtrado por nombre/almacén/alertas
+- Mensajes vacíos cuando no hay coincidencias
+- Cálculo de totales (entradas, salidas, saldo neto)
+- Sumisión exitosa y mensajes de éxito/error
+- Botones de acción (Kardex, Ajuste, Registrar ajuste, Cancelar)
+
+**`frontend/vite.config.ts`** (modificado): thresholds de cobertura `branches: 60, functions: 60, lines: 60`.
+
+**Validaciones:**
+- `npx tsc --noEmit`: 0 errores ✅
+- `npx vitest run`: **65 passed, 0 failed** (10 test files) ✅
+
+**DoD TEST-05:** ✅
+
+---
+
+### Resumen de archivos afectados (Semana 4)
+
+| Archivo | Cambio |
+|---|---|
+| `frontend/src/services/inventarioService.ts` | Nuevo |
+| `frontend/src/pages/Inventario/InventarioDashboardPage.tsx` | Nuevo |
+| `frontend/src/pages/Inventario/StockActualPage.tsx` | Nuevo |
+| `frontend/src/pages/Inventario/KardexPage.tsx` | Nuevo |
+| `frontend/src/pages/Inventario/AjusteInventarioPage.tsx` | Nuevo |
+| `frontend/src/routes/inventarioRoutes.tsx` | Nuevo |
+| `frontend/src/router.tsx` | +`inventarioRoutes()` |
+| `frontend/src/components/SidebarMenu.tsx` | +sección Inventario |
+| `frontend/src/__tests__/InventarioDashboardPage.test.tsx` | Nuevo (8 tests) |
+| `frontend/src/__tests__/StockActualPage.test.tsx` | Nuevo (10 tests) |
+| `frontend/src/__tests__/KardexPage.test.tsx` | Nuevo (8 tests) |
+| `frontend/src/__tests__/AjusteInventarioPage.test.tsx` | Nuevo (9 tests) |
+| `frontend/vite.config.ts` | +coverage thresholds 60% |
+
+### Estado al cerrar
+
+- **GAP-06:** ✅ COMPLETO — 4 páginas UI inventario.
+- **TEST-05:** ✅ COMPLETO — 65 tests pasando, thresholds 60% configurados.
+- **Semana 4: COMPLETA** ✅
+- TypeScript: 0 errores.
+- Rama: `chore/diagnostico-inicial`
+
+---

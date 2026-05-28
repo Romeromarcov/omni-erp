@@ -9,6 +9,7 @@ import { finanzasRoutes } from './routes/finanzasRoutes';
 import { coreRoutes } from './routes/coreRoutes';
 import { configuracionRoutes } from './routes/configuracionRoutes';
 import { integracionesRoutes } from './routes/integracionesRoutes';
+import { inventarioRoutes } from './routes/inventarioRoutes';
 
 function ProtectedLayout() {
   const { isCollapsed, isMobile } = useSidebar();
@@ -42,6 +43,7 @@ export default function AppRouter() {
               {finanzasRoutes()}
               {configuracionRoutes()}
               {integracionesRoutes()}
+              {inventarioRoutes()}
             </Route>
           )}
 

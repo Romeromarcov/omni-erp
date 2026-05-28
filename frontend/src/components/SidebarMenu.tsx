@@ -119,6 +119,16 @@ const SidebarMenu: React.FC = () => {
               </li>
               <li>
                 <details>
+                  <summary title="Inventario">Inventario</summary>
+                  <ul style={{ paddingLeft: 16 }}>
+                    <li><Link to="/inventario" onClick={isMobile ? closeMobile : undefined} title="Dashboard Inventario">Dashboard</Link></li>
+                    <li><Link to="/inventario/stock" onClick={isMobile ? closeMobile : undefined} title="Stock Actual">Stock Actual</Link></li>
+                    <li><Link to="/inventario/ajustes" onClick={isMobile ? closeMobile : undefined} title="Ajuste Manual">Ajuste Manual</Link></li>
+                  </ul>
+                </details>
+              </li>
+              <li>
+                <details>
                   <summary title="Usuarios">Usuarios</summary>
                   <ul style={{ paddingLeft: 16 }}>
                     <li><Link to={`/empresas/${empresaId}/usuarios`} onClick={isMobile ? closeMobile : undefined} title="Listado de usuarios">Listado de usuarios</Link></li>
