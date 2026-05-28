@@ -7,6 +7,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from django.contrib.auth import authenticate, get_user_model
 from django.utils import timezone
+from django_ratelimit.core import is_ratelimited
+from django_ratelimit.decorators import ratelimit
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -56,11 +58,26 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    """Custom token view with additional logging"""
+    """Custom token view with additional logging and rate limiting (SEC-07)."""
 
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
+        # SEC-07: rate limit login attempts (5/min per IP, explicit group name)
+        django_request = getattr(request, "_request", request)
+        limited = is_ratelimited(
+            request=django_request,
+            group="omni_erp.token_obtain",
+            key="ip",
+            rate="5/m",
+            method="POST",
+            increment=True,
+        )
+        if limited:
+            return Response(
+                {"error": "Demasiados intentos de login. Espere un momento antes de intentar de nuevo."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         response = super().post(request, *args, **kwargs)
         username = request.data.get("username", "unknown")
         if response.status_code == 200:
@@ -70,12 +87,21 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
 
 
+@ratelimit(key="ip", rate="5/m", method="POST", block=False, group="omni_erp.login")
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_view(request):
     """
-    Login endpoint that returns JWT tokens and maneja detección de dispositivos
+    Login endpoint that returns JWT tokens and maneja detección de dispositivos.
+    SEC-07: Rate-limited to 5 POST requests per minute per IP.
     """
+    # SEC-07: check rate limit flag set by @ratelimit decorator
+    if getattr(request, "limited", False):
+        return Response(
+            {"error": "Demasiados intentos de login. Espere un momento antes de intentar de nuevo."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
     username = request.data.get("username")
     password = request.data.get("password")
     device_fingerprint = request.data.get("device_fingerprint")

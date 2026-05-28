@@ -1295,3 +1295,88 @@ Ver `docs/PLAN_TRABAJO_COMPLETO.md` — quedan: GAP-01 (ciclo ventas→fiscal→
 | `tests_api/test_e2e_ciclo_venta.py` | Nuevo (13 tests) |
 
 ---
+
+## Sesión 25 — 2026-05-28 (Semana 3)
+
+**Rama:** `main`
+**Objetivo:** Cerrar los tres ítems de Semana 3 con DoD al 100%.
+
+---
+
+### GAP-02 — Auditoría: registrar_recepcion() → StockActual
+
+Auditoría de la cadena `registrar_recepcion()` → `StockActual`.
+
+**Resultado:** No requirió cambios de código. La cadena ya estaba completa:
+- `registrar_recepcion()` llama `registrar_movimiento(tipo_movimiento="RECEPCION_COMPRA")`.
+- `RECEPCION_COMPRA` ∈ `TIPOS_ENTRADA = frozenset({"ENTRADA", "RECEPCION_COMPRA"})`.
+- `registrar_movimiento()` llama `_actualizar_stock()` para todos los tipos de entrada.
+- Test `test_incrementa_stock` en `test_m6_compras.py` ya verificaba el flujo.
+
+**DoD GAP-02:** ✅ (código correcto desde antes; auditoría confirma).
+
+---
+
+### GAP-04 — Redis + Celery en docker-compose.prod.yml
+
+Nuevos archivos de infraestructura para producción:
+
+**`docker-compose.prod.yml`** (nuevo)
+- `postgres` (PostgreSQL 17-alpine, sin puerto expuesto al host)
+- `redis` (Redis 7-alpine, persistencia AOF, maxmemory 256 MB)
+- `backend` (uvicorn, 2 workers, sin bind-mounts de código fuente)
+- `celery_worker` (concurrency=4, colas: celery, auditoria, notifications)
+- `celery_beat` (DatabaseScheduler)
+- `nginx` (puerto 80, reverse-proxy + estáticos, SSL comentado)
+- `minio` + `minio_init` (S3-compatible, bucket auto-creado)
+- `redpanda` (Kafka-compatible, modo producción sin dev-container)
+
+**`.env.prod.example`** (nuevo): plantilla con todos los valores de producción marcados `<CAMBIAR_...>`.
+
+**`infra/nginx/nginx.prod.conf`** (nuevo):
+- Zonas de rate limit: `login:5r/m` y `api:60r/m`
+- Rutas: `/static/` (cache 1 año), `/api/auth/login/` (limit_req login), `/api/` (limit_req api), `/ws/` (WebSocket upgrade), `/` (SPA/admin fallback)
+- Headers de seguridad: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
+- Endpoint `/nginx-health` para load balancer
+- Sección SSL comentada (para uso con certificados propios)
+
+**DoD GAP-04:** ✅
+
+---
+
+### SEC-07 — Rate limiting en login
+
+Implementado rate limiting de 5 solicitudes/minuto por IP en ambos endpoints de login.
+
+**`backend/requirements.txt`**: `django-ratelimit>=4.0`
+
+**`backend/apps/core/auth_views.py`**:
+- `login_view` (FBV): `@ratelimit(key="ip", rate="5/m", method="POST", block=False, group="omni_erp.login")` + guard `if getattr(request, "limited", False): return Response({...}, 429)`.
+- `CustomTokenObtainPairView` (CBV): llamada directa a `is_ratelimited(request._request, group="omni_erp.token_obtain", key="ip", rate="5/m", method="POST", increment=True)` al inicio de `post()`.
+
+**`backend/tests_api/conftest.py`**: fixture `_clear_rate_limit_cache` (autouse) limpia la caché LocMemCache antes y después de cada test.
+
+**`backend/tests_api/test_sec07_rate_limiting.py`** (nuevo, 9 tests):
+- `TestSEC07LoginView` (5): primeros 5 no bloqueados, 6to→429, respuesta incluye campo "error", logins exitosos cuentan, bloqueado no autentica aunque credenciales sean válidas.
+- `TestSEC07TokenView` (4): misma cobertura para `/api/auth/token/`.
+- Fixture `_freeze_ratelimit_window` (autouse en módulo): congela `django_ratelimit.core.time.time` a timestamp fijo para evitar fallos por cruce de ventana de minuto.
+
+**Resultado:** 9/9 tests pasando ✅. Sin regresiones en `test_auth_completo.py` (33/33 ✅).
+
+**DoD SEC-07:** ✅
+
+---
+
+### Resumen de archivos afectados (Semana 3)
+
+| Archivo | Cambio |
+|---|---|
+| `docker-compose.prod.yml` | Nuevo |
+| `.env.prod.example` | Nuevo |
+| `infra/nginx/nginx.prod.conf` | Nuevo |
+| `backend/requirements.txt` | +`django-ratelimit>=4.0` |
+| `backend/apps/core/auth_views.py` | Rate limiting en `login_view` y `CustomTokenObtainPairView` |
+| `backend/tests_api/conftest.py` | +fixture `_clear_rate_limit_cache` autouse |
+| `backend/tests_api/test_sec07_rate_limiting.py` | Nuevo (9 tests) |
+
+---

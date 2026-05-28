@@ -1,9 +1,21 @@
 import pytest
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 
 from apps.core.models import Empresa
 from apps.finanzas.models import Moneda  # Moneda está en finanzas, no en core
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_limit_cache():
+    """
+    Limpia la caché de rate limiting (LocMemCache) antes de cada test.
+    Previene que los contadores de intentos se acumulen entre tests (SEC-07).
+    """
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture(autouse=True)
