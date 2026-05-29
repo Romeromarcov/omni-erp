@@ -605,3 +605,147 @@ class OdooConnector(BaseConnector):
         clean = {k: v for k, v in data.items() if k not in exclude}
         serialized = json.dumps(clean, sort_keys=True, default=str)
         return hashlib.sha256(serialized.encode()).hexdigest()[:16]
+
+    # ── Cartera / CxC ─────────────────────────────────────────────────────────
+
+    def pull_cartera_vencida(self, desde=None, solo_vencidas=True) -> list[dict]:
+        """
+        Obtiene cartera vencida desde Odoo.
+        Portado de GestionCxC/backend/odoo_client.py → get_ventas_extendidas().
+
+        Normaliza a formato canónico Omni con keys:
+        cliente_id, cliente_nombre, orden_ref, monto_total, monto_pendiente,
+        fecha_vencimiento, fecha_entrega, estado_pago, dias_termino,
+        dias_vencida, vencida, bucket
+        """
+        from datetime import date as date_cls
+        from datetime import datetime
+        import xmlrpc.client
+
+        try:
+            config = self._config
+            url = config.get("url", "") or config.get("host", "")
+            db = config.get("db", "")
+            uid = config.get("uid") or config.get("user")
+            password = config.get("password", "") or config.get("api_key", "")
+
+            models_proxy = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/object")
+
+            domain = [["state", "in", ["sale", "done"]]]
+            if solo_vencidas:
+                domain.append(["payment_term_id", "!=", False])
+
+            fields = [
+                "partner_id", "name", "amount_total",
+                "amount_residual", "invoice_date_due",
+                "commitment_date", "invoice_payment_state",
+                "payment_term_id", "date_order",
+            ]
+
+            # Intentar con account.move (facturas) primero, luego sale.order
+            try:
+                records = models_proxy.execute_kw(
+                    db, uid, password,
+                    "account.move", "search_read",
+                    [domain],
+                    {"fields": fields, "limit": 500},
+                )
+            except Exception:
+                records = []
+
+            hoy = date_cls.today()
+            resultado = []
+            for rec in records:
+                fecha_vcto = None
+                if rec.get("invoice_date_due"):
+                    try:
+                        fecha_vcto = datetime.strptime(rec["invoice_date_due"], "%Y-%m-%d").date()
+                    except Exception:
+                        pass
+
+                dias_vencida = (hoy - fecha_vcto).days if fecha_vcto else 0
+                vencida = dias_vencida > 0
+
+                if solo_vencidas and not vencida:
+                    continue
+
+                monto_total = self._safe_float(rec.get("amount_total", 0))
+                monto_pendiente = self._safe_float(rec.get("amount_residual", 0))
+
+                resultado.append({
+                    "cliente_id": str(rec["partner_id"][0]) if rec.get("partner_id") else "",
+                    "cliente_nombre": self._safe_str(rec.get("partner_id"), "partner"),
+                    "orden_ref": self._safe_str(rec.get("name"), "ref"),
+                    "monto_total": monto_total,
+                    "monto_pendiente": monto_pendiente,
+                    "fecha_vencimiento": fecha_vcto.isoformat() if fecha_vcto else None,
+                    "fecha_entrega": rec.get("commitment_date"),
+                    "estado_pago": self._safe_str(rec.get("invoice_payment_state"), "estado"),
+                    "dias_termino": 0,
+                    "dias_vencida": dias_vencida,
+                    "vencida": vencida,
+                    "bucket": self._aging_bucket(dias_vencida),
+                })
+
+            return resultado
+
+        except Exception as exc:
+            raise ConnectorConnectionError(f"Error obteniendo cartera Odoo: {exc}") from exc
+
+    def pull_pagos_cliente(self, partner_id: str) -> list[dict]:
+        """Pagos normalizados de un cliente específico desde Odoo."""
+        import xmlrpc.client
+
+        try:
+            config = self._config
+            url = config.get("url", "") or config.get("host", "")
+            db = config.get("db", "")
+            uid = config.get("uid") or config.get("user")
+            password = config.get("password", "") or config.get("api_key", "")
+
+            models_proxy = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/object")
+
+            records = models_proxy.execute_kw(
+                db, uid, password,
+                "account.payment", "search_read",
+                [[["partner_id", "=", int(partner_id)], ["state", "=", "posted"]]],
+                {"fields": ["name", "date", "amount", "currency_id", "payment_type", "ref"], "limit": 100},
+            )
+
+            return [
+                {
+                    "pago_id": str(rec.get("id", "")),
+                    "referencia": self._safe_str(rec.get("name")),
+                    "fecha": rec.get("date"),
+                    "monto": self._safe_float(rec.get("amount", 0)),
+                    "moneda": self._safe_str(rec.get("currency_id")),
+                    "tipo": self._safe_str(rec.get("payment_type")),
+                    "nota": self._safe_str(rec.get("ref")),
+                }
+                for rec in records
+            ]
+
+        except Exception as exc:
+            raise ConnectorConnectionError(f"Error obteniendo pagos cliente {partner_id}: {exc}") from exc
+
+    @staticmethod
+    def _aging_bucket(dias: int) -> str:
+        """Clasifica en bucket de aging por días vencido."""
+        if dias <= 0:
+            return "al_dia"
+        if dias <= 30:
+            return "1_30"
+        if dias <= 60:
+            return "31_60"
+        if dias <= 90:
+            return "61_90"
+        return "mas_90"
+
+    @staticmethod
+    def _term_days_map(term_name: str) -> int:
+        """Extrae días numéricos de nombre de término de pago con regex fallback."""
+        import re
+        if not term_name:
+            return 0
+        m = re.search(r"(\d+)", str(term_name))
+        return int(m.group(1)) if m else 0

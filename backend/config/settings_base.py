@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apps.crm",
     "apps.ventas",
     "apps.cuentas_por_cobrar",
+    "apps.cxc",
     "apps.manufactura",
     "apps.rrhh",
     "apps.tesoreria",
@@ -357,6 +358,34 @@ CELERY_TASK_TIME_LIMIT = 600  # 10 min (hard kill)
 
 # Beat — schedule de tareas periódicas
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# Hub CxC — Sync automático de tasas venezolanas y cartera
+# (Puede sobreescribirse en la DB vía django-celery-beat admin)
+from celery.schedules import crontab as _crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    # BCV sync — 9:00 AM Venezuela (UTC-4 = 13:00 UTC)
+    "hub-sync-tasas-bcv-manana": {
+        "task": "integration_hub.sync_tasas_ve",
+        "schedule": _crontab(hour=13, minute=0),
+    },
+    # BCV sync — 3:00 PM Venezuela (UTC-4 = 19:00 UTC)
+    "hub-sync-tasas-bcv-tarde": {
+        "task": "integration_hub.sync_tasas_ve",
+        "schedule": _crontab(hour=19, minute=0),
+    },
+    # Binance P2P — cada 30 minutos
+    "hub-sync-binance-p2p": {
+        "task": "integration_hub.sync_tasas_ve",
+        "schedule": _crontab(minute="*/30"),
+    },
+    # Limpieza de logs de integración — diaria a las 2 AM UTC
+    "hub-limpiar-logs-antiguos": {
+        "task": "integration_hub.limpiar_logs_antiguos",
+        "schedule": _crontab(hour=2, minute=0),
+        "kwargs": {"dias": 30},
+    },
+}
 
 # ── Event Store (Redpanda/Kafka) ───────────────────────────────────────────────
 # Dejar KAFKA_BROKER_URL vacío para deshabilitar (degradación graceful a log).

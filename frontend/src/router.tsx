@@ -11,6 +11,7 @@ import { configuracionRoutes } from './routes/configuracionRoutes';
 import { integracionesRoutes } from './routes/integracionesRoutes';
 import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
+import { cxcRoutes } from './routes/cxcRoutes';
 
 function ProtectedLayout() {
   const { isCollapsed, isMobile } = useSidebar();
@@ -46,6 +47,7 @@ export default function AppRouter() {
               {integracionesRoutes()}
               {inventarioRoutes()}
               {fiscalRoutes()}
+              {cxcRoutes()}
             </Route>
           )}
 

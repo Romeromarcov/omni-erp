@@ -75,6 +75,7 @@ urlpatterns = [
     path("api/integration-hub/", include("apps.integration_hub.urls")),
     path("api/migracion-datos/", include("apps.migracion_datos.urls")),
     path("api/personalizacion/", include("apps.personalizacion.urls")),
+    path("api/cobranza/", include("apps.cxc.api.router")),
 ]
 
 if settings.DEBUG:

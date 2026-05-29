@@ -808,6 +808,192 @@ def omni_buscar_cliente(
         return [{"error": str(exc)}]
 
 
+def omni_cxc_get_cartera_vencida(
+    capability_token: str,
+    empresa_id: str,
+    top_n: int = 10,
+) -> list:
+    """
+    Obtiene la cartera vencida priorizada por score de cobrabilidad.
+
+    Scope requerido: `cxc:read`
+
+    Args:
+        capability_token: Token con scope `cxc:read`.
+        empresa_id:       ID de la empresa (debe coincidir con el tenant).
+        top_n:            Número máximo de resultados (default 10, máx 50).
+
+    Returns:
+        Lista de partidas vencidas ordenadas por score DESC.
+    """
+    context = _resolve_token(capability_token)
+    _require_scope(context, "cxc:read")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    from apps.core.models import Empresa  # noqa: PLC0415
+    from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider  # noqa: PLC0415
+    from apps.cuentas_por_cobrar.services_scoring import priorizar  # noqa: PLC0415
+
+    top_n = min(top_n, 50)
+
+    empresa = Empresa.objects.get(pk=empresa_id)
+    provider = get_cartera_provider(empresa)
+    partidas = provider.get_partidas(solo_vencidas=True)
+    resultado = priorizar(partidas)[:top_n]
+
+    logger.info(
+        "omni_cxc_get_cartera_vencida | actor=%s | tenant=%s | count=%d",
+        context["actor_id"], context["tenant_id"], len(resultado),
+    )
+    return resultado
+
+
+def omni_cxc_get_aging_summary(
+    capability_token: str,
+    empresa_id: str,
+) -> dict:
+    """
+    Resumen de aging de cartera por bucket (con cache 15 min).
+
+    Scope requerido: `cxc:read`
+
+    Returns:
+        Dict con buckets: al_dia / 1_30 / 31_60 / 61_90 / mas_90
+    """
+    context = _resolve_token(capability_token)
+    _require_scope(context, "cxc:read")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    from django.core.cache import cache  # noqa: PLC0415
+    from apps.core.models import Empresa  # noqa: PLC0415
+    from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider  # noqa: PLC0415
+    from apps.cuentas_por_cobrar.services_aging import calcular_aging  # noqa: PLC0415
+
+    cache_key = f"cxc:aging:{empresa_id}"
+    resumen = cache.get(cache_key)
+
+    if not resumen:
+        empresa = Empresa.objects.get(pk=empresa_id)
+        provider = get_cartera_provider(empresa)
+        partidas = provider.get_partidas()
+        resumen = calcular_aging(partidas)
+        cache.set(cache_key, resumen, timeout=900)
+
+    logger.info(
+        "omni_cxc_get_aging_summary | actor=%s | tenant=%s",
+        context["actor_id"], context["tenant_id"],
+    )
+    return resumen
+
+
+def omni_cxc_get_tasa_cambio_hoy(
+    capability_token: str,
+    tipo_tasa: str = "OFICIAL_BCV",
+) -> dict:
+    """
+    Obtiene la tasa de cambio USD/VES del día.
+
+    Scope requerido: `finanzas:read`
+
+    Args:
+        capability_token: Token con scope `finanzas:read`.
+        tipo_tasa:        'OFICIAL_BCV' | 'PROMEDIO_MERCADO' (default OFICIAL_BCV)
+
+    Returns:
+        dict con fecha, tipo_tasa, valor_tasa o error si no hay tasa hoy.
+    """
+    context = _resolve_token(capability_token)
+    _require_scope(context, "finanzas:read")
+    assert context is not None  # noqa: S101
+
+    from datetime import date  # noqa: PLC0415
+    from apps.finanzas.models import TasaCambio  # noqa: PLC0415
+
+    tasa = (
+        TasaCambio.objects.filter(
+            fecha_tasa=date.today(),
+            tipo_tasa=tipo_tasa,
+            id_moneda_origen__codigo_iso="USD",
+            id_moneda_destino__codigo_iso="VES",
+        )
+        .order_by("-fecha_creacion")
+        .first()
+    )
+
+    if tasa is None:
+        return {
+            "error": f"No hay tasa {tipo_tasa} disponible para hoy ({date.today()})",
+            "fecha": str(date.today()),
+            "tipo_tasa": tipo_tasa,
+            "valor_tasa": None,
+        }
+
+    logger.info(
+        "omni_cxc_get_tasa_cambio_hoy | actor=%s | tipo=%s | tasa=%s",
+        context["actor_id"], tipo_tasa, tasa.valor_tasa,
+    )
+    return {
+        "fecha": str(tasa.fecha_tasa),
+        "tipo_tasa": tasa.tipo_tasa,
+        "valor_tasa": str(tasa.valor_tasa),
+    }
+
+
+def omni_cxc_get_acuerdos_vigentes(
+    capability_token: str,
+    empresa_id: str,
+    cliente_id: str,
+) -> list:
+    """
+    Obtiene los acuerdos de pago vigentes de un cliente.
+
+    Scope requerido: `cxc:read`
+
+    Returns:
+        Lista de acuerdos con cuotas pendientes.
+    """
+    context = _resolve_token(capability_token)
+    _require_scope(context, "cxc:read")
+    assert context is not None  # noqa: S101
+
+    if empresa_id != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    from apps.cxc.models import AcuerdoPago  # noqa: PLC0415
+
+    acuerdos = AcuerdoPago.objects.filter(
+        empresa_id=empresa_id,
+        cliente_id=cliente_id,
+        estado="vigente",
+        deleted_at__isnull=True,
+    ).prefetch_related("cuotas")
+
+    resultado = []
+    for a in acuerdos:
+        pendientes = a.cuotas.filter(estado__in=["pendiente", "vencido"]).count()
+        resultado.append({
+            "id": str(a.pk),
+            "monto_total": str(a.monto_total),
+            "periodicidad": a.periodicidad,
+            "estado": a.estado,
+            "fecha_inicio": str(a.fecha_inicio),
+            "cuotas_pendientes": pendientes,
+            "moneda": a.moneda_codigo,
+        })
+
+    logger.info(
+        "omni_cxc_get_acuerdos_vigentes | actor=%s | cliente=%s | count=%d",
+        context["actor_id"], cliente_id, len(resultado),
+    )
+    return resultado
+
+
 def omni_buscar_contacto(
     capability_token: str,
     empresa_id: str,
@@ -911,6 +1097,11 @@ if MCP_AVAILABLE and mcp is not None:
     omni_registrar_movimiento_inventario = mcp.tool()(omni_registrar_movimiento_inventario)
     omni_get_correlativo_fiscal = mcp.tool()(omni_get_correlativo_fiscal)
     omni_buscar_cliente = mcp.tool()(omni_buscar_cliente)
+    # ── Herramientas CxC cobranza (v2) ───────────────────────────────────────
+    omni_cxc_get_cartera_vencida = mcp.tool()(omni_cxc_get_cartera_vencida)
+    omni_cxc_get_aging_summary = mcp.tool()(omni_cxc_get_aging_summary)
+    omni_cxc_get_tasa_cambio_hoy = mcp.tool()(omni_cxc_get_tasa_cambio_hoy)
+    omni_cxc_get_acuerdos_vigentes = mcp.tool()(omni_cxc_get_acuerdos_vigentes)
 
 
 # ── Auto-discovery: registrar herramientas de módulos (MCP_AGENT_CAPABILITIES) ─

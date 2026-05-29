@@ -129,3 +129,115 @@ def limpiar_logs_antiguos(dias: int = 30):
 
     logger.info("limpiar_logs_antiguos: %d registros eliminados (>%d días)", eliminados, dias)
     return {"eliminados": eliminados}
+
+
+@shared_task(name="integration_hub.sync_tasas_ve", bind=True, max_retries=3, default_retry_delay=120)
+def sync_tasas_ve(self):
+    """
+    Sincroniza BCV + Binance P2P.
+    Persiste en apps.finanzas.TasaCambio (modelo compartido).
+    BCV → tipo OFICIAL_BCV, empresa=None (global)
+    Binance → tipo PROMEDIO_MERCADO, empresa=None
+    """
+    from datetime import date
+    from django.utils import timezone
+
+    try:
+        from apps.integration_hub.connectors.tasas_ve.connector import TasasVeConnector
+        from apps.finanzas.models import TasaCambio, Moneda
+
+        connector = TasasVeConnector()
+        hoy = date.today()
+
+        # Obtener monedas base
+        try:
+            usd = Moneda.objects.get(codigo_iso="USD")
+            ves = Moneda.objects.get(codigo_iso="VES")
+        except Moneda.DoesNotExist:
+            logger.error("sync_tasas_ve: Monedas USD/VES no encontradas en BD")
+            return {"error": "Monedas no encontradas"}
+
+        resultados = {}
+
+        # BCV
+        tasa_bcv = connector.pull_tasa_bcv()
+        if tasa_bcv is not None:
+            obj, created = TasaCambio.objects.update_or_create(
+                id_empresa=None,
+                id_moneda_origen=usd,
+                id_moneda_destino=ves,
+                tipo_tasa="OFICIAL_BCV",
+                fecha_tasa=hoy,
+                defaults={
+                    "valor_tasa": tasa_bcv,
+                    "hora_tasa": timezone.now().time(),
+                    "referencia_externa": "hub:sync_tasas_ve",
+                },
+            )
+            resultados["bcv"] = {"tasa": str(tasa_bcv), "created": created}
+            logger.info("sync_tasas_ve BCV: tasa=%s created=%s", tasa_bcv, created)
+        else:
+            logger.warning("sync_tasas_ve: BCV no disponible — reintentando")
+            raise self.retry(countdown=120)
+
+        # Binance P2P
+        tasa_binance = connector.pull_tasa_binance_p2p()
+        if tasa_binance is not None:
+            obj_b, created_b = TasaCambio.objects.update_or_create(
+                id_empresa=None,
+                id_moneda_origen=usd,
+                id_moneda_destino=ves,
+                tipo_tasa="PROMEDIO_MERCADO",
+                fecha_tasa=hoy,
+                defaults={
+                    "valor_tasa": tasa_binance,
+                    "hora_tasa": timezone.now().time(),
+                    "referencia_externa": "hub:binance_p2p",
+                },
+            )
+            resultados["binance_p2p"] = {"tasa": str(tasa_binance), "created": created_b}
+            logger.info("sync_tasas_ve Binance: tasa=%s created=%s", tasa_binance, created_b)
+
+        return resultados
+
+    except self.MaxRetriesExceededError:
+        logger.error("sync_tasas_ve: máximo de reintentos alcanzado")
+        return {"error": "max_retries"}
+    except Exception as exc:
+        logger.exception("sync_tasas_ve error inesperado: %s", exc)
+        raise self.retry(exc=exc, countdown=60)
+
+
+@shared_task(name="integration_hub.sync_cartera_odoo")
+def sync_cartera_odoo(empresa_id: str):
+    """
+    Para tenants Mode A: refresca cache de aging desde Odoo.
+    Solo actualiza el cache de Redis — no persiste la cartera.
+    """
+    from django.core.cache import cache
+
+    try:
+        from apps.cuentas_por_cobrar.services.cartera_provider import (
+            get_cartera_provider,
+        )
+        from apps.cuentas_por_cobrar.services.aging import calcular_aging
+        from apps.core.models import Empresa
+
+        empresa = Empresa.objects.get(pk=empresa_id)
+        provider = get_cartera_provider(empresa)
+        partidas = provider.get_partidas()
+        resumen = calcular_aging(partidas)
+
+        cache_key = f"cxc:aging:{empresa_id}"
+        cache.set(cache_key, resumen, timeout=900)  # 15 min
+
+        logger.info(
+            "sync_cartera_odoo: empresa=%s partidas=%d",
+            empresa_id,
+            len(partidas),
+        )
+        return {"empresa_id": empresa_id, "partidas": len(partidas)}
+
+    except Exception as exc:
+        logger.exception("sync_cartera_odoo error: %s", exc)
+        return {"error": str(exc)}
