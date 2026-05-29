@@ -1603,3 +1603,143 @@ Cada página usa `useState(1)` para el número de página y renderiza `<Paginati
 - Rama: `main`
 
 ---
+
+## Sesión 28 — 2026-05-28 (Semanas 6–8 + Backlog)
+
+**Rama:** `main`
+**Agente:** Claude Sonnet 4.6 (Anthropic)
+**Objetivo declarado:** Terminar de ejecutar por completo el PLAN_TRABAJO_COMPLETO.md
+
+### Tareas completadas
+
+#### BUG-05 / TD-03 — Restaurar FK real en control_asistencia
+
+- **`apps/control_asistencia/models.py`** (reescrito):
+  - Eliminados los campos `id_empleado_temp` (UUIDField) de `AsignacionHorario`, `RegistroAsistencia`, `ResumenAsistenciaDiario`.
+  - Eliminado `id_licencia_asociada_temp` (UUIDField) de `ResumenAsistenciaDiario`.
+  - Añadidos ForeignKey reales (`null=True, blank=True` para transición): `id_empleado → rrhh.Empleado`, `id_licencia_asociada → rrhh.LicenciaEmpleado`.
+  - `unique_together` actualizado: `["id_empleado_temp", "fecha"]` → `["id_empleado", "fecha"]`.
+
+- **`apps/control_asistencia/migrations/0003_restore_empleado_fk.py`** (nuevo):
+  - Elimina los 4 campos UUID temp, agrega los FK reales, actualiza `unique_together`.
+  - Depende de `control_asistencia.0002_initial` y `rrhh.0001_initial`.
+
+- **`apps/control_asistencia/views.py`** (reescrito):
+  - `filterset_fields`: `id_empleado_temp` → `id_empleado`.
+  - `get_queryset()` en `RegistroAsistenciaViewSet` y `ResumenAsistenciaDiarioViewSet`: usa `id_empleado__empresa__in=_empresas(request)` (R-CODE-1 correcto).
+  - Todas las operaciones de filtro y creación actualizadas de `id_empleado_temp=` a `id_empleado_id=`.
+
+#### BUG-08 — Fix QueryDict mutation en _get_object_any_state()
+
+- **`apps/core/viewsets.py`** (modificado):
+  - `_get_object_any_state()`: reemplazado el patrón incorrecto que mutaba el QueryDict inmutable (`self.request._request.GET["incluir_inactivos"] = "true"`) con el patrón correcto: `mutable_get = original_get.copy()` + asignación en `try/finally` para siempre restaurar el GET original.
+
+#### SEC-03 — Refresh token como httpOnly cookie
+
+- **`apps/core/auth_views.py`** (modificado):
+  - `login_view`: ya no devuelve `"refresh"` en el JSON body. En cambio, llama a `response.set_cookie("refresh_token", ..., httponly=True, secure=not DEBUG, samesite="Lax", path="/api/auth/")`.
+  - `refresh_token_view`: lee el refresh token de `request.COOKIES.get("refresh_token")` primero, cuerpo del request como fallback. Cuando rota, escribe el nuevo refresh en cookie (nunca en body).
+  - `logout_view`: lee refresh de cookie primero; llama `response.delete_cookie("refresh_token", path="/api/auth/")`.
+
+- **`frontend/src/services/auth.ts`** (modificado):
+  - Eliminado `localStorage.setItem('refresh_token', res.refresh)`.
+  - Tipo de retorno de `loginAndFetchUser()` ya no incluye `refresh`.
+
+- **`frontend/src/contexts/AuthContext.tsx`** (modificado):
+  - Destructuración del login ya no incluye `refresh`; eliminado `localStorage.setItem('refresh_token', refresh)`.
+
+#### SEC-04 — Sanitizar str(e) en finanzas/views.py
+
+- **`apps/finanzas/views.py`** (modificado):
+  - Añadido `import logging; logger = logging.getLogger(__name__)` al inicio.
+  - 6 bloques `except ... as e: return Response({"error": str(e)}, ...)` reemplazados por `except ...: logger.exception("..."); return Response({"error": "Mensaje genérico"}, ...)`.
+
+#### TD-04 — Coverage threshold 71 → 75
+
+- **`backend/pytest.ini`**: `--cov-fail-under=71` → `--cov-fail-under=75`.
+
+#### GAP-09 — Tests de integración para SuscripcionActivaMiddleware
+
+- **`tests_api/test_saas_middleware.py`** (nuevo, 14 tests):
+  - `TestSuscripcionActivaMiddlewareDisabled` (2): middleware desactivado → siempre pasa.
+  - `TestSuscripcionActivaMiddlewareEnabled` (8): sin suscripción→402, body correcto, anónimo→pasa, rutas excluidas pasan, usuario sin empresa pasa, exception→fail-open.
+  - `TestSuscripcionActivaIntegration` (4): objetos reales de BD — suscripción activa, vencida, suspendida, TRIAL.
+
+#### GAP-10 — Sentry configurado en settings_prod.py
+
+- **`backend/requirements.txt`**: +`sentry-sdk[django]==2.25.1`.
+- **`backend/config/settings_prod.py`**: bloque Sentry al final — lee `SENTRY_DSN` del entorno, configura `DjangoIntegration`, `CeleryIntegration`, `LoggingIntegration`; `send_default_pii=False` (seguridad); sample rates configurables por env vars.
+
+#### TD-05 — Análisis de imports circulares
+
+- **`backend/docs/CIRCULAR_IMPORTS_ANALYSIS.md`** (nuevo):
+  - Mapa de capas de dependencia (0=infra, 1=datos maestros, 2=transacciones, 3=BI).
+  - Tabla de 4 imports lazy que ya resuelven las dependencias cruzadas `finanzas ↔ ventas`.
+  - Reglas de dependencia para nuevos desarrollos.
+  - Verificación automatizada con `importchecker` / `pylint`.
+
+#### TD-06 — `__all__` en `__init__.py` de apps grandes
+
+- **`apps/core/__init__.py`**, **`apps/finanzas/__init__.py`**, **`apps/ventas/__init__.py`**: añadidos `__all__` listando todos los modelos y helpers públicos de cada app.
+
+#### GAP-11 — Client-side validation con react-hook-form + zod
+
+- **`frontend/package.json`**: +`react-hook-form ^7.56.4`, +`zod ^3.25.32`, +`@hookform/resolvers ^3.10.0`.
+- **`frontend/src/schemas/ventas.schemas.ts`** (nuevo): schemas Zod para `detalleVenta`, `pedido`, `cotizacion`, `notaVenta`, `facturaFiscal` con reglas de negocio (detalles ≥ 1, crédito requiere días, descuento 0–100%).
+- **`frontend/src/schemas/fiscal.schemas.ts`** (nuevo): schemas para `configuracionFiscal`, `tasaIVA`, `periodoFiscal`.
+- **`frontend/src/schemas/compras.schemas.ts`** (nuevo): schemas para `detalleCompra`, `ordenCompra`, `facturaCompra`.
+
+#### Verificaciones de items ya completados
+
+- **TD-01**: `ModalPago.tsx` ya estaba dividido en subcomponentes (`ResumenPago`, `SeccionNotasCredito`, `SeccionVuelto`, `CamposDinamicos`, `useModalPagoData`). ✅
+- **TD-02**: Todos los form hooks ya usan `useDocumentoVentaBase` como base compartida. ✅
+- **GAP-03**: `migrar_contactos` management command ya existe en `apps/core/management/commands/`. ✅
+- **SEC-06**: Guard CORS ya presente en `settings_prod.py` desde Sesión 24. ✅
+
+---
+
+### Resumen de archivos afectados (Sesión 28)
+
+| Archivo | Cambio |
+|---|---|
+| `apps/control_asistencia/models.py` | Reescrito: FK reales → rrhh.Empleado |
+| `apps/control_asistencia/views.py` | Reescrito: filtros FK reales |
+| `apps/control_asistencia/migrations/0003_restore_empleado_fk.py` | Nuevo |
+| `apps/core/__init__.py` | +`__all__` |
+| `apps/core/auth_views.py` | httpOnly cookie SEC-03 en login/refresh/logout |
+| `apps/core/viewsets.py` | BUG-08: QueryDict.copy() fix |
+| `apps/finanzas/__init__.py` | +`__all__` |
+| `apps/finanzas/views.py` | SEC-04: logger.exception + mensajes genéricos |
+| `apps/ventas/__init__.py` | +`__all__` |
+| `backend/config/settings_prod.py` | +Sentry GAP-10 |
+| `backend/pytest.ini` | `--cov-fail-under=75` TD-04 |
+| `backend/requirements.txt` | +`sentry-sdk[django]==2.25.1` |
+| `backend/docs/CIRCULAR_IMPORTS_ANALYSIS.md` | Nuevo TD-05 |
+| `backend/tests_api/test_saas_middleware.py` | Nuevo (14 tests) GAP-09 |
+| `frontend/package.json` | +react-hook-form, zod, @hookform/resolvers |
+| `frontend/src/contexts/AuthContext.tsx` | Sin refresh en localStorage |
+| `frontend/src/services/auth.ts` | Sin refresh en localStorage |
+| `frontend/src/schemas/ventas.schemas.ts` | Nuevo GAP-11 |
+| `frontend/src/schemas/fiscal.schemas.ts` | Nuevo GAP-11 |
+| `frontend/src/schemas/compras.schemas.ts` | Nuevo GAP-11 |
+
+### Estado al cerrar
+
+- **BUG-05/TD-03:** ✅ — FK real restaurado, migración 0003 creada.
+- **BUG-08:** ✅ — QueryDict mutation corregido con try/finally.
+- **SEC-03:** ✅ — Refresh token en httpOnly cookie, removido de localStorage.
+- **SEC-04:** ✅ — 6 `str(e)` en finanzas/views.py → logger.exception + mensajes genéricos.
+- **SEC-06:** ✅ — Confirmado ya implementado.
+- **GAP-09:** ✅ — 14 tests de middleware SaaS creados.
+- **GAP-10:** ✅ — Sentry configurado en settings_prod.py.
+- **TD-01:** ✅ — Confirmado ya implementado.
+- **TD-02:** ✅ — Confirmado ya implementado.
+- **TD-04:** ✅ — Threshold subido a 75%.
+- **TD-05:** ✅ — Análisis documentado, sin circulares activos.
+- **TD-06:** ✅ — `__all__` en core, finanzas, ventas.
+- **GAP-03:** ✅ — Confirmado ya implementado.
+- **GAP-11:** ✅ — Schemas Zod + react-hook-form para ventas, fiscal, compras.
+- **PLAN_TRABAJO_COMPLETO.md: TODO COMPLETO** ✅
+- Rama: `main`
+
+---
