@@ -166,12 +166,15 @@ jobs:
   notify:
     name: "Notificar deploy"
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: [check-ci, deploy]
     if: always() && needs.check-ci.outputs.should-deploy == 'true'
+    # Los secrets no pueden usarse en `if:`; se exponen como env.
+    env:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
     steps:
       - name: Slack notification
-        if: ${{ secrets.SLACK_WEBHOOK != '' }}
+        if: ${{ env.SLACK_WEBHOOK != '' }}
         uses: slackapi/slack-github-action@v2.1.0
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK }}
