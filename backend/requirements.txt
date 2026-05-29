@@ -35,6 +35,13 @@ pytest-django==4.8.0
 pytest-cov==6.1.0
 httpx==0.27.0
 
+# ── CxC — Cobranza Inteligente ───────────────────────────────────────────────
+# BCV scraping (bcv_scrape.py en integration_hub/connectors/tasas_ve/)
+beautifulsoup4==4.13.4
+lxml==5.4.0
+# Agente IA de cobranza (CobranzaAgent en apps/cxc/agents/)
+anthropic>=0.40.0
+
 # ── Calidad de código (dev) ─────────────────────────────────────────────────
 # Estas dependencias también están en el venv local vía pip directo.
 # Se mantienen aquí para que CI las instale automáticamente.
