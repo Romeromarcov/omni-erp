@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -63,11 +63,16 @@ describe('ConfiguracionFiscalPage', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('shows loading state initially', () => {
     vi.mocked(configuracionFiscalService.getByEmpresa).mockReturnValue(new Promise(() => {}));
     vi.mocked(tasaIVAService.getByEmpresa).mockReturnValue(new Promise(() => {}));
     renderPage();
-    expect(screen.getByText(/cargando configuración/i)).toBeInTheDocument();
+    // El estado de carga ahora se representa con un spinner MUI (CircularProgress).
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders the page heading', async () => {

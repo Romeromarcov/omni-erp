@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -89,11 +89,16 @@ describe('InventarioDashboardPage', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('shows loading state initially', () => {
     vi.mocked(stockActualService.getAll).mockReturnValue(new Promise(() => {}));
     vi.mocked(productoInventarioService.getAll).mockReturnValue(new Promise(() => {}));
     renderDashboard();
-    expect(screen.getByText(/cargando inventario/i)).toBeInTheDocument();
+    // El estado de carga ahora se representa con el spinner del DataTable (MUI CircularProgress).
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders dashboard title', async () => {

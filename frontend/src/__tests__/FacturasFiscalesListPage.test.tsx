@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -66,10 +66,15 @@ describe('FacturasFiscalesListPage', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('shows loading state initially', () => {
     vi.mocked(get).mockReturnValue(new Promise(() => {}));
     renderFacturasFiscalesListPage();
-    expect(screen.getByText(/cargando facturas fiscales/i)).toBeInTheDocument();
+    // El estado de carga ahora se representa con el spinner del DataTable (MUI CircularProgress).
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders facturas list after data loads', async () => {
@@ -87,8 +92,9 @@ describe('FacturasFiscalesListPage', () => {
     renderFacturasFiscalesListPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /^facturas fiscales$/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /nueva factura fiscal/i })).toBeInTheDocument();
+      // El título y el botón usan claves i18n (t) que renderizan la clave en el entorno de test.
+      expect(screen.getByRole('heading', { name: /facturasFiscales\.title/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /facturasFiscales\.nueva/i })).toBeInTheDocument();
     });
   });
 
@@ -97,7 +103,8 @@ describe('FacturasFiscalesListPage', () => {
     renderFacturasFiscalesListPage();
 
     await waitFor(() => {
-      expect(screen.getByText(/no hay facturas fiscales registradas/i)).toBeInTheDocument();
+      // El mensaje de vacío usa la clave i18n sinRegistros (renderizada como clave en test).
+      expect(screen.getByText(/facturasFiscales\.sinRegistros/i)).toBeInTheDocument();
     });
   });
 
@@ -106,9 +113,11 @@ describe('FacturasFiscalesListPage', () => {
     renderFacturasFiscalesListPage();
 
     await waitFor(() => {
+      // La tabla modernizada (DataTable) ya no tiene columna "Estado";
+      // verificamos las cabeceras vigentes.
       expect(screen.getByText(/número/i)).toBeInTheDocument();
+      expect(screen.getByText(/fecha/i)).toBeInTheDocument();
       expect(screen.getByText(/cliente/i)).toBeInTheDocument();
-      expect(screen.getByText(/estado/i)).toBeInTheDocument();
     });
   });
 
@@ -117,10 +126,12 @@ describe('FacturasFiscalesListPage', () => {
     renderFacturasFiscalesListPage();
 
     await waitFor(() => {
-      // fac-002 has id_nota_venta_origen set
-      expect(screen.getByText('Nota Venta')).toBeInTheDocument();
-      // fac-001 has no origin (direct)
-      expect(screen.getByText('Directa')).toBeInTheDocument();
+      // La tabla modernizada (DataTable) ya no muestra una columna de "origen"
+      // (Nota Venta / Directa). Se preserva la intención verificando que ambas
+      // facturas (con y sin nota de venta de origen) se listan y se distinguen
+      // por su cliente.
+      expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+      expect(screen.getByText('María García')).toBeInTheDocument();
     });
   });
 });

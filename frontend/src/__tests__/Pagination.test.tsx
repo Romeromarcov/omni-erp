@@ -20,27 +20,27 @@ describe('Pagination', () => {
 
   it('disables prev button on first page', () => {
     render(<Pagination page={1} count={100} pageSize={20} onChange={vi.fn()} />);
-    const prevBtn = screen.getByText('‹');
+    const prevBtn = screen.getByRole('button', { name: /go to previous page/i });
     expect(prevBtn).toBeDisabled();
   });
 
   it('disables next button on last page', () => {
     render(<Pagination page={5} count={100} pageSize={20} onChange={vi.fn()} />);
-    const nextBtn = screen.getByText('›');
+    const nextBtn = screen.getByRole('button', { name: /go to next page/i });
     expect(nextBtn).toBeDisabled();
   });
 
   it('calls onChange with next page when next is clicked', () => {
     const onChange = vi.fn();
     render(<Pagination page={2} count={100} pageSize={20} onChange={onChange} />);
-    fireEvent.click(screen.getByText('›'));
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
     expect(onChange).toHaveBeenCalledWith(3);
   });
 
   it('calls onChange with prev page when prev is clicked', () => {
     const onChange = vi.fn();
     render(<Pagination page={3} count={100} pageSize={20} onChange={onChange} />);
-    fireEvent.click(screen.getByText('‹'));
+    fireEvent.click(screen.getByRole('button', { name: /go to previous page/i }));
     expect(onChange).toHaveBeenCalledWith(2);
   });
 

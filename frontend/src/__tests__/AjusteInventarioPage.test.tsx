@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -90,9 +91,10 @@ describe('AjusteInventarioPage', () => {
     vi.mocked(stockActualService.getAll).mockResolvedValue(mockStock);
     vi.mocked(productoInventarioService.getAll).mockResolvedValue(mockProductos as never[]);
     renderPage();
+    // Los selects ahora son MUI <TextField select> → role="combobox" con su label.
     await waitFor(() => {
-      expect(screen.getByText(/seleccionar producto/i)).toBeInTheDocument();
-      expect(screen.getByText(/seleccionar almacén/i)).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /producto/i })).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /almacén/i })).toBeInTheDocument();
     });
   });
 
@@ -100,10 +102,11 @@ describe('AjusteInventarioPage', () => {
     vi.mocked(stockActualService.getAll).mockResolvedValue(mockStock);
     vi.mocked(productoInventarioService.getAll).mockResolvedValue(mockProductos as never[]);
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByText(/Producto A \(SKU-A\)/)).toBeInTheDocument();
-      expect(screen.getByText(/Producto B \(SKU-B\)/)).toBeInTheDocument();
-    });
+    // Las opciones del MUI Select se renderizan en un portal sólo al abrirlo.
+    await waitFor(() => screen.getByRole('combobox', { name: /producto/i }));
+    await userEvent.click(screen.getByRole('combobox', { name: /producto/i }));
+    expect(await screen.findByRole('option', { name: /Producto A \(SKU-A\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Producto B \(SKU-B\)/ })).toBeInTheDocument();
   });
 
   it('shows ENTRADA and SALIDA radio options', async () => {
@@ -139,15 +142,15 @@ describe('AjusteInventarioPage', () => {
     vi.mocked(productoInventarioService.getAll).mockResolvedValue(mockProductos as never[]);
     renderPage();
 
-    await waitFor(() => screen.getByText(/Producto A \(SKU-A\)/));
+    await waitFor(() => screen.getByRole('combobox', { name: /producto/i }));
 
-    // Select product
-    const productoSelect = screen.getByDisplayValue('— Seleccionar producto —');
-    fireEvent.change(productoSelect, { target: { value: 'prod-001' } });
+    // Select product (MUI Select: click combobox, then the option in the portal)
+    await userEvent.click(screen.getByRole('combobox', { name: /producto/i }));
+    await userEvent.click(await screen.findByRole('option', { name: /Producto A \(SKU-A\)/ }));
 
     // Select warehouse
-    const almacenSelect = screen.getByDisplayValue('— Seleccionar almacén —');
-    fireEvent.change(almacenSelect, { target: { value: 'alm-001' } });
+    await userEvent.click(screen.getByRole('combobox', { name: /almacén/i }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Almacén Principal' }));
 
     await waitFor(() => {
       expect(screen.getByText(/stock actual:/i)).toBeInTheDocument();
@@ -160,16 +163,14 @@ describe('AjusteInventarioPage', () => {
     vi.mocked(movimientoService.registrarAjuste).mockResolvedValue({ id_movimiento_inventario: 'new-001' } as never);
 
     renderPage();
-    await waitFor(() => screen.getByText(/Producto A \(SKU-A\)/));
+    await waitFor(() => screen.getByRole('combobox', { name: /producto/i }));
 
-    // Fill product
-    fireEvent.change(screen.getByDisplayValue('— Seleccionar producto —'), {
-      target: { value: 'prod-001' },
-    });
+    // Fill product (MUI Select)
+    await userEvent.click(screen.getByRole('combobox', { name: /producto/i }));
+    await userEvent.click(await screen.findByRole('option', { name: /Producto A \(SKU-A\)/ }));
     // Fill warehouse
-    fireEvent.change(screen.getByDisplayValue('— Seleccionar almacén —'), {
-      target: { value: 'alm-001' },
-    });
+    await userEvent.click(screen.getByRole('combobox', { name: /almacén/i }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Almacén Principal' }));
     // Fill cantidad
     const cantidadInput = screen.getByPlaceholderText(/ej: 50/i);
     fireEvent.change(cantidadInput, { target: { value: '10' } });
@@ -188,14 +189,12 @@ describe('AjusteInventarioPage', () => {
     vi.mocked(movimientoService.registrarAjuste).mockRejectedValue(new Error('Error de servidor'));
 
     renderPage();
-    await waitFor(() => screen.getByText(/Producto A \(SKU-A\)/));
+    await waitFor(() => screen.getByRole('combobox', { name: /producto/i }));
 
-    fireEvent.change(screen.getByDisplayValue('— Seleccionar producto —'), {
-      target: { value: 'prod-001' },
-    });
-    fireEvent.change(screen.getByDisplayValue('— Seleccionar almacén —'), {
-      target: { value: 'alm-001' },
-    });
+    await userEvent.click(screen.getByRole('combobox', { name: /producto/i }));
+    await userEvent.click(await screen.findByRole('option', { name: /Producto A \(SKU-A\)/ }));
+    await userEvent.click(screen.getByRole('combobox', { name: /almacén/i }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Almacén Principal' }));
     const cantidadInput = screen.getByPlaceholderText(/ej: 50/i);
     fireEvent.change(cantidadInput, { target: { value: '5' } });
 

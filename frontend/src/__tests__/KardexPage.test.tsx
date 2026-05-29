@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -86,11 +86,16 @@ describe('KardexPage', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('shows loading state while fetching movements', () => {
     vi.mocked(productoInventarioService.getById).mockReturnValue(new Promise(() => {}));
     vi.mocked(productoInventarioService.getKardex).mockReturnValue(new Promise(() => {}));
     renderKardex();
-    expect(screen.getByText(/cargando movimientos/i)).toBeInTheDocument();
+    // El estado de carga ahora se representa con el spinner del DataTable (MUI CircularProgress).
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders the Kardex heading with product name', async () => {

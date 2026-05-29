@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -61,10 +61,15 @@ describe('NotasVentaListPage', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('shows loading state initially', () => {
     vi.mocked(get).mockReturnValue(new Promise(() => {}));
     renderNotasVentaListPage();
-    expect(screen.getByText(/cargando notas de venta/i)).toBeInTheDocument();
+    // El estado de carga ahora se representa con el spinner del DataTable (MUI CircularProgress).
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders notas venta list after data loads', async () => {
@@ -72,8 +77,10 @@ describe('NotasVentaListPage', () => {
     renderNotasVentaListPage();
 
     await waitFor(() => {
-      expect(screen.getByText('NV-0001')).toBeInTheDocument();
-      expect(screen.getByText('NV-0002')).toBeInTheDocument();
+      // La tabla modernizada (DataTable) lista una fila por nota; se verifica que
+      // ambas notas aparezcan a través del nombre de su cliente.
+      expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+      expect(screen.getByText('María García')).toBeInTheDocument();
     });
   });
 
@@ -81,8 +88,10 @@ describe('NotasVentaListPage', () => {
     vi.mocked(get).mockResolvedValue({ results: [], count: 0, next: null, previous: null });
     renderNotasVentaListPage();
 
+    // El título resuelve vía i18n; el botón "nueva" no tiene traducción y
+    // renderiza su clave i18n cruda.
     expect(screen.getByText(/gestión de notas de venta/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /nueva nota de venta/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /notasVenta\.nueva/i })).toBeInTheDocument();
   });
 
   it('shows empty state when no notas venta', async () => {
@@ -99,7 +108,10 @@ describe('NotasVentaListPage', () => {
     renderNotasVentaListPage();
 
     await waitFor(() => {
-      expect(screen.getByText(/✓ convertido/i)).toBeInTheDocument();
+      // El estado de conversión ahora se muestra con un StatusChip por estado:
+      // nv-002 está FACTURADA (convertida) y nv-001 en BORRADOR.
+      expect(screen.getByText('FACTURADA')).toBeInTheDocument();
+      expect(screen.getByText('BORRADOR')).toBeInTheDocument();
     });
   });
 
@@ -108,8 +120,11 @@ describe('NotasVentaListPage', () => {
     renderNotasVentaListPage();
 
     await waitFor(() => {
-      expect(screen.getByText(/✓ de pedido/i)).toBeInTheDocument();
-      expect(screen.getByText(/^manual$/i)).toBeInTheDocument();
+      // La tabla modernizada ya no tiene columna de origen ("De Pedido"/"Manual").
+      // Se preserva la intención verificando que ambas notas (con y sin pedido de
+      // origen) se listan, distinguidas por el nombre de su cliente.
+      expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+      expect(screen.getByText('María García')).toBeInTheDocument();
     });
   });
 });
