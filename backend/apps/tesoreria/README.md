@@ -22,5 +22,5 @@ Acciones personalizadas:
 | Ruta | Descripción |
 |---|---|
 | `POST movimientos-bancarios/importar-csv/` | Importar movimientos desde CSV. |
-| `POST conciliaciones-bancarias/conciliar-auto/` | Conciliación automática. |
+| `POST movimientos-bancarios/conciliar-auto/` | Conciliación automática. |
 | `POST conciliaciones-bancarias/{id}/cerrar/` | Cerrar conciliación. |

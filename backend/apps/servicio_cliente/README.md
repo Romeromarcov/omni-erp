@@ -24,7 +24,7 @@ Acciones personalizadas destacadas:
 |---|---|
 | `GET tickets-soporte/abiertos/` · `por-prioridad/` · `dashboard/` | Vistas operativas de tickets. |
 | `POST tickets-soporte/{id}/asignar-agente/` · `cambiar-estado/` · `escalar/` | Operaciones sobre el ticket. |
-| `POST tickets-soporte/agregar-comentario/` | Agregar comentario. |
-| `GET articulos-conocimiento/publicos/` · `buscar/` | Base de conocimiento pública / búsqueda. |
+| `GET categorias-ticket/activas/` · `{id}/estadisticas/` | Categorías activas y sus estadísticas. |
+| `POST interacciones-ticket/agregar-comentario/` | Agregar comentario a un ticket. |
+| `GET articulos-conocimiento/publicos/` · `buscar/` · `POST {id}/actualizar-revision/` | Base de conocimiento: público, búsqueda, revisión. |
 | `GET feedback-cliente/estadisticas-satisfaccion/` · `por-tipo/` · `quejas-sugerencias/` | Reportes de feedback. |
-| `POST feedback-cliente/{id}/actualizar-revision/` | Actualizar revisión de feedback. |

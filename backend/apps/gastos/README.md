@@ -21,6 +21,7 @@ Acciones personalizadas:
 | Ruta | Descripción |
 |---|---|
 | `GET categorias-gasto/activas/` | Categorías activas. |
-| `POST gastos/{id}/aprobar/` · `rechazar/` · `procesar_pago/` · `anular/` | Flujo del gasto. |
-| `GET gastos/pendientes_aprobacion/` · `pendientes_pago/` | Bandejas de gastos. |
-| `GET gastos/resumen_por_categoria/` | Resumen de gastos por categoría. |
+| `POST gastos/{id}/aprobar/` · `rechazar/` | Aprobar / rechazar gasto. |
+| `GET gastos/pendientes_aprobacion/` · `resumen_por_categoria/` | Bandeja y resumen de gastos. |
+| `POST reembolsos-gasto/{id}/procesar_pago/` · `anular/` | Procesar / anular reembolso. |
+| `GET reembolsos-gasto/pendientes_pago/` | Reembolsos pendientes de pago. |
