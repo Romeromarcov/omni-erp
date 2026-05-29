@@ -60,7 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string): Promise<DispositivoInfo | null> => {
     setIsLoading(true);
     try {
-      const { token: newToken, refresh, usuario, dispositivo } = await loginAndFetchUser(username, password);
+      // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie
+      const { token: newToken, usuario, dispositivo } = await loginAndFetchUser(username, password);
       setToken(newToken);
       setUser(usuario);
       setDispositivoInfo(dispositivo || null);
@@ -85,9 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       localStorage.setItem('token', newToken);
-      if (refresh) {
-        localStorage.setItem('refresh_token', refresh);
-      }
+      // SEC-03: refresh token is stored as httpOnly cookie by the backend — do NOT store in localStorage.
       localStorage.setItem('usuario', JSON.stringify(usuario));
       if (usuario.empresas && usuario.empresas.length > 0) {
         localStorage.setItem('empresa', JSON.stringify(usuario.empresas[0]));

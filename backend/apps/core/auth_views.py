@@ -261,12 +261,30 @@ def login_view(request):
                     logger.error(f"Error procesando dispositivo: {e}", exc_info=True)
                     dispositivo_info = {"error": "Error interno al procesar el dispositivo."}
 
-            response_data = {"access": str(refresh.access_token), "refresh": str(refresh), "user": user_data}
+            response_data = {"access": str(refresh.access_token), "user": user_data}
 
             if dispositivo_info:
                 response_data["dispositivo"] = dispositivo_info
 
-            return Response(response_data, status=status.HTTP_200_OK)
+            response = Response(response_data, status=status.HTTP_200_OK)
+
+            # SEC-03: Almacenar refresh token como httpOnly cookie (nunca en el body).
+            # Esto elimina la exposición a XSS que tendría si se devolviera en JSON.
+            from django.conf import settings as django_settings
+            cookie_secure = not django_settings.DEBUG  # secure=True solo en producción (HTTPS)
+            cookie_samesite = getattr(django_settings, "REFRESH_TOKEN_COOKIE_SAMESITE", "Lax")
+            cookie_max_age = int(django_settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME",
+                                 __import__("datetime").timedelta(days=7)).total_seconds())
+            response.set_cookie(
+                key="refresh_token",
+                value=str(refresh),
+                max_age=cookie_max_age,
+                httponly=True,
+                secure=cookie_secure,
+                samesite=cookie_samesite,
+                path="/api/auth/",  # restringir path para no enviar en cada request
+            )
+            return response
 
         else:
             logger.warning(f"Login attempt for inactive user: {username}")
@@ -280,17 +298,22 @@ def login_view(request):
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     """
-    Logout endpoint that blacklists the refresh token
+    Logout endpoint that blacklists the refresh token and clears the httpOnly cookie.
+    SEC-03: reads refresh from cookie first, falls back to body.
     """
     try:
-        refresh_token = request.data.get("refresh")
-        if refresh_token:
-            token = RefreshToken(refresh_token)
+        # SEC-03: read from cookie first, then body
+        refresh_token_str = request.COOKIES.get("refresh_token") or request.data.get("refresh")
+        if refresh_token_str:
+            token = RefreshToken(refresh_token_str)
             token.blacklist()
 
         logger.info(f"User {request.user.username} logged out successfully")
 
-        return Response({"message": "Successfully logged out"}, status=status.HTTP_200_OK)
+        response = Response({"message": "Successfully logged out"}, status=status.HTTP_200_OK)
+        # SEC-03: clear the httpOnly cookie on logout
+        response.delete_cookie("refresh_token", path="/api/auth/")
+        return response
     except Exception as e:
         logger.error(f"Logout error for user {request.user.username}: {str(e)}")
         return Response({"error": "Error during logout"}, status=status.HTTP_400_BAD_REQUEST)
@@ -390,29 +413,54 @@ def change_password_view(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def refresh_token_view(request):
-    """Refresh JWT access token, rotating the refresh token if configured."""
+    """
+    Refresh JWT access token.
+    SEC-03: Reads refresh token from httpOnly cookie first; falls back to request body
+    for backward compatibility during migration period.
+    On success, issues a new refresh token via httpOnly cookie (if ROTATE_REFRESH_TOKENS).
+    """
     from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
     from django.conf import settings as django_settings
 
-    refresh_token = request.data.get("refresh")
-    if not refresh_token:
+    # SEC-03: prefer cookie over body
+    refresh_token_str = request.COOKIES.get("refresh_token") or request.data.get("refresh")
+    if not refresh_token_str:
         return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        refresh = RefreshToken(refresh_token)
+        refresh = RefreshToken(refresh_token_str)
         data = {"access": str(refresh.access_token)}
 
         rotate = django_settings.SIMPLE_JWT.get("ROTATE_REFRESH_TOKENS", False)
-        blacklist = django_settings.SIMPLE_JWT.get("BLACKLIST_AFTER_ROTATION", False)
+        blacklist_after = django_settings.SIMPLE_JWT.get("BLACKLIST_AFTER_ROTATION", False)
+
+        response = Response(data, status=status.HTTP_200_OK)
+
         if rotate:
-            if blacklist:
+            if blacklist_after:
                 refresh.blacklist()
             refresh.set_jti()
             refresh.set_exp()
-            data["refresh"] = str(refresh)
+            new_refresh_str = str(refresh)
+            # SEC-03: new refresh token goes to httpOnly cookie, NOT in body
+            cookie_secure = not django_settings.DEBUG
+            cookie_samesite = getattr(django_settings, "REFRESH_TOKEN_COOKIE_SAMESITE", "Lax")
+            cookie_max_age = int(django_settings.SIMPLE_JWT.get(
+                "REFRESH_TOKEN_LIFETIME",
+                __import__("datetime").timedelta(days=7)
+            ).total_seconds())
+            response.set_cookie(
+                key="refresh_token",
+                value=new_refresh_str,
+                max_age=cookie_max_age,
+                httponly=True,
+                secure=cookie_secure,
+                samesite=cookie_samesite,
+                path="/api/auth/",
+            )
 
-        return Response(data, status=status.HTTP_200_OK)
+        return response
     except (TokenError, InvalidToken) as e:
         logger.warning(f"Token refresh failed: {e}")
         return Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)

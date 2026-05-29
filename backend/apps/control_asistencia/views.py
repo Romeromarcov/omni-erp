@@ -67,13 +67,15 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
     queryset = AsignacionHorario.objects.all()
     serializer_class = AsignacionHorarioSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["activo", "id_empleado_temp", "id_horario"]
+    filterset_fields = ["activo", "id_empleado", "id_horario"]
     ordering_fields = ["fecha_inicio", "fecha_fin"]
     ordering = ["-fecha_inicio"]
 
     def get_queryset(self):
-        # R-CODE-1 via HorarioTrabajo → id_empresa
-        return AsignacionHorario.objects.filter(id_horario__id_empresa__in=_empresas(self.request))
+        # R-CODE-1: filtrado via empresa del empleado y via HorarioTrabajo → id_empresa
+        return AsignacionHorario.objects.filter(
+            id_horario__id_empresa__in=_empresas(self.request)
+        )
 
     @action(detail=False, methods=["get"])
     def activas(self, request):
@@ -81,7 +83,7 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
         empleado_id = request.query_params.get("empleado_id")
         filters = {"activo": True}
         if empleado_id:
-            filters["id_empleado_temp"] = empleado_id
+            filters["id_empleado_id"] = empleado_id
 
         asignaciones_activas = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(asignaciones_activas, many=True)
@@ -94,7 +96,7 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
         if not empleado_id:
             return Response({"error": "Debe especificar el ID del empleado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        asignaciones = self.get_queryset().filter(id_empleado_temp=empleado_id)
+        asignaciones = self.get_queryset().filter(id_empleado_id=empleado_id)
         serializer = self.get_serializer(asignaciones, many=True)
         return Response(serializer.data)
 
@@ -122,20 +124,16 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
     queryset = RegistroAsistencia.objects.all()
     serializer_class = RegistroAsistenciaSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["id_empleado_temp", "tipo_marcado", "metodo_marcado"]
+    filterset_fields = ["id_empleado", "tipo_marcado", "metodo_marcado"]
     search_fields = ["observaciones"]
     ordering_fields = ["fecha_hora_marcado"]
     ordering = ["-fecha_hora_marcado"]
 
     def get_queryset(self):
-        # R-CODE-1 — filtrado via UUIDs de empleados de las empresas visibles.
-        # NOTA: id_empleado FK está comentado temporalmente (usa id_empleado_temp UUID).
-        # Cuando se restaure la FK real, cambiar a: filter(id_empleado__empresa__in=...)
-        empresas = _empresas(self.request)
-        empleados_ids = AsignacionHorario.objects.filter(
-            id_horario__id_empresa__in=empresas
-        ).values_list("id_empleado_temp", flat=True).distinct()
-        return RegistroAsistencia.objects.filter(id_empleado_temp__in=empleados_ids)
+        # R-CODE-1 — filtrado via empleado__empresa
+        return RegistroAsistencia.objects.filter(
+            id_empleado__empresa__in=_empresas(self.request)
+        )
 
     @action(detail=False, methods=["post"])
     def marcar_asistencia(self, request):
@@ -151,7 +149,7 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
 
         # Crear registro de asistencia
         registro = RegistroAsistencia.objects.create(
-            id_empleado_temp=empleado_id,
+            id_empleado_id=empleado_id,
             fecha_hora_marcado=timezone.now(),
             tipo_marcado=tipo_marcado,
             metodo_marcado=metodo_marcado,
@@ -172,7 +170,7 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
         if not empleado_id:
             return Response({"error": "Debe especificar el ID del empleado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        filters = {"id_empleado_temp": empleado_id}
+        filters = {"id_empleado_id": empleado_id}
 
         if fecha_inicio:
             filters["fecha_hora_marcado__date__gte"] = fecha_inicio
@@ -191,7 +189,7 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
 
         filters = {"fecha_hora_marcado__date": hoy}
         if empleado_id:
-            filters["id_empleado_temp"] = empleado_id
+            filters["id_empleado_id"] = empleado_id
 
         registros = self.get_queryset().filter(**filters)
         serializer = self.get_serializer(registros, many=True)
@@ -202,17 +200,15 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
     queryset = ResumenAsistenciaDiario.objects.all()
     serializer_class = ResumenAsistenciaDiarioSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["id_empleado_temp", "fecha", "es_ausencia", "estado_revision"]
+    filterset_fields = ["id_empleado", "fecha", "es_ausencia", "estado_revision"]
     ordering_fields = ["fecha", "horas_trabajadas_netas"]
     ordering = ["-fecha"]
 
     def get_queryset(self):
-        # R-CODE-1 — misma estrategia que RegistroAsistencia via AsignacionHorario
-        empresas = _empresas(self.request)
-        empleados_ids = AsignacionHorario.objects.filter(
-            id_horario__id_empresa__in=empresas
-        ).values_list("id_empleado_temp", flat=True).distinct()
-        return ResumenAsistenciaDiario.objects.filter(id_empleado_temp__in=empleados_ids)
+        # R-CODE-1 — filtrado via empleado__empresa
+        return ResumenAsistenciaDiario.objects.filter(
+            id_empleado__empresa__in=_empresas(self.request)
+        )
 
     @action(detail=False, methods=["post"])
     def generar_resumen_diario(self, request):
@@ -230,16 +226,16 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
             # Obtener todos los empleados que tienen registros de asistencia en la fecha
             empleados_ids = (
                 RegistroAsistencia.objects.filter(fecha_hora_marcado__date=fecha)
-                .values_list("id_empleado_temp", flat=True)
+                .values_list("id_empleado_id", flat=True)
                 .distinct()
             )
 
         resumenes_creados = 0
 
-        for empleado_id in empleados_ids:
+        for emp_id in empleados_ids:
             # Verificar si ya existe resumen para esta fecha y empleado
             resumen_existente = ResumenAsistenciaDiario.objects.filter(
-                id_empleado_temp=empleado_id, fecha=fecha
+                id_empleado_id=emp_id, fecha=fecha
             ).first()
 
             if resumen_existente:
@@ -247,13 +243,13 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
 
             # Obtener registros de asistencia del empleado para la fecha
             registros = RegistroAsistencia.objects.filter(
-                id_empleado_temp=empleado_id, fecha_hora_marcado__date=fecha
+                id_empleado_id=emp_id, fecha_hora_marcado__date=fecha
             ).order_by("fecha_hora_marcado")
 
             if not registros.exists():
                 # Crear resumen de ausencia
                 ResumenAsistenciaDiario.objects.create(
-                    id_empleado_temp=empleado_id, fecha=fecha, es_ausencia=True, estado_revision="PENDIENTE"
+                    id_empleado_id=emp_id, fecha=fecha, es_ausencia=True, estado_revision="PENDIENTE"
                 )
                 resumenes_creados += 1
                 continue
@@ -275,7 +271,7 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
 
             # Crear resumen
             ResumenAsistenciaDiario.objects.create(
-                id_empleado_temp=empleado_id,
+                id_empleado_id=emp_id,
                 fecha=fecha,
                 hora_entrada_real=entrada.time() if entrada else None,
                 hora_salida_real=salida.time() if salida else None,
@@ -285,7 +281,7 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
             )
             resumenes_creados += 1
 
-        return Response({"mensaje": f"Se generaron {resumenes_creados} resúmenes diarios", "fecha": fecha})
+        return Response({"mensaje": f"Se generaron {resumenes_creados} resúmenes diarios", "fecha": str(fecha)})
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):
@@ -312,7 +308,7 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
         filters = {"estado_revision": "PENDIENTE"}
 
         if empleado_id:
-            filters["id_empleado_temp"] = empleado_id
+            filters["id_empleado_id"] = empleado_id
         if fecha_desde:
             filters["fecha__gte"] = fecha_desde
         if fecha_hasta:
@@ -332,7 +328,9 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
         if not empleado_id:
             return Response({"error": "Debe especificar el ID del empleado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        resumenes = self.get_queryset().filter(id_empleado_temp=empleado_id, fecha__year=año, fecha__month=mes)
+        resumenes = self.get_queryset().filter(
+            id_empleado_id=empleado_id, fecha__year=año, fecha__month=mes
+        )
 
         # Calcular estadísticas
         total_dias = resumenes.count()

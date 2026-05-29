@@ -1,8 +1,12 @@
+import logging
+
 from django.db import models
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+logger = logging.getLogger(__name__)
 
 from apps.core.viewsets import BaseModelViewSet
 from apps.tesoreria.serializers import CajaSerializer
@@ -156,8 +160,9 @@ class DatafonoViewSet(BaseModelViewSet):
         hasta_dt = parse_datetime(hasta) if hasta else None
         try:
             resultado = datafono.realizar_cierre(usuario=usuario, hasta=hasta_dt)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            logger.exception("Error al realizar cierre de datafono")
+            return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(resultado)
 
 
@@ -495,8 +500,9 @@ class CajaViewSet(BaseModelViewSet):
         hasta_dt = parse_datetime(hasta) if hasta else None
         try:
             resultado = caja.realizar_cierre(saldo_real=saldo_real, usuario=usuario, hasta=hasta_dt)
-        except Exception as e:
-            return Response({"error": str(e)}, status=400)
+        except Exception:
+            logger.exception("Error al realizar cierre de caja")
+            return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
         return Response(resultado)
 
     @action(detail=False, methods=["get"], url_path="tipo-caja-choices")
@@ -680,8 +686,9 @@ class CajaUsuarioViewSet(viewsets.ModelViewSet):
                 nombre=nombre, monedas_ids=monedas_ids, metodos_pago_ids=metodos_pago_ids, usuario=request.user
             )
             return Response({"mensaje": f"Caja virtual '{nombre}' creada exitosamente", "caja_virtual": caja_virtual})
-        except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            logger.exception("Error al crear caja virtual")
+            return Response({"error": "No se pudo crear la caja virtual. Verifique los datos."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ViewSet para CajaVirtualUsuario
@@ -833,8 +840,9 @@ class DatafonoViewSet(BaseModelViewSet):
                 },
                 status=status.HTTP_200_OK,
             )
-        except ValueError as e:
-            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            logger.exception("Error al cerrar sesión datafono")
+            return Response({"success": False, "message": "No se pudo cerrar la sesión. Intente de nuevo."}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["post"], url_path="registrar-pago")
     def registrar_pago_tarjeta(self, request, pk=None):
@@ -883,8 +891,9 @@ class DatafonoViewSet(BaseModelViewSet):
             return Response(
                 {"success": False, "message": "Transacción financiera no encontrada"}, status=status.HTTP_404_NOT_FOUND
             )
-        except ValueError as e:
-            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            logger.exception("Error al registrar pago tarjeta")
+            return Response({"success": False, "message": "No se pudo registrar el pago. Verifique los datos."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TransaccionDatafonoViewSet(BaseModelViewSet):
@@ -961,8 +970,9 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
             return Response(
                 {"success": False, "message": "Movimiento bancario no encontrado"}, status=status.HTTP_404_NOT_FOUND
             )
-        except ValueError as e:
-            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            logger.exception("Error al conciliar depósito")
+            return Response({"success": False, "message": "No se pudo conciliar el depósito. Verifique los datos."}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["get"], url_path="pendientes")
     def depositos_pendientes(self, request):

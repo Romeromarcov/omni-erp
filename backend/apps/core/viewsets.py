@@ -125,17 +125,20 @@ class SoftDeleteModelMixin:
             pass
 
         if obj is None:
-            # No está en activos — buscar en inactivos con los mismos filtros de empresa
-            qs_all = qs.model.objects.filter(activo=False)
-            # Aplicar filtros de empresa si existen (heredados de get_queryset con incluir_inactivos)
-            # Temporalmente forzar incluir_inactivos para obtener el queryset completo
-            original_params = self.request.query_params
-            self.request._request.GET = self.request.query_params.copy()
-            self.request._request.GET["incluir_inactivos"] = "true"
-            qs_full = self.get_queryset()
-            # Restaurar
-            self.request._request.GET = original_params._mutable and original_params or original_params
-            obj = qs_full.filter(activo=False).filter(**filter_kwargs).first()
+            # No está en activos — buscar en inactivos con los mismos filtros de empresa.
+            # Usamos una copia mutable del GET dict para no mutar el QueryDict original
+            # (que es inmutable y causaría AttributeError en producción).
+            from django.http import QueryDict  # noqa: PLC0415
+
+            original_get = self.request._request.GET
+            mutable_get = original_get.copy()  # copy() retorna un QueryDict mutable
+            mutable_get["incluir_inactivos"] = "true"
+            self.request._request.GET = mutable_get
+            try:
+                qs_full = self.get_queryset()
+                obj = qs_full.filter(activo=False).filter(**filter_kwargs).first()
+            finally:
+                self.request._request.GET = original_get  # siempre restaurar
 
         if obj is None:
             from rest_framework.exceptions import NotFound  # noqa: PLC0415

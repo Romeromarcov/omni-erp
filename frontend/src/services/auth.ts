@@ -9,7 +9,8 @@ export async function fetchMe(): Promise<Usuario> {
 
 export async function loginAndFetchUser(username: string, password: string): Promise<{
   token: string;
-  refresh: string;
+  // SEC-03: refresh token is now managed as an httpOnly cookie by the browser.
+  // It is NO LONGER returned here to prevent XSS exposure.
   usuario: Usuario;
   dispositivo?: DispositivoInfo;
 }> {
@@ -22,11 +23,10 @@ export async function loginAndFetchUser(username: string, password: string): Pro
     ...deviceInfo
   });
 
-  // Guardar tokens
+  // Guardar access token en localStorage.
+  // SEC-03: el refresh token ya NO se guarda en localStorage — el backend lo envía
+  // como httpOnly cookie (path=/api/auth/) que el navegador gestiona automáticamente.
   localStorage.setItem('token', res.access);
-  if (res.refresh) {
-    localStorage.setItem('refresh_token', res.refresh);
-  }
 
   // Obtener el usuario autenticado
   const usuario = await fetchMe();
@@ -66,7 +66,6 @@ export async function loginAndFetchUser(username: string, password: string): Pro
 
   return {
     token: res.access,
-    refresh: res.refresh,
     usuario,
     dispositivo: res.dispositivo
   };
