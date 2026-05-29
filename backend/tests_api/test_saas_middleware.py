@@ -29,7 +29,7 @@ User = get_user_model()
 
 @pytest.fixture
 def empresa(db):
-    return Empresa.objects.create(nombre="Test SaaS Corp", rif="J-99999999-9")
+    return Empresa.objects.create(nombre_legal="Test SaaS Corp", identificador_fiscal="J-99999999-9")
 
 
 @pytest.fixture

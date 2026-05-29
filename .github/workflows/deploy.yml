@@ -1,12 +1,11 @@
 name: CD — Deploy to Production
 
 on:
-  push:
-    branches: [main]
   workflow_run:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
 
 # Solo un deploy a la vez
 concurrency:
@@ -20,20 +19,31 @@ jobs:
   check-ci:
     name: "Verificar CI"
     runs-on: ubuntu-latest
+    # Los secrets no pueden usarse en `if:` a nivel de job; se exponen
+    # como env para poder comprobar si el deploy está configurado.
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
     outputs:
       should-deploy: ${{ steps.check.outputs.should-deploy }}
     steps:
       - name: Check CI status
         id: check
         run: |
-          # Si se disparó por push directo a main, siempre desplegar
-          # Si se disparó por workflow_run, verificar que CI pasó
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          # 1) Sin servidor de deploy configurado (faltan secrets de
+          #    producción): omitir el deploy limpiamente, no fallar.
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "should-deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Sin secret DEPLOY_HOST — deploy omitido (no es un error)."
+            exit 0
+          fi
+          # 2) Manual (workflow_dispatch): desplegar.
+          #    Por CI (workflow_run): solo si CI pasó.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should-deploy=true" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
-            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> "$GITHUB_OUTPUT"
           else
-            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "should-deploy=false" >> "$GITHUB_OUTPUT"
             echo "CI no pasó — abortando deploy"
           fi
 
