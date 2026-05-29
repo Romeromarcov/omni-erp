@@ -13,6 +13,7 @@ export interface ConectorProveedor {
   descripcion: string;
   icono_url: string;
   capacidades: string[];
+  requiere_db?: boolean;
   estado: 'activo' | 'beta' | 'proximamente';
   versiones_soportadas: string[];
 }

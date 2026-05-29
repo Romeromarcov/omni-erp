@@ -1,8 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/Core/Login/LoginPage';
-import SidebarMenu from './components/SidebarMenu';
-import NotificationBell from './components/NotificationBell';
-import { SidebarProvider, useSidebar } from './components/SidebarContext';
+import AppLayout from './components/layout/AppLayout';
 import { useAuth } from './contexts/AuthContext';
 import { ventasRoutes } from './routes/ventasRoutes';
 import { finanzasRoutes } from './routes/finanzasRoutes';
@@ -13,47 +11,29 @@ import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 
-function ProtectedLayout() {
-  const { isCollapsed, isMobile } = useSidebar();
-  const marginLeft = isMobile ? 0 : (isCollapsed ? 60 : 200);
-  return (
-    <div style={{ display: 'flex' }}>
-      <SidebarMenu />
-      <div style={{ marginLeft, width: '100%', transition: 'margin-left 0.3s ease' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px', borderBottom: '1px solid #f0f0f0' }}>
-          <NotificationBell />
-        </div>
-        <Outlet />
-      </div>
-    </div>
-  );
-}
-
 export default function AppRouter() {
   const { token } = useAuth();
   return (
     <BrowserRouter>
-      <SidebarProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<LoginPage />} />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<LoginPage />} />
 
-          {token && (
-            <Route element={<ProtectedLayout />}>
-              {coreRoutes()}
-              {ventasRoutes()}
-              {finanzasRoutes()}
-              {configuracionRoutes()}
-              {integracionesRoutes()}
-              {inventarioRoutes()}
-              {fiscalRoutes()}
-              {cxcRoutes()}
-            </Route>
-          )}
+        {token && (
+          <Route element={<AppLayout />}>
+            {coreRoutes()}
+            {ventasRoutes()}
+            {finanzasRoutes()}
+            {configuracionRoutes()}
+            {integracionesRoutes()}
+            {inventarioRoutes()}
+            {fiscalRoutes()}
+            {cxcRoutes()}
+          </Route>
+        )}
 
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </SidebarProvider>
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
     </BrowserRouter>
   );
 }

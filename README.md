@@ -83,9 +83,13 @@ python -m pytest tests_api/ -v
 
 ## Documentación
 
+- **Índice de documentación:** `docs/README.md` — mapa de toda la documentación.
 - **Plan maestro único (fuente de verdad):** `docs/PLAN_MAESTRO_UNICO.md` — empieza aquí.
-- Registro cronológico de sesiones: `backend/PROJECT_LOG.md`
+- **Arquitectura del backend:** `backend/docs/ARQUITECTURA_BACKEND.md` — catálogo de las 36 apps y su routing.
+- **README por app:** `backend/apps/<nombre>/README.md` — modelos y endpoints de cada app.
+- Frontend: `frontend/README.md` (estructura, páginas, componentes y hooks; refactor en pausa).
 - Decisiones arquitectónicas: `docs/decisions/ADR-*.md`
+- Registro cronológico de sesiones: `backend/PROJECT_LOG.md`
 - Planes históricos archivados: `docs/_archive/`
 - API interactiva: http://localhost:8000/api/docs/
 - ReDoc: http://localhost:8000/api/redoc/

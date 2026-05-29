@@ -2,54 +2,71 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  MenuItem,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
+import {
   getConector,
   testConector,
   triggerSync,
   getJobsDeConector,
   type JobSincronizacion,
 } from '../../services/integrationHubService';
+import { PageContainer } from '../../components/ui';
 
-const ESTADO_JOB_COLORS: Record<string, { bg: string; text: string }> = {
-  completado:             { bg: '#e6f4ea', text: '#1e7e34' },
-  completado_con_errores: { bg: '#fff3cd', text: '#856404' },
-  fallido:                { bg: '#fde8e8', text: '#b91c1c' },
-  en_progreso:            { bg: '#eff6ff', text: '#1d4ed8' },
-  pendiente:              { bg: '#f3f4f6', text: '#6b7280' },
+type ChipColor = 'success' | 'warning' | 'error' | 'info' | 'default';
+
+const ESTADO_JOB_COLORS: Record<string, ChipColor> = {
+  completado: 'success',
+  completado_con_errores: 'warning',
+  fallido: 'error',
+  en_progreso: 'info',
+  pendiente: 'default',
 };
 
-const ESTADO_CONECTOR_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  activo:       { bg: '#e6f4ea', text: '#1e7e34', label: 'Activo' },
-  configurando: { bg: '#fff3cd', text: '#856404', label: 'Configurando' },
-  error:        { bg: '#fde8e8', text: '#b91c1c', label: 'Error' },
-  inactivo:     { bg: '#f3f4f6', text: '#6b7280', label: 'Inactivo' },
+const ESTADO_CONECTOR_COLORS: Record<string, { color: ChipColor; label: string }> = {
+  activo: { color: 'success', label: 'Activo' },
+  configurando: { color: 'warning', label: 'Configurando' },
+  error: { color: 'error', label: 'Error' },
+  inactivo: { color: 'default', label: 'Inactivo' },
 };
 
 const JobRow: React.FC<{ job: JobSincronizacion }> = ({ job }) => {
-  const col = ESTADO_JOB_COLORS[job.estado] ?? ESTADO_JOB_COLORS.pendiente;
+  const color = ESTADO_JOB_COLORS[job.estado] ?? ESTADO_JOB_COLORS.pendiente;
   const inicio = job.iniciado_en
     ? new Date(job.iniciado_en).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })
     : '—';
-  const duracion = job.duracion_segundos != null
-    ? `${job.duracion_segundos}s`
-    : '—';
+  const duracion = job.duracion_segundos != null ? `${job.duracion_segundos}s` : '—';
 
   return (
-    <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-      <td style={{ padding: '10px 12px', fontSize: 13 }}>{job.tipo_entidad}</td>
-      <td style={{ padding: '10px 12px' }}>
-        <span style={{ ...col, padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
-          {job.estado.replace(/_/g, ' ')}
-        </span>
-      </td>
-      <td style={{ padding: '10px 12px', fontSize: 13, color: '#6b7280' }}>{inicio}</td>
-      <td style={{ padding: '10px 12px', fontSize: 13, textAlign: 'right' }}>
-        {job.creados > 0 && <span style={{ color: '#16a34a', marginRight: 6 }}>+{job.creados}</span>}
-        {job.actualizados > 0 && <span style={{ color: '#2563eb', marginRight: 6 }}>↺{job.actualizados}</span>}
-        {job.omitidos > 0 && <span style={{ color: '#9ca3af', marginRight: 6 }}>={job.omitidos}</span>}
-        {job.fallidos > 0 && <span style={{ color: '#dc2626' }}>✕{job.fallidos}</span>}
-      </td>
-      <td style={{ padding: '10px 12px', fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{duracion}</td>
-    </tr>
+    <TableRow>
+      <TableCell>{job.tipo_entidad}</TableCell>
+      <TableCell>
+        <Chip size="small" label={job.estado.replace(/_/g, ' ')} color={color} variant={color === 'default' ? 'outlined' : 'filled'} />
+      </TableCell>
+      <TableCell>{inicio}</TableCell>
+      <TableCell align="right">
+        {job.creados > 0 && <Box component="span" sx={{ color: 'success.main', mr: 1 }}>+{job.creados}</Box>}
+        {job.actualizados > 0 && <Box component="span" sx={{ color: 'primary.main', mr: 1 }}>↺{job.actualizados}</Box>}
+        {job.omitidos > 0 && <Box component="span" sx={{ color: 'text.disabled', mr: 1 }}>={job.omitidos}</Box>}
+        {job.fallidos > 0 && <Box component="span" sx={{ color: 'error.main' }}>✕{job.fallidos}</Box>}
+      </TableCell>
+      <TableCell align="right">{duracion}</TableCell>
+    </TableRow>
   );
 };
 
@@ -87,169 +104,147 @@ const ConectorDetallePage: React.FC = () => {
     },
   });
 
-  if (isLoading) return <div style={{ padding: 40, color: '#9ca3af' }}>Cargando…</div>;
-  if (!conector) return <div style={{ padding: 40, color: '#dc2626' }}>Conector no encontrado.</div>;
+  if (isLoading) return (
+    <PageContainer><Box display="flex" justifyContent="center" py={6}><CircularProgress /></Box></PageContainer>
+  );
+  if (!conector) return (
+    <PageContainer><Alert severity="error">Conector no encontrado.</Alert></PageContainer>
+  );
 
   const estadoConector = ESTADO_CONECTOR_COLORS[conector.estado] ?? ESTADO_CONECTOR_COLORS.inactivo;
   const jobs = jobsData?.results ?? [];
 
-  const btn = (primary?: boolean, danger?: boolean): React.CSSProperties => ({
-    padding: '8px 16px',
-    borderRadius: 6,
-    border: 'none',
-    cursor: 'pointer',
-    fontWeight: 600,
-    fontSize: 13,
-    background: primary ? '#2563eb' : danger ? '#dc2626' : '#f3f4f6',
-    color: primary || danger ? '#fff' : '#374151',
-  });
-
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1000 }}>
+    <PageContainer>
       {/* Back */}
-      <button
-        onClick={() => navigate('/integraciones')}
-        style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, marginBottom: 16, padding: 0 }}
-      >
+      <Button onClick={() => navigate('/integraciones')} sx={{ mb: 2 }}>
         ← Volver al Integration Hub
-      </button>
+      </Button>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#111827' }}>{conector.nombre}</h1>
-            <span style={{
-              padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-              background: estadoConector.bg, color: estadoConector.text,
-            }}>
-              {estadoConector.label}
-            </span>
-          </div>
-          <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={3}>
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1.25}>
+            <Typography variant="h5" sx={{ fontWeight: 800 }}>{conector.nombre}</Typography>
+            <Chip size="small" label={estadoConector.label} color={estadoConector.color} variant={estadoConector.color === 'default' ? 'outlined' : 'filled'} />
+          </Stack>
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
             {conector.proveedor_nombre}
             {conector.version_detectada && ` · v${conector.version_detectada}`}
-          </div>
-        </div>
-        <button
-          style={btn(false, false)}
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
           onClick={() => { testMutation.reset(); setTestResult(null); testMutation.mutate(); }}
           disabled={testMutation.isPending}
         >
-          {testMutation.isPending ? 'Probando…' : '🔌 Probar conexión'}
-        </button>
-      </div>
+          {testMutation.isPending ? 'Probando…' : 'Probar conexión'}
+        </Button>
+      </Stack>
 
       {/* Test result */}
       {testResult && (
-        <div style={{
-          background: testResult.success ? '#e6f4ea' : '#fde8e8',
-          border: `1px solid ${testResult.success ? '#86efac' : '#fca5a5'}`,
-          borderRadius: 8, padding: '10px 14px', marginBottom: 20,
-          fontSize: 13, color: testResult.success ? '#166534' : '#b91c1c',
-        }}>
-          {testResult.success ? '✓' : '✕'} {testResult.message}
-          {testResult.version && <span style={{ marginLeft: 8, opacity: 0.7 }}>({testResult.version})</span>}
-        </div>
+        <Alert severity={testResult.success ? 'success' : 'error'} sx={{ mb: 3 }}>
+          {testResult.message}
+          {testResult.version && <Box component="span" sx={{ ml: 1, opacity: 0.7 }}>({testResult.version})</Box>}
+        </Alert>
       )}
 
       {/* Config info */}
-      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '16px 20px', marginBottom: 24 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10, color: '#374151' }}>Configuración</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px', fontSize: 13 }}>
+      <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
+        <Typography variant="subtitle2" mb={1.5}>Configuración</Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 0.75, columnGap: 3 }}>
           {conector.configuracion_publica?.host && (
             <>
-              <span style={{ color: '#9ca3af' }}>Host</span>
-              <span style={{ fontFamily: 'monospace' }}>{conector.configuracion_publica.host}</span>
+              <Typography variant="body2" color="text.secondary">Host</Typography>
+              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{conector.configuracion_publica.host}</Typography>
             </>
           )}
           {conector.configuracion_publica?.user && (
             <>
-              <span style={{ color: '#9ca3af' }}>Usuario</span>
-              <span>{conector.configuracion_publica.user}</span>
+              <Typography variant="body2" color="text.secondary">Usuario</Typography>
+              <Typography variant="body2">{conector.configuracion_publica.user}</Typography>
             </>
           )}
-          <span style={{ color: '#9ca3af' }}>Intervalo sync</span>
-          <span>Cada {conector.intervalo_sync_minutos} min</span>
-          <span style={{ color: '#9ca3af' }}>Último sync</span>
-          <span>{conector.ultimo_sync ? new Date(conector.ultimo_sync).toLocaleString('es-VE') : 'Nunca'}</span>
-        </div>
+          <Typography variant="body2" color="text.secondary">Intervalo sync</Typography>
+          <Typography variant="body2">Cada {conector.intervalo_sync_minutos} min</Typography>
+          <Typography variant="body2" color="text.secondary">Último sync</Typography>
+          <Typography variant="body2">{conector.ultimo_sync ? new Date(conector.ultimo_sync).toLocaleString('es-VE') : 'Nunca'}</Typography>
+        </Box>
 
         {conector.entidades_activas.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <span style={{ color: '#9ca3af', fontSize: 13 }}>Entidades: </span>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap mt={1.5} alignItems="center">
+            <Typography variant="body2" color="text.secondary">Entidades:</Typography>
             {conector.entidades_activas.map(e => (
-              <span key={e} style={{ background: '#eff6ff', color: '#1d4ed8', borderRadius: 4, padding: '2px 6px', fontSize: 11, fontWeight: 500, marginRight: 4 }}>
-                {e}
-              </span>
+              <Chip key={e} size="small" label={e} color="info" variant="outlined" />
             ))}
-          </div>
+          </Stack>
         )}
-      </div>
+      </Paper>
 
       {/* Disparar sync */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '16px 20px', marginBottom: 24 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10, color: '#374151' }}>Sincronización manual</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <select
+      <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
+        <Typography variant="subtitle2" mb={1.5}>Sincronización manual</Typography>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            select
+            size="small"
             value={syncEntidad}
             onChange={e => setSyncEntidad(e.target.value)}
-            style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+            sx={{ flex: 1 }}
           >
-            <option value="">Seleccionar entidad…</option>
+            <MenuItem value="">Seleccionar entidad…</MenuItem>
             {conector.entidades_activas.map(e => (
-              <option key={e} value={e}>{e}</option>
+              <MenuItem key={e} value={e}>{e}</MenuItem>
             ))}
-          </select>
-          <button
-            style={btn(true)}
+          </TextField>
+          <Button
+            variant="contained"
             disabled={!syncEntidad || syncMutation.isPending}
             onClick={() => syncMutation.mutate()}
           >
-            {syncMutation.isPending ? 'Iniciando…' : '▶ Sincronizar'}
-          </button>
-        </div>
+            {syncMutation.isPending ? 'Iniciando…' : 'Sincronizar'}
+          </Button>
+        </Stack>
         {syncMutation.isSuccess && syncMutation.data?.job_id && (
-          <div style={{ marginTop: 8, fontSize: 12, color: '#16a34a' }}>
-            ✓ Job iniciado — {syncMutation.data.mensaje}
-          </div>
+          <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
+            Job iniciado — {syncMutation.data.mensaje}
+          </Typography>
         )}
         {syncMutation.isError && (
-          <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626' }}>
+          <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1 }}>
             Error: {(syncMutation.error as Error).message}
-          </div>
+          </Typography>
         )}
-      </div>
+      </Paper>
 
       {/* Jobs recientes */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #f3f4f6', fontWeight: 600, fontSize: 14, color: '#111827' }}>
+      <Paper variant="outlined">
+        <Typography variant="subtitle1" sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           Jobs recientes
-        </div>
+        </Typography>
         {jobs.length === 0 ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
-            Sin jobs registrados aún.
-          </div>
+          <Typography align="center" color="text.secondary" py={4}>Sin jobs registrados aún.</Typography>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Entidad', 'Estado', 'Inicio', 'Registros', 'Duración'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Registros' || h === 'Duración' ? 'right' : 'left', fontSize: 11, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Entidad</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell>Inicio</TableCell>
+                  <TableCell align="right">Registros</TableCell>
+                  <TableCell align="right">Duración</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {jobs.map(j => <JobRow key={j.id_job} job={j} />)}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
-      </div>
-    </div>
+      </Paper>
+    </PageContainer>
   );
 };
 

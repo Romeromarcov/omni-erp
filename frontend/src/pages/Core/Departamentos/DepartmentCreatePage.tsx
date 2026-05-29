@@ -4,6 +4,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
+import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 interface Departamento {
   nombre_departamento: string;
@@ -28,12 +29,9 @@ const DepartmentCreatePage: React.FC = () => {
     mutationFn: (data: Departamento) => post<Departamento>('/core/departamentos/', data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });
-      alert('Departamento creado');
       navigate(`/empresas/${id_empresa}/departamentos`);
     },
-    onError: () => {
-      alert('Error al crear departamento');
-    },
+    onError: () => alert('Error al crear departamento'),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -41,29 +39,25 @@ const DepartmentCreatePage: React.FC = () => {
     createMutation.mutate(form);
   };
 
-  const loading = createMutation.isPending;
-
   return (
-    <PageLayout maxWidth={480}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Nuevo departamento</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre
-          <input value={form.nombre_departamento} onChange={e => setForm(f => ({ ...f, nombre_departamento: e.target.value }))} placeholder="Nombre" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Descripción
-          <input value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder="Descripción" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Activo
-          <select value={form.activo ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }}>
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-        <button type="submit" disabled={loading} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Crear departamento</button>
-      </form>
-      <div style={{ marginTop: 28, textAlign: 'center' }}>
-        <button type="button" onClick={() => navigate(-1)} style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}>Cancelar</button>
-      </div>
+    <PageLayout maxWidth={560}>
+      <Typography variant="h5" mb={3}>Nuevo departamento</Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          <TextField label="Nombre" value={form.nombre_departamento} onChange={e => setForm(f => ({ ...f, nombre_departamento: e.target.value }))} required fullWidth />
+          <TextField label="Descripción" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} required fullWidth multiline minRows={3} />
+          <TextField select label="Activo" value={form.activo ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))} fullWidth>
+            <MenuItem value="true">Sí</MenuItem>
+            <MenuItem value="false">No</MenuItem>
+          </TextField>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate(-1)}>Cancelar</Button>
+            <Button type="submit" variant="contained" disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Guardando…' : 'Crear departamento'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
 };

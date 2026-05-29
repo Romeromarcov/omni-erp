@@ -1,16 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Box, Card, CardActionArea, CardContent, Chip, Stack, Typography } from '@mui/material';
 import type { ConectorInstancia } from '../../services/integrationHubService';
 
 interface Props {
   conector: ConectorInstancia;
 }
 
-const ESTADO_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  activo:       { bg: '#e6f4ea', text: '#1e7e34', label: 'Activo' },
-  configurando: { bg: '#fff3cd', text: '#856404', label: 'Configurando' },
-  error:        { bg: '#fde8e8', text: '#b91c1c', label: 'Error' },
-  inactivo:     { bg: '#f3f4f6', text: '#6b7280', label: 'Inactivo' },
+type ChipColor = 'success' | 'warning' | 'error' | 'default';
+
+const ESTADO_COLORS: Record<string, { color: ChipColor; label: string }> = {
+  activo: { color: 'success', label: 'Activo' },
+  configurando: { color: 'warning', label: 'Configurando' },
+  error: { color: 'error', label: 'Error' },
+  inactivo: { color: 'default', label: 'Inactivo' },
 };
 
 const ConectorCard: React.FC<Props> = ({ conector }) => {
@@ -22,79 +25,47 @@ const ConectorCard: React.FC<Props> = ({ conector }) => {
     : 'Nunca';
 
   return (
-    <div
-      onClick={() => navigate(`/integraciones/conectores/${conector.id_conector}`)}
-      style={{
-        background: '#fff',
-        border: '1px solid #e5e7eb',
-        borderRadius: 10,
-        padding: '18px 20px',
-        cursor: 'pointer',
-        transition: 'box-shadow 0.15s',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-      }}
-      onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)')}
-      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{conector.nombre}</div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{conector.proveedor_nombre}</div>
-        </div>
-        <span
-          style={{
-            padding: '3px 10px',
-            borderRadius: 20,
-            fontSize: 12,
-            fontWeight: 600,
-            background: estado.bg,
-            color: estado.text,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {estado.label}
-        </span>
-      </div>
+    <Card variant="outlined">
+      <CardActionArea onClick={() => navigate(`/integraciones/conectores/${conector.id_conector}`)}>
+        <CardContent>
+          <Stack spacing={1.25}>
+            {/* Header */}
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box>
+                <Typography sx={{ fontWeight: 700 }}>{conector.nombre}</Typography>
+                <Typography variant="caption" color="text.secondary">{conector.proveedor_nombre}</Typography>
+              </Box>
+              <Chip size="small" label={estado.label} color={estado.color} variant={estado.color === 'default' ? 'outlined' : 'filled'} />
+            </Stack>
 
-      {/* Host */}
-      {conector.configuracion_publica?.host && (
-        <div style={{ fontSize: 12, color: '#374151', fontFamily: 'monospace', background: '#f9fafb', padding: '4px 8px', borderRadius: 4 }}>
-          {conector.configuracion_publica.host}
-        </div>
-      )}
+            {/* Host */}
+            {conector.configuracion_publica?.host && (
+              <Typography
+                variant="body2"
+                sx={{ fontFamily: 'monospace', bgcolor: 'action.hover', px: 1, py: 0.5, borderRadius: 1, wordBreak: 'break-all' }}
+              >
+                {conector.configuracion_publica.host}
+              </Typography>
+            )}
 
-      {/* Entidades */}
-      {conector.entidades_activas.length > 0 && (
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {conector.entidades_activas.map(e => (
-            <span
-              key={e}
-              style={{
-                background: '#eff6ff',
-                color: '#1d4ed8',
-                borderRadius: 4,
-                padding: '2px 6px',
-                fontSize: 11,
-                fontWeight: 500,
-              }}
-            >
-              {e}
-            </span>
-          ))}
-        </div>
-      )}
+            {/* Entidades */}
+            {conector.entidades_activas.length > 0 && (
+              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                {conector.entidades_activas.map(e => (
+                  <Chip key={e} size="small" label={e} color="info" variant="outlined" />
+                ))}
+              </Stack>
+            )}
 
-      {/* Footer */}
-      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-        Último sync: <span style={{ color: '#6b7280' }}>{ultimoSync}</span>
-        {conector.version_detectada && (
-          <span style={{ marginLeft: 12 }}>v{conector.version_detectada}</span>
-        )}
-      </div>
-    </div>
+            {/* Footer */}
+            <Typography variant="caption" color="text.secondary">
+              Último sync: {ultimoSync}
+              {conector.version_detectada && ` · v${conector.version_detectada}`}
+            </Typography>
+          </Stack>
+        </CardContent>
+      </CardActionArea>
+    </Card>
   );
 };
 

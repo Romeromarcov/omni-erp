@@ -1,10 +1,12 @@
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
-import TipoDocumentoListPage from '../pages/Configuracion/TiposDocumento/TipoDocumentoListPage';
-import TipoDocumentoDetailPage from '../pages/Configuracion/TiposDocumento/TipoDocumentoDetailPage';
-import ParametroSistemaListPage from '../pages/Configuracion/ParametrosSistema/ParametroSistemaListPage';
-import ParametroSistemaDetailPage from '../pages/Configuracion/ParametrosSistema/ParametroSistemaDetailPage';
-import CatalogoValorListPage from '../pages/Configuracion/CatalogosValor/CatalogoValorListPage';
-import CatalogoValorDetailPage from '../pages/Configuracion/CatalogosValor/CatalogoValorDetailPage';
+
+const TipoDocumentoListPage = lazy(() => import('../pages/Configuracion/TiposDocumento/TipoDocumentoListPage'));
+const TipoDocumentoDetailPage = lazy(() => import('../pages/Configuracion/TiposDocumento/TipoDocumentoDetailPage'));
+const ParametroSistemaListPage = lazy(() => import('../pages/Configuracion/ParametrosSistema/ParametroSistemaListPage'));
+const ParametroSistemaDetailPage = lazy(() => import('../pages/Configuracion/ParametrosSistema/ParametroSistemaDetailPage'));
+const CatalogoValorListPage = lazy(() => import('../pages/Configuracion/CatalogosValor/CatalogoValorListPage'));
+const CatalogoValorDetailPage = lazy(() => import('../pages/Configuracion/CatalogosValor/CatalogoValorDetailPage'));
 
 export function configuracionRoutes() {
   return (

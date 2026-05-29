@@ -117,8 +117,8 @@ const OverridesMetodosPagoPage: React.FC = () => {
   return (
     <PageLayout>
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4">Overrides de Métodos de Pago por Sucursal</Typography>
-        <Button onClick={handleCreate}>
+        <Typography variant="h5">Overrides de Métodos de Pago por Sucursal</Typography>
+        <Button variant="contained" onClick={handleCreate}>
           Nuevo Override
         </Button>
       </Box>
@@ -131,7 +131,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      <Paper sx={{ p: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2 }}>
         {isLoading ? (
           <Typography>Cargando...</Typography>
         ) : overrides.length === 0 ? (
@@ -228,7 +228,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
           <Button variant="outlined" onClick={() => setShowDialog(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button variant="contained" onClick={handleSubmit}>
             {editingOverride ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogActions>

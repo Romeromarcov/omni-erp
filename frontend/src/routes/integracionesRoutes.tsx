@@ -1,6 +1,9 @@
+ 
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
-import IntegrationHubPage from '../pages/Integraciones/IntegrationHubPage';
-import ConectorDetallePage from '../pages/Integraciones/ConectorDetallePage';
+
+const IntegrationHubPage = lazy(() => import('../pages/Integraciones/IntegrationHubPage'));
+const ConectorDetallePage = lazy(() => import('../pages/Integraciones/ConectorDetallePage'));
 
 export function integracionesRoutes() {
   return (

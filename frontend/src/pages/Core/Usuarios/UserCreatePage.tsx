@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { createUsuario } from '../../../services/users';
 import PageLayout from '../../../components/PageLayout';
 import { getEmpresaId } from '../../../utils/empresa';
@@ -69,72 +83,73 @@ const UserCreatePage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={480}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Crear Nuevo Usuario</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Username
-          <input name="username" value={form.username} onChange={handleChange} required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Email
-          <input name="email" value={form.email} onChange={handleChange} required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15, borderColor: emailError ? '#d32f2f' : '#cfd8dc' }} />
-          {emailError && <span style={{ color: '#d32f2f', fontSize: 13 }}>{emailError}</span>}
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Password
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={form.password}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(v => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2', fontWeight: 500 }}
-              tabIndex={-1}
-            >
-              {showPassword ? 'Ocultar' : 'Ver'}
-            </button>
-          </div>
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Confirmar contraseña
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input
-              name="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              required
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15,
-                borderColor: confirmPassword && form.password !== confirmPassword ? '#d32f2f' : '#cfd8dc' }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(v => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2', fontWeight: 500 }}
-              tabIndex={-1}
-            >
-              {showConfirmPassword ? 'Ocultar' : 'Ver'}
-            </button>
-          </div>
-          {confirmPassword && form.password !== confirmPassword && (
-            <span style={{ color: '#d32f2f', fontSize: 13 }}>Las contraseñas no coinciden</span>
+      <Typography variant="h5" mb={3}>Crear Nuevo Usuario</Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          <TextField name="username" label="Username" value={form.username} onChange={handleChange} required fullWidth />
+          <TextField
+            name="email"
+            label="Email"
+            value={form.email}
+            onChange={handleChange}
+            required
+            fullWidth
+            error={!!emailError}
+            helperText={emailError || undefined}
+          />
+          <TextField
+            name="password"
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            value={form.password}
+            onChange={handleChange}
+            required
+            fullWidth
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(v => !v)} edge="end" tabIndex={-1}>
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            name="confirmPassword"
+            label="Confirmar contraseña"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            required
+            fullWidth
+            error={!!(confirmPassword && form.password !== confirmPassword)}
+            helperText={confirmPassword && form.password !== confirmPassword ? 'Las contraseñas no coinciden' : undefined}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowConfirmPassword(v => !v)} edge="end" tabIndex={-1}>
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField name="first_name" label="Nombre" value={form.first_name} onChange={handleChange} fullWidth />
+          <TextField name="last_name" label="Apellido" value={form.last_name} onChange={handleChange} fullWidth />
+          <FormControlLabel
+            control={<Checkbox name="is_active" checked={form.is_active} onChange={handleChange} />}
+            label="Activo"
+          />
+          {/* Superusuario checkbox removed as requested */}
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button type="submit" variant="contained" disabled={loading}>Crear usuario</Button>
+          </Stack>
+          {message && (
+            <Alert severity={message.includes('exitosamente') ? 'success' : 'error'}>{message}</Alert>
           )}
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre
-          <input name="first_name" value={form.first_name} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Apellido
-          <input name="last_name" value={form.last_name} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input name="is_active" type="checkbox" checked={form.is_active} onChange={handleChange} style={{ marginTop: 0 }} /> Activo
-        </label>
-        {/* Superusuario checkbox removed as requested */}
-        <button type="submit" disabled={loading} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Crear usuario</button>
-      </form>
-      {message && <p style={{ marginTop: 18, textAlign: 'center', color: message.includes('exitosamente') ? '#388e3c' : '#d32f2f', fontWeight: 500 }}>{message}</p>}
+        </Stack>
+      </Box>
     </PageLayout>
   );
 };

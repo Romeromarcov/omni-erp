@@ -1,30 +1,33 @@
+ 
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
-import CuentaBancariaListPage from '../pages/Finanzas/CuentasBancarias/CuentaBancariaListPage';
-import CuentaBancariaCreatePage from '../pages/Finanzas/CuentasBancarias/CuentaBancariaCreatePage';
-import CuentaBancariaDetailPage from '../pages/Finanzas/CuentasBancarias/CuentaBancariaDetailPage';
-import CuentaBancariaMovimientosListPage from '../pages/Finanzas/CuentasBancarias/CuentaBancariaMovimientosListPage';
-import TasaCambioListPage from '../pages/Finanzas/TasasCambio/TasaCambioListPage';
-import TasaCambioCreatePage from '../pages/Finanzas/TasasCambio/TasaCambioCreatePage';
-import TasaCambioDetailPage from '../pages/Finanzas/TasasCambio/TasaCambioDetailPage';
-import MetodoPagoListPage from '../pages/Finanzas/MetodoPago/MetodoPagoListPage';
-import MetodoPagoDetailPage from '../pages/Finanzas/MetodoPago/MetodoPagoDetailPage';
-import MetodoPagoCreatePage from '../pages/Finanzas/MetodoPago/MetodoPagoCreatePage';
-import MonedaListPage from '../pages/Finanzas/Monedas/MonedaListPage';
-import MonedaDetailPage from '../pages/Finanzas/Monedas/MonedaDetailPage';
-import MonedaFormPage from '../pages/Finanzas/Monedas/MonedaFormPage';
-import TransaccionFinancieraListPage from '../pages/Finanzas/TransaccionFinanciera/TransaccionFinancieraListPage';
-import TransaccionFinancieraDetailPage from '../pages/Finanzas/TransaccionFinanciera/TransaccionFinancieraDetailPage';
-import TransaccionFinancieraFormPage from '../pages/Finanzas/TransaccionFinanciera/TransaccionFinancieraFormPage';
-import CajaListPage from '../pages/Finanzas/Cajas/CajaListPage';
-import CajaDetailPage from '../pages/Finanzas/Cajas/CajaDetailPage';
-import CajaMovimientosListPage from '../pages/Finanzas/Cajas/CajaMovimientosListPage';
-import CajaCreatePage from '../pages/Finanzas/Cajas/CajaCreatePage';
-import PlantillasMaestroListPage from '../pages/Finanzas/Cajas/PlantillasMaestroListPage';
-import PlantillaMaestroFormPage from '../pages/Finanzas/Cajas/PlantillaMaestroFormPage';
-import OverridesMetodosPagoPage from '../pages/Finanzas/Cajas/OverridesMetodosPagoPage';
-import CajasFisicasListPage from '../pages/Finanzas/Cajas/CajasFisicasListPage';
-import CajaFisicaDetailPage from '../pages/Finanzas/Cajas/CajaFisicaDetailPage';
-import CajaFisicaFormPage from '../pages/Finanzas/Cajas/CajaFisicaFormPage';
+
+const CuentaBancariaListPage = lazy(() => import('../pages/Finanzas/CuentasBancarias/CuentaBancariaListPage'));
+const CuentaBancariaCreatePage = lazy(() => import('../pages/Finanzas/CuentasBancarias/CuentaBancariaCreatePage'));
+const CuentaBancariaDetailPage = lazy(() => import('../pages/Finanzas/CuentasBancarias/CuentaBancariaDetailPage'));
+const CuentaBancariaMovimientosListPage = lazy(() => import('../pages/Finanzas/CuentasBancarias/CuentaBancariaMovimientosListPage'));
+const TasaCambioListPage = lazy(() => import('../pages/Finanzas/TasasCambio/TasaCambioListPage'));
+const TasaCambioCreatePage = lazy(() => import('../pages/Finanzas/TasasCambio/TasaCambioCreatePage'));
+const TasaCambioDetailPage = lazy(() => import('../pages/Finanzas/TasasCambio/TasaCambioDetailPage'));
+const MetodoPagoListPage = lazy(() => import('../pages/Finanzas/MetodoPago/MetodoPagoListPage'));
+const MetodoPagoDetailPage = lazy(() => import('../pages/Finanzas/MetodoPago/MetodoPagoDetailPage'));
+const MetodoPagoCreatePage = lazy(() => import('../pages/Finanzas/MetodoPago/MetodoPagoCreatePage'));
+const MonedaListPage = lazy(() => import('../pages/Finanzas/Monedas/MonedaListPage'));
+const MonedaDetailPage = lazy(() => import('../pages/Finanzas/Monedas/MonedaDetailPage'));
+const MonedaFormPage = lazy(() => import('../pages/Finanzas/Monedas/MonedaFormPage'));
+const TransaccionFinancieraListPage = lazy(() => import('../pages/Finanzas/TransaccionFinanciera/TransaccionFinancieraListPage'));
+const TransaccionFinancieraDetailPage = lazy(() => import('../pages/Finanzas/TransaccionFinanciera/TransaccionFinancieraDetailPage'));
+const TransaccionFinancieraFormPage = lazy(() => import('../pages/Finanzas/TransaccionFinanciera/TransaccionFinancieraFormPage'));
+const CajaListPage = lazy(() => import('../pages/Finanzas/Cajas/CajaListPage'));
+const CajaDetailPage = lazy(() => import('../pages/Finanzas/Cajas/CajaDetailPage'));
+const CajaMovimientosListPage = lazy(() => import('../pages/Finanzas/Cajas/CajaMovimientosListPage'));
+const CajaCreatePage = lazy(() => import('../pages/Finanzas/Cajas/CajaCreatePage'));
+const PlantillasMaestroListPage = lazy(() => import('../pages/Finanzas/Cajas/PlantillasMaestroListPage'));
+const PlantillaMaestroFormPage = lazy(() => import('../pages/Finanzas/Cajas/PlantillaMaestroFormPage'));
+const OverridesMetodosPagoPage = lazy(() => import('../pages/Finanzas/Cajas/OverridesMetodosPagoPage'));
+const CajasFisicasListPage = lazy(() => import('../pages/Finanzas/Cajas/CajasFisicasListPage'));
+const CajaFisicaDetailPage = lazy(() => import('../pages/Finanzas/Cajas/CajaFisicaDetailPage'));
+const CajaFisicaFormPage = lazy(() => import('../pages/Finanzas/Cajas/CajaFisicaFormPage'));
 
 export function finanzasRoutes() {
   return (

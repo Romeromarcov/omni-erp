@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +8,15 @@ import type { Moneda } from '../../../services/monedas';
 import { fetchEmpresas } from '../../../services/empresas';
 import type { Empresa } from '../../../services/empresas';
 import PageLayout from '../../../components/PageLayout';
-import { Button } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 
 interface TasaCambioDetail {
   id_tasa_cambio: string;
@@ -72,8 +78,20 @@ const TasaCambioDetailPage: React.FC = () => {
     updateMutation.mutate(tasa as unknown as Record<string, unknown>);
   };
 
-  if (isLoading) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
-  if (!tasa) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>No encontrada</div></PageLayout>;
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <Typography align="center" color="text.secondary" sx={{ py: 4 }}>Cargando...</Typography>
+      </PageLayout>
+    );
+  }
+  if (!tasa) {
+    return (
+      <PageLayout>
+        <Typography align="center" color="text.secondary" sx={{ py: 4 }}>No encontrada</Typography>
+      </PageLayout>
+    );
+  }
 
   // Helpers para mostrar nombres/códigos
   const monedaOrigen = monedas.find(m => m.id_moneda === tasa.id_moneda_origen);
@@ -82,68 +100,97 @@ const TasaCambioDetailPage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={500}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Detalle de Tasa de Cambio</h2>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button variant="contained" color="secondary" onClick={() => navigate(-1)}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
+        <Typography variant="h5">Detalle de Tasa de Cambio</Typography>
+        <Button variant="outlined" onClick={() => navigate(-1)}>
           Volver
         </Button>
-      </div>
+      </Stack>
       {!edit ? (
-        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div><b>Empresa:</b> {empresa ? (empresa.nombre_comercial || empresa.nombre_legal) : (tasa.empresa_nombre || tasa.id_empresa)}</div>
-          <div><b>Moneda Origen:</b> {monedaOrigen ? `${monedaOrigen.nombre} (${monedaOrigen.codigo_iso})` : tasa.id_moneda_origen}</div>
-          <div><b>Moneda Destino:</b> {monedaDestino ? `${monedaDestino.nombre} (${monedaDestino.codigo_iso})` : tasa.id_moneda_destino}</div>
-          <div><b>Tipo Tasa:</b> {tasa.tipo_tasa}</div>
-          <div><b>Valor:</b> {tasa.valor_tasa}</div>
-          <div><b>Fecha:</b> {tasa.fecha_tasa}</div>
-          <div><b>Hora:</b> {tasa.hora_tasa || '-'}</div>
-          <div><b>Usuario:</b> {tasa.id_usuario_registro__username || '-'}</div>
-          <Button variant="contained" onClick={() => setEdit(true)} style={{ marginTop: 8, alignSelf: 'flex-end' }}>Editar</Button>
-        </div>
+        <Stack spacing={1.5}>
+          <Box><Typography component="span" fontWeight="bold">Empresa:</Typography> {empresa ? (empresa.nombre_comercial || empresa.nombre_legal) : (tasa.empresa_nombre || tasa.id_empresa)}</Box>
+          <Box><Typography component="span" fontWeight="bold">Moneda Origen:</Typography> {monedaOrigen ? `${monedaOrigen.nombre} (${monedaOrigen.codigo_iso})` : tasa.id_moneda_origen}</Box>
+          <Box><Typography component="span" fontWeight="bold">Moneda Destino:</Typography> {monedaDestino ? `${monedaDestino.nombre} (${monedaDestino.codigo_iso})` : tasa.id_moneda_destino}</Box>
+          <Box><Typography component="span" fontWeight="bold">Tipo Tasa:</Typography> {tasa.tipo_tasa}</Box>
+          <Box><Typography component="span" fontWeight="bold">Valor:</Typography> {tasa.valor_tasa}</Box>
+          <Box><Typography component="span" fontWeight="bold">Fecha:</Typography> {tasa.fecha_tasa}</Box>
+          <Box><Typography component="span" fontWeight="bold">Hora:</Typography> {tasa.hora_tasa || '-'}</Box>
+          <Box><Typography component="span" fontWeight="bold">Usuario:</Typography> {tasa.id_usuario_registro__username || '-'}</Box>
+          <Stack direction="row" justifyContent="flex-end">
+            <Button variant="contained" onClick={() => setEdit(true)}>Editar</Button>
+          </Stack>
+        </Stack>
       ) : (
-        <form onSubmit={handleUpdate} style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div><b>Empresa:</b> {empresa ? (empresa.nombre_comercial || empresa.nombre_legal) : (tasa.empresa_nombre || tasa.id_empresa)}</div>
-          <label style={{ fontWeight: 500 }}>Moneda Origen
-            <select value={tasa.id_moneda_origen} onChange={e => setTasa({ ...tasa, id_moneda_origen: e.target.value })} style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', background: '#f6fafd', marginTop: 4 }}>
-              <option value="">Seleccione moneda</option>
+        <Box component="form" onSubmit={handleUpdate}>
+          <Stack spacing={2}>
+            <Box><Typography component="span" fontWeight="bold">Empresa:</Typography> {empresa ? (empresa.nombre_comercial || empresa.nombre_legal) : (tasa.empresa_nombre || tasa.id_empresa)}</Box>
+            <TextField
+              select
+              label="Moneda Origen"
+              value={tasa.id_moneda_origen}
+              onChange={e => setTasa({ ...tasa, id_moneda_origen: e.target.value })}
+              fullWidth
+            >
+              <MenuItem value="">Seleccione moneda</MenuItem>
               {monedas.map(m => (
-                <option key={m.id_moneda} value={m.id_moneda}>{m.nombre} ({m.codigo_iso})</option>
+                <MenuItem key={m.id_moneda} value={m.id_moneda}>{m.nombre} ({m.codigo_iso})</MenuItem>
               ))}
-            </select>
-          </label>
-          <label style={{ fontWeight: 500 }}>Moneda Destino
-            <select value={tasa.id_moneda_destino} onChange={e => setTasa({ ...tasa, id_moneda_destino: e.target.value })} style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', background: '#f6fafd', marginTop: 4 }}>
-              <option value="">Seleccione moneda</option>
+            </TextField>
+            <TextField
+              select
+              label="Moneda Destino"
+              value={tasa.id_moneda_destino}
+              onChange={e => setTasa({ ...tasa, id_moneda_destino: e.target.value })}
+              fullWidth
+            >
+              <MenuItem value="">Seleccione moneda</MenuItem>
               {monedas.map(m => (
-                <option key={m.id_moneda} value={m.id_moneda}>{m.nombre} ({m.codigo_iso})</option>
+                <MenuItem key={m.id_moneda} value={m.id_moneda}>{m.nombre} ({m.codigo_iso})</MenuItem>
               ))}
-            </select>
-          </label>
-          <label style={{ fontWeight: 500 }}>Tipo Tasa
-            <select value={tasa.tipo_tasa} onChange={e => setTasa({ ...tasa, tipo_tasa: e.target.value })} style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', background: '#f6fafd', marginTop: 4 }}>
-              <option value="">Seleccione tipo</option>
-              <option value="OFICIAL_BCV">Oficial BCV</option>
-              <option value="ESPECIAL_USUARIO">Especial Usuario</option>
-              <option value="PROMEDIO_MERCADO">Promedio Mercado</option>
-              <option value="FIJA">Fija</option>
-            </select>
-          </label>
-          <label style={{ fontWeight: 500 }}>Valor
-            <input value={tasa.valor_tasa} onChange={e => setTasa({ ...tasa, valor_tasa: e.target.value })} style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', background: '#f6fafd', marginTop: 4 }} />
-          </label>
-          <label style={{ fontWeight: 500 }}>Fecha
-            <input type="date" value={tasa.fecha_tasa} onChange={e => setTasa({ ...tasa, fecha_tasa: e.target.value })} style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', background: '#f6fafd', marginTop: 4 }} />
-          </label>
-          <label style={{ fontWeight: 500 }}>Hora
-            <input type="time" value={tasa.hora_tasa || ''} onChange={e => setTasa({ ...tasa, hora_tasa: e.target.value })} style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', background: '#f6fafd', marginTop: 4 }} />
-          </label>
-          <div><b>Usuario:</b> {tasa.id_usuario_registro__username || '-'}</div>
-          {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
-          <div style={{ display: 'flex', gap: 12, marginTop: 8, justifyContent: 'flex-end' }}>
-            <Button type="submit" variant="contained" disabled={loading}>{loading ? 'Actualizando...' : 'Actualizar'}</Button>
-            <Button type="button" variant="contained" color="secondary" onClick={() => setEdit(false)}>Cancelar</Button>
-          </div>
-        </form>
+            </TextField>
+            <TextField
+              select
+              label="Tipo Tasa"
+              value={tasa.tipo_tasa}
+              onChange={e => setTasa({ ...tasa, tipo_tasa: e.target.value })}
+              fullWidth
+            >
+              <MenuItem value="">Seleccione tipo</MenuItem>
+              <MenuItem value="OFICIAL_BCV">Oficial BCV</MenuItem>
+              <MenuItem value="ESPECIAL_USUARIO">Especial Usuario</MenuItem>
+              <MenuItem value="PROMEDIO_MERCADO">Promedio Mercado</MenuItem>
+              <MenuItem value="FIJA">Fija</MenuItem>
+            </TextField>
+            <TextField
+              label="Valor"
+              value={tasa.valor_tasa}
+              onChange={e => setTasa({ ...tasa, valor_tasa: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="Fecha"
+              type="date"
+              value={tasa.fecha_tasa}
+              onChange={e => setTasa({ ...tasa, fecha_tasa: e.target.value })}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
+            <TextField
+              label="Hora"
+              type="time"
+              value={tasa.hora_tasa || ''}
+              onChange={e => setTasa({ ...tasa, hora_tasa: e.target.value })}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
+            <Box><Typography component="span" fontWeight="bold">Usuario:</Typography> {tasa.id_usuario_registro__username || '-'}</Box>
+            {error && <Alert severity="error">{error}</Alert>}
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button type="button" variant="outlined" onClick={() => setEdit(false)}>Cancelar</Button>
+              <Button type="submit" variant="contained" disabled={loading}>{loading ? 'Actualizando...' : 'Actualizar'}</Button>
+            </Stack>
+          </Stack>
+        </Box>
       )}
     </PageLayout>
   );

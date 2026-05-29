@@ -1,28 +1,21 @@
-import React from 'react';
+import type { ReactNode } from 'react';
+import { Box, Paper } from '@mui/material';
 
 interface PageLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   maxWidth?: number;
-  style?: React.CSSProperties;
 }
 
-const PageLayout: React.FC<PageLayoutProps> = ({ children, maxWidth = 900, style }) => (
-  <div className="vertical-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #e3f0ff 0%, #f6fafd 100%)' }}>
-    <div
-      className="centered-container"
-      style={{
-        background: '#fff',
-        borderRadius: 16,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-        padding: 32,
-        maxWidth,
-        margin: '32px auto',
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  </div>
-);
-
-export default PageLayout;
+/**
+ * Contenedor centrado tipo "tarjeta" para formularios y vistas de detalle.
+ * Se renderiza dentro del shell de la app (no a pantalla completa).
+ */
+export default function PageLayout({ children, maxWidth = 900 }: PageLayoutProps) {
+  return (
+    <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', justifyContent: 'center' }}>
+      <Paper variant="outlined" sx={{ width: '100%', maxWidth, p: { xs: 2, md: 4 } }}>
+        {children}
+      </Paper>
+    </Box>
+  );
+}

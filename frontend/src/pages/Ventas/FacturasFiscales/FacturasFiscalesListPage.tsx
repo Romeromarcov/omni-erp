@@ -1,220 +1,87 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import PageLayout from '../../../components/PageLayout';
+import { Button, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { facturaFiscalService } from '../../../services/ventas';
 import type { FacturaFiscal } from '../../../types/ventas';
 import type { PaginatedResponse } from '../../../services/ventas';
-import { Alert, Box, Button, Chip, IconButton, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Pagination from '../../../components/Pagination';
+import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
 const PAGE_SIZE = 20;
 
-const FacturasFiscalesListPage: React.FC = () => {
+export default function FacturasFiscalesListPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedFactura, setSelectedFactura] = useState<FacturaFiscal | null>(null);
   const [page, setPage] = useState(1);
 
-  const { data, isLoading: loading, isError } = useQuery<PaginatedResponse<FacturaFiscal>>({
-    queryKey: ['/ventas/facturas-fiscales/', page],
+  const { data, isLoading } = useQuery<PaginatedResponse<FacturaFiscal>>({
+    queryKey: ['facturas-fiscales', page],
     queryFn: () => facturaFiscalService.getAllPaginated(page, PAGE_SIZE),
   });
 
   const facturas = data?.results ?? [];
   const count = data?.count ?? 0;
 
-  const error = isError ? t('ventas.facturas.errorCargar') : null;
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => facturaFiscalService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/facturas-fiscales/'] });
+  const columns: Column<FacturaFiscal>[] = [
+    { key: 'numero', header: t('ventas.tabla.numero'), render: (f) => f.numero_factura },
+    { key: 'fecha', header: t('ventas.tabla.fecha'), render: (f) => new Date(f.fecha_emision).toLocaleDateString() },
+    { key: 'control', header: t('ventas.facturasFiscales.tabla.control'), render: (f) => f.numero_control },
+    {
+      key: 'cliente',
+      header: t('ventas.tabla.cliente'),
+      render: (f) =>
+        f.id_cliente ? (
+          <>
+            <Typography variant="body2" fontWeight={600}>{f.id_cliente.nombre}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {f.id_cliente.razon_social} · {f.id_cliente.rif}
+            </Typography>
+          </>
+        ) : (
+          <Typography variant="body2" color="error">{t('ventas.tabla.clienteNoEncontrado')}</Typography>
+        ),
     },
-    onError: () => alert(t('ventas.facturas.errorEliminar')),
-  });
-
-  const generarNotaCreditoMutation = useMutation({
-    mutationFn: (id: string) => facturaFiscalService.generarNotaCredito(id, 'DEVOLUCION', {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/facturas-fiscales/'] });
+    {
+      key: 'total',
+      header: t('ventas.facturasFiscales.tabla.total'),
+      align: 'right',
+      render: (f) => Number(f.monto_total ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
     },
-    onError: () => alert(t('ventas.facturas.errorNotaCredito')),
-  });
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'BORRADOR': return 'default';
-      case 'EMITIDA': return 'primary';
-      case 'PAGADA': return 'success';
-      case 'ANULADA': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, factura: FacturaFiscal) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedFactura(factura);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedFactura(null);
-  };
-
-  const handleView = () => {
-    if (selectedFactura) {
-      navigate(`/ventas/facturas-fiscales/${selectedFactura.id_factura}`);
-    }
-    handleMenuClose();
-  };
-
-  const handleEdit = () => {
-    if (selectedFactura) {
-      navigate(`/ventas/facturas-fiscales/${selectedFactura.id_factura}/edit`);
-    }
-    handleMenuClose();
-  };
-
-  const handleDelete = () => {
-    if (selectedFactura && window.confirm(t('ventas.facturas.confirmEliminar'))) {
-      deleteMutation.mutate(selectedFactura.id_factura);
-    }
-    handleMenuClose();
-  };
-
-  const handleCrearNotaCredito = () => {
-    if (selectedFactura) {
-      generarNotaCreditoMutation.mutate(selectedFactura.id_factura);
-    }
-    handleMenuClose();
-  };
-
-  if (loading) {
-    return (
-      <PageLayout>
-        <div>{t('ventas.facturas.cargando')}</div>
-      </PageLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <PageLayout>
-        <Alert severity="error">{error}</Alert>
-      </PageLayout>
-    );
-  }
+    {
+      key: 'acciones',
+      header: t('ventas.tabla.acciones'),
+      align: 'right',
+      render: (f) => (
+        <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(f.id_factura); }}>
+          {t('ventas.tabla.ver')}
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1">
-          {t('ventas.facturas.title')}
-        </Typography>
-        <Button variant="contained" onClick={() => navigate('/ventas/facturas-fiscales/new')}>
-          {t('ventas.facturas.nuevo')}
-        </Button>
-      </Box>
-
-      <Paper sx={{ p: 3 }}>
-        {facturas.length > 0 ? (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t('ventas.tabla.numero')}</TableCell>
-                  <TableCell>{t('ventas.tabla.fecha')}</TableCell>
-                  <TableCell>{t('ventas.tabla.cliente')}</TableCell>
-                  <TableCell>{t('ventas.tabla.estado')}</TableCell>
-                  <TableCell align="right">{t('ventas.tabla.total')}</TableCell>
-                  <TableCell>{t('ventas.tabla.origen')}</TableCell>
-                  <TableCell align="center">{t('ventas.tabla.acciones')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {facturas.map((factura) => (
-                  <TableRow key={factura.id_factura} hover>
-                    <TableCell>{factura.numero_factura}</TableCell>
-                    <TableCell>{new Date(factura.fecha_emision).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      {factura.id_cliente ? (
-                        <div>
-                          <div style={{ fontWeight: 'bold' }}>{factura.id_cliente.nombre}</div>
-                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                            {factura.id_cliente.razon_social} - {factura.id_cliente.rif}
-                          </div>
-                        </div>
-                      ) : (
-                        <span style={{ color: '#dc3545' }}>{t('ventas.tabla.clienteNoEncontrado')}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={factura.estado}
-                        color={getEstadoColor(factura.estado)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      {factura.detalles?.reduce((total, detalle) => total + detalle.total_linea, 0).toLocaleString('es-VE', { style: 'currency', currency: 'VES' }) || '0'}
-                    </TableCell>
-                    <TableCell>
-                      {factura.id_nota_venta_origen ? t('ventas.facturas.origenNotaVenta') : t('ventas.facturas.origenDirecta')}
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton onClick={(e) => handleMenuOpen(e, factura)}>
-                        <MoreVertIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h6" color="text.secondary">
-              {t('ventas.facturas.sinRegistros')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {t('ventas.facturas.sinRegistrosHint')}
-            </Typography>
-          </Box>
-        )}
-      </Paper>
-
-      <Pagination
-        page={page}
-        count={count}
-        pageSize={PAGE_SIZE}
-        onChange={(p) => { setPage(p); window.scrollTo(0, 0); }}
+    <PageContainer>
+      <PageHeader
+        title={t('ventas.facturasFiscales.title')}
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('new')}>
+            {t('ventas.facturasFiscales.nueva')}
+          </Button>
+        }
       />
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleView}>{t('ventas.tabla.verDetalles')}</MenuItem>
-        <MenuItem onClick={handleEdit} disabled={selectedFactura?.estado !== 'BORRADOR'}>
-          {t('common.edit')}
-        </MenuItem>
-        <MenuItem onClick={handleDelete} disabled={selectedFactura?.estado !== 'BORRADOR'}>
-          {t('common.delete')}
-        </MenuItem>
-        {selectedFactura?.estado === 'EMITIDA' && (
-          <MenuItem onClick={handleCrearNotaCredito}>
-            {t('ventas.facturas.crearNotaCredito')}
-          </MenuItem>
-        )}
-      </Menu>
-    </PageLayout>
+      <DataTable
+        columns={columns}
+        rows={facturas}
+        getRowKey={(f) => f.id_factura}
+        loading={isLoading}
+        emptyMessage={t('ventas.facturasFiscales.sinRegistros')}
+        onRowClick={(f) => navigate(f.id_factura)}
+      />
+      <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={(p) => { setPage(p); window.scrollTo(0, 0); }} />
+    </PageContainer>
   );
-};
-
-export default FacturasFiscalesListPage;
+}

@@ -4,6 +4,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
+import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 interface Sucursal {
   nombre: string;
@@ -36,12 +37,9 @@ const BranchCreatePage: React.FC = () => {
     mutationFn: (data: Sucursal) => post<Sucursal>('/core/sucursales/', data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });
-      alert('Sucursal creada');
       navigate(`/empresas/${id_empresa}/sucursales`);
     },
-    onError: () => {
-      alert('Error al crear sucursal');
-    },
+    onError: () => alert('Error al crear sucursal'),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -49,41 +47,29 @@ const BranchCreatePage: React.FC = () => {
     createMutation.mutate(form);
   };
 
-  const loading = createMutation.isPending;
-
   return (
-    <PageLayout maxWidth={480}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Nueva sucursal</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre
-          <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Nombre" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Código
-          <input value={form.codigo_sucursal} onChange={e => setForm(f => ({ ...f, codigo_sucursal: e.target.value }))} placeholder="Código" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Dirección
-          <input value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} placeholder="Dirección" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Teléfono
-          <input value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} placeholder="Teléfono" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Email
-          <input value={form.email_contacto} onChange={e => setForm(f => ({ ...f, email_contacto: e.target.value }))} placeholder="Email" style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Ubicación GPS
-          <input value={form.ubicacion_gps_json} onChange={e => setForm(f => ({ ...f, ubicacion_gps_json: e.target.value }))} placeholder="Ubicación GPS (JSON)" style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Activo
-          <select value={form.activo ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }}>
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-        <button type="submit" disabled={loading} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Crear sucursal</button>
-      </form>
-      <div style={{ marginTop: 28, textAlign: 'center' }}>
-        <button type="button" onClick={() => navigate(-1)} style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}>Cancelar</button>
-      </div>
+    <PageLayout maxWidth={560}>
+      <Typography variant="h5" mb={3}>Nueva sucursal</Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          <TextField label="Nombre" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} required fullWidth />
+          <TextField label="Código" value={form.codigo_sucursal} onChange={e => setForm(f => ({ ...f, codigo_sucursal: e.target.value }))} required fullWidth />
+          <TextField label="Dirección" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} required fullWidth multiline minRows={2} />
+          <TextField label="Teléfono" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} required fullWidth />
+          <TextField label="Email" type="email" value={form.email_contacto} onChange={e => setForm(f => ({ ...f, email_contacto: e.target.value }))} fullWidth />
+          <TextField label="Ubicación GPS (JSON)" value={form.ubicacion_gps_json} onChange={e => setForm(f => ({ ...f, ubicacion_gps_json: e.target.value }))} fullWidth />
+          <TextField select label="Activo" value={form.activo ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))} fullWidth>
+            <MenuItem value="true">Sí</MenuItem>
+            <MenuItem value="false">No</MenuItem>
+          </TextField>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate(-1)}>Cancelar</Button>
+            <Button type="submit" variant="contained" disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Guardando…' : 'Crear sucursal'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
 };

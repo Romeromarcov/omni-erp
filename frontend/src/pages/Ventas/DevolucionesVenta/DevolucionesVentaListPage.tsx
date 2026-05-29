@@ -1,181 +1,68 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageLayout from '../../../components/PageLayout';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { devolucionVentaService } from '../../../services/ventas';
 import type { DevolucionVenta } from '../../../types/ventas';
-import { Alert, Box, Button, Chip, InputAdornment, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import type { PaginatedResponse } from '../../../services/ventas';
+import Pagination from '../../../components/Pagination';
+import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
-const DevolucionesVentaListPage: React.FC = () => {
+const PAGE_SIZE = 20;
+
+export default function DevolucionesVentaListPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { t } = useTranslation();
+  const [page, setPage] = useState(1);
 
-  const { data: devoluciones = [], isLoading: loading, isError } = useQuery<DevolucionVenta[]>({
-    queryKey: ['/ventas/devoluciones-venta/'],
-    queryFn: () => devolucionVentaService.getAll(),
+  const { data, isLoading } = useQuery<PaginatedResponse<DevolucionVenta>>({
+    queryKey: ['devoluciones-venta', page],
+    queryFn: () => devolucionVentaService.getAllPaginated(page, PAGE_SIZE),
   });
 
-  const error = isError ? 'Error al cargar las devoluciones' : null;
+  const devoluciones = data?.results ?? [];
+  const count = data?.count ?? 0;
 
-  const procesarMutation = useMutation({
-    mutationFn: (id: string) => devolucionVentaService.procesar(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/devoluciones-venta/'] });
+  const columns: Column<DevolucionVenta>[] = [
+    { key: 'numero', header: t('ventas.tabla.numero'), render: (d) => d.numero_devolucion },
+    { key: 'fecha', header: t('ventas.tabla.fecha'), render: (d) => new Date(d.fecha_devolucion).toLocaleDateString() },
+    { key: 'motivo', header: t('ventas.devoluciones.tabla.motivo'), render: (d) => d.motivo_devolucion },
+    { key: 'monto', header: t('ventas.devoluciones.tabla.total'), align: 'right', render: (d) => Number(d.monto_total ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2 }) },
+    { key: 'estado', header: t('ventas.tabla.estado'), render: (d) => <StatusChip value={d.estado} /> },
+    {
+      key: 'acciones',
+      header: t('ventas.tabla.acciones'),
+      align: 'right',
+      render: (d) => (
+        <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(d.id_devolucion); }}>
+          {t('ventas.tabla.ver')}
+        </Button>
+      ),
     },
-    onError: () => alert('Error al procesar la devolución'),
-  });
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'PENDIENTE': return 'warning';
-      case 'PROCESADA': return 'success';
-      case 'RECHAZADA': return 'error';
-      case 'CANCELADA': return 'default';
-      default: return 'default';
-    }
-  };
-
-  const filteredDevoluciones = devoluciones.filter(devolucion =>
-    devolucion.numero_devolucion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    devolucion.id_cliente?.razon_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    devolucion.id_cliente?.rif?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    devolucion.motivo_devolucion?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleProcesar = (id: string) => {
-    procesarMutation.mutate(id);
-  };
-
-  if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;
-  if (error) return <PageLayout><Alert severity="error">{error}</Alert></PageLayout>;
+  ];
 
   return (
-    <PageLayout>
-      <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Devoluciones de Venta
-          </Typography>
-          <Button variant="contained" onClick={() => navigate('new')}>
-            Nueva Devolución
+    <PageContainer>
+      <PageHeader
+        title={t('ventas.devoluciones.title')}
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('new')}>
+            {t('ventas.devoluciones.nueva')}
           </Button>
-        </Box>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <TextField
-            fullWidth
-            placeholder="Buscar por número, cliente, RIF o motivo..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 2 }}
-          />
-        </Paper>
-
-        <Paper sx={{ p: 3 }}>
-          {filteredDevoluciones.length > 0 ? (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Número</TableCell>
-                    <TableCell>Fecha</TableCell>
-                    <TableCell>Cliente</TableCell>
-                    <TableCell>Motivo</TableCell>
-                    <TableCell align="right">Monto</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell align="center">Acciones</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredDevoluciones.map((devolucion) => (
-                    <TableRow key={devolucion.id_devolucion}>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="bold">
-                          {devolucion.numero_devolucion}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(devolucion.fecha_devolucion).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        {devolucion.id_cliente ? (
-                          <div>
-                            <div style={{ fontWeight: 'bold' }}>{devolucion.id_cliente.razon_social}</div>
-                            <div style={{ fontSize: '12px', color: '#6c757d' }}>{devolucion.id_cliente.rif}</div>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#dc3545' }}>Cliente no encontrado</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{devolucion.motivo_devolucion}</TableCell>
-                      <TableCell align="right">
-                        {devolucion.monto_total?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={devolucion.estado || 'PENDIENTE'}
-                          color={getEstadoColor(devolucion.estado || 'PENDIENTE')}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                          <Button
-                            variant="contained" color="secondary"
-                            onClick={() => navigate(`${devolucion.id_devolucion}`)}
-                          >
-                            Ver
-                          </Button>
-                          <Button
-                            variant="contained" color="secondary"
-                            onClick={() => navigate(`${devolucion.id_devolucion}/edit`)}
-                          >
-                            Editar
-                          </Button>
-                          {devolucion.estado === 'PENDIENTE' && (
-                            <Button
-                              variant="contained"
-                              onClick={() => handleProcesar(devolucion.id_devolucion)}
-                            >
-                              Procesar
-                            </Button>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="h6" color="text.secondary">
-                {searchTerm ? 'No se encontraron devoluciones con los criterios de búsqueda' : 'No hay devoluciones registradas'}
-              </Typography>
-              {!searchTerm && (
-                <Button variant="contained" onClick={() => navigate('new')} style={{ marginTop: 16 }}>
-                  Crear primera devolución
-                </Button>
-              )}
-            </Box>
-          )}
-        </Paper>
-      </Box>
-    </PageLayout>
+        }
+      />
+      <DataTable
+        columns={columns}
+        rows={devoluciones}
+        getRowKey={(d) => d.id_devolucion}
+        loading={isLoading}
+        emptyMessage={t('ventas.devoluciones.sinRegistros')}
+        onRowClick={(d) => navigate(d.id_devolucion)}
+      />
+      <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={(p) => { setPage(p); window.scrollTo(0, 0); }} />
+    </PageContainer>
   );
-};
-
-export default DevolucionesVentaListPage;
+}

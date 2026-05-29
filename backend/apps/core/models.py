@@ -157,6 +157,11 @@ class Usuarios(AbstractUser):
     # id_empleado = models.ForeignKey(Empleado, on_delete=models.SET_NULL, db_column='id_empleado', blank=True, null=True, related_name='usuario_erp', verbose_name="Empleado Asociado")
     # Nota: La FK a Empleado se añadirá cuando el módulo de rrhh esté implementado.
 
+    @property
+    def empresa(self):
+        """Devuelve la primera empresa asociada al usuario (convenio de acceso rápido)."""
+        return self.empresas.first()
+
     def get_cajas_virtuales_disponibles(self, empresa=None):
         """
         Retorna las cajas virtuales disponibles para este usuario basado en:

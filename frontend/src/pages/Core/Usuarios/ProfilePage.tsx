@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// import './usuarios.css';
+import { Box, Button, Stack, TextField, Typography } from '@mui/material';
 import ProfileForm from '../../../components/ProfileForm';
 import RoleList from '../../../components/RoleList';
 
@@ -24,23 +24,21 @@ interface ProfilePageProps {
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate }) => {
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const cardStyle: React.CSSProperties = {
-    width: '100%',
-    maxWidth: 500,
-    background: '#fff',
-    borderRadius: 16,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-    padding: '32px 24px',
-    margin: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 24,
-  };
   return (
-    <div className="vertical-center">
-      <div className="centered-container" style={{ background: 'linear-gradient(135deg, #e3f0ff 0%, #f6fafd 100%)', padding: '24px 0' }}>
-        <div style={cardStyle}>
-          <h2 style={{ textAlign: 'center', marginBottom: 8, color: '#1976d2' }}>Perfil de usuario</h2>
+    <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', justifyContent: 'center' }}>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: 500,
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 3,
+          p: { xs: 3, md: 4 },
+          m: 2,
+        }}
+      >
+        <Stack spacing={3}>
+          <Typography variant="h5" align="center">Perfil de usuario</Typography>
           <ProfileForm
             initialValues={{
               first_name: user.first_name,
@@ -50,21 +48,21 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate }) => {
             }}
             onSubmit={onUpdate}
           />
-          <h4 style={{ marginTop: 16 }}>Roles asignados</h4>
+          <Typography variant="h6">Roles asignados</Typography>
           <RoleList roles={user.roles} />
-          <button style={{ marginTop: 16, alignSelf: 'center', background: '#1976d2', color: '#fff', borderRadius: 8, padding: '8px 16px', border: 'none' }} onClick={() => setShowChangePassword(s => !s)}>
+          <Button variant="contained" sx={{ alignSelf: 'center' }} onClick={() => setShowChangePassword(s => !s)}>
             {showChangePassword ? 'Ocultar cambio de contraseña' : 'Cambiar contraseña'}
-          </button>
+          </Button>
           {showChangePassword && (
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Stack spacing={2}>
               {/* Aquí iría el formulario de cambio de contraseña */}
-              <input type="password" placeholder="Nueva contraseña" style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }} />
-              <button style={{ background: '#1976d2', color: '#fff', borderRadius: 8, padding: '8px 16px', border: 'none' }}>Guardar nueva contraseña</button>
-            </div>
+              <TextField type="password" label="Nueva contraseña" fullWidth />
+              <Button variant="contained">Guardar nueva contraseña</Button>
+            </Stack>
           )}
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 

@@ -1,11 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemText,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { fetchUsuarios } from '../../../services/users';
 import type { Usuario } from '../../../services/users';
 import { fetchUsuarioRoles } from '../../../services/usuarioRoles';
 import type { UsuarioRol } from '../../../services/usuarioRoles';
 import PageLayout from '../../../components/PageLayout';
+
+const MULTI_HELP = 'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones.';
 
 const UserDetailPage: React.FC = () => {
   const { id_empresa, id } = useParams<{ id_empresa: string; id: string }>();
@@ -113,110 +134,113 @@ const UserDetailPage: React.FC = () => {
     onError: () => alert('Error al actualizar usuario'),
   });
 
-  if (loading) return <p>Cargando...</p>;
-  if (!usuario) return <p>Usuario no encontrado</p>;
+  if (loading) return (
+    <PageLayout maxWidth={540}><Typography>Cargando...</Typography></PageLayout>
+  );
+  if (!usuario) return (
+    <PageLayout maxWidth={540}><Typography>Usuario no encontrado</Typography></PageLayout>
+  );
+
+  const empresasAsignadas = empresas.filter(e => form.empresas.includes(String(e.id_empresa))).map(e => e.nombre_comercial || e.nombre_legal).join(', ') || 'Ninguna';
+  const sucursalesAsignadas = sucursales.filter(s => form.sucursales.includes(String(s.id_sucursal))).map(s => s.nombre).join(', ') || 'Ninguna';
+  const departamentosAsignados = departamentos.filter(d => form.departamentos.includes(String(d.id_departamento))).map(d => d.nombre_departamento).join(', ') || 'Ninguno';
 
   return (
     <PageLayout maxWidth={540}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Detalle/Edición de Usuario</h2>
-      <form style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Username
-          <input value={usuario.username} readOnly style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15, background: '#f5f5f5' }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Email
-          <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre
-          <input value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Apellido
-          <input value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input type="checkbox" checked={usuario.is_active} readOnly style={{ marginTop: 0 }} /> Activo
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>
-          Empresas
-          <div style={{ margin: '4px 0 4px 0', fontSize: 13, color: '#1976d2' }}>
-            <b>Asignadas:</b> {empresas.filter(e => form.empresas.includes(String(e.id_empresa))).map(e => e.nombre_comercial || e.nombre_legal).join(', ') || <span style={{color:'#888'}}>Ninguna</span>}
-          </div>
-          <select
-            multiple
-            value={form.empresas}
-            onChange={e => setForm(f => ({ ...f, empresas: Array.from(e.target.selectedOptions, opt => opt.value) }))}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15, minHeight: 60 }}
-            title={'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones'}
-          >
-            {empresas.map(e => (
-              <option key={e.id_empresa} value={e.id_empresa}>{e.nombre_comercial || e.nombre_legal}</option>
-            ))}
-          </select>
-          <span style={{ fontSize: 12, color: '#888', marginTop: 2, display: 'block' }}>
-            {'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones.'}
-          </span>
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>
-          Sucursales
-          <div style={{ margin: '4px 0 4px 0', fontSize: 13, color: '#1976d2' }}>
-            <b>Asignadas:</b> {sucursales.filter(s => form.sucursales.includes(String(s.id_sucursal))).map(s => s.nombre).join(', ') || <span style={{color:'#888'}}>Ninguna</span>}
-          </div>
-          <select
-            multiple
-            value={form.sucursales}
-            onChange={e => setForm(f => ({ ...f, sucursales: Array.from(e.target.selectedOptions, opt => opt.value) }))}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15, minHeight: 60 }}
-            title={'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones'}
-          >
-            {sucursales.map(s => (
-              <option key={s.id_sucursal} value={s.id_sucursal}>{s.nombre}</option>
-            ))}
-          </select>
-          <span style={{ fontSize: 12, color: '#888', marginTop: 2, display: 'block' }}>
-            {'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones.'}
-          </span>
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>
-          Departamentos
-          <div style={{ margin: '4px 0 4px 0', fontSize: 13, color: '#1976d2' }}>
-            <b>Asignados:</b> {departamentos.filter(d => form.departamentos.includes(String(d.id_departamento))).map(d => d.nombre_departamento).join(', ') || <span style={{color:'#888'}}>Ninguno</span>}
-          </div>
-          <select
-            multiple
-            value={form.departamentos}
-            onChange={e => setForm(f => ({ ...f, departamentos: Array.from(e.target.selectedOptions, opt => opt.value) }))}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15, minHeight: 60 }}
-            title={'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones'}
-          >
-            {departamentos.map(d => (
-              <option key={d.id_departamento} value={d.id_departamento}>{d.nombre_departamento}</option>
-            ))}
-          </select>
-          <span style={{ fontSize: 12, color: '#888', marginTop: 2, display: 'block' }}>
-            {'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones.'}
-          </span>
-        </label>
-        <button
-          type="button"
-          style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}
-          onClick={() => updateMutation.mutate()}
-          disabled={updateMutation.isPending}
-        >Guardar cambios</button>
-      </form>
-      <h4 style={{ marginTop: 32, color: '#1a237e', fontWeight: 600, fontSize: 18 }}>Roles asignados</h4>
-      <ul style={{ margin: '12px 0 24px 0', padding: 0, listStyle: 'none', color: '#333', fontSize: 15 }}>
+      <Typography variant="h5" mb={3}>Detalle/Edición de Usuario</Typography>
+      <Box component="form">
+        <Stack spacing={2}>
+          <TextField label="Username" value={usuario.username} InputProps={{ readOnly: true }} fullWidth />
+          <TextField label="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} fullWidth />
+          <TextField label="Nombre" value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} fullWidth />
+          <TextField label="Apellido" value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} fullWidth />
+          <FormControlLabel control={<Checkbox checked={usuario.is_active} readOnly />} label="Activo" />
+
+          <Box>
+            <Typography variant="body2" color="primary"><b>Empresas asignadas:</b> {empresasAsignadas}</Typography>
+            <TextField
+              select
+              label="Empresas"
+              value={form.empresas}
+              onChange={e => setForm(f => ({ ...f, empresas: Array.isArray(e.target.value) ? e.target.value as unknown as string[] : [e.target.value] }))}
+              fullWidth
+              SelectProps={{ multiple: true }}
+              helperText={MULTI_HELP}
+              sx={{ mt: 1 }}
+            >
+              {empresas.map(e => (
+                <MenuItem key={e.id_empresa} value={e.id_empresa}>{e.nombre_comercial || e.nombre_legal}</MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <Box>
+            <Typography variant="body2" color="primary"><b>Sucursales asignadas:</b> {sucursalesAsignadas}</Typography>
+            <TextField
+              select
+              label="Sucursales"
+              value={form.sucursales}
+              onChange={e => setForm(f => ({ ...f, sucursales: Array.isArray(e.target.value) ? e.target.value as unknown as string[] : [e.target.value] }))}
+              fullWidth
+              SelectProps={{ multiple: true }}
+              helperText={MULTI_HELP}
+              sx={{ mt: 1 }}
+            >
+              {sucursales.map(s => (
+                <MenuItem key={s.id_sucursal} value={s.id_sucursal}>{s.nombre}</MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <Box>
+            <Typography variant="body2" color="primary"><b>Departamentos asignados:</b> {departamentosAsignados}</Typography>
+            <TextField
+              select
+              label="Departamentos"
+              value={form.departamentos}
+              onChange={e => setForm(f => ({ ...f, departamentos: Array.isArray(e.target.value) ? e.target.value as unknown as string[] : [e.target.value] }))}
+              fullWidth
+              SelectProps={{ multiple: true }}
+              helperText={MULTI_HELP}
+              sx={{ mt: 1 }}
+            >
+              {departamentos.map(d => (
+                <MenuItem key={d.id_departamento} value={d.id_departamento}>{d.nombre_departamento}</MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button
+              type="button"
+              variant="contained"
+              onClick={() => updateMutation.mutate()}
+              disabled={updateMutation.isPending}
+            >Guardar cambios</Button>
+          </Stack>
+        </Stack>
+      </Box>
+
+      <Divider sx={{ my: 3 }} />
+      <Typography variant="h6" mb={1}>Roles asignados</Typography>
+      <List dense>
         {usuarioRoles.map(ur => (
-          <li key={ur.id_usuario_rol} style={{ marginBottom: 4 }}>{ur.id_rol_nombre}</li>
+          <ListItem key={ur.id_usuario_rol} disableGutters>
+            <ListItemText primary={ur.id_rol_nombre} />
+          </ListItem>
         ))}
-      </ul>
-      <button
-        style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, marginBottom: 12, cursor: 'pointer' }}
+      </List>
+
+      <Button
+        variant="outlined"
+        sx={{ mb: 2 }}
         onClick={() => setShowChangePassword(s => !s)}
       >
         {showChangePassword ? 'Ocultar cambio de contraseña' : 'Cambiar contraseña'}
-      </button>
+      </Button>
       {showChangePassword && (
-        <form
-          style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start', width: '100%' }}
+        <Box
+          component="form"
           onSubmit={async e => {
             e.preventDefault();
             setPasswordMessage('');
@@ -253,69 +277,65 @@ const UserDetailPage: React.FC = () => {
             }
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-            <input
+          <Stack spacing={2}>
+            <TextField
               type={showOldPassword ? 'text' : 'password'}
-              placeholder="Contraseña actual"
+              label="Contraseña actual"
               value={oldPassword}
               onChange={e => setOldPassword(e.target.value)}
-              style={{ width: '50%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', fontSize: 15 }}
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowOldPassword(v => !v)} edge="end" tabIndex={-1}>
+                      {showOldPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-            <button
-              type="button"
-              onClick={() => setShowOldPassword(v => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2', fontWeight: 500 }}
-              tabIndex={-1}
-            >
-              {showOldPassword ? 'Ocultar' : 'Ver'}
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-            <input
+            <TextField
               type={showNewPassword ? 'text' : 'password'}
-              placeholder="Nueva contraseña"
+              label="Nueva contraseña"
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              style={{ width: '50%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', fontSize: 15 }}
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowNewPassword(v => !v)} edge="end" tabIndex={-1}>
+                      {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-            <button
-              type="button"
-              onClick={() => setShowNewPassword(v => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2', fontWeight: 500 }}
-              tabIndex={-1}
-            >
-              {showNewPassword ? 'Ocultar' : 'Ver'}
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-            <input
+            <TextField
               type={showConfirmPassword ? 'text' : 'password'}
-              placeholder="Confirmar contraseña"
+              label="Confirmar contraseña"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              style={{ width: '50%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', fontSize: 15,
-                borderColor: confirmPassword && newPassword !== confirmPassword ? '#d32f2f' : '#cfd8dc' }}
+              fullWidth
+              error={!!(confirmPassword && newPassword !== confirmPassword)}
+              helperText={confirmPassword && newPassword !== confirmPassword ? 'Las contraseñas no coinciden' : undefined}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowConfirmPassword(v => !v)} edge="end" tabIndex={-1}>
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(v => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2', fontWeight: 500 }}
-              tabIndex={-1}
-            >
-              {showConfirmPassword ? 'Ocultar' : 'Ver'}
-            </button>
-          </div>
-          {confirmPassword && newPassword !== confirmPassword && (
-            <span style={{ color: '#d32f2f', fontSize: 13 }}>Las contraseñas no coinciden</span>
-          )}
-          {passwordMessage && (
-            <span style={{ color: passwordMessage.includes('correctamente') ? '#388e3c' : '#d32f2f', fontSize: 13 }}>{passwordMessage}</span>
-          )}
-          <button
-            type="submit"
-            style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}
-          >Guardar nueva contraseña</button>
-        </form>
+            {passwordMessage && (
+              <Alert severity={passwordMessage.includes('correctamente') ? 'success' : 'error'}>{passwordMessage}</Alert>
+            )}
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button type="submit" variant="contained">Guardar nueva contraseña</Button>
+            </Stack>
+          </Stack>
+        </Box>
       )}
     </PageLayout>
   );

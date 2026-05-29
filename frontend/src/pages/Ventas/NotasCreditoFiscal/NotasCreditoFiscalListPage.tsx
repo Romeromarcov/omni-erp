@@ -1,177 +1,68 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageLayout from '../../../components/PageLayout';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { notaCreditoFiscalService } from '../../../services/ventas';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
-import { Alert, Box, Button, Chip, InputAdornment, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import type { PaginatedResponse } from '../../../services/ventas';
+import Pagination from '../../../components/Pagination';
+import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
-const NotasCreditoFiscalListPage: React.FC = () => {
+const PAGE_SIZE = 20;
+
+export default function NotasCreditoFiscalListPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { t } = useTranslation();
+  const [page, setPage] = useState(1);
 
-  const { data: notasCredito = [], isLoading: loading, isError } = useQuery<NotaCreditoFiscal[]>({
-    queryKey: ['/ventas/notas-credito-fiscal/'],
-    queryFn: () => notaCreditoFiscalService.getAll(),
+  const { data, isLoading } = useQuery<PaginatedResponse<NotaCreditoFiscal>>({
+    queryKey: ['notas-credito-fiscal', page],
+    queryFn: () => notaCreditoFiscalService.getAllPaginated(page, PAGE_SIZE),
   });
 
-  const error = isError ? 'Error al cargar las notas de crédito fiscal' : null;
+  const notas = data?.results ?? [];
+  const count = data?.count ?? 0;
 
-  const aplicarMutation = useMutation({
-    mutationFn: (id: string) => notaCreditoFiscalService.aplicar(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-credito-fiscal/'] });
+  const columns: Column<NotaCreditoFiscal>[] = [
+    { key: 'numero', header: t('ventas.tabla.numero'), render: (n) => n.numero_nota_credito },
+    { key: 'control', header: t('ventas.facturasFiscales.tabla.control'), render: (n) => n.numero_control },
+    { key: 'fecha', header: t('ventas.tabla.fecha'), render: (n) => new Date(n.fecha_emision).toLocaleDateString() },
+    { key: 'motivo', header: t('ventas.notasCreditoFiscal.tabla.motivo'), render: (n) => n.motivo },
+    { key: 'total', header: t('ventas.notasCreditoFiscal.tabla.total'), align: 'right', render: (n) => Number(n.monto_total ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2 }) },
+    {
+      key: 'acciones',
+      header: t('ventas.tabla.acciones'),
+      align: 'right',
+      render: (n) => (
+        <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(n.id_nota_credito_fiscal); }}>
+          {t('ventas.tabla.ver')}
+        </Button>
+      ),
     },
-    onError: () => alert('Error al aplicar la nota de crédito fiscal'),
-  });
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'PENDIENTE': return 'warning';
-      case 'APLICADA': return 'success';
-      case 'ANULADA': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const filteredNotas = notasCredito.filter(nota =>
-    nota.numero_nota_credito?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    nota.id_cliente?.razon_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    nota.id_cliente?.rif?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleAplicar = (id: string) => {
-    aplicarMutation.mutate(id);
-  };
-
-  if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;
-  if (error) return <PageLayout><Alert severity="error">{error}</Alert></PageLayout>;
+  ];
 
   return (
-    <PageLayout>
-      <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Notas de Crédito Fiscal
-          </Typography>
-          <Button variant="contained" onClick={() => navigate('new')}>
-            Nueva Nota de Crédito Fiscal
+    <PageContainer>
+      <PageHeader
+        title={t('ventas.notasCreditoFiscal.title')}
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('new')}>
+            {t('ventas.notasCreditoFiscal.nueva')}
           </Button>
-        </Box>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <TextField
-            fullWidth
-            placeholder="Buscar por número, cliente o RIF..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 2 }}
-          />
-        </Paper>
-
-        <Paper sx={{ p: 3 }}>
-          {filteredNotas.length > 0 ? (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Número</TableCell>
-                    <TableCell>Fecha</TableCell>
-                    <TableCell>Cliente</TableCell>
-                    <TableCell align="right">Monto Total</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell align="center">Acciones</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredNotas.map((nota) => (
-                    <TableRow key={nota.id_nota_credito_fiscal}>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="bold">
-                          {nota.numero_nota_credito}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(nota.fecha_emision).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        {nota.id_cliente ? (
-                          <div>
-                            <div style={{ fontWeight: 'bold' }}>{nota.id_cliente.razon_social}</div>
-                            <div style={{ fontSize: '12px', color: '#6c757d' }}>{nota.id_cliente.rif}</div>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#dc3545' }}>Cliente no encontrado</span>
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        {nota.monto_total?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={nota.estado || 'PENDIENTE'}
-                          color={getEstadoColor(nota.estado || 'PENDIENTE')}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                          <Button
-                            variant="contained" color="secondary"
-                            onClick={() => navigate(`${nota.id_nota_credito_fiscal}`)}
-                          >
-                            Ver
-                          </Button>
-                          <Button
-                            variant="contained" color="secondary"
-                            onClick={() => navigate(`${nota.id_nota_credito_fiscal}/edit`)}
-                          >
-                            Editar
-                          </Button>
-                          {nota.estado !== 'APLICADA' && (
-                            <Button
-                              variant="contained"
-                              onClick={() => handleAplicar(nota.id_nota_credito_fiscal)}
-                            >
-                              Aplicar
-                            </Button>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="h6" color="text.secondary">
-                {searchTerm ? 'No se encontraron notas de crédito fiscal con los criterios de búsqueda' : 'No hay notas de crédito fiscal registradas'}
-              </Typography>
-              {!searchTerm && (
-                <Button variant="contained" onClick={() => navigate('new')} style={{ marginTop: 16 }}>
-                  Crear primera nota de crédito fiscal
-                </Button>
-              )}
-            </Box>
-          )}
-        </Paper>
-      </Box>
-    </PageLayout>
+        }
+      />
+      <DataTable
+        columns={columns}
+        rows={notas}
+        getRowKey={(n) => n.id_nota_credito_fiscal}
+        loading={isLoading}
+        emptyMessage={t('ventas.notasCreditoFiscal.sinRegistros')}
+        onRowClick={(n) => navigate(n.id_nota_credito_fiscal)}
+      />
+      <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={(p) => { setPage(p); window.scrollTo(0, 0); }} />
+    </PageContainer>
   );
-};
-
-export default NotasCreditoFiscalListPage;
+}

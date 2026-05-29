@@ -1,6 +1,6 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import PageLayout from '../../../components/PageLayout';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica } from '../../../services/cajasFisicasService';
 import { Alert, Box, Button, Card, CardActions, CardContent, Chip, Divider, Paper, Typography } from '@mui/material';
@@ -84,6 +84,7 @@ const CajaFisicaDetailPage: React.FC = () => {
       <PageLayout>
         <Box sx={{ mb: 2 }}>
           <Button
+            variant="outlined"
             onClick={() => navigate('/finanzas/cajas-fisicas')}
           >
             ← Volver al listado
@@ -100,12 +101,14 @@ const CajaFisicaDetailPage: React.FC = () => {
     <PageLayout>
       <Box sx={{ mb: 3 }}>
         <Button
+          variant="outlined"
           onClick={() => navigate('/finanzas/cajas-fisicas')}
+          sx={{ mb: 2 }}
         >
           ← Volver al listado
         </Button>
 
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h5" gutterBottom>
           Detalle de Caja Física
         </Typography>
       </Box>
@@ -168,7 +171,7 @@ const CajaFisicaDetailPage: React.FC = () => {
         ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
             {cajasVirtuales.map((caja) => (
-              <Card key={caja.id_caja}>
+              <Card key={caja.id_caja} variant="outlined">
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="h6">{caja.nombre}</Typography>
@@ -220,7 +223,7 @@ const CajaFisicaDetailPage: React.FC = () => {
         ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
             {datafonos.map((datafono) => (
-              <Card key={datafono.id_datafono}>
+              <Card key={datafono.id_datafono} variant="outlined">
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="h6">{datafono.nombre}</Typography>

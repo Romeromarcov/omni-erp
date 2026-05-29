@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
@@ -49,39 +50,45 @@ const DepartmentDetailPage: React.FC = () => {
     updateMutation.mutate(form);
   };
 
-  if (isLoading) return <p>Cargando...</p>;
-  if (!departamento) return <p>No encontrado</p>;
+  if (isLoading) return (
+    <PageLayout maxWidth={480}>
+      <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
+    </PageLayout>
+  );
+  if (!departamento) return (
+    <PageLayout maxWidth={480}>
+      <Typography align="center" color="text.secondary" py={4}>No encontrado</Typography>
+    </PageLayout>
+  );
 
   return (
     <PageLayout maxWidth={480}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Detalle de departamento</h2>
+      <Typography variant="h5" mb={3}>Detalle de departamento</Typography>
       {!edit ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <p><b>Nombre:</b> {departamento.nombre_departamento}</p>
-          <p><b>Descripción:</b> {departamento.descripcion}</p>
-          <p><b>Activo:</b> {departamento.activo ? <span style={{ color: '#1976d2', fontWeight: 600 }}>Sí</span> : <span style={{ color: '#d32f2f', fontWeight: 600 }}>No</span>}</p>
-          <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
-            <button onClick={() => setEdit(true)} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}>Editar</button>
-            <button onClick={() => navigate(-1)} style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}>Volver</button>
-          </div>
-        </div>
+        <Stack spacing={1.5}>
+          <Typography><b>Nombre:</b> {departamento.nombre_departamento}</Typography>
+          <Typography><b>Descripción:</b> {departamento.descripcion}</Typography>
+          <Typography><b>Activo:</b> {departamento.activo ? 'Sí' : 'No'}</Typography>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
+            <Button variant="contained" onClick={() => setEdit(true)}>Editar</Button>
+          </Stack>
+        </Stack>
       ) : (
-        <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre
-            <input value={form?.nombre_departamento || ''} onChange={e => setForm(f => f ? { ...f, nombre_departamento: e.target.value } : f)} placeholder="Nombre" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Descripción
-            <input value={form?.descripcion || ''} onChange={e => setForm(f => f ? { ...f, descripcion: e.target.value } : f)} placeholder="Descripción" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Activo
-            <select value={form?.activo ? 'true' : 'false'} onChange={e => setForm(f => f ? { ...f, activo: e.target.value === 'true' } : f)} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }}>
-              <option value="true">Sí</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <button type="submit" style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Guardar</button>
-          <button type="button" onClick={() => setEdit(false)} style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, marginTop: 8, cursor: 'pointer' }}>Cancelar</button>
-        </form>
+        <Box component="form" onSubmit={handleUpdate}>
+          <Stack spacing={2}>
+            <TextField label="Nombre" value={form?.nombre_departamento || ''} onChange={e => setForm(f => f ? { ...f, nombre_departamento: e.target.value } : f)} required fullWidth />
+            <TextField label="Descripción" value={form?.descripcion || ''} onChange={e => setForm(f => f ? { ...f, descripcion: e.target.value } : f)} required fullWidth />
+            <TextField select label="Activo" value={form?.activo ? 'true' : 'false'} onChange={e => setForm(f => f ? { ...f, activo: e.target.value === 'true' } : f)} fullWidth>
+              <MenuItem value="true">Sí</MenuItem>
+              <MenuItem value="false">No</MenuItem>
+            </TextField>
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button type="button" variant="outlined" onClick={() => setEdit(false)}>Cancelar</Button>
+              <Button type="submit" variant="contained">Guardar</Button>
+            </Stack>
+          </Stack>
+        </Box>
       )}
     </PageLayout>
   );

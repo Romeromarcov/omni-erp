@@ -66,8 +66,8 @@ const CajasFisicasListPage: React.FC = () => {
   return (
     <PageLayout>
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4">Cajas Físicas</Typography>
-        <Button onClick={() => navigate('/finanzas/cajas-fisicas/crear')}>
+        <Typography variant="h5">Cajas Físicas</Typography>
+        <Button variant="contained" onClick={() => navigate('/finanzas/cajas-fisicas/crear')}>
           Nueva Caja Física
         </Button>
       </Box>
@@ -78,7 +78,7 @@ const CajasFisicasListPage: React.FC = () => {
         </Alert>
       )}
 
-      <Paper>
+      <Paper variant="outlined">
         <TableContainer>
           <Table>
             <TableHead>

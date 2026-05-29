@@ -1,174 +1,91 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { get } from '../../../services/api';
 import { toList } from '../../../utils/api';
-import PageLayout from '../../../components/PageLayout';
 import type { CatalogoValor } from '../../../types/configuracion';
-import { Button } from '@mui/material';
+import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
 type CatalogoValorApiResponse = CatalogoValor[] | { results: CatalogoValor[]; count: number };
 
-const CatalogoValorListPage: React.FC = () => {
+export default function CatalogoValorListPage() {
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
-  const { data: catalogos = [], isLoading, isError } = useQuery<
-    CatalogoValorApiResponse,
-    Error,
-    CatalogoValor[]
-  >({
+  const { data: catalogos = [], isLoading, isError } = useQuery<CatalogoValorApiResponse, Error, CatalogoValor[]>({
     queryKey: ['/configuracion_motor/catalogos-valor/'],
     queryFn: () => get<CatalogoValorApiResponse>('/configuracion_motor/catalogos-valor/'),
     select: toList,
   });
 
+  const q = search.toLowerCase();
   const filtered = catalogos.filter(
-    c =>
-      c.valor.toLowerCase().includes(search.toLowerCase()) ||
-      c.codigo_catalogo.toLowerCase().includes(search.toLowerCase()),
+    (c) => c.valor.toLowerCase().includes(q) || c.codigo_catalogo.toLowerCase().includes(q),
   );
 
-  // Agrupar por código de catálogo
-  const groupedCatalogos = filtered.reduce(
-    (acc, catalogo) => {
-      if (!acc[catalogo.codigo_catalogo]) {
-        acc[catalogo.codigo_catalogo] = [];
-      }
-      acc[catalogo.codigo_catalogo].push(catalogo);
-      return acc;
+  const grouped = filtered.reduce((acc, c) => {
+    (acc[c.codigo_catalogo] ||= []).push(c);
+    return acc;
+  }, {} as Record<string, CatalogoValor[]>);
+
+  const columns: Column<CatalogoValor>[] = [
+    { key: 'valor', header: 'Valor', render: (c) => c.valor },
+    { key: 'descripcion', header: 'Descripción', render: (c) => c.descripcion || '—' },
+    { key: 'orden', header: 'Orden', align: 'center', render: (c) => c.orden },
+    { key: 'activo', header: 'Activo', align: 'center', render: (c) => <StatusChip value={c.activo} /> },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      align: 'right',
+      render: (c) => (
+        <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(`/configuracion/catalogos-valor/${c.id_catalogo_valor}`); }}>
+          Ver / Editar
+        </Button>
+      ),
     },
-    {} as Record<string, CatalogoValor[]>,
-  );
+  ];
 
   return (
-    <PageLayout>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Catálogos de Valor</h2>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24, gap: 16 }}>
-        <input
-          type="text"
-          placeholder="Buscar catálogo o valor..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            padding: 10,
-            borderRadius: 8,
-            border: '1px solid #cfd8dc',
-            width: 260,
-            fontSize: '1rem',
-            background: '#f6fafd',
-          }}
-        />
-        <Button
-          onClick={() => navigate('/configuracion/catalogos-valor/new')}
-          style={{
-            fontWeight: 500,
-            background: '#1976d2',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '8px 24px',
-            fontSize: 15,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(25,118,210,0.08)',
-          }}
-        >
-          + Nuevo Valor de Catálogo
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
-      ) : isError ? (
-        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32 }}>
-          Error al cargar catálogos.
-        </div>
-      ) : Object.keys(groupedCatalogos).length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 32, color: '#888' }}>
-          No se encontraron catálogos de valor.
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Catálogos de Valor"
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/configuracion/catalogos-valor/new')}>
+            Nuevo valor
+          </Button>
+        }
+      />
+      <TextField
+        size="small"
+        placeholder="Buscar catálogo o valor…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mb: 2, width: { xs: '100%', sm: 320 } }}
+      />
+      {isError ? (
+        <Alert severity="error">Error al cargar catálogos.</Alert>
+      ) : isLoading ? (
+        <DataTable columns={columns} rows={[]} getRowKey={() => ''} loading emptyMessage="" />
+      ) : Object.keys(grouped).length === 0 ? (
+        <Alert severity="info">No se encontraron catálogos de valor.</Alert>
       ) : (
-        Object.entries(groupedCatalogos).map(([codigoCatalogo, valores]) => (
-          <div key={codigoCatalogo} style={{ marginBottom: 32 }}>
-            <h3
-              style={{
-                color: '#1976d2',
-                marginBottom: 16,
-                borderBottom: '2px solid #e3f0ff',
-                paddingBottom: 8,
-              }}
-            >
-              Catálogo: {codigoCatalogo}
-            </h3>
-            <div style={{ overflowX: 'auto' }}>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  background: '#f6fafd',
-                  borderRadius: 12,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                }}
-              >
-                <thead>
-                  <tr style={{ background: '#e3f0ff' }}>
-                    <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Valor</th>
-                    <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>
-                      Descripción
-                    </th>
-                    <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Orden</th>
-                    <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Activo</th>
-                    <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {valores.map(c => (
-                    <tr
-                      key={c.id_catalogo_valor}
-                      style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}
-                    >
-                      <td style={{ padding: '10px 8px' }}>{c.valor}</td>
-                      <td style={{ padding: '10px 8px' }}>{c.descripcion || '-'}</td>
-                      <td style={{ padding: '10px 8px' }}>{c.orden}</td>
-                      <td style={{ padding: '10px 8px' }}>
-                        {c.activo ? (
-                          <span style={{ color: '#1976d2', fontWeight: 600 }}>Sí</span>
-                        ) : (
-                          <span style={{ color: '#d32f2f', fontWeight: 600 }}>No</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '10px 8px' }}>
-                        <Button
-                          onClick={() =>
-                            navigate(`/configuracion/catalogos-valor/${c.id_catalogo_valor}`)
-                          }
-                          style={{
-                            background: '#e3eafc',
-                            color: '#1976d2',
-                            border: 'none',
-                            borderRadius: 6,
-                            padding: '6px 18px',
-                            fontWeight: 500,
-                            fontSize: 14,
-                            cursor: 'pointer',
-                            marginRight: 8,
-                          }}
-                        >
-                          Ver/Editar
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        Object.entries(grouped).map(([codigo, valores]) => (
+          <Box key={codigo} sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, color: 'primary.main' }}>
+              Catálogo: {codigo}
+            </Typography>
+            <DataTable
+              columns={columns}
+              rows={valores}
+              getRowKey={(c) => c.id_catalogo_valor}
+              onRowClick={(c) => navigate(`/configuracion/catalogos-valor/${c.id_catalogo_valor}`)}
+            />
+          </Box>
         ))
       )}
-    </PageLayout>
+    </PageContainer>
   );
-};
-
-export default CatalogoValorListPage;
+}

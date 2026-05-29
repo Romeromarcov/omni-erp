@@ -1,4 +1,4 @@
-import { Box, Grid2, Card, CardContent, Typography, Chip, LinearProgress, Alert, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Chip, LinearProgress, Alert, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { useCarteraDashboard } from '../../hooks/useCxC';
 import type { PrioridadCliente } from '../../types/cxc';
 
@@ -41,8 +41,8 @@ export default function DashboardCxCPage() {
       </Typography>
 
       {/* KPI Cards */}
-      <Grid2 container spacing={2} mb={3}>
-        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+      <Grid container spacing={2} mb={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="body2" color="text.secondary">Total Pendiente</Typography>
@@ -51,8 +51,8 @@ export default function DashboardCxCPage() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="body2" color="text.secondary">Partidas Vencidas</Typography>
@@ -61,8 +61,8 @@ export default function DashboardCxCPage() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="body2" color="text.secondary">Tasa BCV Hoy</Typography>
@@ -73,8 +73,8 @@ export default function DashboardCxCPage() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="body2" color="text.secondary">+90 días</Typography>
@@ -86,12 +86,12 @@ export default function DashboardCxCPage() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid2>
-      </Grid2>
+        </Grid>
+      </Grid>
 
       {/* Aging Chart (barras simples con CSS) */}
-      <Grid2 container spacing={2}>
-        <Grid2 size={{ xs: 12, md: 6 }}>
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight="bold" mb={2}>Aging por Bucket</Typography>
@@ -117,10 +117,10 @@ export default function DashboardCxCPage() {
               })}
             </CardContent>
           </Card>
-        </Grid2>
+        </Grid>
 
         {/* Top prioridades */}
-        <Grid2 size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight="bold" mb={2}>Top Prioridades</Typography>
@@ -156,8 +156,8 @@ export default function DashboardCxCPage() {
               </TableContainer>
             </CardContent>
           </Card>
-        </Grid2>
-      </Grid2>
+        </Grid>
+      </Grid>
     </Box>
   );
 }

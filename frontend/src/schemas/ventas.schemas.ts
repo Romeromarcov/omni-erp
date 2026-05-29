@@ -6,19 +6,8 @@ import { z } from 'zod';
 
 // ── Shared sub-schemas ────────────────────────────────────────────────────────
 
-const uuidField = (label: string) =>
-  z.string().uuid({ message: `${label} debe ser un UUID válido` });
-
 const requiredUUID = (label: string) =>
   z.string().min(1, { message: `${label} es obligatorio` });
-
-const positiveDecimal = (label: string) =>
-  z.number({ invalid_type_error: `${label} debe ser un número` })
-    .positive({ message: `${label} debe ser mayor a 0` });
-
-const nonNegativeDecimal = (label: string) =>
-  z.number({ invalid_type_error: `${label} debe ser un número` })
-    .nonnegative({ message: `${label} no puede ser negativo` });
 
 // ── Detalle (línea de producto) ───────────────────────────────────────────────
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
-import { Button } from '@mui/material';
 
 interface Sucursal {
   id_sucursal: string;
@@ -62,58 +62,52 @@ const BranchDetailPage: React.FC = () => {
   };
 
   if (isLoading) return (
-    <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>
+    <PageLayout maxWidth={480}>
+      <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
+    </PageLayout>
   );
   if (!sucursal) return (
-    <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>No encontrada</div></PageLayout>
+    <PageLayout maxWidth={480}>
+      <Typography align="center" color="text.secondary" py={4}>No encontrada</Typography>
+    </PageLayout>
   );
 
   return (
     <PageLayout maxWidth={480}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Detalle de sucursal</h2>
+      <Typography variant="h5" mb={3}>Detalle de sucursal</Typography>
       {!edit ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <p><b>Nombre:</b> {sucursal.nombre}</p>
-          <p><b>Código:</b> {sucursal.codigo_sucursal}</p>
-          <p><b>Dirección:</b> {sucursal.direccion}</p>
-          <p><b>Teléfono:</b> {sucursal.telefono}</p>
-          <p><b>Email:</b> {sucursal.email_contacto}</p>
-          <p><b>Ubicación GPS:</b> {sucursal.ubicacion_gps_json}</p>
-          <p><b>Activo:</b> {sucursal.activo ? <span style={{ color: '#1976d2', fontWeight: 600 }}>Sí</span> : <span style={{ color: '#d32f2f', fontWeight: 600 }}>No</span>}</p>
-          <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
-            <Button onClick={() => setEdit(true)}>Editar</Button>
-            <Button onClick={() => navigate(-1)} style={{ background: '#e3eafc', color: '#1976d2' }}>Volver</Button>
-          </div>
-        </div>
+        <Stack spacing={1.5}>
+          <Typography><b>Nombre:</b> {sucursal.nombre}</Typography>
+          <Typography><b>Código:</b> {sucursal.codigo_sucursal}</Typography>
+          <Typography><b>Dirección:</b> {sucursal.direccion}</Typography>
+          <Typography><b>Teléfono:</b> {sucursal.telefono}</Typography>
+          <Typography><b>Email:</b> {sucursal.email_contacto}</Typography>
+          <Typography><b>Ubicación GPS:</b> {sucursal.ubicacion_gps_json}</Typography>
+          <Typography><b>Activo:</b> {sucursal.activo ? 'Sí' : 'No'}</Typography>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
+            <Button variant="contained" onClick={() => setEdit(true)}>Editar</Button>
+          </Stack>
+        </Stack>
       ) : (
-        <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre
-            <input value={form?.nombre || ''} onChange={e => setForm(f => f ? { ...f, nombre: e.target.value } : f)} placeholder="Nombre" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Código
-            <input value={form?.codigo_sucursal || ''} onChange={e => setForm(f => f ? { ...f, codigo_sucursal: e.target.value } : f)} placeholder="Código" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Dirección
-            <input value={form?.direccion || ''} onChange={e => setForm(f => f ? { ...f, direccion: e.target.value } : f)} placeholder="Dirección" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Teléfono
-            <input value={form?.telefono || ''} onChange={e => setForm(f => f ? { ...f, telefono: e.target.value } : f)} placeholder="Teléfono" required style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Email
-            <input value={form?.email_contacto || ''} onChange={e => setForm(f => f ? { ...f, email_contacto: e.target.value } : f)} placeholder="Email" style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Ubicación GPS
-            <input value={form?.ubicacion_gps_json || ''} onChange={e => setForm(f => f ? { ...f, ubicacion_gps_json: e.target.value } : f)} placeholder="Ubicación GPS (JSON)" style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-          </label>
-          <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Activo
-            <select value={form?.activo ? 'true' : 'false'} onChange={e => setForm(f => f ? { ...f, activo: e.target.value === 'true' } : f)} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }}>
-              <option value="true">Sí</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <button type="submit" style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Guardar</button>
-          <button type="button" onClick={() => setEdit(false)} style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, marginTop: 8, cursor: 'pointer' }}>Cancelar</button>
-        </form>
+        <Box component="form" onSubmit={handleUpdate}>
+          <Stack spacing={2}>
+            <TextField label="Nombre" value={form?.nombre || ''} onChange={e => setForm(f => f ? { ...f, nombre: e.target.value } : f)} required fullWidth />
+            <TextField label="Código" value={form?.codigo_sucursal || ''} onChange={e => setForm(f => f ? { ...f, codigo_sucursal: e.target.value } : f)} required fullWidth />
+            <TextField label="Dirección" value={form?.direccion || ''} onChange={e => setForm(f => f ? { ...f, direccion: e.target.value } : f)} required fullWidth />
+            <TextField label="Teléfono" value={form?.telefono || ''} onChange={e => setForm(f => f ? { ...f, telefono: e.target.value } : f)} required fullWidth />
+            <TextField label="Email" value={form?.email_contacto || ''} onChange={e => setForm(f => f ? { ...f, email_contacto: e.target.value } : f)} fullWidth />
+            <TextField label="Ubicación GPS (JSON)" value={form?.ubicacion_gps_json || ''} onChange={e => setForm(f => f ? { ...f, ubicacion_gps_json: e.target.value } : f)} fullWidth />
+            <TextField select label="Activo" value={form?.activo ? 'true' : 'false'} onChange={e => setForm(f => f ? { ...f, activo: e.target.value === 'true' } : f)} fullWidth>
+              <MenuItem value="true">Sí</MenuItem>
+              <MenuItem value="false">No</MenuItem>
+            </TextField>
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button type="button" variant="outlined" onClick={() => setEdit(false)}>Cancelar</Button>
+              <Button type="submit" variant="contained">Guardar</Button>
+            </Stack>
+          </Stack>
+        </Box>
       )}
     </PageLayout>
   );

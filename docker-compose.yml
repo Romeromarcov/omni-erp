@@ -76,6 +76,8 @@ services:
       S3_REGION: us-east-1
       # Event Store — Redpanda/Kafka
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      # Asistente IA (Anthropic) — define ANTHROPIC_API_KEY en tu .env para habilitar el chat
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     volumes:
       # Hot reload: el código fuente se monta en el contenedor
       - ./backend:/app

@@ -1,25 +1,27 @@
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
-import PedidosListPage from '../pages/Ventas/Pedidos/PedidosListPage';
-import PedidoDetailPage from '../pages/Ventas/Pedidos/PedidoDetailPage';
-import PedidoFormPage from '../pages/Ventas/Pedidos/PedidoFormPage';
-import CotizacionesListPage from '../pages/Ventas/Cotizaciones/CotizacionesListPage';
-import CotizacionDetailPage from '../pages/Ventas/Cotizaciones/CotizacionDetailPage';
-import CotizacionFormPage from '../pages/Ventas/Cotizaciones/CotizacionFormPage';
-import NotasVentaListPage from '../pages/Ventas/NotasVenta/NotasVentaListPage';
-import NotaVentaDetailPage from '../pages/Ventas/NotasVenta/NotaVentaDetailPage';
-import NotaVentaFormPage from '../pages/Ventas/NotasVenta/NotaVentaFormPage';
-import NotasCreditoVentaListPage from '../pages/Ventas/NotasCreditoVenta/NotasCreditoVentaListPage';
-import NotaCreditoVentaDetailPage from '../pages/Ventas/NotasCreditoVenta/NotaCreditoVentaDetailPage';
-import NotaCreditoVentaFormPage from '../pages/Ventas/NotasCreditoVenta/NotaCreditoVentaFormPage';
-import NotasCreditoFiscalListPage from '../pages/Ventas/NotasCreditoFiscal/NotasCreditoFiscalListPage';
-import NotaCreditoFiscalDetailPage from '../pages/Ventas/NotasCreditoFiscal/NotaCreditoFiscalDetailPage';
-import NotaCreditoFiscalFormPage from '../pages/Ventas/NotasCreditoFiscal/NotaCreditoFiscalFormPage';
-import DevolucionesVentaListPage from '../pages/Ventas/DevolucionesVenta/DevolucionesVentaListPage';
-import DevolucionVentaDetailPage from '../pages/Ventas/DevolucionesVenta/DevolucionVentaDetailPage';
-import DevolucionVentaFormPage from '../pages/Ventas/DevolucionesVenta/DevolucionVentaFormPage';
-import FacturasFiscalesListPage from '../pages/Ventas/FacturasFiscales/FacturasFiscalesListPage';
-import FacturaFiscalDetailPage from '../pages/Ventas/FacturasFiscales/FacturaFiscalDetailPage';
-import FacturaFiscalFormPage from '../pages/Ventas/FacturasFiscales/FacturaFiscalFormPage';
+
+const PedidosListPage = lazy(() => import('../pages/Ventas/Pedidos/PedidosListPage'));
+const PedidoDetailPage = lazy(() => import('../pages/Ventas/Pedidos/PedidoDetailPage'));
+const PedidoFormPage = lazy(() => import('../pages/Ventas/Pedidos/PedidoFormPage'));
+const CotizacionesListPage = lazy(() => import('../pages/Ventas/Cotizaciones/CotizacionesListPage'));
+const CotizacionDetailPage = lazy(() => import('../pages/Ventas/Cotizaciones/CotizacionDetailPage'));
+const CotizacionFormPage = lazy(() => import('../pages/Ventas/Cotizaciones/CotizacionFormPage'));
+const NotasVentaListPage = lazy(() => import('../pages/Ventas/NotasVenta/NotasVentaListPage'));
+const NotaVentaDetailPage = lazy(() => import('../pages/Ventas/NotasVenta/NotaVentaDetailPage'));
+const NotaVentaFormPage = lazy(() => import('../pages/Ventas/NotasVenta/NotaVentaFormPage'));
+const NotasCreditoVentaListPage = lazy(() => import('../pages/Ventas/NotasCreditoVenta/NotasCreditoVentaListPage'));
+const NotaCreditoVentaDetailPage = lazy(() => import('../pages/Ventas/NotasCreditoVenta/NotaCreditoVentaDetailPage'));
+const NotaCreditoVentaFormPage = lazy(() => import('../pages/Ventas/NotasCreditoVenta/NotaCreditoVentaFormPage'));
+const NotasCreditoFiscalListPage = lazy(() => import('../pages/Ventas/NotasCreditoFiscal/NotasCreditoFiscalListPage'));
+const NotaCreditoFiscalDetailPage = lazy(() => import('../pages/Ventas/NotasCreditoFiscal/NotaCreditoFiscalDetailPage'));
+const NotaCreditoFiscalFormPage = lazy(() => import('../pages/Ventas/NotasCreditoFiscal/NotaCreditoFiscalFormPage'));
+const DevolucionesVentaListPage = lazy(() => import('../pages/Ventas/DevolucionesVenta/DevolucionesVentaListPage'));
+const DevolucionVentaDetailPage = lazy(() => import('../pages/Ventas/DevolucionesVenta/DevolucionVentaDetailPage'));
+const DevolucionVentaFormPage = lazy(() => import('../pages/Ventas/DevolucionesVenta/DevolucionVentaFormPage'));
+const FacturasFiscalesListPage = lazy(() => import('../pages/Ventas/FacturasFiscales/FacturasFiscalesListPage'));
+const FacturaFiscalDetailPage = lazy(() => import('../pages/Ventas/FacturasFiscales/FacturaFiscalDetailPage'));
+const FacturaFiscalFormPage = lazy(() => import('../pages/Ventas/FacturasFiscales/FacturaFiscalFormPage'));
 
 export function ventasRoutes() {
   return (

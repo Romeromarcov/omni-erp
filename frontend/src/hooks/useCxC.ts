@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { get, post } from '../services/api';
-import type { CarteraAging, GestionCobranza, AcuerdoPago } from '../types/cxc';
+import { get } from '../services/api';
+import type { CarteraAging, AcuerdoPago } from '../types/cxc';
 
 // Hook para el dashboard de cartera
 export function useCarteraDashboard() {
@@ -107,7 +107,9 @@ export function useAgenteStream() {
               const parsed = JSON.parse(data);
               if (parsed.text) setOutput(prev => prev + parsed.text);
               if (parsed.error) setError(parsed.error);
-            } catch {}
+            } catch {
+              /* fragmento SSE parcial; se completa en la próxima iteración */
+            }
           }
         }
       }

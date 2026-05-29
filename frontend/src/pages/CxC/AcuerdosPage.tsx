@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Card, CardContent, Typography, Chip, Grid2, TextField, MenuItem, Alert, CircularProgress, Stepper, Step, StepLabel, Table, TableBody, TableCell, TableHead, TableRow, TableContainer } from '@mui/material';
+import { Box, Button, Card, CardContent, Typography, Chip, Grid, TextField, MenuItem, Alert, CircularProgress, Stepper, Step, StepLabel, Table, TableBody, TableCell, TableHead, TableRow, TableContainer } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { post } from '../../services/api';
 import { useAcuerdos } from '../../hooks/useCxC';
@@ -103,63 +103,63 @@ export default function AcuerdosPage() {
             {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
 
             {step === 0 && (
-              <Grid2 container spacing={2}>
-                <Grid2 size={{ xs: 12, sm: 6 }}>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth label="ID Cliente" value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} />
-                </Grid2>
-                <Grid2 size={{ xs: 12, sm: 6 }}>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth label="Nombre Cliente" value={form.cliente_nombre} onChange={e => setForm(f => ({ ...f, cliente_nombre: e.target.value }))} />
-                </Grid2>
-                <Grid2 size={{ xs: 12, sm: 6 }}>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth label="Monto Total" type="number" value={form.monto_total} onChange={e => setForm(f => ({ ...f, monto_total: e.target.value }))} />
-                </Grid2>
-                <Grid2 size={{ xs: 12, sm: 6 }}>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth select label="Moneda" value={form.moneda_codigo} onChange={e => setForm(f => ({ ...f, moneda_codigo: e.target.value }))}>
                     <MenuItem value="USD">USD</MenuItem>
                     <MenuItem value="VES">VES</MenuItem>
                   </TextField>
-                </Grid2>
-                <Grid2 size={{ xs: 12 }}>
+                </Grid>
+                <Grid size={{ xs: 12 }}>
                   <Box display="flex" justifyContent="flex-end" gap={1}>
                     <Button onClick={() => setShowWizard(false)}>Cancelar</Button>
                     <Button variant="contained" onClick={() => setStep(1)} disabled={!form.cliente_id || !form.monto_total}>Siguiente</Button>
                   </Box>
-                </Grid2>
-              </Grid2>
+                </Grid>
+              </Grid>
             )}
 
             {step === 1 && (
-              <Grid2 container spacing={2}>
-                <Grid2 size={{ xs: 12, sm: 6 }}>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth select label="Periodicidad" value={form.periodicidad} onChange={e => setForm(f => ({ ...f, periodicidad: e.target.value as typeof PERIODICIDAD_OPTIONS[number] }))}>
                     {PERIODICIDAD_OPTIONS.map(p => <MenuItem key={p} value={p}>{PERIODICIDAD_LABELS[p]}</MenuItem>)}
                   </TextField>
-                </Grid2>
+                </Grid>
                 {form.periodicidad !== 'unico' && (
-                  <Grid2 size={{ xs: 12, sm: 6 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField fullWidth label="Plazo Total (días)" type="number" value={form.plazo_total_dias} onChange={e => setForm(f => ({ ...f, plazo_total_dias: e.target.value }))} />
-                  </Grid2>
+                  </Grid>
                 )}
-                <Grid2 size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth type="date" label="Fecha Inicio" value={form.fecha_inicio} onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} InputLabelProps={{ shrink: true }} />
-                </Grid2>
+                </Grid>
                 {form.periodicidad !== 'unico' && (
                   <>
-                    <Grid2 size={{ xs: 12, sm: 6 }}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField fullWidth label="Monto por Cuota (opcional)" type="number" value={form.monto_cuota} onChange={e => setForm(f => ({ ...f, monto_cuota: e.target.value, porcentaje_abono: '' }))} />
-                    </Grid2>
-                    <Grid2 size={{ xs: 12, sm: 6 }}>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField fullWidth label="% por Cuota (opcional)" type="number" value={form.porcentaje_abono} onChange={e => setForm(f => ({ ...f, porcentaje_abono: e.target.value, monto_cuota: '' }))} />
-                    </Grid2>
+                    </Grid>
                   </>
                 )}
-                <Grid2 size={{ xs: 12 }}>
+                <Grid size={{ xs: 12 }}>
                   <Box display="flex" justifyContent="flex-end" gap={1}>
                     <Button onClick={() => setStep(0)}>Atrás</Button>
                     <Button variant="contained" onClick={() => setStep(2)}>Siguiente</Button>
                   </Box>
-                </Grid2>
-              </Grid2>
+                </Grid>
+              </Grid>
             )}
 
             {step === 2 && (

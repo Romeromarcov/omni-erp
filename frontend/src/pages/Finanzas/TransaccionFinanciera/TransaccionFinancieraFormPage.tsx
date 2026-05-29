@@ -21,7 +21,7 @@ import PageLayout from '../../../components/PageLayout';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { toList } from '../../../utils/api';
-import { Button, TextField } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 
 const tipoTransaccionOptions = [
@@ -268,64 +268,122 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <h2 style={{ marginBottom: 16 }}>Registrar Transacción</h2>
-      <form onSubmit={handleSubmit} style={{ maxWidth: 400, margin: '0 auto' }}>
-        <TextField fullWidth label="Fecha" name="fecha_hora_transaccion" type="datetime-local" value={form.fecha_hora_transaccion} onChange={handleChange} required />
-        <label style={{ display: 'block', marginBottom: 4 }}>Tipo de Transacción</label>
-        <select name="tipo_transaccion" value={form.tipo_transaccion} onChange={handleChange} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', width: '100%', marginBottom: 16 }}>
-          {tipoTransaccionOptions.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-        <TextField fullWidth label="Monto" name="monto_transaccion" type="number" value={form.monto_transaccion} onChange={handleChange} required />
-
-        {/* Dropdown de monedas activas */}
-        <label style={{ display: 'block', marginBottom: 4 }}>Moneda de Transacción</label>
-        <select name="id_moneda_transaccion" value={form.id_moneda_transaccion} onChange={handleChange} required style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', width: '100%', marginBottom: 16 }}>
-          <option value="">Seleccione una moneda</option>
-          {monedas.map(moneda => (
-            <option key={moneda.id} value={moneda.moneda}>{moneda.moneda_nombre}</option>
-          ))}
-        </select>
-
-        {/* Dropdown de métodos de pago activos */}
-        <label style={{ display: 'block', marginBottom: 4 }}>Método de Pago</label>
-        <select name="id_metodo_pago" value={form.id_metodo_pago} onChange={handleChange} required style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', width: '100%', marginBottom: 16 }}>
-          <option value="">Seleccione método de pago</option>
-          {metodosPago.map(metodo => (
-            <option key={metodo.id} value={metodo.metodo_pago}>{metodo.nombre}</option>
-          ))}
-        </select>
-
-        {/* Moneda base (readonly) */}
-        <TextField fullWidth label="Moneda Base" name="moneda_base" value={monedaBase} InputProps={{ readOnly: true }} style={{ marginBottom: 16 }} />
-
-        {/* Tasa de cambio (editable, validada) */}
-        <TextField fullWidth label="Tasa de Cambio" name="tasa_cambio" type="number" value={tasaCambio} onChange={handleTasaCambio} required inputProps={{ min: "0.0001", step: "0.0001" }} style={{ marginBottom: 16 }} />
-        {tasaError && <div style={{ color: 'red', marginBottom: 8 }}>{tasaError}</div>}
-
-        {/* Monto base (readonly, auto-calculado) */}
-        <TextField fullWidth label="Monto Base" name="monto_base" value={montoBase} InputProps={{ readOnly: true }} style={{ marginBottom: 16 }} />
-
-        <TextField fullWidth label="Referencia" name="referencia_pago" value={form.referencia_pago} onChange={handleChange} />
-        <TextField fullWidth label="Descripción" name="descripcion" value={form.descripcion} onChange={handleChange} />
-        <TextField fullWidth label="Caja" name="id_caja" value={form.id_caja} onChange={handleChange} required />
-        <TextField fullWidth label="Cuenta Bancaria" name="id_cuenta_bancaria" value={form.id_cuenta_bancaria} onChange={handleChange} />
-        <label style={{ display: 'block', marginBottom: 4 }}>Tipo de Documento Asociado</label>
-        <select name="tipo_documento_asociado" value={form.tipo_documento_asociado} onChange={handleChange} required style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', width: '100%', marginBottom: 16 }}>
-          <option value="">Seleccione tipo de documento</option>
-          <option value="COMPRA">Compra</option>
-          <option value="VENTA">Venta</option>
-          <option value="GASTO">Gasto</option>
-          <option value="NOMINA">Nómina</option>
-          <option value="AJUSTE">Ajuste</option>
-        </select>
-        <TextField fullWidth label="Nro. Documento Asociado" name="nro_documento_asociado" value={form.nro_documento_asociado} onChange={handleChange} />
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Registrando...' : 'Registrar transacción'}
-        </Button>
-      </form>
+    <PageLayout maxWidth={480}>
+      <Typography variant="h5" mb={3}>Registrar Transacción</Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          <TextField
+            label="Fecha"
+            name="fecha_hora_transaccion"
+            type="datetime-local"
+            value={form.fecha_hora_transaccion}
+            onChange={handleChange}
+            required
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+          />
+          <TextField
+            select
+            label="Tipo de Transacción"
+            name="tipo_transaccion"
+            value={form.tipo_transaccion}
+            onChange={handleChange}
+            fullWidth
+          >
+            {tipoTransaccionOptions.map(opt => (
+              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label="Monto"
+            name="monto_transaccion"
+            type="number"
+            value={form.monto_transaccion}
+            onChange={handleChange}
+            required
+            fullWidth
+          />
+          <TextField
+            select
+            label="Moneda de Transacción"
+            name="id_moneda_transaccion"
+            value={form.id_moneda_transaccion}
+            onChange={handleChange}
+            required
+            fullWidth
+          >
+            <MenuItem value="">Seleccione una moneda</MenuItem>
+            {monedas.map(moneda => (
+              <MenuItem key={moneda.id} value={moneda.moneda}>{moneda.moneda_nombre}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            label="Método de Pago"
+            name="id_metodo_pago"
+            value={form.id_metodo_pago}
+            onChange={handleChange}
+            required
+            fullWidth
+          >
+            <MenuItem value="">Seleccione método de pago</MenuItem>
+            {metodosPago.map(metodo => (
+              <MenuItem key={metodo.id} value={metodo.metodo_pago}>{metodo.nombre}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label="Moneda Base"
+            name="moneda_base"
+            value={monedaBase}
+            slotProps={{ input: { readOnly: true } }}
+            fullWidth
+          />
+          <TextField
+            label="Tasa de Cambio"
+            name="tasa_cambio"
+            type="number"
+            value={tasaCambio}
+            onChange={handleTasaCambio}
+            required
+            slotProps={{ htmlInput: { min: '0.0001', step: '0.0001' } }}
+            fullWidth
+          />
+          {tasaError && <Alert severity="error">{tasaError}</Alert>}
+          <TextField
+            label="Monto Base"
+            name="monto_base"
+            value={montoBase}
+            slotProps={{ input: { readOnly: true } }}
+            fullWidth
+          />
+          <TextField label="Referencia" name="referencia_pago" value={form.referencia_pago} onChange={handleChange} fullWidth />
+          <TextField label="Descripción" name="descripcion" value={form.descripcion} onChange={handleChange} fullWidth />
+          <TextField label="Caja" name="id_caja" value={form.id_caja} onChange={handleChange} required fullWidth />
+          <TextField label="Cuenta Bancaria" name="id_cuenta_bancaria" value={form.id_cuenta_bancaria} onChange={handleChange} fullWidth />
+          <TextField
+            select
+            label="Tipo de Documento Asociado"
+            name="tipo_documento_asociado"
+            value={form.tipo_documento_asociado}
+            onChange={handleChange}
+            required
+            fullWidth
+          >
+            <MenuItem value="">Seleccione tipo de documento</MenuItem>
+            <MenuItem value="COMPRA">Compra</MenuItem>
+            <MenuItem value="VENTA">Venta</MenuItem>
+            <MenuItem value="GASTO">Gasto</MenuItem>
+            <MenuItem value="NOMINA">Nómina</MenuItem>
+            <MenuItem value="AJUSTE">Ajuste</MenuItem>
+          </TextField>
+          <TextField label="Nro. Documento Asociado" name="nro_documento_asociado" value={form.nro_documento_asociado} onChange={handleChange} fullWidth />
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button type="submit" variant="contained" disabled={loading}>
+              {loading ? 'Registrando...' : 'Registrar transacción'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
 }

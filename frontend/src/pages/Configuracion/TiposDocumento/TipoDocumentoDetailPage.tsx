@@ -1,186 +1,133 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { get, put, post } from '../../../services/api';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { get, post, patch } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
-import type { TipoDocumento } from '../../../types/configuracion';
-import { Button } from '@mui/material';
 
-const TipoDocumentoDetailPage: React.FC = () => {
+interface TipoDocumentoForm {
+  codigo: string;
+  nombre: string;
+  descripcion: string;
+  modulo_origen: string;
+  es_transaccional: boolean;
+  afecta_inventario: boolean;
+  afecta_contabilidad: boolean;
+  prefijo_correlativo: string;
+  longitud_correlativo: number;
+}
+
+const MODULOS = ['VENTAS', 'COMPRAS', 'INVENTARIO', 'FINANZAS', 'CONTABILIDAD', 'RRHH', 'GENERAL'];
+
+export default function TipoDocumentoDetailPage() {
   const { id_tipo_documento } = useParams<{ id_tipo_documento: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<Partial<TipoDocumento>>({
+  const isNew = !id_tipo_documento || id_tipo_documento === 'new';
+
+  const [form, setForm] = useState<TipoDocumentoForm>({
     codigo: '',
     nombre: '',
     descripcion: '',
-    modulo_origen: '',
-    es_transaccional: true,
+    modulo_origen: 'GENERAL',
+    es_transaccional: false,
+    afecta_inventario: false,
+    afecta_contabilidad: false,
     prefijo_correlativo: '',
-    ultimo_correlativo: 0,
+    longitud_correlativo: 8,
   });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const isEditing = !!id_tipo_documento;
-
-  const { data: existingData } = useQuery<TipoDocumento>({
-    queryKey: ['/configuracion_motor/tipos-documento/', id_tipo_documento],
-    queryFn: () => get<TipoDocumento>(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`),
-    enabled: isEditing,
+  const { data: tipoExistente } = useQuery({
+    queryKey: [`/configuracion_motor/tipos-documento/${id_tipo_documento}/`],
+    queryFn: () => get(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`),
+    enabled: !isNew,
   });
 
   useEffect(() => {
-    if (existingData) {
-      setFormData(existingData);
+    if (tipoExistente) {
+      const td = tipoExistente as Partial<TipoDocumentoForm>;
+      setForm((f) => ({ ...f, ...td }));
     }
-  }, [existingData]);
+  }, [tipoExistente]);
 
-  const saveMutation = useMutation({
-    mutationFn: (data: Partial<TipoDocumento>) => {
-      if (isEditing) {
-        return put<TipoDocumento>(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`, data as Record<string, unknown>);
-      }
-      return post<TipoDocumento>('/configuracion_motor/tipos-documento/', data as Record<string, unknown>);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/configuracion_motor/tipos-documento/'] });
-      navigate('/configuracion/tipos-documento');
-    },
-    onError: (error) => {
-      console.error('Error saving tipo documento:', error);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    setError(null);
+    setLoading(true);
+    try {
+      if (isNew) {
+        await post('/configuracion_motor/tipos-documento/', form as unknown as Record<string, unknown>);
+      } else {
+        await patch(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`, form as unknown as Record<string, unknown>);
+      }
+      setSuccess(true);
+      setTimeout(() => navigate('/configuracion/tipos-documento'), 800);
+    } catch {
+      setError('Error al guardar el tipo de documento.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
-  };
-
-  const loading = saveMutation.isPending;
+  const set = <K extends keyof TipoDocumentoForm>(field: K, value: TipoDocumentoForm[K]) =>
+    setForm((f) => ({ ...f, [field]: value }));
 
   return (
-    <PageLayout>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>
-        {isEditing ? 'Editar Tipo de Documento' : 'Nuevo Tipo de Documento'}
-      </h2>
-
-      <form onSubmit={handleSubmit} style={{ maxWidth: 600, margin: '0 auto', background: '#f6fafd', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Código *</label>
-          <input
-            type="text"
-            name="codigo"
-            value={formData.codigo || ''}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
+    <PageLayout maxWidth={640}>
+      <Typography variant="h5" mb={3}>
+        {isNew ? 'Nuevo Tipo de Documento' : 'Editar Tipo de Documento'}
+      </Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          {success && <Alert severity="success">Guardado correctamente.</Alert>}
+          {error && <Alert severity="error">{error}</Alert>}
+          <TextField label="Código" value={form.codigo} onChange={(e) => set('codigo', e.target.value)} required fullWidth />
+          <TextField label="Nombre" value={form.nombre} onChange={(e) => set('nombre', e.target.value)} required fullWidth />
+          <TextField label="Descripción" value={form.descripcion} onChange={(e) => set('descripcion', e.target.value)} fullWidth multiline minRows={3} />
+          <TextField select label="Módulo de origen" value={form.modulo_origen} onChange={(e) => set('modulo_origen', e.target.value)} fullWidth>
+            {MODULOS.map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+          </TextField>
+          <FormControlLabel
+            control={<Checkbox checked={form.es_transaccional} onChange={(e) => set('es_transaccional', e.target.checked)} />}
+            label="Es transaccional"
           />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Nombre *</label>
-          <input
-            type="text"
-            name="nombre"
-            value={formData.nombre || ''}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
+          <FormControlLabel
+            control={<Checkbox checked={form.afecta_inventario} onChange={(e) => set('afecta_inventario', e.target.checked)} />}
+            label="Afecta inventario"
           />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Descripción</label>
-          <textarea
-            name="descripcion"
-            value={formData.descripcion || ''}
-            onChange={handleChange}
-            rows={3}
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
+          <FormControlLabel
+            control={<Checkbox checked={form.afecta_contabilidad} onChange={(e) => set('afecta_contabilidad', e.target.checked)} />}
+            label="Afecta contabilidad"
           />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Módulo Origen *</label>
-          <select
-            name="modulo_origen"
-            value={formData.modulo_origen || ''}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
-          >
-            <option value="">Seleccionar módulo...</option>
-            <option value="VENTAS">Ventas</option>
-            <option value="COMPRAS">Compras</option>
-            <option value="INVENTARIO">Inventario</option>
-            <option value="FINANZAS">Finanzas</option>
-            <option value="NOMINA">Nómina</option>
-            <option value="CONTABILIDAD">Contabilidad</option>
-          </select>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'flex', alignItems: 'center', fontWeight: 600, color: '#1976d2' }}>
-            <input
-              type="checkbox"
-              name="es_transaccional"
-              checked={formData.es_transaccional || false}
-              onChange={handleChange}
-              style={{ marginRight: 8 }}
-            />
-            Es transaccional
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Prefijo Correlativo</label>
-          <input
-            type="text"
-            name="prefijo_correlativo"
-            value={formData.prefijo_correlativo || ''}
-            onChange={handleChange}
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 24 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Último Correlativo</label>
-          <input
+          <TextField label="Prefijo correlativo" value={form.prefijo_correlativo} onChange={(e) => set('prefijo_correlativo', e.target.value)} fullWidth />
+          <TextField
             type="number"
-            name="ultimo_correlativo"
-            value={formData.ultimo_correlativo || 0}
-            onChange={handleChange}
-            min="0"
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
+            label="Longitud correlativo"
+            value={form.longitud_correlativo}
+            onChange={(e) => set('longitud_correlativo', parseInt(e.target.value) || 0)}
+            fullWidth
           />
-        </div>
-
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-          <Button
-            type="button"
-            onClick={() => navigate('/configuracion/tipos-documento')}
-            style={{ background: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: 6, padding: '10px 24px', fontWeight: 500, cursor: 'pointer' }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-            style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 24px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
-          >
-            {loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
-          </Button>
-        </div>
-      </form>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate('/configuracion/tipos-documento')}>Cancelar</Button>
+            <Button type="submit" variant="contained" disabled={loading}>
+              {loading ? 'Guardando…' : 'Guardar'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
-};
-
-export default TipoDocumentoDetailPage;
+}

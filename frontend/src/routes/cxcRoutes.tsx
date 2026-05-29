@@ -1,8 +1,11 @@
+ 
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
-import DashboardCxCPage from '../pages/CxC/DashboardCxCPage';
-import CobranzaPage from '../pages/CxC/CobranzaPage';
-import AcuerdosPage from '../pages/CxC/AcuerdosPage';
-import AgenteCobranzaPage from '../pages/CxC/AgenteCobranzaPage';
+
+const DashboardCxCPage = lazy(() => import('../pages/CxC/DashboardCxCPage'));
+const CobranzaPage = lazy(() => import('../pages/CxC/CobranzaPage'));
+const AcuerdosPage = lazy(() => import('../pages/CxC/AcuerdosPage'));
+const AgenteCobranzaPage = lazy(() => import('../pages/CxC/AgenteCobranzaPage'));
 
 export function cxcRoutes() {
   return (

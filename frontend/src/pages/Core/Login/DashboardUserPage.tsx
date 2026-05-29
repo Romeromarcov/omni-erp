@@ -1,10 +1,10 @@
 import React from 'react';
+import { Box, Button, Card, CardContent, Chip, Typography, Stack } from '@mui/material';
+import { Business, Store, AccountCircle, Logout, SwitchAccount } from '@mui/icons-material';
 import { getEmpresaId } from '../../../utils/empresa';
-import { DashboardCard } from '../../../components/DashboardCard';
 import SugerenciasWidget from '../../../components/SugerenciasWidget';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Paper } from '@mui/material';
 
 interface DashboardPageProps {
   user: {
@@ -21,84 +21,103 @@ interface DashboardPageProps {
 const DashboardUserPage: React.FC<DashboardPageProps> = ({ user, empresa, sucursal, actividades }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+
+  const handleLogout = () => { logout(); navigate('/login'); };
   const handleProfile = () => {
     const id_empresa = getEmpresaId();
-    if (id_empresa) {
-      navigate(`/empresas/${id_empresa}/usuarios/${user.id}`);
-    }
+    if (id_empresa) navigate(`/empresas/${id_empresa}/usuarios/${user.id}`);
   };
-  const handleChangeEmpresaSucursal = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleChangeEmpresaSucursal = () => { logout(); navigate('/login'); };
+
+  const empresaNombre = empresa.nombre_legal || empresa.nombre_comercial || empresa.nombre || '—';
+
   return (
-    <div className="vertical-center">
-      <div className="centered-container" style={{ background: 'linear-gradient(135deg, #e3f0ff 0%, #f6fafd 100%)', padding: '24px 0' }}>
-        <div style={{
-          width: '100%',
-          maxWidth: 900,
-          background: '#fff',
-          borderRadius: 16,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-          padding: '32px 24px',
-          margin: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 24
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginBottom: 8 }}>
-            <button onClick={handleProfile} style={{ padding: '8px 16px', borderRadius: 6, background: '#1976d2', color: '#fff', border: 'none', cursor: 'pointer' }}>Perfil</button>
-            <button onClick={handleChangeEmpresaSucursal} style={{ padding: '8px 16px', borderRadius: 6, background: '#e3f0ff', color: '#1976d2', border: 'none', cursor: 'pointer' }}>Cambiar empresa/sucursal</button>
-            <button onClick={handleLogout} style={{ padding: '8px 16px', borderRadius: 6, background: '#d32f2f', color: '#fff', border: 'none', cursor: 'pointer' }}>Cerrar sesión</button>
-          </div>
-          <h2 style={{ textAlign: 'center', marginBottom: 8, color: '#1976d2' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 960, mx: 'auto' }}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={1}>
+        <Box>
+          <Typography variant="h5" color="primary">
             Bienvenido, {user.first_name} {user.last_name}
-          </h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
-            <DashboardCard title="Empresa" value={empresa.nombre_legal || empresa.nombre || ''} />
-            <DashboardCard title="Sucursal" value={sucursal.nombre} />
-            <Paper sx={{ p: 2 }}>
-              <h4>Roles asignados</h4>
-              <ul style={{ paddingLeft: 0, margin: 0 }}>
-                {(user.roles || []).map((role) => (
-                  <li key={role.id} style={{ listStyle: 'none', marginBottom: 4 }}>
-                    <span style={{ background: '#e3f0ff', borderRadius: 4, padding: '2px 8px' }}>{role.name}</span>
-                  </li>
-                ))}
-              </ul>
-            </Paper>
-          </div>
-          <Paper sx={{ p: 2 }}>
-            <h4>Actividades recientes</h4>
-            <ul style={{ paddingLeft: 0, margin: 0 }}>
-              {actividades.map((act) => (
-                <li key={act.id} style={{ listStyle: 'none', marginBottom: 4 }}>
-                  <span style={{ color: '#1976d2', fontWeight: 500 }}>{act.descripcion}</span> - {act.fecha}
-                </li>
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {empresaNombre} · {sucursal.nombre}
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" size="small" startIcon={<AccountCircle />} onClick={handleProfile}>
+            Perfil
+          </Button>
+          <Button variant="outlined" size="small" startIcon={<SwitchAccount />} onClick={handleChangeEmpresaSucursal}>
+            Cambiar empresa
+          </Button>
+          <Button variant="contained" color="error" size="small" startIcon={<Logout />} onClick={handleLogout}>
+            Salir
+          </Button>
+        </Stack>
+      </Box>
+
+      {/* Info cards */}
+      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
+        <Card sx={{ flex: 1, minWidth: 180 }}>
+          <CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+              <Business fontSize="small" color="primary" />
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>EMPRESA</Typography>
+            </Stack>
+            <Typography variant="subtitle1">{empresaNombre}</Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ flex: 1, minWidth: 180 }}>
+          <CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+              <Store fontSize="small" color="primary" />
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>SUCURSAL</Typography>
+            </Stack>
+            <Typography variant="subtitle1">{sucursal.nombre}</Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ flex: 1, minWidth: 180 }}>
+          <CardContent>
+            <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={1}>ROLES</Typography>
+            <Box display="flex" gap={0.5} flexWrap="wrap">
+              {(user.roles || []).map(role => (
+                <Chip key={role.id} label={role.name} size="small" color="primary" variant="outlined" />
               ))}
-            </ul>
-          </Paper>
-          <Paper sx={{ p: 2 }}>
-            <h4>Módulos y páginas</h4>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {/* Aquí puedes agregar enlaces a otros módulos */}
-              <button style={{ padding: '8px 16px', borderRadius: 6, background: '#e3f0ff', color: '#1976d2', border: 'none', cursor: 'pointer' }} disabled>Ventas</button>
-              <button style={{ padding: '8px 16px', borderRadius: 6, background: '#e3f0ff', color: '#1976d2', border: 'none', cursor: 'pointer' }} disabled>Compras</button>
-              <button style={{ padding: '8px 16px', borderRadius: 6, background: '#e3f0ff', color: '#1976d2', border: 'none', cursor: 'pointer' }} disabled>Inventario</button>
-              {/* Agrega más módulos aquí */}
-            </div>
-          </Paper>
-          <Paper sx={{ p: 2 }}>
-            <SugerenciasWidget />
-          </Paper>
-        </div>
-      </div>
-    </div>
+              {(!user.roles || user.roles.length === 0) && (
+                <Typography variant="body2" color="text.secondary">Sin roles asignados</Typography>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Recent activity */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="subtitle1" mb={1.5}>Actividad reciente</Typography>
+          {actividades.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">Sin actividad reciente.</Typography>
+          ) : (
+            <Stack spacing={1}>
+              {actividades.map(act => (
+                <Box key={act.id} display="flex" justifyContent="space-between">
+                  <Typography variant="body2">{act.descripcion}</Typography>
+                  <Typography variant="caption" color="text.secondary">{act.fecha}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* AI suggestions */}
+      <Card>
+        <CardContent>
+          <SugerenciasWidget />
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
-export default DashboardUserPage;
 
+export default DashboardUserPage;

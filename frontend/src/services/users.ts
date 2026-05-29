@@ -7,6 +7,8 @@ import { get, post, put } from './api';
 export interface EmpresaRef {
   id_empresa: string;
   nombre: string;
+  nombre_legal?: string;
+  nombre_comercial?: string;
 }
 
 export interface SucursalRef {

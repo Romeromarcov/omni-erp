@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Box, Button, MenuItem, Stack, TextField } from '@mui/material';
 import { fetchAuditLogs } from '../../../services/auditoria';
 import { fetchEmpresas } from '../../../services/empresas';
 import { fetchUsuarios } from '../../../services/users';
 import type { Usuario } from '../../../services/users';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
 // Types
 export type AuditLog = {
@@ -111,74 +113,56 @@ const AuditLogListPage: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const columns: Column<AuditLog>[] = [
+    { key: 'fecha', header: 'Fecha/Hora', render: (l) => l.fecha_hora_accion },
+    { key: 'tipo', header: 'Tipo Evento', render: (l) => l.tipo_evento },
+    { key: 'modulo', header: 'Módulo', render: (l) => l.modulo_afectado },
+    { key: 'modelo', header: 'Modelo', render: (l) => l.nombre_modelo_afectado },
+    { key: 'id_registro', header: 'ID Registro', render: (l) => l.id_registro_afectado },
+    { key: 'descripcion', header: 'Descripción', render: (l) => l.descripcion_accion },
+    { key: 'resultado', header: 'Resultado', render: (l) => l.resultado_evento },
+    { key: 'usuario', header: 'Usuario', render: (l) => typeof l.id_usuario === 'object' && l.id_usuario !== null ? l.id_usuario.username : usuarios.find(u => u.id === String(l.id_usuario))?.username || '-' },
+    { key: 'empresa', header: 'Empresa', render: (l) => typeof l.id_empresa === 'object' && l.id_empresa !== null ? l.id_empresa.nombre_legal : empresas.find(e => e.id_empresa === l.id_empresa)?.nombre_legal || '-' },
+  ];
+
   return (
-    <PageLayout>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Registro de Auditoría</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <select
-          value={selectedEmpresa || efectiveEmpresa}
-          onChange={e => setSelectedEmpresa(e.target.value)}
-          style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 180 }}
-        >
-          {empresas.map(e => (
-            <option key={e.id_empresa} value={e.id_empresa}>{e.nombre_legal || e.id_empresa}</option>
-          ))}
-        </select>
-        <input placeholder="Usuario" value={filtroUsuario} onChange={e => setFiltroUsuario(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 120 }} />
-        <input placeholder="Tipo evento" value={filtroTipoEvento} onChange={e => setFiltroTipoEvento(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 120 }} />
-        <input placeholder="Módulo" value={filtroModulo} onChange={e => setFiltroModulo(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 120 }} />
-        <input placeholder="Modelo" value={filtroModelo} onChange={e => setFiltroModelo(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 120 }} />
-        <input placeholder="Empresa" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 120 }} />
-        <input placeholder="Resultado" value={filtroResultado} onChange={e => setFiltroResultado(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 120 }} />
-        <input type="date" value={filtroFechaInicio} onChange={e => setFiltroFechaInicio(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc' }} />
-        <input type="date" value={filtroFechaFin} onChange={e => setFiltroFechaFin(e.target.value)} style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc' }} />
-        <button onClick={exportCSV} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Exportar CSV</button>
-      </div>
-      {loading ? (
-        <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
-      ) : errorMsg ? (
-        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32, fontWeight: 500 }}>{errorMsg}</div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#f6fafd', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <thead>
-              <tr style={{ background: '#e3f0ff' }}>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Fecha/Hora</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Tipo Evento</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Módulo</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Modelo</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>ID Registro</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Descripción</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Resultado</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Usuario</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Empresa</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: 32, color: '#888' }}>No se encontraron registros.</td>
-                </tr>
-              ) : (
-                filteredLogs.map(l => (
-                  <tr key={l.id} style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}>
-                    <td style={{ padding: '10px 8px' }}>{l.fecha_hora_accion}</td>
-                    <td style={{ padding: '10px 8px' }}>{l.tipo_evento}</td>
-                    <td style={{ padding: '10px 8px' }}>{l.modulo_afectado}</td>
-                    <td style={{ padding: '10px 8px' }}>{l.nombre_modelo_afectado}</td>
-                    <td style={{ padding: '10px 8px' }}>{l.id_registro_afectado}</td>
-                    <td style={{ padding: '10px 8px' }}>{l.descripcion_accion}</td>
-                    <td style={{ padding: '10px 8px' }}>{l.resultado_evento}</td>
-                    <td style={{ padding: '10px 8px' }}>{typeof l.id_usuario === 'object' && l.id_usuario !== null ? l.id_usuario.username : usuarios.find(u => u.id === String(l.id_usuario))?.username || '-'}</td>
-                    <td style={{ padding: '10px 8px' }}>{typeof l.id_empresa === 'object' && l.id_empresa !== null ? l.id_empresa.nombre_legal : empresas.find(e => e.id_empresa === l.id_empresa)?.nombre_legal || '-'}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </PageLayout>
+    <PageContainer>
+      <PageHeader
+        title="Registro de Auditoría"
+        actions={<Button variant="contained" onClick={exportCSV}>Exportar CSV</Button>}
+      />
+      <Box sx={{ mb: 2 }}>
+        <Stack direction="row" flexWrap="wrap" gap={1.5} useFlexGap>
+          <TextField
+            select
+            size="small"
+            label="Empresa"
+            value={selectedEmpresa || efectiveEmpresa}
+            onChange={e => setSelectedEmpresa(e.target.value)}
+            sx={{ minWidth: 180 }}
+          >
+            {empresas.map(e => (
+              <MenuItem key={e.id_empresa} value={e.id_empresa}>{e.nombre_legal || e.id_empresa}</MenuItem>
+            ))}
+          </TextField>
+          <TextField size="small" placeholder="Usuario" value={filtroUsuario} onChange={e => setFiltroUsuario(e.target.value)} sx={{ minWidth: 120 }} />
+          <TextField size="small" placeholder="Tipo evento" value={filtroTipoEvento} onChange={e => setFiltroTipoEvento(e.target.value)} sx={{ minWidth: 120 }} />
+          <TextField size="small" placeholder="Módulo" value={filtroModulo} onChange={e => setFiltroModulo(e.target.value)} sx={{ minWidth: 120 }} />
+          <TextField size="small" placeholder="Modelo" value={filtroModelo} onChange={e => setFiltroModelo(e.target.value)} sx={{ minWidth: 120 }} />
+          <TextField size="small" placeholder="Empresa" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)} sx={{ minWidth: 120 }} />
+          <TextField size="small" placeholder="Resultado" value={filtroResultado} onChange={e => setFiltroResultado(e.target.value)} sx={{ minWidth: 120 }} />
+          <TextField size="small" type="date" value={filtroFechaInicio} onChange={e => setFiltroFechaInicio(e.target.value)} InputLabelProps={{ shrink: true }} />
+          <TextField size="small" type="date" value={filtroFechaFin} onChange={e => setFiltroFechaFin(e.target.value)} InputLabelProps={{ shrink: true }} />
+        </Stack>
+      </Box>
+      <DataTable
+        columns={columns}
+        rows={filteredLogs}
+        getRowKey={(l) => String(l.id)}
+        loading={loading}
+        emptyMessage={errorMsg || 'No se encontraron registros.'}
+      />
+    </PageContainer>
   );
 };
 

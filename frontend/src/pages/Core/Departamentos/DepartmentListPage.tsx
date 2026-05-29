@@ -1,155 +1,78 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEmpresaId } from '../../../utils/empresa';
-import { toList } from '../../../utils/api';
-import { get } from '../../../services/api';
-import { useQuery } from '@tanstack/react-query';
-import PageLayout from '../../../components/PageLayout';
+import { Button, TextField } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { useApiQuery } from '../../../hooks/useApiQuery';
+import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
 interface Departamento {
   id_departamento: string;
   nombre_departamento: string;
-  descripcion: string;
+  descripcion?: string;
   activo: boolean;
 }
 
-type DepartamentoApiResponse = Departamento[] | { results: Departamento[]; count: number };
+type DepartamentosApiResponse = Departamento[] | { results: Departamento[] };
 
-const DepartmentListPage: React.FC = () => {
-  let { id_empresa } = useParams<{ id_empresa: string }>();
-  if (!id_empresa) id_empresa = getEmpresaId() || '';
-  const [search, setSearch] = useState('');
+export default function DepartmentListPage() {
+  const { id_empresa } = useParams<{ id_empresa: string }>();
   const navigate = useNavigate();
+  const [search, setSearch] = useState('');
 
-  const { data: departamentos = [], isLoading, isError } = useQuery<
-    DepartamentoApiResponse,
-    Error,
-    Departamento[]
-  >({
-    queryKey: ['/core/departamentos/', id_empresa],
-    queryFn: () => get<DepartamentoApiResponse>(`/core/departamentos/?id_empresa=${id_empresa}`),
-    select: toList,
-    enabled: !!id_empresa,
-  });
-
-  const filtered = departamentos.filter(
-    dep =>
-      dep &&
-      (dep.nombre_departamento?.toLowerCase().includes(search.toLowerCase()) ||
-        dep.descripcion?.toLowerCase().includes(search.toLowerCase())),
+  const { data: departamentos = [], isLoading } = useApiQuery<DepartamentosApiResponse>(
+    `/core/departamentos/?id_empresa=${id_empresa}`,
+    {
+      enabled: !!id_empresa,
+      select: (raw): Departamento[] => (Array.isArray(raw) ? raw : raw.results ?? []),
+    },
   );
+
+  const filtered = (departamentos as Departamento[]).filter((d) =>
+    d.nombre_departamento.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const columns: Column<Departamento>[] = [
+    { key: 'nombre', header: 'Nombre', render: (d) => d.nombre_departamento },
+    { key: 'descripcion', header: 'Descripción', render: (d) => d.descripcion || '—' },
+    { key: 'activo', header: 'Activo', render: (d) => <StatusChip value={d.activo} /> },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      align: 'right',
+      render: (d) => (
+        <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(`/departamentos/${d.id_departamento}`); }}>
+          Ver / Editar
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <PageLayout maxWidth={900}>
-      <h2
-        style={{ textAlign: 'center', color: '#1a237e', fontWeight: 700, fontSize: 26, marginBottom: 24 }}
-      >
-        Departamentos
-      </h2>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24, gap: 16 }}>
-        <input
-          type="text"
-          placeholder="Buscar departamento..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            padding: 10,
-            borderRadius: 8,
-            border: '1px solid #cfd8dc',
-            width: 260,
-            fontSize: '1rem',
-            background: '#f6fafd',
-          }}
-        />
-        <button
-          onClick={() => navigate(`/empresas/${id_empresa}/departamentos/new`)}
-          style={{
-            fontWeight: 500,
-            background: '#1976d2',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '8px 24px',
-            fontSize: 15,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(25,118,210,0.08)',
-          }}
-        >
-          + Nuevo departamento
-        </button>
-      </div>
-
-      {isLoading ? (
-        <p style={{ textAlign: 'center', color: '#888' }}>Cargando...</p>
-      ) : isError ? (
-        <p style={{ textAlign: 'center', color: '#d32f2f' }}>Error al cargar departamentos.</p>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              background: '#f6fafd',
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            }}
-          >
-            <thead>
-              <tr style={{ background: '#e3f0ff' }}>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Nombre</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Descripción</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Activo</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: 32, color: '#888' }}>
-                    No se encontraron departamentos.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((dep, idx) => (
-                  <tr
-                    key={dep.id_departamento || idx}
-                    style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}
-                  >
-                    <td style={{ padding: '10px 8px' }}>{dep.nombre_departamento}</td>
-                    <td style={{ padding: '10px 8px' }}>{dep.descripcion}</td>
-                    <td style={{ padding: '10px 8px' }}>
-                      {dep.activo ? (
-                        <span style={{ color: '#1976d2', fontWeight: 600 }}>Sí</span>
-                      ) : (
-                        <span style={{ color: '#d32f2f', fontWeight: 600 }}>No</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '10px 8px' }}>
-                      <button
-                        onClick={() => navigate(`/departamentos/${dep.id_departamento}`)}
-                        style={{
-                          background: '#e3eafc',
-                          color: '#1976d2',
-                          border: 'none',
-                          borderRadius: 6,
-                          padding: '6px 18px',
-                          fontWeight: 500,
-                          fontSize: 14,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Ver/Editar
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </PageLayout>
+    <PageContainer>
+      <PageHeader
+        title="Departamentos"
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate(`/empresas/${id_empresa}/departamentos/new`)}>
+            Nuevo departamento
+          </Button>
+        }
+      />
+      <TextField
+        size="small"
+        placeholder="Buscar departamento…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mb: 2, width: { xs: '100%', sm: 320 } }}
+      />
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        getRowKey={(d) => d.id_departamento}
+        loading={isLoading}
+        emptyMessage="No se encontraron departamentos."
+        onRowClick={(d) => navigate(`/departamentos/${d.id_departamento}`)}
+      />
+    </PageContainer>
   );
-};
-
-export default DepartmentListPage;
+}

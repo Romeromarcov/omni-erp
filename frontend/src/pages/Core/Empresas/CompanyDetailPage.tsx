@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
+import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 interface Empresa {
   id_empresa: string;
@@ -64,7 +65,7 @@ const CompanyDetailPage: React.FC = () => {
     onError: () => alert('Error al actualizar'),
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!localEmpresa) return;
     const { name, value } = e.target;
     if (name === 'activo') {
@@ -81,50 +82,44 @@ const CompanyDetailPage: React.FC = () => {
     updateMutation.mutate(localEmpresa);
   };
 
-  if (loadingEmpresa || !localEmpresa) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
+  if (loadingEmpresa || !localEmpresa) {
+    return (
+      <PageLayout maxWidth={560}>
+        <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
+      </PageLayout>
+    );
+  }
 
   return (
-    <PageLayout maxWidth={480}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Detalle de empresa</h2>
+    <PageLayout maxWidth={560}>
+      <Typography variant="h5" mb={3}>Detalle de empresa</Typography>
       {(!monedas || monedas.length === 0) && (
-        <div style={{ color: '#d32f2f', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>
-          No se encontraron monedas disponibles.
-        </div>
+        <Alert severity="warning" sx={{ mb: 2 }}>No se encontraron monedas disponibles.</Alert>
       )}
-      <form style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre legal
-          <input name="nombre_legal" value={localEmpresa.nombre_legal} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Nombre comercial
-          <input name="nombre_comercial" value={localEmpresa.nombre_comercial} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Identificador fiscal
-          <input name="identificador_fiscal" value={localEmpresa.identificador_fiscal} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Email contacto
-          <input name="email_contacto" value={localEmpresa.email_contacto} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }} />
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Activo
-          <select name="activo" value={localEmpresa.activo ? 'true' : 'false'} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }}>
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-        <label style={{ fontWeight: 500, color: '#333', marginBottom: 2 }}>Moneda base
-          <select name="id_moneda_base" value={localEmpresa.id_moneda_base?.toString() ?? ''} onChange={handleChange} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cfd8dc', marginTop: 4, fontSize: 15 }}>
-            <option value="">Seleccione moneda</option>
+      <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+        <Stack spacing={2}>
+          <TextField name="nombre_legal" label="Nombre legal" value={localEmpresa.nombre_legal} onChange={handleChange} fullWidth />
+          <TextField name="nombre_comercial" label="Nombre comercial" value={localEmpresa.nombre_comercial} onChange={handleChange} fullWidth />
+          <TextField name="identificador_fiscal" label="Identificador fiscal" value={localEmpresa.identificador_fiscal} onChange={handleChange} fullWidth />
+          <TextField name="email_contacto" type="email" label="Email contacto" value={localEmpresa.email_contacto} onChange={handleChange} fullWidth />
+          <TextField select name="activo" label="Activo" value={localEmpresa.activo ? 'true' : 'false'} onChange={handleChange} fullWidth>
+            <MenuItem value="true">Sí</MenuItem>
+            <MenuItem value="false">No</MenuItem>
+          </TextField>
+          <TextField select name="id_moneda_base" label="Moneda base" value={localEmpresa.id_moneda_base?.toString() ?? ''} onChange={handleChange} fullWidth>
+            <MenuItem value="">Seleccione moneda</MenuItem>
             {(Array.isArray(monedas) ? monedas : []).map(moneda => (
-              <option key={moneda.id_moneda} value={moneda.id_moneda}>
-                {moneda.nombre} ({moneda.codigo_iso})
-              </option>
+              <MenuItem key={moneda.id_moneda} value={moneda.id_moneda}>{moneda.nombre} ({moneda.codigo_iso})</MenuItem>
             ))}
-          </select>
-        </label>
-        <button type="button" onClick={handleSave} disabled={updateMutation.isPending} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 10, cursor: 'pointer', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }}>Guardar cambios</button>
-      </form>
-      <div style={{ marginTop: 28, textAlign: 'center' }}>
-        <button onClick={() => navigate('/empresas')} style={{ background: '#e3eafc', color: '#1976d2', border: 'none', borderRadius: 6, padding: '8px 24px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}>Volver a la lista</button>
-      </div>
+          </TextField>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate('/empresas')}>Volver a la lista</Button>
+            <Button type="submit" variant="contained" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
 };

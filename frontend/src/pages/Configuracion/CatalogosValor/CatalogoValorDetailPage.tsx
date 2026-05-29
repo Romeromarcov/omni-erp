@@ -1,157 +1,85 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { get, put, post } from '../../../services/api';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Alert, Box, Button, Checkbox, FormControlLabel, Stack, TextField, Typography } from '@mui/material';
+import { get, post, patch } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
-import type { CatalogoValor } from '../../../types/configuracion';
-import { Button } from '@mui/material';
 
-const CatalogoValorDetailPage: React.FC = () => {
+export default function CatalogoValorDetailPage() {
   const { id_catalogo_valor } = useParams<{ id_catalogo_valor: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<Partial<CatalogoValor>>({
+  const isNew = !id_catalogo_valor || id_catalogo_valor === 'new';
+
+  const [form, setForm] = useState({
     codigo_catalogo: '',
     valor: '',
     descripcion: '',
     orden: 0,
     activo: true,
   });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const isEditing = !!id_catalogo_valor;
-
-  const { data: existingData } = useQuery<CatalogoValor>({
-    queryKey: ['/configuracion_motor/catalogos-valor/', id_catalogo_valor],
-    queryFn: () => get<CatalogoValor>(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`),
-    enabled: isEditing,
+  const { data: catalogoExistente } = useQuery({
+    queryKey: [`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`],
+    queryFn: () => get(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`),
+    enabled: !isNew,
   });
 
   useEffect(() => {
-    if (existingData) {
-      setFormData(existingData);
+    if (catalogoExistente) {
+      const c = catalogoExistente as Partial<typeof form>;
+      setForm((f) => ({ ...f, ...c }));
     }
-  }, [existingData]);
+  }, [catalogoExistente]);
 
-  const saveMutation = useMutation({
-    mutationFn: (data: Partial<CatalogoValor>) => {
-      if (isEditing) {
-        return put<CatalogoValor>(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`, data as Record<string, unknown>);
-      }
-      return post<CatalogoValor>('/configuracion_motor/catalogos-valor/', data as Record<string, unknown>);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/configuracion_motor/catalogos-valor/'] });
-      navigate('/configuracion/catalogos-valor');
-    },
-    onError: (error) => {
-      console.error('Error saving catalogo valor:', error);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    setError(null);
+    setLoading(true);
+    try {
+      if (isNew) {
+        await post('/configuracion_motor/catalogos-valor/', form);
+      } else {
+        await patch(`/configuracion_motor/catalogos-valor/${id_catalogo_valor}/`, form);
+      }
+      setSuccess(true);
+      setTimeout(() => navigate('/configuracion/catalogos-valor'), 800);
+    } catch {
+      setError('Error al guardar el valor de catálogo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : (type === 'number' ? Number(value) : value)
-    }));
-  };
-
-  const loading = saveMutation.isPending;
+  const set = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) =>
+    setForm((f) => ({ ...f, [field]: value }));
 
   return (
-    <PageLayout>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>
-        {isEditing ? 'Editar Valor de Catálogo' : 'Nuevo Valor de Catálogo'}
-      </h2>
-
-      <form onSubmit={handleSubmit} style={{ maxWidth: 600, margin: '0 auto', background: '#f6fafd', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Código del Catálogo *</label>
-          <input
-            type="text"
-            name="codigo_catalogo"
-            value={formData.codigo_catalogo || ''}
-            onChange={handleChange}
-            required
-            placeholder="Ej: ESTADO_CIVIL, TIPO_DOCUMENTO, etc."
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
+    <PageLayout maxWidth={640}>
+      <Typography variant="h5" mb={3}>{isNew ? 'Nuevo Valor de Catálogo' : 'Editar Valor de Catálogo'}</Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          {success && <Alert severity="success">Guardado correctamente.</Alert>}
+          {error && <Alert severity="error">{error}</Alert>}
+          <TextField label="Código del catálogo" value={form.codigo_catalogo} onChange={(e) => set('codigo_catalogo', e.target.value)} required fullWidth />
+          <TextField label="Valor" value={form.valor} onChange={(e) => set('valor', e.target.value)} required fullWidth />
+          <TextField label="Descripción" value={form.descripcion} onChange={(e) => set('descripcion', e.target.value)} fullWidth multiline minRows={2} />
+          <TextField type="number" label="Orden" value={form.orden} onChange={(e) => set('orden', parseInt(e.target.value) || 0)} fullWidth />
+          <FormControlLabel
+            control={<Checkbox checked={form.activo} onChange={(e) => set('activo', e.target.checked)} />}
+            label="Activo"
           />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Valor *</label>
-          <input
-            type="text"
-            name="valor"
-            value={formData.valor || ''}
-            onChange={handleChange}
-            required
-            placeholder="Ej: SOLTERO, CEDULA, ACTIVO, etc."
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Descripción</label>
-          <textarea
-            name="descripcion"
-            value={formData.descripcion || ''}
-            onChange={handleChange}
-            rows={3}
-            placeholder="Descripción opcional del valor"
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1976d2' }}>Orden</label>
-          <input
-            type="number"
-            name="orden"
-            value={formData.orden || 0}
-            onChange={handleChange}
-            min="0"
-            style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', fontSize: '1rem' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 24 }}>
-          <label style={{ display: 'flex', alignItems: 'center', fontWeight: 600, color: '#1976d2' }}>
-            <input
-              type="checkbox"
-              name="activo"
-              checked={formData.activo || false}
-              onChange={handleChange}
-              style={{ marginRight: 8 }}
-            />
-            Activo
-          </label>
-        </div>
-
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-          <Button
-            type="button"
-            onClick={() => navigate('/configuracion/catalogos-valor')}
-            style={{ background: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: 6, padding: '10px 24px', fontWeight: 500, cursor: 'pointer' }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-            style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 24px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
-          >
-            {loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
-          </Button>
-        </div>
-      </form>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate('/configuracion/catalogos-valor')}>Cancelar</Button>
+            <Button type="submit" variant="contained" disabled={loading}>
+              {loading ? 'Guardando…' : 'Guardar'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
-};
-
-export default CatalogoValorDetailPage;
+}

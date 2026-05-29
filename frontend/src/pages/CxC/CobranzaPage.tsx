@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Card, CardContent, Typography, Chip, Grid2, TextField, MenuItem, Alert, CircularProgress, Paper } from '@mui/material';
+import { Box, Button, Card, CardContent, Typography, Chip, Grid, TextField, MenuItem, Alert, CircularProgress, Paper } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { post } from '../../services/api';
 import { useApi } from '../../hooks/useApi';
@@ -67,44 +67,44 @@ export default function CobranzaPage() {
           <CardContent>
             <Typography variant="subtitle1" fontWeight="bold" mb={2}>Registrar Gestión</Typography>
             {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
-            <Grid2 container spacing={2}>
-              <Grid2 size={{ xs: 12, sm: 6 }}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="ID Cliente" value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} />
-              </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6 }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Nombre Cliente" value={form.cliente_nombre} onChange={e => setForm(f => ({ ...f, cliente_nombre: e.target.value }))} />
-              </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6 }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Ref. Orden/Factura" value={form.orden_ref} onChange={e => setForm(f => ({ ...f, orden_ref: e.target.value }))} />
-              </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6 }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth select label="Canal" value={form.canal} onChange={e => setForm(f => ({ ...f, canal: e.target.value }))}>
                   {CANAL_OPTIONS.map(c => <MenuItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</MenuItem>)}
                 </TextField>
-              </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6 }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth select label="Resultado" value={form.resultado} onChange={e => setForm(f => ({ ...f, resultado: e.target.value }))}>
                   {RESULTADO_OPTIONS.map(r => <MenuItem key={r} value={r}>{RESULTADO_LABELS[r]}</MenuItem>)}
                 </TextField>
-              </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6 }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth type="date" label="Fecha Gestión" value={form.fecha_gestion} onChange={e => setForm(f => ({ ...f, fecha_gestion: e.target.value }))} InputLabelProps={{ shrink: true }} />
-              </Grid2>
+              </Grid>
               {form.resultado === 'promesa_pago' && (
-                <Grid2 size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth type="date" label="Próxima Acción" value={form.proxima_accion} onChange={e => setForm(f => ({ ...f, proxima_accion: e.target.value }))} InputLabelProps={{ shrink: true }} />
-                </Grid2>
+                </Grid>
               )}
-              <Grid2 size={{ xs: 12 }}>
+              <Grid size={{ xs: 12 }}>
                 <TextField fullWidth multiline rows={3} label="Notas" value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} />
-              </Grid2>
-              <Grid2 size={{ xs: 12 }}>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
                 <Button variant="contained" onClick={handleSubmit} disabled={saving}>
                   {saving ? <CircularProgress size={20} /> : 'Guardar Gestión'}
                 </Button>
                 <Button sx={{ ml: 1 }} onClick={() => setShowForm(false)}>Cancelar</Button>
-              </Grid2>
-            </Grid2>
+              </Grid>
+            </Grid>
           </CardContent>
         </Card>
       )}

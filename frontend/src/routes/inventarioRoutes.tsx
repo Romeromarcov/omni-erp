@@ -1,8 +1,11 @@
+ 
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
-import InventarioDashboardPage from '../pages/Inventario/InventarioDashboardPage';
-import StockActualPage from '../pages/Inventario/StockActualPage';
-import KardexPage from '../pages/Inventario/KardexPage';
-import AjusteInventarioPage from '../pages/Inventario/AjusteInventarioPage';
+
+const InventarioDashboardPage = lazy(() => import('../pages/Inventario/InventarioDashboardPage'));
+const StockActualPage = lazy(() => import('../pages/Inventario/StockActualPage'));
+const KardexPage = lazy(() => import('../pages/Inventario/KardexPage'));
+const AjusteInventarioPage = lazy(() => import('../pages/Inventario/AjusteInventarioPage'));
 
 export function inventarioRoutes() {
   return (

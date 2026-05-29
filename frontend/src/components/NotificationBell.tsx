@@ -1,4 +1,17 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Badge,
+  Box,
+  Divider,
+  IconButton,
+  List,
+  ListItemButton,
+  Popover,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutlined';
 import { fetcher } from '../services/api';
 
 interface Notificacion {
@@ -14,30 +27,26 @@ interface Notificacion {
 
 const POLL_INTERVAL_MS = 30_000;
 
-const BELL_ICON = '🔔';
-
 const NotificationBell: React.FC = () => {
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
-  const [open, setOpen] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchNoLeidas = useCallback(async () => {
     try {
       const data = await fetcher<Notificacion[]>(
-        '/notificaciones/notificaciones/mis-notificaciones/?no_leidas=true'
+        '/notificaciones/notificaciones/mis-notificaciones/?no_leidas=true',
       );
       setNotificaciones(Array.isArray(data) ? data : []);
     } catch {
-      // silencioso si no hay conectividad
+      /* silencioso si no hay conectividad */
     }
   }, []);
 
   useEffect(() => {
     fetchNoLeidas();
-    intervalRef.current = setInterval(fetchNoLeidas, POLL_INTERVAL_MS);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    const interval = setInterval(fetchNoLeidas, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, [fetchNoLeidas]);
 
   const marcarLeida = async (id: string) => {
@@ -46,133 +55,71 @@ const NotificationBell: React.FC = () => {
         method: 'PATCH',
         body: JSON.stringify({}),
       });
-      setNotificaciones(prev => prev.filter(n => n.id_notificacion !== id));
+      setNotificaciones((prev) => prev.filter((n) => n.id_notificacion !== id));
     } catch {
-      // ignorar errores de red
+      /* ignorar errores de red */
+    }
+  };
+
+  const handleClick = (n: Notificacion) => {
+    marcarLeida(n.id_notificacion);
+    if (n.url_accion) {
+      navigate(n.url_accion);
+      setAnchorEl(null);
     }
   };
 
   const count = notificaciones.length;
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        aria-label={`Notificaciones${count > 0 ? ` (${count} sin leer)` : ''}`}
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          fontSize: 22,
-          position: 'relative',
-          padding: '4px 8px',
-        }}
+    <>
+      <Tooltip title="Notificaciones">
+        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} aria-label="Notificaciones">
+          <Badge badgeContent={count} color="error">
+            <NotificationsNoneOutlined />
+          </Badge>
+        </IconButton>
+      </Tooltip>
+      <Popover
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        slotProps={{ paper: { sx: { width: 360, maxHeight: 480, mt: 1 } } }}
       >
-        {BELL_ICON}
-        {count > 0 && (
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              background: '#e53935',
-              color: '#fff',
-              borderRadius: '50%',
-              fontSize: 11,
-              width: 18,
-              height: 18,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-            }}
-          >
-            {count > 9 ? '9+' : count}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: '110%',
-            width: 320,
-            background: '#fff',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-            borderRadius: 8,
-            zIndex: 1000,
-            maxHeight: 400,
-            overflowY: 'auto',
-          }}
-        >
-          <div
-            style={{
-              padding: '10px 14px',
-              borderBottom: '1px solid #f0f0f0',
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
-            Notificaciones
-            {count > 0 && (
-              <span style={{ marginLeft: 8, color: '#e53935', fontSize: 12 }}>
-                ({count} sin leer)
-              </span>
-            )}
-          </div>
-
-          {notificaciones.length === 0 ? (
-            <div style={{ padding: '16px 14px', color: '#888', fontSize: 13 }}>
-              Sin notificaciones pendientes
-            </div>
-          ) : (
-            notificaciones.map(n => (
-              <div
-                key={n.id_notificacion}
-                style={{
-                  padding: '10px 14px',
-                  borderBottom: '1px solid #f8f8f8',
-                  background: '#f0f7ff',
-                }}
-              >
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>
-                  {n.titulo}
-                </div>
-                <div style={{ fontSize: 12, color: '#555', marginBottom: 6 }}>
-                  {n.mensaje}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {n.url_accion && (
-                    <a
-                      href={n.url_accion}
-                      style={{ fontSize: 11, color: '#1976d2' }}
-                      onClick={() => setOpen(false)}
-                    >
-                      Ver detalle
-                    </a>
-                  )}
-                  <button
-                    onClick={() => marcarLeida(n.id_notificacion)}
-                    style={{
-                      fontSize: 11,
-                      color: '#888',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                  >
-                    Marcar leída
-                  </button>
-                </div>
-              </div>
-            ))
+        <Box sx={{ px: 2, py: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="subtitle1">Notificaciones</Typography>
+          {count > 0 && (
+            <Typography variant="caption" color="error">
+              {count} sin leer
+            </Typography>
           )}
-        </div>
-      )}
-    </div>
+        </Box>
+        <Divider />
+        {count === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+            <Typography variant="body2">Sin notificaciones pendientes</Typography>
+          </Box>
+        ) : (
+          <List disablePadding>
+            {notificaciones.map((n) => (
+              <ListItemButton
+                key={n.id_notificacion}
+                onClick={() => handleClick(n)}
+                sx={{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', py: 1.25 }}
+              >
+                <Typography variant="body2" fontWeight={600}>{n.titulo}</Typography>
+                <Typography variant="body2" color="text.secondary">{n.mensaje}</Typography>
+                <Typography variant="caption" color="text.disabled">
+                  {new Date(n.fecha_creacion).toLocaleString()}
+                </Typography>
+              </ListItemButton>
+            ))}
+          </List>
+        )}
+      </Popover>
+    </>
   );
 };
 

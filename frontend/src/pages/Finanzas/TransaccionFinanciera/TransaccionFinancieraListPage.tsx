@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { getTransaccionesFinancieras, exportTransaccionesFinancieras } from '../../../services/transaccionFinancieraService';
 import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
-import { Button, TextField } from '@mui/material';
+import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
 const tipoTransaccionOptions = [
   { value: '', label: 'Todos' },
@@ -45,98 +47,76 @@ const TransaccionFinancieraListPage: React.FC = () => {
     enabled: !!empresaIdToUse,
   });
 
+  const columns: Column<TransaccionFinanciera>[] = [
+    { key: 'fecha', header: 'Fecha', align: 'center', render: (row) => row.fecha_hora_transaccion },
+    { key: 'tipo', header: 'Tipo', align: 'center', render: (row) => row.tipo_transaccion },
+    { key: 'monto', header: 'Monto', align: 'right', render: (row) => row.monto_transaccion },
+    { key: 'moneda', header: 'Moneda', align: 'center', render: (row) => row.id_moneda_transaccion__codigo_iso },
+    { key: 'moneda_base', header: 'Moneda Base', align: 'center', render: (row) => row.id_moneda_base__codigo_iso || '-' },
+    { key: 'monto_base', header: 'Monto Base', align: 'right', render: (row) => row.monto_base_empresa },
+    { key: 'moneda_pais', header: 'Moneda País', render: (row) => row.id_moneda_pais_empresa__codigo_iso || '-' },
+    { key: 'monto_pais', header: 'Monto País', render: (row) => row.monto_moneda_pais !== undefined ? row.monto_moneda_pais : '-' },
+    { key: 'metodo', header: 'Método de Pago', render: (row) => row.id_metodo_pago__nombre_metodo },
+    { key: 'referencia', header: 'Referencia', render: (row) => row.referencia_pago },
+    { key: 'descripcion', header: 'Descripción', render: (row) => row.descripcion },
+    { key: 'usuario', header: 'Usuario', render: (row) => row.id_usuario_registro__username },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      align: 'right',
+      render: (row) => (
+        <Button size="small" variant="outlined" onClick={() => navigate(`/transacciones-financieras/${row.id}`)}>
+          Ver Detalle
+        </Button>
+      ),
+    },
+  ];
+
   if (!empresaIdToUse) {
     return (
       <PageLayout>
-        <div style={{ textAlign: 'center', marginTop: 50 }}>
-          <h2>Empresa no especificada</h2>
-          <p>Por favor, selecciona una empresa para ver las transacciones financieras.</p>
-        </div>
+        <Box sx={{ textAlign: 'center', mt: 6 }}>
+          <Typography variant="h5" mb={1}>Empresa no especificada</Typography>
+          <Typography color="text.secondary">Por favor, selecciona una empresa para ver las transacciones financieras.</Typography>
+        </Box>
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout maxWidth={1400}>
-      <h2 style={{ marginBottom: 16 }}>Transacciones Financieras</h2>
-      {loading && <div style={{ marginBottom: 16, textAlign: 'center', color: '#666' }}>Cargando transacciones...</div>}
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <select
+    <PageContainer>
+      <PageHeader title="Transacciones Financieras" />
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        <TextField
+          select
+          size="small"
+          label="Tipo"
           value={filters.tipo}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters(f => ({ ...f, tipo: e.target.value }))}
-          style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
+          onChange={(e) => setFilters(f => ({ ...f, tipo: e.target.value }))}
+          sx={{ minWidth: 140 }}
         >
           {tipoTransaccionOptions.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
           ))}
-        </select>
-        <TextField fullWidth placeholder="Moneda" value={filters.moneda} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilters(f => ({ ...f, moneda: e.target.value }))} />
-        <TextField fullWidth placeholder="Método de Pago" value={filters.metodo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilters(f => ({ ...f, metodo: e.target.value }))} />
-        <TextField fullWidth placeholder="Usuario" value={filters.usuario} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilters(f => ({ ...f, usuario: e.target.value }))} />
-        <TextField fullWidth type="date" label="Desde" value={filters.fecha_inicio} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilters(f => ({ ...f, fecha_inicio: e.target.value }))} />
-        <TextField fullWidth type="date" label="Hasta" value={filters.fecha_fin} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilters(f => ({ ...f, fecha_fin: e.target.value }))} />
-        <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/transacciones-financieras/new`)}>Nueva Transacción</Button>
-        <Button variant="outlined" onClick={() => exportTransaccionesFinancieras(id_empresa, filters)}>Exportar</Button>
-      </div>
-      <div style={{ overflowX: 'auto', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: '14px',
-          backgroundColor: '#fff'
-        }}>
-          <thead style={{ backgroundColor: '#f5f5f5' }}>
-            <tr>
-              <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', borderBottom: '2px solid #e0e0e0' }}>Fecha</th>
-              <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', borderBottom: '2px solid #e0e0e0' }}>Tipo</th>
-              <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', borderBottom: '2px solid #e0e0e0' }}>Monto</th>
-              <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', borderBottom: '2px solid #e0e0e0' }}>Moneda</th>
-              <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', borderBottom: '2px solid #e0e0e0' }}>Moneda Base</th>
-              <th>Monto Base</th>
-              <th>Moneda País</th>
-              <th>Monto País</th>
-              <th>Método de Pago</th>
-              <th>Referencia</th>
-              <th>Descripción</th>
-              <th>Usuario</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, idx) => {
-              return (
-                <tr key={row.id || idx} style={{
-                  borderBottom: '1px solid #e0e0e0'
-                }}>
-                  <td style={{ padding: '12px 8px', textAlign: 'center' }}>{row.fecha_hora_transaccion}</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'center' }}>{row.tipo_transaccion}</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold' }}>{row.monto_transaccion}</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'center' }}>{row.id_moneda_transaccion__codigo_iso}</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'center' }}>{row.id_moneda_base__codigo_iso || '-'}</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'right' }}>{row.monto_base_empresa}</td>
-                  <td>{row.id_moneda_pais_empresa__codigo_iso || '-'}</td>
-                  <td>{row.monto_moneda_pais !== undefined ? row.monto_moneda_pais : '-'}</td>
-                  <td>{row.id_metodo_pago__nombre_metodo}</td>
-                  <td>{row.referencia_pago}</td>
-                  <td>{row.descripcion}</td>
-                  <td>{row.id_usuario_registro__username}</td>
-                  <td>
-                    <Button variant="outlined" onClick={() => navigate(`/transacciones-financieras/${row.id}`)}>
-                      Ver Detalle
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {data.length === 0 && !loading && (
-          <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-            No se encontraron transacciones financieras.
-          </div>
-        )}
-      </div>
-    </PageLayout>
+        </TextField>
+        <TextField size="small" placeholder="Moneda" value={filters.moneda} onChange={(e) => setFilters(f => ({ ...f, moneda: e.target.value }))} />
+        <TextField size="small" placeholder="Método de Pago" value={filters.metodo} onChange={(e) => setFilters(f => ({ ...f, metodo: e.target.value }))} />
+        <TextField size="small" placeholder="Usuario" value={filters.usuario} onChange={(e) => setFilters(f => ({ ...f, usuario: e.target.value }))} />
+        <TextField size="small" type="date" label="Desde" slotProps={{ inputLabel: { shrink: true } }} value={filters.fecha_inicio} onChange={(e) => setFilters(f => ({ ...f, fecha_inicio: e.target.value }))} />
+        <TextField size="small" type="date" label="Hasta" slotProps={{ inputLabel: { shrink: true } }} value={filters.fecha_fin} onChange={(e) => setFilters(f => ({ ...f, fecha_fin: e.target.value }))} />
+        <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
+          <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/transacciones-financieras/new`)}>Nueva Transacción</Button>
+          <Button variant="outlined" onClick={() => exportTransaccionesFinancieras(id_empresa, filters)}>Exportar</Button>
+        </Stack>
+      </Box>
+      <DataTable
+        columns={columns}
+        rows={data}
+        getRowKey={(row) => row.id}
+        loading={loading}
+        emptyMessage="No se encontraron transacciones financieras."
+      />
+    </PageContainer>
   );
 };
 

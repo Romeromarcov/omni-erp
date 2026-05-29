@@ -1,40 +1,26 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import PageLayout from '../../components/PageLayout';
+import { Box, Button, Card, CardContent, Chip, Stack, TextField, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { productoInventarioService } from '../../services/inventarioService';
 import type { MovimientoInventario } from '../../services/inventarioService';
+import { PageContainer, PageHeader, DataTable } from '../../components/ui';
+import type { Column } from '../../components/ui';
 
-const TIPO_COLORS: Record<string, string> = {
-  ENTRADA: '#4caf50',
-  RECEPCION_COMPRA: '#66bb6a',
-  SALIDA: '#f44336',
-  DESPACHO_VENTA: '#ef5350',
-  SALIDA_INTERNA: '#e53935',
-  TRANSFERENCIA: '#2196f3',
-  AJUSTE: '#ff9800',
-  CONSUMO_PRODUCCION: '#9c27b0',
-  RESERVA_VENTA: '#607d8b',
+type ChipColor = 'success' | 'error' | 'info' | 'warning' | 'primary' | 'secondary' | 'default';
+
+const TIPO_COLORS: Record<string, ChipColor> = {
+  ENTRADA: 'success',
+  RECEPCION_COMPRA: 'success',
+  SALIDA: 'error',
+  DESPACHO_VENTA: 'error',
+  SALIDA_INTERNA: 'error',
+  TRANSFERENCIA: 'info',
+  AJUSTE: 'warning',
+  CONSUMO_PRODUCCION: 'secondary',
+  RESERVA_VENTA: 'default',
 };
-
-function tipoBadge(tipo: string) {
-  const color = TIPO_COLORS[tipo] ?? '#6c757d';
-  return (
-    <span
-      style={{
-        padding: '3px 10px',
-        borderRadius: 6,
-        backgroundColor: color,
-        color: '#fff',
-        fontSize: 11,
-        fontWeight: 600,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {tipo.replace(/_/g, ' ')}
-    </span>
-  );
-}
 
 const ENTRADAS = new Set(['ENTRADA', 'RECEPCION_COMPRA', 'AJUSTE']);
 const SALIDAS = new Set(['SALIDA', 'DESPACHO_VENTA', 'SALIDA_INTERNA', 'CONSUMO_PRODUCCION']);
@@ -74,174 +60,106 @@ const KardexPage: React.FC = () => {
     .filter((m) => SALIDAS.has(m.tipo_movimiento))
     .reduce((sum, m) => sum + Math.abs(parseFloat(m.cantidad)), 0);
 
+  const columns: Column<MovimientoInventario>[] = [
+    { key: 'fecha', header: 'Fecha', render: (m) => new Date(m.fecha_hora_movimiento).toLocaleString() },
+    {
+      key: 'tipo',
+      header: 'Tipo',
+      render: (m) => <Chip size="small" label={m.tipo_movimiento.replace(/_/g, ' ')} color={TIPO_COLORS[m.tipo_movimiento] ?? 'default'} />,
+    },
+    {
+      key: 'cantidad',
+      header: 'Cantidad',
+      align: 'right',
+      render: (m) => {
+        const isEntrada = ENTRADAS.has(m.tipo_movimiento);
+        const isSalida = SALIDAS.has(m.tipo_movimiento);
+        const color = isEntrada ? 'success.main' : isSalida ? 'error.main' : 'warning.main';
+        const sign = isEntrada ? '+' : isSalida ? '-' : '±';
+        return (
+          <Typography component="span" sx={{ fontWeight: 700, color }}>
+            {sign}{Math.abs(parseFloat(m.cantidad)).toLocaleString()}
+          </Typography>
+        );
+      },
+    },
+    { key: 'origen', header: 'Almacén origen', render: (m) => m.almacen_origen_nombre ?? '—' },
+    { key: 'destino', header: 'Almacén destino', render: (m) => m.almacen_destino_nombre ?? '—' },
+    {
+      key: 'costo',
+      header: 'Costo unit.',
+      render: (m) =>
+        m.costo_unitario_movimiento
+          ? parseFloat(m.costo_unitario_movimiento).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+          : '—',
+    },
+    { key: 'observaciones', header: 'Observaciones', render: (m) => m.observaciones ?? '—' },
+  ];
+
   return (
-    <PageLayout maxWidth={1100}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <button
-            onClick={() => navigate('/inventario/stock')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#1976d2',
-              cursor: 'pointer',
-              fontSize: 14,
-              padding: 0,
-              marginBottom: 6,
-            }}
-          >
-            ← Volver al stock
-          </button>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
-            Kardex — {producto?.nombre_producto ?? productoId}
-          </h2>
-          {producto && (
-            <p style={{ color: '#6c757d', margin: '4px 0 0', fontSize: 14 }}>
-              SKU: {producto.sku ?? '—'} · {producto.nombre_categoria ?? '—'} ·{' '}
-              {producto.nombre_unidad_medida ?? '—'}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={() => navigate(`/inventario/ajustes?producto=${productoId}`)}
-          style={{
-            padding: '8px 16px',
-            background: '#ff9800',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: 14,
-          }}
-        >
-          + Ajuste
-        </button>
-      </div>
+    <PageContainer>
+      <Button onClick={() => navigate('/inventario/stock')} sx={{ mb: 1 }}>
+        ← Volver al stock
+      </Button>
+      <PageHeader
+        title={`Kardex — ${producto?.nombre_producto ?? productoId}`}
+        subtitle={producto ? `SKU: ${producto.sku ?? '—'} · ${producto.nombre_categoria ?? '—'} · ${producto.nombre_unidad_medida ?? '—'}` : undefined}
+        actions={
+          <Button variant="contained" color="warning" startIcon={<AddIcon />} onClick={() => navigate(`/inventario/ajustes?producto=${productoId}`)}>
+            Ajuste
+          </Button>
+        }
+      />
 
       {/* Date filter */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-        <label style={{ fontSize: 14 }}>
-          Desde:{' '}
-          <input
-            type="date"
-            value={fechaDesde}
-            onChange={(e) => setFechaDesde(e.target.value)}
-            style={{ padding: '6px 10px', border: '1px solid #dee2e6', borderRadius: 6, fontSize: 14 }}
-          />
-        </label>
-        <label style={{ fontSize: 14 }}>
-          Hasta:{' '}
-          <input
-            type="date"
-            value={fechaHasta}
-            onChange={(e) => setFechaHasta(e.target.value)}
-            style={{ padding: '6px 10px', border: '1px solid #dee2e6', borderRadius: 6, fontSize: 14 }}
-          />
-        </label>
-        <span style={{ fontSize: 13, color: '#6c757d' }}>
-          {movimientos.length} movimientos
-        </span>
-      </div>
+      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap mb={3}>
+        <TextField
+          type="date"
+          label="Desde"
+          value={fechaDesde}
+          onChange={(e) => setFechaDesde(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          size="small"
+        />
+        <TextField
+          type="date"
+          label="Hasta"
+          value={fechaHasta}
+          onChange={(e) => setFechaHasta(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          size="small"
+        />
+        <Typography variant="body2" color="text.secondary">{movimientos.length} movimientos</Typography>
+      </Stack>
 
       {/* Summary cards */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
         {[
-          { label: 'Total entradas', value: totalEntradas.toLocaleString(), color: '#4caf50' },
-          { label: 'Total salidas', value: totalSalidas.toLocaleString(), color: '#f44336' },
+          { label: 'Total entradas', value: totalEntradas.toLocaleString(), color: 'success.main' },
+          { label: 'Total salidas', value: totalSalidas.toLocaleString(), color: 'error.main' },
           {
             label: 'Saldo neto',
             value: (totalEntradas - totalSalidas).toLocaleString(),
-            color: totalEntradas >= totalSalidas ? '#1976d2' : '#ff9800',
+            color: totalEntradas >= totalSalidas ? 'primary.main' : 'warning.main',
           },
         ].map((c) => (
-          <div
-            key={c.label}
-            style={{
-              flex: 1,
-              minWidth: 140,
-              padding: '14px 18px',
-              border: `2px solid ${c.color}`,
-              borderRadius: 10,
-              background: '#fff',
-            }}
-          >
-            <div style={{ fontSize: 12, color: '#6c757d', marginBottom: 2 }}>{c.label}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
-          </div>
+          <Card key={c.label} variant="outlined" sx={{ flex: '1 1 140px' }}>
+            <CardContent>
+              <Typography variant="caption" color="text.secondary">{c.label}</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: c.color }}>{c.value}</Typography>
+            </CardContent>
+          </Card>
         ))}
-      </div>
+      </Box>
 
-      {/* Movement table */}
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#6c757d' }}>Cargando movimientos…</div>
-      ) : movimientos.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#6c757d' }}>
-          No hay movimientos en el período seleccionado.
-        </div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead>
-              <tr style={{ background: '#f8f9fa' }}>
-                {['Fecha', 'Tipo', 'Cantidad', 'Almacén origen', 'Almacén destino', 'Costo unit.', 'Observaciones'].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {movimientos.map((m) => {
-                const isEntrada = ENTRADAS.has(m.tipo_movimiento);
-                const cantNum = parseFloat(m.cantidad);
-                return (
-                  <tr key={m.id_movimiento_inventario} style={{ borderBottom: '1px solid #dee2e6' }}>
-                    <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                      {new Date(m.fecha_hora_movimiento).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>{tipoBadge(m.tipo_movimiento)}</td>
-                    <td
-                      style={{
-                        padding: '10px 12px',
-                        fontWeight: 700,
-                        color: isEntrada ? '#4caf50' : SALIDAS.has(m.tipo_movimiento) ? '#f44336' : '#ff9800',
-                      }}
-                    >
-                      {isEntrada ? '+' : SALIDAS.has(m.tipo_movimiento) ? '-' : '±'}
-                      {Math.abs(cantNum).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 12px', color: '#6c757d' }}>
-                      {m.almacen_origen_nombre ?? '—'}
-                    </td>
-                    <td style={{ padding: '10px 12px', color: '#6c757d' }}>
-                      {m.almacen_destino_nombre ?? '—'}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      {m.costo_unitario_movimiento
-                        ? parseFloat(m.costo_unitario_movimiento).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 4,
-                          })
-                        : '—'}
-                    </td>
-                    <td style={{ padding: '10px 12px', color: '#6c757d', maxWidth: 200 }}>
-                      {m.observaciones ?? '—'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </PageLayout>
+      <DataTable
+        columns={columns}
+        rows={movimientos}
+        getRowKey={(m) => m.id_movimiento_inventario}
+        loading={isLoading}
+        emptyMessage="No hay movimientos en el período seleccionado."
+      />
+    </PageContainer>
   );
 };
 

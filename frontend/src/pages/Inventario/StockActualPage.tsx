@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import PageLayout from '../../components/PageLayout';
+import { Box, Button, Chip, FormControlLabel, Checkbox, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { stockActualService, productoInventarioService } from '../../services/inventarioService';
 import type { StockActual } from '../../services/inventarioService';
+import { PageContainer, PageHeader, DataTable } from '../../components/ui';
+import type { Column } from '../../components/ui';
 
-function stockBadgeColor(stock: StockActual): { label: string; color: string } {
+type ChipColor = 'error' | 'warning' | 'success';
+
+function stockBadge(stock: StockActual): { label: string; color: ChipColor } {
   const disponible = parseFloat(stock.cantidad_disponible);
   const minima = parseFloat(stock.cantidad_minima);
-  if (disponible <= 0) return { label: 'SIN STOCK', color: '#f44336' };
-  if (minima > 0 && disponible < minima) return { label: 'BAJO', color: '#ff9800' };
-  return { label: 'NORMAL', color: '#4caf50' };
+  if (disponible <= 0) return { label: 'SIN STOCK', color: 'error' };
+  if (minima > 0 && disponible < minima) return { label: 'BAJO', color: 'warning' };
+  return { label: 'NORMAL', color: 'success' };
 }
 
 const StockActualPage: React.FC = () => {
@@ -44,223 +49,97 @@ const StockActualPage: React.FC = () => {
   const totalProductos = productos.length;
   const totalUnidades = stockList.reduce((sum, s) => sum + parseFloat(s.cantidad_disponible), 0);
 
+  const columns: Column<StockActual>[] = [
+    { key: 'producto', header: 'Producto', render: (s) => s.producto_nombre ?? s.id_producto },
+    { key: 'almacen', header: 'Almacén', render: (s) => s.almacen_nombre ?? '—' },
+    { key: 'disponible', header: 'Disponible', render: (s) => parseFloat(s.cantidad_disponible).toLocaleString() },
+    { key: 'minimo', header: 'Mínimo', render: (s) => parseFloat(s.cantidad_minima).toLocaleString() },
+    { key: 'maximo', header: 'Máximo', render: (s) => parseFloat(s.cantidad_maxima).toLocaleString() },
+    { key: 'comprometido', header: 'Comprometido', render: (s) => parseFloat(s.cantidad_comprometida).toLocaleString() },
+    { key: 'transito', header: 'En tránsito', render: (s) => parseFloat(s.cantidad_en_transito).toLocaleString() },
+    {
+      key: 'estado',
+      header: 'Estado',
+      render: (s) => {
+        const badge = stockBadge(s);
+        return <Chip size="small" label={badge.label} color={badge.color} />;
+      },
+    },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      align: 'right',
+      render: (s) => (
+        <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <Button size="small" variant="outlined" onClick={() => navigate(`/inventario/kardex/${s.id_producto}`)}>
+            Kardex
+          </Button>
+          <Button size="small" variant="outlined" color="warning" onClick={() => navigate(`/inventario/ajustes?producto=${s.id_producto}&almacen=${s.id_almacen}`)}>
+            Ajuste
+          </Button>
+        </Stack>
+      ),
+    },
+  ];
+
   return (
-    <PageLayout maxWidth={1200}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Stock Actual</h2>
-          <p style={{ color: '#6c757d', margin: '4px 0 0', fontSize: 14 }}>
-            {totalProductos} productos · {Math.round(totalUnidades).toLocaleString()} unidades totales
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={() => navigate('/inventario')}
-            style={{
-              padding: '8px 16px',
-              background: 'transparent',
-              border: '1px solid #dee2e6',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontSize: 14,
-            }}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => navigate('/inventario/ajustes')}
-            style={{
-              padding: '8px 16px',
-              background: '#1976d2',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
-            + Ajuste manual
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          type="text"
-          placeholder="Buscar producto…"
-          value={filtroProducto}
-          onChange={(e) => setFiltroProducto(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid #dee2e6',
-            borderRadius: 8,
-            fontSize: 14,
-            minWidth: 200,
-          }}
-        />
-        <select
-          value={filtroAlmacen}
-          onChange={(e) => setFiltroAlmacen(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid #dee2e6',
-            borderRadius: 8,
-            fontSize: 14,
-            minWidth: 160,
-          }}
-        >
-          <option value="">Todos los almacenes</option>
-          {almacenes.map((a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
-        </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={soloAlertas}
-            onChange={(e) => setSoloAlertas(e.target.checked)}
+    <PageContainer>
+      <PageHeader
+        title="Stock Actual"
+        subtitle={`${totalProductos} productos · ${Math.round(totalUnidades).toLocaleString()} unidades totales`}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => navigate('/inventario')}>Dashboard</Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/inventario/ajustes')}>Ajuste manual</Button>
+          </>
+        }
+      />
+      <Box sx={{ mb: 2 }}>
+        <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center" useFlexGap>
+          <TextField
+            size="small"
+            placeholder="Buscar producto…"
+            value={filtroProducto}
+            onChange={(e) => setFiltroProducto(e.target.value)}
+            sx={{ minWidth: 200 }}
           />
-          Solo alertas
-        </label>
-        <span style={{ fontSize: 13, color: '#6c757d' }}>{filtered.length} registros</span>
-      </div>
-
-      {/* Table */}
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#6c757d' }}>Cargando stock…</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#6c757d' }}>
-          No hay registros con los filtros seleccionados.
-        </div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead>
-              <tr style={{ background: '#f8f9fa' }}>
-                {[
-                  'Producto',
-                  'Almacén',
-                  'Disponible',
-                  'Mínimo',
-                  'Máximo',
-                  'Comprometido',
-                  'En tránsito',
-                  'Estado',
-                  'Acciones',
-                ].map((h) => (
-                  <th
-                    key={h}
-                    style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => {
-                const badge = stockBadgeColor(s);
-                return (
-                  <tr
-                    key={s.id_stock_actual}
-                    style={{ borderBottom: '1px solid #dee2e6' }}
-                  >
-                    <td style={{ padding: '10px 12px', fontWeight: 500 }}>
-                      {s.producto_nombre ?? s.id_producto}
-                    </td>
-                    <td style={{ padding: '10px 12px', color: '#6c757d' }}>
-                      {s.almacen_nombre ?? '—'}
-                    </td>
-                    <td style={{ padding: '10px 12px', fontWeight: 700 }}>
-                      {parseFloat(s.cantidad_disponible).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      {parseFloat(s.cantidad_minima).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      {parseFloat(s.cantidad_maxima).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      {parseFloat(s.cantidad_comprometida).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      {parseFloat(s.cantidad_en_transito).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <span
-                        style={{
-                          padding: '3px 10px',
-                          borderRadius: 6,
-                          backgroundColor: badge.color,
-                          color: '#fff',
-                          fontSize: 11,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          onClick={() => navigate(`/inventario/kardex/${s.id_producto}`)}
-                          style={{
-                            padding: '4px 12px',
-                            background: 'transparent',
-                            border: '1px solid #1976d2',
-                            color: '#1976d2',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                            fontSize: 13,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Kardex
-                        </button>
-                        <button
-                          onClick={() =>
-                            navigate(`/inventario/ajustes?producto=${s.id_producto}&almacen=${s.id_almacen}`)
-                          }
-                          style={{
-                            padding: '4px 12px',
-                            background: 'transparent',
-                            border: '1px solid #ff9800',
-                            color: '#ff9800',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                            fontSize: 13,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Ajuste
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Last updated */}
+          <TextField
+            select
+            size="small"
+            value={filtroAlmacen}
+            onChange={(e) => setFiltroAlmacen(e.target.value)}
+            sx={{ minWidth: 160 }}
+          >
+            <MenuItem value="">Todos los almacenes</MenuItem>
+            {almacenes.map((a) => (
+              <MenuItem key={a} value={a}>{a}</MenuItem>
+            ))}
+          </TextField>
+          <FormControlLabel
+            control={<Checkbox checked={soloAlertas} onChange={(e) => setSoloAlertas(e.target.checked)} />}
+            label="Solo alertas"
+          />
+          <Typography variant="body2" color="text.secondary">{filtered.length} registros</Typography>
+        </Stack>
+      </Box>
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        getRowKey={(s) => s.id_stock_actual}
+        loading={isLoading}
+        emptyMessage="No hay registros con los filtros seleccionados."
+      />
       {stockList.length > 0 && (
-        <p style={{ fontSize: 12, color: '#adb5bd', marginTop: 16, textAlign: 'right' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'right' }}>
           Última actualización:{' '}
           {new Date(
             stockList.reduce((latest, s) =>
               s.fecha_ultima_actualizacion > latest.fecha_ultima_actualizacion ? s : latest
             ).fecha_ultima_actualizacion
           ).toLocaleString()}
-        </p>
+        </Typography>
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

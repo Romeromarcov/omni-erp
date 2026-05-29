@@ -6,7 +6,7 @@ El sistema de detección de dispositivos permite identificar automáticamente di
 ## Endpoints
 
 ### 1. Login con Detección de Dispositivos
-**POST** `/api/core/auth/login/`
+**POST** `/api/auth/login/`
 
 Parámetros opcionales para detección de dispositivos:
 - `device_fingerprint`: String único que identifica el dispositivo (requerido para detección)

@@ -5,7 +5,7 @@ import { DeviceActionModal } from '../../../components/DeviceActionModal';
 import { get } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { DispositivoInfo } from '../../../types/dispositivos';
-import { Button } from '@mui/material';
+import { Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 
 const LoginPage: React.FC = () => {
@@ -182,27 +182,31 @@ const LoginPage: React.FC = () => {
                   navigate('/dashboard');
                 }
               }}
-              style={{ maxWidth: 350, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
             >
-              <h3 style={{ textAlign: 'center', color: '#1976d2' }}>Selecciona empresa y sucursal (opcional)</h3>
-              <label>Empresa</label>
-              <select value={empresa} onChange={e => { setEmpresa(e.target.value); }}>
-                <option value="">Seleccione una empresa</option>
-                {(Array.isArray(empresas) ? empresas : []).map(emp => (
-                  <option key={emp.id_empresa} value={String(emp.id_empresa)}>{emp.nombre_legal}</option>
-                ))}
-              </select>
-              <label>Sucursal</label>
-              <select value={sucursal} onChange={e => setSucursal(e.target.value)} disabled={!empresa}>
-                <option value="">Seleccione una sucursal</option>
-                {sucursales
-                  .filter(suc => suc && String(suc.id_empresa) === String(empresa))
-                  .map(suc => (
-                    <option key={`${suc.id_sucursal}-${suc.nombre}`} value={suc.id_sucursal}>{suc.nombre}</option>
-                  ))
-                }
-              </select>
-              <Button type="submit">Continuar</Button>
+              <h3 style={{ textAlign: 'center', color: '#1976d2', margin: '0 0 8px' }}>Selecciona empresa y sucursal</h3>
+              <FormControl fullWidth size="small">
+                <InputLabel>Empresa</InputLabel>
+                <Select value={empresa} label="Empresa" onChange={e => setEmpresa(e.target.value)}>
+                  <MenuItem value=""><em>Seleccione una empresa</em></MenuItem>
+                  {(Array.isArray(empresas) ? empresas : []).map(emp => (
+                    <MenuItem key={emp.id_empresa} value={String(emp.id_empresa)}>{emp.nombre_legal}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small" disabled={!empresa}>
+                <InputLabel>Sucursal</InputLabel>
+                <Select value={sucursal} label="Sucursal" onChange={e => setSucursal(e.target.value)}>
+                  <MenuItem value=""><em>Seleccione una sucursal</em></MenuItem>
+                  {sucursales
+                    .filter(suc => suc && String(suc.id_empresa) === String(empresa))
+                    .map(suc => (
+                      <MenuItem key={`${suc.id_sucursal}-${suc.nombre}`} value={suc.id_sucursal}>{suc.nombre}</MenuItem>
+                    ))
+                  }
+                </Select>
+              </FormControl>
+              <Button type="submit" variant="contained" fullWidth>Continuar</Button>
             </form>
           )}
         </div>

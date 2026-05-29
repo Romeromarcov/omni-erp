@@ -6,6 +6,7 @@ import { toList } from '../../../utils/api';
 import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
 import type { Moneda } from './MonedaListPage';
 import PageLayout from '../../../components/PageLayout';
+import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 const defaultMoneda: Partial<Moneda> = {
   tipo_moneda: 'fiat',
@@ -43,7 +44,7 @@ const MonedaFormPage: React.FC = () => {
 
   const saving = createMutation.isPending;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setMoneda({ ...moneda, [e.target.name]: e.target.value });
   };
 
@@ -54,13 +55,11 @@ const MonedaFormPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    // Validación fuzzy de duplicados antes de enviar
     const similar = findSimilarMoneda(moneda, monedasExistentes, 65);
     if (similar) {
       setError(`Ya existe una moneda similar: "${similar.nombre}" (${similar.codigo_iso})`);
       return;
     }
-    // Formatea la fecha correctamente
     const payload = {
       ...moneda,
       fecha_cierre_estimada: moneda.fecha_cierre_estimada
@@ -74,51 +73,30 @@ const MonedaFormPage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={480}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Nueva Moneda</h2>
-      <form onSubmit={handleSubmit} style={{ background: '#f6fafd', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: 32, display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 400, margin: '0 auto' }}>
-        <label>Tipo de Moneda
-          <select name="tipo_moneda" value={moneda.tipo_moneda || 'fiat'} onChange={handleChange} required>
-            <option value="fiat">Fiat</option>
-            <option value="crypto">Cripto</option>
-            <option value="otro">Otro</option>
-          </select>
-        </label>
-        <label>Código ISO
-          <input
-            name="codigo_iso"
-            value={moneda.codigo_iso}
-            onChange={handleChange}
-            required
-            maxLength={moneda.tipo_moneda === 'crypto' ? 5 : 3}
-          />
-        </label>
-        <label>Nombre
-          <input name="nombre" value={moneda.nombre} onChange={handleChange} required />
-        </label>
-        <label>Símbolo
-          <input name="simbolo" value={moneda.simbolo} onChange={handleChange} required />
-        </label>
-        <label>Decimales
-          <input name="decimales" type="number" value={moneda.decimales} onChange={handleChange} min={0} max={8} required />
-        </label>
-        <label>Referencia Externa
-          <input name="referencia_externa" value={moneda.referencia_externa || ''} onChange={handleChange} />
-        </label>
-        <label>Documento JSON
-          <input name="documento_json" value={moneda.documento_json || ''} onChange={handleChange} />
-        </label>
-        <label>Tipo Operación
-          <input name="tipo_operacion" value={moneda.tipo_operacion || ''} onChange={handleChange} />
-        </label>
-        <label>Fecha Cierre Estimada
-          <input name="fecha_cierre_estimada" type="date" value={moneda.fecha_cierre_estimada || ''} onChange={handleChange} />
-        </label>
-        <label>
-          <input name="activo" type="checkbox" checked={!!moneda.activo} onChange={handleCheck} /> Activo
-        </label>
-        <button type="submit" disabled={saving} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 15, marginTop: 8 }}>{saving ? 'Guardando...' : 'Crear'}</button>
-        {error && <div style={{ color: '#d32f2f', marginTop: 8, textAlign: 'center', fontWeight: 500 }}>{error}</div>}
-      </form>
+      <Typography variant="h5" mb={3}>Nueva Moneda</Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <TextField select name="tipo_moneda" label="Tipo de Moneda" value={moneda.tipo_moneda || 'fiat'} onChange={handleChange} required fullWidth>
+            <MenuItem value="fiat">Fiat</MenuItem>
+            <MenuItem value="crypto">Cripto</MenuItem>
+            <MenuItem value="otro">Otro</MenuItem>
+          </TextField>
+          <TextField name="codigo_iso" label="Código ISO" value={moneda.codigo_iso} onChange={handleChange} required fullWidth inputProps={{ maxLength: moneda.tipo_moneda === 'crypto' ? 5 : 3 }} />
+          <TextField name="nombre" label="Nombre" value={moneda.nombre} onChange={handleChange} required fullWidth />
+          <TextField name="simbolo" label="Símbolo" value={moneda.simbolo} onChange={handleChange} required fullWidth />
+          <TextField name="decimales" type="number" label="Decimales" value={moneda.decimales} onChange={handleChange} required fullWidth inputProps={{ min: 0, max: 8 }} />
+          <TextField name="referencia_externa" label="Referencia Externa" value={moneda.referencia_externa || ''} onChange={handleChange} fullWidth />
+          <TextField name="documento_json" label="Documento JSON" value={moneda.documento_json || ''} onChange={handleChange} fullWidth />
+          <TextField name="tipo_operacion" label="Tipo Operación" value={moneda.tipo_operacion || ''} onChange={handleChange} fullWidth />
+          <TextField name="fecha_cierre_estimada" type="date" label="Fecha Cierre Estimada" value={moneda.fecha_cierre_estimada || ''} onChange={handleChange} fullWidth InputLabelProps={{ shrink: true }} />
+          <FormControlLabel control={<Checkbox name="activo" checked={!!moneda.activo} onChange={handleCheck} />} label="Activo" />
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate('/finanzas/monedas')}>Cancelar</Button>
+            <Button type="submit" variant="contained" disabled={saving}>{saving ? 'Guardando…' : 'Crear'}</Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
 };

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getTransaccionFinancieraDetail, printTransaccionFinanciera } from '../../../services/transaccionFinancieraService';
 import PageLayout from '../../../components/PageLayout';
-import { Button, Paper } from '@mui/material';
+import { Box, Button, Divider, Stack, Typography } from '@mui/material';
 
 type TransaccionFinancieraDetail = {
   id: string;
@@ -29,6 +29,13 @@ type TransaccionFinancieraDetail = {
   [key: string]: string | number | boolean | undefined;
 };
 
+const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <Box sx={{ display: 'flex', gap: 1, py: 0.75 }}>
+    <Typography sx={{ fontWeight: 'bold', minWidth: 200 }}>{label}</Typography>
+    <Typography>{value}</Typography>
+  </Box>
+);
+
 const TransaccionFinancieraDetailPage: React.FC = () => {
   const { id_transaccion } = useParams<{ id_transaccion: string }>();
   const navigate = useNavigate();
@@ -42,114 +49,70 @@ const TransaccionFinancieraDetailPage: React.FC = () => {
   if (!id_transaccion) {
     return (
       <PageLayout>
-        <h2 style={{ marginBottom: 16 }}>Detalle de Transacción Financiera</h2>
-        <div>No se encontró el ID de la transacción.</div>
-        <Button onClick={() => navigate(-1)}>Volver</Button>
+        <Typography variant="h5" mb={2}>Detalle de Transacción Financiera</Typography>
+        <Typography mb={2}>No se encontró el ID de la transacción.</Typography>
+        <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
       </PageLayout>
     );
   }
 
-  if (isLoading || !data) return <PageLayout><h2 style={{ marginBottom: 16 }}>Detalle de Transacción Financiera</h2><div>Cargando...</div></PageLayout>;
+  if (isLoading || !data) {
+    return (
+      <PageLayout>
+        <Typography variant="h5" mb={2}>Detalle de Transacción Financiera</Typography>
+        <Typography color="text.secondary">Cargando...</Typography>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
-      <h2 style={{ marginBottom: 16 }}>Detalle de Transacción Financiera</h2>
-      <Paper sx={{ p: 2 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
-          <tbody>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>ID Transacción</td>
-              <td style={{ padding: '4px 8px' }}>{data.id}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>ID Empresa</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_empresa || '-'}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Nombre Empresa</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_empresa_nombre || '-'}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Usuario Registro</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_usuario_registro_username || data.id_usuario_registro__username || '-'}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Fecha/Hora</td>
-              <td style={{ padding: '4px 8px' }}>{data.fecha_hora_transaccion}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Tipo de Transacción</td>
-              <td style={{ padding: '4px 8px' }}>{data.tipo_transaccion}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Monto</td>
-              <td style={{ padding: '4px 8px' }}>{data.monto_transaccion}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Moneda</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_moneda_transaccion__codigo_iso}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Moneda Base</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_moneda_base__codigo_iso}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Monto Base Empresa</td>
-              <td style={{ padding: '4px 8px' }}>{data.monto_base_empresa}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Moneda País Empresa</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_moneda_pais_empresa__codigo_iso}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Monto Moneda País</td>
-              <td style={{ padding: '4px 8px' }}>{data.monto_moneda_pais}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Método de Pago</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_metodo_pago__nombre_metodo}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Referencia de Pago</td>
-              <td style={{ padding: '4px 8px' }}>{data.referencia_pago}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Descripción</td>
-              <td style={{ padding: '4px 8px' }}>{data.descripcion}</td>
-            </tr>
-            {/* Caja asociada */}
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Caja</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_caja_nombre || data.id_caja || '-'}</td>
-            </tr>
-            {/* Cuenta bancaria asociada */}
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Cuenta Bancaria</td>
-              <td style={{ padding: '4px 8px' }}>{data.id_cuenta_bancaria_nombre || data.id_cuenta_bancaria || '-'}</td>
-            </tr>
-            {/* Tipo de documento asociado */}
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Tipo de Documento</td>
-              <td style={{ padding: '4px 8px' }}>{data.tipo_documento || '-'}</td>
-            </tr>
-            {/* Número de documento asociado */}
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Nro. Documento</td>
-              <td style={{ padding: '4px 8px' }}>{data.nro_documento || '-'}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: 'bold', padding: '4px 8px', background: '#f6fafd' }}>Conciliada</td>
-              <td style={{ padding: '4px 8px' }}>{data.conciliada ? 'Sí' : 'No'}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {/* <Button onClick={() => setEditMode(true)} disabled={!!data.conciliada}>Editar</Button> */}
-          <Button onClick={() => printTransaccionFinanciera(id_transaccion || '')}>Imprimir</Button>
-          <Button onClick={() => navigate(-1)}>Volver</Button>
-        </div>
-        {/* Si editMode, mostrar formulario de edición limitada aquí */}
-      </Paper>
+      <Typography variant="h5" mb={3}>Detalle de Transacción Financiera</Typography>
+      <Box>
+        <Row label="ID Transacción" value={data.id} />
+        <Divider />
+        <Row label="ID Empresa" value={data.id_empresa || '-'} />
+        <Divider />
+        <Row label="Nombre Empresa" value={data.id_empresa_nombre || '-'} />
+        <Divider />
+        <Row label="Usuario Registro" value={data.id_usuario_registro_username || data.id_usuario_registro__username || '-'} />
+        <Divider />
+        <Row label="Fecha/Hora" value={data.fecha_hora_transaccion} />
+        <Divider />
+        <Row label="Tipo de Transacción" value={data.tipo_transaccion} />
+        <Divider />
+        <Row label="Monto" value={data.monto_transaccion} />
+        <Divider />
+        <Row label="Moneda" value={data.id_moneda_transaccion__codigo_iso} />
+        <Divider />
+        <Row label="Moneda Base" value={data.id_moneda_base__codigo_iso} />
+        <Divider />
+        <Row label="Monto Base Empresa" value={data.monto_base_empresa} />
+        <Divider />
+        <Row label="Moneda País Empresa" value={data.id_moneda_pais_empresa__codigo_iso} />
+        <Divider />
+        <Row label="Monto Moneda País" value={data.monto_moneda_pais} />
+        <Divider />
+        <Row label="Método de Pago" value={data.id_metodo_pago__nombre_metodo} />
+        <Divider />
+        <Row label="Referencia de Pago" value={data.referencia_pago} />
+        <Divider />
+        <Row label="Descripción" value={data.descripcion} />
+        <Divider />
+        <Row label="Caja" value={data.id_caja_nombre || data.id_caja || '-'} />
+        <Divider />
+        <Row label="Cuenta Bancaria" value={data.id_cuenta_bancaria_nombre || data.id_cuenta_bancaria || '-'} />
+        <Divider />
+        <Row label="Tipo de Documento" value={data.tipo_documento || '-'} />
+        <Divider />
+        <Row label="Nro. Documento" value={data.nro_documento || '-'} />
+        <Divider />
+        <Row label="Conciliada" value={data.conciliada ? 'Sí' : 'No'} />
+      </Box>
+      <Stack direction="row" spacing={1} mt={3} justifyContent="flex-end">
+        <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
+        <Button variant="contained" onClick={() => printTransaccionFinanciera(id_transaccion || '')}>Imprimir</Button>
+      </Stack>
     </PageLayout>
   );
 };

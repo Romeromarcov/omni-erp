@@ -1,132 +1,68 @@
-import React from 'react';
-import PageLayout from '../../../components/PageLayout';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { notaCreditoVentaService } from '../../../services/ventas';
 import type { NotaCreditoVenta } from '../../../types/ventas';
-import { Button } from '@mui/material';
+import type { PaginatedResponse } from '../../../services/ventas';
+import Pagination from '../../../components/Pagination';
+import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
-const NotasCreditoVentaListPage: React.FC = () => {
+const PAGE_SIZE = 20;
+
+export default function NotasCreditoVentaListPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  const [page, setPage] = useState(1);
 
-  const { data: notasCredito = [], isLoading: loading } = useQuery<NotaCreditoVenta[]>({
-    queryKey: ['/ventas/notas-credito-venta/'],
-    queryFn: () => notaCreditoVentaService.getAll(),
+  const { data, isLoading } = useQuery<PaginatedResponse<NotaCreditoVenta>>({
+    queryKey: ['notas-credito-venta', page],
+    queryFn: () => notaCreditoVentaService.getAllPaginated(page, PAGE_SIZE),
   });
 
-  const aplicarMutation = useMutation({
-    mutationFn: (id: string) => notaCreditoVentaService.aplicar(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-credito-venta/'] });
+  const notas = data?.results ?? [];
+  const count = data?.count ?? 0;
+
+  const columns: Column<NotaCreditoVenta>[] = [
+    { key: 'numero', header: t('ventas.tabla.numero'), render: (n) => n.numero_nota_credito },
+    { key: 'fecha', header: t('ventas.tabla.fecha'), render: (n) => new Date(n.fecha_emision).toLocaleDateString() },
+    { key: 'motivo', header: t('ventas.notasCredito.tabla.motivo'), render: (n) => n.motivo },
+    { key: 'estado', header: t('ventas.tabla.estado'), render: (n) => <StatusChip value={n.estado} /> },
+    { key: 'total', header: t('ventas.notasCredito.tabla.total'), align: 'right', render: (n) => Number(n.monto_total ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2 }) },
+    {
+      key: 'acciones',
+      header: t('ventas.tabla.acciones'),
+      align: 'right',
+      render: (n) => (
+        <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(n.id_nota_credito); }}>
+          {t('ventas.tabla.ver')}
+        </Button>
+      ),
     },
-    onError: () => alert('Error al aplicar la nota de crédito'),
-  });
-
-  const handleAplicar = (notaCredito: NotaCreditoVenta) => {
-    aplicarMutation.mutate(notaCredito.id_nota_credito);
-  };
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'PENDIENTE': return '#ffc107';
-      case 'APLICADA': return '#28a745';
-      case 'ANULADA': return '#dc3545';
-      default: return '#6c757d';
-    }
-  };
+  ];
 
   return (
-    <PageLayout>
-      <div style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1>Notas de Crédito de Venta</h1>
-          <Button variant="contained" onClick={() => navigate('new')}>
-            Nueva Nota de Crédito
+    <PageContainer>
+      <PageHeader
+        title={t('ventas.notasCredito.title')}
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('new')}>
+            {t('ventas.notasCredito.nueva')}
           </Button>
-        </div>
-
-        {loading ? (
-          <div>Cargando...</div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f8f9fa' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>N° Nota</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Fecha</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Cliente</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Motivo</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Estado</th>
-                  <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>Monto</th>
-                  <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #dee2e6' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {notasCredito.map((notaCredito) => (
-                  <tr key={notaCredito.id_nota_credito} style={{ borderBottom: '1px solid #dee2e6' }}>
-                    <td style={{ padding: '12px' }}>{notaCredito.numero_nota_credito}</td>
-                    <td style={{ padding: '12px' }}>{new Date(notaCredito.fecha_emision).toLocaleDateString()}</td>
-                    <td style={{ padding: '12px' }}>
-                      {notaCredito.id_cliente ? (
-                        <div>
-                          <div style={{ fontWeight: 'bold' }}>{notaCredito.id_cliente.nombre}</div>
-                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                            {notaCredito.id_cliente.razon_social} - {notaCredito.id_cliente.rif}
-                          </div>
-                        </div>
-                      ) : (
-                        <span style={{ color: '#dc3545' }}>Cliente no encontrado</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px' }}>{notaCredito.motivo}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        backgroundColor: getEstadoColor(notaCredito.estado || 'PENDIENTE'),
-                        color: 'white',
-                        fontSize: '12px'
-                      }}>
-                        {notaCredito.estado || 'PENDIENTE'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>
-                      {notaCredito.monto_total?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <Button
-                        variant="contained" color="secondary"
-                        onClick={() => navigate(`${notaCredito.id_nota_credito}`)}
-                        style={{ marginRight: '8px' }}
-                      >
-                        Ver
-                      </Button>
-                      <Button
-                        variant="contained" color="secondary"
-                        onClick={() => navigate(`${notaCredito.id_nota_credito}/edit`)}
-                        style={{ marginRight: '8px' }}
-                      >
-                        Editar
-                      </Button>
-                      {notaCredito.estado !== 'APLICADA' && (
-                        <Button
-                          variant="contained"
-                          onClick={() => handleAplicar(notaCredito)}
-                        >
-                          Aplicar
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </PageLayout>
+        }
+      />
+      <DataTable
+        columns={columns}
+        rows={notas}
+        getRowKey={(n) => n.id_nota_credito}
+        loading={isLoading}
+        emptyMessage={t('ventas.notasCredito.sinRegistros')}
+        onRowClick={(n) => navigate(n.id_nota_credito)}
+      />
+      <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={(p) => { setPage(p); window.scrollTo(0, 0); }} />
+    </PageContainer>
   );
-};
-
-export default NotasCreditoVentaListPage;
+}

@@ -33,15 +33,15 @@ const PlantillasMaestroListPage: React.FC = () => {
   return (
     <PageLayout>
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4">Plantillas Maestro de Cajas Virtuales</Typography>
-        <Button onClick={() => navigate('/finanzas/plantillas-maestro/crear')}>
+        <Typography variant="h5">Plantillas Maestro de Cajas Virtuales</Typography>
+        <Button variant="contained" onClick={() => navigate('/finanzas/plantillas-maestro/crear')}>
           Nueva Plantilla
         </Button>
       </Box>
 
       {isError && <Alert severity="error" sx={{ mb: 2 }}>Error al cargar las plantillas</Alert>}
 
-      <Paper sx={{ p: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2 }}>
         {isLoading ? (
           <Typography>Cargando...</Typography>
         ) : plantillas.length === 0 ? (

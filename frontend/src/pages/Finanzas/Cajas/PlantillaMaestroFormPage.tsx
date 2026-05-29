@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPlantillaMaestro, updatePlantillaMaestro, getPlantillasMaestro } from '../../../services/plantillasService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
-import { Alert, Autocomplete, Box, Button, Chip, FormControlLabel, Paper, Switch, TextField, Typography } from '@mui/material';
+import { Alert, Autocomplete, Box, Button, Chip, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material';
 
 interface MetodoPago {
   id_metodo_pago: string;
@@ -107,113 +107,109 @@ const PlantillaMaestroFormPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h4">
-          {isEditing ? 'Editar Plantilla Maestro' : 'Nueva Plantilla Maestro'}
-        </Typography>
+    <PageLayout maxWidth={800}>
+      <Typography variant="h5" mb={3}>
+        {isEditing ? 'Editar Plantilla Maestro' : 'Nueva Plantilla Maestro'}
+      </Typography>
+
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={3}>
+          <TextField
+            label="Nombre"
+            value={form.nombre}
+            onChange={(e) => handleChange('nombre', e.target.value)}
+            required
+            fullWidth
+          />
+
+          <TextField
+            label="Descripción"
+            value={form.descripcion}
+            onChange={(e) => handleChange('descripcion', e.target.value)}
+            multiline
+            minRows={3}
+            fullWidth
+          />
+
+          <Autocomplete
+            multiple
+            options={metodosPago}
+            getOptionLabel={(option) => option.nombre}
+            value={metodosPago.filter(mp => form.metodos_pago.includes(mp.id_metodo_pago))}
+            onChange={(_, newValue) => {
+              handleChange('metodos_pago', newValue.map(mp => mp.id_metodo_pago));
+            }}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  label={option.nombre}
+                  {...getTagProps({ index })}
+                  size="small"
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Métodos de Pago"
+                placeholder="Selecciona métodos de pago"
+              />
+            )}
+          />
+
+          <Autocomplete
+            multiple
+            options={monedas}
+            getOptionLabel={(option) => `${option.nombre} (${option.simbolo})`}
+            value={monedas.filter(m => form.monedas.includes(m.id_moneda))}
+            onChange={(_, newValue) => {
+              handleChange('monedas', newValue.map(m => m.id_moneda));
+            }}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  label={`${option.nombre} (${option.simbolo})`}
+                  {...getTagProps({ index })}
+                  size="small"
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Monedas"
+                placeholder="Selecciona monedas"
+              />
+            )}
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={form.activa}
+                onChange={(e) => handleChange('activa', e.target.checked)}
+              />
+            }
+            label="Activa"
+          />
+
+          {error && <Alert severity="error">{error}</Alert>}
+          {success && <Alert severity="success">{success}</Alert>}
+
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={() => navigate('/finanzas/plantillas-maestro')}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" variant="contained" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+            </Button>
+          </Stack>
+        </Stack>
       </Box>
-
-      <Paper sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
-        <form onSubmit={handleSubmit}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <TextField
-              label="Nombre"
-              value={form.nombre}
-              onChange={(e) => handleChange('nombre', e.target.value)}
-              required
-              fullWidth
-            />
-
-            <TextField
-              label="Descripción"
-              value={form.descripcion}
-              onChange={(e) => handleChange('descripcion', e.target.value)}
-              multiline
-              rows={3}
-              fullWidth
-            />
-
-            <Autocomplete
-              multiple
-              options={metodosPago}
-              getOptionLabel={(option) => option.nombre}
-              value={metodosPago.filter(mp => form.metodos_pago.includes(mp.id_metodo_pago))}
-              onChange={(_, newValue) => {
-                handleChange('metodos_pago', newValue.map(mp => mp.id_metodo_pago));
-              }}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    label={option.nombre}
-                    {...getTagProps({ index })}
-                    size="small"
-                  />
-                ))
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Métodos de Pago"
-                  placeholder="Selecciona métodos de pago"
-                />
-              )}
-            />
-
-            <Autocomplete
-              multiple
-              options={monedas}
-              getOptionLabel={(option) => `${option.nombre} (${option.simbolo})`}
-              value={monedas.filter(m => form.monedas.includes(m.id_moneda))}
-              onChange={(_, newValue) => {
-                handleChange('monedas', newValue.map(m => m.id_moneda));
-              }}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    label={`${option.nombre} (${option.simbolo})`}
-                    {...getTagProps({ index })}
-                    size="small"
-                  />
-                ))
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Monedas"
-                  placeholder="Selecciona monedas"
-                />
-              )}
-            />
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={form.activa}
-                  onChange={(e) => handleChange('activa', e.target.checked)}
-                />
-              }
-              label="Activa"
-            />
-
-            {error && <Alert severity="error">{error}</Alert>}
-            {success && <Alert severity="success">{success}</Alert>}
-
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button
-                type="button"
-                variant="outlined"
-                onClick={() => navigate('/finanzas/plantillas-maestro')}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
-              </Button>
-            </Box>
-          </Box>
-        </form>
-      </Paper>
     </PageLayout>
   );
 };

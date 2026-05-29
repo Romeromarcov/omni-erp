@@ -1,165 +1,84 @@
-import React, { useState } from 'react';
-import PageLayout from '../../../components/PageLayout';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Button, Stack, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { notaVentaService } from '../../../services/ventas';
 import type { NotaVenta } from '../../../types/ventas';
 import type { PaginatedResponse } from '../../../services/ventas';
-import { Button } from '@mui/material';
 import Pagination from '../../../components/Pagination';
+import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
+import type { Column } from '../../../components/ui';
 
 const PAGE_SIZE = 20;
 
-const NotasVentaListPage: React.FC = () => {
+export default function NotasVentaListPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
 
-  const { data, isLoading: loading } = useQuery<PaginatedResponse<NotaVenta>>({
-    queryKey: ['/ventas/notas-venta/', page],
+  const { data, isLoading } = useQuery<PaginatedResponse<NotaVenta>>({
+    queryKey: ['notas-venta', page],
     queryFn: () => notaVentaService.getAllPaginated(page, PAGE_SIZE),
   });
 
   const notasVenta = data?.results ?? [];
   const count = data?.count ?? 0;
 
-  const convertirMutation = useMutation({
-    mutationFn: (id: string) => notaVentaService.convertirAFactura(id, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-venta/'] });
+  const columns: Column<NotaVenta>[] = [
+    { key: 'numero', header: t('ventas.tabla.numero'), render: (n) => n.numero_nota_venta },
+    { key: 'fecha', header: t('ventas.tabla.fecha'), render: (n) => new Date(n.fecha_nota_venta).toLocaleDateString() },
+    { key: 'estado', header: t('ventas.tabla.estado'), render: (n) => <StatusChip value={n.estado} /> },
+    {
+      key: 'cliente',
+      header: t('ventas.tabla.cliente'),
+      render: (n) =>
+        n.id_cliente ? (
+          <>
+            <Typography variant="body2" fontWeight={600}>{n.id_cliente.nombre}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {n.id_cliente.razon_social} · {n.id_cliente.rif}
+            </Typography>
+          </>
+        ) : (
+          <Typography variant="body2" color="error">{t('ventas.tabla.clienteNoEncontrado')}</Typography>
+        ),
     },
-    onError: () => alert(t('ventas.notasVenta.errorConvertir')),
-  });
-
-  const handleConvertirAFactura = (notaVenta: NotaVenta) => {
-    if (!notaVenta.convertido_a_factura) {
-      convertirMutation.mutate(notaVenta.id_nota_venta);
-    }
-  };
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'BORRADOR': return '#6c757d';
-      case 'ENTREGADA': return '#007bff';
-      case 'FACTURADA': return '#28a745';
-      case 'ANULADA': return '#dc3545';
-      default: return '#6c757d';
-    }
-  };
+    {
+      key: 'acciones',
+      header: t('ventas.tabla.acciones'),
+      align: 'right',
+      render: (n) => (
+        <Stack direction="row" spacing={1} justifyContent="flex-end" onClick={(e) => e.stopPropagation()}>
+          <Button size="small" variant="outlined" onClick={() => navigate(n.id_nota_venta)}>{t('ventas.tabla.ver')}</Button>
+          {n.estado !== 'FACTURADA' && (
+            <Button size="small" variant="outlined" onClick={() => navigate(`${n.id_nota_venta}/edit`)}>{t('common.edit')}</Button>
+          )}
+        </Stack>
+      ),
+    },
+  ];
 
   return (
-    <PageLayout>
-      <h2 style={{ marginBottom: 16 }}>{t('ventas.notasVenta.title')}</h2>
-      <div style={{ marginBottom: 16 }}>
-        <Button variant="contained" onClick={() => navigate('new')}>{t('ventas.notasVenta.nuevo')}</Button>
-      </div>
-
-      {loading ? (
-        <div>{t('ventas.notasVenta.cargando')}</div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f8f9fa' }}>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.numero')}</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.fecha')}</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.estado')}</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.cliente')}</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.origen')}</th>
-                <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #dee2e6' }}>{t('ventas.tabla.acciones')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {notasVenta.map((notaVenta) => (
-                <tr key={notaVenta.id_nota_venta} style={{ borderBottom: '1px solid #dee2e6' }}>
-                  <td style={{ padding: '12px' }}>{notaVenta.numero_nota}</td>
-                  <td style={{ padding: '12px' }}>{notaVenta.fecha_nota ? new Date(notaVenta.fecha_nota).toLocaleDateString() : '-'}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: getEstadoColor(notaVenta.estado),
-                      color: 'white',
-                      fontSize: '12px'
-                    }}>
-                      {notaVenta.estado}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    {notaVenta.id_cliente ? (
-                      <div>
-                        <div style={{ fontWeight: 'bold' }}>{notaVenta.id_cliente.nombre}</div>
-                        <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                          {notaVenta.id_cliente.razon_social} - {notaVenta.id_cliente.rif}
-                        </div>
-                      </div>
-                    ) : (
-                      <span style={{ color: '#dc3545' }}>{t('ventas.tabla.clienteNoEncontrado')}</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    {notaVenta.id_pedido_origen ? (
-                      <span style={{ color: '#007bff', fontSize: '12px' }}>
-                        {t('ventas.notasVenta.dePedido')}
-                      </span>
-                    ) : (
-                      <span style={{ color: '#6c757d', fontSize: '12px' }}>
-                        {t('ventas.tabla.manual')}
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <Button
-                        variant="contained" color="secondary"
-                        onClick={() => navigate(notaVenta.id_nota_venta)}
-                      >
-                        {t('ventas.tabla.ver')}
-                      </Button>
-                      <Button
-                        variant="contained" color="secondary"
-                        onClick={() => navigate(`${notaVenta.id_nota_venta}/edit`)}
-                      >
-                        {t('common.edit')}
-                      </Button>
-                      {!notaVenta.convertido_a_factura && notaVenta.estado === 'ENTREGADA' && (
-                        <Button
-                          variant="contained"
-                          onClick={() => handleConvertirAFactura(notaVenta)}
-                        >
-                          {t('ventas.notasVenta.convertirAFactura')}
-                        </Button>
-                      )}
-                      {notaVenta.convertido_a_factura && (
-                        <span style={{ color: '#28a745', fontSize: '12px' }}>
-                          {t('ventas.tabla.convertido')}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {notasVenta.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
-              {t('ventas.notasVenta.sinRegistros')}
-            </div>
-          )}
-
-          <Pagination
-            page={page}
-            count={count}
-            pageSize={PAGE_SIZE}
-            onChange={(p) => { setPage(p); window.scrollTo(0, 0); }}
-          />
-        </div>
-      )}
-    </PageLayout>
+    <PageContainer>
+      <PageHeader
+        title={t('ventas.notasVenta.title')}
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('new')}>
+            {t('ventas.notasVenta.nueva')}
+          </Button>
+        }
+      />
+      <DataTable
+        columns={columns}
+        rows={notasVenta}
+        getRowKey={(n) => n.id_nota_venta}
+        loading={isLoading}
+        emptyMessage={t('ventas.notasVenta.sinRegistros')}
+        onRowClick={(n) => navigate(n.id_nota_venta)}
+      />
+      <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={(p) => { setPage(p); window.scrollTo(0, 0); }} />
+    </PageContainer>
   );
-};
-
-export default NotasVentaListPage;
+}

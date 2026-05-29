@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Box, Button, Card, CardContent, CircularProgress, Paper, Stack, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import {
   getConectores,
   getIntegrationHubStatus,
 } from '../../services/integrationHubService';
+import { PageContainer, PageHeader } from '../../components/ui';
 import ConectorCard from './ConectorCard';
 import NuevoConectorModal from './NuevoConectorModal';
 
@@ -23,115 +26,62 @@ const IntegrationHubPage: React.FC = () => {
 
   const conectores = conectoresData?.results ?? [];
 
-  const stat = (label: string, value: number | string, color = '#111827') => (
-    <div
-      style={{
-        background: '#fff',
-        border: '1px solid #e5e7eb',
-        borderRadius: 10,
-        padding: '16px 22px',
-        minWidth: 120,
-      }}
-    >
-      <div style={{ fontSize: 24, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{label}</div>
-    </div>
+  const stat = (label: string, value: number | string, color = 'text.primary') => (
+    <Card variant="outlined" sx={{ minWidth: 120, flex: '0 1 auto' }}>
+      <CardContent>
+        <Typography variant="h5" sx={{ fontWeight: 700, color }}>{value}</Typography>
+        <Typography variant="caption" color="text.secondary">{label}</Typography>
+      </CardContent>
+    </Card>
   );
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1200 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#111827' }}>
-            Integration Hub
-          </h1>
-          <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>
-            Conecta Omni ERP con cualquier sistema externo
-          </p>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          style={{
-            background: '#2563eb',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            padding: '10px 20px',
-            fontWeight: 600,
-            fontSize: 14,
-            cursor: 'pointer',
-          }}
-        >
-          + Nuevo conector
-        </button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Integration Hub"
+        subtitle="Conecta Omni ERP con cualquier sistema externo"
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowModal(true)}>
+            Nuevo conector
+          </Button>
+        }
+      />
 
       {/* Stats */}
       {status && (
-        <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-          {stat('Conectores activos', status.conectores_activos, '#2563eb')}
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap mb={4}>
+          {stat('Conectores activos', status.conectores_activos, 'primary.main')}
           {stat('Total conectores', status.conectores_total)}
           {stat('Jobs (24h)', status.ultima_24h.total)}
-          {stat('Completados', status.ultima_24h.completados, '#16a34a')}
-          {status.ultima_24h.fallidos > 0 &&
-            stat('Fallidos', status.ultima_24h.fallidos, '#dc2626')}
-          {status.ultima_24h.en_progreso > 0 &&
-            stat('En progreso', status.ultima_24h.en_progreso, '#d97706')}
-        </div>
+          {stat('Completados', status.ultima_24h.completados, 'success.main')}
+          {status.ultima_24h.fallidos > 0 && stat('Fallidos', status.ultima_24h.fallidos, 'error.main')}
+          {status.ultima_24h.en_progreso > 0 && stat('En progreso', status.ultima_24h.en_progreso, 'warning.main')}
+        </Stack>
       )}
 
       {/* Grid de conectores */}
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>Cargando conectores…</div>
+        <Box display="flex" justifyContent="center" py={6}><CircularProgress /></Box>
       ) : conectores.length === 0 ? (
-        <div
-          style={{
-            border: '2px dashed #e5e7eb',
-            borderRadius: 12,
-            padding: '60px 32px',
-            textAlign: 'center',
-          }}
-        >
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🔌</div>
-          <div style={{ fontWeight: 700, fontSize: 18, color: '#111827', marginBottom: 6 }}>
-            Sin conectores configurados
-          </div>
-          <div style={{ color: '#6b7280', marginBottom: 20, fontSize: 14 }}>
+        <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed' }}>
+          <Typography variant="h6" gutterBottom>Sin conectores configurados</Typography>
+          <Typography variant="body2" color="text.secondary" mb={2}>
             Conecta tu primera plataforma externa para empezar a sincronizar datos.
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            style={{
-              background: '#2563eb',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              padding: '10px 20px',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-            }}
-          >
+          </Typography>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowModal(true)}>
             Agregar primer conector
-          </button>
-        </div>
+          </Button>
+        </Paper>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: 16,
-          }}
-        >
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
           {conectores.map(c => (
             <ConectorCard key={c.id_conector} conector={c} />
           ))}
-        </div>
+        </Box>
       )}
 
       {showModal && <NuevoConectorModal onClose={() => setShowModal(false)} />}
-    </div>
+    </PageContainer>
   );
 };
 

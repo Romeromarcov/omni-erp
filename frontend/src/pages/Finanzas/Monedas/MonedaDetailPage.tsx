@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put } from '../../../services/api';
@@ -6,23 +6,20 @@ import { toList } from '../../../utils/api';
 import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
 import type { Moneda } from './MonedaListPage';
 import PageLayout from '../../../components/PageLayout';
+import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 const MonedaDetailPage: React.FC = () => {
   const { id_moneda } = useParams<{ id_moneda: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [moneda, setMoneda] = useState<Moneda | null>(null);
+  const [moneda, setMoneda] = useState<Partial<Moneda>>({});
   const [error, setError] = useState('');
 
-  const { data: monedaData, isLoading } = useQuery<Moneda>({
+  const { data: monedaData } = useQuery<Moneda>({
     queryKey: [`/finanzas/monedas/${id_moneda}/`],
-    queryFn: () => get<Moneda>(`/finanzas/monedas/${id_moneda}/`),
+    queryFn: () => get(`/finanzas/monedas/${id_moneda}/`),
     enabled: !!id_moneda,
   });
-
-  useEffect(() => {
-    if (monedaData) setMoneda(monedaData);
-  }, [monedaData]);
 
   const { data: monedasExistentes = [] } = useQuery<unknown, Error, Moneda[]>({
     queryKey: ['/finanzas/monedas/?limit=1000'],
@@ -30,141 +27,74 @@ const MonedaDetailPage: React.FC = () => {
     select: toList,
   });
 
+  useEffect(() => {
+    if (monedaData) setMoneda(monedaData);
+  }, [monedaData]);
+
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => put(`/finanzas/monedas/${id_moneda}/`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/finanzas/monedas/'] });
       navigate('/finanzas/monedas');
     },
-    onError: (err: unknown) => {
-      console.error(err);
-      let backendMsg = '';
-      let foundGenericError = false;
-      if (
-        typeof err === 'object' && err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: unknown } }).response === 'object' &&
-        (err as { response?: { data?: unknown } }).response !== null &&
-        'data' in (err as { response: { data?: unknown } }).response!
-      ) {
-        const data = (err as { response: { data: unknown } }).response.data;
-        const checkMsg = (val: unknown): boolean => {
-          if (!val) return false;
-          if (typeof val === 'string') return val.toLowerCase().includes('no puede modificar una moneda genérica');
-          if (typeof val === 'object') {
-            return Object.values(val).some(checkMsg);
-          }
-          return false;
-        };
-        foundGenericError = checkMsg(data);
-        backendMsg = typeof data === 'string' ? data : JSON.stringify(data);
-      }
-      if (foundGenericError) {
-        setError('No es posible modificar las monedas generales del sistema.');
-      } else {
-        setError(backendMsg || 'Error al actualizar moneda');
-      }
-    },
+    onError: () => setError('Error al actualizar moneda'),
   });
 
   const saving = updateMutation.isPending;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    if (!moneda) return;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setMoneda({ ...moneda, [e.target.name]: e.target.value });
   };
 
   const handleCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!moneda) return;
     setMoneda({ ...moneda, [e.target.name]: e.target.checked });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!moneda) return;
     setError('');
-    // Validación fuzzy de duplicados antes de enviar (excluyendo la moneda actual)
-    const otras = monedasExistentes.filter(m => m.id_moneda !== moneda.id_moneda);
-    const similar = findSimilarMoneda(moneda, otras, 65);
+    const similar = findSimilarMoneda(moneda, monedasExistentes.filter(m => m.id_moneda !== id_moneda), 65);
     if (similar) {
       setError(`Ya existe una moneda similar: "${similar.nombre}" (${similar.codigo_iso})`);
       return;
     }
-    // Prepara el payload para cumplir con los tipos del modelo
-    type MonedaPayload = Partial<Omit<Moneda, 'referencia_externa' | 'tipo_operacion' | 'fecha_cierre_estimada'> & {
-      referencia_externa: string | null;
-      tipo_operacion: string | null;
-      fecha_cierre_estimada: string | null;
-    }>;
-    const payload: MonedaPayload = {
+    const payload = {
       ...moneda,
-      decimales: Number(moneda.decimales),
-      fecha_cierre_estimada: moneda.fecha_cierre_estimada && typeof moneda.fecha_cierre_estimada === 'string' && moneda.fecha_cierre_estimada.match(/^\d{4}-\d{2}-\d{2}$/)
-        ? moneda.fecha_cierre_estimada
+      fecha_cierre_estimada: moneda.fecha_cierre_estimada
+        ? (typeof moneda.fecha_cierre_estimada === 'string' && moneda.fecha_cierre_estimada.match(/^\d{4}-\d{2}-\d{2}$/)
+            ? moneda.fecha_cierre_estimada
+            : null)
         : null,
-      documento_json: (() => {
-        if (!moneda.documento_json || moneda.documento_json === '') return null;
-        try {
-          return typeof moneda.documento_json === 'string' ? JSON.parse(moneda.documento_json) : moneda.documento_json;
-        } catch {
-          return null;
-        }
-      })(),
-      referencia_externa: moneda.referencia_externa !== '' ? moneda.referencia_externa : null,
-      tipo_operacion: moneda.tipo_operacion !== '' ? moneda.tipo_operacion : null,
     };
     updateMutation.mutate(payload as Record<string, unknown>);
   };
 
-  if (isLoading || !moneda) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
-
   return (
     <PageLayout maxWidth={480}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Detalle de Moneda</h2>
-      <form onSubmit={handleSubmit} style={{ background: '#f6fafd', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: 32, display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 400, margin: '0 auto' }}>
-        <label>Tipo de Moneda
-          <select name="tipo_moneda" value={moneda.tipo_moneda || 'fiat'} onChange={handleChange} required>
-            <option value="fiat">Fiat</option>
-            <option value="crypto">Cripto</option>
-            <option value="otro">Otro</option>
-          </select>
-        </label>
-        <label>Código ISO
-          <input
-            name="codigo_iso"
-            value={moneda.codigo_iso}
-            onChange={handleChange}
-            required
-            maxLength={moneda.tipo_moneda === 'crypto' ? 5 : 3}
-          />
-        </label>
-        <label>Nombre
-          <input name="nombre" value={moneda.nombre} onChange={handleChange} required />
-        </label>
-        <label>Símbolo
-          <input name="simbolo" value={moneda.simbolo} onChange={handleChange} required />
-        </label>
-        <label>Decimales
-          <input name="decimales" type="number" value={moneda.decimales} onChange={handleChange} min={0} max={8} required />
-        </label>
-        <label>Referencia Externa
-          <input name="referencia_externa" value={moneda.referencia_externa || ''} onChange={handleChange} />
-        </label>
-        <label>Documento JSON
-          <input name="documento_json" value={moneda.documento_json || ''} onChange={handleChange} />
-        </label>
-        <label>Tipo Operación
-          <input name="tipo_operacion" value={moneda.tipo_operacion || ''} onChange={handleChange} />
-        </label>
-        <label>Fecha Cierre Estimada
-          <input name="fecha_cierre_estimada" type="date" value={moneda.fecha_cierre_estimada || ''} onChange={handleChange} />
-        </label>
-        <label>
-          <input name="activo" type="checkbox" checked={!!moneda.activo} onChange={handleCheck} /> Activo
-        </label>
-        <button type="submit" disabled={saving} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 15, marginTop: 8 }}>{saving ? 'Guardando...' : 'Actualizar'}</button>
-        {error && <div style={{ color: '#d32f2f', marginTop: 8, textAlign: 'center', fontWeight: 500 }}>{error}</div>}
-      </form>
+      <Typography variant="h5" mb={3}>Editar Moneda</Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <TextField select name="tipo_moneda" label="Tipo de Moneda" value={moneda.tipo_moneda || 'fiat'} onChange={handleChange} required fullWidth>
+            <MenuItem value="fiat">Fiat</MenuItem>
+            <MenuItem value="crypto">Cripto</MenuItem>
+            <MenuItem value="otro">Otro</MenuItem>
+          </TextField>
+          <TextField name="codigo_iso" label="Código ISO" value={moneda.codigo_iso || ''} onChange={handleChange} required fullWidth inputProps={{ maxLength: moneda.tipo_moneda === 'crypto' ? 5 : 3 }} />
+          <TextField name="nombre" label="Nombre" value={moneda.nombre || ''} onChange={handleChange} required fullWidth />
+          <TextField name="simbolo" label="Símbolo" value={moneda.simbolo || ''} onChange={handleChange} required fullWidth />
+          <TextField name="decimales" type="number" label="Decimales" value={moneda.decimales ?? 2} onChange={handleChange} required fullWidth inputProps={{ min: 0, max: 8 }} />
+          <TextField name="referencia_externa" label="Referencia Externa" value={moneda.referencia_externa || ''} onChange={handleChange} fullWidth />
+          <TextField name="documento_json" label="Documento JSON" value={moneda.documento_json || ''} onChange={handleChange} fullWidth />
+          <TextField name="tipo_operacion" label="Tipo Operación" value={moneda.tipo_operacion || ''} onChange={handleChange} fullWidth />
+          <TextField name="fecha_cierre_estimada" type="date" label="Fecha Cierre Estimada" value={typeof moneda.fecha_cierre_estimada === 'string' ? moneda.fecha_cierre_estimada : ''} onChange={handleChange} fullWidth InputLabelProps={{ shrink: true }} />
+          <FormControlLabel control={<Checkbox name="activo" checked={!!moneda.activo} onChange={handleCheck} />} label="Activo" />
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="outlined" onClick={() => navigate('/finanzas/monedas')}>Cancelar</Button>
+            <Button type="submit" variant="contained" disabled={saving}>{saving ? 'Guardando…' : 'Actualizar'}</Button>
+          </Stack>
+        </Stack>
+      </Box>
     </PageLayout>
   );
 };
