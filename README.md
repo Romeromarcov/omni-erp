@@ -83,7 +83,10 @@ python -m pytest tests_api/ -v
 
 ## Documentación
 
-- Plan maestro del proyecto: `docs/OMNI_ERP_MASTER_PLAN.md`
+- **Plan maestro único (fuente de verdad):** `docs/PLAN_MAESTRO_UNICO.md` — empieza aquí.
+- Registro cronológico de sesiones: `backend/PROJECT_LOG.md`
+- Decisiones arquitectónicas: `docs/decisions/ADR-*.md`
+- Planes históricos archivados: `docs/_archive/`
 - API interactiva: http://localhost:8000/api/docs/
 - ReDoc: http://localhost:8000/api/redoc/
 
@@ -91,8 +94,8 @@ python -m pytest tests_api/ -v
 
 - Usa ramas `feature/` o `bugfix/` para tus cambios.
 - Asegúrate de que los tests y linters pasen antes de hacer PR.
-- Lee el `OMNI_ERP_MASTER_PLAN.md` antes de incorporarte al proyecto.
+- Lee `docs/PLAN_MAESTRO_UNICO.md` antes de incorporarte al proyecto.
 
 ---
 
-¿Dudas? Consulta el plan maestro o contacta al equipo de desarrollo.
+¿Dudas? Consulta `docs/PLAN_MAESTRO_UNICO.md` o contacta al equipo de desarrollo.
