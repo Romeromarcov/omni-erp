@@ -294,6 +294,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 | ADR-005 | DSL de personalización declarativo (no JSON Schema/Pydantic/parser propio) | ✅ |
 | ADR-006 | Asientos contables automáticos (R-CODE-11) | ✅ |
 | ADR-007 | **Arquitectura de localización de dos capas (legal + mercado), activable por empresa** | 📝 Por redactar |
+| ADR-008 | Monorepo de clientes + shells mobile (RN/Expo) y desktop (Tauri 2) sobre la Capa 1 | ✅ |
 
 ---
 
@@ -306,15 +307,15 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **Fase 0 (Fundación AI-nativa): CERRADA al 100%.** Tag `v0.1.0-phase0-complete`.
 - **Fase 1 / Bloque 1 — núcleo común (M1–M10): COMPLETO** (M9 agentes solo en modo sombra/sugerencia).
 - **Plan de hardening post-auditoría (39 ítems, `PLAN_TRABAJO_COMPLETO`): TODO COMPLETO.** Seguridad, tests, infra prod, Sentry, rate limiting, cookies httpOnly, paginación, validación zod.
-- **Módulo `cxc` (Cobranza Inteligente): implementado** (Bloques 0–10 del plan CxC); pulido de frontend en curso en `main`.
-- **~37 apps Django**, **~789 tests backend** (47 archivos en `tests_api/`) + eval suite, **~92 tests frontend**, cobertura backend ≥75% / frontend ≥60%.
+- **Módulo `cxc` (Cobranza Inteligente): implementado** (Bloques 0–10 del plan CxC); frontend shell ERP moderno + asistente IA shippeado en commit `84f7ab4` (2026-05-31).
+- **~37 apps Django**, **850 tests backend verdes** (verificado 2026-06-01, exit 0 en pytest) + eval suite, **~92 tests frontend**, cobertura backend gate ≥65% / frontend ≥60%.
 
 ## 4.2 Módulos — estado verificado
 
 **Núcleo y plataforma (✅ funcional)**
 - `core` — Empresa, Sucursal, Usuario, Rol, Permiso, Departamento, `Contacto` unificado, `CapabilityToken`, `Notificacion`, `ConfiguracionFlujoDocumentos`, base_models, MCP server, event store.
 - `configuracion_motor` — TipoDocumento, ParametroSistema, CatalogoValor.
-- `auditoria` — LogAuditoria automático vía signals.
+- `auditoria` — `RegistroAuditoria` (modelo + admin); los signals viven en `core/signals.py` (no en `auditoria/signals.py`). Pendiente consolidar en su app de origen.
 - `saas` — middleware de suscripción (fail-open documentado, desactivable), planes.
 - `integration_hub` — conector Odoo completo + SyncEngine + Celery tasks + MCP.
 - `personalizacion` — DSL runtime (entidades/estados/reglas/vistas).
@@ -353,7 +354,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **`saas` middleware fail-open** — revisar a fail-closed al activar `SAAS_VERIFICAR_SUSCRIPCION`.
 - **Service Workers / offline real** (portales) — pendiente.
 - **Acoplamiento a Venezuela en el núcleo** — hoy la lógica VE está dispersa y semi-incrustada (`apps/fiscal`, detección de IGTF en `apps/ventas`, métodos de pago IGTF, libros SENIAT). Debe migrarse a la arquitectura de localización de dos capas (ver [§3.7](#37--arquitectura-de-localización-l10n-de-dos-capas)) vía strangler fig. La app `apps/vzla_localizacion` ya existe como punto de partida pero está casi vacía.
-- **Capa B (dinámica de mercado) parcialmente cubierta** — multimoneda, tasas, CxC y métodos de pago existen, pero faltan como capacidades de localización formalizadas: pagos de terceros (Zelle/nómina), cambios de divisa, doble tasa universal en cada operación, libro maestro de flujo de caja, ventas con/sin factura. Insumos disponibles en el proyecto `GestionCxC` (ver [§6](#6--localización-venezuela-l10n-ve)).
+- **Capa B (dinámica de mercado) parcialmente cubierta** — multimoneda, tasas, CxC, métodos de pago y **`OperacionCambioDivisa` (apps/tesoreria, con comisiones y CRUD)** existen, pero faltan como capacidades de localización formalizadas: pagos de terceros (Zelle/nómina), doble tasa universal en cada operación, libro maestro de flujo de caja, ventas con/sin factura. Insumos disponibles en el proyecto `GestionCxC` (ver [§6](#6--localización-venezuela-l10n-ve)).
 - **Dos `PROJECT_LOG.md` divergentes** (raíz vs `backend/`) — consolidar: `backend/PROJECT_LOG.md` es el vigente; el de la raíz debe archivarse.
 - **Encoding (mojibake)** en `docs/_archive/OMNI_ERP_MASTER_PLAN.md` — documento archivado; su contenido vigente ya está consolidado aquí.
 
@@ -386,7 +387,7 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 │        listas precios, reportes/PDF) ........ ✅ COMPLETO
 ├── 1.E Personalización + agentes (DSL,
 │        agentes en modo sugerir) ............. ✅ COMPLETO (sombra/sugerencia)
-│        + Cobranza Inteligente (apps/cxc) ..... ✅ COMPLETO (backend); 🔶 frontend en pulido
+│        + Cobranza Inteligente (apps/cxc) ..... ✅ COMPLETO (backend + frontend shippeado en 84f7ab4)
 ├── 1.F Distribuidora en producción .......... ⬜ SIGUIENTE HITO
 ├── 1.G Específicos distribuidora (POS,
 │        comisiones, devoluciones, despacho) ... ⬜ pendiente
@@ -402,7 +403,8 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 ### Paso 0 — Higiene de documentación (esta entrega)
 - [x] Consolidar planificación en este documento único.
 - [ ] Archivar planes ejecutados y el `PROJECT_LOG.md` de la raíz (ver §10).
-- [ ] Terminar el pulido de frontend de `cxc` que está en `main` sin commitear (ver `git status`).
+- [x] Frontend shell ERP moderno + asistente IA shippeado en `84f7ab4` (2026-05-31). Cierra ítem "pulido cxc" del plan original.
+- [ ] **Auditoría 2026-06-01:** ejecutar `docs/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` (33 hallazgos + 4 deltas vs plan). Bloqueante de pasos siguientes para ítems CRIT-1..3 y H-SEC-1..2.
 
 ### Sub-fase 1.F — Distribuidora en producción (PRÓXIMO, métrica que cierra Bloque 1 parcial)
 **Objetivo único:** la distribuidora opera diariamente con Omni durante **30 días continuos** sin volver a su sistema anterior.
@@ -456,6 +458,73 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 - [ ] Portar insumos de `GestionCxC` que aún no están en Omni (ver [§6.8](#68--backlog-de-tropicalización-desde-gestioncxc)).
 
 **Criterio de salida:** una empresa de prueba **no venezolana** opera el ciclo comercial completo (cotización→factura→cobro→asiento) sin ver IGTF, doble tasa, ni métodos de pago venezolanos, y una empresa venezolana sigue teniendo todo. Eso prueba que la localización es realmente enchufable.
+
+## 5.2-ter Workstream transversal — Monorepo + shells mobile/desktop (ADR-008)
+
+> Este workstream **ejecuta operativamente** la decisión arquitectónica de [ADR-008](decisions/ADR-008-monorepo-shells-multiplataforma.md). Es transversal y **subordinado a 1.F**: ninguna fase de aquí arranca si pone en riesgo la distribuidora en producción (R-PROC-8). Para el racional, las alternativas descartadas y los criterios de éxito, ver ADR-008. Esta sección solo lista fases con triggers y DoD.
+
+### Mapeo al roadmap del proyecto
+
+| Fase de este workstream | Cuándo arranca | Subordinada a |
+|---|---|---|
+| **Fase 0–1** (monorepo + extracción Capa 1 a `packages/`) | Después de 1.F en producción 30 días | 1.J o paralelo a 1.G si hay holgura |
+| **Fase 2** (cerrar Nivel 1 de ADR-001 en la PWA web existente) | **Puede arrancar ya** — es deuda técnica de §4.3, no toca arquitectura | — |
+| **Fase 3** (shell Desktop con Tauri 2) | Tras Fase 1 | Habilita POS de 1.G |
+| **Fase 4** (shell Mobile + Nivel 2 de ADR-001) | Tras Fase 3, demanda real | Cronograma ADR-001: ~mes 9 (app vendedores) |
+| **Fase 5** (`clients/cobranza-standalone`) | Tras Fase 4 | Ejecuta wedge de ADR-002/004 |
+| **Fase 6** (paridad y release 1.0 multiplataforma) | Bloque 2 | — |
+
+### Fases con DoD
+
+**Fase 0 — Bootstrap monorepo** (trigger: 1.F DoD cumplido).
+- Migrar `frontend/` → `clients/web/`; configurar pnpm workspaces + turborepo.
+- `drf-spectacular` en backend + `openapi-typescript` en CI; falla el build ante diff sin commit.
+- CI con jobs por workspace.
+- **DoD:** monorepo verde en CI; `clients/web` se comporta idéntica para el usuario.
+
+**Fase 1 — Extracción de Capa 1 a `packages/`** (trigger: Fase 0 cerrada).
+- `packages/domain` (schemas Zod, tipos, reglas puras), `packages/api-client` (HTTP con `HttpAdapter` + `TokenStorage` inyectables — elimina `localStorage`/`window` directos de `services/api.ts`), `packages/auth` (`SecureStorage` interface), `packages/i18n`.
+- Refactor de `clients/web` para consumir packages.
+- **DoD:** 0 imports relativos a archivos compartidos desde `clients/web`; cobertura ≥60% mantenida.
+
+**Fase 2 — Nivel 1 de ADR-001 en la web** (trigger: ya; no depende de Fase 0/1).
+- Auditar y endurecer la PWA actual (cobertura de caché, expiración, fallback offline).
+- Reintento de mutaciones con backoff (sin outbox completo).
+- Banner global de estado online/offline + badge "datos stale".
+- **DoD:** un corte de 5 minutos no rompe consultas y los reintentos completan al volver la red. Cierra la deuda "Service Workers / offline real" de [§4.3](#43-deuda-técnica-conocida-y-abierta).
+
+**Fase 3 — Shell Desktop (Tauri 2)** (trigger: Fase 1 cerrada).
+- `clients/desktop` envolviendo el build de `clients/web`.
+- Adaptadores Tauri: `tauri-plugin-sql` (SQLite), `tauri-plugin-stronghold` (secrets), `tauri-plugin-printer` (térmica 80mm), `tauri-plugin-updater` (OTA).
+- Implementación de `packages/offline` para Tauri (LocalStore + outbox sobre SQLite).
+- Instaladores firmados: `.msi`, `.dmg`, `.AppImage`/`.deb`.
+- **DoD:** caja de la distribuidora opera 8 h sin red y sincroniza al final del día (Nivel 2 de ADR-001 sobre POS).
+
+**Fase 4 — Shell Mobile (RN + Expo) + Nivel 2** (trigger: Fase 3 cerrada y demanda real de vendedor en ruta).
+- Decisión RN Paper vs Tamagui antes de empezar (sub-decisión menor, no requiere ADR).
+- `clients/mobile` con `expo-router`, `expo-secure-store`, `op-sqlite`.
+- Pantallas piloto: Pedidos, Clientes, Productos, Cobranza, Asistencia.
+- Push notifications (Expo) atadas a `apps/notificaciones`.
+- Build TestFlight + Internal Track Play Store.
+- **DoD:** vendedor en ruta toma pedido sin red y sincroniza al volver sin conflictos.
+
+**Fase 5 — `clients/cobranza-standalone`** (trigger: Fase 4 cerrada y/o gestion-cxc-V2 listo para sustituirse).
+- Shell que solo importa `cxc`, `crm`, `auth`, `i18n` de `packages/`.
+- Empaquetado en las 3 plataformas reusando los shells.
+- Modo "integración con ERP destino" vía Integration Hub (Capa 3).
+- **DoD:** la empresa donde el founder es gerente usa Omni Cobranza standalone sobre su ERP existente.
+
+**Fase 6 — Paridad y release 1.0 multiplataforma** (trigger: Bloque 2).
+- Migrar dominios restantes (fiscal, inventario, finanzas, configuración) a mobile/desktop.
+- E2E: Detox (mobile), Playwright (web), tauri-driver (desktop).
+- UI de resolución de conflictos.
+- Telemetría unificada (Sentry en los 3 shells).
+- **DoD:** release **1.0 multiplataforma** con paridad funcional.
+
+### Regla activa desde ahora (costo cero)
+
+- Todo cambio nuevo en `frontend/` debe ser **portable** a `packages/domain` cuando llegue la Fase 1. Concretamente: no añadir lógica de negocio dentro de componentes; vivirá en hooks/servicios; no usar `localStorage`/`window` directamente fuera de un adaptador.
+- Toda regla de cálculo de dinero, IVA, IGTF, scoring que se escriba desde hoy debe ser **pura** (sin I/O) — pre-condición para vivir en `packages/domain`.
 
 ## 5.3 Bloque 2 — De piloto a producto (Mes 16–33 aprox.)
 **Métrica única:** 5+ clientes externos pagando con retención >70%, y el founder puede pasar 2 semanas sin tocar el sistema sin que se rompa.
