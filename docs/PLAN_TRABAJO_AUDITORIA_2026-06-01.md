@@ -1,6 +1,6 @@
 # Plan de Trabajo — Auditoría 2026-06-01
 
-**Fuente:** auditoría multi-agente (203 agentes, 162 hallazgos confirmados, 71 items gap) + ejecución de validaciones del 2026-06-01.
+**Fuente:** auditoría multi-agente backend (203 agentes, 162 hallazgos confirmados, 71 items gap) + auditoría profunda frontend (189 agentes, 153 hallazgos confirmados) + ejecución de validaciones del 2026-06-01.
 **Fuente de verdad de planificación:** este documento solo lista trabajo derivado de la auditoría; el roadmap mayor sigue en [`PLAN_MAESTRO_UNICO.md`](PLAN_MAESTRO_UNICO.md).
 **Responsable:** Marco + agente IA co-desarrollador.
 **Convenciones:** PRs pequeños y focales (R-PROC-2). Cada PR debe cerrar 1–N items de este plan y dejar CI verde. ID de item se cita en el commit (`fix(audit): CRIT-1 ...`).
@@ -11,15 +11,17 @@
 
 | Semana | Foco | Items | DoD del bloque |
 |---|---|---|---|
-| **Sem 1** | Stop the bleed multi-tenant | CRIT-1..3, H-SEC-1, H-SEC-2, H-API-1..3 | Ningún endpoint con `.objects.all()` sin filtro tenant en core/ventas/compras |
-| **Sem 2** | Integridad contable y monetaria | H-BUG-1..4, H-RCODE-1, NEW-MIG-1 | R-CODE-11 sin tragar excepciones; integración Odoo con Decimal |
-| **Sem 3** | Hardening de seguridad de superficie | H-SEC-3..9 | TLS, secretos, JWT, uploads, capability tokens |
-| **Sem 4** | Hardening de seguridad profunda + medios/bajos | H-SEC-10..13, M-1..15 | Headers nginx, CSP, defaults de docker-compose |
-| **Sem 5** | Limpieza de bugs medios y bajos | M-16..30, NEW-PAG-1 | Sin `except Exception: pass` en lógica de negocio |
-| **Sem 6** | Gap del plan + alineación documental | GAP-1..6 | Plan refleja realidad; ADR-007 redactado |
-| **Sem 7+** | Sub-fase 1.F (distribuidora) | TRACK-1F-* | Bloqueante real desbloqueado |
+| **Sem 1** | Stop the bleed multi-tenant | CRIT-1..3, H-SEC-1, H-SEC-2, H-API-1..3, **FE-HIGH-12** | Ningún endpoint con `.objects.all()` sin filtro tenant en core/ventas/compras/finanzas |
+| **Sem 2** | Integridad contable y monetaria | H-BUG-1..4, H-RCODE-1, NEW-MIG-1, **FE-HIGH-7, FE-HIGH-8** | R-CODE-11 sin tragar excepciones; Decimal end-to-end (backend Odoo + frontend formularios) |
+| **Sem 3** | Hardening de seguridad de superficie | H-SEC-3..9, **FE-HIGH-13, FE-HIGH-11, FE-HIGH-18** | TLS, secretos, JWT, uploads, capability tokens; access token sale de localStorage; refresh interceptor |
+| **Sem 4** | Hardening de seguridad profunda + medios | H-SEC-10..13, M-SEC-1..15, **FE-HIGH-10, FE-HIGH-14, FE-HIGH-16** | Headers nginx, CSP, defaults de docker-compose; servicios HTTP centralizados en api.ts |
+| **Sem 5** | Limpieza de bugs medios y bajos | M-BUG-1..15, NEW-PAG-1, **FE-MED-* (tabla §11.3)** | Sin `except Exception: pass`/`catch {}` en lógica de negocio |
+| **Sem 6** | **Formularios: react-hook-form + zod cableados** | **FE-CRIT-1, FE-HIGH-1, FE-HIGH-2, FE-HIGH-6, FE-HIGH-9, FE-HIGH-17** | 14 formularios usan stack declarado; cero `as unknown as X` en hooks de form |
+| **Sem 7** | Estado: queries consistentes | **FE-HIGH-3, FE-HIGH-4, FE-HIGH-5, FE-HIGH-15** | Cero `useState+useEffect+fetch` en hooks de negocio; polling vía `refetchInterval` |
+| **Sem 8** | Gap del plan + alineación documental | GAP-1..6 | Plan refleja realidad; ADR-007 redactado |
+| **Sem 9+** | Sub-fase 1.F (distribuidora) | TRACK-1F-* | Bloqueante real desbloqueado |
 
-Carga estimada total: **120–180 h** (3–4 semanas a 40 h, o 6–9 semanas a 20 h/sem según R-PROC quincenal).
+Carga estimada total: **240–320 h** (6–8 semanas a 40 h, o 12–16 semanas a 20 h/sem según R-PROC quincenal). El frontend añade ~120 h al estimado original.
 
 ---
 
@@ -455,13 +457,240 @@ Items no se enumeran aquí (los tiene ADR-008 §"Fases con DoD").
 
 ---
 
+## 11. Auditoría Frontend Profunda (2026-06-01)
+
+> **Fuente:** workflow `omni-erp-frontend-deep-audit` (run_id `wf_daa868b5-a52`), 189 agentes, 153 hallazgos confirmados post-verificación adversarial en 12 dimensiones (tipos, estado, formularios, servicios-http, seguridad-cliente, auth-rutas, accesibilidad, pwa-offline, i18n, performance, componentes, tests).
+>
+> **Hallazgos sistémicos** — patrones repetidos en muchos archivos, no incidentes aislados:
+> 1. **Stack declarado ≠ stack usado:** `react-hook-form`, `@hookform/resolvers`, `zod` instalados pero **0 formularios los usan**. Los schemas `src/schemas/*.schemas.ts` son código muerto.
+> 2. **Doble sistema de fetching:** TanStack Query dominante, pero `useApi.ts`, `useCxC.ts`, `useModalPagoData.ts`, `NotificationBell`, `SugerenciasWidget` y hooks de formularios usan `useState + useEffect + fetch` manual.
+> 3. **`Number()` / `parseFloat()` sobre montos monetarios** en formularios fiscales (factura, cotización, NC, TF) cuando backend usa `Decimal`.
+> 4. **Access JWT + PII (incluyendo RIF)** en `localStorage` leídos directamente desde 8+ archivos.
+> 5. **`as unknown as X`** como cast de escape repetido en hooks de formularios.
+
+### 11.1 Críticos (Sem 6 — refactor sistémico)
+
+#### FE-CRIT-1 · Cablear react-hook-form + zod en 14 formularios
+- **Riesgo:** stack del plan no se usa; validación inconsistente reimplementada con `useState` en cada form; schemas zod son código muerto.
+- **Archivos:**
+  - Hooks: `frontend/src/hooks/{useCotizacionForm,useFacturaFiscalForm,useNotaVentaForm,usePedidoForm}.ts`
+  - Schemas: `frontend/src/schemas/{ventas,fiscal,compras}.schemas.ts`
+  - 14 `*FormPage.tsx` / `*Form.tsx` en `src/pages/` y `src/components/`
+- **Pasos:**
+  1. **Piloto:** refactorizar `frontend/src/pages/Finanzas/Monedas/MonedaFormPage.tsx` como template — `useForm({ resolver: zodResolver(monedaSchema), mode: 'onBlur' })`. Reemplazar `TextField` controlado por `register()` o `Controller`. Eliminar `setError` ad hoc; usar `errors.x?.message` en `helperText`.
+  2. Replicar el patrón en `CotizacionFormPage`, `FacturaFiscalFormPage`, `NotaVentaFormPage`, `PedidoFormPage`, `NotaCreditoVentaFormPage`, `TransaccionFinancieraFormPage` y los 8 *FormPage restantes.
+  3. Hooks de form devuelven `{ register, control, handleSubmit, formState, reset }` en vez de su API ad hoc.
+  4. Mantener `useDocumentoVentaBase` como hook compositor que cablea defaults compartidos.
+- **Tests:** Vitest + Testing Library — `test_form_submit_vacio_muestra_helperText_por_campo`, `test_form_submit_valido_llama_mutacion_una_vez`, `test_form_a11y_error_asociado_via_aria_describedby`.
+- **DoD:** `grep -nP "useState<[^>]+>\(\s*\{[^}]*nombre" frontend/src` cero matches en pages. Coverage Vitest no baja.
+- **Esfuerzo:** L (5–7 días). Desbloquea FE-HIGH-6/9/17 y simplifica FE-HIGH-1.
+
+### 11.2 Altos (Sem 1–7 según item)
+
+#### FE-HIGH-1 · Eliminar `as unknown as X` en hooks de formularios (Sem 6)
+- **Archivos:** `frontend/src/hooks/usePedidoForm.ts:78` (+7 ocurrencias), `useNotaVentaForm.ts`, `useCotizacionForm.ts`, `useFacturaFiscalForm.ts`.
+- **Pasos:** crear `frontend/src/types/ventas.ts` con interfaces completas (`Pedido`, `Cotizacion`, `NotaVenta`, `FacturaFiscal`); tipar los parámetros directamente.
+- **Tests:** `tsc --noEmit` exit 0; `grep -P "as unknown as" frontend/src/hooks/` cero matches.
+- **Esfuerzo:** M (2 días). Mejor hacerlo junto con FE-CRIT-1.
+
+#### FE-HIGH-2 · `MetodoPago*Page` deja de leer `window.user` (Sem 1)
+- **Archivos:** `frontend/src/pages/Finanzas/MetodoPago/{MetodoPagoDetailPage:35,MetodoPagoCreatePage:36-37,MetodoPagoListPage:53,62-63}.tsx`.
+- **Evidencia:** `const user: User = (window as unknown as { user?: User }).user || { es_superusuario_innova: false };`.
+- **Pasos:** reemplazar por `useAuth()`; crear `useEmpresas()` hook con `useQuery(['empresas','visible'])`.
+- **Tests:** test de permisos por flag `es_superusuario_innova`.
+- **Esfuerzo:** S (½ día).
+
+#### FE-HIGH-3 · `useCxC.ts` → TanStack Query (Sem 7)
+- **Archivo:** `frontend/src/hooks/useCxC.ts:19,29,62`.
+- **Pasos:** convertir `useCarteraDashboard`, `useTasaHoy`, `useAcuerdos` a `useQuery` con `queryKey: ['cartera','dashboard']`, `['tasas','hoy']`, `['acuerdos', estado]`. Añadir `invalidateQueries` en las mutaciones del módulo.
+- **Tests:** `test_mutar_acuerdo_invalida_dashboard`.
+- **Esfuerzo:** M (1 día).
+
+#### FE-HIGH-4 · `useModalPagoData` → React Query (Sem 7, prioritario)
+- **Archivo:** `frontend/src/components/Pedidos/useModalPagoData.ts:59,88,114,122,138,168,181,191`.
+- **Riesgo:** corazón transaccional de pagos — 8 `useEffect+get` con `setState` y `catch { console.error }`. Race conditions probables al desmontar antes de resolver. Si tasa BCV falla, el modal sigue habilitado.
+- **Pasos:** convertir cada efecto a `useQuery` con `queryKeys` parametrizadas por `empresaId`; usar `useQueries` para consolidar; bloquear botón de "Confirmar pago" si `tasaBCVQuery.isError`.
+- **Tests:** `test_modal_pago_bloquea_submit_si_tasa_bcv_falla`, `test_modal_pago_no_race_al_desmontar`.
+- **Esfuerzo:** M (2 días).
+
+#### FE-HIGH-5 · `numero_cotizacion` se genera en backend (Sem 7)
+- **Archivos:** `frontend/src/hooks/useCotizacionForm.ts:117-133` (elimina useEffect), `backend/apps/ventas/services.py` o models.py (sequence atómica).
+- **Riesgo:** dos usuarios concurrentes pueden generar el mismo número (race en cliente).
+- **Pasos:** backend asigna número en `create()` con `select_for_update` (similar a `fiscal.siguiente_numero` — coordinar con M-BUG-2 que mejora ese patrón). Frontend muestra campo readonly "Se asignará al guardar".
+- **Tests:** test backend de concurrencia (2 threads creando cotizaciones simultáneas no chocan).
+- **Esfuerzo:** M (1–2 días).
+
+#### FE-HIGH-6 · Eliminar patrón `useQuery + useState localCopy` (Sem 6)
+- **Archivos:** `CompanyDetailPage.tsx:34-50`, `ConfiguracionFiscalPage.tsx:66`, `NotaCreditoVentaFormPage.tsx:51`, `useCotizacionForm.ts:76`, `useFacturaFiscalForm.ts`, `useNotaVentaForm.ts`, `usePedidoForm.ts`.
+- **Riesgo:** refetch en focus pierde silenciosamente la edición pendiente del usuario.
+- **Pasos:** consecuencia natural de FE-CRIT-1 — `react-hook-form.reset(data)` cuando `useQuery` carga; eliminar el segundo `useState`. Usar `formState.isDirty` para evitar reset durante edición.
+- **Tests:** `test_refetch_focus_no_pierde_edicion_pendiente`.
+- **Esfuerzo:** M (2 días).
+
+#### FE-HIGH-7 · `decimal.js` en cálculos monetarios del frontend (Sem 2)
+- **Archivos:** `useFacturaFiscalForm.ts:133-139`, `useCotizacionForm.ts:164-167`, `pages/Ventas/NotasCreditoVenta/NotaCreditoVentaFormPage.tsx:258,267`, `components/Pedidos/ResumenTotales.tsx:16-23`, `components/Pedidos/TablaProductos.tsx:33-35,114-117`.
+- **Riesgo:** `Number(d.cantidad) * Number(d.precio_unitario)` envía subtotal con error binario (0.1+0.2=0.30000000000000004). Backend con `Decimal` rechaza facturas SENIAT por descuadre IVA/IGTF.
+- **Pasos:**
+  1. `npm install decimal.js`.
+  2. Crear `frontend/src/lib/decimal.ts` con `D = (x: string | number) => new Decimal(x)`.
+  3. Reemplazar multiplicaciones y sumas; serializar a string con `.toFixed(2)` o `.toFixed(4)` según contexto.
+  4. **Alternativa preferida:** enviar solo cantidad y precio unitario por línea; dejar que el backend calcule subtotal/IVA/total (R-PROD-3: complejidad oculta).
+- **Tests:** `test_total_factura_coincide_backend_decimal`, `test_caso_0_1_mas_0_2_igual_0_30`.
+- **Esfuerzo:** M (2 días). Combina con FE-HIGH-8.
+
+#### FE-HIGH-8 · Cross-field validation en schemas fiscales (Sem 2)
+- **Archivo:** `frontend/src/schemas/ventas.schemas.ts:89-111` (`facturaFiscalSchema` sin `monto_total` ni IVA).
+- **Pasos:** agregar `.refine(d => sumOfSubtotales(d.detalles).eq(d.monto_total), { message: 'Total no cuadra con detalles' })` y equivalentes para IVA, IGTF y descuentos. Hacerlo con `decimal.js` (depende de FE-HIGH-7).
+- **Tests:** schema rechaza factura con total inconsistente.
+- **Esfuerzo:** S (½ día).
+
+#### FE-HIGH-9 · Errores por campo con `helperText` (Sem 6)
+- Cubierto por FE-CRIT-1. Tracking aquí.
+
+#### FE-HIGH-10 · `UserDetailPage` → services (Sem 4)
+- **Archivo:** `frontend/src/pages/Core/Usuarios/UserDetailPage.tsx:45-77`.
+- **Evidencia:** `safeJsonFetch('/api/core/empresas/', { headers })` con `getHeaders()` local reimplementando auth.
+- **Pasos:** crear `services/departamentos.ts`; migrar a `services/empresas.ts`, `services/sucursales.ts`, `services/departamentos.ts`; eliminar `safeJsonFetch` y `getHeaders` locales.
+- **Tests:** mock de `api.ts`; verifica auth header y prefijo `API_URL`.
+- **Esfuerzo:** S (½ día).
+
+#### FE-HIGH-11 · Interceptor 401 con refresh + retry (Sem 3)
+- **Archivo:** `frontend/src/services/api.ts:17-26`.
+- **Riesgo:** 401 fuerza logout inmediato anulando la utilidad del refresh httpOnly ya implementado en `backend/apps/core/auth_views.py:415-466`.
+- **Pasos:**
+  1. En `fetcher`, si `res.status === 401` y la URL no es `/auth/*`: llamar a `POST /auth/refresh/` (cookie httpOnly se envía automáticamente).
+  2. Si refresh OK: actualizar access token en memoria, reintentar la request original UNA vez con el nuevo token.
+  3. Si refresh KO o segundo 401: limpiar y redirigir a login.
+  4. Proteger contra refresh concurrente (locking de promesa única).
+- **Tests:** `test_acceso_expira_refresh_ok_request_reintenta_200`, `test_doble_401_termina_en_logout`, `test_refresh_concurrente_solo_un_request_de_refresh`.
+- **Esfuerzo:** M (1.5 días).
+
+#### FE-HIGH-12 · Cerrar bypass de tenancy de `id_empresa` en query string (Sem 1)
+- **Archivos (frontend):** `frontend/src/services/transaccionFinancieraService.ts:7,20,48,53`, `cajaService.ts:13`, `cuentaBancariaService.ts:22`, `pagosService.ts:203`.
+- **Archivo (backend):** `backend/apps/finanzas/views.py:437-459` (`TransaccionFinancieraViewSet.get_queryset` **no valida** `id_empresa` contra `user.empresas`).
+- **Riesgo:** usuario malicioso lee/escribe transacciones financieras de empresas a las que no pertenece. Confirmado por auditoría: patrón seguro existe en `MovimientoCajaBancoViewSet:469` y `CuentaBancariaEmpresaViewSet:611` (usan `get_empresas_visible`).
+- **Pasos:**
+  1. Backend: `TransaccionFinancieraViewSet.get_queryset` debe filtrar por `id_empresa__in=get_empresas_visible(self.request.user)`. Si recibe query param `id_empresa`, validarlo está en el set.
+  2. Backend: `perform_create` inyecta `id_empresa` desde `request.user` (no del payload).
+  3. Frontend: eliminar `id_empresa` del query string en los 4 services; pasarlo solo cuando se requiere acción multi-empresa explícita (validada arriba).
+- **Tests:** `test_transaccion_financiera_cross_tenant_no_lista`, `test_transaccion_financiera_create_ignora_id_empresa_del_payload`.
+- **Esfuerzo:** M (1 día). **Este hallazgo era cross-tenant write/read no detectado en la auditoría backend inicial** — pertenece a la familia de CRIT-1..3 / H-API-1..2.
+
+#### FE-HIGH-13 · Access JWT y PII fuera de `localStorage` (Sem 3)
+- **Archivos:** `frontend/src/contexts/AuthContext.tsx:88,90`, `services/auth.ts:29,45,60,71`, `services/api.ts:4`, `hooks/useAssistantChat.ts:47`, `hooks/useCxC.ts:74`, `services/fiscalService.ts:90,107`, `pages/Core/Usuarios/UserDetailPage.tsx:60`, `components/Pedidos/useModalPagoData.ts:139`.
+- **Riesgo:** XSS o dependencia comprometida exfiltra JWT, email, RIF, lista de empresas. Para un ERP fiscal VE, severo.
+- **Pasos:**
+  1. **Token en memoria:** `services/api.ts` mantiene `let accessToken: string | null = null` con setters/getters expuestos. Eliminar `localStorage.getItem/setItem('token')` de todos los consumidores.
+  2. **Rehidratación:** `AuthContext` al montar llama a `POST /auth/refresh/` (cookie httpOnly) para obtener access token nuevo. Si falla, redirect a login.
+  3. **Perfil:** crear endpoint `GET /auth/me/` si no existe (verificar `core/auth_views.py`); usar `useQuery(['auth','me'])` para hidratar; eliminar `localStorage.setItem('usuario', JSON.stringify(...))`.
+  4. **Mínimos persistidos:** solo `id_empresa_activa`, `id_sucursal_activa` (selección UI). Nunca tokens.
+  5. **Migración:** al cargar la app, si hay `token` en localStorage, eliminarlo y forzar refresh.
+- **Tests:** `test_recarga_pagina_mantiene_sesion_sin_token_en_localStorage`, `test_logout_limpia_solo_keys_propias_no_clear_all`.
+- **Esfuerzo:** L (3 días). Bloquea progreso en FE-HIGH-11 (refresh interceptor depende de tener token en un solo lugar).
+
+#### FE-HIGH-14 · Helpers `fetchText`/`fetchBlob`/`streamSSE` en `api.ts` (Sem 4)
+- **Archivos:** `frontend/src/services/api.ts` (extender), consumidores en `fiscalService.ts:89-125`, `hooks/useCxC.ts:74-88`, `hooks/useAssistantChat.ts:48`.
+- **Pasos:** implementar `fetchText(url)`, `fetchBlob(url)`, `streamSSE(url, onEvent)` que reusan el interceptor de 401 y headers de auth. Migrar consumidores. Eliminar `fetch` directo en hooks.
+- **Tests:** mock fetch; verifica auth header y manejo 401 unificado en cada helper.
+- **Esfuerzo:** M (1 día). Depende de FE-HIGH-13 (token en memoria).
+
+#### FE-HIGH-15 · Polling con `refetchInterval` (Sem 7)
+- **Archivos:** `frontend/src/components/NotificationBell.tsx:28-50`, `SugerenciasWidget.tsx:66-103`.
+- **Pasos:** reemplazar `setInterval(..., 30_000)` por `useQuery({ queryKey: [...], refetchInterval: 30_000, refetchIntervalInBackground: false })`.
+- **Tests:** `test_pestaña_oculta_no_genera_fetches`.
+- **Esfuerzo:** S (½ día).
+
+#### FE-HIGH-16 · Eliminar `hooks/useApi.ts` (Sem 4)
+- **Archivos:** `frontend/src/hooks/useApi.ts`, consumidor único `pages/CxC/CobranzaPage.tsx`.
+- **Pasos:** migrar `CobranzaPage` a `useApiQuery`; eliminar `useApi.ts`.
+- **Tests:** tests de `CobranzaPage` siguen verdes.
+- **Esfuerzo:** S (½ día).
+
+#### FE-HIGH-17 · Validación `onBlur` (Sem 6)
+- Cubierto por FE-CRIT-1 (`mode: 'onBlur'` en `useForm`). Tracking aquí.
+
+#### FE-HIGH-18 · `AbortController` + timeout en `fetcher` (Sem 3)
+- **Archivo:** `frontend/src/services/api.ts:14`.
+- **Riesgo:** request colgada deja TanStack Query en pending eternamente; spinners infinitos en PWA con conectividad intermitente.
+- **Pasos:** aceptar `timeoutMs?: number` en options (default 30000; 90000 para descargas de reportes); crear `AbortController`; `setTimeout` que llame `controller.abort()`; pasar `signal` a `fetch`. Permitir signal externo combinable (AbortSignal.any si está disponible).
+- **Tests:** `test_fetch_que_cuelga_aborta_a_30s`.
+- **Esfuerzo:** S (½ día). PR conjunta con FE-HIGH-11.
+
+### 11.3 Medios y bajos (Sem 5)
+
+**Tipos:**
+
+| ID | Acción | Archivo | Sev |
+|---|---|---|---|
+| FE-MED-T1 | `fetcher` sin zod ni type guard runtime | `services/api.ts:43` | media |
+| FE-MED-T2 | Casts `data as unknown as Record<string,unknown>` en POST/PUT | `BranchDetailPage.tsx:46` + 12 archivos | media |
+| FE-MED-T3 | `onChange` con cast a `HTMLInputElement` en MUI Select | `PedidoFormPage.tsx:147` + 3 | media |
+| FE-MED-T4 | Select multi-value casteado `as unknown as string[]` | `UserDetailPage.tsx:165,183,201` | media |
+| FE-LOW-T1 | `PedidoDetailPage` castea respuesta paginada sin guard + typo `ProdutoItem` | `PedidoDetailPage.tsx:79` | baja |
+| FE-LOW-T2 | `tsconfig.app.json` sin `noUncheckedIndexedAccess` | `frontend/tsconfig.app.json:19` | baja |
+| FE-LOW-T3 | Documentación usa `:any` como ejemplo | `services/README_PagosService.md:156,178` | baja |
+
+**Estado:**
+
+| ID | Acción | Archivo | Sev |
+|---|---|---|---|
+| FE-MED-E4 | QueryKeys con endpoint+querystring como string opaco | `NotaVentaDetailPage.tsx:60` + 2 | media |
+| FE-MED-E5 | QueryKeys hardcoded duplicados sin factory | `InventarioDashboardPage.tsx:50` + 5 | media |
+| FE-MED-E6 | Errores tragados silenciosamente | `NotificationBell:41`, `useModalPagoData` (10 catch), `useCxC.ts:38` | media |
+| FE-MED-E7 | Mutación sin invalidar prefijos relacionados | `NotaVentaDetailPage.tsx:73` | media |
+| FE-MED-E8 | `AuthContext` duplica estado con localStorage + `localStorage.clear()` destructivo (limpia datos de otras apps si comparten origen) | `AuthContext.tsx:54,111` | media |
+| FE-LOW-E1 | `useApiQuery` no permite override de queryKey jerárquica | `hooks/useApiQuery.ts:19` | baja |
+| FE-LOW-E2 | `staleTime`/`gcTime` granular casi ausente | `lib/queryClient.ts:13` | baja |
+| FE-LOW-E3 | `select: toList` repetido en cada useQuery (30+ ocurrencias) | varios | baja |
+
+**Formularios:**
+
+| ID | Acción | Archivo | Sev |
+|---|---|---|---|
+| FE-MED-F1 | `TransaccionFinancieraFormPage` con useState dispersos y `parseFloat` monetario | `TransaccionFinancieraFormPage.tsx:159` | media |
+| FE-MED-F2 | `NotaCreditoVenta` no valida nada antes de submit | `NotaCreditoVentaFormPage.tsx:135` | media |
+| FE-LOW-F1 | TextField no se deshabilita durante submit (doble submit posible) | `LoginForm.tsx:24-38`, `ProfileForm`, `MonedaFormPage` | baja |
+| FE-LOW-F2 | Reset incompleto post-create (`id_empresa`/`id_sucursal` vacíos) | `useCotizacionForm.ts:194`, `useFacturaFiscalForm.ts:170` | baja |
+| FE-LOW-F3 | `handleChange` con cast `as keyof Form` permite teclas inválidas | `usePedidoForm.ts:51`, `useCotizacionForm.ts:62`, `useFacturaFiscalForm.ts:54`, `ProfileForm.tsx:22` | baja |
+| FE-LOW-F4 | `required` HTML5 sin `trim`/`minLength` | `LoginForm.tsx:28,36`, `ProfileForm` | baja |
+| FE-LOW-F5 | `dias_credito` declarado number en schema pero formulario maneja string | `schemas/ventas.schemas.ts:96` | baja |
+
+**Servicios HTTP:**
+
+| ID | Acción | Archivo | Sev |
+|---|---|---|---|
+| FE-MED-S4 | Descarga PDF con `window.open` sin auth header | `FacturaFiscalDetailPage.tsx:154-155` | media |
+| FE-MED-S5 | Errores HTTP serializados como JSON-string en `Error.message` (consumidores parsean string) | `services/api.ts:41` | media |
+| FE-MED-S6 | Servicios no validan response con zod | `services/*` | media |
+| FE-MED-S7 | Paginación reimplementada en cada servicio | `ventas.ts:47`, `clientesService.ts:33`, `inventarioService.ts:79` | media |
+| FE-MED-S9 | `Content-Type` enviado también en GET/DELETE + headers duplicados | `services/api.ts:7` | media |
+| FE-LOW-S1 | 403/404/409/422 no diferenciados (solo 401 tratado) | `services/api.ts:16` | baja |
+| FE-LOW-S2 | Default `API_URL` a localhost se queda en bundle prod | `services/api.ts:1` | baja |
+| FE-LOW-S3 | `window.open` con URL relativa `/finanzas/...` sin prefijo API | `transaccionFinancieraService.ts:26,42` | baja |
+| FE-LOW-S4 | `POST` con body vacío `{}` por firma rígida | `services/ventas.ts:155,165,175,179` | baja |
+
+### 11.4 Dimensiones no auditadas a fondo en este lote
+
+El audit cubrió a fondo: tipos, estado, formularios, servicios-http, seguridad-cliente. Las dimensiones siguientes no produjeron hallazgos confirmados — significa **"no auditado en profundidad"**, no "limpio":
+
+- **Accesibilidad (a11y):** ningún hallazgo confirmado. Lanzar segunda pasada con axe-core sobre páginas críticas (Login, Factura, Caja).
+- **i18n / l10n:** ningún hallazgo confirmado. Sospechoso dado el requisito de localización dos capas (CLAUDE.md). Verificar paridad keys es↔en y strings hardcoded en JSX.
+- **Performance:** memoización, lazy routes, bundle splitting — sin hallazgos.
+- **Tests frontend:** cobertura, mocks de MUI, MSW vs fetch global — sin hallazgos.
+- **Auth/Routing:** guards, ErrorBoundary global — sin hallazgos en este lote (FE-HIGH-2, 11, 13 tocan la zona pero no agotan).
+- **PWA / offline:** Service Worker, cache strategies, outbox — sin hallazgos.
+
+**Acción:** lanzar `Workflow` focalizado en estas 6 dimensiones (a11y + i18n + performance + tests + auth/routing + pwa) en Semana 5 o 6, cuando el frontend ya esté en estado más coherente tras FE-CRIT-1.
+
+---
+
 ## Apéndice A — Mapeo de items a PRs sugeridos
 
 | PR | Items | Branch sugerido |
 |---|---|---|
 | `fix/audit-crit-1-3` | CRIT-1, CRIT-2, CRIT-3 | `fix/audit-detailviews-tenant` |
 | `fix/audit-settings-failclose` | H-SEC-1, H-SEC-2 | `fix/audit-settings-failclose` |
-| `fix/audit-tenant-views-residual` | H-SEC-6, H-SEC-7, H-SEC-8, H-SEC-9, H-SEC-10, H-SEC-11, H-SEC-12 | `fix/audit-tenant-views-batch` |
+| `fix/audit-tenant-views-residual` | H-SEC-6, H-SEC-7, H-SEC-8, H-SEC-9, H-SEC-10, H-SEC-11, H-SEC-12, **FE-HIGH-12** | `fix/audit-tenant-views-batch` |
 | `feat/audit-encrypt-integraciones` | H-SEC-4 | `feat/audit-encrypt-integraciones` |
 | `feat/audit-upload-whitelist` | H-SEC-5 | `feat/audit-upload-whitelist` |
 | `fix/audit-bcv-tls` | H-SEC-3 | `fix/audit-bcv-tls` |
@@ -478,11 +707,19 @@ Items no se enumeran aquí (los tiene ADR-008 §"Fases con DoD").
 | `feat/infra-backup-postgres` | GAP-4 | `feat/infra-backup-postgres` |
 | `feat/infra-ssl-letsencrypt` | GAP-5 | `feat/infra-ssl-letsencrypt` |
 | `feat/migracion-datos-cmds` | TRACK-1F-1..5 | `feat/migracion-datos-cmds` |
+| **`fix/fe-window-user`** | **FE-HIGH-2** | `fix/fe-window-user` |
+| **`refactor/fe-auth-storage`** | **FE-HIGH-13, FE-HIGH-11, FE-HIGH-18, FE-HIGH-14** | `refactor/fe-auth-storage` |
+| **`refactor/fe-decimal-monedas`** | **FE-HIGH-7, FE-HIGH-8** | `refactor/fe-decimal-monedas` |
+| **`refactor/fe-services-centralization`** | **FE-HIGH-10, FE-HIGH-16, FE-MED-S\*** | `refactor/fe-services-centralization` |
+| **`refactor/fe-react-hook-form`** | **FE-CRIT-1, FE-HIGH-1, FE-HIGH-6, FE-HIGH-9, FE-HIGH-17** | `refactor/fe-react-hook-form` |
+| **`refactor/fe-tanstack-query`** | **FE-HIGH-3, FE-HIGH-4, FE-HIGH-5, FE-HIGH-15** | `refactor/fe-tanstack-query` |
+| **`fix/fe-medium-low-batch`** | **FE-MED-* + FE-LOW-*** | `fix/fe-medium-low-batch` |
 
 ---
 
 ## Apéndice B — Resumen cuantitativo
 
+### Backend + Infra
 - **Críticos:** 3 (cierran en 1.5 h)
 - **Altos seguridad:** 13
 - **Altos bugs:** 4
@@ -494,9 +731,15 @@ Items no se enumeran aquí (los tiene ADR-008 §"Fases con DoD").
 - **Gap del plan:** 6
 - **Track 1.F (no es deuda, es feature):** 5
 
-**Total items planeables:** 72.
+### Frontend (sección 11)
+- **Críticos:** 1 (FE-CRIT-1 — refactor sistémico)
+- **Altos:** 18 (FE-HIGH-1..18, incluye FE-HIGH-12 que es tenancy bypass backend cruzado)
+- **Medios tipos:** 4 · **Medios estado:** 5 · **Medios formularios:** 2 · **Medios servicios HTTP:** 5
+- **Bajos tipos:** 3 · **Bajos estado:** 3 · **Bajos formularios:** 5 · **Bajos servicios HTTP:** 4
+
+**Total items planeables:** 122.
 
 ---
 
-*Documento generado a partir del workflow `omni-erp-full-audit` (run_id `wf_032f2ca2-ef8`) y validaciones ejecutables del 2026-06-01.*
-*Próxima revisión: al cierre de Semana 1 o tras desplegar fix de los 3 críticos.*
+*Documento generado a partir de los workflows `omni-erp-full-audit` (run_id `wf_032f2ca2-ef8`) y `omni-erp-frontend-deep-audit` (run_id `wf_daa868b5-a52`) + validaciones ejecutables del 2026-06-01.*
+*Próxima revisión: al cierre de Semana 1 o tras desplegar fix de los 3 críticos CRIT-1..3 y FE-HIGH-12.*
