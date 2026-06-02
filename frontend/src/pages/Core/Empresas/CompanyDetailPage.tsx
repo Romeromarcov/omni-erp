@@ -5,6 +5,7 @@ import { get, put } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 interface Empresa {
@@ -52,7 +53,7 @@ const CompanyDetailPage: React.FC = () => {
   }, [empresaData]);
 
   const { data: monedas = [] } = useQuery<MonedaApiResponse, Error, Moneda[]>({
-    queryKey: ['/finanzas/monedas/activas/'],
+    queryKey: finanzasKeys.monedas.activas(),
     queryFn: () => get<MonedaApiResponse>('/finanzas/monedas/activas/'),
     select: toList,
   });
