@@ -8,11 +8,14 @@ Expone:
   MovimientoInvalidoError  — datos inválidos (almacén faltante, mismo origen/destino, …).
 """
 
+import logging
 from decimal import Decimal
 
 from django.db import transaction
 
 from .models import MovimientoInventario, StockActual
+
+logger = logging.getLogger(__name__)
 
 # ── Clasificación de tipos de movimiento ─────────────────────────────────────
 
@@ -147,11 +150,21 @@ def liberar_reserva(empresa, producto, variante, almacen, cantidad: Decimal) -> 
     de crear el MovimientoInventario que descuenta cantidad_disponible.
     """
     cantidad = Decimal(str(cantidad))
-    stock = StockActual.objects.select_for_update().get(
-        id_producto=producto,
-        id_variante=variante,
-        id_almacen=almacen,
-    )
+    try:
+        stock = StockActual.objects.select_for_update().get(
+            id_producto=producto,
+            id_variante=variante,
+            id_almacen=almacen,
+        )
+    except StockActual.DoesNotExist as exc:
+        # M-BUG-11: no silenciar. No existe fila de stock → no hay reserva que
+        # liberar; se reporta como ReservaInsuficienteError para que el caller
+        # (entregar_nota_venta) lo trate como "venta directa sin reserva previa".
+        logger.warning(
+            "liberar_reserva: no existe StockActual para producto=%s almacen=%s — nada que liberar.",
+            getattr(producto, "pk", producto), getattr(almacen, "pk", almacen),
+        )
+        raise ReservaInsuficienteError("No existe reserva para el producto/almacén indicado.") from exc
     if stock.cantidad_comprometida < cantidad:
         raise ReservaInsuficienteError(
             f"Reserva insuficiente para liberar. Comprometido: {stock.cantidad_comprometida}, "

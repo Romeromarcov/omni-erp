@@ -10,11 +10,14 @@ Flujo correcto (R-CODE-11 en emitir_factura_fiscal):
   emitir_factura_fiscal() → EMITIDA + AsientoContable automático (R-CODE-11)
 """
 
+import logging
 from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db import models, transaction
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 from apps.contabilidad.services import AsientoError, MapeoContableNoEncontrado, generar_asiento
 from apps.core.services import FlujoError, verificar_paso_flujo  # noqa: F401 — re-exported for callers
@@ -157,9 +160,13 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
                 usuario=usuario,
                 observaciones=f"Reserva pedido {pedido.numero_pedido}",
             )
-        except Exception:  # noqa: BLE001
-            # La reserva de stock ya se hizo; el movimiento de audit es best-effort.
-            pass
+        except (StockInsuficienteError, MovimientoInvalidoError, ReservaInsuficienteError) as exc:
+            # El movimiento de auditoría es best-effort (la reserva ya se hizo),
+            # pero NO se traga en silencio: M-BUG-3.
+            logger.warning(
+                "confirmar_pedido: no se registró movimiento de auditoría para pedido %s: %s",
+                pedido.id_pedido, exc,
+            )
 
     pedido.estado = "APROBADO"
     pedido.save(update_fields=["estado"])
@@ -262,8 +269,14 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
                 almacen=almacen,
                 cantidad=detalle.cantidad,
             )
-        except (ReservaInsuficienteError, Exception):
-            pass  # Sin pedido previo no hay reserva que liberar
+        except ReservaInsuficienteError:
+            # Sin pedido previo no hay reserva que liberar — caso esperado.
+            # H-BUG-4: NO capturar Exception genérico; un deadlock u otro error
+            # de transacción debe propagar para que @transaction.atomic revierta.
+            logger.debug(
+                "entregar_nota_venta: sin reserva previa para producto %s (venta directa).",
+                detalle.id_producto,
+            )
 
         try:
             mov = registrar_movimiento(
@@ -428,6 +441,14 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     asiento_iva = None
     asiento_iva_error = None
     if monto_iva > Decimal("0"):
+        # H-BUG-2: si la empresa es contribuyente de IVA, el asiento de IVA es
+        # OBLIGATORIO. Ninguna factura SENIAT puede quedar "EMITIDA" sin su
+        # asiento de IVA descuadrando la contabilidad. Para no contribuyentes
+        # (o sin configuración fiscal) se mantiene best-effort.
+        from apps.fiscal.models import ConfiguracionFiscalEmpresa
+
+        config_fiscal = ConfiguracionFiscalEmpresa.objects.filter(id_empresa=factura.id_empresa).first()
+        iva_obligatorio = bool(config_fiscal and config_fiscal.contribuyente_iva)
         try:
             asiento_iva = generar_asiento(
                 "FACTURA_VENTA_IVA",
@@ -435,10 +456,12 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
                 factura.id_empresa,
                 monto=monto_iva,
             )
-        except MapeoContableNoEncontrado as exc:
-            # El mapeo IVA es opcional; no bloquea la emisión de la factura
-            asiento_iva_error = str(exc)
-        except AsientoError as exc:
+        except (MapeoContableNoEncontrado, AsientoError) as exc:
+            if iva_obligatorio:
+                raise VentaError(
+                    "Configure el Mapeo Contable de IVA antes de emitir facturas "
+                    f"como contribuyente: {exc}"
+                ) from exc
             asiento_iva_error = str(exc)
 
     # State transition happens after the asiento succeeds — if asiento fails the
