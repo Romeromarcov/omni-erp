@@ -377,11 +377,10 @@ class TestDocumentoViewSetAcciones:
         response = api_client_auth.get(f"/api/gestion-documental/documentos/{doc.pk}/descargar/")
         assert response.status_code == 404
 
-    def test_eliminar_borra_de_db(self, db, settings, api_client_auth, empresa_a, user_a):
-        """DELETE eliminar-archivo borra el registro de DB."""
+    def test_eliminar_es_soft_delete(self, db, settings, api_client_auth, empresa_a, user_a):
+        """M-BUG-4: DELETE eliminar-archivo es borrado lógico: el registro queda
+        en DB con activo=False y deja de listarse, no se borra físicamente."""
         settings.USE_S3 = False
-        settings.CELERY_TASK_ALWAYS_EAGER = True
-        settings.CELERY_TASK_EAGER_PROPAGATES = True
 
         from apps.gestion_documental.models import Documento
 
@@ -397,4 +396,11 @@ class TestDocumentoViewSetAcciones:
 
         response = api_client_auth.delete(f"/api/gestion-documental/documentos/{doc.pk}/eliminar-archivo/")
         assert response.status_code == 200
-        assert not Documento.objects.filter(pk=doc_id).exists()
+        # El registro SIGUE en DB pero inactivo (recuperable / auditable).
+        doc.refresh_from_db()
+        assert doc.activo is False
+        # Ya no aparece en el listado del ViewSet.
+        lista = api_client_auth.get("/api/gestion-documental/documentos/")
+        data = lista.data["results"] if isinstance(lista.data, dict) and "results" in lista.data else lista.data
+        ids = {str(d["id_documento"]) for d in data}
+        assert doc_id not in ids

@@ -34,8 +34,11 @@ class DocumentoViewSet(BaseModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        # R-CODE-1: filtrar por empresas visibles
-        return Documento.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_subida")
+        # R-CODE-1: filtrar por empresas visibles. M-BUG-4: excluir soft-deleted.
+        return (
+            Documento.objects.filter(id_empresa__in=_empresas(self.request), activo=True)
+            .order_by("-fecha_subida")
+        )
 
     @action(
         detail=False,
@@ -150,17 +153,14 @@ class DocumentoViewSet(BaseModelViewSet):
         no bloquear la request en caso de lentitud del storage.
         """
         documento = self.get_object()  # aplica get_queryset → R-CODE-1
-        s3_key = documento.ruta_almacenamiento
 
-        # Eliminar el registro de DB primero
+        # M-BUG-4: borrado lógico. NO se borra el registro ni el archivo en S3
+        # (recuperable); solo se marca activo=False y deja de listarse. Evita
+        # perder historial/auditoría de documentos (incluidos fiscales).
         documento_id = str(documento.pk)
         nombre_archivo = documento.nombre_archivo
-        documento.delete()
-
-        # Disparar eliminación async del archivo en S3
-        from apps.gestion_documental.tasks import eliminar_archivo_s3
-
-        eliminar_archivo_s3.delay(s3_key=s3_key, documento_id=documento_id)
+        documento.activo = False
+        documento.save(update_fields=["activo"])
 
         return Response(
             {
