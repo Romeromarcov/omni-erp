@@ -1,4 +1,8 @@
+import logging
+
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 from .models import Caja, ConciliacionBancaria, MovimientoBancario, MovimientoInternoFondo, OperacionCambioDivisa
 
@@ -178,6 +182,22 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
             saldo_nuevo=0,
             id_usuario_registro=usuario,
         )
+
+        # NEW-DOC-1 (R-CODE-11): asiento contable del cambio de divisas. Si la
+        # empresa exige contabilidad y falta el mapeo, falla en duro; si no la
+        # exige (bodega informal), procede best-effort y se registra el motivo.
+        from apps.contabilidad.services import AsientoError, MapeoContableNoEncontrado, generar_asiento
+
+        try:
+            generar_asiento("CAMBIO_DIVISA", operacion, empresa, monto=operacion.monto_origen)
+        except (MapeoContableNoEncontrado, AsientoError) as exc:
+            if getattr(empresa, "contabilidad_activa", False):
+                raise serializers.ValidationError(
+                    {"asiento": f"Configure el Mapeo Contable 'CAMBIO_DIVISA' antes de operar: {exc}"}
+                ) from exc
+            logger.warning(
+                "OperacionCambioDivisa: asiento omitido (empresa sin contabilidad activa) — %s", exc
+            )
 
         return operacion
 
