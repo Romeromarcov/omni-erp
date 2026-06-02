@@ -20,6 +20,7 @@ Se crea un ADR cuando se toma una decisión que:
 | 004 | Stack Agéntico — Anthropic SDK + Orquestación Propia + Shadow Mode | 2026-05-16 | Aceptado |
 | 005 | DSL de Personalización Declarativo — 6 Primitivas YAML/JSON | 2026-05-16 | Aceptado |
 | 006 | Asientos Contables Automáticos Obligatorios (R-CODE-11) | 2026-05-16 | Aceptado |
+| 007 | Arquitectura de Localización en Dos Capas | 2026-06-01 | Aceptado |
 | 008 | Monorepo de Clientes + Shells Mobile y Desktop sobre la Capa 1 | 2026-06-01 | Aceptado |
 
 ## Cómo se escriben

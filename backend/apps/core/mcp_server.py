@@ -650,6 +650,21 @@ def omni_registrar_movimiento_inventario(
     if tipo not in TIPOS_VALIDOS:
         return {"error": f"tipo '{tipo}' inválido. Válidos: {sorted(TIPOS_VALIDOS)}"}
 
+    # M-SEC-10: validar que el actor del token MCP sea un UUID de usuario real
+    # antes de usarlo como FK (evita IntegrityError opaco / inyección de FK).
+    import uuid as _uuid
+
+    from apps.core.models import Usuarios  # noqa: PLC0415
+
+    actor_raw = context["actor_id"].replace("mcp-token:", "")
+    try:
+        _uuid.UUID(str(actor_raw))
+        actor_valido = Usuarios.objects.filter(pk=actor_raw).exists()
+    except (ValueError, TypeError):
+        actor_valido = False
+    if not actor_valido:
+        return {"error": "actor_id del token MCP no corresponde a un usuario válido."}
+
     try:
         movimiento = MovimientoInventario.objects.create(
             id_empresa_id=empresa_id,
@@ -659,7 +674,7 @@ def omni_registrar_movimiento_inventario(
             cantidad=Decimal(cantidad),
             id_almacen_origen_id=almacen_origen_id or None,
             id_almacen_destino_id=almacen_destino_id or None,
-            id_usuario_registro_id=context["actor_id"].replace("mcp-token:", ""),
+            id_usuario_registro_id=actor_raw,
         )
 
         logger.info(
