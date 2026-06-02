@@ -107,6 +107,26 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
+            # M-BUG-9: tasa real (moneda del pago → moneda base de la empresa) en
+            # vez de hardcodear 1. Fallback conservador a 1 si no hay tasa o es la
+            # misma moneda, para no bloquear el pago.
+            from decimal import Decimal
+
+            from apps.finanzas.services import TasaCambioError, obtener_tasa_cambio
+
+            tasa_pago = Decimal("1")
+            empresa_base = getattr(acuerdo.empresa, "id_moneda_base", None)
+            if empresa_base is not None and empresa_base.pk != moneda.pk:
+                try:
+                    tasa_pago = obtener_tasa_cambio(
+                        moneda, empresa_base, empresa=acuerdo.empresa
+                    ).valor_tasa
+                except TasaCambioError:
+                    logger.warning(
+                        "registrar_pago: sin tasa %s→base para empresa=%s; se usa tasa=1.",
+                        getattr(moneda, "codigo_iso", moneda), acuerdo.empresa_id,
+                    )
+
             # Crear pago en finanzas
             pago = Pago.objects.create(
                 id_empresa=acuerdo.empresa,
@@ -116,7 +136,7 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
                 fecha_pago=timezone.now(),
                 monto=data["monto"],
                 id_moneda=moneda,
-                tasa=1,
+                tasa=tasa_pago,
                 id_metodo_pago=metodo_pago,
                 referencia=data.get("referencia", ""),
                 observaciones=data.get("observaciones", f"Cuota {cuota.numero_cuota} — Acuerdo {acuerdo.pk}"),
