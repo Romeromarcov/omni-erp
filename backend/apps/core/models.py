@@ -58,6 +58,15 @@ class Empresa(OmniBaseModel, IntegrationFieldsMixin):
         default=False,
         help_text="Si True, los asientos contables generados automáticamente se aprueban de inmediato.",
     )
+    contabilidad_activa = models.BooleanField(
+        default=False,
+        help_text=(
+            "Si True, la empresa exige contabilidad: una operación sin Mapeo Contable "
+            "configurado FALLA en vez de continuar sin asiento (H-BUG-1 / R-CODE-11). "
+            "Si False (bodega informal, R-PROD-3), la operación procede sin asiento. "
+            "Default False para no romper empresas existentes."
+        ),
+    )
 
     class Meta:
         db_table = "empresas"

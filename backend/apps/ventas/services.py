@@ -357,10 +357,14 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
             nota_venta.id_empresa,
             monto=subtotal,
         )
-    except MapeoContableNoEncontrado as exc:
-        # El mapeo es opcional en ambientes sin contabilidad configurada
-        asiento_error = str(exc)
-    except AsientoError as exc:
+    except (MapeoContableNoEncontrado, AsientoError) as exc:
+        # H-BUG-1: si la empresa exige contabilidad, la falta de asiento es un
+        # error duro (la @transaction.atomic revierte). Para empresas sin
+        # contabilidad (bodega informal, R-PROD-3) la operación procede sin asiento.
+        if getattr(nota_venta.id_empresa, "contabilidad_activa", False):
+            raise VentaError(
+                f"Configure el Mapeo Contable antes de confirmar (contabilidad activa): {exc}"
+            ) from exc
         asiento_error = str(exc)
 
     resultado["asiento"] = asiento
