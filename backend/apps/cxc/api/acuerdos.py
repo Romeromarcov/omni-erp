@@ -162,22 +162,28 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
                 acuerdo.estado = "cumplido"
                 acuerdo.save(update_fields=["estado"])
 
-            # R-CODE-11: AsientoContable en la misma transacción.
-            # M-BUG-10: solo se tolera la ausencia de mapeo contable (empresa sin
-            # contabilidad configurada). Cualquier otro error del asiento propaga
-            # para que la transacción del pago revierta y no quede descuadrada.
-            try:
-                from apps.contabilidad.services import (
-                    AsientoError,
-                    MapeoContableNoEncontrado,
-                    generar_asiento,
-                )
+            # R-CODE-11: AsientoContable en la misma transacción (centralizado).
+            # M-BUG-10: generar_asiento_o_fallar tolera la ausencia de mapeo SOLO si
+            # la empresa no tiene contabilidad activa; si la tiene, o si el asiento
+            # falla por descuadre (AsientoError), propaga y la transacción del pago
+            # revierte para no quedar descuadrada.
+            from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
 
-                generar_asiento("PAGO_CXC", cuota, acuerdo.empresa, data["monto"])
-            except (MapeoContableNoEncontrado, AsientoError) as exc:
-                logger.warning(
-                    "registrar_pago: asiento contable omitido para cuota=%s | empresa=%s | razón=%s",
-                    cuota.id, acuerdo.empresa_id, exc,
+            try:
+                generar_asiento_o_fallar("PAGO_CXC", cuota, acuerdo.empresa, data["monto"])
+            except AsientoError:
+                logger.exception(
+                    "registrar_pago: asiento contable obligatorio falló | empresa=%s | cuota=%s",
+                    acuerdo.empresa_id, cuota.id,
+                )
+                transaction.set_rollback(True)
+                return Response(
+                    {
+                        "code": "asiento_contable_requerido",
+                        "detail": "No se pudo generar el asiento contable. "
+                        "Configure el Mapeo Contable de la empresa.",
+                    },
+                    status=422,
                 )
 
             logger.info(
