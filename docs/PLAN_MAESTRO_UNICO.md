@@ -183,11 +183,13 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 | Componente | Estado |
 |---|---|
 | Docker Compose dev (`docker-compose.yml`) | ✅ db, redis, backend, frontend, celery_worker/beat, minio, redpanda + console |
-| Docker Compose prod (`docker-compose.prod.yml`) | ✅ + nginx reverse-proxy con rate limit y headers de seguridad |
+| Docker Compose prod (`docker-compose.prod.yml`) | ✅ + nginx reverse-proxy con rate limit y headers de seguridad (topología self-hosted) |
+| **Deploy Railway (topología activa)** | ✅ `backend/Dockerfile` (con appuser non-root) + `frontend/Dockerfile.prod` + `frontend/nginx.conf` (Railway termina TLS upstream). PRs #3, #4, #5 — 2026-06-01 |
 | CI/CD | ✅ GitHub Actions (`.github/workflows/ci.yml`): jobs backend, frontend, agent-eval |
 | Monitoreo APM | ⚠️ Sentry configurado; Prometheus/Grafana pendiente |
-| Backup automático PostgreSQL | ❌ pendiente |
-| SSL automático (Let's Encrypt) | ❌ pendiente (sección comentada en nginx.prod.conf) |
+| Backup automático PostgreSQL | ❌ pendiente (en Railway: revisar plan de backups del addon Postgres) |
+| SSL automático (Let's Encrypt) | ⚠️ N/A en Railway (TLS upstream automático); pendiente en self-hosted (sección comentada en nginx.prod.conf) |
+| Security headers en nginx (Railway) | ❌ pendiente — ver `PLAN_TRABAJO_AUDITORIA_2026-06-01.md` NEW-INFRA-1 |
 
 ## 3.2 Estrategia multi-tenant
 

@@ -13,8 +13,8 @@
 |---|---|---|---|
 | **Sem 1** | Stop the bleed multi-tenant | CRIT-1..3, H-SEC-1, H-SEC-2, H-API-1..3, **FE-HIGH-12** | Ningún endpoint con `.objects.all()` sin filtro tenant en core/ventas/compras/finanzas |
 | **Sem 2** | Integridad contable y monetaria | H-BUG-1..4, H-RCODE-1, NEW-MIG-1, **FE-HIGH-7, FE-HIGH-8** | R-CODE-11 sin tragar excepciones; Decimal end-to-end (backend Odoo + frontend formularios) |
-| **Sem 3** | Hardening de seguridad de superficie | H-SEC-3..9, **FE-HIGH-13, FE-HIGH-11, FE-HIGH-18** | TLS, secretos, JWT, uploads, capability tokens; access token sale de localStorage; refresh interceptor |
-| **Sem 4** | Hardening de seguridad profunda + medios | H-SEC-10..13, M-SEC-1..15, **FE-HIGH-10, FE-HIGH-14, FE-HIGH-16** | Headers nginx, CSP, defaults de docker-compose; servicios HTTP centralizados en api.ts |
+| **Sem 3** | Hardening de seguridad de superficie | H-SEC-3..9, **FE-HIGH-13, FE-HIGH-11, FE-HIGH-18, NEW-INFRA-1** | TLS, secretos, JWT, uploads, capability tokens; access token sale de localStorage; refresh interceptor; security headers en nginx Railway |
+| **Sem 4** | Hardening de seguridad profunda + medios | H-SEC-10..13, M-SEC-1..15, **NEW-INFRA-2..5**, **FE-HIGH-10, FE-HIGH-14, FE-HIGH-16** | Headers nginx, CSP, defaults de docker-compose; Dockerfiles endurecidos (non-root nginx, multi-stage backend, .dockerignore completo, HEALTHCHECK); servicios HTTP centralizados en api.ts |
 | **Sem 5** | Limpieza de bugs medios y bajos | M-BUG-1..15, NEW-PAG-1, **FE-MED-* (tabla §11.3)** | Sin `except Exception: pass`/`catch {}` en lógica de negocio |
 | **Sem 6** | **Formularios: react-hook-form + zod cableados** | **FE-CRIT-1, FE-HIGH-1, FE-HIGH-2, FE-HIGH-6, FE-HIGH-9, FE-HIGH-17** | 14 formularios usan stack declarado; cero `as unknown as X` en hooks de form |
 | **Sem 7** | Estado: queries consistentes | **FE-HIGH-3, FE-HIGH-4, FE-HIGH-5, FE-HIGH-15** | Cero `useState+useEffect+fetch` en hooks de negocio; polling vía `refetchInterval` |
@@ -263,7 +263,7 @@ Resuelto en H-SEC-6. Tracking aquí para checklist.
 | M-SEC-2 | Forzar HTTPS en Odoo XML-RPC (`https://` requerido salvo `DEBUG`) | `odoo/connector.py:627` | S |
 | M-SEC-3 | Cookie `refresh_token` con `SameSite="Strict"` + `Secure` en prod | `core/auth_views.py:275` | S |
 | M-SEC-4 | Reducir `ACCESS_TOKEN_LIFETIME` a 15 min (refresh sigue 7d) | `config/settings_base.py:199` | S |
-| M-SEC-5 | Headers nginx: añadir `Content-Security-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` | `infra/nginx/nginx.prod.conf:36` | M |
+| M-SEC-5 | Headers nginx: añadir `Content-Security-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `server_tokens off` — **aplicar a AMBOS:** `infra/nginx/nginx.prod.conf` (self-hosted) y `frontend/nginx.conf` (Railway, ver NEW-INFRA-1) | `infra/nginx/nginx.prod.conf:36` + `frontend/nginx.conf` | M |
 | M-SEC-6 | `server_name` específico (no `_` wildcard) | `infra/nginx/nginx.prod.conf:25` | S |
 | M-SEC-7 | Rate-limit nginx `burst=10 nodelay` con throttle más estricto | `infra/nginx/nginx.prod.conf:75` | S |
 | M-SEC-8 | Validar magic bytes en uploads sensibles (factura, retención) | `gestion_documental/views.py:95` | M |
@@ -339,6 +339,107 @@ Resuelto en H-SEC-6. Tracking aquí para checklist.
 - Los signals viven en `core/signals.py`. Plan ya corregido en §4.2 en este commit.
 - **Acción opcional (no bloqueante):** mover los signals a `apps/auditoria/signals.py` y registrar en `auditoria/apps.py` para consistencia. Esfuerzo S.
 
+### NEW-INFRA-1 · `frontend/nginx.conf` (Railway) sin security headers — ALTA
+- **Detectado:** revisión post-pull 2026-06-01 de PRs #3, #4, #5.
+- **Archivo:** [`frontend/nginx.conf`](../frontend/nginx.conf).
+- **Riesgo:** Railway despliega este nginx como cara externa del frontend. TLS lo termina Railway upstream, pero los headers de seguridad downstream son responsabilidad del app. Sin ellos: clickjacking (X-Frame-Options), MIME sniffing (X-Content-Type-Options), fuga de Referer, exposición de versión nginx, sin CSP.
+- **Pasos:**
+  1. Agregar al bloque `server`:
+     ```nginx
+     server_tokens off;
+     add_header X-Frame-Options "DENY" always;
+     add_header X-Content-Type-Options "nosniff" always;
+     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+     add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+     add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.railway.app https://api.bcv.org.ve; frame-ancestors 'none';" always;
+     ```
+  2. CSP inicial **permisiva** (`unsafe-inline` por MUI runtime); endurecer después midiendo violaciones con `Content-Security-Policy-Report-Only`.
+  3. Verificar headers post-deploy con `curl -I https://<railway-url>` o `securityheaders.com`.
+- **DoD:** `securityheaders.com` rating A o superior; ningún `console error` de CSP en producción tras una semana.
+- **Esfuerzo:** S (1 h, sin contar afinar CSP).
+- **Relación:** unifica con **M-SEC-5** del plan original (que solo cubría `infra/nginx/nginx.prod.conf`). Subimos M-SEC-5 a **alta** y duplicamos para ambos archivos.
+
+### NEW-INFRA-2 · `frontend/Dockerfile.prod` corre nginx sin usuario non-root explícito — MEDIA
+- **Archivo:** [`frontend/Dockerfile.prod:26-33`](../frontend/Dockerfile.prod#L26).
+- **Riesgo:** la imagen `nginx:1.27-alpine` por default corre el proceso master como root (forks workers como `nginx` user). Si un RCE escapa al master, comprometés el container completo. No hay `USER nginx` ni reconfiguración para correr todo como no-root.
+- **Pasos:**
+  1. Cambiar puerto a >1024 (ya está en 8080 ✓).
+  2. Antes del `CMD`, agregar instrucciones para que nginx corra como no-root:
+     ```dockerfile
+     RUN chown -R nginx:nginx /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /usr/share/nginx/html \
+         && sed -i 's,/var/run/nginx.pid,/tmp/nginx.pid,' /etc/nginx/nginx.conf \
+         && sed -i '/user.*nginx/d' /etc/nginx/nginx.conf
+     USER nginx
+     ```
+  3. Verificar que el container arranca y sirve `/`.
+- **DoD:** `docker exec <container> whoami` devuelve `nginx`.
+- **Esfuerzo:** S (1–2 h, validar Railway no se rompe).
+
+### NEW-INFRA-3 · `backend/Dockerfile` sin pinning point-release y con build-essential en runtime — MEDIA
+- **Archivo:** [`backend/Dockerfile:1,3-10`](../backend/Dockerfile#L1).
+- **Riesgo:**
+  1. `python:3.11-slim` (sin point release) — la imagen muta entre builds, rompe reproducibilidad y dificulta forensia.
+  2. `build-essential` y `libpq-dev` permanecen en la imagen final (no es multi-stage). Atacante con RCE encuentra compilador, headers, herramientas → escalación más fácil. La imagen final crece ~150 MB innecesariamente.
+- **Pasos:**
+  1. Pinear a `python:3.11.10-slim-bookworm` (o el último point release seguro al momento del commit). Actualizar trimestralmente.
+  2. Multi-stage:
+     ```dockerfile
+     FROM python:3.11.10-slim-bookworm AS builder
+     RUN apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+     COPY requirements.txt /tmp/
+     RUN pip wheel --no-cache-dir --wheel-dir /wheels -r /tmp/requirements.txt
+
+     FROM python:3.11.10-slim-bookworm AS runtime
+     RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client libpq5 netcat-traditional dos2unix && rm -rf /var/lib/apt/lists/*
+     COPY --from=builder /wheels /wheels
+     COPY requirements.txt /tmp/
+     RUN pip install --no-cache-dir --no-index --find-links=/wheels -r /tmp/requirements.txt && rm -rf /wheels
+     # ... resto del Dockerfile actual (COPY, USER, ENTRYPOINT)
+     ```
+  3. Verificar tamaño final con `docker images` (debería bajar de ~700 MB a ~300 MB).
+- **DoD:** image size reportada bajó >40%; `apt list --installed | grep build-essential` no devuelve nada en runtime image.
+- **Esfuerzo:** M (½ día con validación en Railway).
+
+### NEW-INFRA-4 · `frontend/.dockerignore` no excluye `.env*` ni docs — MEDIA
+- **Archivo:** [`frontend/.dockerignore`](../frontend/.dockerignore).
+- **Riesgo:** un `.env.local` con secretos puede entrar a la build context y, peor, ser incluido por accidente en el bundle si alguien copia `.env` a `dist/`. También `Dockerfile`, `README.md`, `tests/` aumentan contexto innecesario.
+- **Pasos:** ampliar `.dockerignore`:
+  ```
+  node_modules
+  dist
+  .git
+  .gitignore
+  *.log
+  coverage
+  .vscode
+  .idea
+  # Secretos
+  .env
+  .env.*
+  *.env
+  # Build artifacts y meta
+  Dockerfile
+  Dockerfile.*
+  .dockerignore
+  README.md
+  CHANGELOG.md
+  # Tests (no necesarios en imagen de runtime)
+  src/__tests__
+  src/test-setup.ts
+  vitest.config.ts
+  ```
+- **DoD:** `docker build` no reporta `.env*` en context (`docker build --no-cache 2>&1 | grep -i env` vacío).
+- **Esfuerzo:** XS (15 min).
+
+### NEW-INFRA-5 · Sin `HEALTHCHECK` en Dockerfiles — BAJA
+- **Archivos:** [`backend/Dockerfile`](../backend/Dockerfile), [`frontend/Dockerfile.prod`](../frontend/Dockerfile.prod).
+- **Riesgo:** Railway tiene healthcheck propio (configurado en railway.toml o servicio), pero el `docker-compose.prod.yml` self-hosted no usa healthchecks de Dockerfile; orchestrators (Docker Swarm, Kubernetes) tampoco reciben señal estandarizada.
+- **Pasos:** agregar al final de cada Dockerfile:
+  - Backend: `HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -fsS http://localhost:8000/api/health/ || exit 1` (requiere `curl` — añadir a `apt-get install`).
+  - Frontend: `HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8080/ >/dev/null 2>&1 || exit 1`.
+- **DoD:** `docker inspect <container> | grep Health` muestra estado.
+- **Esfuerzo:** XS (30 min). **Nota:** verificar primero que existe `/api/health/` en backend; si no, crear endpoint trivial en `apps/core/views.py`.
+
 ---
 
 ## 7. Gap del plan vs realidad (Sem 6)
@@ -387,16 +488,21 @@ Resuelto en H-SEC-6. Tracking aquí para checklist.
 - **DoD:** simulacro de restore desde último backup funciona en máquina dev.
 - **Esfuerzo:** M (1 día).
 
-### GAP-5 · SSL automático (Let's Encrypt)
+### GAP-5 · SSL automático (Let's Encrypt) — **PRIORIDAD REDUCIDA**
 - **Item §1.J.** `infra/nginx/nginx.prod.conf:109-113` lo tiene comentado.
-- **Pasos:**
+- **Cambio de contexto (PRs #3-#5 mergeadas el 2026-06-01):** el deploy ahora va a **Railway** que termina TLS upstream automáticamente. GAP-5 solo aplica si se mantiene la topología self-hosted (docker-compose.prod.yml) en paralelo o como fallback.
+- **Decisión a tomar (Marco):**
+  - **Opción A:** Railway es la topología única → GAP-5 se cierra como **N/A**, mover a CTF con `vence_en` y dueño documentando la dependencia de Railway TLS.
+  - **Opción B:** mantener self-hosted como fallback → ejecutar GAP-5 según pasos originales.
+- **Pasos (si Opción B):**
   1. Añadir `certbot` sidecar al `docker-compose.prod.yml`.
   2. Descomentar y completar bloque server SSL en `nginx.prod.conf`.
   3. Variables: `LETSENCRYPT_EMAIL`, `LETSENCRYPT_DOMAIN` en `.env`.
   4. Renovación automática vía cron.
-  5. Headers HSTS, `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`.
+  5. Headers HSTS, `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` (también en Railway/`frontend/nginx.conf`, via NEW-INFRA-1).
 - **DoD:** `curl -I https://<dominio>` devuelve 200 con cert válido.
-- **Esfuerzo:** M (½ día — más fricción de DNS/dominio).
+- **Esfuerzo:** M (½ día — más fricción de DNS/dominio). Si Opción A: XS (documentar decisión).
+- **Nota relevante:** HSTS sí se debe agregar en `frontend/nginx.conf` aunque sea Railway-only, porque Railway honra los headers downstream. Tracking en NEW-INFRA-1.
 
 ### GAP-6 · Archivar `PROJECT_LOG.md` de la raíz
 - **Estado:** el plan §10 ya lo marca como obsoleto. Verificar si el archivo aún existe en raíz; si sí, moverlo a `docs/_archive/PROJECT_LOG_root_obsoleto.md`.
@@ -700,6 +806,8 @@ El audit cubrió a fondo: tipos, estado, formularios, servicios-http, seguridad-
 | `fix/audit-bugs-misc` | H-BUG-4, M-BUG-1..15 | `fix/audit-bugs-misc` |
 | `fix/audit-security-headers` | M-SEC-1..15 | `fix/audit-security-headers` |
 | `fix/audit-migrations-drift` | NEW-MIG-1 | `fix/audit-migrations-drift` |
+| `fix/infra-nginx-headers-railway` | NEW-INFRA-1 (+ M-SEC-5) | `fix/infra-nginx-headers-railway` |
+| `fix/infra-docker-hardening` | NEW-INFRA-2, NEW-INFRA-3, NEW-INFRA-4, NEW-INFRA-5 | `fix/infra-docker-hardening` |
 | `chore/audit-pag-ordering` | NEW-PAG-1 | `chore/audit-pag-ordering` |
 | `docs/audit-plan-cleanup` | NEW-DOC-1, NEW-DOC-2, GAP-3, GAP-6 | `docs/audit-plan-cleanup` |
 | `docs/adr-007-localizacion` | GAP-1 | `docs/adr-007-localizacion` |
@@ -728,6 +836,7 @@ El audit cubrió a fondo: tipos, estado, formularios, servicios-http, seguridad-
 - **Medios bugs:** 15
 - **Medios API/dup:** 4
 - **Nuevos (validación 2026-06-01):** 4
+- **Nuevos infra (revisión post-pull Railway, 2026-06-01):** 5 (NEW-INFRA-1..5)
 - **Gap del plan:** 6
 - **Track 1.F (no es deuda, es feature):** 5
 
@@ -737,7 +846,7 @@ El audit cubrió a fondo: tipos, estado, formularios, servicios-http, seguridad-
 - **Medios tipos:** 4 · **Medios estado:** 5 · **Medios formularios:** 2 · **Medios servicios HTTP:** 5
 - **Bajos tipos:** 3 · **Bajos estado:** 3 · **Bajos formularios:** 5 · **Bajos servicios HTTP:** 4
 
-**Total items planeables:** 122.
+**Total items planeables:** 127.
 
 ---
 
