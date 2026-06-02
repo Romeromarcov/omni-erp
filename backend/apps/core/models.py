@@ -67,6 +67,15 @@ class Empresa(OmniBaseModel, IntegrationFieldsMixin):
             "Default False para no romper empresas existentes."
         ),
     )
+    # GAP-2 / ADR-007: localización en dos capas, activable por empresa.
+    localizacion_legal_activa = models.BooleanField(
+        default=True,
+        help_text="Capa legal (impuestos/documentos/libros del país). Si False, no aplica IVA/IGTF/etc.",
+    )
+    localizacion_mercado_activa = models.BooleanField(
+        default=True,
+        help_text="Capa de mercado (tasas, métodos de pago locales). Activable independientemente.",
+    )
 
     class Meta:
         db_table = "empresas"

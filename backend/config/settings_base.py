@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     # Apps ERP
     "apps.core",
+    "apps.localizacion",  # GAP-2 / ADR-007: framework de localización (puertos)
     "apps.finanzas",
     "apps.fiscal",
     "apps.contabilidad",

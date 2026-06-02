@@ -122,6 +122,15 @@ def calcular_igtf(monto_pago: Decimal, metodo_pago: str, empresa=None) -> dict:
     monto_pago = Decimal(str(monto_pago))
     aplica = metodo_pago in METODOS_PAGO_IGTF
 
+    # GAP-2 / ADR-007: el IGTF es de la capa legal venezolana. No aplica si la
+    # empresa tiene la localización legal desactivada o su país no es Venezuela.
+    if empresa is not None:
+        if not getattr(empresa, "localizacion_legal_activa", True):
+            aplica = False
+        pais = getattr(empresa, "pais_codigo_iso", None)
+        if pais and pais.upper() not in ("VE", "VEN"):
+            aplica = False
+
     if not aplica:
         return {
             "aplica": False,
