@@ -93,9 +93,19 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
 
             try:
                 moneda = Moneda.objects.get(pk=data["moneda_id"])
+            except Moneda.DoesNotExist:
+                # M-API-3: código de error en vez de filtrar el str() de la excepción.
+                return Response(
+                    {"code": "moneda_no_encontrada", "detail": "La moneda indicada no existe."},
+                    status=400,
+                )
+            try:
                 metodo_pago = MetodoPago.objects.get(pk=data["metodo_pago_id"])
-            except (Moneda.DoesNotExist, MetodoPago.DoesNotExist) as e:
-                return Response({"error": str(e)}, status=400)
+            except MetodoPago.DoesNotExist:
+                return Response(
+                    {"code": "metodo_pago_no_encontrado", "detail": "El método de pago indicado no existe."},
+                    status=400,
+                )
 
             # Crear pago en finanzas
             pago = Pago.objects.create(
