@@ -20,6 +20,8 @@ class OrdenCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrdenCompra
         fields = "__all__"
+        # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_orden_compra", "fecha_creacion")
 
 
 class DetalleOrdenCompraSerializer(serializers.ModelSerializer):
@@ -32,18 +34,24 @@ class RecepcionMercanciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecepcionMercancia
         fields = "__all__"
+        # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_recepcion", "fecha_creacion")
 
 
 class FacturaCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = FacturaCompra
         fields = "__all__"
+        # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_factura_compra", "fecha_creacion")
 
 
 class RequisicionCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequisicionCompra
         fields = "__all__"
+        # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_requisicion", "fecha_creacion")
 
 
 class DetalleRequisicionCompraSerializer(serializers.ModelSerializer):
@@ -56,6 +64,8 @@ class SolicitudCotizacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SolicitudCotizacion
         fields = "__all__"
+        # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_solicitud_cotizacion", "fecha_creacion")
 
 
 class DetalleSolicitudCotizacionSerializer(serializers.ModelSerializer):

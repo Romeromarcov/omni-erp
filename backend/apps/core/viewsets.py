@@ -225,6 +225,32 @@ def get_empresas_visible(user):
     return Empresa.objects.filter(id_empresa__in=ids)
 
 
+def get_empresa_primaria(user):
+    """Empresa por defecto del usuario para inyección en creaciones."""
+    return get_empresas_visible(user).first()
+
+
+class EmpresaInjectMixin:
+    """
+    H-API-1/H-API-2: inyecta la empresa del usuario autenticado al crear, en
+    vez de confiar en el ``id_empresa`` del payload (que permitiría crear
+    registros en otra empresa). El serializer debe declarar ``id_empresa`` como
+    read_only para que el valor del cliente se ignore por completo.
+
+    ``empresa_field`` permite ajustar el nombre del campo FK a empresa.
+    """
+
+    empresa_field = "id_empresa"
+
+    def perform_create(self, serializer):
+        empresa = get_empresa_primaria(self.request.user)
+        if empresa is None:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        serializer.save(**{self.empresa_field: empresa})
+
+
 class EmpresaViewSet(BaseModelViewSet):
     queryset = Empresa.objects.all()
     serializer_class = EmpresaSerializer

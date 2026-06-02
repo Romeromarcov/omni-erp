@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import BaseModelViewSet, EmpresaInjectMixin, get_empresas_visible
 
 from .models import (
     DetalleFacturaCompra,
@@ -38,7 +38,7 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class OrdenCompraViewSet(BaseModelViewSet):
+class OrdenCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     queryset = OrdenCompra.objects.all()
     serializer_class = OrdenCompraSerializer
 
@@ -67,7 +67,7 @@ class DetalleOrdenCompraViewSet(BaseModelViewSet):
         return DetalleOrdenCompra.objects.filter(id_orden_compra__id_empresa__in=_empresas(self.request))
 
 
-class RecepcionMercanciaViewSet(BaseModelViewSet):
+class RecepcionMercanciaViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     queryset = RecepcionMercancia.objects.all()
     serializer_class = RecepcionMercanciaSerializer
 
@@ -141,7 +141,7 @@ class RecepcionMercanciaViewSet(BaseModelViewSet):
         )
 
 
-class FacturaCompraViewSet(BaseModelViewSet):
+class FacturaCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     queryset = FacturaCompra.objects.all()
     serializer_class = FacturaCompraSerializer
 
@@ -194,7 +194,7 @@ class FacturaCompraViewSet(BaseModelViewSet):
         )
 
 
-class RequisicionCompraViewSet(BaseModelViewSet):
+class RequisicionCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     queryset = RequisicionCompra.objects.all()
     serializer_class = RequisicionCompraSerializer
 
@@ -212,7 +212,7 @@ class DetalleRequisicionCompraViewSet(BaseModelViewSet):
         return DetalleRequisicionCompra.objects.filter(id_requisicion__id_empresa__in=_empresas(self.request))
 
 
-class SolicitudCotizacionViewSet(BaseModelViewSet):
+class SolicitudCotizacionViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     queryset = SolicitudCotizacion.objects.all()
     serializer_class = SolicitudCotizacionSerializer
 

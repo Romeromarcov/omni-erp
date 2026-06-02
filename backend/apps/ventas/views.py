@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import BaseModelViewSet, EmpresaInjectMixin, get_empresas_visible
 
 logger = logging.getLogger(__name__)
 
@@ -498,7 +498,7 @@ def crear_transaccion_financiera_pago(pago, usuario):
         raise
 
 
-class PedidoViewSet(viewsets.ModelViewSet):
+class PedidoViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = Pedido.objects.all()
     serializer_class = PedidoSerializer
     permission_classes = [IsAuthenticated]
@@ -579,7 +579,7 @@ class DetallePedidoViewSet(viewsets.ModelViewSet):
         return DetallePedido.objects.filter(id_pedido__id_empresa__in=_empresas(self.request))
 
 
-class NotaVentaViewSet(viewsets.ModelViewSet):
+class NotaVentaViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = NotaVenta.objects.all()
     serializer_class = NotaVentaSerializer
     permission_classes = [IsAuthenticated]
@@ -599,7 +599,7 @@ class DetalleNotaVentaViewSet(viewsets.ModelViewSet):
         return DetalleNotaVenta.objects.filter(id_nota_venta__id_empresa__in=_empresas(self.request))
 
 
-class FacturaFiscalViewSet(viewsets.ModelViewSet):
+class FacturaFiscalViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = FacturaFiscal.objects.all()
     serializer_class = FacturaFiscalSerializer
     permission_classes = [IsAuthenticated]
@@ -643,7 +643,7 @@ class DetalleFacturaFiscalViewSet(viewsets.ModelViewSet):
         return DetalleFacturaFiscal.objects.filter(id_factura__id_empresa__in=_empresas(self.request))
 
 
-class NotaCreditoVentaViewSet(viewsets.ModelViewSet):
+class NotaCreditoVentaViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = NotaCreditoVenta.objects.all()
     serializer_class = NotaCreditoVentaSerializer
     permission_classes = [IsAuthenticated]
@@ -669,7 +669,7 @@ class DetalleNotaCreditoVentaViewSet(viewsets.ModelViewSet):
         return DetalleNotaCreditoVenta.objects.filter(id_nota_credito__id_empresa__in=_empresas(self.request))
 
 
-class DevolucionVentaViewSet(viewsets.ModelViewSet):
+class DevolucionVentaViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = DevolucionVenta.objects.all()
     serializer_class = DevolucionVentaSerializer
     permission_classes = [IsAuthenticated]
@@ -695,7 +695,7 @@ class DetalleDevolucionVentaViewSet(viewsets.ModelViewSet):
         return DetalleDevolucionVenta.objects.filter(id_devolucion__id_empresa__in=_empresas(self.request))
 
 
-class CotizacionViewSet(viewsets.ModelViewSet):
+class CotizacionViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = Cotizacion.objects.all()
     serializer_class = CotizacionSerializer
     permission_classes = [IsAuthenticated]
@@ -739,7 +739,7 @@ class DetalleCotizacionViewSet(viewsets.ModelViewSet):
         return DetalleCotizacion.objects.filter(id_cotizacion__id_empresa__in=_empresas(self.request))
 
 
-class NotaCreditoFiscalViewSet(viewsets.ModelViewSet):
+class NotaCreditoFiscalViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = NotaCreditoFiscal.objects.all()
     serializer_class = NotaCreditoFiscalSerializer
     permission_classes = [IsAuthenticated]
@@ -767,7 +767,7 @@ class DetalleNotaCreditoFiscalViewSet(viewsets.ModelViewSet):
         )
 
 
-class ListaPrecioViewSet(viewsets.ModelViewSet):
+class ListaPrecioViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
     queryset = ListaPrecio.objects.all()
     serializer_class = ListaPrecioSerializer
     permission_classes = [IsAuthenticated]

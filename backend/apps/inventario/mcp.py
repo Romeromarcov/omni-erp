@@ -9,6 +9,7 @@ Herramientas expuestas:
 
 
 import logging
+from decimal import Decimal
 from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.inventario")
@@ -70,7 +71,8 @@ def inventario_get_productos(
             "id_producto": str(p.id_producto),
             "nombre_producto": p.nombre_producto,
             "sku": p.sku or "",
-            "precio_venta_sugerido": float(p.precio_venta_sugerido or 0),
+            # M-BUG-1: monetario como Decimal (no float) para no perder precisión.
+            "precio_venta_sugerido": p.precio_venta_sugerido or Decimal("0"),
             "activo": p.activo,
         }
         for p in productos

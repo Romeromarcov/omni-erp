@@ -15,10 +15,10 @@ documento origen. Si el asiento no puede crearse, toda la transacción se revier
 """
 
 import uuid
-from datetime import date
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 
 from .models import AsientoContable, DetalleAsiento, MapeoContable
 
@@ -70,7 +70,7 @@ def _extraer_monto(documento) -> Decimal:
 
 
 def _numero_asiento(tipo: str) -> str:
-    fecha = date.today().strftime("%Y%m%d")
+    fecha = timezone.now().date().strftime("%Y%m%d")  # M-BUG-12: TZ-aware
     sufijo = uuid.uuid4().hex[:8].upper()
     return f"AST-{tipo[:4]}-{fecha}-{sufijo}"
 
@@ -133,7 +133,7 @@ def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal = None) -
 
     asiento = AsientoContable.objects.create(
         id_empresa=empresa,
-        fecha_asiento=date.today(),
+        fecha_asiento=timezone.now().date(),  # M-BUG-12: TZ-aware
         numero_asiento=numero,
         descripcion=descripcion,
         id_documento_origen=documento.pk,

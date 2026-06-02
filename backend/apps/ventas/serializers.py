@@ -102,7 +102,8 @@ class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pedido
         fields = "__all__"
-        read_only_fields = ("numero_pedido",)
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("numero_pedido", "id_empresa", "id_pedido", "fecha_creacion")
 
     def validate(self, data):
         if data.get("fecha_cierre_estimada") and data["fecha_cierre_estimada"] < data["fecha_pedido"]:
@@ -252,6 +253,8 @@ class FacturaFiscalSerializer(serializers.ModelSerializer):
     class Meta:
         model = FacturaFiscal
         fields = "__all__"
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_factura", "fecha_creacion")
 
 
 class DetalleFacturaFiscalSerializer(serializers.ModelSerializer):
@@ -282,6 +285,8 @@ class NotaCreditoVentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotaCreditoVenta
         fields = "__all__"
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_nota_credito", "fecha_creacion")
 
 
 class DetalleNotaCreditoVentaSerializer(serializers.ModelSerializer):
@@ -312,6 +317,8 @@ class DevolucionVentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DevolucionVenta
         fields = "__all__"
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_devolucion", "fecha_creacion")
 
 
 class DetalleDevolucionVentaSerializer(serializers.ModelSerializer):
@@ -342,6 +349,8 @@ class CotizacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cotizacion
         fields = "__all__"
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_cotizacion", "fecha_creacion")
 
 
 class DetalleCotizacionSerializer(serializers.ModelSerializer):
@@ -372,6 +381,8 @@ class NotaVentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotaVenta
         fields = "__all__"
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_nota_venta", "fecha_creacion")
 
     def validate_numero_nota(self, value):
         if not value:
@@ -417,6 +428,8 @@ class NotaCreditoFiscalSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotaCreditoFiscal
         fields = "__all__"
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ("id_empresa", "id_nota_credito_fiscal", "fecha_creacion")
 
 
 class DetalleNotaCreditoFiscalSerializer(serializers.ModelSerializer):
@@ -429,7 +442,8 @@ class ListaPrecioSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListaPrecio
         fields = "__all__"
-        read_only_fields = ["id_lista", "fecha_creacion"]
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ["id_lista", "fecha_creacion", "id_empresa"]
 
 
 class DetallePrecioSerializer(serializers.ModelSerializer):
