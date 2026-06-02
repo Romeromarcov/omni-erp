@@ -17,6 +17,12 @@ if not SECRET_KEY:
 # del SECRET_KEY; si no está, se deriva del SECRET_KEY (aceptable solo en dev).
 CRYPTOGRAPHY_KEY = os.environ.get("CRYPTOGRAPHY_KEY")
 
+# M-SEC-3: SameSite del refresh_token httpOnly. Default "Strict" (más seguro).
+# Si el frontend vive en un dominio/subdominio distinto del backend (p. ej.
+# servicios separados en Railway), poné "None" en el entorno (requiere Secure,
+# que ya se aplica en prod) para que el refresh cross-site funcione.
+REFRESH_TOKEN_COOKIE_SAMESITE = os.environ.get("REFRESH_TOKEN_COOKIE_SAMESITE", "Strict")
+
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 

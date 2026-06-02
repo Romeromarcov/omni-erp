@@ -68,6 +68,31 @@ class VentaFraccionadaViewSet(viewsets.ModelViewSet):
         if not _fraccionamiento_enabled(empresa):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Módulo de fraccionamiento no habilitado.")
+
+        # M-BUG-8: reservar stock al crear la venta pendiente. Las ventas
+        # pendientes del lote ya comprometen cantidad; rechazamos crear una que
+        # sobrevendería el lote (evita pendientes que nunca podrán confirmarse).
+        from django.db.models import Sum
+        from rest_framework.exceptions import ValidationError
+
+        lote = serializer.validated_data.get("lote")
+        cantidad = serializer.validated_data.get("cantidad")
+        if lote is not None and cantidad is not None:
+            with transaction.atomic():
+                lote_lock = LoteFraccionado.objects.select_for_update().get(pk=lote.pk)
+                reservado = (
+                    VentaFraccionada.objects.filter(
+                        lote=lote_lock, estado="pendiente", deleted_at__isnull=True
+                    ).aggregate(s=Sum("cantidad"))["s"]
+                    or 0
+                )
+                if reservado + cantidad > lote_lock.cantidad_actual:
+                    raise ValidationError(
+                        f"Stock insuficiente para reservar: {lote_lock.cantidad_actual} disponibles, "
+                        f"{reservado} ya reservados por ventas pendientes."
+                    )
+                serializer.save(empresa=empresa)
+            return
         serializer.save(empresa=empresa)
 
     @action(detail=True, methods=["post"])
