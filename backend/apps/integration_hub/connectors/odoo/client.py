@@ -16,9 +16,16 @@ from __future__ import annotations
 
 import logging
 import re
-import xmlrpc.client
+import xmlrpc.client  # nosec B411
 from datetime import datetime, date
 from typing import Any
+
+# B411: endurecer xmlrpc contra ataques XML (billion laughs, entidades externas)
+# en las respuestas del servidor Odoo externo. monkey_patch() sustituye el parser
+# de xmlrpclib por el de defusedxml a nivel de proceso (idempotente).
+from defusedxml.xmlrpc import monkey_patch as _defuse_xmlrpc
+
+_defuse_xmlrpc()
 
 logger = logging.getLogger(__name__)
 

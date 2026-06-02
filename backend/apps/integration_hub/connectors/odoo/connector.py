@@ -638,7 +638,7 @@ class OdooConnector(BaseConnector):
         """
         from datetime import date as date_cls
         from datetime import datetime
-        import xmlrpc.client
+        import xmlrpc.client  # nosec B411
 
         try:
             config = self._config
@@ -717,7 +717,7 @@ class OdooConnector(BaseConnector):
 
     def pull_pagos_cliente(self, partner_id: str) -> list[dict]:
         """Pagos normalizados de un cliente específico desde Odoo."""
-        import xmlrpc.client
+        import xmlrpc.client  # nosec B411
 
         try:
             config = self._config
