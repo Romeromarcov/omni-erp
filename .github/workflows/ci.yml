@@ -203,3 +203,39 @@ jobs:
         working-directory: frontend
         continue-on-error: true
         run: npm audit --audit-level=high || true
+
+  # ──────────────────────────────────────────────────────────────
+  # Static analysis — plan "cero dudas" Fase 0/1
+  # bandit (seguridad) bloqueante en MEDIUM+; ruff (lint); mypy (tipos, gradual)
+  # ──────────────────────────────────────────────────────────────
+  static-analysis:
+    name: "Static analysis (bandit + ruff + mypy)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev tooling
+        working-directory: backend
+        run: pip install bandit==1.9.4 ruff==0.8.4 mypy==1.13.0
+
+      - name: Bandit (seguridad estática — bloqueante en MEDIUM+)
+        working-directory: backend
+        run: bandit -r apps/ config/ -c .bandit.yaml --severity-level medium
+
+      - name: Ruff (lint — errores graves)
+        working-directory: backend
+        # Solo errores de sintaxis/nombres/imports indefinidos por ahora (gradual).
+        run: ruff check apps/ config/ --select E9,F63,F7,F82,F401,F811 || true
+
+      - name: Mypy (tipos — gradual, no bloqueante aún)
+        working-directory: backend
+        continue-on-error: true
+        run: |
+          pip install -r requirements.txt
+          mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura --ignore-missing-imports || true

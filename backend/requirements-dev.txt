@@ -1,0 +1,22 @@
+# Dependencias de desarrollo / CI (plan "cero dudas" — Fase 0).
+# Se instalan en CI además de requirements.txt.
+-r requirements.txt
+
+# ── Análisis estático de seguridad ──
+bandit==1.9.4
+semgrep==1.97.0
+
+# ── Tipos ──
+mypy==1.13.0
+django-stubs==5.1.1
+djangorestframework-stubs==3.15.1
+
+# ── Calidad / dependencias ──
+ruff==0.8.4
+pip-audit==2.7.3
+
+# ── Testing ──
+factory_boy==3.3.1
+hypothesis==6.122.3
+pytest-xdist==3.6.1
+diff-cover==10.3.0
