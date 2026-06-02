@@ -5,7 +5,7 @@ Incluye feriados nacionales fijos y móviles (Semana Santa calculada).
 Fuente: Ley Orgánica del Trabajo, Artículo 184 y legislación vigente.
 
 Uso:
-    from apps.vzla_localizacion.calendario import es_feriado, feriados_del_año, dias_habiles
+    from apps.localizacion_ve.calendario import es_feriado, feriados_del_año, dias_habiles
     print(es_feriado(date(2026, 1, 1)))   # True (Año Nuevo)
     print(dias_habiles(date(2026, 1, 1), date(2026, 1, 31)))
 """

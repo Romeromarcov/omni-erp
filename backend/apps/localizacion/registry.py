@@ -23,3 +23,22 @@ def get(pais_codigo_iso: str | None) -> dict | None:
 
 def paises_registrados() -> list[str]:
     return sorted(_LOCALIZACIONES.keys())
+
+
+def _registrar_localizaciones_bundled() -> None:
+    """
+    Registra las localizaciones que vienen con el producto (GAP-2).
+
+    Venezuela: ``MotorImpuestosVE`` delega en apps.fiscal (strangler fig). El
+    adaptador importa fiscal de forma perezosa, así que registrar la instancia
+    aquí es seguro durante la carga de apps.
+    """
+    try:
+        from apps.localizacion_ve.adapters import MotorImpuestosVE
+
+        register("VE", {"MotorImpuestos": MotorImpuestosVE()})
+    except Exception:  # noqa: BLE001 — no romper el arranque si VE no está disponible
+        pass
+
+
+_registrar_localizaciones_bundled()

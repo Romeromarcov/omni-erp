@@ -23,16 +23,16 @@ class TestValidadoresVzla:
     """Validadores de RIF, Cédula y Número de Control."""
 
     def test_rif_j_valido(self):
-        from apps.vzla_localizacion.validators import validar_rif
+        from apps.localizacion_ve.validators import validar_rif
         # Formato correcto: tipo J + 8 dígitos + DV
         assert validar_rif("J-30543012-5") is True
 
     def test_rif_v_valido(self):
-        from apps.vzla_localizacion.validators import validar_rif
+        from apps.localizacion_ve.validators import validar_rif
         assert validar_rif("V-12345678-3") is True
 
     def test_rif_todos_tipos_validos(self):
-        from apps.vzla_localizacion.validators import validar_rif
+        from apps.localizacion_ve.validators import validar_rif
         # Todos los prefijos soportados
         assert validar_rif("J-12345678-1") is True
         assert validar_rif("E-12345678-1") is True
@@ -40,59 +40,59 @@ class TestValidadoresVzla:
         assert validar_rif("P-12345678-1") is True
 
     def test_rif_formato_incorrecto(self):
-        from apps.vzla_localizacion.validators import validar_rif
+        from apps.localizacion_ve.validators import validar_rif
         assert validar_rif("X-12345678-5") is False  # prefijo inválido
         assert validar_rif("") is False
         assert validar_rif("12345678") is False
         assert validar_rif("J-1234-5") is False  # muy pocos dígitos
 
     def test_rif_sin_guiones(self):
-        from apps.vzla_localizacion.validators import validar_rif
+        from apps.localizacion_ve.validators import validar_rif
         # Debe funcionar con o sin guiones
         assert validar_rif("J305430125") is True
 
     def test_normalizar_rif(self):
-        from apps.vzla_localizacion.validators import normalizar_rif
+        from apps.localizacion_ve.validators import normalizar_rif
         assert normalizar_rif("J305430125") == "J-30543012-5"
         assert normalizar_rif("j-30543012-5") == "J-30543012-5"
 
     def test_normalizar_rif_invalido(self):
-        from apps.vzla_localizacion.validators import normalizar_rif
+        from apps.localizacion_ve.validators import normalizar_rif
         with pytest.raises(ValueError):
             normalizar_rif("X-123")
 
     def test_cedula_valida(self):
-        from apps.vzla_localizacion.validators import validar_cedula
+        from apps.localizacion_ve.validators import validar_cedula
         assert validar_cedula("V-12345678") is True
         assert validar_cedula("E-87654321") is True
         assert validar_cedula("V12345678") is True
 
     def test_cedula_invalida(self):
-        from apps.vzla_localizacion.validators import validar_cedula
+        from apps.localizacion_ve.validators import validar_cedula
         assert validar_cedula("X-12345678") is False
         assert validar_cedula("") is False
 
     def test_normalizar_cedula(self):
-        from apps.vzla_localizacion.validators import normalizar_cedula
+        from apps.localizacion_ve.validators import normalizar_cedula
         assert normalizar_cedula("V12345678") == "V-12345678"
 
     def test_numero_control_valido(self):
-        from apps.vzla_localizacion.validators import validar_numero_control
+        from apps.localizacion_ve.validators import validar_numero_control
         assert validar_numero_control("00-00000123") is True
         assert validar_numero_control("01-00001000") is True
 
     def test_numero_control_invalido(self):
-        from apps.vzla_localizacion.validators import validar_numero_control
+        from apps.localizacion_ve.validators import validar_numero_control
         assert validar_numero_control("") is False
         assert validar_numero_control("0-123") is False
 
     def test_siguiente_numero_control(self):
-        from apps.vzla_localizacion.validators import siguiente_numero_control
+        from apps.localizacion_ve.validators import siguiente_numero_control
         assert siguiente_numero_control("00-00000099") == "00-00000100"
         assert siguiente_numero_control("00-00000001") == "00-00000002"
 
     def test_validar_email(self):
-        from apps.vzla_localizacion.validators import validar_email
+        from apps.localizacion_ve.validators import validar_email
         assert validar_email("usuario@empresa.com") is True
         assert validar_email("invalido") is False
         assert validar_email("") is False
@@ -102,64 +102,64 @@ class TestCalendarioVzla:
     """Feriados y días hábiles venezolanos."""
 
     def test_ano_nuevo_es_feriado(self):
-        from apps.vzla_localizacion.calendario import es_feriado
+        from apps.localizacion_ve.calendario import es_feriado
         assert es_feriado(date(2026, 1, 1)) is True
 
     def test_dia_independencia_es_feriado(self):
-        from apps.vzla_localizacion.calendario import es_feriado
+        from apps.localizacion_ve.calendario import es_feriado
         assert es_feriado(date(2026, 7, 5)) is True
 
     def test_navidad_es_feriado(self):
-        from apps.vzla_localizacion.calendario import es_feriado
+        from apps.localizacion_ve.calendario import es_feriado
         assert es_feriado(date(2026, 12, 25)) is True
 
     def test_lunes_laborable_no_feriado(self):
-        from apps.vzla_localizacion.calendario import es_feriado
+        from apps.localizacion_ve.calendario import es_feriado
         # Lunes 2 de febrero 2026 no es feriado
         assert es_feriado(date(2026, 2, 2)) is False
 
     def test_sabado_no_es_habil(self):
-        from apps.vzla_localizacion.calendario import es_dia_habil
+        from apps.localizacion_ve.calendario import es_dia_habil
         # Sábado 3 enero 2026
         assert es_dia_habil(date(2026, 1, 3)) is False
 
     def test_feriado_no_es_habil(self):
-        from apps.vzla_localizacion.calendario import es_dia_habil
+        from apps.localizacion_ve.calendario import es_dia_habil
         assert es_dia_habil(date(2026, 1, 1)) is False
 
     def test_dia_habil_normal(self):
-        from apps.vzla_localizacion.calendario import es_dia_habil
+        from apps.localizacion_ve.calendario import es_dia_habil
         # Miércoles 7 enero 2026 no es feriado
         assert es_dia_habil(date(2026, 1, 7)) is True
 
     def test_feriados_del_año_tiene_entries(self):
-        from apps.vzla_localizacion.calendario import feriados_del_año
+        from apps.localizacion_ve.calendario import feriados_del_año
         feriados = feriados_del_año(2026)
         assert len(feriados) >= 15
         assert date(2026, 1, 1) in feriados
         assert date(2026, 12, 25) in feriados
 
     def test_dias_habiles_rango(self):
-        from apps.vzla_localizacion.calendario import dias_habiles
+        from apps.localizacion_ve.calendario import dias_habiles
         # En una semana típica sin feriados debería haber ~5 días hábiles
         # Semana 5-9 enero 2026 (lunes a viernes, sin feriados)
         total = dias_habiles(date(2026, 1, 5), date(2026, 1, 9))
         assert total == 5
 
     def test_dias_habiles_incluye_feriado(self):
-        from apps.vzla_localizacion.calendario import dias_habiles
+        from apps.localizacion_ve.calendario import dias_habiles
         # 1 enero (feriado) al 2 enero: solo 1 día hábil (viernes 2)
         total = dias_habiles(date(2026, 1, 1), date(2026, 1, 2))
         assert total == 1  # 1 enero es feriado, 2 enero es viernes hábil
 
     def test_siguiente_dia_habil_desde_viernes(self):
-        from apps.vzla_localizacion.calendario import siguiente_dia_habil
+        from apps.localizacion_ve.calendario import siguiente_dia_habil
         # Desde viernes 2 enero, el siguiente hábil debe ser lunes 5 enero
         siguiente = siguiente_dia_habil(date(2026, 1, 2))
         assert siguiente == date(2026, 1, 5)
 
     def test_semana_santa_calculada(self):
-        from apps.vzla_localizacion.calendario import feriados_del_año
+        from apps.localizacion_ve.calendario import feriados_del_año
         # En 2026, el domingo de Pascua es 5 de abril
         # Viernes Santo = 3 de abril, Jueves Santo = 2 de abril
         feriados = feriados_del_año(2026)
@@ -171,52 +171,52 @@ class TestFormatoVzla:
     """Formateo de montos venezolanos."""
 
     def test_formatear_bolivares(self):
-        from apps.vzla_localizacion.formato import formatear_bolivares
+        from apps.localizacion_ve.formato import formatear_bolivares
         resultado = formatear_bolivares(Decimal("1234567.89"))
         assert "1.234.567" in resultado
         assert "89" in resultado
         assert "Bs." in resultado
 
     def test_formatear_bolivares_sin_simbolo(self):
-        from apps.vzla_localizacion.formato import formatear_bolivares
+        from apps.localizacion_ve.formato import formatear_bolivares
         resultado = formatear_bolivares(Decimal("1000"), incluir_simbolo=False)
         assert "Bs." not in resultado
         assert "1.000" in resultado
 
     def test_formatear_usd(self):
-        from apps.vzla_localizacion.formato import formatear_usd
+        from apps.localizacion_ve.formato import formatear_usd
         resultado = formatear_usd(Decimal("1234.50"))
         assert "$" in resultado
         assert "1,234.50" in resultado
 
     def test_formatear_monto_ves(self):
-        from apps.vzla_localizacion.formato import formatear_monto
+        from apps.localizacion_ve.formato import formatear_monto
         resultado = formatear_monto(Decimal("5000"), "VES")
         assert "Bs." in resultado
 
     def test_formatear_monto_usd(self):
-        from apps.vzla_localizacion.formato import formatear_monto
+        from apps.localizacion_ve.formato import formatear_monto
         resultado = formatear_monto(Decimal("100"), "USD")
         assert "$" in resultado
 
     def test_monto_a_letras_cero(self):
-        from apps.vzla_localizacion.formato import monto_a_letras
+        from apps.localizacion_ve.formato import monto_a_letras
         resultado = monto_a_letras(0)
         assert "CERO" in resultado
 
     def test_monto_a_letras_mil(self):
-        from apps.vzla_localizacion.formato import monto_a_letras
+        from apps.localizacion_ve.formato import monto_a_letras
         resultado = monto_a_letras(1000, "DOLARES")
         assert "MIL" in resultado
         assert "DOLARES" in resultado
 
     def test_monto_a_letras_con_centavos(self):
-        from apps.vzla_localizacion.formato import monto_a_letras
+        from apps.localizacion_ve.formato import monto_a_letras
         resultado = monto_a_letras(Decimal("1234.50"))
         assert "CON 50/100" in resultado
 
     def test_monto_a_letras_millon(self):
-        from apps.vzla_localizacion.formato import monto_a_letras
+        from apps.localizacion_ve.formato import monto_a_letras
         resultado = monto_a_letras(1_000_000)
         assert "MILLÓN" in resultado or "MILLON" in resultado
 
@@ -225,14 +225,14 @@ class TestZonaHorariaVzla:
     """Zona horaria venezolana VET (UTC-4)."""
 
     def test_ahora_vet_tiene_tz(self):
-        from apps.vzla_localizacion.zona_horaria import ahora_vet
+        from apps.localizacion_ve.zona_horaria import ahora_vet
         dt = ahora_vet()
         assert dt.tzinfo is not None
         assert dt.utcoffset().total_seconds() == -4 * 3600
 
     def test_a_vet_conversion(self):
         from datetime import timezone as tz
-        from apps.vzla_localizacion.zona_horaria import a_vet
+        from apps.localizacion_ve.zona_horaria import a_vet
         import datetime
         # UTC 12:00 → VET 08:00
         dt_utc = datetime.datetime(2026, 6, 15, 12, 0, 0, tzinfo=tz.utc)
@@ -240,18 +240,18 @@ class TestZonaHorariaVzla:
         assert dt_vet.hour == 8
 
     def test_a_vet_sin_tz_lanza_error(self):
-        from apps.vzla_localizacion.zona_horaria import a_vet
+        from apps.localizacion_ve.zona_horaria import a_vet
         import datetime
         with pytest.raises(ValueError):
             a_vet(datetime.datetime(2026, 1, 1, 12, 0))
 
     def test_formatear_fecha_ve(self):
-        from apps.vzla_localizacion.zona_horaria import formatear_fecha_ve
+        from apps.localizacion_ve.zona_horaria import formatear_fecha_ve
         fecha = date(2026, 5, 17)
         assert formatear_fecha_ve(fecha) == "17/05/2026"
 
     def test_inicio_dia_vet(self):
-        from apps.vzla_localizacion.zona_horaria import inicio_dia_vet
+        from apps.localizacion_ve.zona_horaria import inicio_dia_vet
         dt = inicio_dia_vet(date(2026, 6, 15))
         assert dt.hour == 0
         assert dt.minute == 0

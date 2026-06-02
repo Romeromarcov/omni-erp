@@ -4,7 +4,7 @@ M10-T6: Zona horaria venezolana (VET — Venezuela Standard Time).
 Venezuela usa UTC-4 todo el año (sin cambio de horario desde 2007).
 
 Uso:
-    from apps.vzla_localizacion.zona_horaria import ahora_vet, a_vet, a_utc
+    from apps.localizacion_ve.zona_horaria import ahora_vet, a_vet, a_utc
     dt_local = ahora_vet()
     dt_utc   = a_utc(dt_local)
 """
