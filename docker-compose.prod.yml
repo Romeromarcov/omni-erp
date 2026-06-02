@@ -170,6 +170,25 @@ services:
       # - "443:443"
 
   # ─────────────────────────────────────────
+  # SSL — Let's Encrypt (GAP-5, DIFERIDO a fase self-hosted)
+  # Railway termina TLS upstream, así que esto solo aplica en self-hosted.
+  # Para activar: 1) descomentar este sidecar y los volúmenes letsencrypt;
+  # 2) montar ./infra/nginx/certs y descomentar el bloque server 443 + HSTS en
+  #    infra/nginx/nginx.prod.conf; 3) exponer 443 en nginx (arriba);
+  # 4) definir LETSENCRYPT_EMAIL y LETSENCRYPT_DOMAIN en .env.
+  # certbot:
+  #   image: certbot/certbot:latest
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./infra/nginx/certs:/etc/letsencrypt
+  #     - omni_certbot_webroot:/var/www/certbot
+  #   # Renovación automática cada 12h (certbot renueva si faltan <30 días).
+  #   entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done'
+  #   environment:
+  #     LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+  #     LETSENCRYPT_DOMAIN: ${LETSENCRYPT_DOMAIN}
+
+  # ─────────────────────────────────────────
   # Object Storage — MinIO (S3-compatible)
   # ─────────────────────────────────────────
   minio:
@@ -236,6 +255,9 @@ services:
       start_period: 45s
 
 volumes:
+  # GAP-5: descomentar junto con el sidecar certbot (SSL self-hosted).
+  # omni_certbot_webroot:
+  #   name: omni_certbot_webroot
   omni_prod_db_data:
     name: omni_prod_db_data
   omni_prod_redis_data:
