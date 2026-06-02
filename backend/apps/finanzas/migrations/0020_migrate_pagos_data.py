@@ -142,11 +142,22 @@ def migrate_pagos_data(apps, schema_editor):
 
 
 def reverse_migrate_pagos_data(apps, schema_editor):
-    """Reverse migration - elimina los pagos migrados"""
-    Pago = apps.get_model('finanzas', 'Pago')
-    # Solo eliminar pagos que tienen referencias a los modelos antiguos
-    # Esto es una simplificación - en producción necesitarías una estrategia más sofisticada
-    Pago.objects.filter(tipo_documento__in=['PEDIDO', 'CXP', 'IMPUESTO']).delete()
+    """
+    Reverse — NOOP seguro (M-BUG-6).
+
+    La versión anterior borraba `Pago.objects.filter(tipo_documento__in=
+    ['PEDIDO','CXP','IMPUESTO'])`, lo que también eliminaría pagos creados
+    legítimamente DESPUÉS de esta migración (no solo los migrados), con riesgo
+    real de pérdida de datos financieros al revertir.
+
+    Como esta es una migración de datos one-shot y no hay forma de distinguir de
+    manera fiable un pago "migrado" de uno creado luego, el reverse no hace nada:
+    es preferible dejar los datos intactos (la migración forward es idempotente
+    en la práctica) que arriesgar un borrado masivo. Si se necesita revertir de
+    verdad, hacerlo manualmente con un respaldo previo.
+    """
+    # Intencionalmente sin operaciones — ver docstring.
+    return
 
 
 class Migration(migrations.Migration):
