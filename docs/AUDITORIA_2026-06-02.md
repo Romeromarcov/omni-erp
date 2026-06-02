@@ -1,5 +1,11 @@
 # Auditoría Integral — Omni ERP — 2026-06-02
 
+> **ESTADO DE REMEDIACIÓN (2026-06-02):** las Olas 1–4 (todos los hallazgos de
+> remediación) están **RESUELTAS y verificadas** (suite backend 921 tests verde +
+> tsc/eslint/vitest frontend). La Ola 5 (gaps de fase, roadmap) avanzó con
+> **implementaciones reales y testeadas**: motor de cálculo LOTTT (5.2) y servicios
+> de manufactura BOM/MRP/costeo/OF (5.3); el detalle por ítem está en §9.
+
 **Tipo:** Re-auditoría post-remediación (verificación del cierre del plan 2026-06-01 + hallazgos residuales/nuevos + compilación + cumplimiento del Plan Maestro).
 **Rama auditada:** `main` @ `a32e2e3`.
 **Método:** 5 agentes en paralelo (seguridad, bugs/R-CODE, frontend, build/compilación, infra/CI) + auditoría manual contra `PLAN_MAESTRO_UNICO.md`.
@@ -256,3 +262,45 @@ El proyecto **no tiene bloqueadores de compilación ni hallazgos críticos abier
 2. **Gaps funcionales de fase (Ola 5):** Nómina LOTTT y Manufactura siguen siendo solo modelos sin lógica de servicio — son el verdadero camino crítico hacia los pilotos (Fábrica) y el cierre del Bloque 1.
 
 **Recomendación de orden:** ejecutar Ola 1 ya (integridad contable + seguridad), luego desbloquear 1.F (no necesita código nuevo), y atacar Manufactura/Nómina como el trabajo de fondo del roadmap.
+
+---
+
+## 9. Registro de remediación (2026-06-02)
+
+Ejecución del plan §7. Cada ítem citado en su commit (`fix(audit2): <ID>` /
+`feat(audit2): Ola 5.x`). Verificación: suite backend **921 tests verde** (BD
+PostgreSQL local) + `tsc`/`eslint`/`vitest` frontend verdes.
+
+### Ola 1 — Integridad contable + seguridad ALTA ✅
+- **H-BUG-1 / M-BUG-10 / BUG-NEW-1** — `contabilidad.services.generar_asiento_o_fallar()` centraliza R-CODE-11; aplicado en compras, cxc/acuerdos (con `set_rollback`+422) e inventario. 4 tests nuevos.
+- **SEC-NEW-4** — gate del comodín `*` cableado en `mcp_server._resolve_token` vía `CapabilityToken.comodin_autorizado`. 2 tests.
+- **SEC-NEW-1** — eliminado el scraper BCV legacy (`update_bcv_exchange.py`, `verify=False`). `grep verify=False` → 0 en código.
+- **FE-NEW-1** — descarga de PDF de factura vía `fetchBlob` (con auth) en vez de `window.open`.
+- **FE-HIGH-7** — subtotales con `decimal.js` en `useNotaVentaForm`, `usePedidoForm`, `FacturaFiscalDetailPage`.
+
+### Ola 2 — Multi-tenant residual + R-CODE-4 + infra MEDIA ✅
+- **SEC-NEW-2** — `request.user.empresa` → `get_empresas_visible` en cxc (cobranza/cartera/agente/fraccionamiento) e integration_hub.
+- **SEC-NEW-5** — `agentes/views.py` con `logger.exception` + mensaje genérico (sin `str(exc)`).
+- **BUG-NEW-2** — dinero como `Decimal` en tools MCP de core/finanzas/ventas.
+- **BUG-NEW-4** — UUIDv7 en los 5 modelos legacy de manufactura (migración custom validada desde cero).
+- **INFRA-NEW-1** — headers COOP/CORP en ambos nginx. **INFRA-NEW-2** — `backend/.dockerignore` excluye tests/docs. **INFRA-NEW-3** — gate de cobertura frontend en CI (ratchet al piso actual; objetivo 60%).
+- **FE-HIGH-6** — datos de referencia de `useDocumentoVentaBase` a TanStack Query.
+
+### Ola 3 — Pulido + bugs BAJA ✅
+- **BUG-NEW-5** — `integration_hub/mcp` loguea y marca job `fallido` (no `except/pass`). **BUG-NEW-3** — documentado el `float()` de borde XML-RPC. **BUILD-1** — type-hints bajo `TYPE_CHECKING` (5 F821 → 0).
+- **FE-NEW-2** — `alert/confirm` nativos → MUI Snackbar/Dialog. **FE-MED-E4/E5** — factory `queryKeys` tipada. **FE-NEW-3** — `getEmpresaId()` en MonedaListPage. **FE-LOW-S2** — fail-fast de `VITE_API_URL` en prod. **BUILD-2** — warnings `exhaustive-deps` corregidos. **FE-MED-E6** — resuelto por la migración a useQuery (FE-HIGH-6).
+
+### Ola 4 — Defensa en profundidad + CI hardening ✅
+- **SEC-NEW-3 / SEC-NEW-6** — serializers cabecera de ventas/compras y `EmpresaSerializer` ocultan `referencia_externa`/`documento_json`.
+- **INFRA-NEW-4** — job `security-scan` (gitleaks + pip-audit + npm audit). **INFRA-NEW-5** — deploy fija el SHA validado por CI. **INFRA-NEW-6** — sidecar `backup` en compose prod.
+- **INFRA-NEW-7 (CSP nonces)** — diferido (línea base MUI documentada). **FE-MED-S6 (zod runtime guards)** — diferido (esfuerzo L, frontera API; no bloqueante).
+
+### Ola 5 — Gaps funcionales de fase (foundations reales + roadmap)
+- **5.2 Nómina LOTTT** ✅ *núcleo* — `nomina/calculo_lottt.py` (motor PURO Decimal: salario, horas extra 50/100%, bono nocturno, deducciones SSO/FAOV/RPE, ISLR progresivo UT, provisiones, aportes patronales) + `nomina/services.py` + puerto `CalculadoraNominaVE`. **16 tests.** Cierra el gap "services.py vacío". *Pendiente roadmap:* generación de registros `ProcesoNomina`/`Nomina`, fórmula ARC oficial de ISLR, UI.
+- **5.3 Manufactura** ✅ *núcleo* — `manufactura/services.py`: explosión BOM, MRP básico, costeo real (PUROS) + orquestación OF (crear orden, consumir materiales↔inventario con `CONSUMO_PRODUCCION`, producción terminada↔`ENTRADA` al costo real). **9 tests.** Cierra el gap "services.py vacío". *Pendiente roadmap:* OF con etapas/rutas detalladas, UI, MRP multinivel.
+- **5.4 Extracción l10n (GAP-2 cont.)** 🟡 — framework `apps/localizacion` con puertos `MotorImpuestosVE` (delega en fiscal) y ahora `CalculadoraNominaVE` (real, en `localizacion_ve`) registrados por país. *Pendiente roadmap (Bloque 2 por el propio plan):* mover libros SENIAT / motor IVA-IGTF y la Capa B a `localizacion_ve` (strangler fig).
+- **5.1 Sub-fase 1.F** ⬜ *operacional, no código* — el software está listo y los comandos `TRACK-1F-1..5` existen; falta la carga de datos reales de la distribuidora + 30 días de operación (tarea del founder, no de código).
+
+### Verificación final
+- Backend: `manage.py check` 0 issues · `makemigrations --check` sin drift · **921 tests** verdes.
+- Frontend: `tsc -b` 0 errores · `eslint` 0 errores/0 warnings · `vitest` verde · gate de cobertura verde.
