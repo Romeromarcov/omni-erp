@@ -11,6 +11,12 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # BUILD-1: solo para anotaciones (evita F821)
+    from .models import AbonoCxC
+
+
 
 class AbonoError(Exception):
     pass

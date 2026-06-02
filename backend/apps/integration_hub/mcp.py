@@ -146,7 +146,19 @@ def sincronizar(
         job.celery_task_id = task.id
         job.save(update_fields=["celery_task_id"])
     except Exception:
-        pass
+        # BUG-NEW-5: si el broker Celery falla, no dejar el job "pendiente" eterno
+        # sin rastro: marcarlo fallido y loguear con traza.
+        logger.exception("No se pudo encolar el job de sincronización %s", job.id_job)
+        job.estado = "fallido"
+        job.resumen_errores = [
+            "No se pudo encolar la tarea de sincronización (procesador de tareas no disponible)."
+        ]
+        job.save(update_fields=["estado", "resumen_errores"])
+        return {
+            "success": False,
+            "job_id": str(job.id_job),
+            "mensaje": "No se pudo iniciar la sincronización: el procesador de tareas no está disponible.",
+        }
 
     return {
         "success": True,
