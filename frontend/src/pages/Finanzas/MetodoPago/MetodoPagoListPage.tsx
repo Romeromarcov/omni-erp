@@ -5,6 +5,8 @@ import { get, post, patch } from '../../../services/api';
 import { toList, toCount, type PaginatedResponse } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 import { Button } from '@mui/material';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEmpresas } from '../../../hooks/useEmpresas';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -43,15 +45,6 @@ const TIPO_METODO = [
   { value: 'OTRO', label: 'Otro' },
 ];
 
-// ── Helpers de contexto de ventana (interop con código heredado) ──────────────
-
-interface WindowContext {
-  user?: { es_superusuario_innova: boolean };
-  empresas?: { id: string; nombre_comercial: string }[];
-}
-
-const windowCtx = window as unknown as WindowContext;
-
 // ── Componente ───────────────────────────────────────────────────────────────
 
 const MetodoPagoListPage: React.FC = () => {
@@ -59,8 +52,10 @@ const MetodoPagoListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const user = windowCtx.user ?? { es_superusuario_innova: false };
-  const empresas = windowCtx.empresas ?? [];
+  const { user } = useAuth();
+  const esSuperusuario = user?.es_superusuario_innova ?? false;
+  const { data: empresasData = [] } = useEmpresas();
+  const empresas = empresasData.map(e => ({ id: e.id_empresa, nombre_comercial: e.nombre_comercial }));
 
   const [filtro, setFiltro] = useState<Filtro>({ nombre: '', tipo: '', visibilidad: '' });
   const [page, setPage] = useState(1);
@@ -278,7 +273,7 @@ const MetodoPagoListPage: React.FC = () => {
                     <td style={{ padding: '10px 8px' }}>{m.tipo_metodo}</td>
                     <td style={{ padding: '10px 8px' }}>
                       {m.es_generico ? 'Genérico' : m.es_publico ? 'Público' : 'Empresa'}
-                      {user.es_superusuario_innova && m.empresa && (
+                      {esSuperusuario && m.empresa && (
                         <span style={{ marginLeft: 6, color: '#888', fontSize: 12 }}>
                           ({empresas.find(e => e.id === m.empresa)?.nombre_comercial ?? m.empresa})
                         </span>

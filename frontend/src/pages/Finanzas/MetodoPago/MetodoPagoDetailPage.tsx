@@ -8,6 +8,8 @@ import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 import { updateMonedasMetodoPagoEmpresaActiva, fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { Button } from '@mui/material';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEmpresas } from '../../../hooks/useEmpresas';
 
 
 interface MetodoPagoDetail {
@@ -29,11 +31,10 @@ interface MetodoPagoDetail {
 const MetodoPagoDetailPage: React.FC = () => {
   const { id_metodo_pago } = useParams();
   const navigate = useNavigate();
-  // Simulación de usuario y empresas (ajusta según tu contexto real)
-  type User = { es_superusuario_innova: boolean };
-  type Empresa = { id: string; nombre_comercial: string };
-  const user: User = (window as unknown as { user?: User }).user || { es_superusuario_innova: false };
-  const empresas: Empresa[] = React.useMemo(() => (window as unknown as { empresas?: Empresa[] }).empresas || [], []);
+  const { user } = useAuth();
+  const esSuperusuario = user?.es_superusuario_innova ?? false;
+  const { data: empresasData = [] } = useEmpresas();
+  const empresas = empresasData.map(e => ({ id: e.id_empresa, nombre_comercial: e.nombre_comercial }));
   const [editMonedas, setEditMonedas] = useState(false);
   const [error, setError] = useState('');
   const [localMonedas, setLocalMonedas] = useState<string[]>([]);
@@ -109,7 +110,7 @@ const MetodoPagoDetailPage: React.FC = () => {
           </div>
           <div><b>Tipo:</b> {metodo.tipo_metodo}</div>
           <div><b>Visibilidad:</b> {metodo.es_generico ? 'Genérico' : metodo.es_publico ? 'Público' : 'Empresa'}
-            {user.es_superusuario_innova && metodo.empresa && (
+            {esSuperusuario && metodo.empresa && (
               <span style={{ marginLeft: 6, color: '#888', fontSize: 12 }}>
                 ({empresas.find(e => e.id === metodo.empresa)?.nombre_comercial || metodo.empresa})
               </span>

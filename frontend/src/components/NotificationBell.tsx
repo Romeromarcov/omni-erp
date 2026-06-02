@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Badge,
   Box,
@@ -30,24 +31,18 @@ const POLL_INTERVAL_MS = 30_000;
 const NotificationBell: React.FC = () => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
 
-  const fetchNoLeidas = useCallback(async () => {
-    try {
+  const { data: notificaciones = [], refetch } = useQuery<Notificacion[], Error>({
+    queryKey: ['notificaciones', 'no-leidas'],
+    queryFn: async () => {
       const data = await fetcher<Notificacion[]>(
         '/notificaciones/notificaciones/mis-notificaciones/?no_leidas=true',
       );
-      setNotificaciones(Array.isArray(data) ? data : []);
-    } catch {
-      /* silencioso si no hay conectividad */
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNoLeidas();
-    const interval = setInterval(fetchNoLeidas, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchNoLeidas]);
+      return Array.isArray(data) ? data : [];
+    },
+    refetchInterval: POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+  });
 
   const marcarLeida = async (id: string) => {
     try {
@@ -55,7 +50,7 @@ const NotificationBell: React.FC = () => {
         method: 'PATCH',
         body: JSON.stringify({}),
       });
-      setNotificaciones((prev) => prev.filter((n) => n.id_notificacion !== id));
+      refetch();
     } catch {
       /* ignorar errores de red */
     }

@@ -5,9 +5,10 @@
  * generadas por CobranzaEstrategaAgent y ReordenSugeridorAgent.
  * El usuario puede Aceptar o Rechazar cada sugerencia.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { fetcher } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
   Box,
@@ -62,30 +63,31 @@ function formatConfianza(c: number): string {
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
+const POLL_INTERVAL_MS = 30_000;
+
 const SugerenciasWidget: React.FC = () => {
-  const [sugerencias, setSugerencias] = useState<Sugerencia[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [respondiendo, setRespondiendo] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
 
-  const cargar = useCallback(async () => {
-    try {
+  const {
+    data: sugerencias = [],
+    isLoading: loading,
+    isError,
+    refetch,
+  } = useQuery<Sugerencia[], Error>({
+    queryKey: ['agentes', 'sugerencias-activas'],
+    queryFn: async () => {
       const data = await fetcher<SugerenciasResponse>(
         '/agentes/predicciones/sugerencias-activas/?limite=5'
       );
-      setSugerencias(data.sugerencias ?? []);
-      setError('');
-    } catch {
-      setError('No se pudieron cargar las sugerencias.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return data.sugerencias ?? [];
+    },
+    refetchInterval: POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+  });
 
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  const error = actionError || (isError ? 'No se pudieron cargar las sugerencias.' : '');
 
   const responder = async (id: string, accion: 'aceptar' | 'rechazar') => {
     setRespondiendo(id);
@@ -94,9 +96,10 @@ const SugerenciasWidget: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ accion }),
       });
-      setSugerencias((prev) => prev.filter((s) => s.id !== id));
+      setActionError('');
+      refetch();
     } catch {
-      setError('Error al procesar la sugerencia.');
+      setActionError('Error al procesar la sugerencia.');
     } finally {
       setRespondiendo(null);
     }

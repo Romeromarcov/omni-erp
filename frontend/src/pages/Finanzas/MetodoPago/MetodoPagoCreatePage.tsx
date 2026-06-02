@@ -18,6 +18,8 @@ import { toList } from '../../../utils/api';
 import { findSimilarMetodoPago } from '../../../utils/fuzzyDuplicate';
 import PageLayout from '../../../components/PageLayout';
 import { Button } from '@mui/material';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEmpresas } from '../../../hooks/useEmpresas';
 
 const TIPO_METODO = [
   { value: 'EFECTIVO', label: 'Efectivo' },
@@ -31,10 +33,10 @@ const TIPO_METODO = [
 const MetodoPagoCreatePage: React.FC = () => {
   const { id_empresa } = useParams();
   const navigate = useNavigate();
-  // Simulación de usuario y empresas (reemplaza por tu contexto real)
-  // Ajusta estos tipos según tu contexto real de usuario y empresa
-  const user = (window as unknown as { user?: { es_superusuario_innova: boolean } }).user || { es_superusuario_innova: false };
-  const empresas = (window as unknown as { empresas?: { id: string; nombre_comercial: string }[] }).empresas || [];
+  const { user } = useAuth();
+  const esSuperusuario = user?.es_superusuario_innova ?? false;
+  const { data: empresasData = [] } = useEmpresas();
+  const empresas = empresasData.map(e => ({ id: e.id_empresa, nombre_comercial: e.nombre_comercial }));
 
   const [form, setForm] = useState({
     nombre_metodo: '',
@@ -100,7 +102,7 @@ const MetodoPagoCreatePage: React.FC = () => {
       referencia_externa: form.referencia_externa || '',
       documento_json: form.documento_json ? JSON.parse(form.documento_json) : null,
       monedas: form.monedas,
-      ...(user.es_superusuario_innova && {
+      ...(esSuperusuario && {
         es_generico: form.es_generico,
         es_publico: form.es_publico,
         empresa: form.empresa || null,
@@ -118,7 +120,7 @@ const MetodoPagoCreatePage: React.FC = () => {
         </Button>
       </div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {user?.es_superusuario_innova && (
+        {esSuperusuario && (
           <>
             <label>
               <input

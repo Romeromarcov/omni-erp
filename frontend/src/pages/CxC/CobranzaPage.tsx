@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Button, Card, CardContent, Typography, Chip, Grid, TextField, MenuItem, Alert, CircularProgress, Paper } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { post } from '../../services/api';
-import { useApi } from '../../hooks/useApi';
+import { useApiQuery } from '../../hooks/useApiQuery';
 import type { GestionCobranza } from '../../types/cxc';
 
 const CANAL_OPTIONS = ['whatsapp', 'email', 'llamada', 'visita', 'carta'];
@@ -25,7 +25,7 @@ function getResultadoColor(resultado: string): 'success' | 'warning' | 'error' |
 }
 
 export default function CobranzaPage() {
-  const { data, loading, error } = useApi<{ results: GestionCobranza[] }>('/cobranza/gestiones/');
+  const { data, isLoading: loading, error } = useApiQuery<{ results: GestionCobranza[] }>('/cobranza/gestiones/');
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export default function CobranzaPage() {
       )}
 
       {loading && <CircularProgress />}
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && <Alert severity="error">{error.message}</Alert>}
 
       {data?.results?.map(g => (
         <Paper key={g.id} sx={{ p: 2, mb: 1 }}>

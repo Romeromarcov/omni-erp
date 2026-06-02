@@ -93,7 +93,7 @@ El routing está dividido por dominio en `src/routes/*.tsx` (compuestos en `src/
 
 | Hook | Rol |
 |---|---|
-| `useApi` / `useApiQuery` | Acceso HTTP y wrappers de TanStack Query. |
+| `useApiQuery` | Acceso HTTP y wrappers de TanStack Query. |
 | `useDocumentoVentaBase` | Lógica común a todos los documentos de venta. |
 | `usePedidoForm`, `useCotizacionForm`, `useNotaVentaForm`, `useFacturaFiscalForm` | Estado/validación de cada formulario de venta. |
 | `useCxC` | Datos del módulo de cobranza. |
