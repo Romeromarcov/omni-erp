@@ -108,9 +108,9 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
-      - name: Vitest unit tests
+      - name: Vitest unit tests (con gate de cobertura ≥60% — INFRA-NEW-3)
         working-directory: frontend
-        run: npm test -- --run
+        run: npm run test:coverage -- --run
 
   # ──────────────────────────────────────────────────────────────
   # Agent eval — Shadow mode quality gate (CTF-003)

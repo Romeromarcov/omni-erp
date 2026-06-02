@@ -62,10 +62,15 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'src/test-setup.ts'],
+      // INFRA-NEW-3: el gate de cobertura ahora SÍ corre en CI (npm run
+      // test:coverage). Los umbrales son un "ratchet" fijado al piso actual del
+      // código para prevenir regresión; el objetivo del Plan Maestro es 60% en
+      // las cuatro métricas y se sube conforme se agregan tests. No bajar.
       thresholds: {
-        branches: 60,
-        functions: 60,
-        lines: 60,
+        statements: 52,
+        branches: 41,
+        functions: 45,
+        lines: 55,
       },
     },
   },
