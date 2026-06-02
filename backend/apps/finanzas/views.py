@@ -137,33 +137,10 @@ from rest_framework.response import Response
 from .models import Datafono
 
 
-class DatafonoViewSet(BaseModelViewSet):
-    queryset = Datafono.objects.all()
-    # serializer_class = DatafonoSerializer  # Si tienes un serializer, descomenta esto
-
-    def get_queryset(self):
-        # R-CODE-1: filtrar por empresas visibles del usuario autenticado
-        from apps.core.viewsets import get_empresas_visible
-        return Datafono.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
-
-    @action(detail=True, methods=["post"], url_path="cierre")
-    def cierre_datafono(self, request, pk=None):
-        """
-        Endpoint para realizar el cierre manual de un datafono.
-        Permite pasar una fecha/hora límite opcional (hasta) y usa el usuario autenticado.
-        """
-        datafono = self.get_object()
-        hasta = request.data.get("hasta")
-        usuario = request.user if request.user.is_authenticated else None
-        from django.utils.dateparse import parse_datetime
-
-        hasta_dt = parse_datetime(hasta) if hasta else None
-        try:
-            resultado = datafono.realizar_cierre(usuario=usuario, hasta=hasta_dt)
-        except Exception:
-            logger.exception("Error al realizar cierre de datafono")
-            return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(resultado)
+# NOTA: existía aquí una clase DatafonoViewSet duplicada (muerta, sombreada por
+# la definición posterior en este mismo módulo). Se eliminó en el plan "cero
+# dudas" para evitar confusión; el ViewSet efectivo y endurecido (R-CODE-1) está
+# más abajo.
 
 
 # ViewSet para MetodoPagoEmpresaActiva
@@ -179,7 +156,13 @@ class MetodoPagoEmpresaActivaViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        from apps.core.viewsets import get_empresas_visible
+
+        # R-CODE-1: SIEMPRE acotar al tenant; los query params solo estrechan
+        # (antes filtraban opcionalmente → fuga cross-tenant sin ?empresa=).
+        qs = MetodoPagoEmpresaActiva.objects.filter(
+            empresa__in=get_empresas_visible(self.request.user)
+        )
         empresa = self.request.query_params.get("empresa")
         metodo_pago = self.request.query_params.get("metodo_pago")
         if empresa:
@@ -826,7 +809,12 @@ class DatafonoViewSet(BaseModelViewSet):
     serializer_class = DatafonoSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        from apps.core.viewsets import get_empresas_visible
+
+        # R-CODE-1: SIEMPRE acotar al tenant del usuario; los query params solo
+        # estrechan dentro de las empresas visibles (antes filtraban de forma
+        # opcional → fuga cross-tenant si no se pasaba id_empresa).
+        queryset = Datafono.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
         id_empresa = self.request.query_params.get("id_empresa")
         id_caja_fisica = self.request.query_params.get("id_caja_fisica")
         if id_empresa:
