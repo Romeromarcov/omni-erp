@@ -1,7 +1,20 @@
 node_modules
 dist
 .git
+.gitignore
 *.log
 coverage
 .vscode
 .idea
+# NEW-INFRA-4: additional exclusions
+.env
+.env.*
+*.env
+Dockerfile
+Dockerfile.*
+.dockerignore
+README.md
+CHANGELOG.md
+src/__tests__
+src/test-setup.ts
+vitest.config.ts
