@@ -14,6 +14,7 @@ generar_asiento() se llama SIEMPRE dentro de la misma @transaction.atomic que el
 documento origen. Si el asiento no puede crearse, toda la transacción se revierte.
 """
 
+import logging
 import uuid
 from decimal import Decimal
 
@@ -21,6 +22,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from .models import AsientoContable, DetalleAsiento, MapeoContable
+
+logger = logging.getLogger(__name__)
 
 # ── Tipos soportados ──────────────────────────────────────────────────────────
 
@@ -48,6 +51,41 @@ class AsientoError(Exception):
 
 class MapeoContableNoEncontrado(AsientoError):
     pass
+
+
+# ── R-CODE-11 centralizado ────────────────────────────────────────────────────
+
+
+def generar_asiento_o_fallar(tipo: str, documento, empresa=None, monto: Decimal = None):
+    """Aplica la política R-CODE-11 de forma uniforme en todos los callsites.
+
+    - ``AsientoError`` (descuadre, error real del asiento) **siempre** se propaga,
+      rompiendo la ``@transaction.atomic`` del documento origen.
+    - ``MapeoContableNoEncontrado``:
+        * si ``empresa.contabilidad_activa`` es True → se re-lanza como
+          ``AsientoError`` (error duro: la empresa exige contabilidad y falta el
+          mapeo, no se puede continuar);
+        * si es False (bodega informal, R-PROD-3) → se loguea un warning y la
+          operación continúa sin asiento.
+
+    Returns:
+        (asiento|None, asiento_error_str|None)
+    """
+    empresa = empresa if empresa is not None else _extraer_empresa(documento)
+    try:
+        asiento = generar_asiento(tipo, documento, empresa, monto=monto)
+        return asiento, None
+    except MapeoContableNoEncontrado as exc:
+        if getattr(empresa, "contabilidad_activa", False):
+            raise AsientoError(
+                f"Configure el Mapeo Contable antes de continuar "
+                f"(contabilidad activa, {tipo}): {exc}"
+            ) from exc
+        logger.warning(
+            "Asiento omitido (sin mapeo, contabilidad inactiva) | tipo=%s | empresa=%s | razón=%s",
+            tipo, getattr(empresa, "pk", None), exc,
+        )
+        return None, str(exc)
 
 
 # ── Helpers internos ──────────────────────────────────────────────────────────
