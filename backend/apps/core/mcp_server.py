@@ -111,11 +111,19 @@ def _resolve_token(capability_token: str) -> Optional[Dict[str, Any]]:
     if token_obj.is_expired():
         return None
 
+    # SEC-NEW-4: el comodín '*' solo es efectivo para tokens de sistema/superusuario
+    # (CapabilityToken.comodin_autorizado). Un token de empresa con scopes=["*"]
+    # auto-otorgado NO debe conceder acceso total; se filtra aquí, en el único punto
+    # de resolución, para que _require_scope siga siendo trivial.
+    scopes = list(token_obj.scopes or [])
+    if "*" in scopes and not token_obj.comodin_autorizado:
+        scopes = [s for s in scopes if s != "*"]
+
     return {
         "tenant_id": str(token_obj.empresa.id_empresa),
         "empresa_id": str(token_obj.empresa.id_empresa),
         "actor_id": f"mcp-token:{str(token_obj.token)[:8]}",
-        "scopes": token_obj.scopes,
+        "scopes": scopes,
     }
 
 

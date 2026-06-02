@@ -688,6 +688,18 @@ class CapabilityToken(OmniBaseModel):
             return False
         return timezone.now() > self.expires_at
 
+    @property
+    def comodin_autorizado(self) -> bool:
+        """M-SEC-9 / SEC-NEW-4: ¿el comodín '*' es efectivo para este token?
+
+        Solo para tokens internos del sistema (sin creador) o creados por un
+        superusuario Omni. Un usuario normal NO puede auto-otorgarse acceso total.
+        Única fuente de verdad: reusada por has_scope() y por el enforcement MCP.
+        """
+        if self.creado_por is None:
+            return True
+        return bool(getattr(self.creado_por, "es_superusuario_omni", False))
+
     def has_scope(self, scope: str) -> bool:
         """
         Retorna True si el token tiene el scope pedido.
@@ -700,12 +712,7 @@ class CapabilityToken(OmniBaseModel):
         if scope in self.scopes:
             return True
         if "*" in self.scopes:
-            # '*' válido para tokens internos del sistema (sin creador) o creados
-            # por un superusuario Omni. Un usuario normal NO puede auto-otorgarse
-            # acceso total.
-            if self.creado_por is None:
-                return True
-            return bool(getattr(self.creado_por, "es_superusuario_omni", False))
+            return self.comodin_autorizado
         return False
 
     def mark_used(self) -> None:
