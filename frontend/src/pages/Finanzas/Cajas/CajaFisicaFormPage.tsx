@@ -2,12 +2,29 @@ import React, { useState, useEffect } from 'react';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { cajasFisicasService } from '../../../services/cajasFisicasService';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import type { MonedaEmpresaActiva } from '../../../services/monedasEmpresaActiva';
+import { cajaFisicaSchema, type CajaFisicaInput } from '../../../schemas/finanzas.schemas';
 import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Switch, TextField, Typography } from '@mui/material';
 
 type TipoCajaChoice = { value: string; display: string };
+
+const defaultValues: CajaFisicaInput = {
+  nombre: '',
+  tipo_caja: 'REGISTRADORA',
+  descripcion: '',
+  sucursal: '',
+  moneda: '',
+  nombre_dispositivo: '',
+  tipo_dispositivo: 'PC',
+  identificador_dispositivo: '',
+  descripcion_dispositivo: '',
+  requiere_sesion_activa: true,
+  activa: true,
+};
 
 const CajaFisicaFormPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,18 +32,16 @@ const CajaFisicaFormPage: React.FC = () => {
   const isEditing = action === 'editar' && !!id;
   const queryClient = useQueryClient();
 
-  const [form, setForm] = useState({
-    nombre: '',
-    tipo_caja: 'REGISTRADORA',
-    descripcion: '',
-    sucursal: '',
-    moneda: '',
-    nombre_dispositivo: '',
-    tipo_dispositivo: 'PC',
-    identificador_dispositivo: '',
-    descripcion_dispositivo: '',
-    requiere_sesion_activa: true,
-    activa: true,
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<CajaFisicaInput>({
+    resolver: zodResolver(cajaFisicaSchema),
+    mode: 'onBlur',
+    defaultValues,
   });
 
   const [error, setError] = useState('');
@@ -51,9 +66,10 @@ const CajaFisicaFormPage: React.FC = () => {
     enabled: isEditing && !!id,
   });
 
+  // FE-HIGH-6: rehidratar sin pisar ediciones en curso.
   useEffect(() => {
-    if (cajaData) {
-      setForm({
+    if (cajaData && !isDirty) {
+      reset({
         nombre: cajaData.nombre,
         tipo_caja: cajaData.tipo_caja,
         descripcion: cajaData.descripcion || '',
@@ -67,10 +83,11 @@ const CajaFisicaFormPage: React.FC = () => {
         activa: cajaData.activa,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cajaData]);
 
   const saveMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: (form: CajaFisicaInput) => {
       const dataToSend = {
         ...form,
         empresa: idEmpresa,
@@ -98,26 +115,10 @@ const CajaFisicaFormPage: React.FC = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.nombre.trim()) {
-      setError('El nombre es obligatorio');
-      return;
-    }
-    if (!form.moneda) {
-      setError('Debe seleccionar una moneda');
-      return;
-    }
+  const onSubmit = (form: CajaFisicaInput) => {
     setError('');
     setSuccess('');
-    saveMutation.mutate();
-  };
-
-  const handleChange = (field: string, value: string | boolean) => {
-    setForm(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    saveMutation.mutate(form);
   };
 
   if (isLoading) {
@@ -149,67 +150,84 @@ const CajaFisicaFormPage: React.FC = () => {
       )}
 
       <Paper sx={{ p: 3 }}>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               <Box sx={{ flex: '1 1 300px' }}>
                 <TextField
                   fullWidth
                   label="Nombre"
-                  value={form.nombre}
-                  onChange={(e) => handleChange('nombre', e.target.value)}
+                  {...register('nombre')}
+                  error={!!errors.nombre}
+                  helperText={errors.nombre?.message}
                   required
                 />
               </Box>
               <Box sx={{ flex: '1 1 300px' }}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Tipo de Caja"
-                  value={form.tipo_caja}
-                  onChange={(e) => handleChange('tipo_caja', e.target.value)}
-                >
-                  {tipoCajaChoices.map((choice) => (
-                    <MenuItem key={choice.value} value={choice.value}>
-                      {choice.display}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="tipo_caja"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      fullWidth
+                      select
+                      label="Tipo de Caja"
+                      {...field}
+                      error={!!errors.tipo_caja}
+                      helperText={errors.tipo_caja?.message}
+                    >
+                      {tipoCajaChoices.map((choice) => (
+                        <MenuItem key={choice.value} value={choice.value}>
+                          {choice.display}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Box>
             </Box>
 
             <TextField
               fullWidth
               label="Descripción"
-              value={form.descripcion}
-              onChange={(e) => handleChange('descripcion', e.target.value)}
+              {...register('descripcion')}
+              error={!!errors.descripcion}
+              helperText={errors.descripcion?.message}
               multiline
               rows={2}
             />
 
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               <Box sx={{ flex: '1 1 300px' }}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Moneda"
-                  value={form.moneda}
-                  onChange={(e) => handleChange('moneda', e.target.value)}
-                  required
-                >
-                  {monedas.map((moneda) => (
-                    <MenuItem key={moneda.id_moneda} value={moneda.id_moneda}>
-                      {moneda.nombre} ({moneda.codigo_iso})
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="moneda"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      fullWidth
+                      select
+                      label="Moneda"
+                      {...field}
+                      error={!!errors.moneda}
+                      helperText={errors.moneda?.message}
+                      required
+                    >
+                      {monedas.map((moneda) => (
+                        <MenuItem key={moneda.id_moneda} value={moneda.id_moneda}>
+                          {moneda.nombre} ({moneda.codigo_iso})
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Box>
               <Box sx={{ flex: '1 1 300px' }}>
                 <TextField
                   fullWidth
                   label="Nombre del Dispositivo"
-                  value={form.nombre_dispositivo}
-                  onChange={(e) => handleChange('nombre_dispositivo', e.target.value)}
+                  {...register('nombre_dispositivo')}
+                  error={!!errors.nombre_dispositivo}
+                  helperText={errors.nombre_dispositivo?.message}
                   placeholder="Nombre descriptivo del dispositivo"
                 />
               </Box>
@@ -217,26 +235,34 @@ const CajaFisicaFormPage: React.FC = () => {
 
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               <Box sx={{ flex: '1 1 300px' }}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Tipo de Dispositivo"
-                  value={form.tipo_dispositivo}
-                  onChange={(e) => handleChange('tipo_dispositivo', e.target.value)}
-                >
-                  <MenuItem value="PC">Computadora Personal</MenuItem>
-                  <MenuItem value="TABLET">Tablet</MenuItem>
-                  <MenuItem value="MOVIL">Teléfono Móvil</MenuItem>
-                  <MenuItem value="TERMINAL">Terminal de Pago</MenuItem>
-                  <MenuItem value="OTRO">Otro</MenuItem>
-                </TextField>
+                <Controller
+                  name="tipo_dispositivo"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      fullWidth
+                      select
+                      label="Tipo de Dispositivo"
+                      {...field}
+                      error={!!errors.tipo_dispositivo}
+                      helperText={errors.tipo_dispositivo?.message}
+                    >
+                      <MenuItem value="PC">Computadora Personal</MenuItem>
+                      <MenuItem value="TABLET">Tablet</MenuItem>
+                      <MenuItem value="MOVIL">Teléfono Móvil</MenuItem>
+                      <MenuItem value="TERMINAL">Terminal de Pago</MenuItem>
+                      <MenuItem value="OTRO">Otro</MenuItem>
+                    </TextField>
+                  )}
+                />
               </Box>
               <Box sx={{ flex: '1 1 300px' }}>
                 <TextField
                   fullWidth
                   label="Identificador del Dispositivo"
-                  value={form.identificador_dispositivo}
-                  onChange={(e) => handleChange('identificador_dispositivo', e.target.value)}
+                  {...register('identificador_dispositivo')}
+                  error={!!errors.identificador_dispositivo}
+                  helperText={errors.identificador_dispositivo?.message}
                   placeholder="MAC address, serial number, UUID, etc."
                 />
               </Box>
@@ -245,8 +271,9 @@ const CajaFisicaFormPage: React.FC = () => {
             <TextField
               fullWidth
               label="Descripción del Dispositivo"
-              value={form.descripcion_dispositivo}
-              onChange={(e) => handleChange('descripcion_dispositivo', e.target.value)}
+              {...register('descripcion_dispositivo')}
+              error={!!errors.descripcion_dispositivo}
+              helperText={errors.descripcion_dispositivo?.message}
               placeholder="Descripción adicional del dispositivo"
               multiline
               rows={2}
@@ -254,25 +281,37 @@ const CajaFisicaFormPage: React.FC = () => {
 
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               <Box sx={{ flex: '1 1 300px' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={form.requiere_sesion_activa}
-                      onChange={(e) => handleChange('requiere_sesion_activa', e.target.checked)}
+                <Controller
+                  name="requiere_sesion_activa"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                      }
+                      label="Requiere sesión activa"
                     />
-                  }
-                  label="Requiere sesión activa"
+                  )}
                 />
               </Box>
               <Box sx={{ flex: '1 1 300px' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={form.activa}
-                      onChange={(e) => handleChange('activa', e.target.checked)}
+                <Controller
+                  name="activa"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                      }
+                      label="Activa"
                     />
-                  }
-                  label="Activa"
+                  )}
                 />
               </Box>
             </Box>

@@ -176,3 +176,87 @@ export const notaCreditoVentaSchema = z.object({
 });
 
 export type NotaCreditoVentaInput = z.infer<typeof notaCreditoVentaSchema>;
+
+// ── Nota de Crédito Fiscal ──────────────────────────────────────────────────────
+
+const motivoNotaCreditoFiscal = [
+  'DEVOLUCION',
+  'DESCUENTO',
+  'ERROR_FACTURACION',
+  'ANULACION',
+  'AJUSTE_PRECIO',
+  'OTRO',
+] as const;
+
+export const detalleNotaCreditoFiscalSchema = z.object({
+  id_producto: requiredUUID('Producto'),
+  cantidad: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
+  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
+  descuento_porcentaje: z.coerce
+    .number()
+    .min(0, 'El descuento no puede ser negativo')
+    .max(100, 'El descuento no puede superar 100'),
+});
+
+export const notaCreditoFiscalSchema = z.object({
+  id_cliente: requiredUUID('Cliente'),
+  id_factura_origen: z.string().optional(),
+  numero_control: z.string().min(1, 'El número de control es obligatorio'),
+  fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
+  motivo: z.enum(motivoNotaCreditoFiscal, {
+    errorMap: () => ({ message: 'El motivo no es válido' }),
+  }),
+  estado: z.enum(estadoNotaCredito, {
+    errorMap: () => ({ message: 'El estado no es válido' }),
+  }),
+  afecta_inventario_fiscal: z.boolean(),
+  observaciones: z.string().max(1000).optional(),
+  detalles: z
+    .array(detalleNotaCreditoFiscalSchema)
+    .min(1, 'La nota de crédito fiscal debe tener al menos un producto'),
+});
+
+export type NotaCreditoFiscalInput = z.infer<typeof notaCreditoFiscalSchema>;
+
+// ── Devolución de Venta ─────────────────────────────────────────────────────────
+
+const motivoDevolucion = [
+  'DEFECTO',
+  'GARANTIA',
+  'ERROR_ENTREGA',
+  'CAMBIO_CLIENTE',
+  'VENCIMIENTO',
+  'OTRO',
+] as const;
+
+const estadoDevolucion = ['PENDIENTE', 'APROBADA', 'PROCESADA', 'RECHAZADA', 'ANULADA'] as const;
+const estadoProducto = ['BUENO', 'DEFECTUOSO', 'VENCIDO', 'DAÑADO'] as const;
+const accionInventario = ['REINTEGRAR', 'CUARENTENA', 'DESCARTAR', 'REPARAR'] as const;
+
+export const detalleDevolucionVentaSchema = z.object({
+  id_producto: requiredUUID('Producto'),
+  cantidad_devuelta: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
+  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
+  estado_producto: z.enum(estadoProducto),
+  accion_inventario: z.enum(accionInventario),
+  observaciones: z.string().optional(),
+});
+
+export const devolucionVentaSchema = z.object({
+  id_cliente: requiredUUID('Cliente'),
+  id_factura_origen: z.string().optional(),
+  fecha_devolucion: z.string().min(1, 'La fecha de devolución es obligatoria'),
+  motivo_devolucion: z.enum(motivoDevolucion, {
+    errorMap: () => ({ message: 'El motivo no es válido' }),
+  }),
+  estado: z.enum(estadoDevolucion, {
+    errorMap: () => ({ message: 'El estado no es válido' }),
+  }),
+  generar_nota_credito: z.boolean(),
+  observaciones: z.string().max(1000).optional(),
+  detalles: z
+    .array(detalleDevolucionVentaSchema)
+    .min(1, 'La devolución debe tener al menos un producto'),
+});
+
+export type DevolucionVentaInput = z.infer<typeof devolucionVentaSchema>;

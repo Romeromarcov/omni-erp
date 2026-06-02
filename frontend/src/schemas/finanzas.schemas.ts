@@ -58,3 +58,56 @@ export const transaccionFinancieraSchema = z.object({
 });
 
 export type TransaccionFinancieraInput = z.infer<typeof transaccionFinancieraSchema>;
+
+// ── Transacción Financiera (formulario de registro multimoneda) ─────────────────
+// Distinto de transaccionFinancieraSchema (modelo cuenta-origen/destino): este
+// refleja los campos del formulario de registro de transacciones por caja/método.
+
+export const registroTransaccionSchema = z.object({
+  fecha_hora_transaccion: z.string().min(1, 'La fecha es obligatoria'),
+  tipo_transaccion: z.string().min(1, 'El tipo de transacción es obligatorio'),
+  monto_transaccion: z
+    .string()
+    .min(1, 'El monto es obligatorio')
+    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, { message: 'El monto debe ser mayor a 0' }),
+  id_moneda_transaccion: z.string().min(1, 'La moneda de transacción es obligatoria'),
+  id_metodo_pago: z.string().min(1, 'El método de pago es obligatorio'),
+  referencia_pago: z.string().optional(),
+  descripcion: z.string().optional(),
+  id_caja: z.string().min(1, 'La caja es obligatoria'),
+  id_cuenta_bancaria: z.string().optional(),
+  tipo_documento_asociado: z.string().min(1, 'El tipo de documento es obligatorio'),
+  nro_documento_asociado: z.string().optional(),
+});
+
+export type RegistroTransaccionInput = z.infer<typeof registroTransaccionSchema>;
+
+// ── Caja Física ─────────────────────────────────────────────────────────────────
+
+export const cajaFisicaSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es obligatorio').max(255),
+  tipo_caja: z.string().min(1, 'El tipo de caja es obligatorio'),
+  descripcion: z.string().optional(),
+  sucursal: z.string().optional(),
+  moneda: z.string().min(1, 'Debe seleccionar una moneda'),
+  nombre_dispositivo: z.string().optional(),
+  tipo_dispositivo: z.string().optional(),
+  identificador_dispositivo: z.string().optional(),
+  descripcion_dispositivo: z.string().optional(),
+  requiere_sesion_activa: z.boolean(),
+  activa: z.boolean(),
+});
+
+export type CajaFisicaInput = z.infer<typeof cajaFisicaSchema>;
+
+// ── Plantilla Maestro de Cajas ───────────────────────────────────────────────────
+
+export const plantillaMaestroSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es obligatorio').max(255),
+  descripcion: z.string().optional(),
+  metodos_pago: z.array(z.string()),
+  monedas: z.array(z.string()),
+  activa: z.boolean(),
+});
+
+export type PlantillaMaestroInput = z.infer<typeof plantillaMaestroSchema>;

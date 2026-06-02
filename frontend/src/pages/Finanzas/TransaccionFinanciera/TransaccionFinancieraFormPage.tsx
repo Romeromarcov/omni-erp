@@ -16,11 +16,14 @@ interface TasaBCVResponse {
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import PageLayout from '../../../components/PageLayout';
 // import { createTransaccion } from '../../../services/transaccionFinancieraService';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { toList } from '../../../utils/api';
+import { registroTransaccionSchema, type RegistroTransaccionInput } from '../../../schemas/finanzas.schemas';
 import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 
@@ -57,19 +60,35 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   const [tasaBCV, setTasaBCV] = useState<number | null>(null);
   const [tasaError, setTasaError] = useState('');
   const [montoBase, setMontoBase] = useState('');
-  const [form, setForm] = useState({
-    fecha_hora_transaccion: '',
-    tipo_transaccion: 'ingreso',
-    monto_transaccion: '',
-    id_moneda_transaccion: '',
-    id_metodo_pago: '',
-    referencia_pago: '',
-    descripcion: '',
-    id_caja: '',
-    id_cuenta_bancaria: '',
-    tipo_documento_asociado: '',
-    nro_documento_asociado: '',
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<RegistroTransaccionInput>({
+    resolver: zodResolver(registroTransaccionSchema),
+    mode: 'onBlur',
+    defaultValues: {
+      fecha_hora_transaccion: '',
+      tipo_transaccion: 'ingreso',
+      monto_transaccion: '',
+      id_moneda_transaccion: '',
+      id_metodo_pago: '',
+      referencia_pago: '',
+      descripcion: '',
+      id_caja: '',
+      id_cuenta_bancaria: '',
+      tipo_documento_asociado: '',
+      nro_documento_asociado: '',
+    },
   });
+
+  // Valores observados que alimentan los cálculos derivados (tasa BCV / monto base).
+  const idMonedaTransaccion = watch('id_moneda_transaccion');
+  const fechaHoraTransaccion = watch('fecha_hora_transaccion');
+  const montoTransaccion = watch('monto_transaccion');
 
   useEffect(() => {
     import('../../../services/empresas').then(({ fetchEmpresas }) => {
@@ -113,9 +132,9 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   const metodosPago = metodosPagoRaw.filter((m: MetodoPagoEmpresaActiva) => m.activa);
 
   useEffect(() => {
-    if (!idEmpresa || !form.id_moneda_transaccion || !form.fecha_hora_transaccion) return;
+    if (!idEmpresa || !idMonedaTransaccion || !fechaHoraTransaccion) return;
     // Buscar la moneda seleccionada en el array de monedas activas
-    const monedaDestino = monedas.find(m => m.moneda === form.id_moneda_transaccion);
+    const monedaDestino = monedas.find(m => m.moneda === idMonedaTransaccion);
     const nombreMonedaDestino = monedaDestino?.moneda_nombre || '';
     const codigoDestino = monedaDestino?.moneda_codigo_iso || monedaDestino?.codigo_iso;
     // Si la moneda base es igual a la moneda de transacción, tasa = 1
@@ -129,10 +148,10 @@ const TransaccionFinancieraFormPage: React.FC = () => {
     const codigoOrigen = 'USD';
     // Extraer solo la fecha en formato YYYY-MM-DD
     let fecha = '';
-    if (form.fecha_hora_transaccion.includes('T')) {
-      fecha = form.fecha_hora_transaccion.split('T')[0];
-    } else if (form.fecha_hora_transaccion.length >= 10) {
-      fecha = form.fecha_hora_transaccion.substring(0, 10);
+    if (fechaHoraTransaccion.includes('T')) {
+      fecha = fechaHoraTransaccion.split('T')[0];
+    } else if (fechaHoraTransaccion.length >= 10) {
+      fecha = fechaHoraTransaccion.substring(0, 10);
     }
     if (codigoDestino && fecha) {
       import('../../../services/api').then(({ get }) => {
@@ -153,13 +172,13 @@ const TransaccionFinancieraFormPage: React.FC = () => {
           });
       });
     }
-  }, [idEmpresa, form.id_moneda_transaccion, monedas, form.fecha_hora_transaccion, monedaBase]);
+  }, [idEmpresa, idMonedaTransaccion, monedas, fechaHoraTransaccion, monedaBase]);
 
   useEffect(() => {
-    const monto = parseFloat(form.monto_transaccion);
+    const monto = parseFloat(montoTransaccion);
     const tasa = parseFloat(tasaCambio);
     // Buscar la moneda seleccionada en el array de monedas activas
-    const monedaDestino = monedas.find(m => m.moneda === form.id_moneda_transaccion);
+    const monedaDestino = monedas.find(m => m.moneda === idMonedaTransaccion);
     const nombreMonedaDestino = monedaDestino?.moneda_nombre || '';
     // Si la moneda base es igual a la moneda de transacción
     if (monedaBase && nombreMonedaDestino && monedaBase === nombreMonedaDestino) {
@@ -176,11 +195,7 @@ const TransaccionFinancieraFormPage: React.FC = () => {
         setMontoBase('');
       }
     }
-  }, [form.monto_transaccion, tasaCambio, monedaBase, form.id_moneda_transaccion, monedas]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  }, [montoTransaccion, tasaCambio, monedaBase, idMonedaTransaccion, monedas]);
 
   // Validar tasa de cambio (debe ser > 0)
   const handleTasaCambio = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,7 +212,7 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   };
 
   const createMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (form: RegistroTransaccionInput) => {
       const { getSessionUsuarioId } = await import('../../../services/session');
       const usuarioId = getSessionUsuarioId();
       const { get, post } = await import('../../../services/api');
@@ -262,86 +277,101 @@ const TransaccionFinancieraFormPage: React.FC = () => {
 
   const loading = createMutation.isPending;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (values: RegistroTransaccionInput) => {
     setTasaError('');
-    createMutation.mutate();
+    createMutation.mutate(values);
   };
 
   return (
     <PageLayout maxWidth={480}>
       <Typography variant="h5" mb={3}>Registrar Transacción</Typography>
-      <Box component="form" onSubmit={handleSubmit}>
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Stack spacing={2}>
           <TextField
             label="Fecha"
-            name="fecha_hora_transaccion"
             type="datetime-local"
-            value={form.fecha_hora_transaccion}
-            onChange={handleChange}
+            {...register('fecha_hora_transaccion')}
+            error={!!errors.fecha_hora_transaccion}
+            helperText={errors.fecha_hora_transaccion?.message}
             required
             slotProps={{ inputLabel: { shrink: true } }}
             fullWidth
           />
-          <TextField
-            select
-            label="Tipo de Transacción"
+          <Controller
             name="tipo_transaccion"
-            value={form.tipo_transaccion}
-            onChange={handleChange}
-            fullWidth
-          >
-            {tipoTransaccionOptions.map(opt => (
-              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-            ))}
-          </TextField>
+            control={control}
+            render={({ field }) => (
+              <TextField
+                select
+                label="Tipo de Transacción"
+                {...field}
+                error={!!errors.tipo_transaccion}
+                helperText={errors.tipo_transaccion?.message}
+                fullWidth
+              >
+                {tipoTransaccionOptions.map(opt => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
           <TextField
             label="Monto"
-            name="monto_transaccion"
             type="number"
-            value={form.monto_transaccion}
-            onChange={handleChange}
+            {...register('monto_transaccion')}
+            error={!!errors.monto_transaccion}
+            helperText={errors.monto_transaccion?.message}
             required
             fullWidth
           />
-          <TextField
-            select
-            label="Moneda de Transacción"
+          <Controller
             name="id_moneda_transaccion"
-            value={form.id_moneda_transaccion}
-            onChange={handleChange}
-            required
-            fullWidth
-          >
-            <MenuItem value="">Seleccione una moneda</MenuItem>
-            {monedas.map(moneda => (
-              <MenuItem key={moneda.id} value={moneda.moneda}>{moneda.moneda_nombre}</MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="Método de Pago"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                select
+                label="Moneda de Transacción"
+                {...field}
+                error={!!errors.id_moneda_transaccion}
+                helperText={errors.id_moneda_transaccion?.message}
+                required
+                fullWidth
+              >
+                <MenuItem value="">Seleccione una moneda</MenuItem>
+                {monedas.map(moneda => (
+                  <MenuItem key={moneda.id} value={moneda.moneda}>{moneda.moneda_nombre}</MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+          <Controller
             name="id_metodo_pago"
-            value={form.id_metodo_pago}
-            onChange={handleChange}
-            required
-            fullWidth
-          >
-            <MenuItem value="">Seleccione método de pago</MenuItem>
-            {metodosPago.map(metodo => (
-              <MenuItem key={metodo.id} value={metodo.metodo_pago}>{metodo.nombre}</MenuItem>
-            ))}
-          </TextField>
+            control={control}
+            render={({ field }) => (
+              <TextField
+                select
+                label="Método de Pago"
+                {...field}
+                error={!!errors.id_metodo_pago}
+                helperText={errors.id_metodo_pago?.message}
+                required
+                fullWidth
+              >
+                <MenuItem value="">Seleccione método de pago</MenuItem>
+                {metodosPago.map(metodo => (
+                  <MenuItem key={metodo.id} value={metodo.metodo_pago}>{metodo.nombre}</MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
           <TextField
             label="Moneda Base"
-            name="moneda_base"
             value={monedaBase}
             slotProps={{ input: { readOnly: true } }}
             fullWidth
           />
           <TextField
             label="Tasa de Cambio"
-            name="tasa_cambio"
             type="number"
             value={tasaCambio}
             onChange={handleTasaCambio}
@@ -352,32 +382,37 @@ const TransaccionFinancieraFormPage: React.FC = () => {
           {tasaError && <Alert severity="error">{tasaError}</Alert>}
           <TextField
             label="Monto Base"
-            name="monto_base"
             value={montoBase}
             slotProps={{ input: { readOnly: true } }}
             fullWidth
           />
-          <TextField label="Referencia" name="referencia_pago" value={form.referencia_pago} onChange={handleChange} fullWidth />
-          <TextField label="Descripción" name="descripcion" value={form.descripcion} onChange={handleChange} fullWidth />
-          <TextField label="Caja" name="id_caja" value={form.id_caja} onChange={handleChange} required fullWidth />
-          <TextField label="Cuenta Bancaria" name="id_cuenta_bancaria" value={form.id_cuenta_bancaria} onChange={handleChange} fullWidth />
-          <TextField
-            select
-            label="Tipo de Documento Asociado"
+          <TextField label="Referencia" {...register('referencia_pago')} fullWidth />
+          <TextField label="Descripción" {...register('descripcion')} fullWidth />
+          <TextField label="Caja" {...register('id_caja')} error={!!errors.id_caja} helperText={errors.id_caja?.message} required fullWidth />
+          <TextField label="Cuenta Bancaria" {...register('id_cuenta_bancaria')} fullWidth />
+          <Controller
             name="tipo_documento_asociado"
-            value={form.tipo_documento_asociado}
-            onChange={handleChange}
-            required
-            fullWidth
-          >
-            <MenuItem value="">Seleccione tipo de documento</MenuItem>
-            <MenuItem value="COMPRA">Compra</MenuItem>
-            <MenuItem value="VENTA">Venta</MenuItem>
-            <MenuItem value="GASTO">Gasto</MenuItem>
-            <MenuItem value="NOMINA">Nómina</MenuItem>
-            <MenuItem value="AJUSTE">Ajuste</MenuItem>
-          </TextField>
-          <TextField label="Nro. Documento Asociado" name="nro_documento_asociado" value={form.nro_documento_asociado} onChange={handleChange} fullWidth />
+            control={control}
+            render={({ field }) => (
+              <TextField
+                select
+                label="Tipo de Documento Asociado"
+                {...field}
+                error={!!errors.tipo_documento_asociado}
+                helperText={errors.tipo_documento_asociado?.message}
+                required
+                fullWidth
+              >
+                <MenuItem value="">Seleccione tipo de documento</MenuItem>
+                <MenuItem value="COMPRA">Compra</MenuItem>
+                <MenuItem value="VENTA">Venta</MenuItem>
+                <MenuItem value="GASTO">Gasto</MenuItem>
+                <MenuItem value="NOMINA">Nómina</MenuItem>
+                <MenuItem value="AJUSTE">Ajuste</MenuItem>
+              </TextField>
+            )}
+          />
+          <TextField label="Nro. Documento Asociado" {...register('nro_documento_asociado')} fullWidth />
           <Stack direction="row" spacing={1} justifyContent="flex-end">
             <Button type="submit" variant="contained" disabled={loading}>
               {loading ? 'Registrando...' : 'Registrar transacción'}
