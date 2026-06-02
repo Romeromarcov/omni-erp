@@ -276,11 +276,15 @@ class TestSoftDeleteViewSetMixin:
         instance.soft_delete.assert_called_once()
         instance.delete.assert_not_called()
 
-    def test_mixin_perform_destroy_fallback_sin_soft_delete(self, db):
+    def test_mixin_perform_destroy_sin_soft_delete_aborta(self, db):
         """
-        Si el objeto no tiene soft_delete(), se cae a delete() estándar.
+        M-BUG-5 (R-CODE-6): si el objeto no tiene soft_delete(), NO se hace hard
+        delete silencioso — se aborta con APIException para no perder historial.
         """
         from unittest.mock import MagicMock
+
+        import pytest
+        from rest_framework.exceptions import APIException
 
         from apps.core.viewsets import SoftDeleteModelMixin
 
@@ -288,8 +292,9 @@ class TestSoftDeleteViewSetMixin:
         instance = MagicMock(spec=[])  # Sin atributos extra → no tiene soft_delete
         instance.delete = MagicMock()
 
-        mixin.perform_destroy(instance)
-        instance.delete.assert_called_once()
+        with pytest.raises(APIException):
+            mixin.perform_destroy(instance)
+        instance.delete.assert_not_called()
 
     def test_activar_action_reactiva_registro(self, db, rol_inactivo, client_a):
         """
