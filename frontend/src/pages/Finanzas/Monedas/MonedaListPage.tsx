@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, patch } from '../../../services/api';
+import { getEmpresaId } from '../../../utils/empresa';
 import PageLayout from '../../../components/PageLayout';
 
 export type Moneda = {
@@ -35,16 +36,12 @@ function toList<T>(raw: T[] | { results: T[] }): T[] {
   return [];
 }
 
-interface WindowWithEmpresa extends Window {
-  id_empresa?: string;
-}
-
 const MonedaListPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [toggleError, setToggleError] = useState('');
   const queryClientHook = useQueryClient();
 
-  const id_empresa = (window as WindowWithEmpresa).id_empresa || '';
+  const id_empresa = getEmpresaId() || '';
 
   // ── Queries paralelas ──────────────────────────────────────────
   const { data: monedas = [], isLoading: loadingMonedas, isError: errorMonedas } =
