@@ -80,20 +80,23 @@ class StorageService:
     realizar ninguna llamada de red (útil en dev/test sin MinIO).
     """
 
-    # Extensiones bloqueadas por seguridad
-    BLOCKED_EXTENSIONS = {
-        ".exe",
-        ".bat",
-        ".cmd",
-        ".sh",
-        ".ps1",
-        ".msi",
-        ".dll",
-        ".php",
-        ".py",
-        ".rb",
-        ".pl",
-        ".cgi",
+    # H-SEC-5: whitelist de extensiones permitidas (más seguro que blacklist:
+    # una blacklist nunca cubre todos los vectores — .html, .svg, .htm, etc.).
+    ALLOWED_EXTENSIONS = {
+        ".pdf",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".gif",
+        ".docx",
+        ".xlsx",
+        ".xls",
+        ".doc",
+        ".csv",
+        ".txt",
+        ".zip",
+        ".xml",
     }
     MAX_FILE_SIZE_MB = 100
 
@@ -197,8 +200,12 @@ class StorageService:
         try:
             client = _get_s3_client()
             params: dict = {"Bucket": self.bucket, "Key": s3_key}
+            # H-SEC-5: forzar descarga (attachment) siempre, para que el navegador
+            # nunca renderice inline contenido potencialmente malicioso (SVG/HTML).
             if filename_hint:
                 params["ResponseContentDisposition"] = f'attachment; filename="{filename_hint}"'
+            else:
+                params["ResponseContentDisposition"] = "attachment"
             url = client.generate_presigned_url(
                 "get_object",
                 Params=params,
@@ -273,10 +280,14 @@ class StorageService:
     # ── Helpers internos ─────────────────────────────────────────────────────
 
     def _validate_filename(self, filename: str) -> None:
-        """Lanza ValueError si la extensión está bloqueada."""
+        """H-SEC-5: solo se permiten extensiones de la whitelist."""
         _, ext = os.path.splitext(filename.lower())
-        if ext in self.BLOCKED_EXTENSIONS:
-            raise ValueError(f"El tipo de archivo '{ext}' no está permitido por seguridad.")
+        if ext not in self.ALLOWED_EXTENSIONS:
+            permitidas = ", ".join(sorted(self.ALLOWED_EXTENSIONS))
+            raise ValueError(
+                f"El tipo de archivo '{ext or '(sin extensión)'}' no está permitido. "
+                f"Permitidos: {permitidas}."
+            )
 
     def _validate_size(self, size_bytes: int, filename: str) -> None:
         """Lanza ValueError si el archivo supera MAX_FILE_SIZE_MB."""
