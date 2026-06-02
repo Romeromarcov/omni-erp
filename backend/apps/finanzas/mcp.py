@@ -9,6 +9,7 @@ Herramientas expuestas:
 
 
 import logging
+from decimal import Decimal
 from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.finanzas")
@@ -66,7 +67,7 @@ def finanzas_get_pagos(
     return [
         {
             "id_pago": str(p.id_pago),
-            "monto": float(p.monto),
+            "monto": p.monto,  # BUG-NEW-2: Decimal, no float
             "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
             "metodo": p.id_metodo_pago.nombre_metodo if p.id_metodo_pago else "",
             "tipo_documento": p.tipo_documento or "",
@@ -114,7 +115,7 @@ def finanzas_get_saldo_caja(
 
     # Obtener la sesión activa si existe
     sesion_activa = caja.sesiones.filter(fecha_cierre__isnull=True).first()
-    saldo_apertura = float(sesion_activa.monto_apertura) if sesion_activa else 0.0
+    saldo_apertura = sesion_activa.monto_apertura if sesion_activa else Decimal("0")  # BUG-NEW-2
 
     return {
         "caja_id": str(caja.id_caja_fisica),

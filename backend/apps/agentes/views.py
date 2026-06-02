@@ -17,6 +17,8 @@ Modo de operación:
   - ClasificadorGastos emite una predicción (PrediccionAgente) y acepta
     aplicar=true para escribir en el modelo Gasto (modo producción activado).
 """
+import logging
+
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -26,6 +28,8 @@ from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import PrediccionAgente
 from .serializers import PrediccionAgenteSerializer
+
+logger = logging.getLogger(__name__)
 
 
 def _empresa_o_error(request):
@@ -128,8 +132,13 @@ class PrediccionAgenteViewSet(BaseModelViewSet):
         agente = CobranzaEstrategaAgent(empresa=empresa)
         try:
             sugerencias = agente.analizar(persistir=persistir)
-        except Exception as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            # SEC-NEW-5 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("Error ejecutando agente IA")
+            return Response(
+                {"code": "agente_error", "detail": "No se pudo completar el análisis del agente."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         data = [
             {
@@ -167,8 +176,13 @@ class PrediccionAgenteViewSet(BaseModelViewSet):
         agente = ReordenSugeridorAgent(empresa=empresa)
         try:
             sugerencias = agente.analizar(solo_alertas=solo_alertas, persistir=persistir)
-        except Exception as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            # SEC-NEW-5 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("Error ejecutando agente IA")
+            return Response(
+                {"code": "agente_error", "detail": "No se pudo completar el análisis del agente."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         data = [
             {
@@ -203,8 +217,13 @@ class PrediccionAgenteViewSet(BaseModelViewSet):
         agente = PersonalizacionCapa2Agent(empresa=empresa)
         try:
             resultado = agente.analizar()
-        except Exception as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            # SEC-NEW-5 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("Error ejecutando agente IA")
+            return Response(
+                {"code": "agente_error", "detail": "No se pudo completar el análisis del agente."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response(
             {
@@ -276,8 +295,13 @@ class PrediccionAgenteViewSet(BaseModelViewSet):
                 monto=gasto.monto,
                 persistir=True,
             )
-        except Exception as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            # SEC-NEW-5 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("Error ejecutando agente IA")
+            return Response(
+                {"code": "agente_error", "detail": "No se pudo completar el análisis del agente."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         # Recuperar la predicción que acabamos de persistir (la más reciente)
         prediccion = (
