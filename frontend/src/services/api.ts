@@ -1,4 +1,19 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// FE-LOW-S2: el default a localhost solo es válido en desarrollo. En un build de
+// producción sin VITE_API_URL configurada apuntaríamos a localhost (bug silente);
+// por eso hacemos fail-fast al cargar el módulo. En dev/test mantenemos el fallback.
+function resolveApiUrl(): string {
+  const configured = import.meta.env.VITE_API_URL;
+  if (configured) return configured;
+  if (import.meta.env.PROD) {
+    throw new Error(
+      'VITE_API_URL no está definida en el build de producción. ' +
+        'Configura VITE_API_URL (p. ej. https://api.midominio.com/api) antes de compilar.',
+    );
+  }
+  return 'http://localhost:8000/api';
+}
+
+export const API_URL = resolveApiUrl();
 
 // ── In-memory access token (FE-HIGH-13) ──────────────────────────────────────
 // The access token lives ONLY in this module variable, never in localStorage.
