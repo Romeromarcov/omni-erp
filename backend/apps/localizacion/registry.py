@@ -34,9 +34,12 @@ def _registrar_localizaciones_bundled() -> None:
     aquí es seguro durante la carga de apps.
     """
     try:
-        from apps.localizacion_ve.adapters import MotorImpuestosVE
+        from apps.localizacion_ve.adapters import CalculadoraNominaVE, MotorImpuestosVE
 
-        register("VE", {"MotorImpuestos": MotorImpuestosVE()})
+        register("VE", {
+            "MotorImpuestos": MotorImpuestosVE(),
+            "CalculadoraNomina": CalculadoraNominaVE(),  # Ola 5.2
+        })
     except Exception:  # noqa: BLE001 — no romper el arranque si VE no está disponible
         pass
 
