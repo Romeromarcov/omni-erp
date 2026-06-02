@@ -7,6 +7,7 @@ from apps.inventario.models import Producto
 
 
 class ListaMateriales(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     referencia_externa = models.CharField(max_length=100, blank=True, default='')
     documento_json = models.JSONField(blank=True, default=dict)
@@ -19,6 +20,7 @@ class ListaMateriales(models.Model):
 
 
 class RutaProduccion(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     referencia_externa = models.CharField(max_length=100, blank=True, default='')
     documento_json = models.JSONField(blank=True, default=dict)
@@ -30,6 +32,7 @@ class RutaProduccion(models.Model):
 
 
 class OrdenProduccion(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=12, decimal_places=2)
     fecha_inicio = models.DateField()
@@ -59,6 +62,7 @@ class OrdenProduccion(models.Model):
 
 
 class ConsumoMaterial(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
     referencia_externa = models.CharField(max_length=100, blank=True, default='')
     documento_json = models.JSONField(blank=True, default=dict)
     orden_produccion = models.ForeignKey(OrdenProduccion, on_delete=models.CASCADE, related_name="consumos")
@@ -70,6 +74,7 @@ class ConsumoMaterial(models.Model):
 
 
 class ProduccionTerminada(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
     referencia_externa = models.CharField(max_length=100, blank=True, default='')
     documento_json = models.JSONField(blank=True, default=dict)
     orden_produccion = models.ForeignKey(

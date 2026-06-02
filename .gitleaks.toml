@@ -1,0 +1,24 @@
+# Configuración de gitleaks (INFRA-NEW-4).
+# Extiende el set de reglas por defecto y allowlista placeholders intencionales:
+# archivos *.example, defaults de desarrollo documentados (docker-compose.yml) y
+# las claves dummy de CI. Esto evita falsos positivos sin debilitar el escaneo de
+# secretos reales en el resto del código.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders de dev/CI y archivos de ejemplo (no son secretos reales)"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.prod\.example$''',
+  '''docker-compose\.yml$''',
+  '''\.github/workflows/ci\.yml$''',
+]
+regexes = [
+  # Claves/credenciales dummy explícitamente marcadas como solo-dev/CI.
+  '''ci-only-dummy-key[-a-zA-Z0-9]*''',
+  '''dev-secret-key-not-for-production[-a-zA-Z0-9]*''',
+  '''minioadmin[0-9]*''',
+  '''omni_erp_dev_[0-9]+''',
+  '''omni_erp_ci''',
+]

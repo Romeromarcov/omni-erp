@@ -41,8 +41,18 @@ logs/
 # Descomenta la siguiente línea si este es tu caso:
 # media/
 
-# Ignorar archivos o directorios de pruebas si no son parte de la aplicación final
-# tests/
+# INFRA-NEW-2: excluir tests del contexto de build (no van a la imagen runtime)
+tests_api/
+tests_eval/
+**/tests/
+**/tests.py
+pytest.ini
+.coverage
+htmlcov/
+
+# Documentación y metadatos que no pertenecen a la imagen
+*.md
+.dockerignore
 
 # Ignorar directorios temporales o de compilación si los usas
 tmp/

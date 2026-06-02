@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 type Sucursal = {
   id_sucursal: string;
@@ -22,6 +23,7 @@ const BranchDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const isEditRoute = location.pathname.endsWith('/edit');
   const [edit, setEdit] = useState(isEditRoute);
   const [form, setForm] = useState<Sucursal | null>(null);
@@ -48,10 +50,10 @@ const BranchDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/', id_sucursal] });
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });
       setEdit(false);
-      alert('Sucursal actualizada');
+      snackbar.success('Sucursal actualizada');
     },
     onError: () => {
-      alert('Error al actualizar');
+      snackbar.error('Error al actualizar');
     },
   });
 

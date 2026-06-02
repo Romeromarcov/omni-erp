@@ -38,6 +38,40 @@ services:
     # Sin puerto expuesto al host: solo accesible dentro de la red Docker
 
   # ─────────────────────────────────────────
+  # Backup PostgreSQL — sidecar diario (INFRA-NEW-6 / GAP-4)
+  # ─────────────────────────────────────────
+  # Ejecuta infra/backup/pg_dump_omni.sh una vez al día (loop con sleep 24h).
+  # En Railway el backup lo hace .github/workflows/backup.yml (GAP-4-bis); este
+  # sidecar cubre la topología self-hosted para que el backup corra solo.
+  # Usa postgres:17-alpine para que pg_dump coincida con la versión del servidor.
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env.prod
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      PGPASSWORD: ${DB_PASSWORD}
+      BACKUP_OUT_DIR: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./infra/backup:/opt/backup:ro
+      - omni_prod_db_backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "[backup] sidecar iniciado; backup diario a /backups (retención ${BACKUP_RETENTION_DAYS:-30}d)";
+        while true; do
+          sh /opt/backup/pg_dump_omni.sh || echo "[backup] fallo en el ciclo, se reintenta mañana";
+          sleep 86400;
+        done
+
+  # ─────────────────────────────────────────
   # Cache / broker — Redis 7 (con persistencia AOF)
   # ─────────────────────────────────────────
   redis:
@@ -272,6 +306,8 @@ volumes:
   #   name: omni_certbot_webroot
   omni_prod_db_data:
     name: omni_prod_db_data
+  omni_prod_db_backups:
+    name: omni_prod_db_backups
   omni_prod_redis_data:
     name: omni_prod_redis_data
   omni_prod_staticfiles:

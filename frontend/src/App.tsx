@@ -3,6 +3,7 @@ import AppRouter from './router';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './contexts/AuthContext';
+import { FeedbackProvider } from './contexts/FeedbackContext';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 
@@ -59,9 +60,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AuthProvider>
-          <AppRouter />
-        </AuthProvider>
+        <FeedbackProvider>
+          <AuthProvider>
+            <AppRouter />
+          </AuthProvider>
+        </FeedbackProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -579,6 +579,10 @@ class OdooConnector(BaseConnector):
             vals["name"] = datos["nombre"]
         if datos.get("codigo_interno"):
             vals["default_code"] = datos["codigo_interno"]
+        # BUG-NEW-3: conversión de borde hacia Odoo. XML-RPC no soporta Decimal y
+        # los campos list_price/standard_price de Odoo son Float; este float() es una
+        # conversión intencional en la frontera del sistema externo, no cálculo
+        # monetario interno (que sí usa Decimal — R-CODE-4).
         if datos.get("precio_venta") is not None:
             vals["list_price"] = float(datos["precio_venta"])
         if datos.get("costo") is not None:

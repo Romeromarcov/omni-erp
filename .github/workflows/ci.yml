@@ -108,9 +108,9 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
-      - name: Vitest unit tests
+      - name: Vitest unit tests (con gate de cobertura ≥60% — INFRA-NEW-3)
         working-directory: frontend
-        run: npm test -- --run
+        run: npm run test:coverage -- --run
 
   # ──────────────────────────────────────────────────────────────
   # Agent eval — Shadow mode quality gate (CTF-003)
@@ -161,3 +161,45 @@ jobs:
         # El umbral se verifica dentro de los tests mismos
         # (test_precision_global / test_precision_global_prioridad /
         #  test_precision_global_canal). Si alguno falla, el job falla.
+
+  # ──────────────────────────────────────────────────────────────
+  # Security scan — INFRA-NEW-4: secret scanning + dependency audit
+  # ──────────────────────────────────────────────────────────────
+  security-scan:
+    name: "Security scan (gitleaks + deps audit)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # gitleaks necesita el historial completo
+
+      - name: Secret scanning (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Dependency audit (Python — pip-audit)
+        working-directory: backend
+        # No bloqueante: reporta vulnerabilidades conocidas sin tumbar el pipeline
+        # ante un CVE recién publicado; el equipo prioriza y remedia.
+        continue-on-error: true
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt || true
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Dependency audit (Node — npm audit)
+        working-directory: frontend
+        continue-on-error: true
+        run: npm audit --audit-level=high || true

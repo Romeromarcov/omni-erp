@@ -11,11 +11,19 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+from apps.core.viewsets import get_empresas_visible
 from apps.cxc.models import GestionCobranza, PlantillaCobranza
 from apps.cxc.api.serializers import (
     GestionCobranzaSerializer,
     PlantillaCobranzaSerializer,
 )
+
+
+def _empresa_actual(user):
+    """SEC-NEW-2: empresa de trabajo del usuario vía el helper vetado
+    get_empresas_visible (en vez de la property user.empresa, que ignora el
+    aislamiento multi-empresa)."""
+    return get_empresas_visible(user).first()
 
 
 class PlantillaCobranzaViewSet(viewsets.ModelViewSet):
@@ -24,12 +32,12 @@ class PlantillaCobranzaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return PlantillaCobranza.objects.filter(
-            empresa=self.request.user.empresa,
+            empresa__in=get_empresas_visible(self.request.user),
             deleted_at__isnull=True,
         ).order_by("canal", "nombre")
 
     def perform_create(self, serializer):
-        serializer.save(empresa=self.request.user.empresa)
+        serializer.save(empresa=_empresa_actual(self.request.user))
 
     def perform_destroy(self, instance):
         instance.soft_delete()
@@ -41,12 +49,12 @@ class GestionCobranzaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return GestionCobranza.objects.filter(
-            empresa=self.request.user.empresa,
+            empresa__in=get_empresas_visible(self.request.user),
             deleted_at__isnull=True,
         ).order_by("-fecha_gestion")
 
     def perform_create(self, serializer):
-        empresa = self.request.user.empresa
+        empresa = _empresa_actual(self.request.user)
         # Calcular score automáticamente
         from apps.cuentas_por_cobrar.services_scoring import ScoreInput, calcular_score
         from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider
@@ -115,7 +123,7 @@ class GestionCobranzaViewSet(viewsets.ModelViewSet):
         from apps.cuentas_por_cobrar.services_scoring import priorizar
         from django.db.models import Count
 
-        empresa = request.user.empresa
+        empresa = _empresa_actual(request.user)
         intentos_raw = (
             GestionCobranza.objects.filter(
                 empresa=empresa,

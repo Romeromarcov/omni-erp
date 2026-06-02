@@ -19,7 +19,7 @@ from .models import (
 class OrdenCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrdenCompra
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_orden_compra", "fecha_creacion")
 
@@ -33,7 +33,7 @@ class DetalleOrdenCompraSerializer(serializers.ModelSerializer):
 class RecepcionMercanciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecepcionMercancia
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_recepcion", "fecha_creacion")
 
@@ -41,7 +41,7 @@ class RecepcionMercanciaSerializer(serializers.ModelSerializer):
 class FacturaCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = FacturaCompra
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_factura_compra", "fecha_creacion")
 

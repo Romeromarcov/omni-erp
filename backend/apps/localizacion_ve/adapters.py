@@ -7,7 +7,7 @@ para no romper el orden de carga de apps.
 """
 from decimal import Decimal
 
-from apps.localizacion.ports import MotorImpuestos
+from apps.localizacion.ports import CalculadoraNomina, MotorImpuestos
 
 
 class MotorImpuestosVE(MotorImpuestos):
@@ -17,3 +17,13 @@ class MotorImpuestosVE(MotorImpuestos):
         from apps.fiscal.services import calcular_impuestos
 
         return calcular_impuestos(Decimal(str(subtotal)), empresa)
+
+
+class CalculadoraNominaVE(CalculadoraNomina):
+    """Nómina venezolana (LOTTT): delega en el motor puro de apps.nomina (Ola 5.2)."""
+
+    def calcular(self, *, empleado, periodo, empresa) -> dict:
+        from apps.nomina.services import calcular_nomina_empleado
+
+        resultado = calcular_nomina_empleado(empleado, periodo)
+        return resultado.as_dict()

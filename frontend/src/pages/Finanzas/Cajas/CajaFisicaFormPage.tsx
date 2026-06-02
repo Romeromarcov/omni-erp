@@ -8,6 +8,7 @@ import { cajasFisicasService } from '../../../services/cajasFisicasService';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import type { MonedaEmpresaActiva } from '../../../services/monedasEmpresaActiva';
 import { cajaFisicaSchema, type CajaFisicaInput } from '../../../schemas/finanzas.schemas';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Switch, TextField, Typography } from '@mui/material';
 
 type TipoCajaChoice = { value: string; display: string };
@@ -50,18 +51,18 @@ const CajaFisicaFormPage: React.FC = () => {
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
   const { data: monedas = [] } = useQuery<MonedaEmpresaActiva[]>({
-    queryKey: ['/finanzas/monedas-empresa-activas/', idEmpresa],
+    queryKey: finanzasKeys.monedas.empresaActivas(idEmpresa),
     queryFn: () => fetchMonedasEmpresaActivas(idEmpresa),
     enabled: !!idEmpresa,
   });
 
   const { data: tipoCajaChoices = [] } = useQuery<TipoCajaChoice[]>({
-    queryKey: ['/finanzas/cajas-fisicas/tipo-caja-choices'],
+    queryKey: finanzasKeys.cajasFisicas.tipoChoices(),
     queryFn: () => cajasFisicasService.getTipoCajaChoices(),
   });
 
   const { data: cajaData, isLoading } = useQuery({
-    queryKey: ['/finanzas/cajas-fisicas/', id],
+    queryKey: finanzasKeys.cajasFisicas.detail(id!),
     queryFn: () => cajasFisicasService.getCajaFisica(id!),
     enabled: isEditing && !!id,
   });
@@ -103,7 +104,7 @@ const CajaFisicaFormPage: React.FC = () => {
       return cajasFisicasService.createCajaFisica(dataToSend as Parameters<typeof cajasFisicasService.createCajaFisica>[0]);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/'] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.cajasFisicas.all() });
       setSuccess(isEditing ? 'Caja física actualizada correctamente' : 'Caja física creada correctamente');
       setTimeout(() => {
         navigate('/finanzas/cajas-fisicas');

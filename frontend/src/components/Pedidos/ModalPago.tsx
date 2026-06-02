@@ -13,6 +13,7 @@ import CamposDinamicos from './CamposDinamicos';
 import SeccionNotasCredito from './SeccionNotasCredito';
 import SeccionVuelto from './SeccionVuelto';
 import ResumenPago from './ResumenPago';
+import { useSnackbar } from '../../contexts/feedbackTypes';
 
 // Re-exportar los tipos públicos que usan otros módulos
 export type { Pago, NotaCredito } from './types';
@@ -36,6 +37,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
   idProveedor,
   tipoOperacionInicial,
 }) => {
+  const snackbar = useSnackbar();
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [form, setForm] = useState<Pago>(FORM_VACIO);
   const [tipoOperacion, setTipoOperacion] = useState<'INGRESO' | 'EGRESO'>(tipoOperacionInicial ?? 'INGRESO');
@@ -149,23 +151,23 @@ const ModalPago: React.FC<ModalPagoProps> = ({
 
   const handleAddPago = () => {
     if (!form.id_metodo_pago || !form.id_moneda || !form.monto || form.monto <= 0) {
-      alert('Por favor, complete todos los campos obligatorios del pago.');
+      snackbar.warning('Por favor, complete todos los campos obligatorios del pago.');
       return;
     }
     const metodo = metodos.find(m => m.id_metodo_pago === form.id_metodo_pago);
-    if (!metodo) { alert('Método de pago no válido.'); return; }
+    if (!metodo) { snackbar.warning('Método de pago no válido.'); return; }
     const tipo = metodo.tipo_metodo?.toLowerCase() ?? '';
     if ((tipo.includes('efectivo') || tipo.includes('cash')) && !form.id_caja_virtual) {
-      alert('Para pagos en efectivo, debe seleccionar una caja virtual.'); return;
+      snackbar.warning('Para pagos en efectivo, debe seleccionar una caja virtual.'); return;
     }
     if ((tipo.includes('transferencia') || tipo.includes('cheque') || tipo.includes('banco')) && !form.id_cuenta_bancaria) {
-      alert('Para este método de pago, debe seleccionar una cuenta bancaria.'); return;
+      snackbar.warning('Para este método de pago, debe seleccionar una cuenta bancaria.'); return;
     }
     if ((tipo.includes('tarjeta') || tipo.includes('debito') || tipo.includes('credito')) && !form.id_datafono) {
-      alert('Para pagos con tarjeta, debe seleccionar un datáfono.'); return;
+      snackbar.warning('Para pagos con tarjeta, debe seleccionar un datáfono.'); return;
     }
     if (!form.id_caja_virtual && !form.id_cuenta_bancaria && !form.id_datafono) {
-      alert('Debe seleccionar al menos una entidad financiera para el pago.'); return;
+      snackbar.warning('Debe seleccionar al menos una entidad financiera para el pago.'); return;
     }
     const conv = conversiones(form.monto, form.tasa, form.moneda ?? '');
     setPagos(prev => [...prev, { ...form, monto_base: conv.base, monto_pais: conv.pais }]);
@@ -358,7 +360,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
             variant="contained"
             onClick={() => {
               if (!esDiferenciaAceptable(saldoRestanteConNotasBase)) {
-                alert(`El total de pagos tiene una diferencia que excede la tolerancia configurada (${toleranciaPositiva.toFixed(2)}). No se pueden confirmar los pagos.`);
+                snackbar.warning(`El total de pagos tiene una diferencia que excede la tolerancia configurada (${toleranciaPositiva.toFixed(2)}). No se pueden confirmar los pagos.`);
                 return;
               }
               onConfirm(pagos, vuelto ? [vuelto] : undefined, notasCreditoSeleccionadas);

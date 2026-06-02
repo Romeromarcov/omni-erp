@@ -10,6 +10,7 @@ import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
 import { devolucionVentaSchema, type DevolucionVentaInput } from '../../../schemas/ventas.schemas';
+import { ventasKeys } from '../../../lib/queryKeys';
 import type { DevolucionVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
 import type { Producto } from '../../../services/productosService';
@@ -54,19 +55,19 @@ const DevolucionVentaFormPage: React.FC = () => {
   const { fields, append, remove } = useFieldArray({ control, name: 'detalles' });
 
   const { data: clientes = [] } = useQuery<unknown, Error, Cliente[]>({
-    queryKey: [`/ventas/clientes/?id_empresa=${empresaId}`],
+    queryKey: ventasKeys.clientes(empresaId),
     queryFn: () => fetchClientes(empresaId),
     select: toList,
   });
 
   const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
-    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryKey: ventasKeys.productos(empresaId),
     queryFn: () => fetchProductos(empresaId),
     select: toList,
   });
 
   const { data: devolucionData, isLoading: loading } = useQuery<DevolucionVenta>({
-    queryKey: [`/ventas/devoluciones-venta/${id}/`],
+    queryKey: ventasKeys.devoluciones.detail(id!),
     queryFn: () => devolucionVentaService.getById(id!),
     enabled: isEditing && !!id,
   });
@@ -110,7 +111,7 @@ const DevolucionVentaFormPage: React.FC = () => {
       return devolucionVentaService.create(submitData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/devoluciones-venta/'] });
+      queryClient.invalidateQueries({ queryKey: ventasKeys.devoluciones.all() });
       navigate('/ventas/devoluciones-venta');
     },
     onError: () => setError('Error al guardar la devolución'),

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { get } from '../../../services/api';
+import { get, fetchBlob } from '../../../services/api';
+import { sumDecimals, subtotalLinea } from '../../../lib/decimal';
 import { pagosService } from '../../../services/pagosService';
 import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -142,17 +143,34 @@ const FacturaFiscalDetailPage: React.FC = () => {
     }
   };
 
+  // FE-HIGH-7: total con aritmética decimal (no Number()*Number()).
   const calcularTotalFactura = () => {
     if (!factura?.detalles) return 0;
-    return factura.detalles.reduce((total, detalle) => {
-      return total + (Number(detalle.precio_unitario) * Number(detalle.cantidad));
-    }, 0);
+    return sumDecimals(
+      factura.detalles.map((d) =>
+        subtotalLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje),
+      ),
+    ).toNumber();
   };
 
-  const handleDescargarPDF = () => {
+  // FE-NEW-1: descargar el PDF vía fetchBlob (envía Authorization desde el token
+  // en memoria). window.open no manda el header → daba 401 tras mover el token a
+  // memoria. Se descarga como blob y se dispara con un <a> temporal.
+  const handleDescargarPDF = async () => {
     if (!id_factura) return;
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    window.open(`${apiBase}/ventas/facturas-fiscales/${id_factura}/pdf/`, '_blank');
+    try {
+      const blob = await fetchBlob(`/ventas/facturas-fiscales/${id_factura}/pdf/`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `factura-${factura?.numero_factura ?? id_factura}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setPagoError('No se pudo descargar el PDF de la factura. Intente nuevamente.');
+    }
   };
 
   return (

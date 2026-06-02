@@ -42,7 +42,10 @@ const AuditLogListPage: React.FC = () => {
     queryFn: fetchEmpresas,
   });
 
-  const empresas: Empresa[] = Array.isArray(empresasRaw) ? empresasRaw : [];
+  const empresas: Empresa[] = useMemo(
+    () => (Array.isArray(empresasRaw) ? empresasRaw : []),
+    [empresasRaw],
+  );
 
   // Set selectedEmpresa to first empresa when loaded
   const efectiveEmpresa = selectedEmpresa || (empresas.length > 0 ? empresas[0].id_empresa : '');
@@ -67,7 +70,10 @@ const AuditLogListPage: React.FC = () => {
     return [];
   }, [logsRaw]);
 
-  const usuarios: Usuario[] = Array.isArray(usuariosRaw) ? usuariosRaw : [];
+  const usuarios: Usuario[] = useMemo(
+    () => (Array.isArray(usuariosRaw) ? usuariosRaw : []),
+    [usuariosRaw],
+  );
 
   const loading = loadingEmpresas || loadingLogs;
   const errorMsg = errorLogs ? (error instanceof Error ? error.message : 'Error al cargar logs') : null;

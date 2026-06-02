@@ -4,6 +4,9 @@ import {
   notasVentaKeys,
   pagosKeys,
   productosKeys,
+  ventasKeys,
+  cxcKeys,
+  finanzasKeys,
 } from '../lib/queryKeys';
 
 describe('queryKeys factory', () => {
@@ -41,5 +44,51 @@ describe('queryKeys factory', () => {
     const porEmpresa = productosKeys.porEmpresa('e1');
     expect(porEmpresa).toEqual(['productos', 'e1']);
     expect(porEmpresa.slice(0, all.length)).toEqual(all);
+  });
+
+  it('ventas: el detalle de cada documento comparte prefijo con su familia', () => {
+    const families = [
+      ventasKeys.devoluciones,
+      ventasKeys.notasCreditoVenta,
+      ventasKeys.notasCreditoFiscal,
+      ventasKeys.cotizaciones,
+    ];
+    for (const fam of families) {
+      const all = fam.all();
+      const detail = fam.detail('x1');
+      expect(detail.slice(0, all.length)).toEqual(all);
+    }
+    expect(ventasKeys.clientes('e1')).toEqual(['ventas', 'clientes', 'e1']);
+    expect(ventasKeys.productos(null)).toEqual(['ventas', 'productos', null]);
+  });
+
+  it('cxc: las queries comparten prefijo con su familia para invalidar por prefijo', () => {
+    expect(cxcKeys.carteraDashboard().slice(0, cxcKeys.carteraAll().length)).toEqual(
+      cxcKeys.carteraAll(),
+    );
+    expect(cxcKeys.tasasHoy().slice(0, cxcKeys.tasasAll().length)).toEqual(cxcKeys.tasasAll());
+    expect(cxcKeys.acuerdos('VIGENTE').slice(0, cxcKeys.acuerdosAll().length)).toEqual(
+      cxcKeys.acuerdosAll(),
+    );
+    expect(cxcKeys.acuerdos()).toEqual(['cxc', 'acuerdos', null]);
+  });
+
+  it('finanzas: cajas-fisicas y monedas comparten prefijo de familia', () => {
+    const cf = finanzasKeys.cajasFisicas;
+    expect(cf.list('e1').slice(0, cf.all().length)).toEqual(cf.all());
+    expect(cf.detail('c1').slice(0, cf.all().length)).toEqual(cf.all());
+    expect(cf.virtuales('c1').slice(0, cf.all().length)).toEqual(cf.all());
+    // El catálogo de tipos NO debe colgar del prefijo de la familia.
+    expect(cf.tipoChoices().slice(0, cf.all().length)).not.toEqual(cf.all());
+
+    const mon = finanzasKeys.monedas;
+    expect(mon.detail('m1').slice(0, mon.all().length)).toEqual(mon.all());
+    expect(mon.listFull().slice(0, mon.all().length)).toEqual(mon.all());
+    expect(finanzasKeys.pagos.porDocumento('COTIZACION', 'q1')).toEqual([
+      'finanzas',
+      'pagos',
+      'COTIZACION',
+      'q1',
+    ]);
   });
 });

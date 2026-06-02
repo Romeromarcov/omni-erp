@@ -95,7 +95,10 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
 
     def validate_nombre(self, value: str) -> str:
         """El nombre debe ser único por empresa."""
-        empresa = self.context["request"].user.empresa
+        # SEC-NEW-2: empresa vía el helper vetado get_empresas_visible.
+        from apps.core.viewsets import get_empresas_visible
+
+        empresa = get_empresas_visible(self.context["request"].user).first()
         qs = ConectorInstancia.objects.filter(id_empresa=empresa, nombre=value)
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)

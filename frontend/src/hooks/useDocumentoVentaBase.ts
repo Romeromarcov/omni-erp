@@ -13,7 +13,8 @@
  * estado de UI auxiliar (staging de línea de producto, datos para autocrear el
  * cliente, descuento general y pagos del modal).
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   useForm,
   useFieldArray,
@@ -108,23 +109,17 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
   // empresaId reactivo: deriva de id_empresa del propio formulario.
   const empresaId = (watch('id_empresa' as Path<TForm>) as string | undefined) || '';
 
-  // ── Estado auxiliar de UI / datos asíncronos ─────────────────────────────────
+  // ── Estado auxiliar de UI (no es server-state) ───────────────────────────────
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<Producto[]>([]);
   const [detalleForm, setDetalleForm] = useState<DetalleDocumentoForm>(emptyDetalleForm());
   const [descuentoGeneral, setDescuentoGeneral] = useState('');
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [clienteManual, setClienteManual] = useState<ClienteManual>({
     razon_social: '', rif: '', telefono: '', direccion: '', correo: '', codigo_cliente: '',
   });
-  const [cajasUsuario, setCajasUsuario] = useState<CajaUsuario[]>([]);
-  const [sesionActiva, setSesionActiva] = useState<SesionCaja | null>(null);
-  const [vendedores, setVendedores] = useState<Usuario[]>([]);
   const [clientesSimilares, setClientesSimilares] = useState<Cliente[]>([]);
-  const [empresas, setEmpresas] = useState<Array<{ id_empresa: string; nombre_legal: string }>>([]);
-  const [sucursales, setSucursales] = useState<Array<{ id_sucursal: string; nombre: string; id_empresa: string }>>([]);
 
   const getFieldString = (obj: unknown, key: string): string => {
     if (!obj || typeof obj !== 'object') return '';
@@ -132,96 +127,93 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
     return v === undefined || v === null ? '' : String(v);
   };
 
-  const loadEmpresas = async () => {
-    try {
-      const res = await get('/core/empresas/');
-      if (Array.isArray(res)) setEmpresas(res);
-      else if (res && typeof res === 'object' && 'results' in res && Array.isArray((res as { results: unknown[] }).results)) {
-        setEmpresas((res as { results: Array<{ id_empresa: string; nombre_legal: string }> }).results);
-      }
-    } catch {
-      // silent — user may not have access to all companies
+  // ── Datos de referencia vía TanStack Query (FE-HIGH-6) ───────────────────────
+  // Antes eran useState+useEffect+get con errores tragados; ahora son queries con
+  // caché, dedup y manejo de error consistente. Los callbacks (caja/sesión/vendedor
+  // predeterminados) se disparan en useEffect sobre la data resuelta.
+  const toArray = <T,>(res: unknown): T[] => {
+    if (Array.isArray(res)) return res as T[];
+    if (res && typeof res === 'object' && 'results' in res && Array.isArray((res as { results: unknown[] }).results)) {
+      return (res as { results: T[] }).results;
     }
+    return [];
   };
 
+  const cajasQuery = useQuery({
+    queryKey: ['venta-ref', 'cajas-usuario'],
+    queryFn: () => get('/finanzas/cajas-usuario/'),
+    staleTime: 60_000,
+  });
+  const cajasUsuario = useMemo(() => toArray<CajaUsuario>(cajasQuery.data), [cajasQuery.data]);
+
+  const sesionQuery = useQuery({
+    queryKey: ['venta-ref', 'sesion-activa'],
+    queryFn: getSesionActiva,
+    staleTime: 30_000,
+  });
+  const sesionActiva = sesionQuery.data ?? null;
+
+  // Empresas solo si no hay sesión activa (o la consulta de sesión falló).
+  const empresasQuery = useQuery({
+    queryKey: ['venta-ref', 'empresas'],
+    queryFn: () => get('/core/empresas/'),
+    enabled: (sesionQuery.isSuccess && !sesionQuery.data) || sesionQuery.isError,
+    staleTime: 60_000,
+  });
+  const empresas = useMemo(
+    () => toArray<{ id_empresa: string; nombre_legal: string }>(empresasQuery.data),
+    [empresasQuery.data],
+  );
+
+  const sucursalesQuery = useQuery({
+    queryKey: ['venta-ref', 'sucursales', empresaId],
+    queryFn: () => get(`/core/sucursales/?id_empresa=${empresaId}`),
+    enabled: !!empresaId,
+    staleTime: 60_000,
+  });
+  const sucursales = useMemo(
+    () => toArray<{ id_sucursal: string; nombre: string; id_empresa: string }>(sucursalesQuery.data),
+    [sucursalesQuery.data],
+  );
+
+  const productosQuery = useQuery({
+    queryKey: ['venta-ref', 'productos', empresaId],
+    queryFn: () => fetchProductos(empresaId),
+    enabled: !!empresaId,
+    staleTime: 60_000,
+  });
+  const productos = useMemo(() => toArray<Producto>(productosQuery.data), [productosQuery.data]);
+
+  const vendedoresQuery = useQuery({
+    queryKey: ['venta-ref', 'vendedores', empresaId],
+    queryFn: () => fetchUsuarios(empresaId || undefined),
+    enabled: !!empresaId,
+    staleTime: 60_000,
+  });
+  const vendedores = useMemo(() => toArray<Usuario>(vendedoresQuery.data), [vendedoresQuery.data]);
+
+  // Callbacks de predeterminados, derivados de la data ya resuelta.
   useEffect(() => {
-    const fetchCajasUsuario = async () => {
-      try {
-        const res = await get('/finanzas/cajas-usuario/');
-        if (Array.isArray(res)) {
-          setCajasUsuario(res);
-          const cajaPred = (res as CajaUsuario[]).find(c => c.es_predeterminada);
-          if (cajaPred?.caja?.id_caja && onCajaPredet) {
-            onCajaPredet(cajaPred.caja.id_caja);
-          }
-        }
-      } catch {
-        // ignore
-      }
-    };
-    fetchCajasUsuario();
+    const cajaPred = cajasUsuario.find(c => c.es_predeterminada);
+    if (cajaPred?.caja?.id_caja && onCajaPredet) onCajaPredet(cajaPred.caja.id_caja);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cajasUsuario]);
 
   useEffect(() => {
-    const fetchSesion = async () => {
-      try {
-        const sesion = await getSesionActiva();
-        setSesionActiva(sesion);
-        if (sesion) {
-          onSesionCargada?.(sesion);
-        } else {
-          await loadEmpresas();
-        }
-      } catch {
-        await loadEmpresas();
-      }
-    };
-    fetchSesion();
+    if (sesionActiva && onSesionCargada) onSesionCargada(sesionActiva);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sesionActiva]);
 
   useEffect(() => {
-    if (!empresaId) { setSucursales([]); return; }
-    get(`/core/sucursales/?id_empresa=${empresaId}`)
-      .then(res => {
-        if (Array.isArray(res)) setSucursales(res);
-        else if (res && typeof res === 'object' && 'results' in res) {
-          setSucursales((res as { results: Array<{ id_sucursal: string; nombre: string; id_empresa: string }> }).results);
-        }
-      })
-      .catch(() => setSucursales([]));
-  }, [empresaId]);
-
-  useEffect(() => {
-    if (!empresaId) { setProductos([]); return; }
-    fetchProductos(empresaId)
-      .then(res => {
-        if (Array.isArray(res)) setProductos(res);
-        else if (res && typeof res === 'object' && 'results' in res) {
-          setProductos((res as { results: Producto[] }).results);
-        } else setProductos([]);
-      })
-      .catch(() => setProductos([]));
-  }, [empresaId]);
-
-  useEffect(() => {
-    if (!empresaId) return;
-    fetchUsuarios(empresaId || undefined)
-      .then(users => {
-        const arr = Array.isArray(users) ? users : [];
-        setVendedores(arr);
-        if (onVendedorPredet && arr.length > 0) {
-          const sesionUserId = sesionActiva?.usuario?.id;
-          const preferred = sesionUserId && arr.some(u => String(u.id) === String(sesionUserId))
-            ? String(sesionUserId)
-            : String(arr[0]?.id ?? '');
-          onVendedorPredet(preferred);
-        }
-      })
-      .catch(() => {});
+    if (onVendedorPredet && vendedores.length > 0) {
+      const sesionUserId = sesionActiva?.usuario?.id;
+      const preferred = sesionUserId && vendedores.some(u => String(u.id) === String(sesionUserId))
+        ? String(sesionUserId)
+        : String(vendedores[0]?.id ?? '');
+      onVendedorPredet(preferred);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [empresaId, sesionActiva]);
+  }, [vendedores, sesionActiva]);
 
   // ── Staging de línea de producto (FormularioProducto) ─────────────────────────
   const handleDetalleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

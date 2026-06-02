@@ -88,8 +88,8 @@ def ventas_get_cotizacion(
             {
                 "producto": d.id_producto.nombre_producto,
                 "cantidad": float(d.cantidad),
-                "precio_unitario": float(d.precio_unitario),
-                "subtotal": float(d.subtotal),
+                "precio_unitario": d.precio_unitario,  # BUG-NEW-2
+                "subtotal": d.subtotal,  # BUG-NEW-2
             }
             for d in cot.detalles.all()
         ],
@@ -188,7 +188,7 @@ def ventas_get_facturas(
             "cliente": f.id_cliente.razon_social,
             "estado": f.estado,
             "fecha": str(f.fecha_factura),
-            "total": float(f.total),
+            "total": f.total,  # BUG-NEW-2
         }
         for f in facturas
     ]

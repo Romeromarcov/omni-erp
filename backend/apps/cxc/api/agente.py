@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from apps.core.viewsets import get_empresas_visible
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class CobranzaAgenteView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        empresa = request.user.empresa
+        empresa = get_empresas_visible(request.user).first()
         empresa_id = str(empresa.pk)
 
         if not _check_rate_limit(empresa_id):

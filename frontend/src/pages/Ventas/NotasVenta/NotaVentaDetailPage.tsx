@@ -16,6 +16,7 @@ import type { NotaVenta } from '../../../types/ventas';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
 import type { Producto as ProductoService } from '../../../services/productosService';
 import { notasVentaKeys, pagosKeys, productosKeys } from '../../../lib/queryKeys';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 interface ProductoDisplay {
   id_producto: string;
@@ -46,6 +47,7 @@ const NotaVentaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
@@ -79,7 +81,7 @@ const NotaVentaDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: notasVentaKeys.all() });
       queryClient.invalidateQueries({ queryKey: pagosKeys.porDocumento('NOTA_VENTA', id!) });
     },
-    onError: () => alert('Error al convertir la nota de venta a factura'),
+    onError: () => snackbar.error('Error al convertir la nota de venta a factura'),
   });
 
   function mapDetalles(detalles: Detalle[]): PedidoDetalleForm[] {

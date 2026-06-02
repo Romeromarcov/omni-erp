@@ -5,6 +5,7 @@ import { get, put } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
 import type { Moneda } from './MonedaListPage';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import PageLayout from '../../../components/PageLayout';
 import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
@@ -16,13 +17,13 @@ const MonedaDetailPage: React.FC = () => {
   const [error, setError] = useState('');
 
   const { data: monedaData } = useQuery<Moneda>({
-    queryKey: [`/finanzas/monedas/${id_moneda}/`],
+    queryKey: finanzasKeys.monedas.detail(id_moneda!),
     queryFn: () => get(`/finanzas/monedas/${id_moneda}/`),
     enabled: !!id_moneda,
   });
 
   const { data: monedasExistentes = [] } = useQuery<unknown, Error, Moneda[]>({
-    queryKey: ['/finanzas/monedas/?limit=1000'],
+    queryKey: finanzasKeys.monedas.listFull(),
     queryFn: () => get('/finanzas/monedas/?limit=1000'),
     select: toList,
   });
@@ -34,7 +35,7 @@ const MonedaDetailPage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => put(`/finanzas/monedas/${id_moneda}/`, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/finanzas/monedas/'] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.monedas.all() });
       navigate('/finanzas/monedas');
     },
     onError: () => setError('Error al actualizar moneda'),

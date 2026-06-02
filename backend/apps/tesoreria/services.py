@@ -16,6 +16,12 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import IO
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # BUILD-1: solo para anotaciones (evita F821)
+    from .models import MovimientoBancario, ConciliacionBancaria
+
+
 
 class ConciliacionError(Exception):
     """Error de negocio en el proceso de conciliación."""

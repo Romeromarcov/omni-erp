@@ -4,15 +4,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { notaCreditoVentaService } from '../../../services/ventas';
 import type { NotaCreditoVenta } from '../../../types/ventas';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
+import { ventasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 
 const NotaCreditoVentaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
 
   const { data: notaCredito = null, isLoading: loading, isError } = useQuery<NotaCreditoVenta | null>({
-    queryKey: [`/ventas/notas-credito-venta/${id}/`],
+    queryKey: ventasKeys.notasCreditoVenta.detail(id!),
     queryFn: () => notaCreditoVentaService.getById(id!),
     enabled: !!id,
   });
@@ -24,7 +27,7 @@ const NotaCreditoVentaDetailPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/ventas/notas-credito-venta/${id}/`] });
     },
-    onError: () => alert('Error al aplicar la nota de crédito'),
+    onError: () => snackbar.error('Error al aplicar la nota de crédito'),
   });
 
   const getEstadoColor = (estado: string) => {

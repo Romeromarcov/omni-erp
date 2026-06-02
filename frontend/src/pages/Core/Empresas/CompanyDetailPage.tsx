@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, put } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 interface Empresa {
@@ -29,6 +31,7 @@ const CompanyDetailPage: React.FC = () => {
   const { id_empresa } = useParams<{ id_empresa: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const cleanId = id_empresa?.replace(':', '') || '';
 
   const [localEmpresa, setLocalEmpresa] = useState<Empresa | null>(null);
@@ -50,7 +53,7 @@ const CompanyDetailPage: React.FC = () => {
   }, [empresaData]);
 
   const { data: monedas = [] } = useQuery<MonedaApiResponse, Error, Moneda[]>({
-    queryKey: ['/finanzas/monedas/activas/'],
+    queryKey: finanzasKeys.monedas.activas(),
     queryFn: () => get<MonedaApiResponse>('/finanzas/monedas/activas/'),
     select: toList,
   });
@@ -60,9 +63,9 @@ const CompanyDetailPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/empresas/', cleanId] });
       queryClient.invalidateQueries({ queryKey: ['/core/empresas/'] });
-      alert('Empresa actualizada');
+      snackbar.success('Empresa actualizada');
     },
-    onError: () => alert('Error al actualizar'),
+    onError: () => snackbar.error('Error al actualizar'),
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

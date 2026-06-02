@@ -44,6 +44,7 @@ Herramientas disponibles (v1):
 import logging
 import os
 import uuid
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from django.db import models
@@ -111,11 +112,19 @@ def _resolve_token(capability_token: str) -> Optional[Dict[str, Any]]:
     if token_obj.is_expired():
         return None
 
+    # SEC-NEW-4: el comodín '*' solo es efectivo para tokens de sistema/superusuario
+    # (CapabilityToken.comodin_autorizado). Un token de empresa con scopes=["*"]
+    # auto-otorgado NO debe conceder acceso total; se filtra aquí, en el único punto
+    # de resolución, para que _require_scope siga siendo trivial.
+    scopes = list(token_obj.scopes or [])
+    if "*" in scopes and not token_obj.comodin_autorizado:
+        scopes = [s for s in scopes if s != "*"]
+
     return {
         "tenant_id": str(token_obj.empresa.id_empresa),
         "empresa_id": str(token_obj.empresa.id_empresa),
         "actor_id": f"mcp-token:{str(token_obj.token)[:8]}",
-        "scopes": token_obj.scopes,
+        "scopes": scopes,
     }
 
 
@@ -302,7 +311,7 @@ def omni_get_saldo_cliente(
     return {
         "cliente_id": cliente_id,
         "empresa_id": empresa_id,
-        "total_pendiente": float(total),
+        "total_pendiente": total,  # BUG-NEW-2: Decimal, no float
         "moneda_base": "USD",
     }
 
@@ -335,7 +344,7 @@ def omni_get_cxc_aging(
     resultado = calcular_aging(empresa_id)
 
     def fmt_bucket(b):
-        return {"count": b["count"], "total": float(b["total"])}
+        return {"count": b["count"], "total": b["total"]}  # BUG-NEW-2
 
     logger.info(
         "omni_get_cxc_aging | actor=%s | tenant=%s | total=%s",
@@ -350,7 +359,7 @@ def omni_get_cxc_aging(
         "dias_31_60":  fmt_bucket(resultado["dias_31_60"]),
         "dias_61_90":  fmt_bucket(resultado["dias_61_90"]),
         "dias_90_mas": fmt_bucket(resultado["dias_90_mas"]),
-        "total_general": float(resultado["total_general"]),
+        "total_general": resultado["total_general"],  # BUG-NEW-2
     }
 
 
@@ -449,8 +458,9 @@ def omni_get_ventas_resumen(
         id_pedido__in=pedidos_ids,
     ).aggregate(total=Sum("subtotal"), promedio=Avg("subtotal"))
 
-    total = float(totales["total"] or 0)
-    promedio = float(totales["promedio"] or 0)
+    # BUG-NEW-2: montos como Decimal (no float) para no perder precisión.
+    total = totales["total"] or Decimal("0")
+    promedio = totales["promedio"] or Decimal("0")
 
     logger.info(
         "omni_get_ventas_resumen | actor=%s | tenant=%s | pedidos=%d | total=%s",
