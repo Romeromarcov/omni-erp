@@ -9,6 +9,7 @@ import { cotizacionService } from '../services/ventas';
 import {
   useDocumentoVentaBase,
 } from './useDocumentoVentaBase';
+import { subtotalLinea } from '../lib/decimal';
 
 interface CotizacionForm {
   numero_cotizacion: string;
@@ -163,7 +164,7 @@ export const useCotizacionForm = (cotizacionId?: string) => {
 
     const detallesConSubtotal = base.detalles.map(d => ({
       ...d,
-      subtotal: String(Number(d.cantidad) * Number(d.precio_unitario) * (1 - Number(d.descuento_porcentaje || 0) / 100)),
+      subtotal: subtotalLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje).toFixed(2),
     }));
     const payload: Record<string, unknown> = { ...form, id_cliente: idClienteFinal, detalles: detallesConSubtotal };
     if (!cotizacionId) delete payload.numero_cotizacion;

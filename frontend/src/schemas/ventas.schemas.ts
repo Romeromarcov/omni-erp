@@ -3,6 +3,10 @@
  * Used with react-hook-form + @hookform/resolvers/zod.
  */
 import { z } from 'zod';
+import { subtotalLinea, sumDecimals } from '../lib/decimal';
+
+/** Tolerancia de redondeo para comparaciones monetarias (1 céntimo). */
+const MONTO_EPSILON = 0.01;
 
 // ── Shared sub-schemas ────────────────────────────────────────────────────────
 
@@ -98,16 +102,42 @@ export const facturaFiscalSchema = z.object({
     .int()
     .nonnegative('Los días de crédito no pueden ser negativos')
     .optional(),
+  // FE-HIGH-8: monto_total es opcional; si está presente, debe cuadrar con los detalles.
+  monto_total: z
+    .union([z.string(), z.number()])
+    .optional()
+    .refine((v) => v === undefined || v === '' || !isNaN(Number(v)), {
+      message: 'El monto total debe ser un número válido',
+    }),
   observaciones: z.string().max(1000).optional(),
   detalles: z
     .array(detalleVentaSchema)
     .min(1, 'La factura debe tener al menos un producto'),
-}).refine(
-  (data) => data.condicion_pago !== 'CREDITO' || (data.dias_credito !== undefined && data.dias_credito > 0),
-  {
-    message: 'Los días de crédito son obligatorios cuando la condición de pago es CRÉDITO',
-    path: ['dias_credito'],
-  }
-);
+})
+  .refine(
+    (data) => data.condicion_pago !== 'CREDITO' || (data.dias_credito !== undefined && data.dias_credito > 0),
+    {
+      message: 'Los días de crédito son obligatorios cuando la condición de pago es CRÉDITO',
+      path: ['dias_credito'],
+    }
+  )
+  // FE-HIGH-8: validación cross-field — el total declarado debe cuadrar con la
+  // suma de los subtotales de las líneas (calculada con decimal.js).
+  .superRefine((data, ctx) => {
+    if (data.monto_total === undefined || data.monto_total === '') return;
+    const sumaDetalles = sumDecimals(
+      data.detalles.map((d) =>
+        subtotalLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje),
+      ),
+    );
+    const declarado = Number(data.monto_total);
+    if (sumaDetalles.minus(declarado).abs().greaterThan(MONTO_EPSILON)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'El total no cuadra con los detalles',
+        path: ['monto_total'],
+      });
+    }
+  });
 
 export type FacturaFiscalInput = z.infer<typeof facturaFiscalSchema>;

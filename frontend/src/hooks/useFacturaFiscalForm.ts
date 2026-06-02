@@ -7,6 +7,7 @@ import { getEmpresaId } from '../utils/empresa';
 import type { Pago } from '../components/Pedidos/ModalPago';
 import { FacturaFiscalService } from '../services/ventas';
 import { useDocumentoVentaBase } from './useDocumentoVentaBase';
+import { D } from '../lib/decimal';
 
 interface FacturaFiscalForm {
   numero_factura: string;
@@ -135,7 +136,7 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
       cantidad: Number(d.cantidad),
       precio_unitario: Number(d.precio_unitario),
       descuento_porcentaje: Number(d.descuento_porcentaje || 0),
-      subtotal: Number(d.cantidad) * Number(d.precio_unitario),
+      subtotal: D(d.cantidad).times(D(d.precio_unitario)).toFixed(2),
     }));
     const payload: Record<string, unknown> = {
       ...form,

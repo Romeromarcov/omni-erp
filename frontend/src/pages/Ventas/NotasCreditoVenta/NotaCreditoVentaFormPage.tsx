@@ -13,6 +13,7 @@ import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, IconButton, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import { D, sumDecimals } from '../../../lib/decimal';
 
 const NotaCreditoVentaFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -90,18 +91,19 @@ const NotaCreditoVentaFormPage: React.FC = () => {
     const detalles = [...(formData.detalles || [])];
     detalles[index] = { ...detalles[index], [field]: value };
 
-    // Recalcular subtotal
+    // Recalcular subtotal (decimal.js para evitar errores de punto flotante)
     if (field === 'cantidad' || field === 'precio_unitario') {
-      const cantidad = field === 'cantidad' ? Number(value) : Number(detalles[index].cantidad);
-      const precioUnitario = field === 'precio_unitario' ? Number(value) : Number(detalles[index].precio_unitario);
-      detalles[index].subtotal = cantidad * precioUnitario;
-      detalles[index].total_linea = detalles[index].subtotal + (detalles[index].monto_impuesto || 0);
+      const cantidad = field === 'cantidad' ? value : detalles[index].cantidad;
+      const precioUnitario = field === 'precio_unitario' ? value : detalles[index].precio_unitario;
+      const subtotal = D(cantidad).times(D(precioUnitario));
+      detalles[index].subtotal = subtotal.toNumber();
+      detalles[index].total_linea = subtotal.plus(D(detalles[index].monto_impuesto)).toNumber();
     }
 
     setFormData(prev => ({ ...prev, detalles }));
 
     // Recalcular total
-    const total = detalles.reduce((sum, det) => sum + (det.total_linea || 0), 0);
+    const total = sumDecimals(detalles.map(det => det.total_linea)).toNumber();
     setFormData(prev => ({ ...prev, monto_total: total }));
   };
 
@@ -111,7 +113,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
     setFormData(prev => ({ ...prev, detalles }));
 
     // Recalcular total
-    const total = detalles.reduce((sum, det) => sum + (det.total_linea || 0), 0);
+    const total = sumDecimals(detalles.map(det => det.total_linea)).toNumber();
     setFormData(prev => ({ ...prev, monto_total: total }));
   };
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@mui/material';
 import type { Producto } from '../../services/productosService';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Box, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { D, subtotalLinea } from '../../lib/decimal';
 
 export interface PedidoDetalleForm {
   id_producto: string;
@@ -30,11 +31,10 @@ const TablaProductos: React.FC<TablaProductosProps> = ({ detalles, productos, on
         {detalles.map((det, idx) => {
           const productoObj = productos.find(p => p.id_producto === det.id_producto);
           const nombre = det.producto || productoObj?.nombre_producto || '';
-          const cantidad = parseFloat(det.cantidad) || 0;
-          const precio = parseFloat(det.precio_unitario) || 0;
-          const descPorc = parseFloat(det.descuento_porcentaje || '0') || 0;
-          const montoDesc = precio * (descPorc / 100);
-          const total = (cantidad * precio) - (cantidad * montoDesc);
+          const cantidad = D(det.cantidad).toNumber();
+          const precio = D(det.precio_unitario);
+          const descPorc = D(det.descuento_porcentaje);
+          const total = subtotalLinea(det.cantidad, det.precio_unitario, det.descuento_porcentaje);
           const sku = det.sku || productoObj?.sku || '';
           return (
             <Box
@@ -111,12 +111,12 @@ const TablaProductos: React.FC<TablaProductosProps> = ({ detalles, productos, on
           {detalles.map((det, idx) => {
             const productoObj = productos.find(p => p.id_producto === det.id_producto);
             const nombre = det.producto || productoObj?.nombre_producto || '';
-            const cantidad = parseFloat(det.cantidad) || 0;
-            const precio = parseFloat(det.precio_unitario) || 0;
+            const cantidad = D(det.cantidad).toNumber();
+            const precio = D(det.precio_unitario);
             const unidad = '';
-            const descPorc = parseFloat(det.descuento_porcentaje || '0') || 0;
-            const montoDesc = precio * (descPorc / 100);
-            const total = (cantidad * precio) - (cantidad * montoDesc);
+            const descPorc = D(det.descuento_porcentaje);
+            const montoDesc = precio.times(descPorc.dividedBy(100));
+            const total = subtotalLinea(det.cantidad, det.precio_unitario, det.descuento_porcentaje);
             const sku = det.sku || productoObj?.sku || '';
             return (
               <TableRow key={idx}>
@@ -126,7 +126,7 @@ const TablaProductos: React.FC<TablaProductosProps> = ({ detalles, productos, on
                 <TableCell>{unidad}</TableCell>
                 <TableCell align="right">{precio.toFixed(2)}</TableCell>
                 <TableCell align="right">{descPorc.toFixed(2)}</TableCell>
-                <TableCell align="right">{(montoDesc * cantidad).toFixed(2)}</TableCell>
+                <TableCell align="right">{montoDesc.times(D(det.cantidad)).toFixed(2)}</TableCell>
                 <TableCell align="right">{total.toFixed(2)}</TableCell>
                 <TableCell>
                   <Button type="button" variant="outlined" onClick={() => onRemove(idx)}>Eliminar</Button>
