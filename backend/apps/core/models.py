@@ -671,8 +671,24 @@ class CapabilityToken(OmniBaseModel):
         return timezone.now() > self.expires_at
 
     def has_scope(self, scope: str) -> bool:
-        """Retorna True si el token tiene el scope pedido (o tiene scope '*')."""
-        return "*" in self.scopes or scope in self.scopes
+        """
+        Retorna True si el token tiene el scope pedido.
+
+        M-SEC-9: el comodín '*' (acceso total) solo es válido si el token fue
+        creado por un superusuario Omni; de lo contrario se ignora y se exige el
+        scope explícito. Evita que un token de empresa con '*' escale a acceso
+        irrestricto.
+        """
+        if scope in self.scopes:
+            return True
+        if "*" in self.scopes:
+            # '*' válido para tokens internos del sistema (sin creador) o creados
+            # por un superusuario Omni. Un usuario normal NO puede auto-otorgarse
+            # acceso total.
+            if self.creado_por is None:
+                return True
+            return bool(getattr(self.creado_por, "es_superusuario_omni", False))
+        return False
 
     def mark_used(self) -> None:
         """Actualiza ultimo_uso sin disparar auto_now de fecha_actualizacion."""
