@@ -445,6 +445,24 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 
 **DoD Bloque 1:** distribuidora 90 días continuos + fábrica 60 días con OF y costeo.
 
+### 5.2-quater Desglose por capa de 1.F–1.I (GAP-3)
+
+> La auditoría 2026-06-01 mostró que el plan estaba pesimista: hay capas
+> (modelos, services, e incluso management commands) ya construidas. Se desglosa
+> cada sub-fase en **datos / lógica (software) / UI / operación** para no
+> declarar "pendiente" lo que ya existe.
+
+| Sub-fase | Datos (carga) | Lógica / software | UI | Operación |
+|---|---|---|---|---|
+| **1.F** Caja + migración | ⬜ cargar reales | ✅ caja, fiscal, CxC + **commands TRACK-1F-1..5** (`apps/migracion_datos`) | ✅ (caja/factura) | ⬜ 30 días |
+| **1.G** Devoluciones/POS | n/a | ✅ modelos devolución/NC; ✅ `apps/despacho` | ⬜ flujo POS táctil | ⬜ |
+| **1.H** BOM | ⬜ cargar BOM | ✅ modelos `apps/manufactura` (ListaMateriales) | ⬜ UI + carga | ⬜ |
+| **1.I** OF + costeo | ⬜ | ✅ modelos OF/costos; ⬜ services costeo real/MRP | ⬜ UI etapas | ⬜ |
+
+Implicación: 1.F ya no requiere "construir software"; el trabajo es **carga de
+datos reales + operación 30 días** (los importadores ya están, ver
+`apps/migracion_datos/management/commands/`).
+
 ## 5.2-bis Workstream transversal — Arquitectura de localización (l10n)
 
 > Es **transversal**, no una fase. No frena la sub-fase 1.F (la distribuidora se pone en producción con la lógica VE actual), pero **gobierna cómo se escribe todo código país-específico desde ahora** (R-PROC-1) para no profundizar el acoplamiento.
