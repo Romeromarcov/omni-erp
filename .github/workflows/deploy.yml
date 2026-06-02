@@ -59,6 +59,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # INFRA-NEW-5: construir exactamente el commit que validó CI, no el tip
+          # móvil de main (evita race entre CI y nuevos pushes).
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
@@ -97,6 +101,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Download frontend dist
         uses: actions/download-artifact@v4
@@ -124,6 +130,9 @@ jobs:
 
       # ── Subir código backend y reiniciar ───────────────────────
       - name: Deploy backend & restart services
+        env:
+          # INFRA-NEW-5: desplegar el SHA exacto validado por CI, no origin/main.
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -p ${{ secrets.DEPLOY_PORT || 22 }} \
@@ -131,9 +140,9 @@ jobs:
             "set -euo pipefail
             cd ${{ secrets.BACKEND_PATH || '/opt/omni-erp/backend' }}
 
-            # Actualizar código
-            git fetch origin main
-            git reset --hard origin/main
+            # Actualizar código al SHA exacto validado por CI
+            git fetch origin
+            git reset --hard ${DEPLOY_SHA}
 
             # Activar virtualenv e instalar dependencias
             source venv/bin/activate
