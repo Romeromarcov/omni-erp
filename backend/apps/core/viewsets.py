@@ -35,6 +35,15 @@ class BaseModelViewSet(viewsets.ModelViewSet):
     search_fields = ["razon_social", "rif", "telefono", "nombre_comercial"]
     ordering_fields = "__all__"
 
+    def paginate_queryset(self, queryset):
+        # NEW-PAG-1: garantizar un orden determinístico antes de paginar.
+        # Solo aplica si el queryset no trae ya un ordering (Meta.ordering u
+        # order_by explícito), para no pisar ordenamientos intencionales.
+        # uuid7/auto-id son cronológicos, así que ordenar por pk es estable.
+        if queryset.ordered is False:
+            queryset = queryset.order_by("pk")
+        return super().paginate_queryset(queryset)
+
 
 class ActiveFilterMixin:
     """
