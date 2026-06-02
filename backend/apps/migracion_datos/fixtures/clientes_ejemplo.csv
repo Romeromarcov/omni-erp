@@ -1,0 +1,4 @@
+razon_social,rif,nombre_comercial,direccion,telefono,email,tipo_cliente,limite_credito,dias_credito
+Distribuidora Uno C.A.,J-111111111,Distri Uno,Av. Principal 1,0212-1111111,uno@distri.com,CREDITO,5000.00,30
+Comercial Dos S.A.,J-222222222,Comercial Dos,Calle 2,0212-2222222,dos@comercial.com,CONTADO,0,0
+Bodegon Tres,J-333333333,,Sector 3,0414-3333333,tres@bodegon.com,CONTADO,0,0
