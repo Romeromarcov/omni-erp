@@ -196,7 +196,8 @@ REST_FRAMEWORK = {
 
 # JWT Settings
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    # M-SEC-4: access token corto (15 min); el refresh httpOnly (7d) renueva.
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -295,9 +296,24 @@ if USE_S3:
         },
     }
 
-    # Credenciales S3 / MinIO
-    AWS_ACCESS_KEY_ID = os.environ.get("S3_ACCESS_KEY", "minioadmin")
-    AWS_SECRET_ACCESS_KEY = os.environ.get("S3_SECRET_KEY", "minioadmin")
+    # Credenciales S3 / MinIO.
+    # M-SEC-12: en dev se permite el default minioadmin; en prod (DEBUG=False)
+    # se exige el valor explícito en el entorno (fail-closed) para no firmar/
+    # acceder al storage con credenciales conocidas.
+    if DEBUG:
+        AWS_ACCESS_KEY_ID = os.environ.get("S3_ACCESS_KEY", "minioadmin")
+        AWS_SECRET_ACCESS_KEY = os.environ.get("S3_SECRET_KEY", "minioadmin")
+    else:
+        try:
+            AWS_ACCESS_KEY_ID = os.environ["S3_ACCESS_KEY"]
+            AWS_SECRET_ACCESS_KEY = os.environ["S3_SECRET_KEY"]
+        except KeyError as exc:
+            from django.core.exceptions import ImproperlyConfigured
+
+            raise ImproperlyConfigured(
+                f"En producción con USE_S3=True, {exc.args[0]} debe estar en el entorno "
+                "(no se permite el default 'minioadmin')."
+            ) from exc
     AWS_STORAGE_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "omni-erp")
     AWS_S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL", "http://localhost:9000")
     AWS_S3_REGION_NAME = os.environ.get("S3_REGION", "us-east-1")

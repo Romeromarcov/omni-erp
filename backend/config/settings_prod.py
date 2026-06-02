@@ -1,7 +1,15 @@
 from .settings_base import *  # noqa: F401, F403
 
 DEBUG = False
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+# M-SEC-14: ALLOWED_HOSTS no puede quedar vacío en producción. Fail-closed.
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+if not ALLOWED_HOSTS:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "DJANGO_ALLOWED_HOSTS debe definir al menos un host en producción "
+        "(ej: 'midominio.com,www.midominio.com')."
+    )
 
 # CORS — solo orígenes explícitos en producción
 CORS_ALLOW_ALL_ORIGINS = False

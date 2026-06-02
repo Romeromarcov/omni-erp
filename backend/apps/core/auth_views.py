@@ -17,6 +17,21 @@ from rest_framework.response import Response
 logger = logging.getLogger(__name__)
 
 
+def _uref(username) -> str:
+    """
+    M-SEC-11: referencia no reversible de un username para logs.
+
+    Evita escribir credenciales/identificadores en texto plano en los logs
+    (que suelen agregarse a sistemas externos). Devuelve un prefijo de hash.
+    """
+    import hashlib
+
+    if not username:
+        return "user=<vacío>"
+    digest = hashlib.sha256(str(username).encode("utf-8")).hexdigest()[:12]
+    return f"user#{digest}"
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Custom token serializer to include user information"""
 
@@ -81,9 +96,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
         username = request.data.get("username", "unknown")
         if response.status_code == 200:
-            logger.info(f"Successful login for user: {username}")
+            logger.info("Successful login for %s", _uref(username))
         else:
-            logger.warning(f"Failed login attempt for user: {username}")
+            logger.warning("Failed login attempt for %s", _uref(username))
         return response
 
 
@@ -119,7 +134,7 @@ def login_view(request):
             refresh = RefreshToken.for_user(user)
             user.last_login = timezone.now()
             user.save(update_fields=["last_login"])
-            logger.info(f"Successful login for user: {username}")
+            logger.info("Successful login for %s", _uref(username))
 
             from .serializers import UsuariosSerializer
 
@@ -255,7 +270,7 @@ def login_view(request):
                                 dispositivo_info["error_sesion"] = "No se pudo abrir la sesión automáticamente."
 
                     else:
-                        logger.warning(f"Usuario {username} no tiene empresa o sucursal asignada")
+                        logger.warning("%s no tiene empresa o sucursal asignada", _uref(username))
 
                 except Exception as e:
                     logger.error(f"Error procesando dispositivo: {e}", exc_info=True)
@@ -287,10 +302,10 @@ def login_view(request):
             return response
 
         else:
-            logger.warning(f"Login attempt for inactive user: {username}")
+            logger.warning("Login attempt for inactive %s", _uref(username))
             return Response({"error": "User account is disabled"}, status=status.HTTP_401_UNAUTHORIZED)
     else:
-        logger.warning(f"Failed login attempt for user: {username}")
+        logger.warning("Failed login attempt for %s", _uref(username))
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
@@ -308,14 +323,14 @@ def logout_view(request):
             token = RefreshToken(refresh_token_str)
             token.blacklist()
 
-        logger.info(f"User {request.user.username} logged out successfully")
+        logger.info("%s logged out successfully", _uref(request.user.username))
 
         response = Response({"message": "Successfully logged out"}, status=status.HTTP_200_OK)
         # SEC-03: clear the httpOnly cookie on logout
         response.delete_cookie("refresh_token", path="/api/auth/")
         return response
     except Exception as e:
-        logger.error(f"Logout error for user {request.user.username}: {str(e)}")
+        logger.error("Logout error for %s: %s", _uref(request.user.username), str(e))
         return Response({"error": "Error during logout"}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -352,7 +367,7 @@ def update_profile_view(request):
 
     if updated_fields:
         user.save(update_fields=updated_fields)
-        logger.info(f"User {user.username} updated profile fields: {updated_fields}")
+        logger.info("%s updated profile fields: %s", _uref(user.username), updated_fields)
 
     return Response(
         {
@@ -403,10 +418,12 @@ def change_password_view(request):
     if refresh_token:
         try:
             RefreshToken(refresh_token).blacklist()
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 — token ya inválido/blacklisteado
+            # M-BUG-13: no silenciar; el cambio de contraseña sigue siendo válido,
+            # pero queremos rastro de por qué no se pudo invalidar la sesión previa.
+            logger.warning("change_password: no se pudo blacklistear el refresh token: %s", exc)
 
-    logger.info(f"User {user.username} changed password successfully")
+    logger.info("%s changed password successfully", _uref(user.username))
     return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
 
 
@@ -422,6 +439,21 @@ def refresh_token_view(request):
     from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
     from django.conf import settings as django_settings
+
+    # M-SEC-13: rate-limit del refresh (por IP) para frenar abuso de tokens.
+    django_request = getattr(request, "_request", request)
+    if is_ratelimited(
+        request=django_request,
+        group="omni_erp.token_refresh",
+        key="ip",
+        rate="20/m",
+        method="POST",
+        increment=True,
+    ):
+        return Response(
+            {"error": "Demasiadas solicitudes de refresh. Espere un momento."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
 
     # SEC-03: prefer cookie over body
     refresh_token_str = request.COOKIES.get("refresh_token") or request.data.get("refresh")
