@@ -68,6 +68,10 @@ jobs:
         working-directory: backend
         run: python manage.py check
 
+      - name: Migraciones sin drift (NEW-MIG-1)
+        working-directory: backend
+        run: python manage.py makemigrations --check --dry-run
+
       - name: Run tests
         working-directory: backend
         run: python -m pytest tests_api/ -v --tb=short --no-header
