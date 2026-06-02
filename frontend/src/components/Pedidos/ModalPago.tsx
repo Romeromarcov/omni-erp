@@ -43,7 +43,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
   const [mostrarVueltos, setMostrarVueltos] = useState(false);
   const [vuelto, setVuelto] = useState<Pago | null>(null);
 
-  const { metodos, monedas, cajas, tasaBCV, toleranciaPositiva, permitirNegativas, notasCredito, cuentasBancarias, datafonos } =
+  const { metodos, monedas, cajas, tasaBCV, toleranciaPositiva, permitirNegativas, notasCredito, cuentasBancarias, datafonos, tasaBCVNoDisponible, tasaBCVError } =
     useModalPagoData({ empresaId, idCliente, idProveedor });
 
   const monedaBase = useMemo(
@@ -347,6 +347,11 @@ const ModalPago: React.FC<ModalPagoProps> = ({
         <Divider sx={{ my: 2 }} />
 
         {/* Acciones */}
+        {tasaBCVError && (
+          <Typography color="error" variant="body2" sx={{ mt: 2 }}>
+            No se pudo cargar la tasa BCV. No es posible confirmar pagos hasta que la tasa esté disponible.
+          </Typography>
+        )}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
           <Button onClick={onClose} sx={{ mr: 1 }}>Cancelar</Button>
           <Button
@@ -358,7 +363,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
               }
               onConfirm(pagos, vuelto ? [vuelto] : undefined, notasCreditoSeleccionadas);
             }}
-            disabled={pagos.length === 0 && notasCreditoSeleccionadas.length === 0}
+            disabled={tasaBCVNoDisponible || (pagos.length === 0 && notasCreditoSeleccionadas.length === 0)}
           >
             Confirmar pagos
           </Button>
