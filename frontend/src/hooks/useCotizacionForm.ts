@@ -134,24 +134,10 @@ export const useCotizacionForm = (cotizacionId?: string) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cotizacionData, isLoadingCotizacion]);
 
-  // Fetch next cotizacion number
-  useEffect(() => {
-    get('/ventas/cotizaciones/?ordering=-numero_cotizacion&limit=1')
-      .then(res => {
-        let ultimo = '';
-        const results = (res as { results?: { numero_cotizacion: string }[] })?.results;
-        if (Array.isArray(results) && results.length > 0) {
-          ultimo = results[0].numero_cotizacion;
-        } else if (Array.isArray(res) && (res as { numero_cotizacion: string }[]).length > 0) {
-          ultimo = (res as { numero_cotizacion: string }[])[0].numero_cotizacion;
-        }
-        const num = ultimo
-          ? (parseInt(ultimo.replace(/\D/g, ''), 10) + 1).toString().padStart(6, '0')
-          : '000001';
-        setNumeroCotizacionCreado(num);
-      })
-      .catch(() => setNumeroCotizacionCreado('000001'));
-  }, []);
+  // FE-HIGH-5: el número de cotización lo asigna el backend de forma atómica
+  // (select_for_update) al guardar. NO se calcula en el cliente (eliminaba la
+  // condición de carrera de dos usuarios generando el mismo número). El campo
+  // se muestra readonly como "Se asignará al guardar" hasta recibir la respuesta.
 
   const submitCotizacion = async (pagosToSend?: Pago[]) => {
     base.setLoading(true);

@@ -710,6 +710,21 @@ class CotizacionViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
             "-fecha_cotizacion", "-fecha_creacion"
         )
 
+    def perform_create(self, serializer):
+        # FE-HIGH-5: el número de cotización se asigna en el backend de forma
+        # atómica (select_for_update en siguiente_numero), evitando la condición
+        # de carrera del cálculo en el cliente (dos usuarios → mismo número).
+        from apps.core.viewsets import get_empresa_primaria
+        from apps.fiscal.services import siguiente_numero
+
+        empresa = get_empresa_primaria(self.request.user)
+        if empresa is None:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        numero = siguiente_numero(empresa, "COTIZACION")
+        serializer.save(id_empresa=empresa, numero_cotizacion=numero)
+
     @action(detail=True, methods=["get"], url_path="pdf")
     def pdf(self, request, pk=None):
         """GET /api/ventas/cotizaciones/{id}/pdf/ — devuelve el PDF de la cotización."""

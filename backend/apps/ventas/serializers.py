@@ -350,7 +350,8 @@ class CotizacionSerializer(serializers.ModelSerializer):
         model = Cotizacion
         fields = "__all__"
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
-        read_only_fields = ("id_empresa", "id_cotizacion", "fecha_creacion")
+        # FE-HIGH-5: numero_cotizacion lo asigna el backend (no el cliente).
+        read_only_fields = ("id_empresa", "id_cotizacion", "fecha_creacion", "numero_cotizacion")
 
 
 class DetalleCotizacionSerializer(serializers.ModelSerializer):
