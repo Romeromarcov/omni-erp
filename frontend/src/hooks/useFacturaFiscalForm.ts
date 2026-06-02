@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { FacturaFiscal, DetalleFacturaFiscal } from '../types/ventas';
 import { get } from '../services/api';
@@ -8,74 +8,39 @@ import type { Pago } from '../components/Pedidos/ModalPago';
 import { FacturaFiscalService } from '../services/ventas';
 import { useDocumentoVentaBase } from './useDocumentoVentaBase';
 import { D } from '../lib/decimal';
-
-interface FacturaFiscalForm {
-  numero_factura: string;
-  fecha_emision: string;
-  id_empresa: string;
-  id_sucursal: string;
-  id_cliente: string;
-  id_caja?: string;
-  id_vendedor?: string;
-  observaciones?: string;
-}
+import { facturaFiscalFormSchema, type FacturaFiscalFormInput } from '../schemas/ventas.schemas';
 
 const facturaFiscalService = new FacturaFiscalService();
 
-const initialForm = (): FacturaFiscalForm => ({
+const initialForm = (): FacturaFiscalFormInput => ({
   numero_factura: '',
   fecha_emision: new Date().toISOString().slice(0, 10),
   id_empresa: getEmpresaId() || '',
   id_sucursal: localStorage.getItem('id_sucursal') || '',
   id_cliente: '',
+  id_caja: '',
   id_vendedor: '',
   observaciones: '',
+  detalles: [],
 });
 
-const FACTURA_FISCAL_FORM_KEYS = [
-  'numero_factura',
-  'fecha_emision',
-  'id_empresa',
-  'id_sucursal',
-  'id_cliente',
-  'id_caja',
-  'id_vendedor',
-  'observaciones',
-] as const satisfies readonly (keyof FacturaFiscalForm)[];
-
-const isFacturaFiscalFormKey = (name: string): name is keyof FacturaFiscalForm =>
-  (FACTURA_FISCAL_FORM_KEYS as readonly string[]).includes(name);
-
 export const useFacturaFiscalForm = (facturaId?: string) => {
-  const [form, setForm] = useState<FacturaFiscalForm>(initialForm());
   const [numeroFacturaCreado, setNumeroFacturaCreado] = useState<string | null>(null);
 
-  const base = useDocumentoVentaBase({
-    empresaId: form.id_empresa,
-    onCajaPredet: (cajaId) => setForm(f => f.id_caja ? f : { ...f, id_caja: cajaId }),
+  const base = useDocumentoVentaBase<FacturaFiscalFormInput>({
+    schema: facturaFiscalFormSchema,
+    defaultValues: initialForm(),
+    onCajaPredet: (cajaId) => { if (!base.watch('id_caja')) base.setValue('id_caja', cajaId); },
     onSesionCargada: (sesion) => {
       if (sesion?.caja_fisica_principal) {
-        setForm(f => ({
-          ...f,
-          id_caja: sesion.caja_fisica_principal.id_caja,
-          id_sucursal: sesion.caja_fisica_principal.sucursal.id_sucursal,
-          id_empresa: sesion.caja_fisica_principal.sucursal.empresa.id_empresa,
-        }));
+        base.setValue('id_caja', sesion.caja_fisica_principal.id_caja);
+        base.setValue('id_sucursal', sesion.caja_fisica_principal.sucursal.id_sucursal);
+        base.setValue('id_empresa', sesion.caja_fisica_principal.sucursal.empresa.id_empresa);
       }
     },
-    onVendedorPredet: (userId) => setForm(f => f.id_vendedor ? f : { ...f, id_vendedor: userId }),
+    onVendedorPredet: (userId) => { if (!base.watch('id_vendedor')) base.setValue('id_vendedor', userId); },
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    if (isFacturaFiscalFormKey(name)) {
-      setForm(f => ({ ...f, [name]: value }));
-    }
-    base.setError('');
-    base.setSuccess('');
-  };
-
-  // Load existing factura fiscal
   const { data: facturaData, isLoading: isLoadingFactura } = useQuery({
     queryKey: ['facturas-fiscales', facturaId],
     queryFn: () => get(`/ventas/facturas-fiscales/${facturaId}/`) as Promise<FacturaFiscal>,
@@ -83,16 +48,11 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
   });
 
   useEffect(() => {
-    if (isLoadingFactura) {
-      base.setLoading(true);
-      return;
-    }
-    if (!facturaData) {
-      if (!isLoadingFactura) base.setLoading(false);
-      return;
-    }
+    if (isLoadingFactura) { base.setLoading(true); return; }
+    if (!facturaData) { base.setLoading(false); return; }
+    if (base.formState.isDirty) { base.setLoading(false); return; }
     const factura = facturaData;
-    setForm({
+    base.reset({
       numero_factura: factura.numero_factura || '',
       fecha_emision: (factura.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
       id_empresa: factura.id_empresa || getEmpresaId() || '',
@@ -101,53 +61,36 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
       id_caja: factura.id_caja || '',
       id_vendedor: factura.id_vendedor || '',
       observaciones: factura.observaciones || '',
+      detalles: Array.isArray(factura.detalles)
+        ? (factura.detalles as DetalleFacturaFiscal[]).map(d => ({
+            id_producto: d.id_producto || '',
+            cantidad: String(d.cantidad ?? 0),
+            precio_unitario: String(d.precio_unitario ?? 0),
+            descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
+            sku: '',
+            producto: '',
+            comentarios: '',
+          }))
+        : [],
     });
-    if (Array.isArray(factura.detalles)) {
-      base.setDetalles(
-        (factura.detalles as DetalleFacturaFiscal[]).map(d => ({
-          id_producto: d.id_producto || '',
-          cantidad: String(d.cantidad ?? 0),
-          precio_unitario: String(d.precio_unitario ?? 0),
-          descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
-          sku: '',
-          producto: '',
-        }))
-      );
-    }
     base.setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facturaData, isLoadingFactura]);
 
-  const submitFacturaFiscal = async (pagosToSend?: Pago[]) => {
+  const submitFacturaFiscal = async (values: FacturaFiscalFormInput, pagosToSend?: Pago[]) => {
     base.setLoading(true);
     base.setError('');
     base.setSuccess('');
 
-    if (!form.fecha_emision || !form.id_empresa || !form.id_sucursal) {
-      base.setError('Todos los campos obligatorios deben estar completos.');
-      base.setLoading(false);
-      return null;
-    }
-    if (base.detalles.length === 0) {
-      base.setError('Debe agregar al menos un producto a la factura fiscal.');
-      base.setLoading(false);
-      return null;
-    }
-
-    let idClienteFinal = form.id_cliente;
+    let idClienteFinal = values.id_cliente || '';
     if (!idClienteFinal) {
-      const newId = await base.crearClienteAuto(form.id_empresa);
+      const newId = await base.crearClienteAuto(values.id_empresa);
       if (!newId) { base.setLoading(false); return null; }
       idClienteFinal = newId;
-      setForm(f => ({ ...f, id_cliente: newId }));
-    }
-    if (!idClienteFinal) {
-      base.setError('Debe seleccionar un cliente antes de guardar la factura fiscal.');
-      base.setLoading(false);
-      return null;
+      base.setValue('id_cliente', newId);
     }
 
-    const detallesConSubtotal = base.detalles.map(d => ({
+    const detallesConSubtotal = values.detalles.map(d => ({
       id_producto: d.id_producto,
       cantidad: Number(d.cantidad),
       precio_unitario: Number(d.precio_unitario),
@@ -155,7 +98,7 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
       subtotal: D(d.cantidad).times(D(d.precio_unitario)).toFixed(2),
     }));
     const payload: Record<string, unknown> = {
-      ...form,
+      ...values,
       id_cliente: { id_cliente: idClienteFinal },
       detalles: detallesConSubtotal,
     };
@@ -184,11 +127,8 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
           }
         }
 
-        setForm(initialForm());
-        base.setDetalles([]);
-        base.setDetalleForm({ id_producto: '', cantidad: '', precio_unitario: '', descuento_porcentaje: '', sku: '', producto: '' });
-        base.setPagos([]);
-        base.setClienteManual({ razon_social: '', rif: '', telefono: '', direccion: '', correo: '', codigo_cliente: '' });
+        base.reset(initialForm());
+        base.resetAuxState();
       }
       base.setLoading(false);
       return response?.numero_factura || '';
@@ -200,15 +140,12 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
   };
 
   const handleClienteManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
-    void base.handleClienteManualKeyDown(e, (id) => setForm(f => ({ ...f, id_cliente: id })));
+    void base.handleClienteManualKeyDown(e, base.setClienteId);
 
   return {
-    form,
-    setForm,
-    handleChange,
+    ...base,
     numeroFacturaCreado,
     submitFacturaFiscal,
-    ...base,
     handleClienteManualKeyDown,
   };
 };

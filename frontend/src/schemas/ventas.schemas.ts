@@ -39,6 +39,89 @@ export const detalleVentaSchema = z.object({
 
 export type DetalleVentaInput = z.infer<typeof detalleVentaSchema>;
 
+// ── Detalle (línea de producto) para los formularios RHF de ventas ────────────
+// FE-CRIT-1: extiende detalleVentaSchema con los campos de presentación que el
+// field-array necesita conservar (sku / nombre del producto / comentarios). No
+// se envían al backend, pero deben sobrevivir a la validación zod para que la
+// tabla de preview pueda mostrarlos.
+export const detalleVentaFormSchema = detalleVentaSchema.extend({
+  sku: z.string().optional(),
+  producto: z.string().optional(),
+  comentarios: z.string().max(500).optional(),
+});
+
+export type DetalleVentaFormInput = z.infer<typeof detalleVentaFormSchema>;
+
+// ── Esquemas RHF específicos de cada formulario de ventas (FE-CRIT-1) ──────────
+// Reflejan EXACTAMENTE los campos que manejan los hooks/páginas actuales. El
+// cliente es opcional porque el flujo permite crearlo automáticamente al guardar
+// (el botón Guardar permanece deshabilitado hasta que haya un cliente, por lo que
+// el "submit vacío" nunca dispara la mutación). Las páginas conservan ese gate.
+
+export const cotizacionFormSchema = z.object({
+  numero_cotizacion: z.string().optional(),
+  fecha_cotizacion: z.string().min(1, 'La fecha de la cotización es obligatoria'),
+  fecha_vencimiento: z.string().optional(),
+  estado: z.string().optional(),
+  id_empresa: requiredUUID('Empresa'),
+  id_sucursal: requiredUUID('Sucursal'),
+  id_cliente: z.string().optional(),
+  id_moneda: requiredUUID('Moneda'),
+  id_caja: z.string().optional(),
+  id_vendedor: z.string().optional(),
+  observaciones: z.string().max(1000).optional(),
+  condiciones_comerciales: z.string().max(1000).optional(),
+  detalles: z
+    .array(detalleVentaFormSchema)
+    .min(1, 'La cotización debe tener al menos un producto'),
+});
+export type CotizacionFormInput = z.infer<typeof cotizacionFormSchema>;
+
+export const pedidoFormSchema = z.object({
+  numero_pedido: z.string().optional(),
+  fecha_pedido: z.string().min(1, 'La fecha del pedido es obligatoria'),
+  id_empresa: requiredUUID('Empresa'),
+  id_sucursal: requiredUUID('Sucursal'),
+  id_cliente: z.string().optional(),
+  id_caja: z.string().optional(),
+  id_vendedor: z.string().optional(),
+  observaciones: z.string().max(1000).optional(),
+  detalles: z
+    .array(detalleVentaFormSchema)
+    .min(1, 'El pedido debe tener al menos un producto'),
+});
+export type PedidoFormInput = z.infer<typeof pedidoFormSchema>;
+
+export const notaVentaFormSchema = z.object({
+  numero_nota_venta: z.string().optional(),
+  fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
+  id_empresa: requiredUUID('Empresa'),
+  id_sucursal: requiredUUID('Sucursal'),
+  id_cliente: z.string().optional(),
+  id_caja: z.string().optional(),
+  id_vendedor: z.string().optional(),
+  observaciones: z.string().max(1000).optional(),
+  detalles: z
+    .array(detalleVentaFormSchema)
+    .min(1, 'La nota de venta debe tener al menos un producto'),
+});
+export type NotaVentaFormInput = z.infer<typeof notaVentaFormSchema>;
+
+export const facturaFiscalFormSchema = z.object({
+  numero_factura: z.string().optional(),
+  fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
+  id_empresa: requiredUUID('Empresa'),
+  id_sucursal: requiredUUID('Sucursal'),
+  id_cliente: z.string().optional(),
+  id_caja: z.string().optional(),
+  id_vendedor: z.string().optional(),
+  observaciones: z.string().max(1000).optional(),
+  detalles: z
+    .array(detalleVentaFormSchema)
+    .min(1, 'La factura fiscal debe tener al menos un producto'),
+});
+export type FacturaFiscalFormInput = z.infer<typeof facturaFiscalFormSchema>;
+
 // ── Pedido ────────────────────────────────────────────────────────────────────
 
 export const pedidoSchema = z.object({

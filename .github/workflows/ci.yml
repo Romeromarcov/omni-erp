@@ -98,9 +98,11 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: TypeScript check
+      - name: TypeScript check (build mode — coincide con el build de producción)
         working-directory: frontend
-        run: npx tsc --noEmit
+        # tsc -b usa tsconfig.app.json (igual que `npm run build`), evitando que
+        # errores de build pasen el gate de CI como ocurría con --noEmit.
+        run: npx tsc -b
 
       - name: ESLint
         working-directory: frontend

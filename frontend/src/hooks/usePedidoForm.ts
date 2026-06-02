@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import type { SelectChangeEvent } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Pedido, DetallePedido } from '../types/ventas';
 import { post, get, patch } from '../services/api';
@@ -7,74 +6,37 @@ import { pagosService } from '../services/pagosService';
 import { getEmpresaId } from '../utils/empresa';
 import type { Pago } from '../components/Pedidos/ModalPago';
 import { useDocumentoVentaBase } from './useDocumentoVentaBase';
+import { pedidoFormSchema, type PedidoFormInput } from '../schemas/ventas.schemas';
 
-interface PedidoForm {
-  numero_pedido: string;
-  fecha_pedido: string;
-  id_empresa: string;
-  id_sucursal: string;
-  id_cliente: string;
-  id_caja?: string;
-  id_vendedor?: string;
-  observaciones?: string;
-}
-
-const initialForm = (): PedidoForm => ({
+const initialForm = (): PedidoFormInput => ({
   numero_pedido: '',
   fecha_pedido: new Date().toISOString().slice(0, 10),
   id_empresa: getEmpresaId() || '',
   id_sucursal: localStorage.getItem('id_sucursal') || '',
   id_cliente: '',
+  id_caja: '',
   id_vendedor: '',
   observaciones: '',
+  detalles: [],
 });
 
-const PEDIDO_FORM_KEYS = [
-  'numero_pedido',
-  'fecha_pedido',
-  'id_empresa',
-  'id_sucursal',
-  'id_cliente',
-  'id_caja',
-  'id_vendedor',
-  'observaciones',
-] as const satisfies readonly (keyof PedidoForm)[];
-
-const isPedidoFormKey = (name: string): name is keyof PedidoForm =>
-  (PEDIDO_FORM_KEYS as readonly string[]).includes(name);
-
 export const usePedidoForm = (pedidoId?: string) => {
-  const [form, setForm] = useState<PedidoForm>(initialForm());
   const [numeroPedidoCreado, setNumeroPedidoCreado] = useState<string | null>(null);
 
-  const base = useDocumentoVentaBase({
-    empresaId: form.id_empresa,
-    onCajaPredet: (cajaId) => setForm(f => f.id_caja ? f : { ...f, id_caja: cajaId }),
+  const base = useDocumentoVentaBase<PedidoFormInput>({
+    schema: pedidoFormSchema,
+    defaultValues: initialForm(),
+    onCajaPredet: (cajaId) => { if (!base.watch('id_caja')) base.setValue('id_caja', cajaId); },
     onSesionCargada: (sesion) => {
       if (sesion?.caja_fisica_principal) {
-        setForm(f => ({
-          ...f,
-          id_caja: sesion.caja_fisica_principal.id_caja,
-          id_sucursal: sesion.caja_fisica_principal.sucursal.id_sucursal,
-          id_empresa: sesion.caja_fisica_principal.sucursal.empresa.id_empresa,
-        }));
+        base.setValue('id_caja', sesion.caja_fisica_principal.id_caja);
+        base.setValue('id_sucursal', sesion.caja_fisica_principal.sucursal.id_sucursal);
+        base.setValue('id_empresa', sesion.caja_fisica_principal.sucursal.empresa.id_empresa);
       }
     },
-    onVendedorPredet: (userId) => setForm(f => f.id_vendedor ? f : { ...f, id_vendedor: userId }),
+    onVendedorPredet: (userId) => { if (!base.watch('id_vendedor')) base.setValue('id_vendedor', userId); },
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | SelectChangeEvent,
-  ) => {
-    const { name, value } = e.target;
-    if (isPedidoFormKey(name)) {
-      setForm(f => ({ ...f, [name]: value }));
-    }
-    base.setError('');
-    base.setSuccess('');
-  };
-
-  // Load existing pedido
   const { data: pedidoData, isLoading: isLoadingPedido } = useQuery({
     queryKey: ['pedidos', pedidoId],
     queryFn: () => get(`/ventas/pedidos/${pedidoId}/`) as Promise<Pedido>,
@@ -82,16 +44,11 @@ export const usePedidoForm = (pedidoId?: string) => {
   });
 
   useEffect(() => {
-    if (isLoadingPedido) {
-      base.setLoading(true);
-      return;
-    }
-    if (!pedidoData) {
-      if (!isLoadingPedido) base.setLoading(false);
-      return;
-    }
+    if (isLoadingPedido) { base.setLoading(true); return; }
+    if (!pedidoData) { base.setLoading(false); return; }
+    if (base.formState.isDirty) { base.setLoading(false); return; }
     const pedido = pedidoData;
-    setForm({
+    base.reset({
       numero_pedido: pedido.numero_pedido || '',
       fecha_pedido: pedido.fecha_pedido?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
       id_empresa: pedido.id_empresa || getEmpresaId() || '',
@@ -100,57 +57,40 @@ export const usePedidoForm = (pedidoId?: string) => {
       id_caja: pedido.id_caja || '',
       id_vendedor: pedido.id_vendedor || '',
       observaciones: pedido.observaciones || '',
+      detalles: Array.isArray(pedido.detalles)
+        ? pedido.detalles.map((d: DetallePedido) => ({
+            id_producto: d.id_producto || '',
+            cantidad: String(d.cantidad ?? 0),
+            precio_unitario: String(d.precio_unitario ?? 0),
+            descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
+            sku: d.sku || '',
+            producto: d.producto || '',
+            comentarios: '',
+          }))
+        : [],
     });
-    if (pedido.detalles && Array.isArray(pedido.detalles)) {
-      base.setDetalles(
-        pedido.detalles.map((d: DetallePedido) => ({
-          id_producto: d.id_producto || '',
-          cantidad: String(d.cantidad ?? 0),
-          precio_unitario: String(d.precio_unitario ?? 0),
-          descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
-          sku: d.sku || '',
-          producto: d.producto || '',
-        }))
-      );
-    }
     base.setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedidoData, isLoadingPedido]);
 
-  const submitPedido = async (pagosToSend?: Pago[]) => {
+  const submitPedido = async (values: PedidoFormInput, pagosToSend?: Pago[]) => {
     base.setLoading(true);
     base.setError('');
     base.setSuccess('');
 
-    if (!form.fecha_pedido || !form.id_empresa || !form.id_sucursal) {
-      base.setError('Todos los campos obligatorios deben estar completos.');
-      base.setLoading(false);
-      return null;
-    }
-    if (base.detalles.length === 0) {
-      base.setError('Debe agregar al menos un producto al pedido.');
-      base.setLoading(false);
-      return null;
-    }
-
-    let idClienteFinal = form.id_cliente;
+    let idClienteFinal = values.id_cliente || '';
     if (!idClienteFinal) {
-      const newId = await base.crearClienteAuto(form.id_empresa);
+      const newId = await base.crearClienteAuto(values.id_empresa);
       if (!newId) { base.setLoading(false); return null; }
       idClienteFinal = newId;
-      setForm(f => ({ ...f, id_cliente: newId }));
-    }
-    if (!idClienteFinal) {
-      base.setError('Debe seleccionar un cliente antes de guardar el pedido.');
-      base.setLoading(false);
-      return null;
+      base.setValue('id_cliente', newId);
     }
 
-    const detallesConSubtotal = base.detalles.map(d => ({
+    const detallesConSubtotal = values.detalles.map(d => ({
       ...d,
       subtotal: String(Number(d.cantidad) * Number(d.precio_unitario)),
     }));
-    const payload: Record<string, unknown> = { ...form, id_cliente: idClienteFinal, detalles: detallesConSubtotal };
+    const payload: Record<string, unknown> = { ...values, id_cliente: idClienteFinal, detalles: detallesConSubtotal };
     delete payload.numero_pedido;
 
     try {
@@ -176,11 +116,8 @@ export const usePedidoForm = (pedidoId?: string) => {
           }
         }
 
-        setForm(initialForm());
-        base.setDetalles([]);
-        base.setDetalleForm({ id_producto: '', cantidad: '', precio_unitario: '', descuento_porcentaje: '', sku: '', producto: '' });
-        base.setPagos([]);
-        base.setClienteManual({ razon_social: '', rif: '', telefono: '', direccion: '', correo: '', codigo_cliente: '' });
+        base.reset(initialForm());
+        base.resetAuxState();
       }
       base.setLoading(false);
       return response?.numero_pedido || '';
@@ -192,15 +129,12 @@ export const usePedidoForm = (pedidoId?: string) => {
   };
 
   const handleClienteManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
-    void base.handleClienteManualKeyDown(e, (id) => setForm(f => ({ ...f, id_cliente: id })));
+    void base.handleClienteManualKeyDown(e, base.setClienteId);
 
   return {
-    form,
-    setForm,
-    handleChange,
+    ...base,
     numeroPedidoCreado,
     submitPedido,
-    ...base,
     handleClienteManualKeyDown,
   };
 };

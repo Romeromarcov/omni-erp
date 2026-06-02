@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// Removed unused Pago, NotaCredito import
+import { Controller } from 'react-hook-form';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate, useParams } from 'react-router-dom';
 import ModalBusquedaProducto from '../../../components/Pedidos/ModalBusquedaProducto';
@@ -12,7 +12,6 @@ import ModalPago from '../../../components/Pedidos/ModalPago';
 import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
 import { useCotizacionForm } from '../../../hooks/useCotizacionForm';
 import type { Producto } from '../../../services/productosService';
-// Removed unused pagosService import
 
 const getFieldString = (obj: unknown, key: string) => {
   if (!obj || typeof obj !== 'object') return '';
@@ -29,19 +28,20 @@ const CotizacionFormPage: React.FC = () => {
   const [showPagoModal, setShowPagoModal] = useState(false);
 
   const {
-    form,
+    control,
+    register,
+    handleSubmit,
+    watch,
     error,
     success,
     loading,
     productos,
-    detalles,
     detalleForm,
     descuentoGeneral,
     clienteManual,
     sesionActiva,
     empresas,
     setDescuentoGeneral,
-    handleChange,
     handleClienteManualChange,
     handleClienteManualKeyDown,
     handleClienteBlur,
@@ -49,21 +49,24 @@ const CotizacionFormPage: React.FC = () => {
     handleAddDetalle,
     handleRemoveDetalle,
     selectProducto,
+    setClienteId,
     submitCotizacion,
   } = useCotizacionForm(id);
 
-  // Handlers for form actions
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await submitCotizacion();
-  };
+  const detalles = watch('detalles') || [];
+  const idCliente = watch('id_cliente');
+  const idEmpresa = watch('id_empresa');
+
+  const onSubmit = handleSubmit(async (values) => {
+    await submitCotizacion(values);
+  });
+
   const handleEnviar = () => alert('Función Enviar: convertir en Nota de venta y cambiar estado a Enviado');
   const handlePagar = () => setShowPagoModal(true);
   const handleAnular = () => alert('Función Anular: cambiar estado a Anulado');
   const handleImprimir = () => alert('Función Imprimir: generar documento de cotización');
   const handleConfirmPago = () => {
     setShowPagoModal(false);
-    // Implementar lógica de confirmación de pago si es necesario
   };
 
   return (
@@ -74,7 +77,7 @@ const CotizacionFormPage: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
       <Paper sx={{ p: 3 }}>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onSubmit} noValidate>
           {/* Información del contexto */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -88,19 +91,21 @@ const CotizacionFormPage: React.FC = () => {
                   <TextField label="Caja Física" value={sesionActiva.caja_fisica_principal?.nombre || 'No disponible'} InputProps={{ readOnly: true }} />
                 </>
               ) : (
-                <>
-                  <FormControl fullWidth>
-                    <InputLabel id="empresa-label">Empresa</InputLabel>
-                    <Select labelId="empresa-label" name="id_empresa" value={form.id_empresa || ''} label="Empresa" onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}>
-                      {empresas.map((emp) => (
-                        <MenuItem key={emp.id_empresa} value={emp.id_empresa}>{emp.nombre_legal}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  {/* Si tienes sucursales, agrega aquí el selector de sucursal igual que en Pedido */}
-                </>
+                <Controller
+                  name="id_empresa"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth>
+                      <InputLabel id="empresa-label">Empresa</InputLabel>
+                      <Select labelId="empresa-label" label="Empresa" {...field} value={field.value || ''}>
+                        {empresas.map((emp) => (
+                          <MenuItem key={emp.id_empresa} value={emp.id_empresa}>{emp.nombre_legal}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                />
               )}
-              {/* Si tienes ID Caja, Usuario, Vendedor y Numeración, agrégalos aquí igual que en Pedido */}
             </Box>
           </Box>
 
@@ -143,17 +148,17 @@ const CotizacionFormPage: React.FC = () => {
 
           {/* Observaciones */}
           <Box sx={{ mb: 3 }}>
-            <TextField fullWidth label="Observaciones" multiline rows={3} name="observaciones" value={form.observaciones} onChange={handleChange} />
+            <TextField fullWidth label="Observaciones" multiline rows={3} {...register('observaciones')} />
           </Box>
 
           {/* Condiciones comerciales */}
           <Box sx={{ mb: 3 }}>
-            <TextField fullWidth label="Condiciones Comerciales" multiline rows={3} name="condiciones_comerciales" value={form.condiciones_comerciales} onChange={handleChange} />
+            <TextField fullWidth label="Condiciones Comerciales" multiline rows={3} {...register('condiciones_comerciales')} />
           </Box>
 
           {/* Botones */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button type="submit" variant="contained" disabled={loading || !form.id_cliente}>
+            <Button type="submit" variant="contained" disabled={loading || !idCliente}>
               {loading ? 'Guardando...' : 'Guardar Cotización'}
             </Button>
             <Button type="button" variant="contained" color="secondary" onClick={() => navigate('/ventas/cotizaciones')}>
@@ -173,9 +178,9 @@ const CotizacionFormPage: React.FC = () => {
       {/* Modales */}
       <ModalBusquedaCliente
         open={showClienteModal}
-        idEmpresa={form.id_empresa || localStorage.getItem('id_empresa') || ''}
+        idEmpresa={idEmpresa || localStorage.getItem('id_empresa') || ''}
         onSelect={cli => {
-          handleChange({ target: { name: 'id_cliente', value: cli.id_cliente } } as React.ChangeEvent<HTMLInputElement>);
+          setClienteId(cli.id_cliente);
           handleClienteManualChange({ target: { name: 'razon_social', value: cli.razon_social || '' } } as React.ChangeEvent<HTMLInputElement>);
           handleClienteManualChange({ target: { name: 'rif', value: cli.rif || '' } } as React.ChangeEvent<HTMLInputElement>);
           handleClienteManualChange({ target: { name: 'telefono', value: cli.telefono || '' } } as React.ChangeEvent<HTMLInputElement>);
@@ -200,7 +205,7 @@ const CotizacionFormPage: React.FC = () => {
         monto={Number(detalles.reduce((acc: number, d: { precio_unitario?: string; cantidad?: string }) => acc + Number(d.precio_unitario || 0) * Number(d.cantidad || 0), 0))}
         onClose={() => setShowPagoModal(false)}
         onConfirm={handleConfirmPago}
-        empresaId={form.id_empresa || localStorage.getItem('id_empresa') || ''}
+        empresaId={idEmpresa || localStorage.getItem('id_empresa') || ''}
         tipoDocumento="COTIZACION"
         idDocumento={id || 'nuevo'}
         tipoOperacionInicial="INGRESO"

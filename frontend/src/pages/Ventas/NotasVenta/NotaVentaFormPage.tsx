@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Controller } from 'react-hook-form';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
 import PageLayout from '../../../components/PageLayout';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -30,12 +31,15 @@ const NotaVentaFormPage: React.FC = () => {
   const [showPagoModal, setShowPagoModal] = useState(false);
 
   const {
-    form,
+    control,
+    register,
+    handleSubmit,
+    watch,
+    getValues,
     error,
     success,
     loading,
     productos,
-    detalles,
     detalleForm,
     descuentoGeneral,
     clienteManual,
@@ -45,7 +49,6 @@ const NotaVentaFormPage: React.FC = () => {
     sucursales,
     setDescuentoGeneral,
     setPagos,
-    handleChange,
     handleClienteManualChange,
     handleClienteManualKeyDown,
     handleClienteBlur,
@@ -54,17 +57,21 @@ const NotaVentaFormPage: React.FC = () => {
     handleAddDetalle,
     handleRemoveDetalle,
     selectProducto,
+    setClienteId,
     submitNotaVenta,
   } = useNotaVentaForm(id_nota_venta);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const result = await submitNotaVenta();
+  const detalles = watch('detalles') || [];
+  const idCliente = watch('id_cliente');
+  const idEmpresa = watch('id_empresa');
+  const idCaja = watch('id_caja');
+
+  const onSubmit = handleSubmit(async (values) => {
+    const result = await submitNotaVenta(values);
     if (result && isEditing) {
-      // Después de editar, redirigir a la página de detalle
       navigate(`/ventas/notas-venta/${id_nota_venta}`);
     }
-  };
+  });
 
   const handleEnviar = () => alert('Función Enviar: convertir en Factura Fiscal y cambiar estado a Enviado');
   const handlePagar = () => setShowPagoModal(true);
@@ -74,11 +81,9 @@ const NotaVentaFormPage: React.FC = () => {
   const handleConfirmPago = (pagosConfirmados: Pago[], vueltos?: Pago[], notasCreditoUtilizadas?: NotaCredito[]) => {
     setShowPagoModal(false);
     if (pagosConfirmados?.length > 0) {
-      // Almacenar pagos en el estado del hook para que se envíen automáticamente al guardar
       setPagos(pagosConfirmados);
-      submitNotaVenta(pagosConfirmados).then(async (result) => {
+      submitNotaVenta(getValues(), pagosConfirmados).then(async (result) => {
         if (result) {
-          // Procesar vueltos
           if (vueltos && vueltos.length > 0) {
             try {
               await pagosService.procesarVueltos(vueltos);
@@ -86,7 +91,6 @@ const NotaVentaFormPage: React.FC = () => {
               console.error('Error procesando vueltos:', error);
             }
           }
-          // Conciliar notas de crédito
           if (notasCreditoUtilizadas && notasCreditoUtilizadas.length > 0) {
             try {
               await pagosService.conciliarNotasCredito(notasCreditoUtilizadas, id_nota_venta || 'nuevo', 'NOTA_VENTA');
@@ -109,7 +113,7 @@ const NotaVentaFormPage: React.FC = () => {
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
       <Paper sx={{ p: 3 }}>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onSubmit} noValidate>
           {/* Información del contexto */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -136,35 +140,34 @@ const NotaVentaFormPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <FormControl fullWidth>
-                    <InputLabel id="empresa-label">Empresa</InputLabel>
-                    <Select
-                      labelId="empresa-label"
-                      name="id_empresa"
-                      value={form.id_empresa || ''}
-                      label="Empresa"
-                      onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
-                    >
-                      {empresas.map((emp) => (
-                        <MenuItem key={emp.id_empresa} value={emp.id_empresa}>{emp.nombre_legal}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl fullWidth>
-                    <InputLabel id="sucursal-label">Sucursal</InputLabel>
-                    <Select
-                      labelId="sucursal-label"
-                      name="id_sucursal"
-                      value={form.id_sucursal || ''}
-                      label="Sucursal"
-                      onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
-                      disabled={!form.id_empresa}
-                    >
-                      {sucursales.map((suc) => (
-                        <MenuItem key={suc.id_sucursal} value={suc.id_sucursal}>{suc.nombre}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Controller
+                    name="id_empresa"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel id="empresa-label">Empresa</InputLabel>
+                        <Select labelId="empresa-label" label="Empresa" {...field} value={field.value || ''}>
+                          {empresas.map((emp) => (
+                            <MenuItem key={emp.id_empresa} value={emp.id_empresa}>{emp.nombre_legal}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                  <Controller
+                    name="id_sucursal"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel id="sucursal-label">Sucursal</InputLabel>
+                        <Select labelId="sucursal-label" label="Sucursal" {...field} value={field.value || ''} disabled={!idEmpresa}>
+                          {sucursales.map((suc) => (
+                            <MenuItem key={suc.id_sucursal} value={suc.id_sucursal}>{suc.nombre}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
                   <TextField
                     label="Caja Física"
                     value="Sin sesión activa"
@@ -174,7 +177,7 @@ const NotaVentaFormPage: React.FC = () => {
               )}
               <TextField
                 label="ID Caja"
-                value={sesionActiva?.caja_fisica_principal?.id_caja || form.id_caja || 'No disponible'}
+                value={sesionActiva?.caja_fisica_principal?.id_caja || idCaja || 'No disponible'}
                 InputProps={{ readOnly: true }}
               />
               <TextField
@@ -182,20 +185,20 @@ const NotaVentaFormPage: React.FC = () => {
                 value={sesionActiva?.usuario?.first_name && sesionActiva?.usuario?.last_name ? `${sesionActiva.usuario.first_name} ${sesionActiva.usuario.last_name}` : sesionActiva?.usuario?.username || 'No disponible'}
                 InputProps={{ readOnly: true }}
               />
-              <FormControl fullWidth>
-                <InputLabel id="vendedor-label">Vendedor</InputLabel>
-                <Select
-                  labelId="vendedor-label"
-                  name="id_vendedor"
-                  value={form.id_vendedor || ''}
-                  label="Vendedor"
-                  onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
-                >
-                  {vendedores && vendedores.length > 0 ? (vendedores as Usuario[]).map((v) => (
-                    <MenuItem key={v.id} value={String(v.id)}>{v.first_name && v.last_name ? `${v.first_name} ${v.last_name}` : v.username}</MenuItem>
-                  )) : <MenuItem value="">Sin vendedores</MenuItem>}
-                </Select>
-              </FormControl>
+              <Controller
+                name="id_vendedor"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel id="vendedor-label">Vendedor</InputLabel>
+                    <Select labelId="vendedor-label" label="Vendedor" {...field} value={field.value || ''}>
+                      {vendedores && vendedores.length > 0 ? (vendedores as Usuario[]).map((v) => (
+                        <MenuItem key={v.id} value={String(v.id)}>{v.first_name && v.last_name ? `${v.first_name} ${v.last_name}` : v.username}</MenuItem>
+                      )) : <MenuItem value="">Sin vendedores</MenuItem>}
+                    </Select>
+                  </FormControl>
+                )}
+              />
               <TextField
                 label="Número de Nota de Venta"
                 value={numeroNotaVentaCreado || 'Calculando...'}
@@ -248,15 +251,13 @@ const NotaVentaFormPage: React.FC = () => {
               label="Observaciones"
               multiline
               rows={3}
-              name="observaciones"
-              value={form.observaciones}
-              onChange={handleChange}
+              {...register('observaciones')}
             />
           </Box>
 
           {/* Botones */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button type="submit" variant="contained" disabled={loading || !form.id_cliente}>
+            <Button type="submit" variant="contained" disabled={loading || !idCliente}>
               {loading ? 'Guardando...' : 'Guardar Nota de Venta'}
             </Button>
             <Button type="button" variant="contained" color="secondary" onClick={() => navigate('/ventas/notas-venta')}>
@@ -275,9 +276,9 @@ const NotaVentaFormPage: React.FC = () => {
       </Paper>
       <ModalBusquedaCliente
         open={showClienteModal}
-        idEmpresa={form.id_empresa || localStorage.getItem('id_empresa') || ''}
+        idEmpresa={idEmpresa || localStorage.getItem('id_empresa') || ''}
         onSelect={cli => {
-          handleChange({ target: { name: 'id_cliente', value: cli.id_cliente } } as React.ChangeEvent<HTMLInputElement>);
+          setClienteId(cli.id_cliente);
           handleClienteManualChange({ target: { name: 'razon_social', value: cli.razon_social || '' } } as React.ChangeEvent<HTMLInputElement>);
           handleClienteManualChange({ target: { name: 'rif', value: cli.rif || '' } } as React.ChangeEvent<HTMLInputElement>);
           handleClienteManualChange({ target: { name: 'telefono', value: cli.telefono || '' } } as React.ChangeEvent<HTMLInputElement>);
@@ -302,7 +303,7 @@ const NotaVentaFormPage: React.FC = () => {
         monto={Number(detalles.reduce((acc: number, d: { precio_unitario?: string; cantidad?: string }) => acc + Number(d.precio_unitario || 0) * Number(d.cantidad || 0), 0))}
         onClose={() => setShowPagoModal(false)}
         onConfirm={handleConfirmPago}
-        empresaId={form.id_empresa || localStorage.getItem('id_empresa') || ''}
+        empresaId={idEmpresa || localStorage.getItem('id_empresa') || ''}
         tipoDocumento="NOTA_VENTA"
         idDocumento={id_nota_venta || 'nuevo'}
         tipoOperacionInicial="INGRESO"

@@ -47,11 +47,13 @@ const UserDetailPage: React.FC = () => {
   // Quitar validación de admin, todos pueden editar
 
   // Multi-select MUI emite string[] (o string en autofill); normalizamos a string[].
+  // TextField.SelectProps.onChange está tipado como SelectChangeEvent<unknown>,
+  // por eso aceptamos unknown y normalizamos.
   const handleMultiSelect =
     (field: 'empresas' | 'sucursales' | 'departamentos') =>
-    (e: SelectChangeEvent<string[]>) => {
+    (e: SelectChangeEvent<unknown>) => {
       const value = e.target.value;
-      const list = Array.isArray(value) ? value : [value];
+      const list = Array.isArray(value) ? (value as string[]) : [value as string];
       setForm(f => ({ ...f, [field]: list }));
     };
 

@@ -1,8 +1,29 @@
 /**
  * Base hook for all sales document forms (Cotizacion, Pedido, NotaVenta, FacturaFiscal).
- * Extracts shared state, effects, and handlers to avoid ~400 lines of duplication per hook.
+ *
+ * FE-CRIT-1: migrado a react-hook-form. El hook crea (o recibe) una instancia de
+ * `useForm` tipada por el esquema zod del documento y expone sus primitivas
+ * (control, register, handleSubmit, formState, reset, setValue, watch) junto con
+ * un `useFieldArray` para `detalles`. El resto de estado asíncrono compartido
+ * (productos, vendedores, sesión, empresas, sucursales, clientes similares) y los
+ * helpers de cliente se mantienen como antes.
+ *
+ * `clienteManual`, `detalleForm`, `descuentoGeneral` y `pagos` siguen siendo
+ * estado local del hook: NO son campos enviados directamente del formulario, sino
+ * estado de UI auxiliar (staging de línea de producto, datos para autocrear el
+ * cliente, descuento general y pagos del modal).
  */
 import { useState, useEffect } from 'react';
+import {
+  useForm,
+  useFieldArray,
+  type FieldValues,
+  type DefaultValues,
+  type Path,
+  type Resolver,
+} from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { ZodTypeAny } from 'zod';
 import { get } from '../services/api';
 import { fetchProductos } from '../services/productosService';
 import { buscarClientes, crearClienteConEmpresa, buscarClientesSimilares } from '../services/clientesService';
@@ -48,29 +69,51 @@ export interface DetalleDocumentoForm {
   descuento_porcentaje?: string;
   sku?: string;
   producto?: string;
+  comentarios?: string;
 }
 
-interface UseDocumentoVentaBaseOptions {
-  empresaId: string;
+const emptyDetalleForm = (): DetalleDocumentoForm => ({
+  id_producto: '', cantidad: '', precio_unitario: '', descuento_porcentaje: '', sku: '', producto: '', comentarios: '',
+});
+
+interface UseDocumentoVentaBaseOptions<TForm extends FieldValues> {
+  /** Esquema zod del documento (se usa como resolver de react-hook-form). */
+  schema: ZodTypeAny;
+  /** Valores iniciales del formulario. */
+  defaultValues: DefaultValues<TForm>;
   onCajaPredet?: (cajaId: string) => void;
   onSesionCargada?: (sesion: SesionCaja) => void;
   onVendedorPredet?: (userId: string) => void;
 }
 
-export const useDocumentoVentaBase = ({
-  empresaId,
+export const useDocumentoVentaBase = <TForm extends FieldValues>({
+  schema,
+  defaultValues,
   onCajaPredet,
   onSesionCargada,
   onVendedorPredet,
-}: UseDocumentoVentaBaseOptions) => {
+}: UseDocumentoVentaBaseOptions<TForm>) => {
+  // ── react-hook-form ──────────────────────────────────────────────────────────
+  const formMethods = useForm<TForm>({
+    resolver: zodResolver(schema) as unknown as Resolver<TForm>,
+    mode: 'onBlur',
+    defaultValues,
+  });
+  const { control, register, handleSubmit, reset, setValue, watch, getValues, formState } = formMethods;
+  const detallesArray = useFieldArray<TForm>({
+    control,
+    name: 'detalles' as never,
+  });
+
+  // empresaId reactivo: deriva de id_empresa del propio formulario.
+  const empresaId = (watch('id_empresa' as Path<TForm>) as string | undefined) || '';
+
+  // ── Estado auxiliar de UI / datos asíncronos ─────────────────────────────────
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [productos, setProductos] = useState<Producto[]>([]);
-  const [detalles, setDetalles] = useState<DetalleDocumentoForm[]>([]);
-  const [detalleForm, setDetalleForm] = useState<DetalleDocumentoForm>({
-    id_producto: '', cantidad: '', precio_unitario: '', descuento_porcentaje: '', sku: '', producto: '',
-  });
+  const [detalleForm, setDetalleForm] = useState<DetalleDocumentoForm>(emptyDetalleForm());
   const [descuentoGeneral, setDescuentoGeneral] = useState('');
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [clienteManual, setClienteManual] = useState<ClienteManual>({
@@ -172,7 +215,7 @@ export const useDocumentoVentaBase = ({
           const sesionUserId = sesionActiva?.usuario?.id;
           const preferred = sesionUserId && arr.some(u => String(u.id) === String(sesionUserId))
             ? String(sesionUserId)
-            : String(arr[0].id);
+            : String(arr[0]?.id ?? '');
           onVendedorPredet(preferred);
         }
       })
@@ -180,6 +223,7 @@ export const useDocumentoVentaBase = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empresaId, sesionActiva]);
 
+  // ── Staging de línea de producto (FormularioProducto) ─────────────────────────
   const handleDetalleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setDetalleForm(f => ({ ...f, [e.target.name]: e.target.value }));
   };
@@ -187,13 +231,21 @@ export const useDocumentoVentaBase = ({
   const handleAddDetalle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!detalleForm.id_producto || !detalleForm.cantidad || !detalleForm.precio_unitario) return;
-    setDetalles(dets => [...dets, { ...detalleForm }]);
-    setDetalleForm({ id_producto: '', cantidad: '', precio_unitario: '', descuento_porcentaje: '', sku: '', producto: '' });
+    detallesArray.append({
+      id_producto: detalleForm.id_producto,
+      cantidad: detalleForm.cantidad,
+      precio_unitario: detalleForm.precio_unitario,
+      descuento_porcentaje: detalleForm.descuento_porcentaje || '',
+      sku: detalleForm.sku || '',
+      producto: detalleForm.producto || '',
+      comentarios: detalleForm.comentarios || '',
+    } as never);
+    setDetalleForm(emptyDetalleForm());
     setError('');
   };
 
   const handleRemoveDetalle = (idx: number) => {
-    setDetalles(dets => dets.filter((_, i) => i !== idx));
+    detallesArray.remove(idx);
   };
 
   const selectProducto = (prod: Producto) => {
@@ -206,6 +258,7 @@ export const useDocumentoVentaBase = ({
     }));
   };
 
+  // ── Cliente ───────────────────────────────────────────────────────────────────
   const selectCliente = (
     cli: Cliente,
     setClienteId: (id: string) => void,
@@ -292,13 +345,36 @@ export const useDocumentoVentaBase = ({
     }
   };
 
+  /** Resetea estado auxiliar tras una creación exitosa. */
+  const resetAuxState = () => {
+    setDetalleForm(emptyDetalleForm());
+    setPagos([]);
+    setDescuentoGeneral('');
+    setClienteManual({ razon_social: '', rif: '', telefono: '', direccion: '', correo: '', codigo_cliente: '' });
+  };
+
+  /** Helper para fijar el id_cliente en el formulario RHF. */
+  const setClienteId = (id: string) => setValue('id_cliente' as Path<TForm>, id as never, { shouldDirty: true });
+
   return {
-    // State
+    // react-hook-form primitives
+    control,
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    getValues,
+    formState,
+    detallesArray,
+    setClienteId,
+    emptyDetalleForm,
+    empresaId,
+    // Estado auxiliar
     error, setError,
     success, setSuccess,
     loading, setLoading,
     productos,
-    detalles, setDetalles,
     detalleForm, setDetalleForm,
     descuentoGeneral, setDescuentoGeneral,
     pagos, setPagos,
@@ -312,6 +388,7 @@ export const useDocumentoVentaBase = ({
     // Utilities
     getFieldString,
     crearClienteAuto,
+    resetAuxState,
     // Handlers
     handleDetalleChange,
     handleAddDetalle,
