@@ -1,6 +1,8 @@
 import os
 
-os.environ.setdefault("SECRET_KEY", "dev-secret-key-not-for-production-change-me")
+# H-SEC-2: NO usar un SECRET_KEY default débil. Si una instancia (incl. staging)
+# arranca sin SECRET_KEY explícito, settings_base lanza un error claro en vez de
+# firmar JWTs con una clave conocida. Copiá .env.example a .env y generá una clave.
 os.environ.setdefault("DEBUG", "True")
 
 from .settings_base import *  # noqa: F401, F403
