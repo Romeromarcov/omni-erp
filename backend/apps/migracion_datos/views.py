@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import BaseModelViewSet, SuperuserWriteMixin, get_empresas_visible
 
 from .models import DetalleErrorMigracion, PlantillaMigracion, ProcesoMigracion
 from .serializers import DetalleErrorMigracionSerializer, PlantillaMigracionSerializer, ProcesoMigracionSerializer
@@ -10,13 +10,14 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class PlantillaMigracionViewSet(BaseModelViewSet):
+class PlantillaMigracionViewSet(SuperuserWriteMixin, BaseModelViewSet):
+    """Plantillas de migración globales. Escritura solo superusuario (H-SEC-6)."""
+
     queryset = PlantillaMigracion.objects.all()
     serializer_class = PlantillaMigracionSerializer
 
     def get_queryset(self):
-        # R-CODE-1 — PlantillaMigracion no tiene id_empresa directo
-        # TODO: modelo sin id_empresa — agregar FK en Fase 2
+        # Catálogo global (sin id_empresa); FK por empresa queda para Fase 2.
         return PlantillaMigracion.objects.all()
 
 

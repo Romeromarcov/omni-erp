@@ -261,6 +261,42 @@ class EmpresaInjectMixin:
         serializer.save(**{self.empresa_field: empresa})
 
 
+class SuperuserWriteMixin:
+    """
+    H-SEC-6: gate de escritura para catálogos GLOBALES (sin id_empresa o con
+    filas globales id_empresa=None). Solo un superusuario Omni puede crear,
+    modificar o eliminar; cualquier usuario autenticado puede leer.
+
+    Para modelos con id_empresa nullable (p. ej. ParametroSistema), las filas
+    de empresa las gestiona el tenant y solo las globales exigen superusuario:
+    sobreescribir ``_es_fila_global``.
+    """
+
+    def _assert_superuser(self):
+        if not getattr(self.request.user, "es_superusuario_omni", False):
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Solo un superusuario Omni puede modificar esta configuración global.")
+
+    def _es_fila_global(self, instance_or_data) -> bool:
+        return True  # por defecto el modelo entero es global
+
+    def perform_create(self, serializer):
+        if self._es_fila_global(serializer.validated_data):
+            self._assert_superuser()
+        serializer.save()
+
+    def perform_update(self, serializer):
+        if self._es_fila_global(serializer.instance):
+            self._assert_superuser()
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if self._es_fila_global(instance):
+            self._assert_superuser()
+        instance.delete()
+
+
 class EmpresaViewSet(BaseModelViewSet):
     queryset = Empresa.objects.all()
     serializer_class = EmpresaSerializer
