@@ -5,6 +5,7 @@ import { getOverridesMetodosPago, createOverrideMetodoPago, updateOverrideMetodo
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchSucursales } from '../../../services/sucursales';
 import { useConfirm } from '../../../contexts/feedbackTypes';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 
 interface MetodoPago {
@@ -34,13 +35,13 @@ const OverridesMetodosPagoPage: React.FC = () => {
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
   const { data: overrides = [], isLoading } = useQuery<CajaMetodoPagoOverride[]>({
-    queryKey: ['/finanzas/overrides-metodos-pago/', idEmpresa],
+    queryKey: finanzasKeys.overridesMetodosPago.list(idEmpresa),
     queryFn: () => getOverridesMetodosPago(idEmpresa),
     enabled: !!idEmpresa,
   });
 
   const { data: metodosPago = [] } = useQuery<MetodoPago[]>({
-    queryKey: ['/finanzas/metodos-pago-empresa-activas/', idEmpresa],
+    queryKey: finanzasKeys.metodosPagoEmpresaActivas(idEmpresa),
     queryFn: () => fetchMetodosPagoEmpresaActivos(idEmpresa) as unknown as Promise<MetodoPago[]>,
     enabled: !!idEmpresa,
   });
@@ -54,7 +55,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteOverrideMetodoPago(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/finanzas/overrides-metodos-pago/', idEmpresa] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.overridesMetodosPago.list(idEmpresa) });
       setSuccess('Override eliminado exitosamente');
     },
     onError: () => setError('Error al eliminar el override'),
@@ -68,7 +69,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
       return createOverrideMetodoPago(form);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/finanzas/overrides-metodos-pago/', idEmpresa] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.overridesMetodosPago.list(idEmpresa) });
       setSuccess(editingOverride ? 'Override actualizado exitosamente' : 'Override creado exitosamente');
       setShowDialog(false);
     },

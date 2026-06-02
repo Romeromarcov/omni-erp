@@ -5,6 +5,7 @@ import PageLayout from '../../../components/PageLayout';
 import { notaCreditoFiscalService } from '../../../services/ventas';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
+import { ventasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 
 const NotaCreditoFiscalDetailPage: React.FC = () => {
@@ -14,7 +15,7 @@ const NotaCreditoFiscalDetailPage: React.FC = () => {
   const snackbar = useSnackbar();
 
   const { data: notaCredito = null, isLoading: loading, isError } = useQuery<NotaCreditoFiscal | null>({
-    queryKey: [`/ventas/notas-credito-fiscal/${id}/`],
+    queryKey: ventasKeys.notasCreditoFiscal.detail(id!),
     queryFn: () => notaCreditoFiscalService.getById(id!),
     enabled: !!id,
   });

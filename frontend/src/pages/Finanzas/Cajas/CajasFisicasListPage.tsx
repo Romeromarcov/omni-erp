@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica, type CajaVirtual, type Datafono } from '../../../services/cajasFisicasService';
 import { useConfirm, useSnackbar } from '../../../contexts/feedbackTypes';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -19,7 +20,7 @@ const CajasFisicasListPage: React.FC = () => {
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
   const { data: cajasFisicasData, isLoading, isError } = useQuery({
-    queryKey: ['/finanzas/cajas-fisicas/', idEmpresa],
+    queryKey: finanzasKeys.cajasFisicas.list(idEmpresa),
     queryFn: () => cajasFisicasService.getCajasFisicas({ empresa: idEmpresa, page_size: 100 }),
     enabled: !!idEmpresa,
   });
@@ -30,14 +31,14 @@ const CajasFisicasListPage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => cajasFisicasService.deleteCajaFisica(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.cajasFisicas.list(idEmpresa) });
     },
   });
 
   const abrirSesionMutation = useMutation({
     mutationFn: (id: string) => cajasFisicasService.abrirSesion(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.cajasFisicas.list(idEmpresa) });
     },
     onError: () => snackbar.error('Error al abrir la sesión de caja'),
   });
@@ -45,7 +46,7 @@ const CajasFisicasListPage: React.FC = () => {
   const cerrarSesionMutation = useMutation({
     mutationFn: ({ id, notas }: { id: string; notas: string }) => cajasFisicasService.cerrarSesion(id, notas),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.cajasFisicas.list(idEmpresa) });
     },
     onError: () => snackbar.error('Error al cerrar la sesión de caja'),
   });

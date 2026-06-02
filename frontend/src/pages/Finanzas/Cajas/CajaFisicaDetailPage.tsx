@@ -3,6 +3,7 @@ import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica } from '../../../services/cajasFisicasService';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Card, CardActions, CardContent, Chip, Divider, Paper, Typography } from '@mui/material';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
@@ -39,19 +40,19 @@ const CajaFisicaDetailPage: React.FC = () => {
   const navigate = useNavigate();
 
   const { data: cajaFisica, isLoading, isError } = useQuery<CajaFisica>({
-    queryKey: ['/finanzas/cajas-fisicas/', id],
+    queryKey: finanzasKeys.cajasFisicas.detail(id!),
     queryFn: () => cajasFisicasService.getCajaFisica(id!),
     enabled: !!id,
   });
 
   const { data: cajasVirtuales = [] } = useQuery<CajaVirtual[]>({
-    queryKey: ['/finanzas/cajas-fisicas/', id, 'cajas-virtuales'],
+    queryKey: finanzasKeys.cajasFisicas.virtuales(id!),
     queryFn: () => cajasFisicasService.getCajasVirtualesAsociadas(id!) as Promise<CajaVirtual[]>,
     enabled: !!id,
   });
 
   const { data: datafonos = [] } = useQuery<Datafono[]>({
-    queryKey: ['/finanzas/cajas-fisicas/', id, 'datafonos'],
+    queryKey: finanzasKeys.cajasFisicas.datafonos(id!),
     queryFn: () => cajasFisicasService.getDatafonosAsociados(id!) as Promise<Datafono[]>,
     enabled: !!id,
   });

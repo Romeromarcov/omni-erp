@@ -2,11 +2,12 @@ import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get, streamSSE } from '../services/api';
 import type { CarteraAging, AcuerdoPago } from '../types/cxc';
+import { cxcKeys } from '../lib/queryKeys';
 
 // Hook para el dashboard de cartera
 export function useCarteraDashboard() {
   const query = useQuery<CarteraAging>({
-    queryKey: ['cartera', 'dashboard'],
+    queryKey: cxcKeys.carteraDashboard(),
     queryFn: () => get<CarteraAging>('/cobranza/cartera/dashboard/'),
   });
 
@@ -21,7 +22,7 @@ export function useCarteraDashboard() {
 // Hook para tasa de hoy (apunta a finanzas, NO a cobranza)
 export function useTasaHoy() {
   const query = useQuery<string | null>({
-    queryKey: ['tasas', 'hoy'],
+    queryKey: cxcKeys.tasasHoy(),
     queryFn: async () => {
       const data = await get<{ results: Array<{ valor_tasa: string; tipo_tasa: string; fecha_tasa: string }> }>(
         '/finanzas/tasas-cambio/?tipo_tasa=OFICIAL_BCV&ordering=-fecha_creacion&limit=1'
@@ -42,7 +43,7 @@ export function useAcuerdos(estado?: string) {
     : '/cobranza/acuerdos/';
 
   const query = useQuery<{ results: AcuerdoPago[] }>({
-    queryKey: ['acuerdos', estado ?? null],
+    queryKey: cxcKeys.acuerdos(estado),
     queryFn: () => get<{ results: AcuerdoPago[] }>(endpoint),
   });
 
@@ -59,9 +60,9 @@ export function useAcuerdos(estado?: string) {
 export function useInvalidateCxC() {
   const queryClient = useQueryClient();
   return useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['cartera'] });
-    queryClient.invalidateQueries({ queryKey: ['acuerdos'] });
-    queryClient.invalidateQueries({ queryKey: ['tasas'] });
+    queryClient.invalidateQueries({ queryKey: cxcKeys.carteraAll() });
+    queryClient.invalidateQueries({ queryKey: cxcKeys.acuerdosAll() });
+    queryClient.invalidateQueries({ queryKey: cxcKeys.tasasAll() });
   }, [queryClient]);
 }
 

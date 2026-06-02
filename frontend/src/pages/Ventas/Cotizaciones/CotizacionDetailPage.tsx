@@ -11,6 +11,7 @@ import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
 import type { Producto } from '../../../services/productosService';
 import { toList } from '../../../utils/api';
+import { ventasKeys, finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -57,20 +58,20 @@ const CotizacionDetailPage: React.FC = () => {
   const [descuentoGeneral, setDescuentoGeneral] = useState('');
 
   const { data: cotizacion = null, isLoading: loading } = useQuery<CotizacionAPI | null>({
-    queryKey: [`/ventas/cotizaciones/${id_cotizacion}/`],
+    queryKey: ventasKeys.cotizaciones.detail(id_cotizacion!),
     queryFn: () => get<CotizacionAPI>(`/ventas/cotizaciones/${id_cotizacion}/`),
     enabled: !!id_cotizacion,
   });
 
   const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
-    queryKey: [`/finanzas/pagos/?tipo_documento=COTIZACION&id_documento=${id_cotizacion}`],
+    queryKey: finanzasKeys.pagos.porDocumento('COTIZACION', id_cotizacion!),
     queryFn: () => pagosService.getPagos({ tipo_documento: 'COTIZACION', id_documento: id_cotizacion! }),
     enabled: !!id_cotizacion,
   });
 
   const empresaId = cotizacion?.id_empresa?.id_empresa;
   const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
-    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryKey: ventasKeys.productos(empresaId),
     queryFn: () => fetchProductos(empresaId!),
     select: toList,
     enabled: !!empresaId,
@@ -125,7 +126,7 @@ const CotizacionDetailPage: React.FC = () => {
       }
       setPagoSuccess('Pagos registrados exitosamente.');
       setShowPagoModal(false);
-      queryClient.invalidateQueries({ queryKey: [`/finanzas/pagos/?tipo_documento=COTIZACION&id_documento=${id_cotizacion}`] });
+      queryClient.invalidateQueries({ queryKey: finanzasKeys.pagos.porDocumento('COTIZACION', id_cotizacion!) });
       setTimeout(() => setPagoSuccess(''), 3000);
     } catch {
       setPagoError('Error al registrar los pagos. Intente nuevamente.');

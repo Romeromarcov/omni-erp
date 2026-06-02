@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, patch } from '../../../services/api';
 import { getEmpresaId } from '../../../utils/empresa';
+import { finanzasKeys } from '../../../lib/queryKeys';
 import PageLayout from '../../../components/PageLayout';
 
 export type Moneda = {
@@ -46,14 +47,14 @@ const MonedaListPage: React.FC = () => {
   // ── Queries paralelas ──────────────────────────────────────────
   const { data: monedas = [], isLoading: loadingMonedas, isError: errorMonedas } =
     useQuery<MonedaApiResponse, Error, Moneda[]>({
-      queryKey: ['/finanzas/monedas/'],
+      queryKey: finanzasKeys.monedas.all(),
       queryFn: () => get<MonedaApiResponse>('/finanzas/monedas/'),
       select: toList,
     });
 
   const { data: activasArr = [], isLoading: loadingActivas } =
     useQuery<MonedaEmpresaActivaApiResponse, Error, MonedaEmpresaActiva[]>({
-      queryKey: ['/finanzas/monedas-empresa-activas/'],
+      queryKey: finanzasKeys.monedas.empresaActivas(),
       queryFn: () => get<MonedaEmpresaActivaApiResponse>('/finanzas/monedas-empresa-activas/'),
       select: toList,
     });
@@ -83,7 +84,7 @@ const MonedaListPage: React.FC = () => {
     },
     onSuccess: () => {
       setToggleError('');
-      queryClientHook.invalidateQueries({ queryKey: ['/finanzas/monedas-empresa-activas/'] });
+      queryClientHook.invalidateQueries({ queryKey: finanzasKeys.monedas.empresaActivas() });
     },
     onError: () => setToggleError('No se pudo actualizar el estado de la moneda'),
   });

@@ -10,6 +10,7 @@ import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
 import { notaCreditoFiscalSchema, type NotaCreditoFiscalInput } from '../../../schemas/ventas.schemas';
+import { ventasKeys } from '../../../lib/queryKeys';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
 import type { Producto } from '../../../services/productosService';
@@ -67,19 +68,19 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
   const { fields, append, remove } = useFieldArray({ control, name: 'detalles' });
 
   const { data: clientes = [] } = useQuery<unknown, Error, Cliente[]>({
-    queryKey: [`/ventas/clientes/?id_empresa=${empresaId}`],
+    queryKey: ventasKeys.clientes(empresaId),
     queryFn: () => fetchClientes(empresaId),
     select: toList,
   });
 
   const { data: productos = [] } = useQuery<unknown, Error, Producto[]>({
-    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryKey: ventasKeys.productos(empresaId),
     queryFn: () => fetchProductos(empresaId),
     select: toList,
   });
 
   const { data: notaCreditoData, isLoading: loading } = useQuery<NotaCreditoFiscal>({
-    queryKey: [`/ventas/notas-credito-fiscal/${id}/`],
+    queryKey: ventasKeys.notasCreditoFiscal.detail(id!),
     queryFn: () => notaCreditoFiscalService.getById(id!),
     enabled: isEditing && !!id,
   });
@@ -124,7 +125,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
       return notaCreditoFiscalService.create(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/ventas/notas-credito-fiscal/'] });
+      queryClient.invalidateQueries({ queryKey: ventasKeys.notasCreditoFiscal.all() });
       navigate('/ventas/notas-credito-fiscal');
     },
     onError: () => setError('Error al guardar la nota de crédito fiscal'),
