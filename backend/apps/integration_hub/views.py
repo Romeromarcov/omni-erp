@@ -46,8 +46,12 @@ logger = logging.getLogger(__name__)
 
 
 def _empresa(request):
-    """Retorna la empresa del usuario autenticado."""
-    return request.user.empresa
+    """Retorna la empresa de trabajo del usuario.
+
+    SEC-NEW-2: vía el helper vetado get_empresas_visible (no la property
+    user.empresa), de modo que solo resuelve empresas que el usuario realmente ve.
+    """
+    return get_empresas_visible(request.user).first()
 
 
 # ── Catálogo de proveedores (solo lectura) ────────────────────────────────────

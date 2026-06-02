@@ -9,13 +9,14 @@ from django.core.cache import cache
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from apps.core.viewsets import get_empresas_visible
 
 
 class CarteraDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        empresa = request.user.empresa
+        empresa = get_empresas_visible(request.user).first()
         cache_key = f"cxc:aging:{empresa.pk}"
         resumen = cache.get(cache_key)
 

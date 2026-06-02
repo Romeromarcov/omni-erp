@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from apps.cxc.models import LoteFraccionado, VentaFraccionada
 from apps.cxc.api.serializers import LoteFraccionadoSerializer, VentaFraccionadaSerializer
+from apps.core.viewsets import get_empresas_visible
 
 
 def _fraccionamiento_enabled(empresa) -> bool:
@@ -29,17 +30,17 @@ class LoteFraccionadoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return LoteFraccionado.objects.filter(
-            empresa=self.request.user.empresa,
+            empresa__in=get_empresas_visible(self.request.user),
             deleted_at__isnull=True,
         ).order_by("-created_at")
 
     def list(self, request, *args, **kwargs):
-        if not _fraccionamiento_enabled(request.user.empresa):
+        if not _fraccionamiento_enabled(get_empresas_visible(request.user).first()):
             return Response({"detail": "Módulo de fraccionamiento no habilitado."}, status=403)
         return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        empresa = self.request.user.empresa
+        empresa = get_empresas_visible(self.request.user).first()
         if not _fraccionamiento_enabled(empresa):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Módulo de fraccionamiento no habilitado.")
@@ -59,12 +60,12 @@ class VentaFraccionadaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return VentaFraccionada.objects.filter(
-            empresa=self.request.user.empresa,
+            empresa__in=get_empresas_visible(self.request.user),
             deleted_at__isnull=True,
         ).select_related("lote").order_by("-created_at")
 
     def perform_create(self, serializer):
-        empresa = self.request.user.empresa
+        empresa = get_empresas_visible(self.request.user).first()
         if not _fraccionamiento_enabled(empresa):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Módulo de fraccionamiento no habilitado.")
@@ -126,7 +127,7 @@ class VentaFraccionadaViewSet(viewsets.ModelViewSet):
         from django.db.models import Count, Sum
         from django.utils import timezone
 
-        empresa = request.user.empresa
+        empresa = get_empresas_visible(request.user).first()
         inicio_mes = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         lotes_activos = LoteFraccionado.objects.filter(
