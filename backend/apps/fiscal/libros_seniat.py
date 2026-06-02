@@ -10,8 +10,11 @@ PDF: Tabla ReportLab con totales al pie.
 from __future__ import annotations
 
 import calendar
+import logging
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+
+logger = logging.getLogger(__name__)
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -243,8 +246,14 @@ def _build_libro_pdf(
                 total_base += Decimal(fila[5].replace(",", "."))
                 total_iva += Decimal(fila[6].replace(",", "."))
                 total_total += Decimal(fila[7].replace(",", "."))
-            except Exception:
-                pass
+            except (InvalidOperation, IndexError, AttributeError) as exc:
+                # M-BUG-14: no tragar errores de parseo en cifras fiscales; un
+                # total mal sumado descuadra el libro SENIAT. Se registra para
+                # que Sentry lo capture (event_level=ERROR en prod).
+                logger.error(
+                    "libro SENIAT: fila con cifras inválidas, excluida del total: %r (%s)",
+                    fila, exc,
+                )
 
         elementos.append(Spacer(1, 0.4 * cm))
         resumen_data = [

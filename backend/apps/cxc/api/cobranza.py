@@ -64,8 +64,12 @@ class GestionCobranzaViewSet(viewsets.ModelViewSet):
             if partida:
                 dias_vencida = partida.dias_vencida
                 monto_pendiente = partida.monto_pendiente
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 — score best-effort si la cartera no carga
+            # M-BUG-7: no silenciar; el score degrada a defaults pero queda rastro.
+            logger.warning(
+                "cobranza: no se pudo obtener cartera para score (cliente=%s): %s",
+                cliente_id, exc,
+            )
 
         intentos = GestionCobranza.objects.filter(
             empresa=empresa,

@@ -132,12 +132,19 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
                 acuerdo.estado = "cumplido"
                 acuerdo.save(update_fields=["estado"])
 
-            # R-CODE-11: AsientoContable en la misma transacción
+            # R-CODE-11: AsientoContable en la misma transacción.
+            # M-BUG-10: solo se tolera la ausencia de mapeo contable (empresa sin
+            # contabilidad configurada). Cualquier otro error del asiento propaga
+            # para que la transacción del pago revierta y no quede descuadrada.
             try:
-                from apps.contabilidad.services import generar_asiento
+                from apps.contabilidad.services import (
+                    AsientoError,
+                    MapeoContableNoEncontrado,
+                    generar_asiento,
+                )
+
                 generar_asiento("PAGO_CXC", cuota, acuerdo.empresa, data["monto"])
-            except Exception as exc:
-                # Si no hay MapeoContable configurado, loguear pero no abortar
+            except (MapeoContableNoEncontrado, AsientoError) as exc:
                 logger.warning(
                     "registrar_pago: asiento contable omitido para cuota=%s | empresa=%s | razón=%s",
                     cuota.id, acuerdo.empresa_id, exc,

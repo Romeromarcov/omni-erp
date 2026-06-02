@@ -94,11 +94,21 @@ class SoftDeleteModelMixin:
     """
 
     def perform_destroy(self, instance):
-        """Usa soft_delete() si está disponible; sino borra físicamente."""
+        """
+        M-BUG-5 (R-CODE-6): borrado lógico únicamente. Si el modelo no soporta
+        soft_delete, NO se hace hard delete silencioso (perdería historial/
+        auditoría); se aborta con un error explícito. Este mixin solo debe
+        mezclarse en ViewSets cuyos modelos extienden SoftDeleteModel.
+        """
         if hasattr(instance, "soft_delete"):
             instance.soft_delete()
         else:
-            instance.delete()
+            from rest_framework.exceptions import APIException
+
+            raise APIException(
+                f"{instance.__class__.__name__} no soporta borrado lógico; "
+                "el hard delete está deshabilitado (R-CODE-6)."
+            )
 
     def _get_object_any_state(self):
         """
