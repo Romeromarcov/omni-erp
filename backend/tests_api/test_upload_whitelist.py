@@ -14,8 +14,17 @@ def storage_local(settings):
     return StorageService()
 
 
-def _file(name):
-    f = io.BytesIO(b"data")
+# Contenido con cabecera (magic bytes) válida por extensión (M-SEC-8).
+_VALID_CONTENT = {
+    ".pdf": b"%PDF-1.4 ...",
+    ".png": b"\x89PNG\r\n\x1a\n....",
+    ".csv": b"col1,col2\n1,2\n",
+    ".docx": b"PK\x03\x04 docx",
+}
+
+
+def _file(name, content=b"data"):
+    f = io.BytesIO(content)
     f.name = name
     return f
 
@@ -28,8 +37,17 @@ def test_upload_extension_no_permitida_rechazada(storage_local, nombre):
 
 @pytest.mark.parametrize("nombre", ["factura.pdf", "logo.png", "datos.csv", "doc.docx"])
 def test_upload_extension_permitida_ok(storage_local, nombre):
-    key, _ = storage_local.upload_file("emp-1", "docs", nombre, _file(nombre))
+    import os
+
+    content = _VALID_CONTENT[os.path.splitext(nombre)[1]]
+    key, _ = storage_local.upload_file("emp-1", "docs", nombre, _file(nombre, content))
     assert key
+
+
+def test_upload_magic_bytes_no_coinciden_rechazado(storage_local):
+    """M-SEC-8: un .pdf cuyo contenido es HTML (no %PDF) se rechaza."""
+    with pytest.raises(ValueError):
+        storage_local.upload_file("emp-1", "docs", "falso.pdf", _file("falso.pdf", b"<html>evil</html>"))
 
 
 def test_presigned_fuerza_attachment(settings):

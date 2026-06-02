@@ -91,7 +91,7 @@ class TestStorageServiceLocal:
     def test_upload_key_es_unico_en_cada_llamada(self, storage_local):
         """Cada subida genera una key única (UUID en el nombre)."""
         empresa_id = str(uuid.uuid4())
-        content = b"file content"
+        content = b"%PDF-1.4 file content"  # M-SEC-8: cabecera PDF válida
         f1, f2 = BytesIO(content), BytesIO(content)
         key1, _ = storage_local.upload_file(empresa_id, "docs", "file.pdf", f1)
         key2, _ = storage_local.upload_file(empresa_id, "docs", "file.pdf", f2)

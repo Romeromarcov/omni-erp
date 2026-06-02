@@ -154,6 +154,7 @@ class StorageService:
 
         size_bytes = len(content)
         self._validate_size(size_bytes, filename)
+        self._validate_magic_bytes(content, filename)  # M-SEC-8
 
         if not self.use_s3:
             logger.debug("StorageService [LOCAL] upload simulado: %s (%d bytes)", s3_key, size_bytes)
@@ -278,6 +279,37 @@ class StorageService:
             raise
 
     # ── Helpers internos ─────────────────────────────────────────────────────
+
+    # M-SEC-8: firmas (magic bytes) por extensión para los tipos con firma
+    # reconocible. Si la extensión está aquí, el contenido DEBE empezar con una
+    # de las firmas; así un .pdf/.png que en realidad es HTML/script se rechaza.
+    # Los formatos sin firma fiable (csv/txt/xml/doc/xls legacy) no se chequean.
+    _MAGIC_SIGNATURES = {
+        ".pdf": [b"%PDF"],
+        ".png": [b"\x89PNG\r\n\x1a\n"],
+        ".jpg": [b"\xff\xd8\xff"],
+        ".jpeg": [b"\xff\xd8\xff"],
+        ".gif": [b"GIF87a", b"GIF89a"],
+        ".webp": [b"RIFF"],  # contenedor RIFF; 'WEBP' va en offset 8
+        ".zip": [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"],
+        ".docx": [b"PK\x03\x04"],
+        ".xlsx": [b"PK\x03\x04"],
+    }
+
+    def _validate_magic_bytes(self, content: bytes, filename: str) -> None:
+        """M-SEC-8: valida que el contenido coincida con la firma de la extensión."""
+        import os as _os
+
+        _, ext = _os.path.splitext(filename.lower())
+        firmas = self._MAGIC_SIGNATURES.get(ext)
+        if not firmas:
+            return  # extensión sin firma fiable — no se valida por magic bytes
+        cabecera = content[:16] if isinstance(content, (bytes, bytearray)) else b""
+        if not any(cabecera.startswith(f) for f in firmas):
+            raise ValueError(
+                f"El contenido del archivo no coincide con la extensión '{ext}' "
+                "(posible archivo malicioso renombrado)."
+            )
 
     def _validate_filename(self, filename: str) -> None:
         """H-SEC-5: solo se permiten extensiones de la whitelist."""
