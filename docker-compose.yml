@@ -188,6 +188,14 @@ services:
         --concurrency=2
         --queues=celery,auditoria
         --hostname=worker@%h
+    # El HEALTHCHECK del Dockerfile (curl :8000/api/health/) es para el web
+    # server; celery no sirve HTTP. Se sobreescribe con un ping de celery.
+    healthcheck:
+      test: ["CMD-SHELL", "python -m celery -A config inspect ping || exit 1"]
+      interval: 30s
+      timeout: 15s
+      start_period: 45s
+      retries: 3
 
   # ─────────────────────────────────────────
   # Celery Beat — scheduler de tareas periódicas
@@ -226,6 +234,10 @@ services:
       python -m celery -A config beat
         --loglevel=info
         --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    # Beat es un scheduler sin endpoint HTTP ni ping de worker; el HEALTHCHECK
+    # web del Dockerfile no aplica. Se deshabilita para no reportar falso unhealthy.
+    healthcheck:
+      disable: true
 
   # ─────────────────────────────────────────
   # Event Store — Redpanda (Kafka-compatible)

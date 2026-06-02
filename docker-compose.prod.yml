@@ -123,6 +123,14 @@ services:
         --hostname=worker@%h
     # Entrypoint omitido: Celery no necesita migrate ni collectstatic
     entrypoint: []
+    # El HEALTHCHECK del Dockerfile (curl :8000) es para el web server; celery
+    # no sirve HTTP. Se sobreescribe con un ping de celery.
+    healthcheck:
+      test: ["CMD-SHELL", "python -m celery -A config inspect ping || exit 1"]
+      interval: 30s
+      timeout: 15s
+      start_period: 45s
+      retries: 3
 
   # ─────────────────────────────────────────
   # Celery Beat — scheduler de tareas periódicas
@@ -150,6 +158,10 @@ services:
         --loglevel=info
         --scheduler django_celery_beat.schedulers:DatabaseScheduler
     entrypoint: []
+    # Beat es scheduler sin endpoint HTTP/ping; el HEALTHCHECK web del Dockerfile
+    # no aplica. Se deshabilita para no reportar falso unhealthy.
+    healthcheck:
+      disable: true
 
   # ─────────────────────────────────────────
   # Nginx — reverse proxy + estáticos
