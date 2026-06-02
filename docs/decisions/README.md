@@ -22,6 +22,7 @@ Se crea un ADR cuando se toma una decisión que:
 | 006 | Asientos Contables Automáticos Obligatorios (R-CODE-11) | 2026-05-16 | Aceptado |
 | 007 | Arquitectura de Localización en Dos Capas | 2026-06-01 | Aceptado |
 | 008 | Monorepo de Clientes + Shells Mobile y Desktop sobre la Capa 1 | 2026-06-01 | Aceptado |
+| 009 | Separación entre cuentas_por_cobrar (ledger) y cxc (cobranza IA) | 2026-06-01 | Aceptado |
 
 ## Cómo se escriben
 
