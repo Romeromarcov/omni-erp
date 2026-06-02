@@ -18,6 +18,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { fetchUsuarios } from '../../../services/users';
@@ -44,6 +45,15 @@ const UserDetailPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
   // Quitar validación de admin, todos pueden editar
+
+  // Multi-select MUI emite string[] (o string en autofill); normalizamos a string[].
+  const handleMultiSelect =
+    (field: 'empresas' | 'sucursales' | 'departamentos') =>
+    (e: SelectChangeEvent<string[]>) => {
+      const value = e.target.value;
+      const list = Array.isArray(value) ? value : [value];
+      setForm(f => ({ ...f, [field]: list }));
+    };
 
   const { data: allData, isLoading: loading } = useQuery({
     queryKey: ['/api/core/usuarios-detalle/', id, id_empresa],
@@ -127,9 +137,8 @@ const UserDetailPage: React.FC = () => {
               select
               label="Empresas"
               value={form.empresas}
-              onChange={e => setForm(f => ({ ...f, empresas: Array.isArray(e.target.value) ? e.target.value as unknown as string[] : [e.target.value] }))}
               fullWidth
-              SelectProps={{ multiple: true }}
+              SelectProps={{ multiple: true, onChange: handleMultiSelect('empresas') }}
               helperText={MULTI_HELP}
               sx={{ mt: 1 }}
             >
@@ -145,9 +154,8 @@ const UserDetailPage: React.FC = () => {
               select
               label="Sucursales"
               value={form.sucursales}
-              onChange={e => setForm(f => ({ ...f, sucursales: Array.isArray(e.target.value) ? e.target.value as unknown as string[] : [e.target.value] }))}
               fullWidth
-              SelectProps={{ multiple: true }}
+              SelectProps={{ multiple: true, onChange: handleMultiSelect('sucursales') }}
               helperText={MULTI_HELP}
               sx={{ mt: 1 }}
             >
@@ -163,9 +171,8 @@ const UserDetailPage: React.FC = () => {
               select
               label="Departamentos"
               value={form.departamentos}
-              onChange={e => setForm(f => ({ ...f, departamentos: Array.isArray(e.target.value) ? e.target.value as unknown as string[] : [e.target.value] }))}
               fullWidth
-              SelectProps={{ multiple: true }}
+              SelectProps={{ multiple: true, onChange: handleMultiSelect('departamentos') }}
               helperText={MULTI_HELP}
               sx={{ mt: 1 }}
             >

@@ -29,6 +29,18 @@ export interface ClienteManual {
   codigo_cliente?: string;
 }
 
+const CLIENTE_MANUAL_KEYS = [
+  'razon_social',
+  'rif',
+  'telefono',
+  'direccion',
+  'correo',
+  'codigo_cliente',
+] as const satisfies readonly (keyof ClienteManual)[];
+
+const isClienteManualKey = (name: string): name is keyof ClienteManual =>
+  (CLIENTE_MANUAL_KEYS as readonly string[]).includes(name);
+
 export interface DetalleDocumentoForm {
   id_producto: string;
   cantidad: string;
@@ -217,8 +229,8 @@ export const useDocumentoVentaBase = ({
       const prefijo = name === 'rif_prefijo' ? value : (prevPref || '');
       const numero = name === 'rif_numero' ? value : (prevNum || '');
       setClienteManual(f => ({ ...f, rif: prefijo && numero ? `${prefijo}-${numero}` : prefijo || numero }));
-    } else {
-      setClienteManual(f => ({ ...f, [name as keyof ClienteManual]: value }));
+    } else if (isClienteManualKey(name)) {
+      setClienteManual(f => ({ ...f, [name]: value }));
     }
   };
 

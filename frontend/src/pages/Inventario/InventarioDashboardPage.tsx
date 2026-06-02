@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Alert, Box, Button, Card, CardActionArea, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { stockActualService, productoInventarioService } from '../../services/inventarioService';
 import type { StockActual } from '../../services/inventarioService';
+import { inventarioKeys } from '../../lib/queryKeys';
 import { PageContainer, PageHeader, DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
 
@@ -47,12 +48,12 @@ const InventarioDashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   const { data: stockList = [], isLoading: loadingStock } = useQuery<StockActual[]>({
-    queryKey: ['stock-actual-all'],
+    queryKey: inventarioKeys.stockActualAll(),
     queryFn: () => stockActualService.getAll(),
   });
 
   const { data: productos = [], isLoading: loadingProductos } = useQuery({
-    queryKey: ['productos-inventario'],
+    queryKey: inventarioKeys.productosInventario(),
     queryFn: () => productoInventarioService.getAll(),
   });
 

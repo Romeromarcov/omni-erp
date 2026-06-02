@@ -1,4 +1,5 @@
 import { get, post } from './api';
+import { toList, type PaginatedResponse } from '../utils/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -69,18 +70,7 @@ export interface AjusteInventarioPayload {
   costo_unitario_movimiento?: number;
 }
 
-interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
-function extractResults<T>(response: PaginatedResponse<T> | T[]): T[] {
-  if (Array.isArray(response)) return response;
-  if ('results' in response) return response.results;
-  return [];
-}
+// Normalización de respuestas paginadas: ver `toList` en utils/api.
 
 // ── Stock Actual ───────────────────────────────────────────────────────────
 
@@ -94,7 +84,7 @@ export const stockActualService = {
     const response = await get<PaginatedResponse<StockActual> | StockActual[]>(
       `/inventario/stock-actual/${query ? '?' + query : ''}`
     );
-    return extractResults(response);
+    return toList<StockActual>(response);
   },
 
   /** Stock por debajo de la cantidad mínima (alertas) */
@@ -112,7 +102,7 @@ export const productoInventarioService = {
   getAll: async (params?: { empresa?: string }): Promise<Producto[]> => {
     const qs = params?.empresa ? `?empresa=${params.empresa}` : '';
     const response = await get<PaginatedResponse<Producto> | Producto[]>(`/inventario/productos/${qs}`);
-    return extractResults(response);
+    return toList<Producto>(response);
   },
 
   getById: async (id: string): Promise<Producto> => {
@@ -131,7 +121,7 @@ export const productoInventarioService = {
     const response = await get<PaginatedResponse<MovimientoInventario> | MovimientoInventario[]>(
       `/inventario/productos/${productoId}/kardex/${query ? '?' + query : ''}`
     );
-    return extractResults(response);
+    return toList<MovimientoInventario>(response);
   },
 };
 

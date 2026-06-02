@@ -144,7 +144,7 @@ const PedidoFormPage: React.FC = () => {
                       name="id_empresa"
                       value={form.id_empresa || ''}
                       label="Empresa"
-                      onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
+                      onChange={handleChange}
                     >
                       {empresas.map((emp) => (
                         <MenuItem key={emp.id_empresa} value={emp.id_empresa}>{emp.nombre_legal}</MenuItem>
@@ -158,7 +158,7 @@ const PedidoFormPage: React.FC = () => {
                       name="id_sucursal"
                       value={form.id_sucursal || ''}
                       label="Sucursal"
-                      onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
+                      onChange={handleChange}
                       disabled={!form.id_empresa}
                     >
                       {sucursales.map((suc) => (
@@ -190,7 +190,7 @@ const PedidoFormPage: React.FC = () => {
                   name="id_vendedor"
                   value={form.id_vendedor || ''}
                   label="Vendedor"
-                  onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
+                  onChange={handleChange}
                 >
                   {vendedores && vendedores.length > 0 ? (vendedores as Usuario[]).map((v) => (
                     <MenuItem key={v.id} value={String(v.id)}>{v.first_name && v.last_name ? `${v.first_name} ${v.last_name}` : v.username}</MenuItem>

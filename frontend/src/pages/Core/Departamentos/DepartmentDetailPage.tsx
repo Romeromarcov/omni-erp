@@ -5,12 +5,12 @@ import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography }
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
-interface Departamento {
+type Departamento = {
   id_departamento: string;
   nombre_departamento: string;
   descripcion: string;
   activo: boolean;
-}
+};
 
 const DepartmentDetailPage: React.FC = () => {
   const { id_departamento } = useParams<{ id_departamento: string }>();
@@ -32,7 +32,7 @@ const DepartmentDetailPage: React.FC = () => {
   }, [departamento]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: Departamento) => put<Departamento>(`/core/departamentos/${id_departamento}/`, data as unknown as Record<string, unknown>),
+    mutationFn: (data: Departamento) => put<Departamento>(`/core/departamentos/${id_departamento}/`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/', id_departamento] });
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });

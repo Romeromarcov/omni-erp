@@ -16,7 +16,7 @@ import {
 import { get, post, patch } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
-interface TipoDocumentoForm {
+type TipoDocumentoForm = {
   codigo: string;
   nombre: string;
   descripcion: string;
@@ -26,7 +26,7 @@ interface TipoDocumentoForm {
   afecta_contabilidad: boolean;
   prefijo_correlativo: string;
   longitud_correlativo: number;
-}
+};
 
 const MODULOS = ['VENTAS', 'COMPRAS', 'INVENTARIO', 'FINANZAS', 'CONTABILIDAD', 'RRHH', 'GENERAL'];
 
@@ -69,9 +69,9 @@ export default function TipoDocumentoDetailPage() {
     setLoading(true);
     try {
       if (isNew) {
-        await post('/configuracion_motor/tipos-documento/', form as unknown as Record<string, unknown>);
+        await post('/configuracion_motor/tipos-documento/', form);
       } else {
-        await patch(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`, form as unknown as Record<string, unknown>);
+        await patch(`/configuracion_motor/tipos-documento/${id_tipo_documento}/`, form);
       }
       setSuccess(true);
       setTimeout(() => navigate('/configuracion/tipos-documento'), 800);

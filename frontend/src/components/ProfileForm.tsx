@@ -45,6 +45,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialValues, onSubmit, load
         {...register('first_name')}
         error={!!errors.first_name}
         helperText={errors.first_name?.message}
+        disabled={loading}
         fullWidth
       />
       <TextField
@@ -52,6 +53,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialValues, onSubmit, load
         {...register('last_name')}
         error={!!errors.last_name}
         helperText={errors.last_name?.message}
+        disabled={loading}
         fullWidth
       />
       <TextField
@@ -59,6 +61,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialValues, onSubmit, load
         {...register('email')}
         error={!!errors.email}
         helperText={errors.email?.message}
+        disabled={loading}
         fullWidth
       />
       <TextField
@@ -66,6 +69,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialValues, onSubmit, load
         {...register('id_sucursal_predeterminada')}
         error={!!errors.id_sucursal_predeterminada}
         helperText={errors.id_sucursal_predeterminada?.message}
+        disabled={loading}
         fullWidth
       />
       {error && <Alert severity="error">{error}</Alert>}

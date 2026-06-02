@@ -6,12 +6,12 @@ import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
-interface Departamento {
+type Departamento = {
   nombre_departamento: string;
   descripcion: string;
   activo: boolean;
   id_empresa: string;
-}
+};
 
 const DepartmentCreatePage: React.FC = () => {
   let { id_empresa } = useParams<{ id_empresa: string }>();
@@ -26,7 +26,7 @@ const DepartmentCreatePage: React.FC = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Departamento) => post<Departamento>('/core/departamentos/', data as unknown as Record<string, unknown>),
+    mutationFn: (data: Departamento) => post<Departamento>('/core/departamentos/', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });
       navigate(`/empresas/${id_empresa}/departamentos`);

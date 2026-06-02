@@ -6,7 +6,7 @@ import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
-interface Sucursal {
+type Sucursal = {
   nombre: string;
   codigo_sucursal: string;
   direccion: string;
@@ -15,7 +15,7 @@ interface Sucursal {
   ubicacion_gps_json: string;
   activo: boolean;
   id_empresa: string;
-}
+};
 
 const BranchCreatePage: React.FC = () => {
   let { id_empresa } = useParams<{ id_empresa: string }>();
@@ -34,7 +34,7 @@ const BranchCreatePage: React.FC = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Sucursal) => post<Sucursal>('/core/sucursales/', data as unknown as Record<string, unknown>),
+    mutationFn: (data: Sucursal) => post<Sucursal>('/core/sucursales/', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });
       navigate(`/empresas/${id_empresa}/sucursales`);

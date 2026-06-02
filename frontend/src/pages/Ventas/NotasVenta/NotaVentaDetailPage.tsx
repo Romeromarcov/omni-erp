@@ -15,6 +15,7 @@ import { notaVentaService } from '../../../services/ventas';
 import type { NotaVenta } from '../../../types/ventas';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
 import type { Producto as ProductoService } from '../../../services/productosService';
+import { notasVentaKeys, pagosKeys, productosKeys } from '../../../lib/queryKeys';
 
 interface ProductoDisplay {
   id_producto: string;
@@ -51,20 +52,20 @@ const NotaVentaDetailPage: React.FC = () => {
   const [pagoError, setPagoError] = useState('');
 
   const { data: notaVenta = null, isLoading: loading } = useQuery<NotaVentaDetail | null>({
-    queryKey: [`/ventas/notas-venta/${id}/`],
+    queryKey: notasVentaKeys.detail(id!),
     queryFn: () => notaVentaService.getById(id!) as unknown as Promise<NotaVentaDetail>,
     enabled: !!id,
   });
 
   const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
-    queryKey: [`/finanzas/pagos/?tipo_documento=NOTA_VENTA&id_documento=${id}`],
+    queryKey: pagosKeys.porDocumento('NOTA_VENTA', id!),
     queryFn: () => pagosService.getPagosNotaVenta(id!),
     enabled: !!id,
   });
 
   const empresaId = notaVenta?.id_empresa?.id_empresa;
   const { data: productos = [] } = useQuery<unknown, Error, ProductoService[]>({
-    queryKey: [`/ventas/productos/?id_empresa=${empresaId}`],
+    queryKey: productosKeys.porEmpresa(empresaId!),
     queryFn: () => fetchProductos(empresaId!),
     select: toList,
     enabled: !!empresaId,
@@ -73,7 +74,10 @@ const NotaVentaDetailPage: React.FC = () => {
   const convertirMutation = useMutation({
     mutationFn: (notaId: string) => notaVentaService.convertirAFactura(notaId, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/ventas/notas-venta/${id}/`] });
+      // Convertir a factura afecta la nota, sus pagos y la lista de notas de venta.
+      queryClient.invalidateQueries({ queryKey: notasVentaKeys.detail(id!) });
+      queryClient.invalidateQueries({ queryKey: notasVentaKeys.all() });
+      queryClient.invalidateQueries({ queryKey: pagosKeys.porDocumento('NOTA_VENTA', id!) });
     },
     onError: () => alert('Error al convertir la nota de venta a factura'),
   });
@@ -144,7 +148,7 @@ const NotaVentaDetailPage: React.FC = () => {
 
       setPagoSuccess('Pagos registrados exitosamente.');
       setShowPagoModal(false);
-      queryClient.invalidateQueries({ queryKey: [`/finanzas/pagos/?tipo_documento=NOTA_VENTA&id_documento=${id}`] });
+      queryClient.invalidateQueries({ queryKey: pagosKeys.porDocumento('NOTA_VENTA', id) });
 
       // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => setPagoSuccess(''), 3000);

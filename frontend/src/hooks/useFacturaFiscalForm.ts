@@ -32,6 +32,20 @@ const initialForm = (): FacturaFiscalForm => ({
   observaciones: '',
 });
 
+const FACTURA_FISCAL_FORM_KEYS = [
+  'numero_factura',
+  'fecha_emision',
+  'id_empresa',
+  'id_sucursal',
+  'id_cliente',
+  'id_caja',
+  'id_vendedor',
+  'observaciones',
+] as const satisfies readonly (keyof FacturaFiscalForm)[];
+
+const isFacturaFiscalFormKey = (name: string): name is keyof FacturaFiscalForm =>
+  (FACTURA_FISCAL_FORM_KEYS as readonly string[]).includes(name);
+
 export const useFacturaFiscalForm = (facturaId?: string) => {
   const [form, setForm] = useState<FacturaFiscalForm>(initialForm());
   const [numeroFacturaCreado, setNumeroFacturaCreado] = useState<string | null>(null);
@@ -54,7 +68,9 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name as keyof FacturaFiscalForm]: value }));
+    if (isFacturaFiscalFormKey(name)) {
+      setForm(f => ({ ...f, [name]: value }));
+    }
     base.setError('');
     base.setSuccess('');
   };

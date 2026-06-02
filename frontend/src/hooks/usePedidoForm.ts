@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { SelectChangeEvent } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import type { Pedido, DetallePedido } from '../types/ventas';
 import { post, get, patch } from '../services/api';
@@ -28,6 +29,20 @@ const initialForm = (): PedidoForm => ({
   observaciones: '',
 });
 
+const PEDIDO_FORM_KEYS = [
+  'numero_pedido',
+  'fecha_pedido',
+  'id_empresa',
+  'id_sucursal',
+  'id_cliente',
+  'id_caja',
+  'id_vendedor',
+  'observaciones',
+] as const satisfies readonly (keyof PedidoForm)[];
+
+const isPedidoFormKey = (name: string): name is keyof PedidoForm =>
+  (PEDIDO_FORM_KEYS as readonly string[]).includes(name);
+
 export const usePedidoForm = (pedidoId?: string) => {
   const [form, setForm] = useState<PedidoForm>(initialForm());
   const [numeroPedidoCreado, setNumeroPedidoCreado] = useState<string | null>(null);
@@ -48,9 +63,13 @@ export const usePedidoForm = (pedidoId?: string) => {
     onVendedorPredet: (userId) => setForm(f => f.id_vendedor ? f : { ...f, id_vendedor: userId }),
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | SelectChangeEvent,
+  ) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name as keyof PedidoForm]: value }));
+    if (isPedidoFormKey(name)) {
+      setForm(f => ({ ...f, [name]: value }));
+    }
     base.setError('');
     base.setSuccess('');
   };

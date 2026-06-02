@@ -40,6 +40,24 @@ const initialForm = (): CotizacionForm => ({
   condiciones_comerciales: '',
 });
 
+const COTIZACION_FORM_KEYS = [
+  'numero_cotizacion',
+  'fecha_cotizacion',
+  'fecha_vencimiento',
+  'estado',
+  'id_empresa',
+  'id_sucursal',
+  'id_cliente',
+  'id_moneda',
+  'id_caja',
+  'id_vendedor',
+  'observaciones',
+  'condiciones_comerciales',
+] as const satisfies readonly (keyof CotizacionForm)[];
+
+const isCotizacionFormKey = (name: string): name is keyof CotizacionForm =>
+  (COTIZACION_FORM_KEYS as readonly string[]).includes(name);
+
 export const useCotizacionForm = (cotizacionId?: string) => {
   const [form, setForm] = useState<CotizacionForm>(initialForm());
   const [numeroCotizacionCreado, setNumeroCotizacionCreado] = useState<string | null>(null);
@@ -62,7 +80,9 @@ export const useCotizacionForm = (cotizacionId?: string) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name as keyof CotizacionForm]: value }));
+    if (isCotizacionFormKey(name)) {
+      setForm(f => ({ ...f, [name]: value }));
+    }
     base.setError('');
     base.setSuccess('');
   };

@@ -5,7 +5,7 @@ import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography }
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
-interface Sucursal {
+type Sucursal = {
   id_sucursal: string;
   nombre: string;
   codigo_sucursal: string;
@@ -15,7 +15,7 @@ interface Sucursal {
   ubicacion_gps_json: string;
   activo: boolean;
   id_empresa: string;
-}
+};
 
 const BranchDetailPage: React.FC = () => {
   const { id_sucursal } = useParams<{ id_sucursal: string }>();
@@ -43,7 +43,7 @@ const BranchDetailPage: React.FC = () => {
   }, [isEditRoute]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: Sucursal) => put<Sucursal>(`/core/sucursales/${id_sucursal}/`, data as unknown as Record<string, unknown>),
+    mutationFn: (data: Sucursal) => put<Sucursal>(`/core/sucursales/${id_sucursal}/`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/', id_sucursal] });
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });

@@ -7,6 +7,7 @@ import { stockActualService, productoInventarioService } from '../../services/in
 import type { StockActual } from '../../services/inventarioService';
 import { PageContainer, PageHeader, DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
+import { inventarioKeys } from '../../lib/queryKeys';
 
 type ChipColor = 'error' | 'warning' | 'success';
 
@@ -25,12 +26,12 @@ const StockActualPage: React.FC = () => {
   const [soloAlertas, setSoloAlertas] = useState(false);
 
   const { data: stockList = [], isLoading } = useQuery<StockActual[]>({
-    queryKey: ['stock-actual-all'],
+    queryKey: inventarioKeys.stockActualAll(),
     queryFn: () => stockActualService.getAll(),
   });
 
   const { data: productos = [] } = useQuery({
-    queryKey: ['productos-inventario'],
+    queryKey: inventarioKeys.productosInventario(),
     queryFn: () => productoInventarioService.getAll(),
   });
 

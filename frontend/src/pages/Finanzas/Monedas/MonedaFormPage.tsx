@@ -90,6 +90,7 @@ const MonedaFormPage: React.FC = () => {
                 {...field}
                 error={!!errors.tipo_moneda}
                 helperText={errors.tipo_moneda?.message}
+                disabled={saving}
                 fullWidth
               >
                 <MenuItem value="fiat">Fiat</MenuItem>
@@ -103,6 +104,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('codigo_iso')}
             error={!!errors.codigo_iso}
             helperText={errors.codigo_iso?.message}
+            disabled={saving}
             fullWidth
             inputProps={{ maxLength: tipoMoneda === 'crypto' ? 5 : 3 }}
           />
@@ -111,6 +113,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('nombre')}
             error={!!errors.nombre}
             helperText={errors.nombre?.message}
+            disabled={saving}
             fullWidth
           />
           <TextField
@@ -118,6 +121,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('simbolo')}
             error={!!errors.simbolo}
             helperText={errors.simbolo?.message}
+            disabled={saving}
             fullWidth
           />
           <TextField
@@ -126,6 +130,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('decimales')}
             error={!!errors.decimales}
             helperText={errors.decimales?.message}
+            disabled={saving}
             fullWidth
             inputProps={{ min: 0, max: 8 }}
           />
@@ -134,6 +139,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('referencia_externa')}
             error={!!errors.referencia_externa}
             helperText={errors.referencia_externa?.message}
+            disabled={saving}
             fullWidth
           />
           <TextField
@@ -141,6 +147,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('documento_json')}
             error={!!errors.documento_json}
             helperText={errors.documento_json?.message}
+            disabled={saving}
             fullWidth
           />
           <TextField
@@ -148,6 +155,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('tipo_operacion')}
             error={!!errors.tipo_operacion}
             helperText={errors.tipo_operacion?.message}
+            disabled={saving}
             fullWidth
           />
           <TextField
@@ -156,6 +164,7 @@ const MonedaFormPage: React.FC = () => {
             {...register('fecha_cierre_estimada')}
             error={!!errors.fecha_cierre_estimada}
             helperText={errors.fecha_cierre_estimada?.message}
+            disabled={saving}
             fullWidth
             InputLabelProps={{ shrink: true }}
           />
@@ -164,7 +173,7 @@ const MonedaFormPage: React.FC = () => {
             control={control}
             render={({ field }) => (
               <FormControlLabel
-                control={<Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                control={<Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} disabled={saving} />}
                 label="Activo"
               />
             )}

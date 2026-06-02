@@ -1,4 +1,5 @@
 import { post, get } from './api';
+import { toList } from '../utils/api';
 import { isSimilar } from '../utils/fuzzyDuplicate';
 
 export interface Cliente {
@@ -29,18 +30,13 @@ export async function buscarClientes(query: string, empresaId?: string): Promise
   // Endpoint corregido para buscar clientes en el backend real, incluyendo empresa
   const empresaParam = empresaId ? `&empresa=${empresaId}` : '';
   const response: Cliente[] | { results: Cliente[] } = await get(`/crm/clientes/?search=${encodeURIComponent(query)}${empresaParam}`);
-  // Si la respuesta es paginada, devolver el array de results
-  if (response && Array.isArray((response as { results?: Cliente[] }).results)) {
-    return (response as { results: Cliente[] }).results;
-  }
-  // Si no, asumir que es un array directo
-  return Array.isArray(response) ? response : [];
+  return toList<Cliente>(response);
 }
 
 export async function buscarClientesSimilares(nombre: string, rif: string, empresaId?: string): Promise<Cliente[]> {
   if (!empresaId) return [];
   const response = await fetchClientes(empresaId);
-  let clientes = Array.isArray(response) ? response : (response as { results: Cliente[] }).results || [];
+  let clientes = toList<Cliente>(response);
   // Extraer tipo_rif (prefijo) del rif
   const tipoRifNuevo = rif.split('-')[0] || '';
   // Filtrar por similitud cruzada: nombre y rif similares al mismo cliente, y tipo_rif coincida

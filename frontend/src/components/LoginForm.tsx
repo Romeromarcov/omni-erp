@@ -35,6 +35,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading, error }) => {
           {...register('username')}
           error={!!errors.username}
           helperText={errors.username?.message}
+          disabled={loading}
           fullWidth
         />
         <TextField
@@ -43,6 +44,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading, error }) => {
           {...register('password')}
           error={!!errors.password}
           helperText={errors.password?.message}
+          disabled={loading}
           fullWidth
         />
         {error && <Alert severity="error">{error}</Alert>}

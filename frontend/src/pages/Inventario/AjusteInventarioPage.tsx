@@ -19,6 +19,7 @@ import {
   stockActualService,
   movimientoService,
 } from '../../services/inventarioService';
+import { inventarioKeys } from '../../lib/queryKeys';
 
 type TipoAjuste = 'ENTRADA' | 'SALIDA';
 
@@ -56,12 +57,12 @@ const AjusteInventarioPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const { data: productos = [] } = useQuery({
-    queryKey: ['productos-inventario'],
+    queryKey: inventarioKeys.productosInventario(),
     queryFn: () => productoInventarioService.getAll(),
   });
 
   const { data: stockList = [] } = useQuery({
-    queryKey: ['stock-actual-all'],
+    queryKey: inventarioKeys.stockActualAll(),
     queryFn: () => stockActualService.getAll(),
   });
 
@@ -98,8 +99,8 @@ const AjusteInventarioPage: React.FC = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock-actual-all'] });
-      queryClient.invalidateQueries({ queryKey: ['kardex'] });
+      queryClient.invalidateQueries({ queryKey: inventarioKeys.stockActualAll() });
+      queryClient.invalidateQueries({ queryKey: inventarioKeys.kardexAll() });
       setSuccessMsg('Ajuste registrado correctamente.');
       setErrorMsg('');
       setForm((f) => ({

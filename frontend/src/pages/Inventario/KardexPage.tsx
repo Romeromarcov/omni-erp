@@ -7,6 +7,7 @@ import { productoInventarioService } from '../../services/inventarioService';
 import type { MovimientoInventario } from '../../services/inventarioService';
 import { PageContainer, PageHeader, DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
+import { inventarioKeys } from '../../lib/queryKeys';
 
 type ChipColor = 'success' | 'error' | 'info' | 'warning' | 'primary' | 'secondary' | 'default';
 
@@ -36,13 +37,13 @@ const KardexPage: React.FC = () => {
   const [fechaHasta, setFechaHasta] = useState(today);
 
   const { data: producto } = useQuery({
-    queryKey: ['producto', productoId],
+    queryKey: inventarioKeys.producto(productoId!),
     queryFn: () => productoInventarioService.getById(productoId!),
     enabled: !!productoId,
   });
 
   const { data: movimientos = [], isLoading } = useQuery<MovimientoInventario[]>({
-    queryKey: ['kardex', productoId, fechaDesde, fechaHasta],
+    queryKey: inventarioKeys.kardex(productoId, fechaDesde, fechaHasta),
     queryFn: () =>
       productoInventarioService.getKardex(productoId!, {
         fecha_desde: fechaDesde,

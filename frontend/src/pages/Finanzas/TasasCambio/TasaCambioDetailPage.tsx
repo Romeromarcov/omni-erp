@@ -18,7 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 
-interface TasaCambioDetail {
+type TasaCambioDetail = {
   id_tasa_cambio: string;
   id_empresa: string;
   id_moneda_origen: string;
@@ -29,7 +29,7 @@ interface TasaCambioDetail {
   hora_tasa?: string;
   id_usuario_registro__username?: string;
   empresa_nombre?: string;
-}
+};
 
 const TasaCambioDetailPage: React.FC = () => {
   const { id_tasa_cambio } = useParams();
@@ -61,7 +61,7 @@ const TasaCambioDetailPage: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: Record<string, unknown>) => put(`/finanzas/tasas-cambio/${id_tasa_cambio}/`, payload),
+    mutationFn: (payload: TasaCambioDetail) => put(`/finanzas/tasas-cambio/${id_tasa_cambio}/`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/finanzas/tasas-cambio/${id_tasa_cambio}/`] });
       setEdit(false);
@@ -75,7 +75,7 @@ const TasaCambioDetailPage: React.FC = () => {
     e.preventDefault();
     if (!tasa) return;
     setError('');
-    updateMutation.mutate(tasa as unknown as Record<string, unknown>);
+    updateMutation.mutate(tasa);
   };
 
   if (isLoading) {

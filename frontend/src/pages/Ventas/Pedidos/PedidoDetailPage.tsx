@@ -7,8 +7,9 @@ import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
+import { toList } from '../../../utils/api';
 
-type ProdutoItem = React.ComponentProps<typeof TablaProductos>['productos'][number];
+type ProductoItem = React.ComponentProps<typeof TablaProductos>['productos'][number];
 import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
@@ -43,7 +44,7 @@ const PedidoDetailPage: React.FC = () => {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
   const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<ProdutoItem[]>([]);
+  const [productos, setProductos] = useState<ProductoItem[]>([]);
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
@@ -76,9 +77,7 @@ const PedidoDetailPage: React.FC = () => {
     if (pedido?.id_empresa && pedido.id_empresa.id_empresa) {
       fetchProductos(pedido.id_empresa.id_empresa)
         .then((res) => {
-          if (Array.isArray(res)) setProductos(res as unknown as ProdutoItem[]);
-          else if (res && Array.isArray((res as unknown as { results: ProdutoItem[] }).results)) setProductos((res as unknown as { results: ProdutoItem[] }).results);
-          else setProductos([]);
+          setProductos(toList<ProductoItem>(res));
         })
         .catch(() => setProductos([]));
     }

@@ -1,4 +1,5 @@
 import { get, post, patch, fetcher } from './api';
+import { toList } from '../utils/api';
 import type {
   Cotizacion,
   Pedido,
@@ -46,12 +47,7 @@ class BaseVentasService<T> {
 
   async getAll(): Promise<T[]> {
     const response = await get<PaginatedResponse<T> | T[]>(`/${this.endpoint}/`);
-    // Handle paginated responses
-    if (response && typeof response === 'object' && 'results' in response) {
-      return response.results;
-    }
-    // Handle direct array responses
-    return Array.isArray(response) ? response : [];
+    return toList<T>(response);
   }
 
   async getAllPaginated(page = 1, pageSize = 20): Promise<PaginatedResponse<T>> {

@@ -31,6 +31,20 @@ const initialForm = (): NotaVentaForm => ({
   observaciones: '',
 });
 
+const NOTA_VENTA_FORM_KEYS = [
+  'numero_nota_venta',
+  'fecha_emision',
+  'id_empresa',
+  'id_sucursal',
+  'id_cliente',
+  'id_caja',
+  'id_vendedor',
+  'observaciones',
+] as const satisfies readonly (keyof NotaVentaForm)[];
+
+const isNotaVentaFormKey = (name: string): name is keyof NotaVentaForm =>
+  (NOTA_VENTA_FORM_KEYS as readonly string[]).includes(name);
+
 export const useNotaVentaForm = (notaVentaId?: string) => {
   const [form, setForm] = useState<NotaVentaForm>(initialForm());
   const [numeroNotaVentaCreado, setNumeroNotaVentaCreado] = useState<string | null>(null);
@@ -53,7 +67,9 @@ export const useNotaVentaForm = (notaVentaId?: string) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name as keyof NotaVentaForm]: value }));
+    if (isNotaVentaFormKey(name)) {
+      setForm(f => ({ ...f, [name]: value }));
+    }
     base.setError('');
     base.setSuccess('');
   };
