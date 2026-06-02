@@ -4,12 +4,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Usuario } from '../services/users';
 import type { DispositivoInfo } from '../types/dispositivos';
-import { loginAndFetchUser } from '../services/auth';
+import { loginAndFetchUser, hydrateSession, logoutSession } from '../services/auth';
+import {
+  getAccessToken,
+  setUnauthorizedHandler,
+} from '../services/api';
+import {
+  setSessionDispositivoInfo,
+  setSessionCajaFisica,
+  clearSession,
+  type CajaFisicaSel,
+} from '../services/session';
 
 interface AuthContextType {
   user: Usuario | null;
   token: string | null;
-  cajaFisica: { id_caja_fisica: string; nombre: string; tipo_caja: string } | null;
+  cajaFisica: CajaFisicaSel | null;
   dispositivoInfo: DispositivoInfo | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<DispositivoInfo | null>;
@@ -20,80 +30,106 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// FE-HIGH-13 migration shim: remove any legacy token/PII left in localStorage
+// by previous versions. Only non-PII UI selection keys are allowed to remain.
+function purgeLegacyAuthStorage(): void {
+  ['token', 'usuario', 'empresa', 'sucursal', 'roles', 'permisos', 'id_usuario',
+    'caja_fisica', 'dispositivo_info'].forEach((k) => localStorage.removeItem(k));
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<Usuario | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [cajaFisica, setCajaFisica] = useState<{ id_caja_fisica: string; nombre: string; tipo_caja: string } | null>(null);
-  const [dispositivoInfo, setDispositivoInfo] = useState<DispositivoInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Token lives in api.ts memory; this is a render-trigger mirror only.
+  const [token, setTokenState] = useState<string | null>(null);
+  const [cajaFisica, setCajaFisicaState] = useState<CajaFisicaSel | null>(null);
+  const [dispositivoInfo, setDispositivoInfoState] = useState<DispositivoInfo | null>(null);
+  // Start in loading state: on mount we attempt to rehydrate from the refresh cookie.
+  const [isLoading, setIsLoading] = useState(true);
+
+  const setDispositivoInfo = useCallback((info: DispositivoInfo | null) => {
+    setSessionDispositivoInfo(info);
+    setDispositivoInfoState(info);
+  }, []);
+
+  const logout = useCallback(() => {
+    logoutSession();
+    setTokenState(null);
+    setUser(null);
+    setCajaFisicaState(null);
+    setDispositivoInfoState(null);
+    clearSession();
+    // Drop UI selection too — it is per-session and may leak across users.
+    localStorage.removeItem('id_empresa');
+    localStorage.removeItem('id_sucursal');
+  }, []);
 
   const refreshUser = useCallback(async () => {
-    if (!token) return;
-    try {
-      const storedUser = localStorage.getItem('usuario');
-      const storedCajaFisica = localStorage.getItem('caja_fisica');
-      const storedDispositivoInfo = localStorage.getItem('dispositivo_info');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-      if (storedCajaFisica) {
-        setCajaFisica(JSON.parse(storedCajaFisica));
-      }
-      if (storedDispositivoInfo) {
-        setDispositivoInfo(JSON.parse(storedDispositivoInfo));
-      }
-    } catch {
-      setToken(null);
-      setUser(null);
-      setCajaFisica(null);
-      setDispositivoInfo(null);
-      localStorage.clear();
+    const hydrated = await hydrateSession();
+    if (hydrated) {
+      setUser(hydrated);
+      setTokenState(getAccessToken());
+    } else {
+      logout();
     }
-  }, [token]);
+  }, [logout]);
 
+  // FE-HIGH-11/13: wire the api layer's unauthorized handler to context logout.
   useEffect(() => {
-    if (token && !user) {
-      refreshUser();
-    }
-  }, [token, user, refreshUser]);
+    setUnauthorizedHandler(() => {
+      logout();
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [logout]);
+
+  // On mount: purge legacy storage and try to rehydrate via the refresh cookie.
+  useEffect(() => {
+    let cancelled = false;
+    purgeLegacyAuthStorage();
+    (async () => {
+      const hydrated = await hydrateSession();
+      if (cancelled) return;
+      if (hydrated) {
+        setUser(hydrated);
+        setTokenState(getAccessToken());
+      }
+      setIsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const login = async (username: string, password: string): Promise<DispositivoInfo | null> => {
     setIsLoading(true);
     try {
-      // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie
+      // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie.
       const { token: newToken, usuario, dispositivo } = await loginAndFetchUser(username, password);
-      setToken(newToken);
+      setTokenState(newToken);
       setUser(usuario);
-      setDispositivoInfo(dispositivo || null);
 
-      // Guardar información de dispositivo si existe
       if (dispositivo) {
-        localStorage.setItem('dispositivo_info', JSON.stringify(dispositivo));
+        setDispositivoInfo(dispositivo);
       }
 
-      // Si se abrió sesión automáticamente, actualizar caja física
+      // Si se abrió sesión automáticamente, actualizar caja física (en memoria).
       if (dispositivo?.sesion_abierta) {
-        setCajaFisica({
+        const caja: CajaFisicaSel = {
           id_caja_fisica: dispositivo.sesion_abierta.caja_fisica.id_caja_fisica,
           nombre: dispositivo.sesion_abierta.caja_fisica.nombre,
-          tipo_caja: 'VENTA' // Valor por defecto, se puede obtener del backend si es necesario
-        });
-        localStorage.setItem('caja_fisica', JSON.stringify({
-          id_caja_fisica: dispositivo.sesion_abierta.caja_fisica.id_caja_fisica,
-          nombre: dispositivo.sesion_abierta.caja_fisica.nombre,
-          tipo_caja: 'VENTA'
-        }));
+          tipo_caja: 'VENTA',
+        };
+        setSessionCajaFisica(caja);
+        setCajaFisicaState(caja);
       }
 
-      localStorage.setItem('token', newToken);
-      // SEC-03: refresh token is stored as httpOnly cookie by the backend — do NOT store in localStorage.
-      localStorage.setItem('usuario', JSON.stringify(usuario));
+      // UI selection (non-PII) — first empresa/sucursal as defaults.
       if (usuario.empresas && usuario.empresas.length > 0) {
-        localStorage.setItem('empresa', JSON.stringify(usuario.empresas[0]));
         localStorage.setItem('id_empresa', usuario.empresas[0].id_empresa);
       }
       if (usuario.sucursales && usuario.sucursales.length > 0) {
-        localStorage.setItem('sucursal', JSON.stringify(usuario.sucursales[0]));
         localStorage.setItem('id_sucursal', usuario.sucursales[0].id_sucursal);
       }
 
@@ -102,14 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
-
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    setCajaFisica(null);
-    setDispositivoInfo(null);
-    localStorage.clear();
-  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, cajaFisica, dispositivoInfo, isLoading, login, logout, refreshUser, setDispositivoInfo }}>

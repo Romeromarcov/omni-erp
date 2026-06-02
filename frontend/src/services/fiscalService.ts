@@ -1,5 +1,4 @@
-import { API_URL } from './api';
-import { get, put, post } from './api';
+import { get, put, post, fetchText, fetchBlob } from './api';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,33 +86,14 @@ function parseTxt(txt: string): LibroEntry[] {
 }
 
 async function fetchLibroTxt(tipo: 'ventas' | 'compras', empresaId: string, periodo: string): Promise<LibroEntry[]> {
-  const token = localStorage.getItem('token');
-  const url = `${API_URL}/fiscal/libro-${tipo}/?empresa=${empresaId}&periodo=${periodo}`;
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'text/plain',
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Error ${res.status}: ${text}`);
-  }
-  const txt = await res.text();
+  const endpoint = `/fiscal/libro-${tipo}/?empresa=${empresaId}&periodo=${periodo}`;
+  const txt = await fetchText(endpoint, { headers: { Accept: 'text/plain' } });
   return parseTxt(txt);
 }
 
 async function downloadLibroTxt(tipo: 'ventas' | 'compras', empresaId: string, periodo: string): Promise<void> {
-  const token = localStorage.getItem('token');
-  const url = `${API_URL}/fiscal/libro-${tipo}/?empresa=${empresaId}&periodo=${periodo}`;
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'text/plain',
-    },
-  });
-  if (!res.ok) throw new Error(`Error ${res.status}`);
-  const blob = await res.blob();
+  const endpoint = `/fiscal/libro-${tipo}/?empresa=${empresaId}&periodo=${periodo}`;
+  const blob = await fetchBlob(endpoint, { headers: { Accept: 'text/plain' } });
   const objUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = objUrl;

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('../services/api', () => ({
   get: vi.fn(),
+  // El hook usa getAccessToken() para habilitar la query de sesión activa.
+  getAccessToken: vi.fn(() => 'test-token'),
 }));
 
 vi.mock('../services/sesionService', () => ({

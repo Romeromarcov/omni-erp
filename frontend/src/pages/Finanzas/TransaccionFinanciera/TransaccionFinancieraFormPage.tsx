@@ -198,7 +198,8 @@ const TransaccionFinancieraFormPage: React.FC = () => {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const usuarioId = localStorage.getItem('id_usuario') || '';
+      const { getSessionUsuarioId } = await import('../../../services/session');
+      const usuarioId = getSessionUsuarioId();
       const { get, post } = await import('../../../services/api');
       const empresaData: EmpresaData = await get(`/core/empresas/${idEmpresa}/`);
       const idMonedaPaisEmpresa = empresaData.id_moneda_pais || '';

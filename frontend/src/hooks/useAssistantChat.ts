@@ -1,11 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
+import { streamSSE } from '../services/api';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
-
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Chat conversacional con el asistente del ERP.
@@ -43,58 +42,31 @@ export function useAssistantChat() {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      try {
-        const token = localStorage.getItem('token');
-        const resp = await fetch(`${API_BASE}/agentes/chat/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ messages: history }),
-          signal: controller.signal,
-        });
-
-        if (!resp.ok || !resp.body) {
-          throw new Error(`Error ${resp.status}`);
-        }
-
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        const appendToLast = (chunk: string) => {
-          setMessages((prev) => {
-            const next = [...prev];
-            const last = next[next.length - 1];
-            if (last && last.role === 'assistant') {
-              next[next.length - 1] = { ...last, content: last.content + chunk };
-            }
-            return next;
-          });
-        };
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine.startsWith('data:')) continue;
-            const data = trimmedLine.slice(5).trim();
-            if (data === '[DONE]') continue;
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.text) appendToLast(parsed.text);
-              if (parsed.error) setError(parsed.error);
-            } catch {
-              /* fragmento parcial; se completará en la próxima iteración */
-            }
+      const appendToLast = (chunk: string) => {
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last && last.role === 'assistant') {
+            next[next.length - 1] = { ...last, content: last.content + chunk };
           }
-        }
+          return next;
+        });
+      };
+
+      try {
+        await streamSSE(
+          '/agentes/chat/',
+          (event) => {
+            if (event.text) appendToLast(event.text as string);
+            if (event.error) setError(event.error as string);
+          },
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: history }),
+            signal: controller.signal,
+          },
+        );
       } catch (e: unknown) {
         if ((e as Error)?.name === 'AbortError') return;
         setError(e instanceof Error ? e.message : 'Error desconocido');

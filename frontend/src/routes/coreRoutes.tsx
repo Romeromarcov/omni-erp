@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { lazy } from 'react';
 import { Route, Navigate } from 'react-router-dom';
+import { getSessionUser, getSessionRoles } from '../services/session';
 
 const DashboardUserPage = lazy(() => import('../pages/Core/Login/DashboardUserPage'));
 const RoleListPage = lazy(() => import('../pages/Core/Usuarios/RoleListPage'));
@@ -21,16 +22,27 @@ const DepartmentListPage = lazy(() => import('../pages/Core/Departamentos/Depart
 const DepartmentDetailPage = lazy(() => import('../pages/Core/Departamentos/DepartmentDetailPage'));
 
 function DashboardRoute() {
-  const userStr = localStorage.getItem('usuario');
-  const empresaStr = localStorage.getItem('empresa');
-  const sucursalStr = localStorage.getItem('sucursal');
-  let user = null, empresa = null, sucursal = null;
-  try { user = userStr ? JSON.parse(userStr) : null; } catch { /* ignore */ }
-  try { empresa = empresaStr ? JSON.parse(empresaStr) : null; } catch { /* ignore */ }
-  try { sucursal = sucursalStr ? JSON.parse(sucursalStr) : null; } catch { /* ignore */ }
+  // FE-HIGH-13: user/empresa/sucursal come from the in-memory session, not
+  // localStorage. empresa/sucursal are resolved from the user's lists using the
+  // non-PII UI selection ids kept in localStorage.
+  const user = getSessionUser();
+  const idEmpresaSel = localStorage.getItem('id_empresa');
+  const idSucursalSel = localStorage.getItem('id_sucursal');
+  const empresa = user?.empresas?.find((e) => String(e.id_empresa) === String(idEmpresaSel))
+    ?? user?.empresas?.[0]
+    ?? null;
+  const sucursal = user?.sucursales?.find((s) => String(s.id_sucursal) === String(idSucursalSel))
+    ?? user?.sucursales?.[0]
+    ?? null;
   const actividades = [{ id: 1, descripcion: 'Inicio de sesión', fecha: new Date().toISOString().slice(0, 10) }];
   if (user?.id) {
-    return <DashboardUserPage user={user} empresa={empresa || { nombre: '' }} sucursal={sucursal || { nombre: '' }} actividades={actividades} />;
+    const dashboardUser = {
+      id: Number(user.id),
+      first_name: user.first_name,
+      last_name: user.last_name,
+      roles: getSessionRoles(),
+    };
+    return <DashboardUserPage user={dashboardUser} empresa={empresa || { nombre: '' }} sucursal={sucursal || { nombre: '' }} actividades={actividades} />;
   }
   return <Navigate to="/login" replace />;
 }

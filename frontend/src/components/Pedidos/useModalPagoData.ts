@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { get } from '../../services/api';
+import { get, getAccessToken } from '../../services/api';
 import { getSesionActiva } from '../../services/sesionService';
 import type {
   MetodoPago,
@@ -159,7 +159,7 @@ export function useModalPagoData({
   // ── Sesión activa (provee la caja física para cajas/datáfonos) ──────────────
   const sesionQuery = useQuery<{ id_caja: string } | null>({
     queryKey: ['sesionActiva', 'cajaFisica'],
-    enabled: !!localStorage.getItem('token'),
+    enabled: !!getAccessToken(),
     queryFn: async () => {
       const sesion = await getSesionActiva();
       return sesion ? sesion.caja_fisica_principal : null;

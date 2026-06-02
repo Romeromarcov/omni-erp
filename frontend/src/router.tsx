@@ -12,7 +12,18 @@ import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 
 export default function AppRouter() {
-  const { token } = useAuth();
+  const { token, isLoading } = useAuth();
+
+  // While rehydrating the session from the refresh cookie, avoid flashing the
+  // login page (which would otherwise win the route race for a logged-in user).
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        Cargando…
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

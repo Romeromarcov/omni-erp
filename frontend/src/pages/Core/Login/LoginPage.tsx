@@ -21,22 +21,12 @@ const LoginPage: React.FC = () => {
   const [dispositivoInfo, setDispositivoInfo] = useState<DispositivoInfo | null>(null);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
 
-  // Solicita la cookie CSRF al cargar la página de login
+  // Al cargar la página de login, limpiar la selección de UI persistida.
+  // FE-HIGH-13: tokens/PII ya no viven en localStorage (están en memoria); solo
+  // quedan las selecciones no sensibles id_empresa/id_sucursal.
   useEffect(() => {
-    // Limpiar cualquier token inválido al cargar la página de login
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('empresa');
-    localStorage.removeItem('sucursal');
     localStorage.removeItem('id_empresa');
     localStorage.removeItem('id_sucursal');
-    localStorage.removeItem('roles');
-    localStorage.removeItem('permisos');
-    localStorage.removeItem('dispositivo_info');
-
-    // No necesitamos obtener cookie CSRF ya que usamos JWT
-    // Si necesitamos verificar conectividad, podemos hacer una petición simple
-    // get('/core/empresas/?limit=1').catch(() => {});
   }, []);
 
 
@@ -55,7 +45,6 @@ const LoginPage: React.FC = () => {
           // Actualizar la información del dispositivo en el AuthContext si hay sesión abierta
           if (dispositivoResult.sesion_abierta) {
             setAuthDispositivoInfo(dispositivoResult);
-            localStorage.setItem('dispositivo_info', JSON.stringify(dispositivoResult));
           }
           navigate('/dashboard');
           setLoading(false);
@@ -118,7 +107,6 @@ const LoginPage: React.FC = () => {
     if (success && updatedDispositivoInfo) {
       // Actualizar la información del dispositivo en el AuthContext
       setAuthDispositivoInfo(updatedDispositivoInfo);
-      localStorage.setItem('dispositivo_info', JSON.stringify(updatedDispositivoInfo));
 
       // Después de completar la acción del dispositivo, ir al dashboard
       navigate('/dashboard');
@@ -166,14 +154,14 @@ const LoginPage: React.FC = () => {
                 if (empresa) {
                   const empresaObj = empresas.find(emp => String(emp.id_empresa) === String(empresa));
                   if (empresaObj) {
-                    localStorage.setItem('empresa', JSON.stringify(empresaObj));
+                    // Solo la selección de UI (no PII) se persiste.
                     localStorage.setItem('id_empresa', empresaObj.id_empresa);
                   }
                 }
                 if (sucursal) {
                   const sucursalObj = sucursales.find(suc => String(suc.id_sucursal) === String(sucursal));
                   if (sucursalObj) {
-                    localStorage.setItem('sucursal', JSON.stringify(sucursalObj));
+                    localStorage.setItem('id_sucursal', sucursalObj.id_sucursal);
                   }
                 }
                 if (dispositivoInfo && (dispositivoInfo.accion === 'preguntar_caja' || dispositivoInfo.accion === 'abrir_sesion')) {

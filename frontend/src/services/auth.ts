@@ -1,53 +1,36 @@
-import { post, get } from './api';
+import { post, get, fetcher, setAccessToken, clearAccessToken } from './api';
 import type { Usuario } from './users';
 import type { LoginResponse, DispositivoInfo } from '../types/dispositivos';
 import { getDeviceInfo } from '../utils/deviceFingerprint';
+import {
+  setSessionUser,
+  setSessionRoles,
+  setSessionPermisos,
+  clearSession,
+} from './session';
 
 export async function fetchMe(): Promise<Usuario> {
   return get<Usuario>('/core/usuarios/me/');
 }
 
-export async function loginAndFetchUser(username: string, password: string): Promise<{
-  token: string;
-  // SEC-03: refresh token is now managed as an httpOnly cookie by the browser.
-  // It is NO LONGER returned here to prevent XSS exposure.
-  usuario: Usuario;
-  dispositivo?: DispositivoInfo;
-}> {
-  // Obtener información del dispositivo
-  const deviceInfo = getDeviceInfo();
+interface Role {
+  id: number;
+  name: string;
+}
 
-  const res = await post<LoginResponse>('/auth/login/', {
-    username,
-    password,
-    ...deviceInfo
-  });
-
-  // Guardar access token en localStorage.
-  // SEC-03: el refresh token ya NO se guarda en localStorage — el backend lo envía
-  // como httpOnly cookie (path=/api/auth/) que el navegador gestiona automáticamente.
-  localStorage.setItem('token', res.access);
-
-  // Obtener el usuario autenticado
-  const usuario = await fetchMe();
-  localStorage.setItem('usuario', JSON.stringify(usuario));
-  if (usuario && usuario.id) {
-    localStorage.setItem('id_usuario', usuario.id);
-  }
-
-  // Cargar roles y permisos del usuario
-  type Role = { id: number; name: string };
-  let roles: Role[] = [];
-  let permisos: string[] = [];
+/**
+ * Loads the user's roles + flattened permission codes into the in-memory
+ * session store. Never blocks login on failure.
+ */
+export async function loadRolesYPermisos(usuarioId: string): Promise<void> {
   try {
-    const rolesRes = await get(`/core/usuario_roles/?id_usuario=${usuario.id}`);
-    roles = Array.isArray(rolesRes) ? rolesRes.map(r => ({ id: r.id_rol, name: r.id_rol_nombre_rol })) : [];
-    localStorage.setItem('roles', JSON.stringify(roles));
-    // Opcional: cargar permisos por rol
+    const rolesRes = await get(`/core/usuario_roles/?id_usuario=${usuarioId}`);
+    const roles: Role[] = Array.isArray(rolesRes)
+      ? rolesRes.map((r) => ({ id: r.id_rol, name: r.id_rol_nombre_rol }))
+      : [];
     const permisosSet = new Set<string>();
     interface Permiso {
       codigo_permiso: string;
-      // agrega otras propiedades si es necesario
     }
     if (Array.isArray(rolesRes)) {
       for (const r of rolesRes) {
@@ -56,17 +39,86 @@ export async function loginAndFetchUser(username: string, password: string): Pro
         }
       }
     }
-    permisos = Array.from(permisosSet);
-    localStorage.setItem('permisos', JSON.stringify(permisos));
+    setSessionRoles(roles);
+    setSessionPermisos(Array.from(permisosSet));
   } catch {
-    // Si falla la carga de roles/permisos, continuar sin bloquear el login
-    localStorage.setItem('roles', JSON.stringify([]));
-    localStorage.setItem('permisos', JSON.stringify([]));
+    // Si falla la carga de roles/permisos, continuar sin bloquear el login.
+    setSessionRoles([]);
+    setSessionPermisos([]);
   }
+}
+
+export async function loginAndFetchUser(username: string, password: string): Promise<{
+  token: string;
+  // SEC-03: refresh token is managed as an httpOnly cookie by the browser.
+  // It is NOT returned here to prevent XSS exposure.
+  usuario: Usuario;
+  dispositivo?: DispositivoInfo;
+}> {
+  const deviceInfo = getDeviceInfo();
+
+  const res = await post<LoginResponse>('/auth/login/', {
+    username,
+    password,
+    ...deviceInfo,
+  });
+
+  // FE-HIGH-13: access token kept in memory only (never localStorage).
+  // The refresh token arrives as an httpOnly cookie set by the backend.
+  setAccessToken(res.access);
+
+  const usuario = await fetchMe();
+  setSessionUser(usuario);
+
+  await loadRolesYPermisos(usuario.id);
 
   return {
     token: res.access,
     usuario,
-    dispositivo: res.dispositivo
+    dispositivo: res.dispositivo,
   };
+}
+
+/**
+ * Rebuilds the session after a full page reload. Uses the httpOnly refresh
+ * cookie to obtain a fresh access token, then hydrates the user via the
+ * lightweight auth profile endpoint. Returns the user on success, null if the
+ * user is unauthenticated (no/expired cookie).
+ */
+export async function hydrateSession(): Promise<Usuario | null> {
+  try {
+    const refresh = await fetcher<{ access?: string }>('/auth/token/refresh/', {
+      method: 'POST',
+      body: JSON.stringify({}),
+      timeoutMs: 15000,
+    });
+    if (!refresh.access) {
+      return null;
+    }
+    setAccessToken(refresh.access);
+  } catch {
+    clearAccessToken();
+    clearSession();
+    return null;
+  }
+
+  try {
+    const usuario = await get<Usuario>('/auth/profile/');
+    setSessionUser(usuario);
+    await loadRolesYPermisos(usuario.id);
+    return usuario;
+  } catch {
+    clearAccessToken();
+    clearSession();
+    return null;
+  }
+}
+
+/**
+ * Clears all in-memory auth state. The httpOnly refresh cookie is left to the
+ * backend / its own expiry; there is no client-side logout endpoint.
+ */
+export function logoutSession(): void {
+  clearAccessToken();
+  clearSession();
 }
