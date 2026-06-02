@@ -440,22 +440,34 @@ class TransaccionFinancieraViewSet(BaseModelViewSet):
     pagination_class = None  # Deshabilitar paginación para ver todas las transacciones
 
     def perform_create(self, serializer):
-        # El serializer ya crea el MovimientoCajaBanco automáticamente
-        serializer.save()
+        # FE-HIGH-12: la empresa se deriva del usuario, no del payload. Si el
+        # cliente envía un id_empresa que NO está entre sus empresas visibles,
+        # se ignora y se usa la primaria del usuario.
+        from apps.core.viewsets import get_empresas_visible
+
+        empresas = get_empresas_visible(self.request.user)
+        id_empresa = serializer.validated_data.get("id_empresa")
+        if id_empresa is not None and empresas.filter(pk=id_empresa.pk).exists():
+            serializer.save()
+            return
+        empresa = empresas.first()
+        if empresa is None:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        serializer.save(id_empresa=empresa)
 
     def get_queryset(self):
-        user = self.request.user
-        # Superusuario ve todas
-        if getattr(user, "es_superusuario_omni", False):
-            return TransaccionFinanciera.objects.all()
-        empresas_usuario = user.empresas.all()
-        # Filtrar por empresa si se pasa id_empresa como query param
+        # FE-HIGH-12: SIEMPRE acotar a empresas visibles del usuario. Un
+        # id_empresa en query string no puede escapar el tenant porque se
+        # aplica sobre el queryset ya filtrado.
+        from apps.core.viewsets import get_empresas_visible
+
+        empresas = get_empresas_visible(self.request.user)
+        qs = TransaccionFinanciera.objects.filter(id_empresa__in=empresas)
         id_empresa = self.request.query_params.get("id_empresa")
-        qs = TransaccionFinanciera.objects.all()
         if id_empresa:
-            qs = qs.filter(empresa_id=id_empresa)
-        elif empresas_usuario.exists():
-            qs = qs.filter(empresa_id__in=empresas_usuario.values_list("id_empresa", flat=True))
+            qs = qs.filter(id_empresa=id_empresa)
         return qs
 
 
@@ -520,8 +532,10 @@ class CajaViewSet(BaseModelViewSet):
         Devuelve los movimientos de caja asociados a esta caja.
         Permite filtrar por fecha, tipo, moneda, concepto, referencia, usuario.
         """
-        caja_id = pk
-        qs = MovimientoCajaBanco.objects.filter(id_caja=caja_id)
+        # H-SEC-8: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la caja es de otra empresa. No usar pk crudo.
+        caja = self.get_object()
+        qs = MovimientoCajaBanco.objects.filter(id_caja=caja)
         # Filtros opcionales
         fecha_inicio = request.query_params.get("fecha_inicio")
         fecha_fin = request.query_params.get("fecha_fin")
@@ -570,8 +584,10 @@ class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
         Devuelve los movimientos de la cuenta bancaria asociados a esta cuenta.
         Permite filtrar por fecha, tipo, moneda, concepto, referencia, usuario.
         """
-        cuenta_id = pk
-        qs = MovimientoCajaBanco.objects.filter(id_cuenta_bancaria=cuenta_id)
+        # H-SEC-8: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la cuenta es de otra empresa. No usar pk crudo.
+        cuenta = self.get_object()
+        qs = MovimientoCajaBanco.objects.filter(id_cuenta_bancaria=cuenta)
         # Filtros opcionales
         fecha_inicio = request.query_params.get("fecha_inicio")
         fecha_fin = request.query_params.get("fecha_fin")

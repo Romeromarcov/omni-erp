@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+from apps.core.viewsets import get_empresas_visible
 from apps.cxc.models import AcuerdoPago, CuotaAcuerdo
 from apps.cxc.api.serializers import (
     AcuerdoPagoSerializer,
@@ -29,8 +30,9 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
         return AcuerdoPagoSerializer
 
     def get_queryset(self):
+        # H-SEC-12: aislar por empresas visibles (soporta usuarios multi-empresa).
         return AcuerdoPago.objects.filter(
-            empresa=self.request.user.empresa,
+            empresa__in=get_empresas_visible(self.request.user),
             deleted_at__isnull=True,
         ).prefetch_related("cuotas").order_by("-created_at")
 
@@ -38,7 +40,12 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         from apps.cxc.services.cuotas import generar_cuotas
 
-        empresa = self.request.user.empresa
+        # H-SEC-12: empresa derivada del usuario, no del payload.
+        empresa = get_empresas_visible(self.request.user).first()
+        if empresa is None:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
         acuerdo = serializer.save(empresa=empresa)
 
         # Generar cuotas en la misma transacción
@@ -156,7 +163,7 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
         limite = hoy + timedelta(days=dias)
 
         cuotas = CuotaAcuerdo.objects.filter(
-            acuerdo__empresa=request.user.empresa,
+            acuerdo__empresa__in=get_empresas_visible(request.user),
             acuerdo__deleted_at__isnull=True,
             fecha_vencimiento__gte=hoy,
             fecha_vencimiento__lte=limite,

@@ -110,6 +110,10 @@ class AsientoContableViewSet(viewsets.ModelViewSet):
         if not empresa_id:
             return Response({"error": "Debe especificar el ID de la empresa"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # H-SEC-10: la empresa solicitada debe estar entre las visibles del usuario.
+        if not _empresas(request).filter(pk=empresa_id).exists():
+            return Response({"error": "Empresa no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
         # Obtener asientos aprobados
         asientos_aprobados = AsientoContable.objects.filter(id_empresa=empresa_id, estado_asiento="APROBADO")
 

@@ -102,7 +102,8 @@ class RecepcionMercanciaViewSet(BaseModelViewSet):
 
         try:
             oc = OrdenCompra.objects.get(pk=oc_id, id_empresa__in=_empresas(request))
-            almacen = Almacen.objects.get(pk=almacen_id)
+            # H-SEC-11: el almacén debe ser de una empresa visible del usuario.
+            almacen = Almacen.objects.get(pk=almacen_id, id_empresa__in=_empresas(request))
         except (OrdenCompra.DoesNotExist, Almacen.DoesNotExist) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
@@ -111,7 +112,8 @@ class RecepcionMercanciaViewSet(BaseModelViewSet):
         items = []
         for it in items_raw:
             try:
-                producto = Producto.objects.get(pk=it["producto_id"])
+                # H-SEC-11: el producto debe ser de una empresa visible del usuario.
+                producto = Producto.objects.get(pk=it["producto_id"], id_empresa__in=_empresas(request))
             except (Producto.DoesNotExist, KeyError):
                 return Response(
                     {"detail": f"Producto '{it.get('producto_id')}' no encontrado."},

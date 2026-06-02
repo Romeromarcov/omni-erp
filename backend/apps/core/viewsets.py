@@ -374,6 +374,26 @@ class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet)
     def get_queryset(self):
         return super().get_queryset()  # solo filtro activo, no por empresa
 
+    # H-SEC-7: los permisos son un catálogo global. Solo un superusuario Omni
+    # puede crearlos, modificarlos o eliminarlos.
+    def _assert_superuser(self):
+        if not getattr(self.request.user, "es_superusuario_omni", False):
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Solo un superusuario Omni puede modificar permisos globales.")
+
+    def perform_create(self, serializer):
+        self._assert_superuser()
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._assert_superuser()
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._assert_superuser()
+        super().perform_destroy(instance)
+
 
 # ── ConfiguracionFlujoDocumentosViewSet ───────────────────────────────────────
 

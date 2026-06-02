@@ -147,6 +147,12 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
         if not empleado_id or not tipo_marcado:
             return Response({"error": "Empleado y tipo de marcado son requeridos"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # H-SEC-9: el empleado debe pertenecer a una empresa visible del usuario.
+        from apps.rrhh.models import Empleado
+
+        if not Empleado.objects.filter(pk=empleado_id, empresa__in=_empresas(request)).exists():
+            return Response({"error": "Empleado no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
         # Crear registro de asistencia
         registro = RegistroAsistencia.objects.create(
             id_empleado_id=empleado_id,
