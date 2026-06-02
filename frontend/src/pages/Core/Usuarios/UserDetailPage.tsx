@@ -29,12 +29,14 @@ import { fetchEmpresas } from '../../../services/empresas';
 import { fetchAllSucursales } from '../../../services/sucursales';
 import { fetchDepartamentos } from '../../../services/departamentos';
 import PageLayout from '../../../components/PageLayout';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 const MULTI_HELP = 'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones.';
 
 const UserDetailPage: React.FC = () => {
   const { id_empresa, id } = useParams<{ id_empresa: string; id: string }>();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const [form, setForm] = useState<{ first_name: string; last_name: string; email: string; empresas: string[]; sucursales: string[]; departamentos: string[] }>({ first_name: '', last_name: '', email: '', empresas: [], sucursales: [], departamentos: [] });
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
@@ -106,9 +108,9 @@ const UserDetailPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/core/usuarios-detalle/', id, id_empresa] });
-      alert('Usuario actualizado correctamente');
+      snackbar.success('Usuario actualizado correctamente');
     },
-    onError: () => alert('Error al actualizar usuario'),
+    onError: () => snackbar.error('Error al actualizar usuario'),
   });
 
   if (loading) return (

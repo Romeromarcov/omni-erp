@@ -10,12 +10,14 @@ import type { PaginatedResponse } from '../../../services/ventas';
 import Pagination from '../../../components/Pagination';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 const PAGE_SIZE = 20;
 
 export default function PedidosListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
 
@@ -30,7 +32,7 @@ export default function PedidosListPage() {
   const convertirMutation = useMutation({
     mutationFn: (pedidoId: string) => pedidoService.convertirANotaVenta(pedidoId, {}),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pedidos'] }),
-    onError: () => alert(t('ventas.pedidos.errorConvertir')),
+    onError: () => snackbar.error(t('ventas.pedidos.errorConvertir')),
   });
 
   const columns: Column<Pedido>[] = [

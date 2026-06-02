@@ -4,6 +4,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 type Departamento = {
@@ -18,6 +19,7 @@ const DepartmentCreatePage: React.FC = () => {
   if (!id_empresa) id_empresa = getEmpresaId() || '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const [form, setForm] = useState<Departamento>({
     nombre_departamento: '',
     descripcion: '',
@@ -31,7 +33,7 @@ const DepartmentCreatePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });
       navigate(`/empresas/${id_empresa}/departamentos`);
     },
-    onError: () => alert('Error al crear departamento'),
+    onError: () => snackbar.error('Error al crear departamento'),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

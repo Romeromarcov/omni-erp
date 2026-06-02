@@ -4,12 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { devolucionVentaService } from '../../../services/ventas';
 import type { DevolucionVenta } from '../../../types/ventas';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { Alert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 
 const DevolucionVentaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
 
   const { data: devolucion = null, isLoading: loading, isError } = useQuery<DevolucionVenta | null>({
     queryKey: [`/ventas/devoluciones-venta/${id}/`],
@@ -24,7 +26,7 @@ const DevolucionVentaDetailPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/ventas/devoluciones-venta/${id}/`] });
     },
-    onError: () => alert('Error al procesar la devolución'),
+    onError: () => snackbar.error('Error al procesar la devolución'),
   });
 
   const getEstadoColor = (estado: string) => {

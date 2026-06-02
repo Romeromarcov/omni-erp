@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { post, get } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 interface Empresa {
@@ -34,6 +35,7 @@ const CompanyCreatePage: React.FC = () => {
   });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
 
   const { data: monedas = [] } = useQuery<MonedaApiResponse, Error, Moneda[]>({
     queryKey: ['/finanzas/monedas/activas/'],
@@ -47,7 +49,7 @@ const CompanyCreatePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/core/empresas/'] });
       navigate('/empresas');
     },
-    onError: () => alert('Error al crear empresa'),
+    onError: () => snackbar.error('Error al crear empresa'),
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

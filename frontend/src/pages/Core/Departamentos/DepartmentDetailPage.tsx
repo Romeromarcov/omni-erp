@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 type Departamento = {
   id_departamento: string;
@@ -16,6 +17,7 @@ const DepartmentDetailPage: React.FC = () => {
   const { id_departamento } = useParams<{ id_departamento: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState<Departamento | null>(null);
 
@@ -37,10 +39,10 @@ const DepartmentDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/', id_departamento] });
       queryClient.invalidateQueries({ queryKey: ['/core/departamentos/'] });
       setEdit(false);
-      alert('Departamento actualizado');
+      snackbar.success('Departamento actualizado');
     },
     onError: () => {
-      alert('Error al actualizar');
+      snackbar.error('Error al actualizar');
     },
   });
 

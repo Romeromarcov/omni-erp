@@ -4,12 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageLayout from '../../../components/PageLayout';
 import { notaCreditoFiscalService } from '../../../services/ventas';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { Alert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 
 const NotaCreditoFiscalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
 
   const { data: notaCredito = null, isLoading: loading, isError } = useQuery<NotaCreditoFiscal | null>({
     queryKey: [`/ventas/notas-credito-fiscal/${id}/`],
@@ -24,7 +26,7 @@ const NotaCreditoFiscalDetailPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/ventas/notas-credito-fiscal/${id}/`] });
     },
-    onError: () => alert('Error al aplicar la nota de crédito fiscal'),
+    onError: () => snackbar.error('Error al aplicar la nota de crédito fiscal'),
   });
 
   const getEstadoColor = (estado: string) => {

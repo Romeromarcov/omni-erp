@@ -4,6 +4,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 type Sucursal = {
@@ -22,6 +23,7 @@ const BranchCreatePage: React.FC = () => {
   if (!id_empresa) id_empresa = getEmpresaId() || '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   const [form, setForm] = useState<Sucursal>({
     nombre: '',
     codigo_sucursal: '',
@@ -39,7 +41,7 @@ const BranchCreatePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/core/sucursales/'] });
       navigate(`/empresas/${id_empresa}/sucursales`);
     },
-    onError: () => alert('Error al crear sucursal'),
+    onError: () => snackbar.error('Error al crear sucursal'),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

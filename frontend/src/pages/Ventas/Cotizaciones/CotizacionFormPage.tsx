@@ -12,6 +12,7 @@ import ModalPago from '../../../components/Pedidos/ModalPago';
 import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
 import { useCotizacionForm } from '../../../hooks/useCotizacionForm';
 import type { Producto } from '../../../services/productosService';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 const getFieldString = (obj: unknown, key: string) => {
   if (!obj || typeof obj !== 'object') return '';
@@ -21,6 +22,7 @@ const getFieldString = (obj: unknown, key: string) => {
 
 const CotizacionFormPage: React.FC = () => {
   const navigate = useNavigate();
+  const snackbar = useSnackbar();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id && id !== 'new';
   const [showClienteModal, setShowClienteModal] = useState(false);
@@ -61,10 +63,10 @@ const CotizacionFormPage: React.FC = () => {
     await submitCotizacion(values);
   });
 
-  const handleEnviar = () => alert('Función Enviar: convertir en Nota de venta y cambiar estado a Enviado');
+  const handleEnviar = () => snackbar.info('Función Enviar: convertir en Nota de venta y cambiar estado a Enviado');
   const handlePagar = () => setShowPagoModal(true);
-  const handleAnular = () => alert('Función Anular: cambiar estado a Anulado');
-  const handleImprimir = () => alert('Función Imprimir: generar documento de cotización');
+  const handleAnular = () => snackbar.info('Función Anular: cambiar estado a Anulado');
+  const handleImprimir = () => snackbar.info('Función Imprimir: generar documento de cotización');
   const handleConfirmPago = () => {
     setShowPagoModal(false);
   };

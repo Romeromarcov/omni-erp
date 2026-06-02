@@ -3,6 +3,7 @@ import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica, type CajaVirtual, type Datafono } from '../../../services/cajasFisicasService';
+import { useConfirm, useSnackbar } from '../../../contexts/feedbackTypes';
 import { Alert, Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -13,6 +14,8 @@ import StopIcon from '@mui/icons-material/Stop';
 const CajasFisicasListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
+  const snackbar = useSnackbar();
   const idEmpresa = localStorage.getItem('id_empresa') || '';
 
   const { data: cajasFisicasData, isLoading, isError } = useQuery({
@@ -36,7 +39,7 @@ const CajasFisicasListPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
     },
-    onError: () => alert('Error al abrir la sesión de caja'),
+    onError: () => snackbar.error('Error al abrir la sesión de caja'),
   });
 
   const cerrarSesionMutation = useMutation({
@@ -44,16 +47,27 @@ const CajasFisicasListPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/finanzas/cajas-fisicas/', idEmpresa] });
     },
-    onError: () => alert('Error al cerrar la sesión de caja'),
+    onError: () => snackbar.error('Error al cerrar la sesión de caja'),
   });
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('¿Está seguro de que desea eliminar esta caja física?')) return;
+  const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: 'Eliminar caja física',
+      message: '¿Está seguro de que desea eliminar esta caja física?',
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
     deleteMutation.mutate(id);
   };
 
-  const handleAbrirSesion = (id: string, nombre: string) => {
-    if (!window.confirm(`¿Está seguro de que desea abrir la sesión de la caja "${nombre}"?`)) return;
+  const handleAbrirSesion = async (id: string, nombre: string) => {
+    const ok = await confirm({
+      title: 'Abrir sesión de caja',
+      message: `¿Está seguro de que desea abrir la sesión de la caja "${nombre}"?`,
+      confirmText: 'Abrir',
+    });
+    if (!ok) return;
     abrirSesionMutation.mutate(id);
   };
 

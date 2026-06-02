@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOverridesMetodosPago, createOverrideMetodoPago, updateOverrideMetodoPago, deleteOverrideMetodoPago, type CajaMetodoPagoOverride } from '../../../services/plantillasService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchSucursales } from '../../../services/sucursales';
+import { useConfirm } from '../../../contexts/feedbackTypes';
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 
 interface MetodoPago {
@@ -18,6 +19,7 @@ interface Sucursal {
 
 const OverridesMetodosPagoPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showDialog, setShowDialog] = useState(false);
@@ -89,8 +91,14 @@ const OverridesMetodosPagoPage: React.FC = () => {
     setShowDialog(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm('¿Está seguro de que desea eliminar este override?')) return;
+  const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: 'Eliminar override',
+      message: '¿Está seguro de que desea eliminar este override?',
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
     deleteMutation.mutate(id);
   };
 

@@ -15,6 +15,7 @@ import { useNotaVentaForm } from '../../../hooks/useNotaVentaForm';
 import type { Usuario } from '../../../services/users';
 import type { Producto } from '../../../services/productosService';
 import { pagosService } from '../../../services/pagosService';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 const getFieldString = (obj: unknown, key: string) => {
   if (!obj || typeof obj !== 'object') return '';
@@ -24,6 +25,7 @@ const getFieldString = (obj: unknown, key: string) => {
 
 const NotaVentaFormPage: React.FC = () => {
   const navigate = useNavigate();
+  const snackbar = useSnackbar();
   const { id_nota_venta } = useParams<{ id_nota_venta: string }>();
   const isEditing = !!id_nota_venta;
   const [showClienteModal, setShowClienteModal] = useState(false);
@@ -73,10 +75,10 @@ const NotaVentaFormPage: React.FC = () => {
     }
   });
 
-  const handleEnviar = () => alert('Función Enviar: convertir en Factura Fiscal y cambiar estado a Enviado');
+  const handleEnviar = () => snackbar.info('Función Enviar: convertir en Factura Fiscal y cambiar estado a Enviado');
   const handlePagar = () => setShowPagoModal(true);
-  const handleAnular = () => alert('Función Anular: cambiar estado a Anulado');
-  const handleImprimir = () => alert('Función Imprimir: generar documento de nota de venta');
+  const handleAnular = () => snackbar.info('Función Anular: cambiar estado a Anulado');
+  const handleImprimir = () => snackbar.info('Función Imprimir: generar documento de nota de venta');
 
   const handleConfirmPago = (pagosConfirmados: Pago[], vueltos?: Pago[], notasCreditoUtilizadas?: NotaCredito[]) => {
     setShowPagoModal(false);
