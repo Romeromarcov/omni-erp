@@ -5,6 +5,11 @@
 **Responsable:** Marco + agente IA co-desarrollador.
 **Convenciones:** PRs pequeños y focales (R-PROC-2). Cada PR debe cerrar 1–N items de este plan y dejar CI verde. ID de item se cita en el commit (`fix(audit): CRIT-1 ...`).
 
+**Topologías de deploy en alcance (Marco 2026-06-01):**
+- **Railway** — primaria activa, por facilidad de trabajo remoto del founder. TLS upstream gestionado por Railway; archivos: `backend/Dockerfile`, `frontend/Dockerfile.prod`, `frontend/nginx.conf`.
+- **Self-hosted** — destino futuro sin fecha, reactivable cuando el negocio crezca. Archivos: `docker-compose.prod.yml`, `infra/nginx/nginx.prod.conf` (mantener vivos, no archivar).
+- **Regla operativa:** todo endurecimiento que se aplique a una topología se replica en simétrico en la otra. Esto evita rehacer trabajo cuando se migre y permite testear ambas en CI si hiciera falta.
+
 ---
 
 ## 0. Tablero ejecutivo
@@ -488,21 +493,34 @@ Resuelto en H-SEC-6. Tracking aquí para checklist.
 - **DoD:** simulacro de restore desde último backup funciona en máquina dev.
 - **Esfuerzo:** M (1 día).
 
-### GAP-5 · SSL automático (Let's Encrypt) — **PRIORIDAD REDUCIDA**
+### GAP-5 · SSL automático (Let's Encrypt) — **DIFERIDO a fase self-hosted**
 - **Item §1.J.** `infra/nginx/nginx.prod.conf:109-113` lo tiene comentado.
-- **Cambio de contexto (PRs #3-#5 mergeadas el 2026-06-01):** el deploy ahora va a **Railway** que termina TLS upstream automáticamente. GAP-5 solo aplica si se mantiene la topología self-hosted (docker-compose.prod.yml) en paralelo o como fallback.
-- **Decisión a tomar (Marco):**
-  - **Opción A:** Railway es la topología única → GAP-5 se cierra como **N/A**, mover a CTF con `vence_en` y dueño documentando la dependencia de Railway TLS.
-  - **Opción B:** mantener self-hosted como fallback → ejecutar GAP-5 según pasos originales.
-- **Pasos (si Opción B):**
+- **Cambio de contexto (PRs #3-#5 mergeadas el 2026-06-01):** el deploy ahora va a **Railway** (topología primaria activa por facilidad de trabajo remoto del founder). Railway termina TLS upstream automáticamente. Self-hosted vuelve a la mesa **cuando el negocio crezca** (post-Bloque 2 probable, según escala / decisión de salida).
+- **Estrategia adoptada (Marco 2026-06-01):** mantener AMBAS topologías como objetivos válidos. Railway primario hoy; self-hosted como destino futuro sin fecha.
+- **Implicación en el plan:**
+  - GAP-5 NO se cierra como N/A. Se **difiere** sin fecha; sale del scope de las semanas 1–9.
+  - `infra/nginx/nginx.prod.conf`, `docker-compose.prod.yml` y el bloque SSL comentado **se mantienen vivos** en el repo (no archivar, no eliminar).
+  - Cualquier endurecimiento que se haga al stack Railway (NEW-INFRA-1, NEW-INFRA-3, M-SEC-5) debe **replicarse en simétrico** en los archivos self-hosted, para que migrar entre topologías no requiera rehacer trabajo.
+- **Pasos (cuando se reactive, sin orden temporal aquí):**
   1. Añadir `certbot` sidecar al `docker-compose.prod.yml`.
   2. Descomentar y completar bloque server SSL en `nginx.prod.conf`.
   3. Variables: `LETSENCRYPT_EMAIL`, `LETSENCRYPT_DOMAIN` en `.env`.
   4. Renovación automática vía cron.
-  5. Headers HSTS, `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` (también en Railway/`frontend/nginx.conf`, via NEW-INFRA-1).
-- **DoD:** `curl -I https://<dominio>` devuelve 200 con cert válido.
-- **Esfuerzo:** M (½ día — más fricción de DNS/dominio). Si Opción A: XS (documentar decisión).
-- **Nota relevante:** HSTS sí se debe agregar en `frontend/nginx.conf` aunque sea Railway-only, porque Railway honra los headers downstream. Tracking en NEW-INFRA-1.
+  5. HSTS (`Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`).
+- **DoD (cuando se ejecute):** `curl -I https://<dominio-self-hosted>` devuelve 200 con cert válido.
+- **Esfuerzo:** M (½ día), no agendado ahora.
+- **Nota:** HSTS sí se debe agregar al `frontend/nginx.conf` (Railway) — Railway honra headers downstream. Se trackea en NEW-INFRA-1, no en este item.
+
+### GAP-4-bis · Backup PostgreSQL en Railway (reemplaza alcance Railway de GAP-4)
+- **Contexto:** GAP-4 original (`pg_dump` propio + S3) sigue aplicando cuando vuelva self-hosted. En Railway, el addon Postgres tiene sus propios backups gestionados por la plataforma.
+- **Pasos:**
+  1. Verificar en dashboard Railway: tipo de plan Postgres → frecuencia y retención de backups automáticos (Hobby suele ser 1/día, 7 días retención; Pro mayor).
+  2. Si la retención no cubre el RPO objetivo (sugerido: ≥30 días para fiscal VE): agendar `pg_dump` programado vía GitHub Actions (`schedule: cron`) que descargue dump y lo suba a un bucket S3 propio (no Railway).
+  3. Documentar el proceso de restore — probar al menos una vez con un dump reciente sobre instancia dev.
+  4. Healthcheck: alerta Sentry si el último backup tiene >25 h (igual que GAP-4 self-hosted).
+- **DoD:** simulacro de restore desde último backup funciona en una BD dev.
+- **Esfuerzo:** S (½ día, mucho menor que GAP-4 self-hosted).
+- **Cuando:** Sem 4–5, antes de cargar datos reales de la distribuidora (sub-fase 1.F).
 
 ### GAP-6 · Archivar `PROJECT_LOG.md` de la raíz
 - **Estado:** el plan §10 ya lo marca como obsoleto. Verificar si el archivo aún existe en raíz; si sí, moverlo a `docs/_archive/PROJECT_LOG_root_obsoleto.md`.

@@ -187,8 +187,8 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 | **Deploy Railway (topología activa)** | ✅ `backend/Dockerfile` (con appuser non-root) + `frontend/Dockerfile.prod` + `frontend/nginx.conf` (Railway termina TLS upstream). PRs #3, #4, #5 — 2026-06-01 |
 | CI/CD | ✅ GitHub Actions (`.github/workflows/ci.yml`): jobs backend, frontend, agent-eval |
 | Monitoreo APM | ⚠️ Sentry configurado; Prometheus/Grafana pendiente |
-| Backup automático PostgreSQL | ❌ pendiente (en Railway: revisar plan de backups del addon Postgres) |
-| SSL automático (Let's Encrypt) | ⚠️ N/A en Railway (TLS upstream automático); pendiente en self-hosted (sección comentada en nginx.prod.conf) |
+| Backup automático PostgreSQL | ⚠️ Railway: addon Postgres gestiona backups; verificar retención (GAP-4-bis en plan de trabajo). Self-hosted: pendiente (GAP-4) cuando se reactive |
+| SSL automático (Let's Encrypt) | ⚠️ Railway: TLS upstream automático (cubierto). Self-hosted: diferido (GAP-5) hasta que el negocio justifique la migración |
 | Security headers en nginx (Railway) | ❌ pendiente — ver `PLAN_TRABAJO_AUDITORIA_2026-06-01.md` NEW-INFRA-1 |
 
 ## 3.2 Estrategia multi-tenant
