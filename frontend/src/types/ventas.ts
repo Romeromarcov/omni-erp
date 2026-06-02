@@ -97,6 +97,8 @@ export interface NotaVenta {
   id_pedido_origen?: string;
   numero_nota?: string;
   fecha_nota?: string;
+  // Algunos endpoints devuelven la fecha como fecha_emision.
+  fecha_emision?: string;
 }
 export interface DetalleCotizacion {
   id_detalle_cotizacion?: string;
@@ -188,6 +190,7 @@ export interface FacturaFiscal {
   // Props para integración
   id_nota_venta_origen?: string;
   id_caja?: string;
+  id_vendedor?: string;
 }
 
 export interface NotaCreditoVenta {

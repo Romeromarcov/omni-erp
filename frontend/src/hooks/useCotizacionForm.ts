@@ -105,8 +105,8 @@ export const useCotizacionForm = (cotizacionId?: string) => {
           cantidad: String(d.cantidad ?? 0),
           precio_unitario: String(d.precio_unitario ?? 0),
           descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
-          sku: (d as unknown as { sku?: string }).sku || '',
-          producto: (d as unknown as { producto?: string }).producto || '',
+          sku: d.sku || '',
+          producto: d.producto || '',
         }))
       );
     }

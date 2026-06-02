@@ -75,22 +75,22 @@ export const usePedidoForm = (pedidoId?: string) => {
     setForm({
       numero_pedido: pedido.numero_pedido || '',
       fecha_pedido: pedido.fecha_pedido?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
-      id_empresa: (pedido as unknown as { id_empresa: string }).id_empresa || getEmpresaId() || '',
+      id_empresa: pedido.id_empresa || getEmpresaId() || '',
       id_sucursal: localStorage.getItem('id_sucursal') || '',
-      id_cliente: (pedido as unknown as { id_cliente: { id_cliente: string } }).id_cliente?.id_cliente || '',
-      id_caja: (pedido as unknown as { id_caja?: string }).id_caja || '',
-      id_vendedor: (pedido as unknown as { id_vendedor?: string }).id_vendedor || '',
+      id_cliente: pedido.id_cliente?.id_cliente || '',
+      id_caja: pedido.id_caja || '',
+      id_vendedor: pedido.id_vendedor || '',
       observaciones: pedido.observaciones || '',
     });
     if (pedido.detalles && Array.isArray(pedido.detalles)) {
       base.setDetalles(
         pedido.detalles.map((d: DetallePedido) => ({
-          id_producto: (d as unknown as { id_producto: string }).id_producto || '',
+          id_producto: d.id_producto || '',
           cantidad: String(d.cantidad ?? 0),
           precio_unitario: String(d.precio_unitario ?? 0),
-          descuento_porcentaje: String((d as unknown as { descuento_porcentaje?: number }).descuento_porcentaje ?? ''),
-          sku: (d as unknown as { sku?: string }).sku || '',
-          producto: (d as unknown as { producto?: string }).producto || '',
+          descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
+          sku: d.sku || '',
+          producto: d.producto || '',
         }))
       );
     }

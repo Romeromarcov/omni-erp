@@ -141,3 +141,38 @@ export const facturaFiscalSchema = z.object({
   });
 
 export type FacturaFiscalInput = z.infer<typeof facturaFiscalSchema>;
+
+// ── Nota de Crédito de Venta ────────────────────────────────────────────────────
+
+const motivoNotaCredito = [
+  'DEVOLUCION',
+  'DESCUENTO',
+  'ERROR_FACTURACION',
+  'ANULACION',
+  'OTRO',
+] as const;
+
+const estadoNotaCredito = ['BORRADOR', 'EMITIDA', 'APLICADA', 'ANULADA'] as const;
+
+export const detalleNotaCreditoVentaSchema = z.object({
+  id_producto: requiredUUID('Producto'),
+  cantidad: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
+  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
+});
+
+export const notaCreditoVentaSchema = z.object({
+  id_cliente: requiredUUID('Cliente'),
+  fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
+  motivo: z.enum(motivoNotaCredito, {
+    errorMap: () => ({ message: 'El motivo no es válido' }),
+  }),
+  estado: z.enum(estadoNotaCredito, {
+    errorMap: () => ({ message: 'El estado no es válido' }),
+  }),
+  observaciones: z.string().max(1000).optional(),
+  detalles: z
+    .array(detalleNotaCreditoVentaSchema)
+    .min(1, 'La nota de crédito debe tener al menos un producto'),
+});
+
+export type NotaCreditoVentaInput = z.infer<typeof notaCreditoVentaSchema>;

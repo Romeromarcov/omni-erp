@@ -74,22 +74,21 @@ export const useNotaVentaForm = (notaVentaId?: string) => {
       if (!isLoadingNota) base.setLoading(false);
       return;
     }
-    const n = notaData as unknown as Record<string, unknown>;
     const nota = notaData;
     setForm({
-      numero_nota_venta: String(n.numero_nota_venta || ''),
-      fecha_emision: String(n.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
-      id_empresa: String(n.id_empresa || getEmpresaId() || ''),
+      numero_nota_venta: nota.numero_nota_venta || '',
+      fecha_emision: (nota.fecha_emision || nota.fecha_nota_venta || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+      id_empresa: nota.id_empresa || getEmpresaId() || '',
       id_sucursal: localStorage.getItem('id_sucursal') || '',
-      id_cliente: String((n.id_cliente as Record<string, unknown>)?.id_cliente || ''),
-      id_caja: String(n.id_caja || ''),
-      id_vendedor: String(n.id_vendedor || ''),
-      observaciones: String(n.observaciones || ''),
+      id_cliente: nota.id_cliente?.id_cliente || '',
+      id_caja: nota.id_caja || '',
+      id_vendedor: nota.id_vendedor || '',
+      observaciones: nota.observaciones || '',
     });
     if (Array.isArray(nota.detalles)) {
       base.setDetalles(
         nota.detalles.map((d: DetalleNotaVenta) => ({
-          id_producto: String((d as unknown as Record<string, unknown>).id_producto || ''),
+          id_producto: d.id_producto || '',
           cantidad: String(d.cantidad ?? 0),
           precio_unitario: String(d.precio_unitario ?? 0),
           descuento_porcentaje: '',

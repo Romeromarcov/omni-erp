@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Alert, Button, TextField } from '@mui/material';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, type LoginInput } from '../schemas/auth.schemas';
 import PageLayout from './PageLayout';
 
 interface LoginFormProps {
@@ -9,31 +12,37 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading, error }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onBlur',
+    defaultValues: { username: '', password: '' },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(username, password);
+  const submit = (values: LoginInput) => {
+    onSubmit(values.username, values.password);
   };
 
   return (
     <PageLayout maxWidth={350}>
       <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Iniciar sesión</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <form onSubmit={handleSubmit(submit)} style={{ display: 'flex', flexDirection: 'column', gap: 18 }} noValidate>
         <TextField
           label="Usuario"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
+          {...register('username')}
+          error={!!errors.username}
+          helperText={errors.username?.message}
           fullWidth
         />
         <TextField
           label="Contraseña"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
+          {...register('password')}
+          error={!!errors.password}
+          helperText={errors.password?.message}
           fullWidth
         />
         {error && <Alert severity="error">{error}</Alert>}

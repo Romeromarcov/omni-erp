@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { DetalleFacturaFiscal } from '../types/ventas';
+import type { FacturaFiscal, DetalleFacturaFiscal } from '../types/ventas';
 import { get } from '../services/api';
 import { pagosService } from '../services/pagosService';
 import { getEmpresaId } from '../utils/empresa';
@@ -62,7 +62,7 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
   // Load existing factura fiscal
   const { data: facturaData, isLoading: isLoadingFactura } = useQuery({
     queryKey: ['facturas-fiscales', facturaId],
-    queryFn: () => get(`/ventas/facturas-fiscales/${facturaId}/`) as Promise<Record<string, unknown>>,
+    queryFn: () => get(`/ventas/facturas-fiscales/${facturaId}/`) as Promise<FacturaFiscal>,
     enabled: !!facturaId,
   });
 
@@ -77,22 +77,22 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
     }
     const factura = facturaData;
     setForm({
-      numero_factura: String(factura.numero_factura || ''),
-      fecha_emision: String(factura.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
-      id_empresa: String(factura.id_empresa || getEmpresaId() || ''),
+      numero_factura: factura.numero_factura || '',
+      fecha_emision: (factura.fecha_emision || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+      id_empresa: factura.id_empresa || getEmpresaId() || '',
       id_sucursal: localStorage.getItem('id_sucursal') || '',
-      id_cliente: String((factura.id_cliente as Record<string, unknown>)?.id_cliente || ''),
-      id_caja: String(factura.id_caja || ''),
-      id_vendedor: String(factura.id_vendedor || ''),
-      observaciones: String(factura.observaciones || ''),
+      id_cliente: factura.id_cliente?.id_cliente || '',
+      id_caja: factura.id_caja || '',
+      id_vendedor: factura.id_vendedor || '',
+      observaciones: factura.observaciones || '',
     });
     if (Array.isArray(factura.detalles)) {
       base.setDetalles(
         (factura.detalles as DetalleFacturaFiscal[]).map(d => ({
-          id_producto: String((d as unknown as Record<string, unknown>).id_producto || ''),
+          id_producto: d.id_producto || '',
           cantidad: String(d.cantidad ?? 0),
           precio_unitario: String(d.precio_unitario ?? 0),
-          descuento_porcentaje: String((d as unknown as { descuento_porcentaje?: number }).descuento_porcentaje ?? ''),
+          descuento_porcentaje: String(d.descuento_porcentaje ?? ''),
           sku: '',
           producto: '',
         }))
