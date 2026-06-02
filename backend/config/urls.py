@@ -29,8 +29,12 @@ schema_view = get_schema_view(
     permission_classes=[permissions.IsAuthenticated],
 )
 
+from apps.core.views import health_view
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Healthcheck (sin auth — orquestadores). NEW-INFRA-5.
+    path("api/health/", health_view, name="health"),
     # Authentication
     path("api/auth/login/", login_view, name="login"),
     path("api/auth/logout/", logout_view, name="logout"),

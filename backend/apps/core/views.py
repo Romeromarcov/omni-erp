@@ -18,7 +18,7 @@ import logging
 from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import UsuarioRoles, Usuarios
@@ -26,6 +26,30 @@ from .serializers import UsuarioRolesSerializer, UsuariosSerializer
 from .viewsets import get_empresas_visible
 
 logger = logging.getLogger(__name__)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def health_view(request):
+    """
+    Healthcheck liviano para orquestadores (Docker HEALTHCHECK, Railway, k8s).
+
+    No toca la base de datos para que un fallo de BD no tumbe el liveness;
+    para readiness con BD existe ``?db=1``. NEW-INFRA-5.
+    """
+    payload = {"status": "ok"}
+    if request.query_params.get("db") == "1":
+        from django.db import connection
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+            payload["db"] = "ok"
+        except Exception:  # noqa: BLE001 — readiness: reportar, no propagar
+            payload["db"] = "error"
+            return Response(payload, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
