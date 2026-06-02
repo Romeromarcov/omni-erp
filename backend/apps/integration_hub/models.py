@@ -22,6 +22,7 @@ import logging
 from django.conf import settings
 from django.db import models
 
+from apps.core.fields import EncryptedJSONField
 from apps.core.uuid import uuid7
 
 logger = logging.getLogger(__name__)
@@ -118,10 +119,10 @@ class ConectorInstancia(models.Model):
         help_text='Nombre amigable, ej: "Odoo Producción"',
     )
     # Credenciales/config: {host, db, user, api_key, ...}
-    # Nunca loguear este campo (R-CODE-8)
-    configuracion = models.JSONField(
+    # Nunca loguear este campo (R-CODE-8). H-SEC-4: cifrado en reposo (Fernet).
+    configuracion = EncryptedJSONField(
         default=dict,
-        help_text="Credenciales y configuración de conexión (almacenadas encriptadas).",
+        help_text="Credenciales y configuración de conexión (cifradas en reposo, H-SEC-4).",
     )
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="configurando")
     mensaje_estado = models.TextField(

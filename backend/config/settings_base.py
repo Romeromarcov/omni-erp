@@ -12,6 +12,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is not set")
 
+# H-SEC-4: clave Fernet para cifrar campos sensibles (EncryptedJSONField).
+# En producción se DEBE configurar CRYPTOGRAPHY_KEY explícito y rotarla aparte
+# del SECRET_KEY; si no está, se deriva del SECRET_KEY (aceptable solo en dev).
+CRYPTOGRAPHY_KEY = os.environ.get("CRYPTOGRAPHY_KEY")
+
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 
