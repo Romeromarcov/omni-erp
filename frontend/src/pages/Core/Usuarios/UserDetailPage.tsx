@@ -24,6 +24,9 @@ import { fetchUsuarios } from '../../../services/users';
 import type { Usuario } from '../../../services/users';
 import { fetchUsuarioRoles } from '../../../services/usuarioRoles';
 import type { UsuarioRol } from '../../../services/usuarioRoles';
+import { fetchEmpresas } from '../../../services/empresas';
+import { fetchAllSucursales } from '../../../services/sucursales';
+import { fetchDepartamentos } from '../../../services/departamentos';
 import PageLayout from '../../../components/PageLayout';
 
 const MULTI_HELP = 'Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar varias opciones.';
@@ -42,58 +45,20 @@ const UserDetailPage: React.FC = () => {
   const [passwordMessage, setPasswordMessage] = useState('');
   // Quitar validación de admin, todos pueden editar
 
-  function safeJsonFetch(url: string, options: RequestInit = {}) {
-    return fetch(url, options).then(async r => {
-      const rawText = await r.text();
-      if (!r.ok) {
-        throw new Error(`Error en ${url}: status ${r.status} - ${rawText.slice(0, 100)}`);
-      }
-      try {
-        return JSON.parse(rawText);
-      } catch {
-        throw new Error(`Respuesta no es JSON en ${url}: ${rawText.slice(0, 100)}`);
-      }
-    });
-  }
-
-  function getHeaders(): HeadersInit {
-    let token = localStorage.getItem('token') || '';
-    token = token.trim().replace(/^"|"$/g, '').replace(/\n/g, '');
-    const headers: Record<string, string> = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
-    return headers;
-  }
-
   const { data: allData, isLoading: loading } = useQuery({
     queryKey: ['/api/core/usuarios-detalle/', id, id_empresa],
     queryFn: async () => {
-      const headers = getHeaders();
-      const [usuariosRaw, usuarioRolesData, empresasDataRaw, sucursalesDataRaw, departamentosDataRaw] = await Promise.all([
+      const [usuariosRaw, usuarioRolesData, empresasData, sucursalesData, departamentosData] = await Promise.all([
         fetchUsuarios(id_empresa),
         fetchUsuarioRoles(id || ''),
-        safeJsonFetch('/api/core/empresas/', { headers }),
-        safeJsonFetch('/api/core/sucursales/', { headers }),
-        safeJsonFetch('/api/core/departamentos/', { headers })
+        fetchEmpresas(),
+        fetchAllSucursales(),
+        fetchDepartamentos(),
       ]);
       let usuarios: Usuario[] = [];
       if (Array.isArray(usuariosRaw)) usuarios = usuariosRaw;
       else if (usuariosRaw && typeof usuariosRaw === 'object' && 'results' in usuariosRaw && Array.isArray((usuariosRaw as { results?: unknown }).results)) {
         usuarios = (usuariosRaw as { results: Usuario[] }).results;
-      }
-      let empresasData: { id_empresa: string; nombre_legal: string; nombre_comercial?: string }[] = [];
-      if (Array.isArray(empresasDataRaw)) empresasData = empresasDataRaw;
-      else if (empresasDataRaw && typeof empresasDataRaw === 'object' && 'results' in empresasDataRaw && Array.isArray((empresasDataRaw as { results?: unknown }).results)) {
-        empresasData = (empresasDataRaw as { results: typeof empresasData }).results;
-      }
-      let sucursalesData: { id_sucursal: string; nombre: string }[] = [];
-      if (Array.isArray(sucursalesDataRaw)) sucursalesData = sucursalesDataRaw;
-      else if (sucursalesDataRaw && typeof sucursalesDataRaw === 'object' && 'results' in sucursalesDataRaw && Array.isArray((sucursalesDataRaw as { results?: unknown }).results)) {
-        sucursalesData = (sucursalesDataRaw as { results: typeof sucursalesData }).results;
-      }
-      let departamentosData: { id_departamento: string; nombre_departamento: string }[] = [];
-      if (Array.isArray(departamentosDataRaw)) departamentosData = departamentosDataRaw;
-      else if (departamentosDataRaw && typeof departamentosDataRaw === 'object' && 'results' in departamentosDataRaw && Array.isArray((departamentosDataRaw as { results?: unknown }).results)) {
-        departamentosData = (departamentosDataRaw as { results: typeof departamentosData }).results;
       }
       const user = usuarios.find(u => u.id === id) || null;
       return { usuario: user, usuarioRoles: usuarioRolesData as UsuarioRol[], empresas: empresasData, sucursales: sucursalesData, departamentos: departamentosData };

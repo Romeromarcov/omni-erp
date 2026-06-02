@@ -1,45 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../services/api';
 import type { CarteraAging, AcuerdoPago } from '../types/cxc';
 
 // Hook para el dashboard de cartera
 export function useCarteraDashboard() {
-  const [data, setData] = useState<CarteraAging | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery<CarteraAging>({
+    queryKey: ['cartera', 'dashboard'],
+    queryFn: () => get<CarteraAging>('/cobranza/cartera/dashboard/'),
+  });
 
-  const refresh = useCallback(() => {
-    setLoading(true);
-    get<CarteraAging>('/cobranza/cartera/dashboard/')
-      .then(setData)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { refresh(); }, [refresh]);
-
-  return { data, loading, error, refresh };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+    refresh: query.refetch,
+  };
 }
 
 // Hook para tasa de hoy (apunta a finanzas, NO a cobranza)
 export function useTasaHoy() {
-  const [tasa, setTasa] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const query = useQuery<string | null>({
+    queryKey: ['tasas', 'hoy'],
+    queryFn: async () => {
+      const data = await get<{ results: Array<{ valor_tasa: string; tipo_tasa: string; fecha_tasa: string }> }>(
+        '/finanzas/tasas-cambio/?tipo_tasa=OFICIAL_BCV&ordering=-fecha_creacion&limit=1'
+      );
+      const hoy = new Date().toISOString().split('T')[0];
+      const tasaHoy = data.results?.find(t => t.fecha_tasa === hoy);
+      return tasaHoy?.valor_tasa ?? null;
+    },
+  });
 
-  useEffect(() => {
-    get<{ results: Array<{ valor_tasa: string; tipo_tasa: string; fecha_tasa: string }> }>(
-      '/finanzas/tasas-cambio/?tipo_tasa=OFICIAL_BCV&ordering=-fecha_creacion&limit=1'
-    )
-      .then(data => {
-        const hoy = new Date().toISOString().split('T')[0];
-        const tasaHoy = data.results?.find(t => t.fecha_tasa === hoy);
-        setTasa(tasaHoy?.valor_tasa ?? null);
-      })
-      .catch(() => setTasa(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { tasa, loading };
+  return { tasa: query.data ?? null, loading: query.isLoading };
 }
 
 // Hook para lista de acuerdos
@@ -47,21 +40,29 @@ export function useAcuerdos(estado?: string) {
   const endpoint = estado
     ? `/cobranza/acuerdos/?estado=${estado}`
     : '/cobranza/acuerdos/';
-  const [data, setData] = useState<{ results: AcuerdoPago[] } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(() => {
-    setLoading(true);
-    get<{ results: AcuerdoPago[] }>(endpoint)
-      .then(setData)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [endpoint]);
+  const query = useQuery<{ results: AcuerdoPago[] }>({
+    queryKey: ['acuerdos', estado ?? null],
+    queryFn: () => get<{ results: AcuerdoPago[] }>(endpoint),
+  });
 
-  useEffect(() => { refresh(); }, [refresh]);
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+    refresh: query.refetch,
+  };
+}
 
-  return { data, loading, error, refresh };
+// Helper de invalidación para mutaciones de CxC (creación de acuerdos, etc.)
+// Permite refrescar dashboard de cartera y listas de acuerdos tras una escritura.
+export function useInvalidateCxC() {
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['cartera'] });
+    queryClient.invalidateQueries({ queryKey: ['acuerdos'] });
+    queryClient.invalidateQueries({ queryKey: ['tasas'] });
+  }, [queryClient]);
 }
 
 // Hook para streaming del agente

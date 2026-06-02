@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Button, Card, CardContent, Typography, Chip, Grid, TextField, MenuItem, Alert, CircularProgress, Stepper, Step, StepLabel, Table, TableBody, TableCell, TableHead, TableRow, TableContainer } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { post } from '../../services/api';
-import { useAcuerdos } from '../../hooks/useCxC';
+import { useAcuerdos, useInvalidateCxC } from '../../hooks/useCxC';
 import { calcularCuotasPreview } from '../../utils/cuotasPreview';
 import type { AcuerdoPago, CuotaPreview } from '../../types/cxc';
 
@@ -36,6 +36,7 @@ interface AcuerdoForm {
 
 export default function AcuerdosPage() {
   const { data, loading, error, refresh } = useAcuerdos();
+  const invalidateCxC = useInvalidateCxC();
   const [step, setStep] = useState<WizardStep>(0);
   const [showWizard, setShowWizard] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -72,6 +73,7 @@ export default function AcuerdosPage() {
       setShowWizard(false);
       setStep(0);
       refresh();
+      invalidateCxC();
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : 'Error');
     } finally {
