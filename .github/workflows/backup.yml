@@ -1,0 +1,55 @@
+name: Backup — PostgreSQL (GAP-4-bis)
+
+on:
+  schedule:
+    # Diario 06:00 UTC (~02:00 VET). Ajustar según ventana de menor carga.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: backup-postgres
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: "pg_dump + subida a S3"
+    runs-on: ubuntu-latest
+    env:
+      # Guardado: si no hay host de BD configurado en secrets, el job se omite
+      # limpiamente (no falla), igual que el workflow de deploy.
+      BACKUP_DB_HOST: ${{ secrets.BACKUP_DB_HOST }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: ¿Backup configurado?
+        id: gate
+        run: |
+          if [ -z "$BACKUP_DB_HOST" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Sin secret BACKUP_DB_HOST — backup omitido (no es un error)."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Instalar cliente PostgreSQL + awscli
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client awscli
+
+      - name: Ejecutar backup
+        if: steps.gate.outputs.run == 'true'
+        env:
+          DB_HOST: ${{ secrets.BACKUP_DB_HOST }}
+          DB_PORT: ${{ secrets.BACKUP_DB_PORT }}
+          DB_NAME: ${{ secrets.BACKUP_DB_NAME }}
+          DB_USER: ${{ secrets.BACKUP_DB_USER }}
+          PGPASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_AWS_REGION }}
+          BACKUP_RETENTION_DAYS: "30"
+        run: bash infra/backup/pg_dump_omni.sh
