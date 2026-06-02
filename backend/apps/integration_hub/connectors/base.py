@@ -200,11 +200,27 @@ class BaseConnector(ABC):
         return str(value)
 
     def _safe_float(self, value: Any) -> float:
-        """Convierte un valor a float de forma segura."""
+        """Convierte un valor a float de forma segura. SOLO para campos NO monetarios."""
         try:
             return float(value or 0)
         except (TypeError, ValueError):
             return 0.0
+
+    def _safe_decimal(self, value: Any):
+        """
+        Convierte un valor a Decimal de forma segura (R-CODE-4 / H-BUG-3).
+
+        Usar SIEMPRE para campos monetarios (precios, montos, saldos). Pasa por
+        str() para no heredar el error binario de un float intermedio.
+        """
+        from decimal import Decimal, InvalidOperation
+
+        if value in (None, "", False):
+            return Decimal("0")
+        try:
+            return Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            return Decimal("0")
 
     def _safe_int(self, value: Any) -> int:
         """Convierte un valor a int de forma segura."""

@@ -256,8 +256,8 @@ class OdooConnector(BaseConnector):
             "nombre": raw.get("name") or "",
             "codigo_interno": raw.get("default_code") or "",
             "descripcion_venta": raw.get("description_sale") or "",
-            "precio_venta": self._safe_float(raw.get("list_price")),
-            "costo": self._safe_float(raw.get("standard_price")),
+            "precio_venta": self._safe_decimal(raw.get("list_price")),
+            "costo": self._safe_decimal(raw.get("standard_price")),
             "categoria_id_externo": str(categ[0]) if isinstance(categ, list) and categ else "",
             "categoria_nombre": (categ[1] if isinstance(categ, list) and len(categ) > 1
                                  else ""),
@@ -336,9 +336,9 @@ class OdooConnector(BaseConnector):
             "estado_factura": factura_map.get(
                 raw.get("invoice_status") or "", raw.get("invoice_status") or ""
             ),
-            "subtotal": self._safe_float(raw.get("amount_untaxed")),
-            "impuestos": self._safe_float(raw.get("amount_tax")),
-            "total": self._safe_float(raw.get("amount_total")),
+            "subtotal": self._safe_decimal(raw.get("amount_untaxed")),
+            "impuestos": self._safe_decimal(raw.get("amount_tax")),
+            "total": self._safe_decimal(raw.get("amount_total")),
             "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1
                        else "USD"),
             "lista_precios": (pricelist[1] if isinstance(pricelist, list) and len(pricelist) > 1
@@ -390,9 +390,9 @@ class OdooConnector(BaseConnector):
             "fecha_aprobacion": (raw.get("date_approve") or "")[:10],
             "estado": raw.get("state") or "",
             "estado_factura": raw.get("invoice_status") or "",
-            "subtotal": self._safe_float(raw.get("amount_untaxed")),
-            "impuestos": self._safe_float(raw.get("amount_tax")),
-            "total": self._safe_float(raw.get("amount_total")),
+            "subtotal": self._safe_decimal(raw.get("amount_untaxed")),
+            "impuestos": self._safe_decimal(raw.get("amount_tax")),
+            "total": self._safe_decimal(raw.get("amount_total")),
             "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1
                        else "USD"),
             "fecha_modificacion_externo": (raw.get("write_date") or "")[:19],
@@ -438,10 +438,10 @@ class OdooConnector(BaseConnector):
                                else ""),
             "fecha_factura": (raw.get("invoice_date") or "")[:10],
             "fecha_vencimiento": (raw.get("invoice_date_due") or "")[:10],
-            "subtotal": self._safe_float(raw.get("amount_untaxed")),
-            "impuestos": self._safe_float(raw.get("amount_tax")),
-            "total": self._safe_float(raw.get("amount_total")),
-            "saldo_pendiente": self._safe_float(raw.get("amount_residual")),
+            "subtotal": self._safe_decimal(raw.get("amount_untaxed")),
+            "impuestos": self._safe_decimal(raw.get("amount_tax")),
+            "total": self._safe_decimal(raw.get("amount_total")),
+            "saldo_pendiente": self._safe_decimal(raw.get("amount_residual")),
             "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1
                        else "USD"),
             "estado_pago": pago_estado_map.get(
@@ -481,7 +481,7 @@ class OdooConnector(BaseConnector):
             "socio_id_externo": str(partner[0]) if isinstance(partner, list) and partner else "",
             "socio_nombre": (partner[1] if isinstance(partner, list) and len(partner) > 1
                              else ""),
-            "monto": self._safe_float(raw.get("amount")),
+            "monto": self._safe_decimal(raw.get("amount")),
             "fecha": (raw.get("date") or "")[:10],
             "estado": raw.get("state") or "",
             "diario": (journal[1] if isinstance(journal, list) and len(journal) > 1 else ""),
@@ -608,6 +608,20 @@ class OdooConnector(BaseConnector):
 
     # ── Cartera / CxC ─────────────────────────────────────────────────────────
 
+    def _odoo_base_url(self, config) -> str:
+        """
+        M-SEC-2: resuelve y valida la URL base de Odoo. Exige https:// en
+        producción (DEBUG=False) para no enviar credenciales XML-RPC en claro.
+        """
+        url = (config.get("url") or config.get("host") or "").rstrip("/")
+        from django.conf import settings
+
+        if not url.startswith("https://") and not getattr(settings, "DEBUG", False):
+            raise ConnectorConnectionError(
+                "La URL de Odoo debe usar https:// en producción (M-SEC-2)."
+            )
+        return url
+
     def pull_cartera_vencida(self, desde=None, solo_vencidas=True) -> list[dict]:
         """
         Obtiene cartera vencida desde Odoo.
@@ -624,7 +638,7 @@ class OdooConnector(BaseConnector):
 
         try:
             config = self._config
-            url = config.get("url", "") or config.get("host", "")
+            url = self._odoo_base_url(config)
             db = config.get("db", "")
             uid = config.get("uid") or config.get("user")
             password = config.get("password", "") or config.get("api_key", "")
@@ -663,14 +677,19 @@ class OdooConnector(BaseConnector):
                     except Exception:
                         pass
 
-                dias_vencida = (hoy - fecha_vcto).days if fecha_vcto else 0
-                vencida = dias_vencida > 0
+                # M-BUG-15: distinguir "al día" (0) de "fecha inválida/ausente" (None).
+                if fecha_vcto:
+                    dias_vencida = (hoy - fecha_vcto).days
+                    vencida = dias_vencida > 0
+                else:
+                    dias_vencida = None
+                    vencida = False
 
                 if solo_vencidas and not vencida:
                     continue
 
-                monto_total = self._safe_float(rec.get("amount_total", 0))
-                monto_pendiente = self._safe_float(rec.get("amount_residual", 0))
+                monto_total = self._safe_decimal(rec.get("amount_total", 0))
+                monto_pendiente = self._safe_decimal(rec.get("amount_residual", 0))
 
                 resultado.append({
                     "cliente_id": str(rec["partner_id"][0]) if rec.get("partner_id") else "",
@@ -684,7 +703,7 @@ class OdooConnector(BaseConnector):
                     "dias_termino": 0,
                     "dias_vencida": dias_vencida,
                     "vencida": vencida,
-                    "bucket": self._aging_bucket(dias_vencida),
+                    "bucket": self._aging_bucket(dias_vencida) if dias_vencida is not None else "sin_fecha",
                 })
 
             return resultado
@@ -698,7 +717,7 @@ class OdooConnector(BaseConnector):
 
         try:
             config = self._config
-            url = config.get("url", "") or config.get("host", "")
+            url = self._odoo_base_url(config)
             db = config.get("db", "")
             uid = config.get("uid") or config.get("user")
             password = config.get("password", "") or config.get("api_key", "")
@@ -717,7 +736,7 @@ class OdooConnector(BaseConnector):
                     "pago_id": str(rec.get("id", "")),
                     "referencia": self._safe_str(rec.get("name")),
                     "fecha": rec.get("date"),
-                    "monto": self._safe_float(rec.get("amount", 0)),
+                    "monto": self._safe_decimal(rec.get("amount", 0)),
                     "moneda": self._safe_str(rec.get("currency_id")),
                     "tipo": self._safe_str(rec.get("payment_type")),
                     "nota": self._safe_str(rec.get("ref")),
