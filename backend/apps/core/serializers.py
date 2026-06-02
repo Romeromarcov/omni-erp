@@ -128,7 +128,29 @@ class UsuariosSerializer(BaseModelSerializer):
 
     class Meta:
         model = Usuarios
-        fields = "__all__"
+        # H-API-3: whitelist explícita. NUNCA exponer ni aceptar desde el cliente
+        # is_superuser, is_staff, last_login, groups ni user_permissions (escalación
+        # de privilegios). El hash de password es write_only.
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "is_active",
+            "password",
+            "empresas",
+            "sucursales",
+            "departamentos",
+            "roles",
+            "es_superusuario_omni",
+            "id_sucursal_predeterminada",
+            "fecha_ultimo_login",
+            "date_joined",
+            "referencia_externa",
+            "documento_json",
+        ]
+        read_only_fields = ["id", "fecha_ultimo_login", "date_joined", "roles"]
         extra_kwargs = {
             "password": {"write_only": True},  # S#6 — never expose hash in responses
         }
