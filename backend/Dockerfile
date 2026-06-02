@@ -25,7 +25,9 @@ COPY . /app/
 # fallaba al arrancar.
 RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser \
+    && mkdir -p /app/logs /app/staticfiles \
+    && chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 8000
