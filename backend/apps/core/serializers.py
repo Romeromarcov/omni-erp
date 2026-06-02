@@ -52,7 +52,8 @@ class EmpresaSerializer(BaseModelSerializer):
 
     class Meta:
         model = Empresa
-        fields = "__all__"
+        # SEC-NEW-6: ocultar campos internos de integración del API.
+        exclude = ("referencia_externa", "documento_json")
         extra_fields = ["id_moneda_pais", "moneda_pais_codigo_iso", "moneda_pais_nombre"]
 
 

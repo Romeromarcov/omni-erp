@@ -101,7 +101,7 @@ class PedidoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pedido
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("numero_pedido", "id_empresa", "id_pedido", "fecha_creacion")
 
@@ -252,7 +252,7 @@ class FacturaFiscalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FacturaFiscal
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_factura", "fecha_creacion")
 
@@ -348,7 +348,7 @@ class CotizacionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cotizacion
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         # FE-HIGH-5: numero_cotizacion lo asigna el backend (no el cliente).
         read_only_fields = ("id_empresa", "id_cotizacion", "fecha_creacion", "numero_cotizacion")
@@ -381,7 +381,7 @@ class NotaVentaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NotaVenta
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_nota_venta", "fecha_creacion")
 
@@ -428,7 +428,7 @@ class NotaCreditoFiscalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NotaCreditoFiscal
-        fields = "__all__"
+        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_nota_credito_fiscal", "fecha_creacion")
 
