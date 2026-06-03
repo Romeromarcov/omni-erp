@@ -53,11 +53,11 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   (cross-tenant 404/403) cuando se construya la estructura `tests/` (TEST-2).
 - **A1-3 — Tercera matriz** `MAPA_MCP_CELERY_COMMANDS.md` + columnas faltantes en las dos
   existentes (`test_authz`, `en_openapi`, `unique_together`, `test_aislamiento`). Regenerada en CI.
-- **A4-1 — `docs/tech-debt/INVENTORY.md`** (hoy vacío): inventariar 3 TODO de frontend + ítems
-  BAJA/MEDIA históricos; enlazar desde `docs/ctf/`.
-- **A5-1 — Corregir §4.2 del Plan Maestro**: quitar apps fantasma (`logistica_transporte`,
-  `flota`, `control_calidad`), añadir `gestion_aprobaciones`/`localizacion`, corregir
-  `vzla_localizacion`→`localizacion_ve`.
+- **A4-1 — `docs/tech-debt/INVENTORY.md`. ✅ HECHO.** Inventario con 3 TODO de frontend
+  (verificados), deuda arquitectónica (§4.3), deuda de tooling y enlaces a auditorías.
+- **A5-1 — Corregir §4.2 del Plan Maestro. ✅ HECHO.** Eliminadas apps fantasma
+  (`logistica_transporte`, `flota`, `control_calidad`), añadidas `gestion_aprobaciones`/
+  `localizacion`, corregido `vzla_localizacion`→`localizacion_ve` (líneas 293, 359, 369).
 - **A2-1 — Consolidar** `AUDITORIA_2026-06-02.md` → `docs/audit/SECURITY_REVIEW_2026-06-02.md`
   con formato DoD A2 (severidad + CWE + archivo:línea + estado).
 
