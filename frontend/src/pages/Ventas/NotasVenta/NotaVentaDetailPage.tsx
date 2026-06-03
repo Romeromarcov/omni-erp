@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pagosService } from '../../../services/pagosService';
-import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { fetchProductos } from '../../../services/productosService';
 import { toList } from '../../../utils/api';
-import { Alert, Box, Button, Chip, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
 import type { Pago as PagoFinanzas } from '../../../services/pagosService';
@@ -17,6 +16,7 @@ import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProduct
 import type { Producto as ProductoService } from '../../../services/productosService';
 import { notasVentaKeys, pagosKeys, productosKeys } from '../../../lib/queryKeys';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
+import { PageContainer, PageHeader, SectionTitle, StatusChip } from '../../../components/ui';
 
 interface ProductoDisplay {
   id_producto: string;
@@ -104,16 +104,6 @@ const NotaVentaDetailPage: React.FC = () => {
     return `${nombre}${rif}${telefono}`;
   }
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'BORRADOR': return 'default';
-      case 'ENTREGADA': return 'primary';
-      case 'FACTURADA': return 'success';
-      case 'ANULADA': return 'error';
-      default: return 'default';
-    }
-  };
-
   const handleConfirmPago = async (pagos: Pago[], vueltos?: Pago[], notasCreditoUtilizadas?: NotaCredito[]) => {
     if (!id || !notaVenta) return;
 
@@ -173,113 +163,124 @@ const NotaVentaDetailPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 2 }}>
-        <Button variant="contained" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
-      </Box>
+    <PageContainer>
       {loading ? (
         <Typography>Cargando...</Typography>
       ) : !notaVenta ? (
         <Typography>No se encontró la nota de venta.</Typography>
       ) : (
-        <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 2 }}>
-          <Typography variant="h4" gutterBottom>
-            Nota de Venta {notaVenta.numero_nota}
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Fecha:</strong> {notaVenta.fecha_nota}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Estado:</strong> <Chip label={notaVenta.estado} color={getEstadoColor(notaVenta.estado)} size="small" /></Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Empresa:</strong> {notaVenta.id_empresa?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Sucursal:</strong> {notaVenta.id_sucursal?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Caja:</strong> {notaVenta.id_caja?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>ID Caja:</strong> {notaVenta.id_caja?.id_caja || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Usuario:</strong> {notaVenta.id_usuario ? (notaVenta.id_usuario.first_name && notaVenta.id_usuario.last_name ? `${notaVenta.id_usuario.first_name} ${notaVenta.id_usuario.last_name}` : notaVenta.id_usuario.username) : '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Número de Nota:</strong> {notaVenta.numero_nota}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Cliente:</strong> {getClienteInfo(notaVenta.id_cliente)}</Typography>
-            </Box>
-            {notaVenta.id_pedido_origen && (
+        <>
+          <PageHeader
+            title={`Nota de Venta ${notaVenta.numero_nota}`}
+            subtitle={`${notaVenta.fecha_nota} · ${notaVenta.id_empresa?.nombre || ''}`}
+            actions={
+              <Button variant="outlined" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
+            }
+          />
+          <Card sx={{ p: 3, mb: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
               <Box sx={{ flex: '1 1 200px' }}>
-                <Typography><strong>Pedido Origen:</strong> {notaVenta.id_pedido_origen}</Typography>
+                <Typography variant="body2" color="text.secondary">Fecha</Typography>
+                <Typography variant="body1">{notaVenta.fecha_nota}</Typography>
               </Box>
-            )}
-            {notaVenta.convertido_a_factura && (
               <Box sx={{ flex: '1 1 200px' }}>
-                <Typography><strong>Estado Conversión:</strong> <Chip label="Convertido a Factura" color="success" size="small" /></Typography>
+                <Typography variant="body2" color="text.secondary">Estado</Typography>
+                <StatusChip value={notaVenta.estado} />
               </Box>
-            )}
-            <Box sx={{ flex: '1 1 100%' }}>
-              <Typography><strong>Observaciones:</strong> {notaVenta.observaciones || '-'}</Typography>
-            </Box>
-          </Box>
-          <Divider sx={{ my: 3 }} />
-          <Typography variant="h5" gutterBottom>Detalles</Typography>
-          {notaVenta.detalles && notaVenta.detalles.length > 0 ? (
-            <>
-              <TablaProductos
-                detalles={mapDetalles(notaVenta.detalles)}
-                productos={productos}
-                onRemove={() => { }}
-              />
-              <Box sx={{ mt: 2 }}>
-                <ResumenTotales detalles={mapDetalles(notaVenta.detalles)} descuentoGeneral={descuentoGeneral} setDescuentoGeneral={setDescuentoGeneral} />
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Empresa</Typography>
+                <Typography variant="body1">{notaVenta.id_empresa?.nombre || '-'}</Typography>
               </Box>
-            </>
-          ) : (
-            <Typography>No hay productos en esta nota de venta.</Typography>
-          )}
-          <Divider sx={{ my: 3 }} />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h5" gutterBottom>Pagos</Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button variant="contained" onClick={() => setShowPagoModal(true)}>
-                Agregar Pago
-              </Button>
-              {!notaVenta.convertido_a_factura && notaVenta.estado === 'ENTREGADA' && (
-                <Button variant="contained" color="secondary" onClick={handleConvertirAFactura}>
-                  Convertir a Factura
-                </Button>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Sucursal</Typography>
+                <Typography variant="body1">{notaVenta.id_sucursal?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Caja</Typography>
+                <Typography variant="body1">{notaVenta.id_caja?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Usuario</Typography>
+                <Typography variant="body1">{notaVenta.id_usuario ? (notaVenta.id_usuario.first_name && notaVenta.id_usuario.last_name ? `${notaVenta.id_usuario.first_name} ${notaVenta.id_usuario.last_name}` : notaVenta.id_usuario.username) : '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Cliente</Typography>
+                <Typography variant="body1">{getClienteInfo(notaVenta.id_cliente)}</Typography>
+              </Box>
+              {notaVenta.id_pedido_origen && (
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="body2" color="text.secondary">Pedido Origen</Typography>
+                  <Typography variant="body1">{notaVenta.id_pedido_origen}</Typography>
+                </Box>
               )}
+              {notaVenta.convertido_a_factura && (
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="body2" color="text.secondary">Conversión</Typography>
+                  <StatusChip value="convertido" label="Convertido a Factura" />
+                </Box>
+              )}
+              <Box sx={{ flex: '1 1 100%' }}>
+                <Typography variant="body2" color="text.secondary">Observaciones</Typography>
+                <Typography variant="body1">{notaVenta.observaciones || '-'}</Typography>
+              </Box>
             </Box>
-          </Box>
-          {pagoSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pagoSuccess}</Alert>}
-          {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
-          {pagos && pagos.length > 0 ? (
-            <List>
-              {pagos.map(pago => (
-                <ListItem key={pago.id_pago} divider>
-                  <ListItemText
-                    primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
-                    secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
-                  />
-                  {pago.observaciones && (
-                    <Typography variant="body2" color="text.secondary">
-                      Obs: {pago.observaciones}
-                    </Typography>
-                  )}
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography>No hay pagos registrados para esta nota de venta.</Typography>
-          )}
-        </Paper>
+          </Card>
+
+          <Card sx={{ p: 3, mb: 2 }}>
+            <SectionTitle>Detalles</SectionTitle>
+            {notaVenta.detalles && notaVenta.detalles.length > 0 ? (
+              <>
+                <TablaProductos
+                  detalles={mapDetalles(notaVenta.detalles)}
+                  productos={productos}
+                  onRemove={() => { }}
+                />
+                <Box sx={{ mt: 2 }}>
+                  <ResumenTotales detalles={mapDetalles(notaVenta.detalles)} descuentoGeneral={descuentoGeneral} setDescuentoGeneral={setDescuentoGeneral} />
+                </Box>
+              </>
+            ) : (
+              <Typography>No hay productos en esta nota de venta.</Typography>
+            )}
+          </Card>
+
+          <Card sx={{ p: 3 }}>
+            <SectionTitle action={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button variant="contained" size="small" onClick={() => setShowPagoModal(true)}>
+                  Agregar Pago
+                </Button>
+                {!notaVenta.convertido_a_factura && notaVenta.estado === 'ENTREGADA' && (
+                  <Button variant="outlined" size="small" color="secondary" onClick={handleConvertirAFactura}>
+                    Convertir a Factura
+                  </Button>
+                )}
+              </Box>
+            }>Pagos</SectionTitle>
+            <Divider sx={{ mb: 2 }} />
+            {pagoSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pagoSuccess}</Alert>}
+            {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
+            {pagos && pagos.length > 0 ? (
+              <List>
+                {pagos.map(pago => (
+                  <ListItem key={pago.id_pago} divider>
+                    <ListItemText
+                      primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
+                      secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
+                    />
+                    {pago.observaciones && (
+                      <Typography variant="body2" color="text.secondary">
+                        Obs: {pago.observaciones}
+                      </Typography>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography>No hay pagos registrados para esta nota de venta.</Typography>
+            )}
+          </Card>
+        </>
       )}
       {!loading && notaVenta && (
         <ModalPago
@@ -294,7 +295,7 @@ const NotaVentaDetailPage: React.FC = () => {
           tipoOperacionInicial="INGRESO"
         />
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

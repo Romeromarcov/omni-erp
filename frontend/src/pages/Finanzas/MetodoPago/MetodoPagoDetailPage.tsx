@@ -5,9 +5,9 @@ import type { MonedasInfoMetodoPago } from '../../../services/monedasInfoMetodoP
 import { useParams, useNavigate } from 'react-router-dom';
 import { get } from '../../../services/api';
 import { toList } from '../../../utils/api';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { updateMonedasMetodoPagoEmpresaActiva, fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
-import { Button } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEmpresas } from '../../../hooks/useEmpresas';
 
@@ -91,17 +91,15 @@ const MetodoPagoDetailPage: React.FC = () => {
     updateMonedasMutation.mutate();
   };
 
-  if (loading) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div></PageLayout>;
-  if (!metodo) return <PageLayout><div style={{ textAlign: 'center', color: '#888', padding: 32 }}>No encontrado</div></PageLayout>;
+  if (loading) return <PageContainer><Box sx={{ textAlign: 'center', color: 'text.secondary', py: 4 }}>Cargando...</Box></PageContainer>;
+  if (!metodo) return <PageContainer><Box sx={{ textAlign: 'center', color: 'text.secondary', py: 4 }}>No encontrado</Box></PageContainer>;
 
   return (
-    <PageLayout maxWidth={500}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Detalle de Método de Pago</h2>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button variant="contained" color="secondary" onClick={() => navigate(-1)}>
-          Volver
-        </Button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Detalle de Método de Pago"
+        actions={<Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>}
+      />
       {!editMonedas ? (
         <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div><b>Nombre:</b> {metodo.nombre_metodo}
@@ -170,7 +168,7 @@ const MetodoPagoDetailPage: React.FC = () => {
           </div>
         </form>
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

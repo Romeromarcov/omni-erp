@@ -9,8 +9,8 @@ import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
 import { monedaSchema, type MonedaInput } from '../../../schemas/finanzas.schemas';
 import type { Moneda } from './MonedaListPage';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import PageLayout from '../../../components/PageLayout';
-import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { PageContainer, PageHeader } from '../../../components/ui';
+import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 
 const defaultValues: MonedaInput = {
   tipo_moneda: 'fiat',
@@ -76,9 +76,9 @@ const MonedaFormPage: React.FC = () => {
   };
 
   return (
-    <PageLayout maxWidth={480}>
-      <Typography variant="h5" mb={3}>Nueva Moneda</Typography>
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <PageContainer>
+      <PageHeader title="Nueva Moneda" />
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ maxWidth: 480 }}>
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
           <Controller
@@ -185,7 +185,7 @@ const MonedaFormPage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

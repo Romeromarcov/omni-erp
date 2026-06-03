@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOverridesMetodosPago, createOverrideMetodoPago, updateOverrideMetodoPago, deleteOverrideMetodoPago, type CajaMetodoPagoOverride } from '../../../services/plantillasService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchSucursales } from '../../../services/sucursales';
 import { useConfirm } from '../../../contexts/feedbackTypes';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 interface MetodoPago {
   id_metodo_pago: string;
@@ -124,13 +124,11 @@ const OverridesMetodosPagoPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5">Overrides de Métodos de Pago por Sucursal</Typography>
-        <Button variant="contained" onClick={handleCreate}>
-          Nuevo Override
-        </Button>
-      </Box>
+    <PageContainer>
+      <PageHeader
+        title="Overrides de Métodos de Pago por Sucursal"
+        actions={<Button variant="contained" onClick={handleCreate}>Nuevo Override</Button>}
+      />
 
       <Alert severity="info" sx={{ mb: 2 }}>
         Los overrides permiten deshabilitar métodos de pago específicos en sucursales particulares,
@@ -140,40 +138,40 @@ const OverridesMetodosPagoPage: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Paper variant="outlined">
         {isLoading ? (
-          <Typography>Cargando...</Typography>
+          <Box sx={{ p: 3 }}>Cargando...</Box>
         ) : overrides.length === 0 ? (
-          <Typography>No hay overrides configurados</Typography>
+          <Box sx={{ p: 3 }}>No hay overrides configurados</Box>
         ) : (
           <TableContainer>
-            <Table>
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Sucursal</TableCell>
                   <TableCell>Método de Pago</TableCell>
-                  <TableCell>Estado</TableCell>
+                  <TableCell align="center">Estado</TableCell>
                   <TableCell>Fecha Creación</TableCell>
-                  <TableCell>Acciones</TableCell>
+                  <TableCell align="center">Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {overrides.map((override) => (
-                  <TableRow key={override.id_override}>
+                  <TableRow key={override.id_override} hover>
                     <TableCell>{getSucursalNombre(override.id_sucursal)}</TableCell>
                     <TableCell>{getMetodoPagoNombre(override.id_metodo_pago)}</TableCell>
-                    <TableCell>
-                      <Chip
+                    <TableCell align="center">
+                      <StatusChip
+                        value={override.deshabilitado ? 'deshabilitado' : 'habilitado'}
                         label={override.deshabilitado ? 'Deshabilitado' : 'Habilitado'}
-                        color={override.deshabilitado ? 'error' : 'success'}
-                        size="small"
+                        colorMap={{ deshabilitado: 'error', habilitado: 'success' }}
                       />
                     </TableCell>
                     <TableCell>{new Date(override.fecha_creacion).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button variant="outlined" onClick={() => handleEdit(override)}>Editar</Button>
-                        <Button variant="outlined" onClick={() => handleDelete(override.id_override)}>Eliminar</Button>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                        <Button size="small" variant="outlined" onClick={() => handleEdit(override)}>Editar</Button>
+                        <Button size="small" variant="outlined" onClick={() => handleDelete(override.id_override)}>Eliminar</Button>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -242,7 +240,7 @@ const OverridesMetodosPagoPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

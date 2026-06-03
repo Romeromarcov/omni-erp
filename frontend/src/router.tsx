@@ -10,6 +10,7 @@ import { integracionesRoutes } from './routes/integracionesRoutes';
 import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
+import { escanerRoutes } from './routes/escanerRoutes';
 
 export default function AppRouter() {
   const { token, isLoading } = useAuth();
@@ -40,6 +41,7 @@ export default function AppRouter() {
             {inventarioRoutes()}
             {fiscalRoutes()}
             {cxcRoutes()}
+            {escanerRoutes()}
           </Route>
         )}
 

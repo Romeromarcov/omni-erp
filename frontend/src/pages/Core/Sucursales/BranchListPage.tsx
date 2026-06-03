@@ -54,6 +54,7 @@ export default function BranchListPage() {
     <PageContainer>
       <PageHeader
         title="Sucursales"
+        subtitle="Sucursales registradas para la empresa"
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate(`/empresas/${id_empresa}/sucursales/new`)}>
             Nueva sucursal

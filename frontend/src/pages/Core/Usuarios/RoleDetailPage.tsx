@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, CircularProgress, FormControlLabel, Checkbox, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, FormControlLabel, Checkbox, Stack, TextField } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 import { fetchRol, updateRol } from '../../../services/roles';
 import type { Rol } from '../../../services/roles';
 import PageLayout from '../../../components/PageLayout';
@@ -61,7 +62,7 @@ const RoleDetailPage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={480}>
-      <Typography variant="h5" mb={3}>Detalle/Edición de Rol</Typography>
+      <PageHeader title="Detalle/Edición de Rol" subtitle={rol.nombre_rol} />
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
           <TextField name="nombre_rol" label="Nombre" value={form.nombre_rol || ''} onChange={handleChange} required fullWidth />

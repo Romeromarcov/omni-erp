@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCajaDetail, updateCaja, getCajaTipoChoices } from '../../../services/cajaService';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
@@ -116,8 +116,8 @@ const CajaDetailPage: React.FC = () => {
   const loading = updateMutation.isPending;
 
   return (
-    <PageLayout>
-      <h2 style={{ marginBottom: 16 }}>Detalle/Edición de Caja</h2>
+    <PageContainer>
+      <PageHeader title="Detalle/Edición de Caja" />
       <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
         <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Tipo de Caja</label>
@@ -160,7 +160,7 @@ const CajaDetailPage: React.FC = () => {
         </div>
         {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
       </form>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

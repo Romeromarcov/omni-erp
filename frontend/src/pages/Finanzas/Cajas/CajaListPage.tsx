@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PageLayout from '../../../components/PageLayout';
 import { useQuery } from '@tanstack/react-query';
 import { getCajas } from '../../../services/cajaService';
 import { toList } from '../../../utils/api';
-import { Button, TextField } from '@mui/material';
+import { Alert, Box, Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
 
 type Caja = {
   id_caja: string;
@@ -33,64 +33,76 @@ const CajaListPage: React.FC = () => {
 
   if (!id_empresa) {
     return (
-      <PageLayout>
-        <h2 style={{ marginBottom: 16 }}>Gestión de Cajas</h2>
-        <div style={{ margin: '32px 0', textAlign: 'center', color: '#c00', fontSize: 18 }}>
-          Seleccione una empresa para ver sus cajas.
-        </div>
-      </PageLayout>
+      <PageContainer>
+        <PageHeader title="Gestión de Cajas" />
+        <Alert severity="warning">Seleccione una empresa para ver sus cajas.</Alert>
+      </PageContainer>
     );
   }
 
   return (
-    <PageLayout maxWidth={1200}>
-      <h2 style={{ marginBottom: 16 }}>Gestión de Cajas</h2>
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <TextField fullWidth placeholder="Sucursal" value={filters.sucursal} onChange={e => setFilters(f => ({ ...f, sucursal: e.target.value }))} />
-        <TextField fullWidth placeholder="Moneda" value={filters.moneda} onChange={e => setFilters(f => ({ ...f, moneda: e.target.value }))} />
-        <select value={filters.activo} onChange={e => setFilters(f => ({ ...f, activo: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+    <PageContainer>
+      <PageHeader
+        title="Gestión de Cajas"
+        actions={
+          <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/cajas/new`)}>
+            Nueva Caja
+          </Button>
+        }
+      />
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <TextField size="small" placeholder="Sucursal" value={filters.sucursal} onChange={e => setFilters(f => ({ ...f, sucursal: e.target.value }))} />
+        <TextField size="small" placeholder="Moneda" value={filters.moneda} onChange={e => setFilters(f => ({ ...f, moneda: e.target.value }))} />
+        <select
+          value={filters.activo}
+          onChange={e => setFilters(f => ({ ...f, activo: e.target.value }))}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.23)', minWidth: 120, height: 40 }}
+        >
           <option value="">Todos</option>
           <option value="true">Activos</option>
           <option value="false">Inactivos</option>
         </select>
-        <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/cajas/new`)}>Nueva Caja</Button>
-      </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th>Nombre Caja</th>
-              <th>Tipo</th>
-              <th>Sucursal</th>
-              <th>Moneda</th>
-              <th>Saldo Actual</th>
-              <th>Activo</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
+      </Box>
+      <TableContainer>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Nombre Caja</TableCell>
+              <TableCell>Tipo</TableCell>
+              <TableCell>Sucursal</TableCell>
+              <TableCell>Moneda</TableCell>
+              <TableCell align="right">Saldo Actual</TableCell>
+              <TableCell align="center">Activo</TableCell>
+              <TableCell align="center">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {isLoading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <TableRow><TableCell colSpan={7} align="center">Cargando...</TableCell></TableRow>
             ) : data.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center' }}>No hay cajas registradas.</td></tr>
+              <TableRow><TableCell colSpan={7} align="center">No hay cajas registradas.</TableCell></TableRow>
             ) : data.map((row) => (
-              <tr key={row.id_caja}>
-                <td>{row.nombre}</td>
-                <td>{row.tipo_caja_display || row.tipo_caja}</td>
-                <td>{row.sucursal_nombre}</td>
-                <td>{row.moneda_codigo_iso}</td>
-                <td>{Number(row.saldo_actual).toFixed(2)}</td>
-                <td>{row.activa ? 'Sí' : 'No'}</td>
-                <td style={{ display: 'flex', gap: 4 }}>
-                  <Button key={`detalle-${row.id_caja}`} variant="outlined" onClick={() => navigate(`/cajas/${row.id_caja}`)}>Ver Detalle</Button>
-                  <Button key={`movimientos-${row.id_caja}`} variant="outlined" onClick={() => navigate(`/cajas/${row.id_caja}/movimientos-caja-banco`)}>Movimientos</Button>
-                </td>
-              </tr>
+              <TableRow key={row.id_caja} hover>
+                <TableCell>{row.nombre}</TableCell>
+                <TableCell>{row.tipo_caja_display || row.tipo_caja}</TableCell>
+                <TableCell>{row.sucursal_nombre}</TableCell>
+                <TableCell>{row.moneda_codigo_iso}</TableCell>
+                <TableCell align="right">{Number(row.saldo_actual).toFixed(2)}</TableCell>
+                <TableCell align="center">
+                  <StatusChip value={row.activa} />
+                </TableCell>
+                <TableCell align="center">
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    <Button size="small" variant="outlined" onClick={() => navigate(`/cajas/${row.id_caja}`)}>Ver Detalle</Button>
+                    <Button size="small" variant="outlined" onClick={() => navigate(`/cajas/${row.id_caja}/movimientos-caja-banco`)}>Movimientos</Button>
+                  </Stack>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </PageLayout>
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </PageContainer>
   );
 };
 

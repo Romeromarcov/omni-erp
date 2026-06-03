@@ -20,7 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
-import PageLayout from '../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../components/ui';
 import {
   configuracionFiscalService,
   tasaIVAService,
@@ -102,11 +102,11 @@ const ConfiguracionFiscalPage: React.FC = () => {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <PageLayout maxWidth={700}>
-      <Typography variant="h5">Configuración Fiscal</Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
-        Parámetros de IVA e IGTF para la empresa.
-      </Typography>
+    <PageContainer maxWidth={700}>
+      <PageHeader
+        title="Configuración Fiscal"
+        subtitle="Parámetros de IVA e IGTF para la empresa."
+      />
 
       {successMsg && <Alert severity="success" sx={{ mb: 2 }}>{successMsg}</Alert>}
       {errorMsg && <Alert severity="error" sx={{ mb: 2 }}>{errorMsg}</Alert>}
@@ -221,7 +221,7 @@ const ConfiguracionFiscalPage: React.FC = () => {
           </Stack>
         </Box>
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

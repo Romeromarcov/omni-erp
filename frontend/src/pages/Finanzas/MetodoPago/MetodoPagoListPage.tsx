@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, patch } from '../../../services/api';
 import { toList, toCount, type PaginatedResponse } from '../../../utils/api';
-import PageLayout from '../../../components/PageLayout';
-import { Button } from '@mui/material';
+import { Alert, Box, Button, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEmpresas } from '../../../hooks/useEmpresas';
 
@@ -140,223 +140,122 @@ const MetodoPagoListPage: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
 
   return (
-    <PageLayout maxWidth={900}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Métodos de Pago</h2>
+    <PageContainer>
+      <PageHeader
+        title="Métodos de Pago"
+        actions={
+          <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/metodos-pago/new`)}>
+            + Nuevo método de pago
+          </Button>
+        }
+      />
 
-      {/* Filtros */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-        <input
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        <TextField
+          size="small"
           placeholder="Buscar por nombre"
           value={filtro.nombre}
           onChange={e => setFiltro(f => ({ ...f, nombre: e.target.value }))}
-          style={{
-            padding: 10,
-            borderRadius: 8,
-            border: '1px solid #cfd8dc',
-            minWidth: 180,
-            background: '#f6fafd',
-          }}
+          sx={{ minWidth: 180 }}
         />
         <select
           value={filtro.tipo}
           onChange={e => setFiltro(f => ({ ...f, tipo: e.target.value }))}
-          style={{
-            padding: 10,
-            borderRadius: 8,
-            border: '1px solid #cfd8dc',
-            minWidth: 140,
-            background: '#f6fafd',
-          }}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.23)', minWidth: 140, height: 40 }}
         >
-          {TIPO_METODO.map(t => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
+          {TIPO_METODO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
         <select
           value={filtro.visibilidad}
           onChange={e => setFiltro(f => ({ ...f, visibilidad: e.target.value }))}
-          style={{
-            padding: 10,
-            borderRadius: 8,
-            border: '1px solid #cfd8dc',
-            minWidth: 140,
-            background: '#f6fafd',
-          }}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.23)', minWidth: 140, height: 40 }}
         >
           <option value="">Todas las visibilidades</option>
           <option value="generico">Genéricos</option>
           <option value="publico">Públicos</option>
           <option value="empresa">Solo de mi empresa</option>
         </select>
-        <Button variant="contained" color="secondary" onClick={resetFiltro}>
-          Limpiar
-        </Button>
-        <div style={{ flex: 1 }} />
-        <Button
-          variant="contained"
-          onClick={() => navigate(`/empresas/${id_empresa}/metodos-pago/new`)}
-        >
-          + Nuevo método de pago
-        </Button>
-      </div>
+        <Button variant="outlined" onClick={resetFiltro}>Limpiar</Button>
+      </Box>
 
       {toggleMutation.isError && (
-        <div style={{ color: '#d32f2f', marginBottom: 12, fontWeight: 500 }}>
-          No se pudo actualizar el estado de uso en empresa
-        </div>
+        <Alert severity="error" sx={{ mb: 2 }}>No se pudo actualizar el estado de uso en empresa</Alert>
       )}
 
-      {/* Tabla */}
       {loadingMetodos ? (
-        <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
+        <Box sx={{ textAlign: 'center', color: 'text.secondary', py: 4 }}>Cargando...</Box>
       ) : isError ? (
-        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32 }}>
-          Error al cargar métodos de pago
-        </div>
+        <Alert severity="error">Error al cargar métodos de pago</Alert>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              background: '#f6fafd',
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            }}
-          >
-            <thead>
-              <tr style={{ background: '#e3f0ff' }}>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Nombre</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Tipo</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>
-                  Visibilidad
-                </th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Activo</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>
-                  Uso Empresa
-                </th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Nombre</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell>Visibilidad</TableCell>
+                <TableCell align="center">Activo</TableCell>
+                <TableCell align="center">Uso Empresa</TableCell>
+                <TableCell align="center">Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {metodos.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: 32, color: '#888' }}>
-                    No hay métodos registrados.
-                  </td>
-                </tr>
-              ) : (
-                metodos.map(m => (
-                  <tr
-                    key={m.id_metodo_pago}
-                    style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}
-                  >
-                    <td style={{ padding: '10px 8px' }}>
-                      {m.nombre_metodo}
-                      {m.es_generico && (
-                        <span
-                          style={{ marginLeft: 6, color: '#1976d2', fontWeight: 600, fontSize: 12 }}
-                        >
-                          [Genérico]
-                        </span>
-                      )}
-                      {m.es_publico && (
-                        <span
-                          style={{ marginLeft: 6, color: '#43a047', fontWeight: 600, fontSize: 12 }}
-                        >
-                          [Público]
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '10px 8px' }}>{m.tipo_metodo}</td>
-                    <td style={{ padding: '10px 8px' }}>
-                      {m.es_generico ? 'Genérico' : m.es_publico ? 'Público' : 'Empresa'}
-                      {esSuperusuario && m.empresa && (
-                        <span style={{ marginLeft: 6, color: '#888', fontSize: 12 }}>
-                          ({empresas.find(e => e.id === m.empresa)?.nombre_comercial ?? m.empresa})
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                      {m.activo ? 'Sí' : 'No'}
-                    </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={activas[m.id_metodo_pago]?.activa ?? true}
-                        onChange={() => handleToggleEmpresa(m)}
-                        disabled={toggleMutation.isPending}
-                        style={{ transform: 'scale(1.2)' }}
-                      />
-                    </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                      <Button
-                        variant="contained"
-                        onClick={() => navigate(`/metodos-pago/${m.id_metodo_pago}`)}
-                      >
-                        Ver/Editar
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                <TableRow>
+                  <TableCell colSpan={6} align="center">No hay métodos registrados.</TableCell>
+                </TableRow>
+              ) : metodos.map(m => (
+                <TableRow key={m.id_metodo_pago} hover>
+                  <TableCell>
+                    {m.nombre_metodo}
+                    {m.es_generico && <StatusChip value="generico" label="Genérico" colorMap={{ generico: 'primary' }} />}
+                    {m.es_publico && <StatusChip value="publico" label="Público" colorMap={{ publico: 'success' }} />}
+                  </TableCell>
+                  <TableCell>{m.tipo_metodo}</TableCell>
+                  <TableCell>
+                    {m.es_generico ? 'Genérico' : m.es_publico ? 'Público' : 'Empresa'}
+                    {esSuperusuario && m.empresa && (
+                      <Box component="span" sx={{ ml: 1, color: 'text.secondary', fontSize: 12 }}>
+                        ({empresas.find(e => e.id === m.empresa)?.nombre_comercial ?? m.empresa})
+                      </Box>
+                    )}
+                  </TableCell>
+                  <TableCell align="center"><StatusChip value={m.activo} /></TableCell>
+                  <TableCell align="center">
+                    <Switch
+                      size="small"
+                      checked={activas[m.id_metodo_pago]?.activa ?? true}
+                      onChange={() => handleToggleEmpresa(m)}
+                      disabled={toggleMutation.isPending}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Button size="small" variant="outlined" onClick={() => navigate(`/metodos-pago/${m.id_metodo_pago}`)}>
+                      Ver/Editar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      {/* Paginación */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginTop: 24,
-          gap: 8,
-        }}
-      >
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-        >
-          Anterior
-        </Button>
-        <span style={{ fontWeight: 500 }}>
-          Página {page} de {totalPages}
-        </span>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={() => setPage(p => (p < totalPages ? p + 1 : p))}
-          disabled={page >= totalPages}
-        >
-          Siguiente
-        </Button>
-        <span style={{ marginLeft: 16 }}>
-          <label style={{ fontWeight: 500 }}>
-            Tamaño:
-            <select
-              value={pageSize}
-              onChange={e => {
-                setPageSize(Number(e.target.value));
-                setPage(1);
-              }}
-              style={{ marginLeft: 4, padding: 6, borderRadius: 6, border: '1px solid #cfd8dc' }}
-            >
-              {[10, 20, 50, 100].map(sz => (
-                <option key={sz} value={sz}>
-                  {sz}
-                </option>
-              ))}
-            </select>
-          </label>
-        </span>
-      </div>
-    </PageLayout>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, gap: 1 }}>
+        <Button variant="outlined" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
+        <Box sx={{ fontWeight: 500, px: 1 }}>Página {page} de {totalPages}</Box>
+        <Button variant="outlined" onClick={() => setPage(p => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages}>Siguiente</Button>
+        <Box sx={{ ml: 2 }}>
+          <select
+            value={pageSize}
+            onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+            style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.23)' }}
+          >
+            {[10, 20, 50, 100].map(sz => <option key={sz} value={sz}>{sz}</option>)}
+          </select>
+        </Box>
+      </Box>
+    </PageContainer>
   );
 };
 

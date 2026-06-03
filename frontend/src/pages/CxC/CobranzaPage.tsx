@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Box, Button, Card, CardContent, Typography, Chip, Grid, TextField, MenuItem, Alert, CircularProgress, Paper } from '@mui/material';
+import { Box, Button, Card, CardContent, Typography, Grid, TextField, MenuItem, Alert, CircularProgress, Paper } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { post } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import type { GestionCobranza } from '../../types/cxc';
+import { PageContainer, PageHeader, StatusChip } from '../../components/ui';
 
 const CANAL_OPTIONS = ['whatsapp', 'email', 'llamada', 'visita', 'carta'];
 const RESULTADO_OPTIONS = ['contactado', 'sin_respuesta', 'promesa_pago', 'negativa', 'acuerdo_logrado'];
@@ -15,14 +16,6 @@ const RESULTADO_LABELS: Record<string, string> = {
   negativa: 'Negativa',
   acuerdo_logrado: 'Acuerdo Logrado',
 };
-
-function getResultadoColor(resultado: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
-  if (resultado === 'contactado' || resultado === 'acuerdo_logrado') return 'success';
-  if (resultado === 'promesa_pago') return 'info';
-  if (resultado === 'sin_respuesta') return 'warning';
-  if (resultado === 'negativa') return 'error';
-  return 'default';
-}
 
 export default function CobranzaPage() {
   const { data, isLoading: loading, error } = useApiQuery<{ results: GestionCobranza[] }>('/cobranza/gestiones/');
@@ -54,13 +47,16 @@ export default function CobranzaPage() {
   };
 
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" fontWeight="bold">Gestiones de Cobranza</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowForm(!showForm)}>
-          Nueva Gestión
-        </Button>
-      </Box>
+    <PageContainer>
+      <PageHeader
+        title="Gestiones de Cobranza"
+        subtitle="Registro y seguimiento de gestiones de cobro"
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowForm(!showForm)}>
+            Nueva Gestión
+          </Button>
+        }
+      />
 
       {showForm && (
         <Card sx={{ mb: 3 }}>
@@ -124,7 +120,7 @@ export default function CobranzaPage() {
               {g.notas && <Typography variant="body2" mt={0.5}>{g.notas}</Typography>}
             </Box>
             <Box textAlign="right">
-              <Chip label={RESULTADO_LABELS[g.resultado] || g.resultado} size="small" color={getResultadoColor(g.resultado)} />
+              <StatusChip value={g.resultado} label={RESULTADO_LABELS[g.resultado] || g.resultado} colorMap={{ contactado: 'success', acuerdo_logrado: 'success', promesa_pago: 'info', sin_respuesta: 'warning', negativa: 'error' }} />
               {g.proxima_accion && (
                 <Typography variant="caption" display="block" color="text.secondary" mt={0.5}>
                   Próxima: {g.proxima_accion}
@@ -134,6 +130,6 @@ export default function CobranzaPage() {
           </Box>
         </Paper>
       ))}
-    </Box>
+    </PageContainer>
   );
 }

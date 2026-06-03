@@ -1,12 +1,11 @@
 import React from 'react';
-import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
+import { PageContainer, PageHeader, SectionTitle, StatusChip } from '../../../components/ui';
 import { useQuery } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica } from '../../../services/cajasFisicasService';
 import { finanzasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Card, CardActions, CardContent, Chip, Divider, Paper, Typography } from '@mui/material';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
+
 
 interface CajaVirtual {
   id_caja: string;
@@ -72,54 +71,43 @@ const CajaFisicaDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <PageLayout>
+      <PageContainer>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
           <Typography>Cargando...</Typography>
         </Box>
-      </PageLayout>
+      </PageContainer>
     );
   }
 
   if (isError || !cajaFisica) {
     return (
-      <PageLayout>
+      <PageContainer>
         <Box sx={{ mb: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={() => navigate('/finanzas/cajas-fisicas')}
-          >
+          <Button variant="outlined" onClick={() => navigate('/finanzas/cajas-fisicas')}>
             ← Volver al listado
           </Button>
         </Box>
         <Alert severity="error">
           {isError ? 'Error al cargar los detalles de la caja física' : 'Caja física no encontrada'}
         </Alert>
-      </PageLayout>
+      </PageContainer>
     );
   }
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 3 }}>
-        <Button
-          variant="outlined"
-          onClick={() => navigate('/finanzas/cajas-fisicas')}
-          sx={{ mb: 2 }}
-        >
-          ← Volver al listado
-        </Button>
-
-        <Typography variant="h5" gutterBottom>
-          Detalle de Caja Física
-        </Typography>
-      </Box>
+    <PageContainer>
+      <PageHeader
+        title="Detalle de Caja Física"
+        actions={
+          <Button variant="outlined" onClick={() => navigate('/finanzas/cajas-fisicas')}>
+            ← Volver al listado
+          </Button>
+        }
+      />
 
       {/* Información General de la Caja */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AccountBalanceWalletIcon />
-          Información General
-        </Typography>
+        <SectionTitle>Información General</SectionTitle>
         <Divider sx={{ mb: 2 }} />
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
@@ -131,12 +119,9 @@ const CajaFisicaDetailPage: React.FC = () => {
             <Typography variant="body1" sx={{ mb: 2 }}>{cajaFisica.tipo_caja_display}</Typography>
 
             <Typography variant="subtitle2" color="text.secondary">Estado</Typography>
-            <Chip
-              label={cajaFisica.activa ? 'Activa' : 'Inactiva'}
-              color={cajaFisica.activa ? 'success' : 'error'}
-              size="small"
-              sx={{ mb: 2 }}
-            />
+            <Box sx={{ mb: 2 }}>
+              <StatusChip value={cajaFisica.activa} label={cajaFisica.activa ? 'Activa' : 'Inactiva'} />
+            </Box>
           </Box>
 
           <Box>
@@ -161,10 +146,7 @@ const CajaFisicaDetailPage: React.FC = () => {
 
       {/* Cajas Virtuales Asociadas */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AccountBalanceWalletIcon />
-          Cajas Virtuales Asociadas
-        </Typography>
+        <SectionTitle>Cajas Virtuales Asociadas</SectionTitle>
         <Divider sx={{ mb: 2 }} />
 
         {cajasVirtuales.length === 0 ? (
@@ -213,10 +195,7 @@ const CajaFisicaDetailPage: React.FC = () => {
 
       {/* Datafonos Asociados */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CreditCardIcon />
-          Datafonos Asociados
-        </Typography>
+        <SectionTitle>Datafonos Asociados</SectionTitle>
         <Divider sx={{ mb: 2 }} />
 
         {datafonos.length === 0 ? (
@@ -265,7 +244,7 @@ const CajaFisicaDetailPage: React.FC = () => {
           </Box>
         )}
       </Paper>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

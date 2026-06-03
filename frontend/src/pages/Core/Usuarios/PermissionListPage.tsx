@@ -21,7 +21,7 @@ const PermissionListPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <PageHeader title="Listado de Permisos" />
+      <PageHeader title="Listado de Permisos" subtitle="Permisos del sistema por módulo" />
       <DataTable
         columns={columns}
         rows={permisos}

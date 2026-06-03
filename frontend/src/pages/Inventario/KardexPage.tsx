@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Box, Button, Card, CardContent, Chip, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined';
+import TrendingDownOutlined from '@mui/icons-material/TrendingDownOutlined';
+import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined';
 import { productoInventarioService } from '../../services/inventarioService';
 import type { MovimientoInventario } from '../../services/inventarioService';
-import { PageContainer, PageHeader, DataTable } from '../../components/ui';
+import { PageContainer, PageHeader, KpiCard, DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { inventarioKeys } from '../../lib/queryKeys';
 
@@ -134,23 +137,15 @@ const KardexPage: React.FC = () => {
       </Stack>
 
       {/* Summary cards */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-        {[
-          { label: 'Total entradas', value: totalEntradas.toLocaleString(), color: 'success.main' },
-          { label: 'Total salidas', value: totalSalidas.toLocaleString(), color: 'error.main' },
-          {
-            label: 'Saldo neto',
-            value: (totalEntradas - totalSalidas).toLocaleString(),
-            color: totalEntradas >= totalSalidas ? 'primary.main' : 'warning.main',
-          },
-        ].map((c) => (
-          <Card key={c.label} variant="outlined" sx={{ flex: '1 1 140px' }}>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">{c.label}</Typography>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: c.color }}>{c.value}</Typography>
-            </CardContent>
-          </Card>
-        ))}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
+        <KpiCard label="Total entradas" value={totalEntradas.toLocaleString()} icon={<TrendingUpOutlined />} tone="success" />
+        <KpiCard label="Total salidas" value={totalSalidas.toLocaleString()} icon={<TrendingDownOutlined />} tone="error" emphasizeError />
+        <KpiCard
+          label="Saldo neto"
+          value={(totalEntradas - totalSalidas).toLocaleString()}
+          icon={<AccountBalanceOutlined />}
+          tone={totalEntradas >= totalSalidas ? 'brand' : 'warning'}
+        />
       </Box>
 
       <DataTable

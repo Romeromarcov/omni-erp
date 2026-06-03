@@ -19,6 +19,8 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
+import AppsOutlined from '@mui/icons-material/AppsOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
@@ -134,6 +136,18 @@ export default function Topbar({ onMenuClick, sidebarWidth, isMobile }: TopbarPr
           size="small"
           sx={{ display: { xs: 'none', md: 'flex' }, maxWidth: 220 }}
         />
+
+        <Tooltip title="Aplicaciones">
+          <IconButton onClick={() => navigate('/inicio')} aria-label="Aplicaciones" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+            <AppsOutlined />
+          </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Escáner">
+          <IconButton onClick={() => navigate('/escaner')} aria-label="Escáner">
+            <QrCodeScannerOutlined />
+          </IconButton>
+        </Tooltip>
 
         <Tooltip title="Asistente IA">
           <IconButton color="primary" onClick={toggleAssistant} aria-label="Asistente IA">

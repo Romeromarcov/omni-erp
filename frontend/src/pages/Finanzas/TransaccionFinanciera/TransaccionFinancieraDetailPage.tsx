@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getTransaccionFinancieraDetail, printTransaccionFinanciera } from '../../../services/transaccionFinancieraService';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { Box, Button, Divider, Stack, Typography } from '@mui/material';
 
 type TransaccionFinancieraDetail = {
@@ -48,26 +48,34 @@ const TransaccionFinancieraDetailPage: React.FC = () => {
 
   if (!id_transaccion) {
     return (
-      <PageLayout>
-        <Typography variant="h5" mb={2}>Detalle de Transacción Financiera</Typography>
+      <PageContainer>
+        <PageHeader title="Detalle de Transacción Financiera" />
         <Typography mb={2}>No se encontró el ID de la transacción.</Typography>
         <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
-      </PageLayout>
+      </PageContainer>
     );
   }
 
   if (isLoading || !data) {
     return (
-      <PageLayout>
-        <Typography variant="h5" mb={2}>Detalle de Transacción Financiera</Typography>
+      <PageContainer>
+        <PageHeader title="Detalle de Transacción Financiera" />
         <Typography color="text.secondary">Cargando...</Typography>
-      </PageLayout>
+      </PageContainer>
     );
   }
 
   return (
-    <PageLayout>
-      <Typography variant="h5" mb={3}>Detalle de Transacción Financiera</Typography>
+    <PageContainer>
+      <PageHeader
+        title="Detalle de Transacción Financiera"
+        actions={
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
+            <Button variant="contained" onClick={() => printTransaccionFinanciera(id_transaccion || '')}>Imprimir</Button>
+          </Stack>
+        }
+      />
       <Box>
         <Row label="ID Transacción" value={data.id} />
         <Divider />
@@ -109,11 +117,7 @@ const TransaccionFinancieraDetailPage: React.FC = () => {
         <Divider />
         <Row label="Conciliada" value={data.conciliada ? 'Sí' : 'No'} />
       </Box>
-      <Stack direction="row" spacing={1} mt={3} justifyContent="flex-end">
-        <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
-        <Button variant="contained" onClick={() => printTransaccionFinanciera(id_transaccion || '')}>Imprimir</Button>
-      </Stack>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

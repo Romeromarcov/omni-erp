@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Stack, TextField } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 import { get, post, patch } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 
@@ -60,7 +61,7 @@ export default function ParametroSistemaDetailPage() {
 
   return (
     <PageLayout maxWidth={640}>
-      <Typography variant="h5" mb={3}>{isNew ? 'Nuevo Parámetro' : 'Editar Parámetro'}</Typography>
+      <PageHeader title={isNew ? 'Nuevo Parámetro' : 'Editar Parámetro'} />
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
           {success && <Alert severity="success">Guardado correctamente.</Alert>}

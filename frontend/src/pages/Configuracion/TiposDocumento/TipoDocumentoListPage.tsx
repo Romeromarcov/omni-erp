@@ -51,6 +51,7 @@ export default function TipoDocumentoListPage() {
     <PageContainer>
       <PageHeader
         title="Tipos de Documento"
+        subtitle="Plantillas de documentos del sistema"
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/configuracion/tipos-documento/new')}>
             Nuevo tipo

@@ -135,6 +135,7 @@ const AuditLogListPage: React.FC = () => {
     <PageContainer>
       <PageHeader
         title="Registro de Auditoría"
+        subtitle="Historial de eventos del sistema"
         actions={<Button variant="contained" onClick={exportCSV}>Exportar CSV</Button>}
       />
       <Box sx={{ mb: 2 }}>

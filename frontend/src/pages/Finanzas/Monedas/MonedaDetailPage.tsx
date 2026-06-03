@@ -6,8 +6,8 @@ import { toList } from '../../../utils/api';
 import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
 import type { Moneda } from './MonedaListPage';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import PageLayout from '../../../components/PageLayout';
-import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { PageContainer, PageHeader } from '../../../components/ui';
+import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 
 const MonedaDetailPage: React.FC = () => {
   const { id_moneda } = useParams<{ id_moneda: string }>();
@@ -71,9 +71,9 @@ const MonedaDetailPage: React.FC = () => {
   };
 
   return (
-    <PageLayout maxWidth={480}>
-      <Typography variant="h5" mb={3}>Editar Moneda</Typography>
-      <Box component="form" onSubmit={handleSubmit}>
+    <PageContainer>
+      <PageHeader title="Editar Moneda" />
+      <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 480 }}>
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
           <TextField select name="tipo_moneda" label="Tipo de Moneda" value={moneda.tipo_moneda || 'fiat'} onChange={handleChange} required fullWidth>
@@ -96,7 +96,7 @@ const MonedaDetailPage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

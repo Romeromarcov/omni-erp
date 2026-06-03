@@ -9,7 +9,8 @@ import PageLayout from '../../../components/PageLayout';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { finanzasKeys } from '../../../lib/queryKeys';
 import { empresaSchema, type EmpresaInput } from '../../../schemas/core.schemas';
-import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Stack, TextField } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 
 interface Moneda {
   id_moneda: string;
@@ -63,7 +64,7 @@ const CompanyCreatePage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={560}>
-      <Typography variant="h5" mb={3}>Nueva empresa</Typography>
+      <PageHeader title="Nueva empresa" />
       {(!monedas || monedas.length === 0) && (
         <Alert severity="warning" sx={{ mb: 2 }}>No se encontraron monedas disponibles.</Alert>
       )}

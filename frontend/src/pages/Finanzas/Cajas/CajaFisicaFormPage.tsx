@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -9,7 +9,7 @@ import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActi
 import type { MonedaEmpresaActiva } from '../../../services/monedasEmpresaActiva';
 import { cajaFisicaSchema, type CajaFisicaInput } from '../../../schemas/finanzas.schemas';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Switch, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Switch, TextField } from '@mui/material';
 
 type TipoCajaChoice = { value: string; display: string };
 
@@ -124,19 +124,15 @@ const CajaFisicaFormPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <PageLayout>
-        <Typography>Cargando...</Typography>
-      </PageLayout>
+      <PageContainer>
+        <Box sx={{ py: 4, textAlign: 'center' }}>Cargando...</Box>
+      </PageContainer>
     );
   }
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h4">
-          {isEditing ? 'Editar Caja Física' : 'Nueva Caja Física'}
-        </Typography>
-      </Box>
+    <PageContainer>
+      <PageHeader title={isEditing ? 'Editar Caja Física' : 'Nueva Caja Física'} />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -334,7 +330,7 @@ const CajaFisicaFormPage: React.FC = () => {
           </Box>
         </form>
       </Paper>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

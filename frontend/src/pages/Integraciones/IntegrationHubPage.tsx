@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Box, Button, Card, CardContent, CircularProgress, Paper, Stack, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import HubOutlined from '@mui/icons-material/HubOutlined';
+import SwapHorizOutlined from '@mui/icons-material/SwapHorizOutlined';
+import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
+import ErrorOutlineOutlined from '@mui/icons-material/ErrorOutlineOutlined';
 import {
   getConectores,
   getIntegrationHubStatus,
 } from '../../services/integrationHubService';
-import { PageContainer, PageHeader } from '../../components/ui';
+import { PageContainer, PageHeader, KpiCard } from '../../components/ui';
 import ConectorCard from './ConectorCard';
 import NuevoConectorModal from './NuevoConectorModal';
 
@@ -26,15 +30,6 @@ const IntegrationHubPage: React.FC = () => {
 
   const conectores = conectoresData?.results ?? [];
 
-  const stat = (label: string, value: number | string, color = 'text.primary') => (
-    <Card variant="outlined" sx={{ minWidth: 120, flex: '0 1 auto' }}>
-      <CardContent>
-        <Typography variant="h5" sx={{ fontWeight: 700, color }}>{value}</Typography>
-        <Typography variant="caption" color="text.secondary">{label}</Typography>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <PageContainer>
       <PageHeader
@@ -49,14 +44,15 @@ const IntegrationHubPage: React.FC = () => {
 
       {/* Stats */}
       {status && (
-        <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap mb={4}>
-          {stat('Conectores activos', status.conectores_activos, 'primary.main')}
-          {stat('Total conectores', status.conectores_total)}
-          {stat('Jobs (24h)', status.ultima_24h.total)}
-          {stat('Completados', status.ultima_24h.completados, 'success.main')}
-          {status.ultima_24h.fallidos > 0 && stat('Fallidos', status.ultima_24h.fallidos, 'error.main')}
-          {status.ultima_24h.en_progreso > 0 && stat('En progreso', status.ultima_24h.en_progreso, 'warning.main')}
-        </Stack>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(auto-fill, minmax(160px, 1fr))' }, gap: 2, mb: 4 }}>
+          <KpiCard label="Conectores activos" value={status.conectores_activos} icon={<HubOutlined />} tone="brand" />
+          <KpiCard label="Total conectores" value={status.conectores_total} icon={<SwapHorizOutlined />} tone="tint" />
+          <KpiCard label="Jobs (24h)" value={status.ultima_24h.total} icon={<SwapHorizOutlined />} tone="ai" />
+          <KpiCard label="Completados" value={status.ultima_24h.completados} icon={<CheckCircleOutlined />} tone="success" />
+          {status.ultima_24h.fallidos > 0 && (
+            <KpiCard label="Fallidos" value={status.ultima_24h.fallidos} icon={<ErrorOutlineOutlined />} tone="error" emphasizeError />
+          )}
+        </Box>
       )}
 
       {/* Grid de conectores */}

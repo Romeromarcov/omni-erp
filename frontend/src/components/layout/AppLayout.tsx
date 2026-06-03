@@ -6,7 +6,8 @@ import AssistantDrawer from '../assistant/AssistantDrawer';
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
 import AppBreadcrumbs from './AppBreadcrumbs';
-import { DRAWER_WIDTH, RAIL_WIDTH, TOPBAR_HEIGHT } from './constants';
+import MobileBottomNav from './MobileBottomNav';
+import { DRAWER_WIDTH, MOBILE_NAV_HEIGHT, RAIL_WIDTH, TOPBAR_HEIGHT } from './constants';
 
 function PageLoader() {
   return (
@@ -92,7 +93,13 @@ export default function AppLayout() {
           >
             <AppBreadcrumbs />
           </Box>
-          <Box sx={{ flexGrow: 1 }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              // Espacio para la barra inferior en móvil (incluye safe-area).
+              pb: { xs: `calc(${MOBILE_NAV_HEIGHT}px + env(safe-area-inset-bottom))`, md: 0 },
+            }}
+          >
             <Suspense fallback={<PageLoader />}>
               <Outlet />
             </Suspense>
@@ -100,6 +107,7 @@ export default function AppLayout() {
         </Box>
 
         <AssistantDrawer />
+        <MobileBottomNav onMore={() => setMobileOpen(true)} />
       </Box>
     </AssistantProvider>
   );

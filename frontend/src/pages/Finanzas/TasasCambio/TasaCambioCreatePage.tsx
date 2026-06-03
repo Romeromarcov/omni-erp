@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { get, post } from '../../../services/api';
 import { toList } from '../../../utils/api';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import {
   Alert,
   Box,
@@ -11,7 +11,6 @@ import {
   MenuItem,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 
 interface Moneda {
@@ -62,13 +61,11 @@ const TasaCambioCreatePage: React.FC = () => {
   };
 
   return (
-    <PageLayout maxWidth={500}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h5">Nueva Tasa de Cambio</Typography>
-        <Button variant="outlined" onClick={() => navigate(-1)}>
-          Volver
-        </Button>
-      </Stack>
+    <PageContainer>
+      <PageHeader
+        title="Nueva Tasa de Cambio"
+        actions={<Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>}
+      />
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
           <TextField
@@ -138,7 +135,7 @@ const TasaCambioCreatePage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

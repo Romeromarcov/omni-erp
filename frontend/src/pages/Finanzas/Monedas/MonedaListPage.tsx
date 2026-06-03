@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, patch } from '../../../services/api';
 import { getEmpresaId } from '../../../utils/empresa';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import PageLayout from '../../../components/PageLayout';
+import { Alert, Box, Button, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
 
 export type Moneda = {
   id_moneda: string;
@@ -104,76 +105,75 @@ const MonedaListPage: React.FC = () => {
   );
 
   return (
-    <PageLayout>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Monedas</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <input
+    <PageContainer>
+      <PageHeader
+        title="Monedas"
+        actions={
+          <Button variant="contained" component={Link} to="/finanzas/monedas/new">
+            Nueva Moneda
+          </Button>
+        }
+      />
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <TextField
+          size="small"
           placeholder="Buscar..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ padding: 6, borderRadius: 6, border: '1px solid #cfd8dc', minWidth: 180 }}
+          sx={{ minWidth: 180 }}
         />
-        <Link
-          to="/finanzas/monedas/new"
-          style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, textDecoration: 'none', display: 'inline-block' }}
-        >
-          Nueva Moneda
-        </Link>
-      </div>
+      </Box>
 
-      {toggleError && (
-        <div style={{ color: '#d32f2f', marginBottom: 12, fontWeight: 500 }}>{toggleError}</div>
-      )}
+      {toggleError && <Alert severity="error" sx={{ mb: 2 }}>{toggleError}</Alert>}
 
       {isLoading ? (
-        <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
+        <Box sx={{ textAlign: 'center', color: 'text.secondary', py: 4 }}>Cargando...</Box>
       ) : errorMonedas ? (
-        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32, fontWeight: 500 }}>Error al cargar monedas</div>
+        <Alert severity="error">Error al cargar monedas</Alert>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#f6fafd', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <thead>
-              <tr style={{ background: '#e3f0ff' }}>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Código ISO</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Nombre</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Símbolo</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Activo</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Uso Empresa</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Código ISO</TableCell>
+                <TableCell>Nombre</TableCell>
+                <TableCell>Símbolo</TableCell>
+                <TableCell align="center">Activo</TableCell>
+                <TableCell align="center">Uso Empresa</TableCell>
+                <TableCell align="center">Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: 32, color: '#888' }}>No hay monedas</td>
-                </tr>
-              ) : (
-                filtered.map(moneda => (
-                  <tr key={moneda.id_moneda} style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}>
-                    <td style={{ padding: '10px 8px' }}>{moneda.codigo_iso}</td>
-                    <td style={{ padding: '10px 8px' }}>{moneda.nombre}</td>
-                    <td style={{ padding: '10px 8px' }}>{moneda.simbolo}</td>
-                    <td style={{ padding: '10px 8px' }}>{moneda.activo ? 'Sí' : 'No'}</td>
-                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={activas[moneda.id_moneda]?.activa ?? true}
-                        onChange={() => handleToggle(moneda)}
-                        disabled={toggleMutation.isPending}
-                        style={{ transform: 'scale(1.2)' }}
-                      />
-                    </td>
-                    <td style={{ padding: '10px 8px' }}>
-                      <Link to={`/finanzas/monedas/${moneda.id_moneda}`}>Ver/Editar</Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                <TableRow>
+                  <TableCell colSpan={6} align="center">No hay monedas</TableCell>
+                </TableRow>
+              ) : filtered.map(moneda => (
+                <TableRow key={moneda.id_moneda} hover>
+                  <TableCell>{moneda.codigo_iso}</TableCell>
+                  <TableCell>{moneda.nombre}</TableCell>
+                  <TableCell>{moneda.simbolo}</TableCell>
+                  <TableCell align="center"><StatusChip value={moneda.activo} /></TableCell>
+                  <TableCell align="center">
+                    <Switch
+                      size="small"
+                      checked={activas[moneda.id_moneda]?.activa ?? true}
+                      onChange={() => handleToggle(moneda)}
+                      disabled={toggleMutation.isPending}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Button size="small" variant="outlined" component={Link} to={`/finanzas/monedas/${moneda.id_moneda}`}>
+                      Ver/Editar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

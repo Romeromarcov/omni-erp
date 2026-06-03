@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
 import type { Pago as PagoFinanzas } from '../../../services/pagosService';
-import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
@@ -12,9 +11,10 @@ import { fetchProductos } from '../../../services/productosService';
 import type { Producto } from '../../../services/productosService';
 import { toList } from '../../../utils/api';
 import { ventasKeys, finanzasKeys } from '../../../lib/queryKeys';
-import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
+import { PageContainer, PageHeader, SectionTitle, StatusChip } from '../../../components/ui';
 
 interface ClienteInfoAPI {
   id_cliente?: string;
@@ -141,96 +141,105 @@ const CotizacionDetailPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 2 }}>
-        <Button variant="contained" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
-      </Box>
+    <PageContainer>
       {loading ? (
         <Typography>Cargando...</Typography>
       ) : !cotizacion ? (
         <Typography>No se encontró la cotización.</Typography>
       ) : (
-        <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 2 }}>
-          <Typography variant="h4" gutterBottom>
-            Cotización {cotizacion.numero_cotizacion}
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Fecha:</strong> {cotizacion.fecha_cotizacion}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Estado:</strong> {cotizacion.estado}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Empresa:</strong> {cotizacion.id_empresa?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Sucursal:</strong> {cotizacion.id_sucursal?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Caja:</strong> {cotizacion.id_caja?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>ID Caja:</strong> {cotizacion.id_caja?.id_caja || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Usuario:</strong> {cotizacion.id_usuario ? (cotizacion.id_usuario.first_name && cotizacion.id_usuario.last_name ? `${cotizacion.id_usuario.first_name} ${cotizacion.id_usuario.last_name}` : cotizacion.id_usuario.username) : '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Número de Cotización:</strong> {cotizacion.numero_cotizacion}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Cliente:</strong> {getClienteInfo(cotizacion.id_cliente)}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 100%' }}>
-              <Typography><strong>Observaciones:</strong> {cotizacion.observaciones || '-'}</Typography>
-            </Box>
-          </Box>
-          <Divider sx={{ my: 3 }} />
-          <Typography variant="h5" gutterBottom>Detalles</Typography>
-          {cotizacion.detalles && cotizacion.detalles.length > 0 ? (
-            <>
-              <TablaProductos
-                detalles={mapDetalles(cotizacion.detalles)}
-                productos={productos}
-                onRemove={() => { }}
-              />
-              <Box sx={{ mt: 2 }}>
-                <ResumenTotales detalles={mapDetalles(cotizacion.detalles)} descuentoGeneral={descuentoGeneral} setDescuentoGeneral={setDescuentoGeneral} />
+        <>
+          <PageHeader
+            title={`Cotización ${cotizacion.numero_cotizacion}`}
+            subtitle={`${cotizacion.fecha_cotizacion} · ${cotizacion.id_empresa?.nombre || ''}`}
+            actions={
+              <Button variant="outlined" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
+            }
+          />
+          <Card sx={{ p: 3, mb: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Fecha</Typography>
+                <Typography variant="body1">{cotizacion.fecha_cotizacion}</Typography>
               </Box>
-            </>
-          ) : (
-            <Typography>No hay productos en esta cotización.</Typography>
-          )}
-          <Divider sx={{ my: 3 }} />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h5" gutterBottom>Pagos</Typography>
-            <Button variant="contained" onClick={() => setShowPagoModal(true)}>
-              Agregar Pago
-            </Button>
-          </Box>
-          {pagoSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pagoSuccess}</Alert>}
-          {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
-          {pagos && pagos.length > 0 ? (
-            <List>
-              {pagos.map(pago => (
-                <ListItem key={pago.id_pago} divider>
-                  <ListItemText
-                    primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
-                    secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
-                  />
-                  {pago.observaciones && (
-                    <Typography variant="body2" color="text.secondary">
-                      Obs: {pago.observaciones}
-                    </Typography>
-                  )}
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography>No hay pagos registrados para esta cotización.</Typography>
-          )}
-        </Paper>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Estado</Typography>
+                <StatusChip value={cotizacion.estado} />
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Empresa</Typography>
+                <Typography variant="body1">{cotizacion.id_empresa?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Sucursal</Typography>
+                <Typography variant="body1">{cotizacion.id_sucursal?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Caja</Typography>
+                <Typography variant="body1">{cotizacion.id_caja?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Usuario</Typography>
+                <Typography variant="body1">{cotizacion.id_usuario ? (cotizacion.id_usuario.first_name && cotizacion.id_usuario.last_name ? `${cotizacion.id_usuario.first_name} ${cotizacion.id_usuario.last_name}` : cotizacion.id_usuario.username) : '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Cliente</Typography>
+                <Typography variant="body1">{getClienteInfo(cotizacion.id_cliente)}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 100%' }}>
+                <Typography variant="body2" color="text.secondary">Observaciones</Typography>
+                <Typography variant="body1">{cotizacion.observaciones || '-'}</Typography>
+              </Box>
+            </Box>
+          </Card>
+
+          <Card sx={{ p: 3, mb: 2 }}>
+            <SectionTitle>Detalles</SectionTitle>
+            {cotizacion.detalles && cotizacion.detalles.length > 0 ? (
+              <>
+                <TablaProductos
+                  detalles={mapDetalles(cotizacion.detalles)}
+                  productos={productos}
+                  onRemove={() => { }}
+                />
+                <Box sx={{ mt: 2 }}>
+                  <ResumenTotales detalles={mapDetalles(cotizacion.detalles)} descuentoGeneral={descuentoGeneral} setDescuentoGeneral={setDescuentoGeneral} />
+                </Box>
+              </>
+            ) : (
+              <Typography>No hay productos en esta cotización.</Typography>
+            )}
+          </Card>
+
+          <Card sx={{ p: 3 }}>
+            <SectionTitle action={
+              <Button variant="contained" size="small" onClick={() => setShowPagoModal(true)}>
+                Agregar Pago
+              </Button>
+            }>Pagos</SectionTitle>
+            <Divider sx={{ mb: 2 }} />
+            {pagoSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pagoSuccess}</Alert>}
+            {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
+            {pagos && pagos.length > 0 ? (
+              <List>
+                {pagos.map(pago => (
+                  <ListItem key={pago.id_pago} divider>
+                    <ListItemText
+                      primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
+                      secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
+                    />
+                    {pago.observaciones && (
+                      <Typography variant="body2" color="text.secondary">
+                        Obs: {pago.observaciones}
+                      </Typography>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography>No hay pagos registrados para esta cotización.</Typography>
+            )}
+          </Card>
+        </>
       )}
       {!loading && cotizacion && (
         <ModalPago
@@ -245,7 +254,7 @@ const CotizacionDetailPage: React.FC = () => {
           tipoOperacionInicial="INGRESO"
         />
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

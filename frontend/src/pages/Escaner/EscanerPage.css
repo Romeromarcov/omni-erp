@@ -1,0 +1,108 @@
+/* Escáner — visor oscuro y retícula animada (barcode / QR / NFC).
+   Las animaciones de la línea de escaneo y las ondas NFC se expresan mejor en
+   CSS plano; el resto del layout vive en el componente con MUI. */
+
+.omni-scan-view {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 360px;
+  color: #fff;
+  background: radial-gradient(120% 90% at 50% 30%, #1a2740 0%, #0a0e16 72%);
+  display: flex;
+  flex-direction: column;
+}
+.omni-scan-view::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.45;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.omni-scan-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  padding: 24px 0;
+}
+
+/* ── retícula ── */
+.omni-reticle {
+  position: relative;
+  z-index: 2;
+}
+.omni-reticle.barcode { width: 230px; height: 130px; }
+.omni-reticle.qr { width: 190px; height: 190px; }
+.omni-reticle.nfc {
+  width: 170px;
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.omni-reticle .corner { position: absolute; width: 34px; height: 34px; border: 3px solid #fff; }
+.omni-reticle .corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 12px 0 0 0; }
+.omni-reticle .corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 12px 0 0; }
+.omni-reticle .corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 12px; }
+.omni-reticle .corner.br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 12px 0; }
+.omni-reticle .bars {
+  position: absolute;
+  inset: 24px 22px;
+  opacity: 0.9;
+  background: repeating-linear-gradient(
+    90deg,
+    #fff 0 3px, transparent 3px 6px,
+    #fff 6px 8px, transparent 8px 14px,
+    #fff 14px 19px, transparent 19px 22px
+  );
+}
+.omni-reticle .scanline {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, #42a5f5, #fff, #42a5f5, transparent);
+  box-shadow: 0 0 14px 2px rgba(66, 165, 245, 0.7);
+  animation: omni-scanmove 2s ease-in-out infinite;
+}
+@keyframes omni-scanmove { 0%, 100% { top: 14%; } 50% { top: 82%; } }
+
+.omni-reticle.nfc .waves { position: absolute; inset: 0; }
+.omni-reticle.nfc .waves b {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border: 2.5px solid rgba(124, 77, 255, 0.7);
+  border-radius: 50%;
+  animation: omni-nfcpulse 2.2s ease-out infinite;
+}
+.omni-reticle.nfc .waves b:nth-child(2) { animation-delay: 0.7s; }
+.omni-reticle.nfc .waves b:nth-child(3) { animation-delay: 1.4s; }
+@keyframes omni-nfcpulse {
+  0% { width: 40px; height: 40px; opacity: 0.9; }
+  100% { width: 170px; height: 170px; opacity: 0; }
+}
+.omni-reticle.nfc .nicon {
+  position: relative;
+  z-index: 2;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #1976d2 0%, #7c4dff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(124, 77, 255, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .omni-reticle .scanline { animation: none; top: 48%; }
+  .omni-reticle.nfc .waves b { animation: none; opacity: 0.4; }
+}

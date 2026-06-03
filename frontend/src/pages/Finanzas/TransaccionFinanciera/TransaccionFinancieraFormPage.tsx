@@ -18,13 +18,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 // import { createTransaccion } from '../../../services/transaccionFinancieraService';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { toList } from '../../../utils/api';
 import { registroTransaccionSchema, type RegistroTransaccionInput } from '../../../schemas/finanzas.schemas';
-import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Stack, TextField } from '@mui/material';
 
 
 const tipoTransaccionOptions = [
@@ -283,9 +283,9 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   };
 
   return (
-    <PageLayout maxWidth={480}>
-      <Typography variant="h5" mb={3}>Registrar Transacción</Typography>
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <PageContainer>
+      <PageHeader title="Registrar Transacción" />
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ maxWidth: 480 }}>
         <Stack spacing={2}>
           <TextField
             label="Fecha"
@@ -420,7 +420,7 @@ const TransaccionFinancieraFormPage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
-    </PageLayout>
+    </PageContainer>
   );
 }
 export default TransaccionFinancieraFormPage;

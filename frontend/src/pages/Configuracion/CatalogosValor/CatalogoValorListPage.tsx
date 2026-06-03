@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { get } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import type { CatalogoValor } from '../../../types/configuracion';
-import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
+import { PageContainer, PageHeader, DataTable, StatusChip, SectionTitle } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 
 type CatalogoValorApiResponse = CatalogoValor[] | { results: CatalogoValor[]; count: number };
@@ -52,6 +52,7 @@ export default function CatalogoValorListPage() {
     <PageContainer>
       <PageHeader
         title="Catálogos de Valor"
+        subtitle="Valores predefinidos agrupados por código de catálogo"
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/configuracion/catalogos-valor/new')}>
             Nuevo valor
@@ -74,9 +75,7 @@ export default function CatalogoValorListPage() {
       ) : (
         Object.entries(grouped).map(([codigo, valores]) => (
           <Box key={codigo} sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 1, color: 'primary.main' }}>
-              Catálogo: {codigo}
-            </Typography>
+            <SectionTitle>Catálogo: {codigo}</SectionTitle>
             <DataTable
               columns={columns}
               rows={valores}
