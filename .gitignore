@@ -73,3 +73,6 @@ backend/update_bcv_exchange_cron.txt
 check_api.py
 debug_pago.py
 test_frontend_api.py
+
+# Worktrees temporales de agentes (Claude Code, etc.)
+.claude/worktrees/

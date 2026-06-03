@@ -141,6 +141,17 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 4. ¿Aumenta el alcance sin cerrar un flujo? → Cerrar el flujo primero.
 5. Cuando un agente proponga algo razonable que incomoda → escalar a revisión humana (R-PROC-3).
 
+## 2.5 Gate de cierre (Definition of Done) — obligatorio
+
+Ningún feature, fix o cambio está **terminado** hasta pasar el gate de cierre: **build
+verde, tests verdes, revisión de seguridad, revisión de bugs, revisión de gaps y cero deuda
+técnica nueva** (o un CTF fechado). El objetivo es que **cada avance quede 100 % sólido y no
+haya que retroceder**.
+
+El gate completo, con comandos y checklists, es de lectura obligatoria para todo agente y
+vive en **[`docs/DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md)**. La puerta de entrada para
+agentes es **[`CLAUDE.md`](../CLAUDE.md)** (y `AGENTS.md`) en la raíz del repo.
+
 ---
 
 # 3 — Arquitectura técnica
