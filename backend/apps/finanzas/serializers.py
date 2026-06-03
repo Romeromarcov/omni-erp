@@ -552,6 +552,7 @@ class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
         model = CuentaBancariaEmpresa
         fields = "__all__"
         read_only_fields = ["moneda_codigo_iso"]
+        ref_name = "CuentaBancariaEmpresaFinanzas"  # evita colisión OpenAPI con banca_electronica
 
 
 class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
@@ -1100,6 +1101,7 @@ class CajaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Caja
         fields = "__all__"
+        ref_name = "CajaFinanzas"  # evita colisión OpenAPI con tesoreria.CajaSerializer
         read_only_fields = [
             "empresa_nombre",
             "sucursal_nombre",

@@ -206,6 +206,14 @@ REST_FRAMEWORK = {
     ],
 }
 
+# drf-yasg — DEFAULT_INFO permite `manage.py generate_swagger` (esquema OpenAPI
+# para el contract testing con schemathesis). USE_COMPAT_RENDERERS=False silencia
+# el warning de renderers y alinea el formato.
+SWAGGER_SETTINGS = {
+    "DEFAULT_INFO": "config.urls.api_info",
+    "USE_SESSION_AUTH": False,
+}
+
 # JWT Settings
 SIMPLE_JWT = {
     # M-SEC-4: access token corto (15 min); el refresh httpOnly (7d) renueva.

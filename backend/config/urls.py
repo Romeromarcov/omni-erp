@@ -19,12 +19,16 @@ from apps.core.auth_views import (
     verify_token_view,
 )
 
+# Info a nivel de módulo para que `generate_swagger` (DEFAULT_INFO) y el contract
+# testing (schemathesis) puedan resolver el esquema OpenAPI.
+api_info = openapi.Info(
+    title="Omni ERP API",
+    default_version="v1",
+    description="API del sistema ERP para el mercado venezolano",
+)
+
 schema_view = get_schema_view(
-    openapi.Info(
-        title="Omni ERP API",
-        default_version="v1",
-        description="API del sistema ERP para el mercado venezolano",
-    ),
+    api_info,
     public=False,
     permission_classes=[permissions.IsAuthenticated],
 )
