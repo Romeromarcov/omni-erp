@@ -74,18 +74,23 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
 - **SEC-3 — CSP**: endurecer `script-src 'unsafe-inline'` (Report-Only + nonces).
 
 ### Tooling / gates (días)
-- **A0-1** — `.semgrep.yml` versionado; `mypy.ini`/`pyproject.toml` con config estricta en
-  módulos de dinero (`contabilidad`, `finanzas`, `nomina`).
+- **A0-1 — `.semgrep.yml` versionado. ✅ HECHO (parcial).** 4 reglas propias bloqueantes
+  (`raw/extra SQL`, `verify=False`, `eval/exec`, `subprocess shell=True`), verificadas
+  limpias (0 findings/616 archivos) y cableadas en el job semgrep de CI. *Pendiente:*
+  `mypy.ini`/`pyproject.toml` con config estricta en módulos de dinero.
 - **A0-2** — `pytest -n auto` (xdist ya instalado) para acortar la suite.
-- **GATE-1** — escalar a bloqueante (quitar `continue-on-error`) **uno por uno y solo cuando
-  el check pase limpio**: `ruff`, `mypy` (módulos críticos), `diff-cover` (PR), `pip-audit`/
-  `npm audit`/`trivy` (High/Critical).
-- **A0-3** — instalar y cablear `drf-spectacular` (OpenAPI), `schemathesis` (job `contract`),
-  `mutmut` (workflow `nightly`), `safety`, `eslint-plugin-security`.
+- **GATE-1 — escalar gates a bloqueante. 🟡 EN CURSO.** ✅ `ruff` bugs reales (E9/F63/F7/F82/
+  **F823**) ahora bloqueante; ✅ reglas semgrep propias bloqueantes. *Pendiente:* `mypy`
+  (módulos críticos), `diff-cover` (PR), `pip-audit`/`npm audit`/`trivy` (High/Critical),
+  `ruff` F401/F811 (tras limpiar — bloquea BUG-DUP-1).
+- **A0-3** — instalar y cablear `drf-spectacular`/`drf-yasg` (OpenAPI), `schemathesis` (job
+  `contract`), `mutmut` (workflow `nightly`), `safety`, `eslint-plugin-security`.
 
 ### Cimientos de test (semanas)
 - **TEST-2** — estructura `backend/tests/{factories,unit,integration,tenant,api,e2e}` + migración.
-- **TEST-3** — property-based con `hypothesis` (instalado, sin usar) para invariantes de dinero.
+- **TEST-3 — property-based con `hypothesis`. ✅ HECHO (inicial).** `test_property_fiscal.py`:
+  invariantes de IVA/IGTF (sumas exactas, no-negatividad, redondeo 2 decimales, aplicabilidad
+  IGTF) sobre ~1300 casos generados. *Ampliar:* aging, scoring, stock, pagos mixtos.
 - **TEST-4** — race tests (`select_for_update`) para stock, saldos CxC/CxP, correlativos.
 - **TEST-5** — integración de flujos críticos faltantes: compra, cobranza, manufactura.
 - **TEST-6** — frontend: MSW (instalado, sin usar), `openapi-typescript` + drift, Playwright E2E,
