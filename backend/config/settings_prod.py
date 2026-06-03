@@ -3,6 +3,13 @@ from .settings_base import *  # noqa: F401, F403
 DEBUG = False
 # M-SEC-14: ALLOWED_HOSTS no puede quedar vacío en producción. Fail-closed.
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+# Railway inyecta automáticamente el dominio público/privado del servicio como
+# variables de sistema; los añadimos para que el deploy se auto-configure sin
+# depender de que DJANGO_ALLOWED_HOSTS incluya el dominio asignado por Railway.
+for _railway_host_var in ("RAILWAY_PUBLIC_DOMAIN", "RAILWAY_PRIVATE_DOMAIN"):
+    _railway_host = os.environ.get(_railway_host_var, "").strip()
+    if _railway_host and _railway_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_railway_host)
 if not ALLOWED_HOSTS:
     from django.core.exceptions import ImproperlyConfigured
 
