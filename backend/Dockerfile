@@ -52,8 +52,13 @@ USER appuser
 
 EXPOSE 8000
 
-# NEW-INFRA-5: healthcheck (curl is installed in runtime stage)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 CMD curl -fsS http://localhost:8000/api/health/ || exit 1
+# NEW-INFRA-5: healthcheck (curl is installed in runtime stage).
+# Usa ${PORT:-8000} para coincidir con el puerto real (Railway inyecta $PORT).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -fsS "http://localhost:${PORT:-8000}/api/health/" || exit 1
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["python", "-m", "uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+# Forma shell para que ${PORT} se expanda: Railway enruta a su $PORT dinámico;
+# en local (sin PORT) cae a 8000. Sin esto, el contenedor escucha en 8000 fijo y
+# el healthcheck/routing de Railway falla.
+CMD python -m uvicorn config.asgi:application --host 0.0.0.0 --port ${PORT:-8000}

@@ -113,25 +113,49 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-_db_host = os.environ.get("DB_HOST")
-if not _db_host:
-    from django.core.exceptions import ImproperlyConfigured
+# Soporte de DATABASE_URL (Railway/Heroku inyectan un solo connection string).
+# Si está presente, tiene prioridad; si no, se usan las variables DB_* (dev local).
+_database_url = os.environ.get("DATABASE_URL")
+if _database_url:
+    from urllib.parse import unquote, urlparse
 
-    raise ImproperlyConfigured(
-        "La variable de entorno DB_HOST no está configurada. "
-        "Omni ERP requiere PostgreSQL — SQLite no está soportado. "
-        "Copiá .env.example a .env y completá las variables DB_*. "
-        "Instrucciones: ver README.md sección 'Desarrollo local'."
-    )
+    _u = urlparse(_database_url)
+    if _u.scheme not in ("postgres", "postgresql"):
+        from django.core.exceptions import ImproperlyConfigured
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        raise ImproperlyConfigured(
+            f"DATABASE_URL debe ser PostgreSQL (postgres://), recibido: {_u.scheme}://"
+        )
+    _db_config = {
+        "NAME": (_u.path or "/omni_erp").lstrip("/"),
+        "USER": unquote(_u.username or ""),
+        "PASSWORD": unquote(_u.password or ""),
+        "HOST": _u.hostname or "",
+        "PORT": str(_u.port or "5432"),
+    }
+else:
+    _db_host = os.environ.get("DB_HOST")
+    if not _db_host:
+        from django.core.exceptions import ImproperlyConfigured
+
+        raise ImproperlyConfigured(
+            "Falta DATABASE_URL o DB_HOST. "
+            "Omni ERP requiere PostgreSQL — SQLite no está soportado. "
+            "En Railway: enlazá el plugin Postgres (provee DATABASE_URL). "
+            "En local: copiá .env.example a .env y completá las variables DB_*."
+        )
+    _db_config = {
         "NAME": os.environ.get("DB_NAME", "omni_erp"),
         "USER": os.environ.get("DB_USER", "omni_erp"),
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": _db_host,
         "PORT": os.environ.get("DB_PORT", "5432"),
+    }
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        **_db_config,
         "OPTIONS": {
             "connect_timeout": 5,
             "client_encoding": "UTF8",
