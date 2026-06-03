@@ -141,6 +141,17 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 4. ¿Aumenta el alcance sin cerrar un flujo? → Cerrar el flujo primero.
 5. Cuando un agente proponga algo razonable que incomoda → escalar a revisión humana (R-PROC-3).
 
+## 2.5 Gate de cierre (Definition of Done) — obligatorio
+
+Ningún feature, fix o cambio está **terminado** hasta pasar el gate de cierre: **build
+verde, tests verdes, revisión de seguridad, revisión de bugs, revisión de gaps y cero deuda
+técnica nueva** (o un CTF fechado). El objetivo es que **cada avance quede 100 % sólido y no
+haya que retroceder**.
+
+El gate completo, con comandos y checklists, es de lectura obligatoria para todo agente y
+vive en **[`docs/DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md)**. La puerta de entrada para
+agentes es **[`CLAUDE.md`](../CLAUDE.md)** (y `AGENTS.md`) en la raíz del repo.
+
 ---
 
 # 3 — Arquitectura técnica
@@ -189,7 +200,7 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 | Monitoreo APM | ⚠️ Sentry configurado; Prometheus/Grafana pendiente |
 | Backup automático PostgreSQL | ⚠️ Railway: addon Postgres gestiona backups; verificar retención (GAP-4-bis en plan de trabajo). Self-hosted: pendiente (GAP-4) cuando se reactive |
 | SSL automático (Let's Encrypt) | ⚠️ Railway: TLS upstream automático (cubierto). Self-hosted: diferido (GAP-5) hasta que el negocio justifique la migración |
-| Security headers en nginx (Railway) | ❌ pendiente — ver `PLAN_TRABAJO_AUDITORIA_2026-06-01.md` NEW-INFRA-1 |
+| Security headers en nginx (Railway) | ❌ pendiente — ver `docs/auditorias/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` NEW-INFRA-1 |
 
 ## 3.2 Estrategia multi-tenant
 
@@ -406,7 +417,7 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 - [x] Consolidar planificación en este documento único.
 - [ ] Archivar planes ejecutados y el `PROJECT_LOG.md` de la raíz (ver §10).
 - [x] Frontend shell ERP moderno + asistente IA shippeado en `84f7ab4` (2026-05-31). Cierra ítem "pulido cxc" del plan original.
-- [ ] **Auditoría 2026-06-01:** ejecutar `docs/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` (33 hallazgos + 4 deltas vs plan). Bloqueante de pasos siguientes para ítems CRIT-1..3 y H-SEC-1..2.
+- [ ] **Auditoría 2026-06-01:** ejecutar `docs/auditorias/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` (33 hallazgos + 4 deltas vs plan). Bloqueante de pasos siguientes para ítems CRIT-1..3 y H-SEC-1..2.
 
 ### Sub-fase 1.F — Distribuidora en producción (PRÓXIMO, métrica que cierra Bloque 1 parcial)
 **Objetivo único:** la distribuidora opera diariamente con Omni durante **30 días continuos** sin volver a su sistema anterior.
