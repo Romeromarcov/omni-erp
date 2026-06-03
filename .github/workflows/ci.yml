@@ -52,6 +52,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # diff-cover necesita el historial para comparar con main
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -72,9 +74,21 @@ jobs:
         working-directory: backend
         run: python manage.py makemigrations --check --dry-run
 
+      - name: Matrices A1 al día (mapa de superficie)
+        working-directory: backend
+        run: python manage.py mapa_superficie --check
+
       - name: Run tests
         working-directory: backend
         run: python -m pytest tests_api/ -v --tb=short --no-header
+
+      - name: Diff coverage — todo código nuevo ≥90% (cero-dudas, bloqueante en PR)
+        if: github.event_name == 'pull_request'
+        working-directory: backend
+        run: |
+          pip install diff-cover
+          git fetch --no-tags origin main
+          diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
 
   # ──────────────────────────────────────────────────────────────
   # Frontend — TypeScript + ESLint
@@ -204,12 +218,22 @@ jobs:
         continue-on-error: true
         run: npm audit --audit-level=high || true
 
+      - name: Trivy — CVEs de dependencias e imágenes (fs scan)
+        uses: aquasecurity/trivy-action@0.28.0
+        continue-on-error: true   # reporta; escalar a bloqueante (CRITICAL) tras cerrar CVEs major
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+
   # ──────────────────────────────────────────────────────────────
   # Static analysis — plan "cero dudas" Fase 0/1
   # bandit (seguridad) bloqueante en MEDIUM+; ruff (lint); mypy (tipos, gradual)
   # ──────────────────────────────────────────────────────────────
   static-analysis:
-    name: "Static analysis (bandit + ruff + mypy)"
+    name: "Static analysis (bandit + semgrep + ruff + mypy)"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -222,11 +246,15 @@ jobs:
 
       - name: Install dev tooling
         working-directory: backend
-        run: pip install bandit==1.9.4 ruff==0.8.4 mypy==1.13.0
+        run: pip install bandit==1.9.4 ruff==0.8.4 mypy==1.13.0 semgrep==1.97.0
 
       - name: Bandit (seguridad estática — bloqueante en MEDIUM+)
         working-directory: backend
         run: bandit -r apps/ config/ -c .bandit.yaml --severity-level medium
+
+      - name: Semgrep (OWASP/Django — bloqueante en severidad ERROR)
+        working-directory: backend
+        run: semgrep --config p/python --config p/django --severity ERROR --error apps/ config/
 
       - name: Ruff (lint — errores graves)
         working-directory: backend
