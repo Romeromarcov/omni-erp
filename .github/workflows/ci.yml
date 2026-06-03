@@ -64,7 +64,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: pip install -r requirements.txt
+        # requirements-dev incluye -r requirements.txt + el tooling de test
+        # (factory_boy, hypothesis, pytest-xdist, diff-cover) necesario para la suite.
+        run: pip install -r requirements-dev.txt
 
       - name: Django system check
         working-directory: backend
@@ -219,14 +221,12 @@ jobs:
         run: npm audit --audit-level=high || true
 
       - name: Trivy — CVEs de dependencias e imágenes (fs scan)
-        uses: aquasecurity/trivy-action@0.28.0
-        continue-on-error: true   # reporta; escalar a bloqueante (CRITICAL) tras cerrar CVEs major
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          format: table
+        # Instalación vía script oficial (evita depender de tags de la action).
+        # Reporta; escalar a bloqueante (CRITICAL) tras cerrar los CVEs major.
+        continue-on-error: true
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --no-progress . || true
 
   # ──────────────────────────────────────────────────────────────
   # Static analysis — plan "cero dudas" Fase 0/1
