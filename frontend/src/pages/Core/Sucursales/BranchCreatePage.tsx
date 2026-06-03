@@ -8,7 +8,8 @@ import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { sucursalSchema, type SucursalInput } from '../../../schemas/core.schemas';
-import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, MenuItem, Stack, TextField } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 
 const defaultValues: SucursalInput = {
   nombre: '',
@@ -52,7 +53,7 @@ const BranchCreatePage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={560}>
-      <Typography variant="h5" mb={3}>Nueva sucursal</Typography>
+      <PageHeader title="Nueva sucursal" />
       <Box component="form" onSubmit={onSubmit} noValidate>
         <Stack spacing={2}>
           <TextField

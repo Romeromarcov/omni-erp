@@ -1,16 +1,17 @@
 import { Box, Button, Card, CardContent, Typography, CircularProgress, Alert, Paper } from '@mui/material';
 import { SmartToy as RobotIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { useAgenteStream } from '../../hooks/useCxC';
+import { PageContainer, PageHeader } from '../../components/ui';
 
 export default function AgenteCobranzaPage() {
   const { streaming, output, error, iniciar, limpiar } = useAgenteStream();
 
   return (
-    <Box p={3}>
-      <Box display="flex" alignItems="center" gap={1} mb={3}>
-        <RobotIcon color="primary" />
-        <Typography variant="h5" fontWeight="bold">Agente de Cobranza IA</Typography>
-      </Box>
+    <PageContainer>
+      <PageHeader
+        title="Agente de Cobranza IA"
+        subtitle="Análisis inteligente de cartera vencida y recomendaciones personalizadas"
+      />
 
       <Card sx={{ mb: 2 }}>
         <CardContent>
@@ -66,6 +67,6 @@ export default function AgenteCobranzaPage() {
           <Typography>Presiona "Analizar Cartera Completa" para iniciar el análisis</Typography>
         </Paper>
       )}
-    </Box>
+    </PageContainer>
   );
 }

@@ -16,7 +16,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { post, get } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import { findSimilarMetodoPago } from '../../../utils/fuzzyDuplicate';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { Button } from '@mui/material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEmpresas } from '../../../hooks/useEmpresas';
@@ -112,13 +112,11 @@ const MetodoPagoCreatePage: React.FC = () => {
   };
 
   return (
-    <PageLayout maxWidth={500}>
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Nuevo Método de Pago</h2>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button variant="contained" color="secondary" onClick={() => navigate(-1)}>
-          Volver
-        </Button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Nuevo Método de Pago"
+        actions={<Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>}
+      />
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {esSuperusuario && (
           <>
@@ -210,7 +208,7 @@ const MetodoPagoCreatePage: React.FC = () => {
         </Button>
       </form>
       {/* Modal de reutilización eliminado */}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

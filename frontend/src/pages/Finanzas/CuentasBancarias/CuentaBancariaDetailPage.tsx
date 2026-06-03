@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { getCuentaBancariaDetail, updateCuentaBancaria } from '../../../services/cuentaBancariaService';
 import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
@@ -103,8 +103,8 @@ const CuentaBancariaDetailPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <h2 style={{ marginBottom: 16 }}>Detalle de Cuenta Bancaria</h2>
+    <PageContainer>
+      <PageHeader title="Detalle de Cuenta Bancaria" />
       <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
         <TextField fullWidth label="Banco" name="nombre_banco" value={form.nombre_banco} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Tipo de Cuenta</label>
@@ -147,7 +147,7 @@ const CuentaBancariaDetailPage: React.FC = () => {
           <Button type="button" onClick={() => navigate(-1)} style={{ marginLeft: 8 }}>Cancelar</Button>
         </div>
       </form>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

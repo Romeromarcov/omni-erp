@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getTransaccionesFinancieras, exportTransaccionesFinancieras } from '../../../services/transaccionFinancieraService';
 import { toList } from '../../../utils/api';
-import PageLayout from '../../../components/PageLayout';
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
@@ -74,12 +73,13 @@ const TransaccionFinancieraListPage: React.FC = () => {
 
   if (!empresaIdToUse) {
     return (
-      <PageLayout>
+      <PageContainer>
+        <PageHeader title="Transacciones Financieras" />
         <Box sx={{ textAlign: 'center', mt: 6 }}>
           <Typography variant="h5" mb={1}>Empresa no especificada</Typography>
           <Typography color="text.secondary">Por favor, selecciona una empresa para ver las transacciones financieras.</Typography>
         </Box>
-      </PageLayout>
+      </PageContainer>
     );
   }
 

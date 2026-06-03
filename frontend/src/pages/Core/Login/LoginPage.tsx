@@ -5,7 +5,8 @@ import { DeviceActionModal } from '../../../components/DeviceActionModal';
 import { get } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { DispositivoInfo } from '../../../types/dispositivos';
-import { Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Button, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
+import { BrandMark, Wordmark } from '../../../components/ui';
 
 
 const LoginPage: React.FC = () => {
@@ -88,15 +89,18 @@ const LoginPage: React.FC = () => {
 
   const cardStyle: React.CSSProperties = {
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 400,
     background: '#fff',
-    borderRadius: 16,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-    padding: '32px 24px',
+    borderRadius: 20,
+    boxShadow: '0 12px 40px rgba(16,42,80,0.12)',
+    border: '1px solid rgba(16,42,80,0.06)',
+    padding: '34px 28px',
     margin: '16px',
     display: 'flex',
     flexDirection: 'column',
     gap: 16,
+    position: 'relative',
+    zIndex: 1,
   };
 
 
@@ -139,11 +143,44 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="vertical-center">
-      <div className="centered-container" style={{ background: 'linear-gradient(135deg, #e3f0ff 0%, #f6fafd 100%)' }}>
+      <div
+        className="centered-container"
+        style={{
+          background: 'linear-gradient(135deg, #e3f0ff 0%, #f6fafd 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Fondo orbital decorativo */}
+        <svg
+          aria-hidden
+          viewBox="0 0 420 880"
+          preserveAspectRatio="xMidYMid slice"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        >
+          <g fill="none" stroke="#1976d2" strokeWidth="1">
+            <circle cx="360" cy="120" r="90" opacity=".10" />
+            <circle cx="360" cy="120" r="150" opacity=".07" />
+            <circle cx="60" cy="760" r="110" opacity=".09" />
+            <circle cx="60" cy="760" r="180" opacity=".06" />
+          </g>
+          <circle cx="420" cy="120" r="6" fill="#42a5f5" opacity=".6" />
+          <circle cx="20" cy="760" r="5" fill="#7c4dff" opacity=".6" />
+        </svg>
+
         <div style={cardStyle}>
           {step === 'login' && (
             <>
-              <h2 style={{ textAlign: 'center', marginBottom: 8, color: '#1976d2' }}>Iniciar sesión</h2>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.25, mb: 1 }}>
+                <BrandMark size={56} />
+                <Wordmark size={26} />
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  Gestión empresarial integral · multimoneda
+                </Typography>
+              </Box>
+              <Typography variant="h6" sx={{ textAlign: 'center' }}>
+                Iniciar sesión
+              </Typography>
               <LoginForm onSubmit={handleLogin} loading={loading} error={error} />
             </>
           )}
@@ -172,7 +209,15 @@ const LoginPage: React.FC = () => {
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
             >
-              <h3 style={{ textAlign: 'center', color: '#1976d2', margin: '0 0 8px' }}>Selecciona empresa y sucursal</h3>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 1 }}>
+                <BrandMark size={44} />
+                <Typography variant="h6" sx={{ textAlign: 'center' }}>
+                  Selecciona empresa y sucursal
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  Tu sesión se abrirá en este contexto
+                </Typography>
+              </Box>
               <FormControl fullWidth size="small">
                 <InputLabel>Empresa</InputLabel>
                 <Select value={empresa} label="Empresa" onChange={e => setEmpresa(e.target.value)}>

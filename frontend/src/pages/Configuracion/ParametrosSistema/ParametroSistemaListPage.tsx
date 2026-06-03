@@ -57,6 +57,7 @@ export default function ParametroSistemaListPage() {
     <PageContainer>
       <PageHeader
         title="Parámetros del Sistema"
+        subtitle="Variables de configuración global y por empresa"
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/configuracion/parametros-sistema/new')}>
             Nuevo parámetro

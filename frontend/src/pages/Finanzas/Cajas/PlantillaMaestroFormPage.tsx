@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -8,7 +8,7 @@ import { createPlantillaMaestro, updatePlantillaMaestro, getPlantillasMaestro } 
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { plantillaMaestroSchema, type PlantillaMaestroInput } from '../../../schemas/finanzas.schemas';
-import { Alert, Autocomplete, Box, Button, Chip, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Alert, Autocomplete, Box, Button, Chip, FormControlLabel, Stack, Switch, TextField } from '@mui/material';
 
 interface MetodoPago {
   id_metodo_pago: string;
@@ -115,12 +115,9 @@ const PlantillaMaestroFormPage: React.FC = () => {
   };
 
   return (
-    <PageLayout maxWidth={800}>
-      <Typography variant="h5" mb={3}>
-        {isEditing ? 'Editar Plantilla Maestro' : 'Nueva Plantilla Maestro'}
-      </Typography>
-
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <PageContainer>
+      <PageHeader title={isEditing ? 'Editar Plantilla Maestro' : 'Nueva Plantilla Maestro'} />
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ maxWidth: 800 }}>
         <Stack spacing={3}>
           <TextField
             label="Nombre"
@@ -234,7 +231,7 @@ const PlantillaMaestroFormPage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

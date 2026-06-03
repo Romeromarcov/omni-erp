@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Box, Button, Card, CardContent, Typography, Chip, Grid, TextField, MenuItem, Alert, CircularProgress, Stepper, Step, StepLabel, Table, TableBody, TableCell, TableHead, TableRow, TableContainer } from '@mui/material';
+import { Box, Button, Card, CardContent, Typography, Grid, TextField, MenuItem, Alert, CircularProgress, Stepper, Step, StepLabel, Table, TableBody, TableCell, TableHead, TableRow, TableContainer } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { post } from '../../services/api';
 import { useAcuerdos, useInvalidateCxC } from '../../hooks/useCxC';
 import { calcularCuotasPreview } from '../../utils/cuotasPreview';
 import type { AcuerdoPago, CuotaPreview } from '../../types/cxc';
+import { PageContainer, PageHeader, StatusChip } from '../../components/ui';
 
 const PERIODICIDAD_OPTIONS = ['unico', 'semanal', 'quincenal', 'mensual'] as const;
 const PERIODICIDAD_LABELS: Record<string, string> = {
@@ -84,13 +85,16 @@ export default function AcuerdosPage() {
   const acuerdos = data?.results || [];
 
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" fontWeight="bold">Acuerdos de Pago</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowWizard(true)}>
-          Nuevo Acuerdo
-        </Button>
-      </Box>
+    <PageContainer>
+      <PageHeader
+        title="Acuerdos de Pago"
+        subtitle="Gestión de acuerdos y planes de pago con clientes"
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowWizard(true)}>
+            Nuevo Acuerdo
+          </Button>
+        }
+      />
 
       {/* Wizard */}
       {showWizard && (
@@ -211,7 +215,7 @@ export default function AcuerdosPage() {
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
               <Typography fontWeight="bold">{ac.cliente_nombre}</Typography>
-              <Chip label={ac.estado} size="small" color={ESTADO_COLORS[ac.estado] || 'default'} />
+              <StatusChip value={ac.estado} colorMap={ESTADO_COLORS} />
             </Box>
             <Typography variant="body2" color="text.secondary">
               ${parseFloat(ac.monto_total).toFixed(2)} {ac.moneda_codigo} — {PERIODICIDAD_LABELS[ac.periodicidad]} — desde {ac.fecha_inicio}
@@ -234,6 +238,6 @@ export default function AcuerdosPage() {
           </CardContent>
         </Card>
       ))}
-    </Box>
+    </PageContainer>
   );
 }

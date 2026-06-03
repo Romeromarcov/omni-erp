@@ -1,11 +1,11 @@
 import React from 'react';
-import PageLayout from '../../../components/PageLayout';
 import { useNavigate } from 'react-router-dom';
+import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica, type CajaVirtual, type Datafono } from '../../../services/cajasFisicasService';
 import { useConfirm, useSnackbar } from '../../../contexts/feedbackTypes';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import { Alert, Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -79,13 +79,15 @@ const CajasFisicasListPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5">Cajas Físicas</Typography>
-        <Button variant="contained" onClick={() => navigate('/finanzas/cajas-fisicas/crear')}>
-          Nueva Caja Física
-        </Button>
-      </Box>
+    <PageContainer>
+      <PageHeader
+        title="Cajas Físicas"
+        actions={
+          <Button variant="contained" onClick={() => navigate('/finanzas/cajas-fisicas/crear')}>
+            Nueva Caja Física
+          </Button>
+        }
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -95,15 +97,15 @@ const CajasFisicasListPage: React.FC = () => {
 
       <Paper variant="outlined">
         <TableContainer>
-          <Table>
+          <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Nombre</TableCell>
                 <TableCell>Tipo</TableCell>
                 <TableCell>Sucursal</TableCell>
                 <TableCell>Identificador Dispositivo</TableCell>
-                <TableCell>Estado</TableCell>
-                <TableCell>Estado de Sesión</TableCell>
+                <TableCell align="center">Estado</TableCell>
+                <TableCell align="center">Estado de Sesión</TableCell>
                 <TableCell>Cajas Virtuales</TableCell>
                 <TableCell>Datafonos</TableCell>
                 <TableCell align="center">Acciones</TableCell>
@@ -112,15 +114,11 @@ const CajasFisicasListPage: React.FC = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center">
-                    Cargando...
-                  </TableCell>
+                  <TableCell colSpan={9} align="center">Cargando...</TableCell>
                 </TableRow>
               ) : cajasFisicas.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center">
-                    No hay cajas físicas registradas
-                  </TableCell>
+                  <TableCell colSpan={9} align="center">No hay cajas físicas registradas</TableCell>
                 </TableRow>
               ) : (
                 cajasFisicas.map((caja) => (
@@ -137,14 +135,10 @@ const CajasFisicasListPage: React.FC = () => {
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={caja.activa ? 'Activa' : 'Inactiva'}
-                          color={caja.activa ? 'success' : 'error'}
-                          size="small"
-                        />
+                      <TableCell align="center">
+                        <StatusChip value={caja.activa} label={caja.activa ? 'Activa' : 'Inactiva'} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="center">
                         <Chip
                           label={caja.estado_sesion_display || 'Cerrada'}
                           color={caja.esta_abierta ? 'success' : 'default'}
@@ -235,7 +229,7 @@ const CajasFisicasListPage: React.FC = () => {
           </Table>
         </TableContainer>
       </Paper>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

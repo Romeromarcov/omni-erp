@@ -4,6 +4,7 @@ import { Route, Navigate } from 'react-router-dom';
 import { getSessionUser, getSessionRoles } from '../services/session';
 
 const DashboardUserPage = lazy(() => import('../pages/Core/Login/DashboardUserPage'));
+const HomePage = lazy(() => import('../pages/Core/Home/HomePage'));
 const RoleListPage = lazy(() => import('../pages/Core/Usuarios/RoleListPage'));
 const AuditLogListPage = lazy(() => import('../pages/Core/Auditoria'));
 const RoleDetailPage = lazy(() => import('../pages/Core/Usuarios/RoleDetailPage'));
@@ -57,6 +58,7 @@ function DepartamentosRoute() {
 export function coreRoutes() {
   return (
     <>
+      <Route path="/inicio" element={<HomePage />} />
       <Route path="/dashboard" element={<DashboardRoute />} />
       <Route path="/roles" element={<RoleListPage />} />
       <Route path="/roles/new" element={<RoleCreatePage />} />

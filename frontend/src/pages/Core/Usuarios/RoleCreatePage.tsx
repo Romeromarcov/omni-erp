@@ -9,8 +9,8 @@ import {
   MenuItem,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 import { createRol } from '../../../services/roles';
 import { fetchEmpresas } from '../../../services/empresas';
 import type { Empresa } from '../../../services/empresas';
@@ -62,7 +62,7 @@ const RoleCreatePage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={560}>
-      <Typography variant="h5" mb={3}>Crear Nuevo Rol</Typography>
+      <PageHeader title="Crear Nuevo Rol" />
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
           <TextField name="nombre_rol" label="Nombre" value={form.nombre_rol} onChange={handleChange} required fullWidth />

@@ -8,7 +8,8 @@ import { post } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { departamentoSchema, type DepartamentoInput } from '../../../schemas/core.schemas';
-import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, MenuItem, Stack, TextField } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 
 const defaultValues: DepartamentoInput = {
   nombre_departamento: '',
@@ -48,7 +49,7 @@ const DepartmentCreatePage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={560}>
-      <Typography variant="h5" mb={3}>Nuevo departamento</Typography>
+      <PageHeader title="Nuevo departamento" />
       <Box component="form" onSubmit={onSubmit} noValidate>
         <Stack spacing={2}>
           <TextField

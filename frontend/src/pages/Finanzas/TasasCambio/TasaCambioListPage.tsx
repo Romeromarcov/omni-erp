@@ -10,8 +10,8 @@ import { get } from '../../../services/api';
 import { toList, toCount } from '../../../utils/api';
 import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
-import PageLayout from '../../../components/PageLayout';
-import { Button } from '@mui/material';
+import { Alert, Box, Button, Card, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { PageContainer, PageHeader } from '../../../components/ui';
 
 interface TasaCambio {
   id_tasa_cambio: string;
@@ -64,132 +64,121 @@ const TasaCambioListPage: React.FC = () => {
   const count = toCount(tasasRaw as unknown);
   const error = isError ? 'Error al cargar tasas de cambio' : '';
 
+  const totalPages = Math.max(1, Math.ceil(count / pageSize));
+
   return (
-    <PageLayout maxWidth={1100}>
-      {/* Tasa oficial BCV global destacada */}
-      <div style={{
-        background: '#e3f0ff',
-        borderRadius: 12,
-        padding: 18,
-        marginBottom: 24,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 24,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-      }}>
+    <PageContainer>
+      {/* Tasa oficial BCV destacada */}
+      <Card sx={{ p: 2.5, mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
         {loadingTasaOficial ? (
-          <span style={{ color: '#888' }}>Cargando tasa oficial BCV...</span>
+          <Typography color="text.secondary">Cargando tasa oficial BCV...</Typography>
         ) : tasaOficial ? (
           <>
-            <span style={{ fontWeight: 600, color: '#1976d2', fontSize: 18 }}>
+            <Typography fontWeight={600} color="primary">
               Tasa Oficial BCV USD/VES hoy ({tasaOficial.fecha_tasa}):
-            </span>
-            <span style={{ fontWeight: 700, color: '#388e3c', fontSize: 22 }}>
+            </Typography>
+            <Typography fontWeight={700} color="success.main" variant="h6">
               {Number(tasaOficial.valor_tasa).toLocaleString('es-VE', { minimumFractionDigits: 4 })}
-            </span>
+            </Typography>
           </>
         ) : (
-          <span style={{ color: '#d32f2f', fontWeight: 500 }}>{errorTasaOficial}</span>
+          <Typography color="error.main" fontWeight={500}>{String(errorTasaOficial ?? 'No disponible')}</Typography>
         )}
-      </div>
-      {/* Encabezado centrado y botón principal */}
-      <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Tasas de Cambio</h2>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24, gap: 16, justifyContent: 'flex-end' }}>
-        <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/tasas-cambio/new`)}>
-          + Nueva tasa de cambio
-        </Button>
-      </div>
-      {/* Filtros */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+      </Card>
+
+      <PageHeader
+        title="Tasas de Cambio"
+        actions={
+          <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/tasas-cambio/new`)}>
+            + Nueva tasa de cambio
+          </Button>
+        }
+      />
+
+      <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
         <select
           value={filtros.moneda_origen}
           onChange={e => setFiltros(f => ({ ...f, moneda_origen: e.target.value }))}
-          style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', minWidth: 140, fontSize: '1rem', background: '#f6fafd' }}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.23)', minWidth: 140, height: 40 }}
         >
           <option value="">Moneda Origen</option>
           {monedas.map(m => (
-            <option key={m.id_moneda} value={m.id_moneda}>
-              {m.nombre} ({m.codigo_iso})
-            </option>
+            <option key={m.id_moneda} value={m.id_moneda}>{m.nombre} ({m.codigo_iso})</option>
           ))}
         </select>
         <select
           value={filtros.moneda_destino}
           onChange={e => setFiltros(f => ({ ...f, moneda_destino: e.target.value }))}
-          style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', minWidth: 140, fontSize: '1rem', background: '#f6fafd' }}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.23)', minWidth: 140, height: 40 }}
         >
           <option value="">Moneda Destino</option>
           {monedas.map(m => (
-            <option key={m.id_moneda} value={m.id_moneda}>
-              {m.nombre} ({m.codigo_iso})
-            </option>
+            <option key={m.id_moneda} value={m.id_moneda}>{m.nombre} ({m.codigo_iso})</option>
           ))}
         </select>
         <input
           type="date"
           value={filtros.fecha}
           onChange={e => setFiltros(f => ({ ...f, fecha: e.target.value }))}
-          style={{ padding: 10, borderRadius: 8, border: '1px solid #cfd8dc', minWidth: 140, fontSize: '1rem', background: '#f6fafd' }}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.23)', height: 40 }}
         />
-        <Button variant="contained" color="secondary" onClick={() => setFiltros({ moneda_origen: '', moneda_destino: '', fecha: '' })}>
+        <Button variant="outlined" onClick={() => setFiltros({ moneda_origen: '', moneda_destino: '', fecha: '' })}>
           Limpiar
         </Button>
-      </div>
+      </Box>
+
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Cargando...</div>
+        <Box sx={{ textAlign: 'center', color: 'text.secondary', py: 4 }}>Cargando...</Box>
       ) : error ? (
-        <div style={{ textAlign: 'center', color: '#d32f2f', padding: 32, fontWeight: 500 }}>{error}</div>
+        <Alert severity="error">{error}</Alert>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#f6fafd', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <thead>
-              <tr style={{ background: '#e3f0ff' }}>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Fecha</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Moneda Origen</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Moneda Destino</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Tipo Tasa</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Valor</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Usuario</th>
-                <th style={{ padding: '12px 8px', color: '#1976d2', fontWeight: 600 }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Fecha</TableCell>
+                <TableCell>Moneda Origen</TableCell>
+                <TableCell>Moneda Destino</TableCell>
+                <TableCell>Tipo Tasa</TableCell>
+                <TableCell align="right">Valor</TableCell>
+                <TableCell>Usuario</TableCell>
+                <TableCell align="center">Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {tasas.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: 32, color: '#888' }}>No hay tasas registradas.</td>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan={7} align="center">No hay tasas registradas.</TableCell>
+                </TableRow>
               ) : tasas.map(tc => (
-                <tr key={tc.id_tasa_cambio} style={{ background: '#fff', borderBottom: '1px solid #e3f0ff' }}>
-                  <td style={{ padding: '10px 8px' }}>{tc.fecha_tasa}</td>
-                  <td style={{ padding: '10px 8px' }}>{tc.moneda_origen_nombre || tc.id_moneda_origen__codigo_iso || tc.id_moneda_origen}</td>
-                  <td style={{ padding: '10px 8px' }}>{tc.moneda_destino_nombre || tc.id_moneda_destino__codigo_iso || tc.id_moneda_destino}</td>
-                  <td style={{ padding: '10px 8px' }}>{tc.tipo_tasa}</td>
-                  <td style={{ padding: '10px 8px' }}>{tc.valor_tasa}</td>
-                  <td style={{ padding: '10px 8px' }}>{tc.usuario_registro_username || tc.id_usuario_registro__username || ''}</td>
-                  <td style={{ padding: '10px 8px' }}>
-                    <Button variant="contained" onClick={() => navigate(`/tasas-cambio/${tc.id_tasa_cambio}`)}>Ver / Editar</Button>
-                  </td>
-                </tr>
+                <TableRow key={tc.id_tasa_cambio} hover>
+                  <TableCell>{tc.fecha_tasa}</TableCell>
+                  <TableCell>{tc.moneda_origen_nombre || tc.id_moneda_origen__codigo_iso || tc.id_moneda_origen}</TableCell>
+                  <TableCell>{tc.moneda_destino_nombre || tc.id_moneda_destino__codigo_iso || tc.id_moneda_destino}</TableCell>
+                  <TableCell>{tc.tipo_tasa}</TableCell>
+                  <TableCell align="right">{tc.valor_tasa}</TableCell>
+                  <TableCell>{tc.usuario_registro_username || tc.id_usuario_registro__username || ''}</TableCell>
+                  <TableCell align="center">
+                    <Button size="small" variant="outlined" onClick={() => navigate(`/tasas-cambio/${tc.id_tasa_cambio}`)}>Ver / Editar</Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-      {/* Paginación real */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 24, gap: 8 }}>
-        <Button variant="contained" color="secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
-        <span style={{ fontWeight: 500 }}>Página {page} de {Math.max(1, Math.ceil(count / pageSize))}</span>
-        <Button variant="contained" color="secondary" onClick={() => setPage(p => (p < Math.ceil(count / pageSize) ? p + 1 : p))} disabled={page >= Math.ceil(count / pageSize)}>Siguiente</Button>
-        <span style={{ marginLeft: 16 }}>
-          <label style={{ fontWeight: 500 }}>Tamaño:
-            <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }} style={{ marginLeft: 4, padding: 6, borderRadius: 6, border: '1px solid #cfd8dc' }}>
-              {[10, 20, 50, 100].map(sz => <option key={sz} value={sz}>{sz}</option>)}
-            </select>
-          </label>
-        </span>
-      </div>
-    </PageLayout>
+
+      <Stack direction="row" justifyContent="center" alignItems="center" spacing={1} mt={3}>
+        <Button variant="outlined" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
+        <Box sx={{ fontWeight: 500 }}>Página {page} de {totalPages}</Box>
+        <Button variant="outlined" onClick={() => setPage(p => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages}>Siguiente</Button>
+        <Box sx={{ ml: 2 }}>
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.23)' }}>
+            {[10, 20, 50, 100].map(sz => <option key={sz} value={sz}>{sz}</option>)}
+          </select>
+        </Box>
+      </Stack>
+    </PageContainer>
   );
 };
 

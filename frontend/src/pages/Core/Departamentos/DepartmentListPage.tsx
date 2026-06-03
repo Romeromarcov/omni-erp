@@ -52,6 +52,7 @@ export default function DepartmentListPage() {
     <PageContainer>
       <PageHeader
         title="Departamentos"
+        subtitle="Departamentos de la empresa"
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate(`/empresas/${id_empresa}/departamentos/new`)}>
             Nuevo departamento

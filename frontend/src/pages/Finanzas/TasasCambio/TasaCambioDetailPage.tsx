@@ -7,7 +7,7 @@ import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
 import { fetchEmpresas } from '../../../services/empresas';
 import type { Empresa } from '../../../services/empresas';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import {
   Alert,
   Box,
@@ -80,16 +80,16 @@ const TasaCambioDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <PageLayout>
+      <PageContainer>
         <Typography align="center" color="text.secondary" sx={{ py: 4 }}>Cargando...</Typography>
-      </PageLayout>
+      </PageContainer>
     );
   }
   if (!tasa) {
     return (
-      <PageLayout>
+      <PageContainer>
         <Typography align="center" color="text.secondary" sx={{ py: 4 }}>No encontrada</Typography>
-      </PageLayout>
+      </PageContainer>
     );
   }
 
@@ -99,13 +99,11 @@ const TasaCambioDetailPage: React.FC = () => {
   const empresa = empresas.find(e => e.id_empresa === tasa.id_empresa);
 
   return (
-    <PageLayout maxWidth={500}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h5">Detalle de Tasa de Cambio</Typography>
-        <Button variant="outlined" onClick={() => navigate(-1)}>
-          Volver
-        </Button>
-      </Stack>
+    <PageContainer>
+      <PageHeader
+        title="Detalle de Tasa de Cambio"
+        actions={<Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>}
+      />
       {!edit ? (
         <Stack spacing={1.5}>
           <Box><Typography component="span" fontWeight="bold">Empresa:</Typography> {empresa ? (empresa.nombre_comercial || empresa.nombre_legal) : (tasa.empresa_nombre || tasa.id_empresa)}</Box>
@@ -192,7 +190,7 @@ const TasaCambioDetailPage: React.FC = () => {
           </Stack>
         </Box>
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

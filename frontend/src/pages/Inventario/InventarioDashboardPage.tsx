@@ -1,37 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Box, Button, Card, CardActionArea, CardContent, Chip, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material';
+import InventoryOutlined from '@mui/icons-material/InventoryOutlined';
+import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
+import ErrorOutlineOutlined from '@mui/icons-material/ErrorOutlineOutlined';
+import ScaleOutlined from '@mui/icons-material/ScaleOutlined';
 import { stockActualService, productoInventarioService } from '../../services/inventarioService';
 import type { StockActual } from '../../services/inventarioService';
 import { inventarioKeys } from '../../lib/queryKeys';
-import { PageContainer, PageHeader, DataTable } from '../../components/ui';
+import { PageContainer, PageHeader, KpiCard, DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
-
-// ── KPI Card ──────────────────────────────────────────────────────────────
-
-interface KpiCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  color?: string;
-  onClick?: () => void;
-}
-
-const KpiCard: React.FC<KpiCardProps> = ({ title, value, subtitle, color = 'primary.main', onClick }) => {
-  const inner = (
-    <CardContent>
-      <Typography variant="body2" color="text.secondary" gutterBottom>{title}</Typography>
-      <Typography variant="h4" sx={{ fontWeight: 700, color }}>{value}</Typography>
-      {subtitle && <Typography variant="caption" color="text.secondary">{subtitle}</Typography>}
-    </CardContent>
-  );
-  return (
-    <Card variant="outlined" sx={{ flex: '1 1 160px' }}>
-      {onClick ? <CardActionArea onClick={onClick}>{inner}</CardActionArea> : inner}
-    </Card>
-  );
-};
 
 function stockLevel(stock: StockActual): 'critico' | 'bajo' | 'normal' {
   const disponible = parseFloat(stock.cantidad_disponible);
@@ -104,11 +83,37 @@ const InventarioDashboardPage: React.FC = () => {
       ) : (
         <>
           {/* KPI Cards */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
-            <KpiCard title="Productos registrados" value={totalSKUs} subtitle="SKUs activos" onClick={() => navigate('/inventario/stock')} />
-            <KpiCard title="Alertas de stock" value={alertas.length} subtitle="Por debajo del mínimo" color={alertas.length > 0 ? 'warning.main' : 'success.main'} />
-            <KpiCard title="Stock crítico" value={criticos.length} subtitle="Cantidad = 0" color={criticos.length > 0 ? 'error.main' : 'success.main'} />
-            <KpiCard title="Unidades totales" value={Math.round(valorTotal).toLocaleString()} subtitle="Suma de cantidades disponibles" color="secondary.main" />
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 4 }}>
+            <KpiCard
+              label="Productos registrados"
+              value={totalSKUs}
+              icon={<InventoryOutlined />}
+              tone="brand"
+              caption="SKUs activos"
+            />
+            <KpiCard
+              label="Alertas de stock"
+              value={alertas.length}
+              icon={<WarningAmberOutlined />}
+              tone={alertas.length > 0 ? 'warning' : 'success'}
+              caption="Por debajo del mínimo"
+              emphasizeError={alertas.length > 0}
+            />
+            <KpiCard
+              label="Stock crítico"
+              value={criticos.length}
+              icon={<ErrorOutlineOutlined />}
+              tone={criticos.length > 0 ? 'error' : 'success'}
+              caption="Cantidad = 0"
+              emphasizeError={criticos.length > 0}
+            />
+            <KpiCard
+              label="Unidades totales"
+              value={Math.round(valorTotal).toLocaleString()}
+              icon={<ScaleOutlined />}
+              tone="tint"
+              caption="Suma de cantidades disponibles"
+            />
           </Box>
 
           {/* Quick actions */}

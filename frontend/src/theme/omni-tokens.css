@@ -1,0 +1,56 @@
+/* ============================================================================
+   Omni ERP — Design tokens (dirección futurista)
+   Espejo de las directrices de diseño compartidas (Claude Design handoff).
+   Sobre los tokens MUI: squircles, gradientes, glow, fills tintados y hairline.
+   Se exponen como variables CSS para componentes que no pasan por el theme MUI.
+   ============================================================================ */
+:root {
+  /* marca / gradientes */
+  --omni-brand-gradient: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  --omni-ai-gradient: linear-gradient(135deg, #1976d2 0%, #7c4dff 100%);
+  --omni-login-bg: linear-gradient(135deg, #e3f0ff 0%, #f6fafd 100%);
+
+  /* paleta primaria */
+  --omni-primary: #1976d2;
+  --omni-primary-light: #42a5f5;
+  --omni-primary-dark: #1565c0;
+
+  /* semáforo de antigüedad (CxC) */
+  --omni-aging-al-dia: #4caf50;
+  --omni-aging-1-30: #ff9800;
+  --omni-aging-31-60: #f57c00;
+  --omni-aging-61-90: #e64a19;
+  --omni-aging-mas-90: #b71c1c;
+
+  /* fills tintados suaves */
+  --omni-tint-primary: rgba(25, 118, 210, 0.08);
+  --omni-tint-primary-strong: rgba(25, 118, 210, 0.12);
+  --omni-tint-success: rgba(46, 125, 50, 0.12);
+  --omni-tint-warning: rgba(237, 108, 2, 0.13);
+  --omni-tint-error: rgba(211, 47, 47, 0.12);
+  --omni-tint-info: rgba(2, 136, 209, 0.12);
+  --omni-on-tint-success: #2e7d32;
+  --omni-on-tint-warning: #c75d00;
+  --omni-on-tint-error: #d32f2f;
+  --omni-on-tint-info: #0277bd;
+
+  /* squircle radii */
+  --omni-radius-tile: 14px;
+  --omni-radius-card: 16px;
+  --omni-radius-card-xl: 20px;
+  --omni-radius-field: 12px;
+  --omni-radius-pill: 999px;
+
+  /* hairline + sombras suaves / glow */
+  --omni-hairline: 1px solid rgba(16, 42, 80, 0.08);
+  --omni-shadow-card-soft: 0 4px 20px rgba(16, 42, 80, 0.06);
+  --omni-glow-primary: 0 8px 20px rgba(25, 118, 210, 0.3);
+  --omni-glow-ai: 0 8px 20px rgba(124, 77, 255, 0.28);
+
+  /* tipografía */
+  --omni-font-sans: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  --omni-font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* superficie oscura (paneles hero / login inverso) */
+  --omni-surface-dark: #0e1726;
+}

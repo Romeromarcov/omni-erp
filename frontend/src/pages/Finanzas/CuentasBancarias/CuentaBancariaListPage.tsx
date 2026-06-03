@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import PageLayout from '../../../components/PageLayout';
 import { getCuentasBancarias } from '../../../services/cuentaBancariaService';
 import { toList } from '../../../utils/api';
-import { Button, TextField } from '@mui/material';
+import { Alert, Box, Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
 
 type CuentaBancaria = {
   id_cuenta_bancaria: string;
@@ -30,66 +30,74 @@ const CuentaBancariaListPage: React.FC = () => {
 
   if (!id_empresa) {
     return (
-      <PageLayout>
-        <h2 style={{ marginBottom: 16 }}>Gestión de Cuentas Bancarias</h2>
-        <div style={{ margin: '32px 0', textAlign: 'center', color: '#c00', fontSize: 18 }}>
-          Seleccione una empresa para ver sus cuentas bancarias.
-        </div>
-      </PageLayout>
+      <PageContainer>
+        <PageHeader title="Gestión de Cuentas Bancarias" />
+        <Alert severity="warning">Seleccione una empresa para ver sus cuentas bancarias.</Alert>
+      </PageContainer>
     );
   }
 
   return (
-    <PageLayout maxWidth={1200}>
-      <h2 style={{ marginBottom: 16 }}>Gestión de Cuentas Bancarias</h2>
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <TextField fullWidth placeholder="Banco" value={filters.banco} onChange={e => setFilters(f => ({ ...f, banco: e.target.value }))} />
-        <TextField fullWidth placeholder="Moneda" value={filters.moneda} onChange={e => setFilters(f => ({ ...f, moneda: e.target.value }))} />
-        <select value={filters.activo} onChange={e => setFilters(f => ({ ...f, activo: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+    <PageContainer>
+      <PageHeader
+        title="Gestión de Cuentas Bancarias"
+        actions={
+          <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/cuentas-bancarias/new`)}>
+            Nueva Cuenta
+          </Button>
+        }
+      />
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <TextField size="small" placeholder="Banco" value={filters.banco} onChange={e => setFilters(f => ({ ...f, banco: e.target.value }))} />
+        <TextField size="small" placeholder="Moneda" value={filters.moneda} onChange={e => setFilters(f => ({ ...f, moneda: e.target.value }))} />
+        <select
+          value={filters.activo}
+          onChange={e => setFilters(f => ({ ...f, activo: e.target.value }))}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.23)', minWidth: 120, height: 40 }}
+        >
           <option value="">Todos</option>
           <option value="true">Activas</option>
           <option value="false">Inactivas</option>
         </select>
-        <Button variant="contained" onClick={() => navigate(`/empresas/${id_empresa}/cuentas-bancarias/new`)}>Nueva Cuenta</Button>
-      </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th>Banco</th>
-              <th>Número de Cuenta</th>
-              <th>Tipo</th>
-              <th>Moneda</th>
-              <th>Saldo Actual</th>
-              <th>Activa</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
+      </Box>
+      <TableContainer>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Banco</TableCell>
+              <TableCell>Número de Cuenta</TableCell>
+              <TableCell>Tipo</TableCell>
+              <TableCell>Moneda</TableCell>
+              <TableCell align="right">Saldo Actual</TableCell>
+              <TableCell align="center">Activa</TableCell>
+              <TableCell align="center">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {loading ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <TableRow><TableCell colSpan={7} align="center">Cargando...</TableCell></TableRow>
             ) : data.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center' }}>No hay cuentas bancarias registradas.</td></tr>
+              <TableRow><TableCell colSpan={7} align="center">No hay cuentas bancarias registradas.</TableCell></TableRow>
             ) : data.map((row) => (
-              <tr key={row.id_cuenta_bancaria}>
-                <td>{row.nombre_banco}</td>
-                <td>{row.numero_cuenta}</td>
-                <td>{row.tipo_cuenta}</td>
-                <td>{row.moneda_codigo_iso}</td>
-                <td>{Number(row.saldo_actual).toFixed(2)}</td>
-                <td>{row.activo ? 'Sí' : 'No'}</td>
-                <td style={{ display: 'flex', gap: 4 }}>
-                  <Button key={`detalle-${row.id_cuenta_bancaria}`} variant="outlined" onClick={() => navigate(`/cuentas-bancarias/${row.id_cuenta_bancaria}`)}>Ver Detalle</Button>
-                  <Button key={`movimientos-${row.id_cuenta_bancaria}`} variant="outlined" onClick={() => navigate(`/cuentas-bancarias/${row.id_cuenta_bancaria}/movimientos`)}>
-                    Movimientos
-                  </Button>
-                </td>
-              </tr>
+              <TableRow key={row.id_cuenta_bancaria} hover>
+                <TableCell>{row.nombre_banco}</TableCell>
+                <TableCell>{row.numero_cuenta}</TableCell>
+                <TableCell>{row.tipo_cuenta}</TableCell>
+                <TableCell>{row.moneda_codigo_iso}</TableCell>
+                <TableCell align="right">{Number(row.saldo_actual).toFixed(2)}</TableCell>
+                <TableCell align="center"><StatusChip value={row.activo} /></TableCell>
+                <TableCell align="center">
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    <Button size="small" variant="outlined" onClick={() => navigate(`/cuentas-bancarias/${row.id_cuenta_bancaria}`)}>Ver Detalle</Button>
+                    <Button size="small" variant="outlined" onClick={() => navigate(`/cuentas-bancarias/${row.id_cuenta_bancaria}/movimientos`)}>Movimientos</Button>
+                  </Stack>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </PageLayout>
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </PageContainer>
   );
 };
 

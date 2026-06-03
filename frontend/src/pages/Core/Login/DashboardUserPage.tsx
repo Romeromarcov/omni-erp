@@ -1,10 +1,15 @@
 import React from 'react';
-import { Box, Button, Card, CardContent, Chip, Typography, Stack } from '@mui/material';
-import { Business, Store, AccountCircle, Logout, SwitchAccount } from '@mui/icons-material';
+import { Box, Button, Card, Chip, Typography, Stack } from '@mui/material';
+import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
+import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined';
+import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined';
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
+import SwitchAccountOutlined from '@mui/icons-material/SwitchAccountOutlined';
 import { getEmpresaId } from '../../../utils/empresa';
 import SugerenciasWidget from '../../../components/SugerenciasWidget';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { PageContainer, BrandMark, KpiCard, SectionTitle } from '../../../components/ui';
 
 interface DashboardPageProps {
   user: {
@@ -32,91 +37,102 @@ const DashboardUserPage: React.FC<DashboardPageProps> = ({ user, empresa, sucurs
   const empresaNombre = empresa.nombre_legal || empresa.nombre_comercial || empresa.nombre || '—';
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 960, mx: 'auto' }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={1}>
-        <Box>
-          <Typography variant="h5" color="primary">
-            Bienvenido, {user.first_name} {user.last_name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {empresaNombre} · {sucursal.nombre}
-          </Typography>
+    <PageContainer maxWidth={1100}>
+      {/* Cabecera con saludo + acciones */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 1.5,
+          mb: 3,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <BrandMark size={34} />
+          <Box>
+            <Typography variant="h5">
+              Bienvenido, {user.first_name} {user.last_name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {empresaNombre} · {sucursal.nombre}
+            </Typography>
+          </Box>
         </Box>
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" size="small" startIcon={<AccountCircle />} onClick={handleProfile}>
+          <Button variant="outlined" size="small" startIcon={<AccountCircleOutlined />} onClick={handleProfile}>
             Perfil
           </Button>
-          <Button variant="outlined" size="small" startIcon={<SwitchAccount />} onClick={handleChangeEmpresaSucursal}>
+          <Button variant="outlined" size="small" startIcon={<SwitchAccountOutlined />} onClick={handleChangeEmpresaSucursal}>
             Cambiar empresa
           </Button>
-          <Button variant="contained" color="error" size="small" startIcon={<Logout />} onClick={handleLogout}>
+          <Button variant="contained" color="error" size="small" startIcon={<LogoutOutlined />} onClick={handleLogout}>
             Salir
           </Button>
         </Stack>
       </Box>
 
-      {/* Info cards */}
-      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
-        <Card sx={{ flex: 1, minWidth: 180 }}>
-          <CardContent>
-            <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
-              <Business fontSize="small" color="primary" />
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>EMPRESA</Typography>
-            </Stack>
-            <Typography variant="subtitle1">{empresaNombre}</Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 180 }}>
-          <CardContent>
-            <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
-              <Store fontSize="small" color="primary" />
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>SUCURSAL</Typography>
-            </Stack>
-            <Typography variant="subtitle1">{sucursal.nombre}</Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 180 }}>
-          <CardContent>
-            <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={1}>ROLES</Typography>
-            <Box display="flex" gap={0.5} flexWrap="wrap">
-              {(user.roles || []).map(role => (
-                <Chip key={role.id} label={role.name} size="small" color="primary" variant="outlined" />
-              ))}
-              {(!user.roles || user.roles.length === 0) && (
-                <Typography variant="body2" color="text.secondary">Sin roles asignados</Typography>
-              )}
-            </Box>
-          </CardContent>
+      {/* Tarjetas de contexto */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <KpiCard label="Empresa" value={empresaNombre} icon={<BusinessOutlined />} tone="brand" />
+        <KpiCard label="Sucursal" value={sucursal.nombre || '—'} icon={<StorefrontOutlined />} tone="tint" />
+        <Card sx={{ p: 2 }}>
+          <Typography
+            sx={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'text.secondary', mb: 1 }}
+          >
+            Roles
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {(user.roles || []).map((role) => (
+              <Chip key={role.id} label={role.name} size="small" color="primary" variant="outlined" />
+            ))}
+            {(!user.roles || user.roles.length === 0) && (
+              <Typography variant="body2" color="text.secondary">Sin roles asignados</Typography>
+            )}
+          </Box>
         </Card>
       </Box>
 
-      {/* Recent activity */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="subtitle1" mb={1.5}>Actividad reciente</Typography>
-          {actividades.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">Sin actividad reciente.</Typography>
-          ) : (
-            <Stack spacing={1}>
-              {actividades.map(act => (
-                <Box key={act.id} display="flex" justifyContent="space-between">
-                  <Typography variant="body2">{act.descripcion}</Typography>
-                  <Typography variant="caption" color="text.secondary">{act.fecha}</Typography>
-                </Box>
-              ))}
-            </Stack>
-          )}
-        </CardContent>
+      {/* Actividad reciente */}
+      <Card sx={{ p: 2.5, mb: 3 }}>
+        <SectionTitle>Actividad reciente</SectionTitle>
+        {actividades.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">Sin actividad reciente.</Typography>
+        ) : (
+          <Stack>
+            {actividades.map((act, i) => (
+              <Box
+                key={act.id}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  py: 1.25,
+                  borderTop: i ? '1px solid' : 'none',
+                  borderColor: 'divider',
+                }}
+              >
+                <Typography variant="body2">{act.descripcion}</Typography>
+                <Typography variant="caption" color="text.secondary">{act.fecha}</Typography>
+              </Box>
+            ))}
+          </Stack>
+        )}
       </Card>
 
-      {/* AI suggestions */}
-      <Card>
-        <CardContent>
-          <SugerenciasWidget />
-        </CardContent>
+      {/* Sugerencias IA */}
+      <Card sx={{ p: 2.5 }}>
+        <SugerenciasWidget />
       </Card>
-    </Box>
+    </PageContainer>
   );
 };
 

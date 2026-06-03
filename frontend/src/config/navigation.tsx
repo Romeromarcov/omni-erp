@@ -9,6 +9,8 @@ import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import HubOutlined from '@mui/icons-material/HubOutlined';
+import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
+import AppsOutlined from '@mui/icons-material/AppsOutlined';
 
 export interface NavItem {
   label: string;
@@ -32,6 +34,12 @@ export function buildNavigation(empresaId: string): NavSection[] {
   const emp = empresaId || '_';
   return [
     {
+      id: 'inicio',
+      label: 'Aplicaciones',
+      icon: <AppsOutlined />,
+      path: '/inicio',
+    },
+    {
       id: 'dashboard',
       label: 'Inicio',
       icon: <SpaceDashboardOutlined />,
@@ -50,6 +58,12 @@ export function buildNavigation(empresaId: string): NavSection[] {
         { label: 'Devoluciones', path: '/ventas/devoluciones-venta' },
         { label: 'Facturas Fiscales', path: '/ventas/facturas-fiscales' },
       ],
+    },
+    {
+      id: 'escaner',
+      label: 'Escáner',
+      icon: <QrCodeScannerOutlined />,
+      path: '/escaner',
     },
     {
       id: 'inventario',

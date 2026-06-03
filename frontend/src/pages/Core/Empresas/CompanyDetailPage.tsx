@@ -6,7 +6,8 @@ import { toList } from '../../../utils/api';
 import PageLayout from '../../../components/PageLayout';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 
 interface Empresa {
   id_empresa: string;
@@ -95,7 +96,7 @@ const CompanyDetailPage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={560}>
-      <Typography variant="h5" mb={3}>Detalle de empresa</Typography>
+      <PageHeader title="Detalle de empresa" subtitle={localEmpresa.nombre_legal || undefined} />
       {(!monedas || monedas.length === 0) && (
         <Alert severity="warning" sx={{ mb: 2 }}>No se encontraron monedas disponibles.</Alert>
       )}

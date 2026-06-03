@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import PageLayout from '../../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../../components/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createCaja, getCajaTipoChoices } from '../../../services/cajaService';
 import { fetchSucursales } from '../../../services/sucursales';
@@ -84,8 +84,8 @@ const CajaCreatePage: React.FC = () => {
   const loading = createMutation.isPending;
 
   return (
-    <PageLayout>
-      <h2 style={{ marginBottom: 16 }}>Crear Nueva Caja</h2>
+    <PageContainer>
+      <PageHeader title="Crear Nueva Caja" />
       <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
         <TextField fullWidth label="Nombre de Caja" name="nombre" value={form.nombre} onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>} required />
         <label>Tipo de Caja</label>
@@ -130,7 +130,7 @@ const CajaCreatePage: React.FC = () => {
         </div>
         {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
       </form>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

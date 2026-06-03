@@ -4,8 +4,6 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   CircularProgress,
   Paper,
   Stack,
@@ -19,8 +17,12 @@ import {
   Typography,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
+import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
+import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined';
+import PercentOutlined from '@mui/icons-material/PercentOutlined';
+import SummarizeOutlined from '@mui/icons-material/SummarizeOutlined';
 import { useAuth } from '../../contexts/AuthContext';
-import PageLayout from '../../components/PageLayout';
+import { PageContainer, PageHeader, KpiCard } from '../../components/ui';
 import { libroService, type LibroEntry } from '../../services/fiscalService';
 
 function currentPeriodo(): string {
@@ -66,11 +68,20 @@ const LibroVentasPage: React.FC = () => {
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <PageLayout maxWidth={1100}>
-      <Typography variant="h5">Libro de Ventas — SENIAT</Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
-        Consulta y exporta el libro de ventas en formato TXT SENIAT.
-      </Typography>
+    <PageContainer>
+      <PageHeader
+        title="Libro de Ventas — SENIAT"
+        subtitle="Consulta y exporta el libro de ventas en formato TXT SENIAT."
+        actions={
+          <>
+            {queryPeriodo && entries.length > 0 && (
+              <Button variant="contained" color="success" startIcon={<DownloadIcon />} onClick={handleDownload} disabled={downloading}>
+                {downloading ? 'Descargando…' : 'Exportar TXT'}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Filter bar */}
       <Stack direction="row" spacing={1.5} alignItems="flex-end" flexWrap="wrap" useFlexGap mb={3}>
@@ -85,11 +96,6 @@ const LibroVentasPage: React.FC = () => {
         <Button variant="contained" onClick={handleConsultar} disabled={!periodo || !empresaId}>
           Consultar
         </Button>
-        {queryPeriodo && entries.length > 0 && (
-          <Button variant="contained" color="success" startIcon={<DownloadIcon />} onClick={handleDownload} disabled={downloading}>
-            {downloading ? 'Descargando…' : 'Exportar TXT'}
-          </Button>
-        )}
       </Stack>
 
       {downloadError && <Alert severity="error" sx={{ mb: 2 }}>{downloadError}</Alert>}
@@ -108,21 +114,12 @@ const LibroVentasPage: React.FC = () => {
 
       {entries.length > 0 && (
         <>
-          {/* Summary cards */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-            {[
-              { label: 'Facturas', value: String(entries.length), color: 'primary.main' },
-              { label: 'Base imponible', value: fmt(totalBase), color: 'success.main' },
-              { label: 'IVA', value: fmt(totalIva), color: 'warning.dark' },
-              { label: 'Total', value: fmt(totalTotal), color: 'secondary.main' },
-            ].map((c) => (
-              <Card key={c.label} variant="outlined" sx={{ flex: '1 1 140px' }}>
-                <CardContent>
-                  <Typography variant="caption" color="text.secondary">{c.label}</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: c.color }}>{c.value}</Typography>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Summary KPIs */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
+            <KpiCard label="Facturas" value={String(entries.length)} icon={<ReceiptLongOutlined />} tone="brand" />
+            <KpiCard label="Base imponible" value={fmt(totalBase)} icon={<AttachMoneyOutlined />} tone="success" />
+            <KpiCard label="IVA" value={fmt(totalIva)} icon={<PercentOutlined />} tone="warning" />
+            <KpiCard label="Total" value={fmt(totalTotal)} icon={<SummarizeOutlined />} tone="tint" />
           </Box>
 
           {/* Table */}
@@ -164,7 +161,7 @@ const LibroVentasPage: React.FC = () => {
           </TableContainer>
         </>
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 

@@ -13,7 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import PageLayout from '../../components/PageLayout';
+import { PageContainer, PageHeader } from '../../components/ui';
 import {
   productoInventarioService,
   stockActualService,
@@ -129,14 +129,14 @@ const AjusteInventarioPage: React.FC = () => {
   }
 
   return (
-    <PageLayout maxWidth={640}>
+    <PageContainer maxWidth={640}>
       <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/inventario/stock')} sx={{ mb: 1 }}>
         Volver al stock
       </Button>
-      <Typography variant="h5" fontWeight={700}>Ajuste Manual de Inventario</Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
-        Registra una entrada o salida de ajuste con motivo documentado.
-      </Typography>
+      <PageHeader
+        title="Ajuste Manual de Inventario"
+        subtitle="Registra una entrada o salida de ajuste con motivo documentado."
+      />
 
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2.5}>
@@ -199,7 +199,7 @@ const AjusteInventarioPage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
-    </PageLayout>
+    </PageContainer>
   );
 };
 

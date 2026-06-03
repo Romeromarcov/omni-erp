@@ -26,7 +26,7 @@ import {
   getJobsDeConector,
   type JobSincronizacion,
 } from '../../services/integrationHubService';
-import { PageContainer } from '../../components/ui';
+import { PageContainer, PageHeader, StatusChip, SectionTitle } from '../../components/ui';
 
 type ChipColor = 'success' | 'warning' | 'error' | 'info' | 'default';
 
@@ -36,13 +36,6 @@ const ESTADO_JOB_COLORS: Record<string, ChipColor> = {
   fallido: 'error',
   en_progreso: 'info',
   pendiente: 'default',
-};
-
-const ESTADO_CONECTOR_COLORS: Record<string, { color: ChipColor; label: string }> = {
-  activo: { color: 'success', label: 'Activo' },
-  configurando: { color: 'warning', label: 'Configurando' },
-  error: { color: 'error', label: 'Error' },
-  inactivo: { color: 'default', label: 'Inactivo' },
 };
 
 const JobRow: React.FC<{ job: JobSincronizacion }> = ({ job }) => {
@@ -111,7 +104,6 @@ const ConectorDetallePage: React.FC = () => {
     <PageContainer><Alert severity="error">Conector no encontrado.</Alert></PageContainer>
   );
 
-  const estadoConector = ESTADO_CONECTOR_COLORS[conector.estado] ?? ESTADO_CONECTOR_COLORS.inactivo;
   const jobs = jobsData?.results ?? [];
 
   return (
@@ -121,26 +113,22 @@ const ConectorDetallePage: React.FC = () => {
         ← Volver al Integration Hub
       </Button>
 
-      {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={3}>
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.25}>
-            <Typography variant="h5" sx={{ fontWeight: 800 }}>{conector.nombre}</Typography>
-            <Chip size="small" label={estadoConector.label} color={estadoConector.color} variant={estadoConector.color === 'default' ? 'outlined' : 'filled'} />
-          </Stack>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
-            {conector.proveedor_nombre}
-            {conector.version_detectada && ` · v${conector.version_detectada}`}
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          onClick={() => { testMutation.reset(); setTestResult(null); testMutation.mutate(); }}
-          disabled={testMutation.isPending}
-        >
-          {testMutation.isPending ? 'Probando…' : 'Probar conexión'}
-        </Button>
-      </Stack>
+      <PageHeader
+        title={conector.nombre}
+        subtitle={`${conector.proveedor_nombre}${conector.version_detectada ? ` · v${conector.version_detectada}` : ''}`}
+        actions={
+          <>
+            <StatusChip value={conector.estado} colorMap={{ activo: 'success', configurando: 'warning', error: 'error', inactivo: 'default' }} />
+            <Button
+              variant="outlined"
+              onClick={() => { testMutation.reset(); setTestResult(null); testMutation.mutate(); }}
+              disabled={testMutation.isPending}
+            >
+              {testMutation.isPending ? 'Probando…' : 'Probar conexión'}
+            </Button>
+          </>
+        }
+      />
 
       {/* Test result */}
       {testResult && (
@@ -152,7 +140,7 @@ const ConectorDetallePage: React.FC = () => {
 
       {/* Config info */}
       <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
-        <Typography variant="subtitle2" mb={1.5}>Configuración</Typography>
+        <SectionTitle>Configuración</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 0.75, columnGap: 3 }}>
           {conector.configuracion_publica?.host && (
             <>
@@ -184,7 +172,7 @@ const ConectorDetallePage: React.FC = () => {
 
       {/* Disparar sync */}
       <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
-        <Typography variant="subtitle2" mb={1.5}>Sincronización manual</Typography>
+        <SectionTitle>Sincronización manual</SectionTitle>
         <Stack direction="row" spacing={1}>
           <TextField
             select
@@ -220,9 +208,9 @@ const ConectorDetallePage: React.FC = () => {
 
       {/* Jobs recientes */}
       <Paper variant="outlined">
-        <Typography variant="subtitle1" sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          Jobs recientes
-        </Typography>
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <SectionTitle>Jobs recientes</SectionTitle>
+        </Box>
         {jobs.length === 0 ? (
           <Typography align="center" color="text.secondary" py={4}>Sin jobs registrados aún.</Typography>
         ) : (

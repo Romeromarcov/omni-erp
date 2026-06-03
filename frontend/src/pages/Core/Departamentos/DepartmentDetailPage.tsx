@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 import { get, put } from '../../../services/api';
 import PageLayout from '../../../components/PageLayout';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
@@ -65,7 +66,7 @@ const DepartmentDetailPage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={480}>
-      <Typography variant="h5" mb={3}>Detalle de departamento</Typography>
+      <PageHeader title="Detalle de departamento" subtitle={departamento.nombre_departamento} />
       {!edit ? (
         <Stack spacing={1.5}>
           <Typography><b>Nombre:</b> {departamento.nombre_departamento}</Typography>

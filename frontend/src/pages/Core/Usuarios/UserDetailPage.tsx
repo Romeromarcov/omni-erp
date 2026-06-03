@@ -18,6 +18,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 import type { SelectChangeEvent } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
@@ -126,7 +127,7 @@ const UserDetailPage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={540}>
-      <Typography variant="h5" mb={3}>Detalle/Edición de Usuario</Typography>
+      <PageHeader title="Detalle/Edición de Usuario" subtitle={usuario.username} />
       <Box component="form">
         <Stack spacing={2}>
           <TextField label="Username" value={usuario.username} InputProps={{ readOnly: true }} fullWidth />

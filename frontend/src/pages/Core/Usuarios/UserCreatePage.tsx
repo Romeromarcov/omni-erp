@@ -10,8 +10,8 @@ import {
   InputAdornment,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
+import { PageHeader } from '../../../components/ui';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { createUsuario } from '../../../services/users';
@@ -83,7 +83,7 @@ const UserCreatePage: React.FC = () => {
 
   return (
     <PageLayout maxWidth={480}>
-      <Typography variant="h5" mb={3}>Crear Nuevo Usuario</Typography>
+      <PageHeader title="Crear Nuevo Usuario" />
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
           <TextField name="username" label="Username" value={form.username} onChange={handleChange} required fullWidth />

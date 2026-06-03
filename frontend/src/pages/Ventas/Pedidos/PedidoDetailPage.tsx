@@ -1,19 +1,22 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
-import PageLayout from '../../../components/PageLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
+import LineasProductoTabla from '../../../components/Pedidos/LineasProductoTabla';
+import type { ColumnDef } from '../../../hooks/useColumnVisibility';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
+import { D } from '../../../lib/decimal';
 import { fetchProductos } from '../../../services/productosService';
 import { toList } from '../../../utils/api';
 
 type ProductoItem = React.ComponentProps<typeof TablaProductos>['productos'][number];
-import { Alert, Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
 import type { Pago as PagoFinanzas } from '../../../services/pagosService';
+import { PageContainer, PageHeader, SectionTitle, StatusChip } from '../../../components/ui';
 
 interface PedidoDetalle {
   id_detalle_pedido: string;
@@ -39,12 +42,45 @@ interface Pedido {
   // pagos será cargado desde la nueva API
 }
 
+/** Columnas configurables (estilo Odoo) para las líneas del documento. */
+const LINE_COLUMNS: ColumnDef<PedidoDetalle>[] = [
+  {
+    key: 'codigo',
+    label: 'Código',
+    defaultVisible: false,
+    render: (d) => (typeof d.id_producto === 'object' && d.id_producto?.id_producto) || '—',
+  },
+  {
+    key: 'producto',
+    label: 'Producto',
+    always: true,
+    render: (d) => (typeof d.id_producto === 'object' && d.id_producto ? d.id_producto.nombre_producto : '—'),
+  },
+  { key: 'cantidad', label: 'Cantidad', align: 'right', defaultVisible: true, render: (d) => D(d.cantidad).toNumber() },
+  {
+    key: 'precio',
+    label: 'Precio unit.',
+    align: 'right',
+    defaultVisible: true,
+    render: (d) => D(d.precio_unitario).toFixed(2),
+  },
+  { key: 'observaciones', label: 'Comentarios', defaultVisible: false, render: (d) => d.observaciones || '—' },
+  {
+    key: 'subtotal',
+    label: 'Subtotal',
+    align: 'right',
+    always: true,
+    render: (d) => D(d.subtotal || '0').toFixed(2),
+  },
+];
+
 const PedidoDetailPage: React.FC = () => {
   const { id_pedido } = useParams();
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
   const [loading, setLoading] = useState(false);
-  const [productos, setProductos] = useState<ProductoItem[]>([]);
+  // Catálogo de productos de la empresa (precargado para acciones futuras de edición).
+  const [, setProductos] = useState<ProductoItem[]>([]);
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
@@ -161,96 +197,106 @@ const PedidoDetailPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <Box sx={{ mb: 2 }}>
-        <Button variant="contained" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
-      </Box>
+    <PageContainer>
       {loading ? (
         <Typography>Cargando...</Typography>
       ) : !pedido ? (
         <Typography>No se encontró el pedido.</Typography>
       ) : (
-        <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 2 }}>
-          <Typography variant="h4" gutterBottom>
-            Pedido {pedido.numero_pedido}
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Fecha:</strong> {pedido.fecha_pedido}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Estado:</strong> {pedido.estado}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Empresa:</strong> {pedido.id_empresa?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Sucursal:</strong> {pedido.id_sucursal?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Caja:</strong> {pedido.id_caja?.nombre || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>ID Caja:</strong> {pedido.id_caja?.id_caja || '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Usuario:</strong> {pedido.id_usuario ? (pedido.id_usuario.first_name && pedido.id_usuario.last_name ? `${pedido.id_usuario.first_name} ${pedido.id_usuario.last_name}` : pedido.id_usuario.username) : '-'}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Número de Pedido:</strong> {pedido.numero_pedido}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px' }}>
-              <Typography><strong>Cliente:</strong> {getClienteInfo(pedido.id_cliente)}</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 100%' }}>
-              <Typography><strong>Observaciones:</strong> {pedido.observaciones || '-'}</Typography>
-            </Box>
-          </Box>
-          <Divider sx={{ my: 3 }} />
-          <Typography variant="h5" gutterBottom>Detalles</Typography>
-          {pedido.detalles && pedido.detalles.length > 0 ? (
-            <>
-              <TablaProductos
-                detalles={mapDetalles(pedido.detalles)}
-                productos={productos}
-                onRemove={() => {}}
-              />
-              <Box sx={{ mt: 2 }}>
-                <ResumenTotales detalles={mapDetalles(pedido.detalles)} descuentoGeneral={descuentoGeneral} setDescuentoGeneral={setDescuentoGeneral} />
+        <>
+          <PageHeader
+            title={`Pedido ${pedido.numero_pedido}`}
+            subtitle={`${pedido.fecha_pedido} · ${pedido.id_empresa?.nombre || ''}`}
+            actions={
+              <Button variant="outlined" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
+            }
+          />
+          <Card sx={{ p: 3, mb: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Fecha</Typography>
+                <Typography variant="body1">{pedido.fecha_pedido}</Typography>
               </Box>
-            </>
-          ) : (
-            <Typography>No hay productos en este pedido.</Typography>
-          )}
-          <Divider sx={{ my: 3 }} />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h5" gutterBottom>Pagos</Typography>
-            <Button variant="contained" onClick={() => setShowPagoModal(true)}>
-              Agregar Pago
-            </Button>
-          </Box>
-          {pagoSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pagoSuccess}</Alert>}
-          {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
-          {pagos && pagos.length > 0 ? (
-            <List>
-              {pagos.map(pago => (
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Estado</Typography>
+                <StatusChip value={pedido.estado} />
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Empresa</Typography>
+                <Typography variant="body1">{pedido.id_empresa?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Sucursal</Typography>
+                <Typography variant="body1">{pedido.id_sucursal?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Caja</Typography>
+                <Typography variant="body1">{pedido.id_caja?.nombre || '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Usuario</Typography>
+                <Typography variant="body1">{pedido.id_usuario ? (pedido.id_usuario.first_name && pedido.id_usuario.last_name ? `${pedido.id_usuario.first_name} ${pedido.id_usuario.last_name}` : pedido.id_usuario.username) : '-'}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography variant="body2" color="text.secondary">Cliente</Typography>
+                <Typography variant="body1">{getClienteInfo(pedido.id_cliente)}</Typography>
+              </Box>
+              <Box sx={{ flex: '1 1 100%' }}>
+                <Typography variant="body2" color="text.secondary">Observaciones</Typography>
+                <Typography variant="body1">{pedido.observaciones || '-'}</Typography>
+              </Box>
+            </Box>
+          </Card>
+
+          <Card sx={{ p: 3, mb: 2 }}>
+            <SectionTitle>Detalles</SectionTitle>
+            {pedido.detalles && pedido.detalles.length > 0 ? (
+              <>
+                <LineasProductoTabla
+                  rows={pedido.detalles}
+                  columns={LINE_COLUMNS}
+                  storageKey="pedido"
+                  getRowKey={(d) => d.id_detalle_pedido}
+                />
+                <Box sx={{ mt: 2 }}>
+                  <ResumenTotales detalles={mapDetalles(pedido.detalles)} descuentoGeneral={descuentoGeneral} setDescuentoGeneral={setDescuentoGeneral} />
+                </Box>
+              </>
+            ) : (
+              <Typography>No hay productos en este pedido.</Typography>
+            )}
+          </Card>
+
+          <Card sx={{ p: 3 }}>
+            <SectionTitle action={
+              <Button variant="contained" size="small" onClick={() => setShowPagoModal(true)}>
+                Agregar Pago
+              </Button>
+            }>Pagos</SectionTitle>
+            <Divider sx={{ mb: 2 }} />
+            {pagoSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pagoSuccess}</Alert>}
+            {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
+            {pagos && pagos.length > 0 ? (
+              <List>
+                {pagos.map(pago => (
                   <ListItem key={pago.id_pago} divider>
-                  <ListItemText
-                    primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
-                    secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
-                  />
-                  {pago.observaciones && (
-                    <Typography variant="body2" color="text.secondary">
-                      Obs: {pago.observaciones}
-                    </Typography>
-                  )}
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography>No hay pagos registrados para este pedido.</Typography>
-          )}
-        </Paper>
+                    <ListItemText
+                      primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
+                      secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
+                    />
+                    {pago.observaciones && (
+                      <Typography variant="body2" color="text.secondary">
+                        Obs: {pago.observaciones}
+                      </Typography>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography>No hay pagos registrados para este pedido.</Typography>
+            )}
+          </Card>
+        </>
       )}
       {!loading && pedido && (
         <ModalPago
@@ -265,7 +311,7 @@ const PedidoDetailPage: React.FC = () => {
           tipoOperacionInicial="INGRESO"
         />
       )}
-    </PageLayout>
+    </PageContainer>
   );
 };
 
