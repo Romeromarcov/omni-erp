@@ -45,10 +45,12 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
 ## Backlog priorizado (por ROI, cada uno = 1 PR con gate)
 
 ### Quick wins verificables (horas–días)
-- **TEST-1 — Aislamiento multi-tenant parametrizado (máximo ROI).** Un único
-  `tests/tenant/test_aislamiento.py` que introspecta el router DRF y prueba cross-tenant
-  TODOS los ViewSets tenant; **falla solo si se añade un ViewSet sin aislamiento**. Blinda
-  R-CODE-1 para siempre. *(Requiere correr la suite con Postgres para validar.)*
+- **TEST-1 — Aislamiento multi-tenant auto-descubierto (máximo ROI). ✅ HECHO.**
+  `tests_api/test_aislamiento_cobertura.py` introspecta el URLconf y verifica que los ~99
+  ViewSets sobre modelos con FK a `Empresa` sobreescriben `get_queryset`; **falla solo si se
+  añade un ViewSet sin aislamiento**. Blinda R-CODE-1 para siempre. Verificado local (99
+  passed, 1 skip por allowlist). *Pendiente complementario:* variante de comportamiento
+  (cross-tenant 404/403) cuando se construya la estructura `tests/` (TEST-2).
 - **A1-3 — Tercera matriz** `MAPA_MCP_CELERY_COMMANDS.md` + columnas faltantes en las dos
   existentes (`test_authz`, `en_openapi`, `unique_together`, `test_aislamiento`). Regenerada en CI.
 - **A4-1 — `docs/tech-debt/INVENTORY.md`** (hoy vacío): inventariar 3 TODO de frontend + ítems
