@@ -95,6 +95,69 @@ def _matriz_modelos() -> str:
     return out.getvalue()
 
 
+def _matriz_mcp_celery_commands() -> str:
+    import inspect
+
+    out = io.StringIO()
+    out.write("# Mapa MCP / Celery / Commands (A1 — generado por `manage.py mapa_superficie`)\n\n")
+
+    # ── Herramientas MCP ──────────────────────────────────────────────────────
+    out.write("## Herramientas MCP\n\n| Tool | Módulo |\n|---|---|\n")
+    tools = []
+    try:
+        import apps.core.mcp_server as mcp_mod
+        tools = sorted(
+            n for n, o in vars(mcp_mod).items()
+            if n.startswith("omni_") and inspect.isfunction(o)
+        )
+    except Exception:  # noqa: BLE001 — introspección best-effort
+        pass
+    for t in tools:
+        out.write(f"| `{t}` | apps.core.mcp_server |\n")
+    out.write(f"\n_Total tools MCP: {len(tools)}_\n\n")
+
+    # ── Tareas Celery ─────────────────────────────────────────────────────────
+    out.write("## Tareas Celery\n\n| Tarea | Módulo |\n|---|---|\n")
+    celery_filas = []
+    try:
+        import importlib
+        from config.celery import app as celery_app
+        # Forzar el registro importando cada apps.<app>.tasks (en un contexto sin
+        # worker, autodiscover es perezoso y app.tasks no estaría poblado).
+        for cfg in django_apps.get_app_configs():
+            if not cfg.name.startswith("apps."):
+                continue
+            try:
+                importlib.import_module(f"{cfg.name}.tasks")
+            except Exception:  # noqa: BLE001 — sin tasks.py o import fallido: se omite
+                continue
+        for name, task in celery_app.tasks.items():
+            if name.startswith("celery."):
+                continue  # tareas internas de Celery
+            celery_filas.append((name, getattr(task, "__module__", "—")))
+    except Exception:  # noqa: BLE001
+        pass
+    for name, mod in sorted(set(celery_filas)):
+        out.write(f"| `{name}` | {mod} |\n")
+    out.write(f"\n_Total tareas Celery: {len(set(celery_filas))}_\n\n")
+
+    # ── Management commands ───────────────────────────────────────────────────
+    out.write("## Management commands\n\n| Comando | App |\n|---|---|\n")
+    cmd_filas = []
+    try:
+        from django.core.management import get_commands
+        cmd_filas = [
+            (name, app) for name, app in get_commands().items()
+            if str(app).startswith("apps.")
+        ]
+    except Exception:  # noqa: BLE001
+        pass
+    for name, app in sorted(set(cmd_filas)):
+        out.write(f"| `{name}` | {app} |\n")
+    out.write(f"\n_Total commands: {len(set(cmd_filas))}_\n")
+    return out.getvalue()
+
+
 class Command(BaseCommand):
     help = "Genera las matrices A1 (mapa de superficie) en docs/audit/."
 
@@ -107,6 +170,7 @@ class Command(BaseCommand):
         artefactos = {
             DOCS / "MAPA_ENDPOINTS.md": _matriz_endpoints(),
             DOCS / "MAPA_MODELOS.md": _matriz_modelos(),
+            DOCS / "MAPA_MCP_CELERY_COMMANDS.md": _matriz_mcp_celery_commands(),
         }
         if opts["check"]:
             desactualizados = [

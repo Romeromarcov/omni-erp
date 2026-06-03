@@ -63,8 +63,10 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   añade un ViewSet sin aislamiento**. Blinda R-CODE-1 para siempre. Verificado local (99
   passed, 1 skip por allowlist). *Pendiente complementario:* variante de comportamiento
   (cross-tenant 404/403) cuando se construya la estructura `tests/` (TEST-2).
-- **A1-3 — Tercera matriz** `MAPA_MCP_CELERY_COMMANDS.md` + columnas faltantes en las dos
-  existentes (`test_authz`, `en_openapi`, `unique_together`, `test_aislamiento`). Regenerada en CI.
+- **A1-3 — Tercera matriz `MAPA_MCP_CELERY_COMMANDS.md`. ✅ HECHO.** `mapa_superficie` ahora
+  introspecta y genera 17 tools MCP + 13 tareas Celery + 10 management commands; incluida en
+  el `--check` bloqueante de CI. *Pendiente:* columnas extra en las dos matrices existentes
+  (`test_authz`, `en_openapi`, `unique_together`, `test_aislamiento`).
 - **A4-1 — `docs/tech-debt/INVENTORY.md`. ✅ HECHO.** Inventario con 3 TODO de frontend
   (verificados), deuda arquitectónica (§4.3), deuda de tooling y enlaces a auditorías.
 - **A5-1 — Corregir §4.2 del Plan Maestro. ✅ HECHO.** Eliminadas apps fantasma
@@ -82,8 +84,12 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   `cobranza.py:24`). **Requiere decisión de diseño**, no parche: ¿el asistente opera sobre una
   empresa explícita del contexto de conversación (validada contra `get_empresas_visible`), o
   agrega? No se toca a ciegas.
-- **SEC-2 — COOP/CORP headers** en ambos nginx (`Cross-Origin-Opener-Policy`/`-Resource-Policy`).
-- **SEC-3 — CSP**: endurecer `script-src 'unsafe-inline'` (Report-Only + nonces).
+- **SEC-2 — COOP/CORP headers. ✅ YA PRESENTE (verificado).** Ambos nginx
+  (`frontend/nginx.conf:14-15`, `infra/nginx/nginx.prod.conf:45-46`) ya tienen
+  `Cross-Origin-Opener-Policy` y `-Resource-Policy` (`same-origin`). El assessment estaba
+  desactualizado. *(Menor: `nginx.prod.conf:26` tiene un `TODO` de `server_name` de despliegue.)*
+- **SEC-3 — CSP**: endurecer `script-src 'unsafe-inline'` (Report-Only + nonces). Requiere
+  nonces para MUI/emotion — diferido (riesgo de romper estilos si se hace a ciegas).
 
 ### Tooling / gates (días)
 - **A0-1 — `.semgrep.yml` versionado. ✅ HECHO (parcial).** 4 reglas propias bloqueantes
