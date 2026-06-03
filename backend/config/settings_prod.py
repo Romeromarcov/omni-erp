@@ -3,13 +3,17 @@ from .settings_base import *  # noqa: F401, F403
 DEBUG = False
 # M-SEC-14: ALLOWED_HOSTS no puede quedar vacío en producción. Fail-closed.
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
-# Railway inyecta automáticamente el dominio público/privado del servicio como
-# variables de sistema; los añadimos para que el deploy se auto-configure sin
-# depender de que DJANGO_ALLOWED_HOSTS incluya el dominio asignado por Railway.
-for _railway_host_var in ("RAILWAY_PUBLIC_DOMAIN", "RAILWAY_PRIVATE_DOMAIN"):
-    _railway_host = os.environ.get(_railway_host_var, "").strip()
-    if _railway_host and _railway_host not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(_railway_host)
+# Railway: la plataforma SIEMPRE inyecta RAILWAY_ENVIRONMENT en el contenedor.
+# Cuando está presente, permitimos los dominios de Railway para que el deploy
+# funcione aunque la propagación de DJANGO_ALLOWED_HOSTS al contenedor falle
+# (ver docs/_archive/RAILWAY_TROUBLESHOOTING_2026-06-03.md). El comodín
+# ".up.railway.app" cubre el dominio público asignado por Railway.
+if os.environ.get("RAILWAY_ENVIRONMENT"):
+    for _rh in (".up.railway.app", ".railway.app", ".railway.internal",
+                os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip(),
+                os.environ.get("RAILWAY_PRIVATE_DOMAIN", "").strip()):
+        if _rh and _rh not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(_rh)
 if not ALLOWED_HOSTS:
     from django.core.exceptions import ImproperlyConfigured
 
@@ -17,6 +21,14 @@ if not ALLOWED_HOSTS:
         "DJANGO_ALLOWED_HOSTS debe definir al menos un host en producción "
         "(ej: 'midominio.com,www.midominio.com')."
     )
+
+# Diagnóstico de arranque (temporal): deja en los logs qué ALLOWED_HOSTS resolvió
+# el contenedor. Útil para confirmar la propagación de variables en Railway.
+import sys as _sys  # noqa: E402
+print(f"[settings_prod] DJANGO_ENV={os.environ.get('DJANGO_ENV')!r} "
+      f"RAILWAY_ENVIRONMENT={os.environ.get('RAILWAY_ENVIRONMENT')!r} "
+      f"DJANGO_ALLOWED_HOSTS_env={os.environ.get('DJANGO_ALLOWED_HOSTS')!r} "
+      f"ALLOWED_HOSTS={ALLOWED_HOSTS}", file=_sys.stderr, flush=True)
 
 # CORS — solo orígenes explícitos en producción
 CORS_ALLOW_ALL_ORIGINS = False
