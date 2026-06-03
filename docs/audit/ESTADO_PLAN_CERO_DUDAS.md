@@ -43,14 +43,17 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 
 | Fase | DoD | Estado | Nota |
 |---|---|---|---|
-| **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟡 ~80% | tooling instalado pero varios `continue-on-error`; falta 3ª matriz |
-| **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟡 sustancial | auditoría en `AUDITORIA_2026-06-02.md`; faltan 2 residuales reales (ver SEC-*) |
-| **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🔴 falta | aislamiento es manual, no auto-descubierto; sin contract |
-| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🔴 falta | cobertura backend 65%, frontend ~55%; sin mutation |
-| **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright; FE en ~55% |
-| **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🔴 falta | varios gates en `continue-on-error` |
+| **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟢 **CERRADA** (2026-06-03) | bandit/semgrep(+reglas Omni)/ruff/mypy/pip-audit/npm audit/trivy/gitleaks + **contract (OpenAPI+schemathesis)** + **mutmut nightly** + factory_boy/hypothesis/xdist; **3 matrices A1** con columnas; diff-cover bloqueante. *Deferral:* `eslint-plugin-security` (frontend, al reanudar FE). |
+| **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
+| **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟡 iniciada | ✅ TEST-1 (aislamiento auto-descubierto), TEST-3 (property), TEST-4 (race), contract en CI. *Falta:* estructura `tests/`, más flujos. |
+| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🔴 falta | cobertura backend **68%** (ratchet 67), frontend ~55%; mutmut cableado (score pendiente) |
+| **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright; FE en ~55%; ALTAs de frontend del 2026-06-02 |
+| **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff F823/F811, semgrep Omni, diff-cover. *Falta:* mypy/audits bloqueantes, branch protection |
 
 Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
+
+> **Fases 0 y 1 CERRADAS al 2026-06-03.** Próximo según plan del owner: paréntesis de
+> despliegue (Railway + logs del servidor) y luego **Fase 2** en adelante.
 
 ---
 
