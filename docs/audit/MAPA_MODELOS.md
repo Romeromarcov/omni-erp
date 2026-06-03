@@ -1,196 +1,196 @@
 # Mapa de modelos (A1 — generado por `manage.py mapa_superficie`)
 
-| App | Modelo | Tenant-aware | PK UUID |
-|---|---|---|---|
-| agentes | ConfigAgente | ✅ | ✅ |
-| agentes | PrediccionAgente | ✅ | ✅ |
-| almacenes | Almacen | ✅ | ✅ |
-| almacenes | UbicacionAlmacen | ✅ | ✅ |
-| auditoria | LogAuditoria | ✅ | ✅ |
-| banca_electronica | CuentaBancariaEmpresa | ✅ | — |
-| compras | DetalleFacturaCompra | — | ✅ |
-| compras | DetalleOfertaProveedor | — | ✅ |
-| compras | DetalleOrdenCompra | — | ✅ |
-| compras | DetalleRecepcionMercancia | — | ✅ |
-| compras | DetalleRequisicionCompra | — | ✅ |
-| compras | DetalleSolicitudCotizacion | — | ✅ |
-| compras | FacturaCompra | ✅ | ✅ |
-| compras | OfertaProveedor | — | ✅ |
-| compras | OrdenCompra | ✅ | ✅ |
-| compras | RecepcionMercancia | ✅ | ✅ |
-| compras | RequisicionCompra | ✅ | ✅ |
-| compras | SolicitudCotizacion | ✅ | ✅ |
-| configuracion_motor | CatalogoValor | — | ✅ |
-| configuracion_motor | ParametroSistema | ✅ | ✅ |
-| configuracion_motor | TipoDocumento | — | ✅ |
-| contabilidad | AsientoContable | ✅ | ✅ |
-| contabilidad | DetalleAsiento | — | ✅ |
-| contabilidad | MapeoContable | ✅ | ✅ |
-| contabilidad | PlanCuentas | ✅ | ✅ |
-| control_asistencia | AsignacionHorario | — | ✅ |
-| control_asistencia | HorarioTrabajo | ✅ | ✅ |
-| control_asistencia | RegistroAsistencia | — | ✅ |
-| control_asistencia | ResumenAsistenciaDiario | — | ✅ |
-| core | CapabilityToken | ✅ | — |
-| core | ConfiguracionFlujoDocumentos | ✅ | ✅ |
-| core | Contacto | ✅ | ✅ |
-| core | Departamento | ✅ | ✅ |
-| core | Dispositivo | ✅ | ✅ |
-| core | Empresa | ✅ | ✅ |
-| core | Notificacion | ✅ | ✅ |
-| core | Permisos | — | ✅ |
-| core | RegistroAuditoria | ✅ | ✅ |
-| core | RolPermisos | — | ✅ |
-| core | Roles | ✅ | ✅ |
-| core | Sucursal | ✅ | ✅ |
-| core | UsuarioRoles | — | ✅ |
-| core | Usuarios | — | ✅ |
-| costos | AnalisisVariacionCosto | ✅ | ✅ |
-| costos | CostoEstandarProducto | ✅ | ✅ |
-| costos | CostoProduccion | ✅ | ✅ |
-| crm | Cliente | ✅ | ✅ |
-| crm | ContactoCliente | ✅ | ✅ |
-| crm | DireccionCliente | ✅ | ✅ |
-| cuentas_por_cobrar | AbonoCxC | — | — |
-| cuentas_por_cobrar | CuentaPorCobrar | ✅ | — |
-| cuentas_por_pagar | AbonoCxP | — | ✅ |
-| cuentas_por_pagar | CuentaPorPagar | ✅ | ✅ |
-| cxc | AcuerdoPago | ✅ | ✅ |
-| cxc | CuotaAcuerdo | — | ✅ |
-| cxc | GestionCobranza | ✅ | ✅ |
-| cxc | LoteFraccionado | ✅ | ✅ |
-| cxc | PlantillaCobranza | ✅ | ✅ |
-| cxc | VentaFraccionada | ✅ | ✅ |
-| despacho | Despacho | ✅ | ✅ |
-| despacho | DetalleDespacho | — | ✅ |
-| finanzas | Caja | ✅ | ✅ |
-| finanzas | CajaFisica | ✅ | ✅ |
-| finanzas | CajaFisicaUsuario | — | ✅ |
-| finanzas | CajaMetodoPagoOverride | — | ✅ |
-| finanzas | CajaUsuario | — | ✅ |
-| finanzas | CajaVirtualAuto | — | ✅ |
-| finanzas | CajaVirtualUsuario | — | ✅ |
-| finanzas | CuentaBancariaEmpresa | ✅ | ✅ |
-| finanzas | Datafono | ✅ | ✅ |
-| finanzas | DepositoDatafono | — | ✅ |
-| finanzas | MetodoPago | ✅ | ✅ |
-| finanzas | MetodoPagoEmpresaActiva | ✅ | ✅ |
-| finanzas | Moneda | ✅ | ✅ |
-| finanzas | MonedaEmpresaActiva | ✅ | ✅ |
-| finanzas | MovimientoCajaBanco | ✅ | ✅ |
-| finanzas | Pago | ✅ | ✅ |
-| finanzas | PlantillaMaestroCajasVirtuales | ✅ | ✅ |
-| finanzas | SesionCajaFisica | ✅ | ✅ |
-| finanzas | SesionDatafono | — | ✅ |
-| finanzas | TasaCambio | ✅ | ✅ |
-| finanzas | TransaccionDatafono | — | ✅ |
-| finanzas | TransaccionFinanciera | ✅ | ✅ |
-| fiscal | ConfiguracionFiscalEmpresa | ✅ | ✅ |
-| fiscal | ConfiguracionImpuesto | ✅ | — |
-| fiscal | ConfiguracionRetencion | ✅ | — |
-| fiscal | ContribucionEmpresaActiva | ✅ | — |
-| fiscal | ContribucionParafiscal | ✅ | — |
-| fiscal | EmpresaContribucionParafiscal | ✅ | — |
-| fiscal | Impuesto | ✅ | — |
-| fiscal | ImpuestoEmpresaActiva | ✅ | — |
-| fiscal | NumeroCorrelativo | ✅ | ✅ |
-| fiscal | PeriodoFiscal | ✅ | ✅ |
-| fiscal | Retencion | ✅ | — |
-| fiscal | RetencionEmpresaActiva | ✅ | — |
-| fiscal | TasaIVAEmpresa | ✅ | ✅ |
-| gastos | CategoriaGasto | ✅ | ✅ |
-| gastos | Gasto | ✅ | ✅ |
-| gastos | ReembolsoGasto | ✅ | ✅ |
-| gestion_aprobaciones | FlujoAprobacion | — | ✅ |
-| gestion_aprobaciones | RegistroAprobacion | — | ✅ |
-| gestion_aprobaciones | SolicitudAprobacion | — | ✅ |
-| gestion_aprobaciones | TipoAprobacion | ✅ | ✅ |
-| gestion_documental | Carpeta | ✅ | ✅ |
-| gestion_documental | Documento | ✅ | ✅ |
-| gestion_documental | PermisoDocumento | — | ✅ |
-| gestion_documental | VinculoDocumento | — | ✅ |
-| integracion_b2b | ConfiguracionIntegracion | ✅ | ✅ |
-| integracion_b2b | LogIntegracion | — | ✅ |
-| integracion_b2b | MapeoCampo | — | ✅ |
-| integration_hub | ConectorInstancia | ✅ | ✅ |
-| integration_hub | ConectorProveedor | — | ✅ |
-| integration_hub | EntidadSincronizada | — | ✅ |
-| integration_hub | JobSincronizacion | — | ✅ |
-| integration_hub | LogDetalleSincronizacion | — | ✅ |
-| inventario | CategoriaProducto | ✅ | ✅ |
-| inventario | ConversionUnidadMedida | ✅ | ✅ |
-| inventario | DetalleRequisicion | — | ✅ |
-| inventario | MovimientoInventario | ✅ | ✅ |
-| inventario | Producto | ✅ | ✅ |
-| inventario | RequisicionInterna | ✅ | ✅ |
-| inventario | StockActual | ✅ | ✅ |
-| inventario | StockConsignacionCliente | ✅ | ✅ |
-| inventario | StockConsignacionProveedor | ✅ | ✅ |
-| inventario | UnidadMedida | ✅ | ✅ |
-| inventario | VarianteProducto | — | ✅ |
-| manufactura | CentroTrabajo | ✅ | ✅ |
-| manufactura | ConsumoMaterial | — | ✅ |
-| manufactura | ListaMateriales | ✅ | ✅ |
-| manufactura | ListaMaterialesDetalle | — | ✅ |
-| manufactura | OperacionProduccion | ✅ | ✅ |
-| manufactura | OrdenProduccion | ✅ | ✅ |
-| manufactura | ProduccionTerminada | — | ✅ |
-| manufactura | RegistroOperacion | — | ✅ |
-| manufactura | RutaProduccion | ✅ | ✅ |
-| manufactura | RutaProduccionDetalle | — | ✅ |
-| migracion_datos | DetalleErrorMigracion | — | ✅ |
-| migracion_datos | PlantillaMigracion | — | ✅ |
-| migracion_datos | ProcesoMigracion | ✅ | ✅ |
-| nomina | ConceptoNomina | ✅ | ✅ |
-| nomina | DetalleNomina | — | ✅ |
-| nomina | Nomina | — | ✅ |
-| nomina | NominaExtrasalarial | — | ✅ |
-| nomina | PeriodoNomina | ✅ | ✅ |
-| nomina | ProcesoNomina | ✅ | ✅ |
-| nomina | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| notificaciones | EventoNotificacion | ✅ | ✅ |
-| notificaciones | LogNotificacion | — | ✅ |
-| notificaciones | PlantillaNotificacion | — | ✅ |
-| notificaciones | SuscripcionNotificacion | — | ✅ |
-| personalizacion | EntidadInstancia | ✅ | ✅ |
-| personalizacion | EstadoPersonalizado | ✅ | ✅ |
-| personalizacion | PersonalizacionConfig | ✅ | ✅ |
-| personalizacion | VistaPersonalizada | ✅ | ✅ |
-| proveedores | ContactoProveedor | — | ✅ |
-| proveedores | CuentaBancariaProveedor | — | ✅ |
-| proveedores | Proveedor | ✅ | ✅ |
-| rrhh | Beneficio | ✅ | ✅ |
-| rrhh | BeneficioEmpleado | — | ✅ |
-| rrhh | Cargo | ✅ | — |
-| rrhh | Empleado | ✅ | — |
-| rrhh | LicenciaEmpleado | — | ✅ |
-| rrhh | TipoLicencia | ✅ | ✅ |
-| saas | Plan | — | ✅ |
-| saas | Suscripcion | ✅ | ✅ |
-| servicio_cliente | BaseConocimientoArticulo | ✅ | ✅ |
-| servicio_cliente | CategoriaTicket | ✅ | ✅ |
-| servicio_cliente | FeedbackCliente | ✅ | ✅ |
-| servicio_cliente | InteraccionTicket | — | ✅ |
-| servicio_cliente | TicketSoporte | ✅ | ✅ |
-| tesoreria | ConciliacionBancaria | ✅ | ✅ |
-| tesoreria | MovimientoBancario | ✅ | ✅ |
-| tesoreria | MovimientoInternoFondo | — | — |
-| tesoreria | OperacionCambioDivisa | ✅ | — |
-| ventas | Cotizacion | ✅ | ✅ |
-| ventas | DetalleCotizacion | — | ✅ |
-| ventas | DetalleDevolucionVenta | — | ✅ |
-| ventas | DetalleFacturaFiscal | — | ✅ |
-| ventas | DetalleNotaCreditoFiscal | — | ✅ |
-| ventas | DetalleNotaCreditoVenta | — | ✅ |
-| ventas | DetalleNotaVenta | — | ✅ |
-| ventas | DetallePedido | — | ✅ |
-| ventas | DetallePrecio | — | ✅ |
-| ventas | DevolucionVenta | ✅ | ✅ |
-| ventas | FacturaFiscal | ✅ | ✅ |
-| ventas | ListaPrecio | ✅ | ✅ |
-| ventas | NotaCreditoFiscal | ✅ | ✅ |
-| ventas | NotaCreditoVenta | ✅ | ✅ |
-| ventas | NotaVenta | ✅ | ✅ |
-| ventas | Pedido | ✅ | ✅ |
+| App | Modelo | Tenant-aware | PK UUID | unique_together |
+|---|---|---|---|---|
+| agentes | ConfigAgente | ✅ | ✅ | id_empresa+agente |
+| agentes | PrediccionAgente | ✅ | ✅ | — |
+| almacenes | Almacen | ✅ | ✅ | id_empresa+codigo_almacen |
+| almacenes | UbicacionAlmacen | ✅ | ✅ | id_almacen+codigo_ubicacion |
+| auditoria | LogAuditoria | ✅ | ✅ | — |
+| banca_electronica | CuentaBancariaEmpresa | ✅ | — | — |
+| compras | DetalleFacturaCompra | — | ✅ | — |
+| compras | DetalleOfertaProveedor | — | ✅ | — |
+| compras | DetalleOrdenCompra | — | ✅ | — |
+| compras | DetalleRecepcionMercancia | — | ✅ | — |
+| compras | DetalleRequisicionCompra | — | ✅ | — |
+| compras | DetalleSolicitudCotizacion | — | ✅ | — |
+| compras | FacturaCompra | ✅ | ✅ | id_empresa+numero_factura |
+| compras | OfertaProveedor | — | ✅ | — |
+| compras | OrdenCompra | ✅ | ✅ | id_empresa+numero_orden |
+| compras | RecepcionMercancia | ✅ | ✅ | — |
+| compras | RequisicionCompra | ✅ | ✅ | id_empresa+numero_requisicion |
+| compras | SolicitudCotizacion | ✅ | ✅ | id_empresa+numero_solicitud |
+| configuracion_motor | CatalogoValor | — | ✅ | — |
+| configuracion_motor | ParametroSistema | ✅ | ✅ | id_empresa+codigo_parametro |
+| configuracion_motor | TipoDocumento | — | ✅ | — |
+| contabilidad | AsientoContable | ✅ | ✅ | id_empresa+numero_asiento |
+| contabilidad | DetalleAsiento | — | ✅ | — |
+| contabilidad | MapeoContable | ✅ | ✅ | id_empresa+tipo_asiento |
+| contabilidad | PlanCuentas | ✅ | ✅ | id_empresa+codigo_cuenta |
+| control_asistencia | AsignacionHorario | — | ✅ | — |
+| control_asistencia | HorarioTrabajo | ✅ | ✅ | — |
+| control_asistencia | RegistroAsistencia | — | ✅ | — |
+| control_asistencia | ResumenAsistenciaDiario | — | ✅ | id_empleado+fecha |
+| core | CapabilityToken | ✅ | — | — |
+| core | ConfiguracionFlujoDocumentos | ✅ | ✅ | id_empresa+tipo_documento+paso |
+| core | Contacto | ✅ | ✅ | — |
+| core | Departamento | ✅ | ✅ | id_empresa+nombre_departamento |
+| core | Dispositivo | ✅ | ✅ | fingerprint+empresa |
+| core | Empresa | ✅ | ✅ | — |
+| core | Notificacion | ✅ | ✅ | — |
+| core | Permisos | — | ✅ | — |
+| core | RegistroAuditoria | ✅ | ✅ | — |
+| core | RolPermisos | — | ✅ | id_rol+id_permiso |
+| core | Roles | ✅ | ✅ | id_empresa+nombre_rol |
+| core | Sucursal | ✅ | ✅ | id_empresa+codigo_sucursal |
+| core | UsuarioRoles | — | ✅ | id_usuario+id_rol |
+| core | Usuarios | — | ✅ | — |
+| costos | AnalisisVariacionCosto | ✅ | ✅ | — |
+| costos | CostoEstandarProducto | ✅ | ✅ | — |
+| costos | CostoProduccion | ✅ | ✅ | — |
+| crm | Cliente | ✅ | ✅ | id_empresa+rif |
+| crm | ContactoCliente | ✅ | ✅ | — |
+| crm | DireccionCliente | ✅ | ✅ | — |
+| cuentas_por_cobrar | AbonoCxC | — | — | — |
+| cuentas_por_cobrar | CuentaPorCobrar | ✅ | — | — |
+| cuentas_por_pagar | AbonoCxP | — | ✅ | — |
+| cuentas_por_pagar | CuentaPorPagar | ✅ | ✅ | — |
+| cxc | AcuerdoPago | ✅ | ✅ | — |
+| cxc | CuotaAcuerdo | — | ✅ | — |
+| cxc | GestionCobranza | ✅ | ✅ | — |
+| cxc | LoteFraccionado | ✅ | ✅ | — |
+| cxc | PlantillaCobranza | ✅ | ✅ | — |
+| cxc | VentaFraccionada | ✅ | ✅ | — |
+| despacho | Despacho | ✅ | ✅ | — |
+| despacho | DetalleDespacho | — | ✅ | — |
+| finanzas | Caja | ✅ | ✅ | — |
+| finanzas | CajaFisica | ✅ | ✅ | — |
+| finanzas | CajaFisicaUsuario | — | ✅ | usuario+caja_fisica |
+| finanzas | CajaMetodoPagoOverride | — | ✅ | caja_fisica+metodo_pago+sucursal |
+| finanzas | CajaUsuario | — | ✅ | usuario+caja |
+| finanzas | CajaVirtualAuto | — | ✅ | caja_fisica+plantilla_maestro+moneda+metodo_pago; empleado+plantilla_maestro+moneda+metodo_pago |
+| finanzas | CajaVirtualUsuario | — | ✅ | usuario+caja_virtual |
+| finanzas | CuentaBancariaEmpresa | ✅ | ✅ | — |
+| finanzas | Datafono | ✅ | ✅ | — |
+| finanzas | DepositoDatafono | — | ✅ | — |
+| finanzas | MetodoPago | ✅ | ✅ | — |
+| finanzas | MetodoPagoEmpresaActiva | ✅ | ✅ | — |
+| finanzas | Moneda | ✅ | ✅ | — |
+| finanzas | MonedaEmpresaActiva | ✅ | ✅ | — |
+| finanzas | MovimientoCajaBanco | ✅ | ✅ | — |
+| finanzas | Pago | ✅ | ✅ | — |
+| finanzas | PlantillaMaestroCajasVirtuales | ✅ | ✅ | — |
+| finanzas | SesionCajaFisica | ✅ | ✅ | — |
+| finanzas | SesionDatafono | — | ✅ | — |
+| finanzas | TasaCambio | ✅ | ✅ | — |
+| finanzas | TransaccionDatafono | — | ✅ | — |
+| finanzas | TransaccionFinanciera | ✅ | ✅ | — |
+| fiscal | ConfiguracionFiscalEmpresa | ✅ | ✅ | — |
+| fiscal | ConfiguracionImpuesto | ✅ | — | — |
+| fiscal | ConfiguracionRetencion | ✅ | — | — |
+| fiscal | ContribucionEmpresaActiva | ✅ | — | empresa+contribucion |
+| fiscal | ContribucionParafiscal | ✅ | — | — |
+| fiscal | EmpresaContribucionParafiscal | ✅ | — | — |
+| fiscal | Impuesto | ✅ | — | — |
+| fiscal | ImpuestoEmpresaActiva | ✅ | — | empresa+impuesto |
+| fiscal | NumeroCorrelativo | ✅ | ✅ | id_empresa+tipo |
+| fiscal | PeriodoFiscal | ✅ | ✅ | id_empresa+año+mes |
+| fiscal | Retencion | ✅ | — | — |
+| fiscal | RetencionEmpresaActiva | ✅ | — | empresa+retencion |
+| fiscal | TasaIVAEmpresa | ✅ | ✅ | id_empresa+tipo |
+| gastos | CategoriaGasto | ✅ | ✅ | — |
+| gastos | Gasto | ✅ | ✅ | — |
+| gastos | ReembolsoGasto | ✅ | ✅ | — |
+| gestion_aprobaciones | FlujoAprobacion | — | ✅ | — |
+| gestion_aprobaciones | RegistroAprobacion | — | ✅ | — |
+| gestion_aprobaciones | SolicitudAprobacion | — | ✅ | — |
+| gestion_aprobaciones | TipoAprobacion | ✅ | ✅ | id_empresa+codigo_tipo |
+| gestion_documental | Carpeta | ✅ | ✅ | — |
+| gestion_documental | Documento | ✅ | ✅ | — |
+| gestion_documental | PermisoDocumento | — | ✅ | — |
+| gestion_documental | VinculoDocumento | — | ✅ | — |
+| integracion_b2b | ConfiguracionIntegracion | ✅ | ✅ | — |
+| integracion_b2b | LogIntegracion | — | ✅ | — |
+| integracion_b2b | MapeoCampo | — | ✅ | — |
+| integration_hub | ConectorInstancia | ✅ | ✅ | id_empresa+nombre |
+| integration_hub | ConectorProveedor | — | ✅ | — |
+| integration_hub | EntidadSincronizada | — | ✅ | id_instancia+tipo_entidad+id_externo |
+| integration_hub | JobSincronizacion | — | ✅ | — |
+| integration_hub | LogDetalleSincronizacion | — | ✅ | — |
+| inventario | CategoriaProducto | ✅ | ✅ | — |
+| inventario | ConversionUnidadMedida | ✅ | ✅ | id_producto+id_unidad_origen+id_unidad_destino |
+| inventario | DetalleRequisicion | — | ✅ | id_requisicion+id_producto |
+| inventario | MovimientoInventario | ✅ | ✅ | — |
+| inventario | Producto | ✅ | ✅ | id_empresa+sku |
+| inventario | RequisicionInterna | ✅ | ✅ | id_empresa+numero_requisicion |
+| inventario | StockActual | ✅ | ✅ | id_producto+id_variante+id_almacen |
+| inventario | StockConsignacionCliente | ✅ | ✅ | — |
+| inventario | StockConsignacionProveedor | ✅ | ✅ | — |
+| inventario | UnidadMedida | ✅ | ✅ | id_empresa+abreviatura |
+| inventario | VarianteProducto | — | ✅ | — |
+| manufactura | CentroTrabajo | ✅ | ✅ | id_empresa+codigo_centro |
+| manufactura | ConsumoMaterial | — | ✅ | — |
+| manufactura | ListaMateriales | ✅ | ✅ | — |
+| manufactura | ListaMaterialesDetalle | — | ✅ | — |
+| manufactura | OperacionProduccion | ✅ | ✅ | id_empresa+codigo_operacion |
+| manufactura | OrdenProduccion | ✅ | ✅ | — |
+| manufactura | ProduccionTerminada | — | ✅ | — |
+| manufactura | RegistroOperacion | — | ✅ | — |
+| manufactura | RutaProduccion | ✅ | ✅ | — |
+| manufactura | RutaProduccionDetalle | — | ✅ | — |
+| migracion_datos | DetalleErrorMigracion | — | ✅ | — |
+| migracion_datos | PlantillaMigracion | — | ✅ | — |
+| migracion_datos | ProcesoMigracion | ✅ | ✅ | — |
+| nomina | ConceptoNomina | ✅ | ✅ | id_empresa+codigo_concepto |
+| nomina | DetalleNomina | — | ✅ | — |
+| nomina | Nomina | — | ✅ | — |
+| nomina | NominaExtrasalarial | — | ✅ | — |
+| nomina | PeriodoNomina | ✅ | ✅ | — |
+| nomina | ProcesoNomina | ✅ | ✅ | id_empresa+numero_proceso |
+| nomina | ProcesoNominaExtrasalarial | ✅ | ✅ | id_empresa+numero_proceso |
+| notificaciones | EventoNotificacion | ✅ | ✅ | codigo_evento+id_empresa |
+| notificaciones | LogNotificacion | — | ✅ | — |
+| notificaciones | PlantillaNotificacion | — | ✅ | — |
+| notificaciones | SuscripcionNotificacion | — | ✅ | id_evento+id_usuario+canal |
+| personalizacion | EntidadInstancia | ✅ | ✅ | — |
+| personalizacion | EstadoPersonalizado | ✅ | ✅ | id_empresa+modelo+nombre |
+| personalizacion | PersonalizacionConfig | ✅ | ✅ | id_empresa+version |
+| personalizacion | VistaPersonalizada | ✅ | ✅ | id_empresa+entidad |
+| proveedores | ContactoProveedor | — | ✅ | — |
+| proveedores | CuentaBancariaProveedor | — | ✅ | nombre_banco+numero_cuenta |
+| proveedores | Proveedor | ✅ | ✅ | id_empresa+rif |
+| rrhh | Beneficio | ✅ | ✅ | — |
+| rrhh | BeneficioEmpleado | — | ✅ | — |
+| rrhh | Cargo | ✅ | — | — |
+| rrhh | Empleado | ✅ | — | empresa+cedula |
+| rrhh | LicenciaEmpleado | — | ✅ | — |
+| rrhh | TipoLicencia | ✅ | ✅ | — |
+| saas | Plan | — | ✅ | — |
+| saas | Suscripcion | ✅ | ✅ | — |
+| servicio_cliente | BaseConocimientoArticulo | ✅ | ✅ | — |
+| servicio_cliente | CategoriaTicket | ✅ | ✅ | — |
+| servicio_cliente | FeedbackCliente | ✅ | ✅ | — |
+| servicio_cliente | InteraccionTicket | — | ✅ | — |
+| servicio_cliente | TicketSoporte | ✅ | ✅ | id_empresa+numero_ticket |
+| tesoreria | ConciliacionBancaria | ✅ | ✅ | — |
+| tesoreria | MovimientoBancario | ✅ | ✅ | — |
+| tesoreria | MovimientoInternoFondo | — | — | — |
+| tesoreria | OperacionCambioDivisa | ✅ | — | empresa+numero_operacion |
+| ventas | Cotizacion | ✅ | ✅ | id_empresa+numero_cotizacion |
+| ventas | DetalleCotizacion | — | ✅ | — |
+| ventas | DetalleDevolucionVenta | — | ✅ | — |
+| ventas | DetalleFacturaFiscal | — | ✅ | — |
+| ventas | DetalleNotaCreditoFiscal | — | ✅ | — |
+| ventas | DetalleNotaCreditoVenta | — | ✅ | — |
+| ventas | DetalleNotaVenta | — | ✅ | — |
+| ventas | DetallePedido | — | ✅ | — |
+| ventas | DetallePrecio | — | ✅ | id_lista+id_producto |
+| ventas | DevolucionVenta | ✅ | ✅ | id_empresa+numero_devolucion |
+| ventas | FacturaFiscal | ✅ | ✅ | id_empresa+numero_factura; id_empresa+numero_control |
+| ventas | ListaPrecio | ✅ | ✅ | id_empresa+codigo |
+| ventas | NotaCreditoFiscal | ✅ | ✅ | id_empresa+numero_nota_credito |
+| ventas | NotaCreditoVenta | ✅ | ✅ | id_empresa+numero_nota_credito |
+| ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
+| ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
 _Total modelos: 190_
