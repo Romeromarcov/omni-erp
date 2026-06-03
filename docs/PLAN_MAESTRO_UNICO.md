@@ -189,7 +189,7 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 | Monitoreo APM | ⚠️ Sentry configurado; Prometheus/Grafana pendiente |
 | Backup automático PostgreSQL | ⚠️ Railway: addon Postgres gestiona backups; verificar retención (GAP-4-bis en plan de trabajo). Self-hosted: pendiente (GAP-4) cuando se reactive |
 | SSL automático (Let's Encrypt) | ⚠️ Railway: TLS upstream automático (cubierto). Self-hosted: diferido (GAP-5) hasta que el negocio justifique la migración |
-| Security headers en nginx (Railway) | ❌ pendiente — ver `PLAN_TRABAJO_AUDITORIA_2026-06-01.md` NEW-INFRA-1 |
+| Security headers en nginx (Railway) | ❌ pendiente — ver `docs/auditorias/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` NEW-INFRA-1 |
 
 ## 3.2 Estrategia multi-tenant
 
@@ -406,7 +406,7 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 - [x] Consolidar planificación en este documento único.
 - [ ] Archivar planes ejecutados y el `PROJECT_LOG.md` de la raíz (ver §10).
 - [x] Frontend shell ERP moderno + asistente IA shippeado en `84f7ab4` (2026-05-31). Cierra ítem "pulido cxc" del plan original.
-- [ ] **Auditoría 2026-06-01:** ejecutar `docs/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` (33 hallazgos + 4 deltas vs plan). Bloqueante de pasos siguientes para ítems CRIT-1..3 y H-SEC-1..2.
+- [ ] **Auditoría 2026-06-01:** ejecutar `docs/auditorias/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` (33 hallazgos + 4 deltas vs plan). Bloqueante de pasos siguientes para ítems CRIT-1..3 y H-SEC-1..2.
 
 ### Sub-fase 1.F — Distribuidora en producción (PRÓXIMO, métrica que cierra Bloque 1 parcial)
 **Objetivo único:** la distribuidora opera diariamente con Omni durante **30 días continuos** sin volver a su sistema anterior.
