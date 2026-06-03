@@ -521,12 +521,41 @@ def ejecutar_reglas(entidad_nombre: str, instancia, empresa) -> list[str]:
 
 # ── Disparador de conectores (webhooks) ───────────────────────────────────────
 
+def _validar_url_externa(url: str) -> None:
+    """Guard SSRF (B310): solo http/https hacia hosts públicos.
+
+    Bloquea esquemas peligrosos (file://, ftp://, gopher://) y destinos internos
+    (loopback, link-local, privados, metadata de nube) para que un webhook
+    configurado por un tenant no pueda leer archivos locales ni alcanzar
+    servicios internos.
+    """
+    import ipaddress  # noqa: PLC0415
+    import socket  # noqa: PLC0415
+    from urllib.parse import urlparse  # noqa: PLC0415
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Esquema de URL no permitido para webhook: {parsed.scheme!r}")
+    host = parsed.hostname
+    if not host:
+        raise ValueError("URL de webhook sin host válido.")
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or (443 if parsed.scheme == "https" else 80))
+    except socket.gaierror as exc:
+        raise ValueError(f"No se pudo resolver el host del webhook: {host}") from exc
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            raise ValueError(f"Destino de webhook no permitido (IP interna): {ip}")
+
+
 def _enviar_webhook(url: str, metodo: str, payload: dict, headers: dict) -> None:
     """Envía el webhook en background. Fallos son silenciosos (solo log)."""
     try:
         import urllib.request  # noqa: PLC0415
         import json  # noqa: PLC0415
 
+        _validar_url_externa(url)  # SSRF guard (B310)
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
             url,
@@ -534,7 +563,7 @@ def _enviar_webhook(url: str, metodo: str, payload: dict, headers: dict) -> None
             headers={"Content-Type": "application/json", **headers},
             method=metodo.upper(),
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310  # nosec B310
             status = resp.status
         logger.info("_enviar_webhook | url=%s | status=%d", url, status)
     except Exception as exc:
