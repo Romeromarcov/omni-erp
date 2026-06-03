@@ -76,14 +76,13 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   con formato DoD A2 (severidad + CWE + archivo:línea + estado).
 
 ### Seguridad residual (verificar y, si procede, fijar)
-- **SEC-1 — `user.empresa` singular en el asistente IA. ⚠️ VERIFICADO (acotado).** Los únicos
-  usos reales están en `apps/agentes/api/chat.py:69,81,105` (herramientas read-only del chat:
-  aging, buscar_cliente, saldo_cliente). **No es fuga cross-tenant** (filtra *a* una empresa,
-  no expone otras); es un **sub-fetch**: para un usuario multi-empresa el asistente sólo ve
-  `empresas.first()`. `cxc/cobranza` ya usa `get_empresas_visible` (comentario explícito en
-  `cobranza.py:24`). **Requiere decisión de diseño**, no parche: ¿el asistente opera sobre una
-  empresa explícita del contexto de conversación (validada contra `get_empresas_visible`), o
-  agrega? No se toca a ciegas.
+- **SEC-1 — empresa de trabajo del asistente IA. ✅ HECHO.** Decisión del owner: el asistente
+  opera sobre la **empresa activa** que envía el cliente (validada contra `get_empresas_visible`,
+  con fallback a la primera visible); el usuario puede **cambiar de empresa** sólo a otra sobre
+  la que tenga permiso. Implementado en `apps/agentes/api/chat.py` con un contexto de empresa
+  de trabajo + tools `listar_empresas`/`usar_empresa`; el endpoint rechaza con **403** un
+  `empresa_id` no permitido. Se eliminó el uso de `user.empresa` y un **`str(e)` filtrado al
+  cliente** (R-CODE-8). 6 tests (`test_chat_empresa_sec1.py`), verificados.
 - **SEC-2 — COOP/CORP headers. ✅ YA PRESENTE (verificado).** Ambos nginx
   (`frontend/nginx.conf:14-15`, `infra/nginx/nginx.prod.conf:45-46`) ya tienen
   `Cross-Origin-Opener-Policy` y `-Resource-Policy` (`same-origin`). El assessment estaba

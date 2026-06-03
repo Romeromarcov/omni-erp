@@ -42,9 +42,36 @@ def _jsonable(obj):
     return obj
 
 
-# ── Herramientas (datos reales, solo lectura, scoped a la empresa del usuario) ──
+# ── Contexto de empresa de trabajo (SEC-1) ───────────────────────────────────
+# El asistente opera sobre una empresa de trabajo concreta. Por defecto es la
+# empresa activa que envía el cliente (validada contra get_empresas_visible); el
+# usuario puede pedir cambiarla a otra sobre la que TENGA permisos (tool
+# usar_empresa). Nunca se usa la property user.empresa (= empresas.first()), que
+# ignora el aislamiento multi-empresa.
 
-def _tool_tasa_bcv_hoy(user, **_):
+def _nombre_empresa(empresa) -> str:
+    if empresa is None:
+        return "—"
+    return (
+        getattr(empresa, "nombre_legal", None)
+        or getattr(empresa, "nombre_comercial", None)
+        or str(empresa)
+    )
+
+
+class _ChatCtx:
+    """Contexto mutable de la conversación: usuario, empresa de trabajo y las
+    empresas sobre las que el usuario tiene permiso (para validar cambios)."""
+
+    def __init__(self, user, empresa, visibles):
+        self.user = user
+        self.empresa = empresa
+        self.visibles = list(visibles)
+
+
+# ── Herramientas (datos reales, solo lectura, scoped a la empresa de trabajo) ──
+
+def _tool_tasa_bcv_hoy(ctx, **_):
     from apps.finanzas.models import TasaCambio
 
     t = (
@@ -62,23 +89,23 @@ def _tool_tasa_bcv_hoy(user, **_):
     return {"fecha": str(t.fecha_tasa), "valor_ves_por_usd": str(t.valor_tasa)}
 
 
-def _tool_aging_cartera(user, **_):
+def _tool_aging_cartera(ctx, **_):
     from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider
     from apps.cuentas_por_cobrar.services_aging import calcular_aging
 
-    provider = get_cartera_provider(user.empresa)
+    provider = get_cartera_provider(ctx.empresa)
     resumen = calcular_aging(provider.get_partidas())
     return _jsonable(resumen)
 
 
-def _tool_buscar_cliente(user, termino="", **_):
+def _tool_buscar_cliente(ctx, termino="", **_):
     from django.db.models import Q
     from apps.crm.models import Cliente
 
     if not termino:
         return {"error": "Falta el término de búsqueda."}
     qs = (
-        Cliente.objects.filter(id_empresa=user.empresa, activo=True)
+        Cliente.objects.filter(id_empresa=ctx.empresa, activo=True)
         .filter(
             Q(razon_social__icontains=termino)
             | Q(nombre_comercial__icontains=termino)
@@ -97,12 +124,12 @@ def _tool_buscar_cliente(user, termino="", **_):
     return {"clientes": clientes, "total": len(clientes)}
 
 
-def _tool_saldo_cliente(user, cliente_id="", **_):
+def _tool_saldo_cliente(ctx, cliente_id="", **_):
     from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider
 
     if not cliente_id:
         return {"error": "Falta cliente_id (usa buscar_cliente para obtenerlo)."}
-    provider = get_cartera_provider(user.empresa)
+    provider = get_cartera_provider(ctx.empresa)
     partidas = [p for p in provider.get_partidas() if str(p.cliente_id) == str(cliente_id)]
     if not partidas:
         return {"resultado": "El cliente no tiene saldo pendiente."}
@@ -115,11 +142,44 @@ def _tool_saldo_cliente(user, cliente_id="", **_):
     }
 
 
+def _tool_listar_empresas(ctx, **_):
+    """Empresas sobre las que el usuario puede trabajar + la empresa actual."""
+    return {
+        "empresa_actual": (
+            {"id": str(ctx.empresa.id_empresa), "nombre": _nombre_empresa(ctx.empresa)}
+            if ctx.empresa else None
+        ),
+        "empresas_disponibles": [
+            {"id": str(e.id_empresa), "nombre": _nombre_empresa(e)} for e in ctx.visibles
+        ],
+    }
+
+
+def _tool_usar_empresa(ctx, empresa="", **_):
+    """Cambia la empresa de trabajo — SOLO entre las que el usuario tiene permiso."""
+    termino = str(empresa).strip()
+    if not termino:
+        return {"error": "Indica el id o el nombre de la empresa."}
+    for e in ctx.visibles:
+        if str(e.id_empresa) == termino or termino.lower() in _nombre_empresa(e).lower():
+            ctx.empresa = e
+            return {
+                "ok": True,
+                "empresa_actual": {"id": str(e.id_empresa), "nombre": _nombre_empresa(e)},
+            }
+    return {
+        "error": "No tienes permiso sobre esa empresa, o no se encontró por ese nombre/id.",
+        "empresas_disponibles": [_nombre_empresa(e) for e in ctx.visibles],
+    }
+
+
 _TOOL_DISPATCH = {
     "tasa_bcv_hoy": _tool_tasa_bcv_hoy,
     "aging_cartera": _tool_aging_cartera,
     "buscar_cliente": _tool_buscar_cliente,
     "saldo_cliente": _tool_saldo_cliente,
+    "listar_empresas": _tool_listar_empresas,
+    "usar_empresa": _tool_usar_empresa,
 }
 
 TOOLS = [
@@ -151,31 +211,46 @@ TOOLS = [
             "required": ["cliente_id"],
         },
     },
+    {
+        "name": "listar_empresas",
+        "description": "Lista las empresas sobre las que el usuario tiene permiso para trabajar y cuál es la empresa actual. Úsala si el usuario pregunta en qué empresas puede trabajar o pide cambiar de empresa.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "usar_empresa",
+        "description": "Cambia la empresa de trabajo del asistente a otra sobre la que el usuario TENGA permiso (por id o nombre). Las demás herramientas operarán sobre esa empresa a partir de entonces. Si el usuario no tiene permiso, devuelve error con las empresas disponibles.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"empresa": {"type": "string", "description": "Id o nombre de la empresa destino."}},
+            "required": ["empresa"],
+        },
+    },
 ]
 
 
-def _dispatch_tool(name, tool_input, user):
+def _dispatch_tool(name, tool_input, ctx):
     fn = _TOOL_DISPATCH.get(name)
     if not fn:
         return {"error": f"Herramienta desconocida: {name}"}
     try:
-        return fn(user, **(tool_input or {}))
+        return fn(ctx, **(tool_input or {}))
     except Exception as e:  # noqa: BLE001 - se reporta al modelo, no debe tumbar el stream
         logger.warning("Tool %s falló: %s", name, e)
-        return {"error": f"No se pudo ejecutar {name}: {e}"}
+        return {"error": f"No se pudo ejecutar {name}."}
 
 
 # ── Prompt y validación ─────────────────────────────────────────────────────────
 
-def _build_system_prompt(request) -> str:
-    user = request.user
-    empresa = getattr(user, "empresa", None)
-    empresa_nombre = getattr(empresa, "nombre_legal", None) or "la empresa actual"
+def _build_system_prompt(user, empresa) -> str:
+    empresa_nombre = _nombre_empresa(empresa) if empresa else "la empresa actual"
     nombre = (user.get_full_name() or user.username).strip()
 
     return (
         "Eres Omni, el asistente de IA integrado en Omni ERP, un sistema de gestión "
-        f"empresarial para empresas en Venezuela. Ayudas a {nombre}, de {empresa_nombre}.\n\n"
+        f"empresarial para empresas en Venezuela. Ayudas a {nombre}.\n\n"
+        f"Trabajas actualmente sobre la empresa «{empresa_nombre}». Si el usuario te pide "
+        "trabajar sobre otra empresa, usa la herramienta usar_empresa (solo funciona si el "
+        "usuario tiene permiso sobre ella); usa listar_empresas para ver sus opciones.\n\n"
         "Puedes responder dudas sobre el uso del ERP y, cuando sea útil, consultar datos "
         "REALES del sistema con tus herramientas (tasa BCV, antigüedad de cartera CxC, "
         "búsqueda de clientes y saldo de un cliente). Para el saldo de un cliente, primero "
@@ -211,13 +286,32 @@ class AsistenteChatView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        from apps.core.viewsets import get_empresas_visible
+
         mensajes = _sanitize_messages(request.data.get("messages"))
         if not mensajes:
             return Response({"error": "Se requiere al menos un mensaje del usuario."}, status=400)
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        system_prompt = _build_system_prompt(request)
         user = request.user
+
+        # SEC-1: empresa de trabajo = la activa que envía el cliente, VALIDADA contra
+        # las empresas sobre las que el usuario tiene permiso. Sin id explícito → la
+        # primera visible (empresa por defecto del usuario).
+        visibles = list(get_empresas_visible(user))
+        empresa_id = request.data.get("empresa_id")
+        if empresa_id:
+            empresa = next((e for e in visibles if str(e.id_empresa) == str(empresa_id)), None)
+            if empresa is None:
+                return Response(
+                    {"error": "No tienes permiso para trabajar sobre esa empresa."},
+                    status=403,
+                )
+        else:
+            empresa = visibles[0] if visibles else None
+
+        ctx = _ChatCtx(user, empresa, visibles)
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        system_prompt = _build_system_prompt(user, empresa)
 
         def sse(payload: dict) -> str:
             return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
@@ -255,7 +349,7 @@ class AsistenteChatView(APIView):
                     tool_results = []
                     for block in final.content:
                         if getattr(block, "type", None) == "tool_use":
-                            result = _dispatch_tool(block.name, block.input, user)
+                            result = _dispatch_tool(block.name, block.input, ctx)
                             tool_results.append({
                                 "type": "tool_result",
                                 "tool_use_id": block.id,
@@ -264,9 +358,9 @@ class AsistenteChatView(APIView):
                     conversation.append({"role": "user", "content": tool_results})
 
                 yield "data: [DONE]\n\n"
-            except Exception as e:  # pragma: no cover
+            except Exception:  # pragma: no cover
                 logger.exception("Error en asistente de chat")
-                yield sse({"error": str(e)})
+                yield sse({"error": "Ocurrió un error procesando tu solicitud."})
 
         response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
         response["Cache-Control"] = "no-cache"
