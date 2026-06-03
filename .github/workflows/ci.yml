@@ -257,14 +257,27 @@ jobs:
         working-directory: backend
         run: bandit -r apps/ config/ -c .bandit.yaml --severity-level medium
 
-      - name: Semgrep (OWASP/Django — bloqueante en severidad ERROR)
+      - name: Semgrep (OWASP/Django + reglas Omni — bloqueante en severidad ERROR)
         working-directory: backend
-        run: semgrep --config p/python --config p/django --severity ERROR --error apps/ config/
+        # ../.semgrep.yml: reglas propias (raw SQL, verify=False, eval/exec, shell=True),
+        # verificadas limpias (0 findings sobre 616 archivos) → bloqueantes.
+        run: semgrep --config p/python --config p/django --config ../.semgrep.yml --severity ERROR --error apps/ config/
 
-      - name: Ruff (lint — errores graves)
+      - name: Ruff (bugs reales — BLOQUEANTE)
         working-directory: backend
-        # Solo errores de sintaxis/nombres/imports indefinidos por ahora (gradual).
-        run: ruff check apps/ config/ --select E9,F63,F7,F82,F401,F811 || true
+        # Códigos que indican bugs, no estilo: sintaxis (E9), f-strings rotos (F63),
+        # comparaciones inválidas (F7), nombres indefinidos (F82) y uso antes de
+        # asignación (F823). Este subconjunto está limpio y bloquea para impedir
+        # regresiones (p.ej. el UnboundLocalError de Decimal corregido en auditoría).
+        run: ruff check apps/ config/ --select E9,F63,F7,F82,F823
+
+      - name: Ruff (limpieza gradual — no bloqueante aún)
+        working-directory: backend
+        # F401 (imports sin usar) y F811 (redefiniciones, incl. serializers duplicados
+        # en finanzas — ver docs/tech-debt/INVENTORY.md). Se limpian por fases; al
+        # quedar en cero, mover estos códigos al paso bloqueante de arriba.
+        continue-on-error: true
+        run: ruff check apps/ config/ --select F401,F811
 
       - name: Mypy (tipos — gradual, no bloqueante aún)
         working-directory: backend

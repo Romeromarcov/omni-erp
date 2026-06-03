@@ -1,0 +1,54 @@
+# Reglas semgrep propias de Omni ERP (auditoría cero-dudas, A0/A2).
+# Complementan los rulesets de registro (p/python, p/django).
+# El job de CI corre semgrep con working-directory: backend, por lo que los
+# paths son relativos a backend/ (apps/, config/).
+# Todas verificadas como LIMPIAS en el código actual (2026-06-03, 0 findings sobre
+# 616 archivos), por lo que son BLOQUEANTES (severity: ERROR): impiden introducir
+# el patrón en el futuro.
+rules:
+  - id: omni-no-raw-sql
+    languages: [python]
+    severity: ERROR
+    message: >
+      Prohibido .raw()/.extra() en el ORM (riesgo de inyección SQL — A2/R-CODE).
+      Usa el ORM de Django o, si es imprescindible, parametriza y justifica en un CTF.
+    paths:
+      include: ["apps/", "config/"]
+      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+    pattern-either:
+      - pattern: $QS.raw(...)
+      - pattern: $QS.extra(...)
+
+  - id: omni-no-tls-verify-disabled
+    languages: [python]
+    severity: ERROR
+    message: >
+      verify=False deshabilita la verificación TLS (MITM/SSRF — A2). Toda salida HTTP
+      pasa por el Integration Hub con verificación de certificados.
+    paths:
+      include: ["apps/", "config/"]
+      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+    pattern: $FUNC(..., verify=False, ...)
+
+  - id: omni-no-dynamic-eval-exec
+    languages: [python]
+    severity: ERROR
+    message: >
+      eval()/exec() sobre datos potencialmente externos = ejecución remota de código.
+    paths:
+      include: ["apps/", "config/"]
+      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+
+  - id: omni-no-subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: >
+      subprocess con shell=True permite inyección de comandos. Pasa los argumentos
+      como lista y shell=False.
+    paths:
+      include: ["apps/", "config/"]
+      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+    pattern: subprocess.$M(..., shell=True, ...)
