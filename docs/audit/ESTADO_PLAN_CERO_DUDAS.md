@@ -13,6 +13,18 @@ El plan está **parcialmente implementado**: la **Fase 0 (tooling + mapa)** y bu
 90/80, mutation ≥80%, contract fuzzing, E2E, gates bloqueantes) **todavía NO se cumple** — es el
 grueso de las Fases 2–5, estimado en semanas. **No se debe afirmar "100% / cero dudas" aún.**
 
+### Avance sesión 2026-06-03 (rama `fix/audit-2026-06-01`)
+- **Bug real corregido:** BUG-1 (`UnboundLocalError` de Decimal en pago en divisa, `ventas/views.py`).
+- **Tests nuevos verificados:** TEST-1 (aislamiento auto-descubierto, ~99 ViewSets), TEST-3
+  (property-based IVA/IGTF), TEST-4 (race de reserva de stock).
+- **Gates endurecidos (CI verde):** ruff bugs reales (E9/F63/F7/F82/F823) bloqueante, 4 reglas
+  semgrep propias bloqueantes (`.semgrep.yml`), diff-cover ≥90% bloqueante en PR.
+- **Cobertura:** ratchet 65→67 (medido 68.06%, 1084 tests verdes).
+- **Hallazgos documentados:** BUG-DUP-1 (clases/ViewSet duplicados en finanzas, sin corregir —
+  requiere PR con tests de API). SEC-1 verificado (sub-fetch acotado, requiere decisión).
+- **3 "bugs críticos" del assessment refutados** con evidencia (atomicidad factura, scope `*` MCP,
+  soft-delete).
+
 ### ⚠️ Falsos positivos del assessment automático (verificados a mano)
 
 La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea por línea:
@@ -91,7 +103,9 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
 - **TEST-3 — property-based con `hypothesis`. ✅ HECHO (inicial).** `test_property_fiscal.py`:
   invariantes de IVA/IGTF (sumas exactas, no-negatividad, redondeo 2 decimales, aplicabilidad
   IGTF) sobre ~1300 casos generados. *Ampliar:* aging, scoring, stock, pagos mixtos.
-- **TEST-4** — race tests (`select_for_update`) para stock, saldos CxC/CxP, correlativos.
+- **TEST-4 — race tests (`select_for_update`). 🟡 EN CURSO.** ✅ `test_inventario_concurrencia.py`
+  (reserva de stock: no overselling, verificado) + el existente `test_fiscal_concurrencia.py`
+  (correlativos). *Pendiente:* saldos CxC/CxP.
 - **TEST-5** — integración de flujos críticos faltantes: compra, cobranza, manufactura.
 - **TEST-6** — frontend: MSW (instalado, sin usar), `openapi-typescript` + drift, Playwright E2E,
   pisos de cobertura por carpeta.
