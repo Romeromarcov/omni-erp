@@ -48,7 +48,9 @@ def _model_de(cls):
 def _es_tenant(model):
     if model is None:
         return False
-    nombres = {f.name for f in model._meta.get_fields()}
+    # Solo campos concretos (columnas propias del modelo), no relaciones inversas:
+    # evita falsos positivos (p.ej. Moneda, referenciada por Empresa.id_moneda_base).
+    nombres = {f.name for f in model._meta.concrete_fields}
     return "id_empresa" in nombres or "empresa" in nombres
 
 

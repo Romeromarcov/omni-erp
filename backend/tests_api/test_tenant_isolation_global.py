@@ -67,7 +67,8 @@ def _model_de_viewset(cls):
 def _es_tenant(model) -> bool:
     if model is None:
         return False
-    nombres = {f.name for f in model._meta.get_fields()}
+    # Solo campos concretos (columnas propias), no relaciones inversas.
+    nombres = {f.name for f in model._meta.concrete_fields}
     return "id_empresa" in nombres or "empresa" in nombres
 
 
