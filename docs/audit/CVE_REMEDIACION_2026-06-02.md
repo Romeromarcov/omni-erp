@@ -12,9 +12,11 @@ Fuente: `pip-audit -r backend/requirements.txt` (job de CI `security-scan` + pla
 | cryptography | 44.0.0 → **44.0.1** | CVE-2024-12797 |
 | python-dotenv | 1.1.1 → **1.2.2** | CVE-2026-28684 |
 | sqlparse | 0.5.3 → **0.5.4** | GHSA-27jp-wm6q-gp25 |
+| PyJWT | 2.9.0 → **2.13.0** | PYSEC-2025-183, PYSEC-2026-120/175/176/177/178/179 |
 
 Validación: `manage.py check` 0 issues · `makemigrations --check` sin drift ·
-suite backend completa verde.
+suite backend completa verde. PyJWT 2.13.0 validado con 64 tests de auth/JWT/
+capability (el bump fue posible porque simplejwt 5.5.1 ya no fija `pyjwt<2.10`).
 
 ## ⏳ Pendiente — requieren PR dedicado con pruebas de compatibilidad (CTF)
 
@@ -23,7 +25,6 @@ puede romper APIs. Se rastrean como compromiso técnico fechado:
 
 | Paquete | Actual → fix | CVE | Riesgo del bump |
 |---|---|---|---|
-| pyjwt | 2.9.0 → 2.13.0 | PYSEC-2025-183, PYSEC-2026-120/175-179 | **Bloqueado** por `simplejwt<2.10.0`; requiere una versión de simplejwt que lo permita. |
 | mcp | 1.12.4 → 1.23.0 | CVE-2025-66416 | Major; puede cambiar la API de FastMCP usada en `apps/core/mcp_server.py`. |
 | lxml | 5.4.0 → 6.1.0 | PYSEC-2026-87 | Major; usado por scraping/PDF; probar parsing. |
 | cryptography | 44.0.1 → 46.x | PYSEC-2026-35, CVE-2026-26007 | Major; revisar `EncryptedJSONField`/Fernet. |
