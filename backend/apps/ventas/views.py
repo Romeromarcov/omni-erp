@@ -462,8 +462,9 @@ def crear_transaccion_financiera_pago(pago, usuario):
                     monto_movimiento = pago.monto
 
             # Convertir monto_movimiento a Decimal para evitar errores de tipo
-            from decimal import Decimal
-
+            # (Decimal ya está importado a nivel de módulo; un re-import local aquí
+            #  convertía a Decimal en variable local de toda la función y provocaba
+            #  UnboundLocalError en los usos previos — pago en divisa. Ver auditoría.)
             monto_movimiento = Decimal(str(monto_movimiento))
 
             movimiento = MovimientoCajaBanco.objects.create(

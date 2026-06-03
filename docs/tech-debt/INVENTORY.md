@@ -17,6 +17,13 @@
 
 > Backend: **0 TODO/FIXME/XXX reales** en `apps/` (verificado 2026-06-03).
 
+## Bugs reales detectados en auditoría (vía ruff E9/F8)
+
+| # | Ubicación | Bug | Estado |
+|---|---|---|---|
+| BUG-1 | `apps/ventas/views.py` (`crear_transaccion_financiera_pago`) | `Decimal` re-importado localmente (antes en línea 465) lo volvía variable local de toda la función → `UnboundLocalError` en pagos en **divisa** (`moneda_pago != moneda_base`); la función re-lanzaba, así que el pago en divisa **fallaba**. No detectado por falta de test de esa ruta. | ✅ **Corregido** (2026-06-03) — guard ruff F823 bloqueante en CI. *Pendiente:* test conductual de pago en divisa (TEST-5). |
+| BUG-DUP-1 | `apps/finanzas/serializers.py:549,568,1233` y `:1016,1220` | `CajaFisicaSerializer` definido **3 veces** (549 con `model=Caja` mal etiquetado, 568 con `model=CajaFisica`, 1233 el activo) y `DatafonoSerializer` **2 veces**. Python liga `serializer_class = X` en el punto de definición del ViewSet, así que ViewSets distintos podrían usar definiciones distintas según su posición en el archivo. | ⚠️ **Verificado, sin corregir.** Requiere PR dedicado: trazar cada uso, renombrar las clases distintas (la 549 es realmente un `CajaSerializer`), y tests de la API de finanzas. Riesgo de regresión si se hace a ciegas. Por eso F811 sigue no-bloqueante en CI. |
+
 ## Deuda arquitectónica conocida (ver Plan Maestro §4.3)
 
 - **Acoplamiento a Venezuela en el núcleo** — lógica VE dispersa (`apps/fiscal`, IGTF en
