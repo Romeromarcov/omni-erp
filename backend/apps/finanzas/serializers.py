@@ -56,9 +56,6 @@ class MetodoPagoEmpresaActivaSerializer(serializers.ModelSerializer):
 from rest_framework import serializers
 
 from .models import (
-    Caja,
-    CajaFisica,
-    CajaUsuario,
     CuentaBancariaEmpresa,
     MetodoPago,
     Moneda,
@@ -546,90 +543,6 @@ class MovimientoCajaBancoSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CajaFisicaSerializer(serializers.ModelSerializer):
-    empresa_nombre = serializers.CharField(source="empresa.nombre_comercial", read_only=True)
-    sucursal_nombre = serializers.CharField(source="sucursal.nombre", read_only=True)
-    moneda_codigo_iso = serializers.CharField(source="moneda.codigo_iso", read_only=True)
-    tipo_caja_display = serializers.CharField(source="get_tipo_caja_display", read_only=True)
-    caja_fisica_nombre = serializers.CharField(source="caja_fisica.nombre", read_only=True)
-
-    class Meta:
-        model = Caja
-        fields = "__all__"
-        read_only_fields = [
-            "empresa_nombre",
-            "sucursal_nombre",
-            "moneda_codigo_iso",
-            "tipo_caja_display",
-            "caja_fisica_nombre",
-        ]
-
-
-class CajaFisicaSerializer(serializers.ModelSerializer):
-    empresa_nombre = serializers.CharField(source="empresa.nombre_comercial", read_only=True)
-    sucursal_nombre = serializers.CharField(source="sucursal.nombre", read_only=True)
-    tipo_dispositivo_display = serializers.CharField(source="get_tipo_dispositivo_display", read_only=True)
-    cajas_virtuales = serializers.SerializerMethodField()
-    datafonos = serializers.SerializerMethodField()
-    # Campos de sesión
-    esta_abierta = serializers.SerializerMethodField()
-    estado_sesion_display = serializers.SerializerMethodField()
-    nombre_usuario_actual = serializers.SerializerMethodField()
-
-    def get_cajas_virtuales(self, obj):
-        from .models import Caja
-
-        cajas = Caja.objects.filter(caja_fisica=obj, activa=True)
-        return [
-            {
-                "id_caja": str(caja.id_caja),
-                "nombre": caja.nombre,
-                "tipo_caja": caja.tipo_caja,
-                "tipo_caja_display": caja.get_tipo_caja_display(),
-                "moneda_codigo_iso": caja.moneda.codigo_iso,
-                "activa": caja.activa,
-            }
-            for caja in cajas
-        ]
-
-    def get_datafonos(self, obj):
-        from .models import Datafono
-
-        datafonos = Datafono.objects.filter(id_caja_fisica=obj, activo=True)
-        return [
-            {
-                "id_datafono": str(datafono.id_datafono),
-                "nombre": datafono.nombre,
-                "serial": datafono.serial,
-                "activo": datafono.activo,
-            }
-            for datafono in datafonos
-        ]
-
-    def get_esta_abierta(self, obj):
-        return obj.esta_abierta
-
-    def get_estado_sesion_display(self, obj):
-        return obj.estado_sesion_display
-
-    def get_nombre_usuario_actual(self, obj):
-        return obj.nombre_usuario_actual
-
-    class Meta:
-        model = CajaFisica
-        fields = "__all__"
-        read_only_fields = [
-            "empresa_nombre",
-            "sucursal_nombre",
-            "tipo_dispositivo_display",
-            "cajas_virtuales",
-            "datafonos",
-            "esta_abierta",
-            "estado_sesion_display",
-            "nombre_usuario_actual",
-        ]
-
-
 class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
     moneda_codigo_iso = serializers.CharField(source="id_moneda.codigo_iso", read_only=True)
     metodos_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all(), many=True)
@@ -1011,27 +924,6 @@ class CajaMetodoPagoOverrideSerializer(serializers.ModelSerializer):
 
 
 # --- Serializers para Datafono ---
-
-
-class DatafonoSerializer(serializers.ModelSerializer):
-    empresa_nombre = serializers.CharField(source="id_empresa.nombre_comercial", read_only=True)
-    sucursal_nombre = serializers.CharField(source="id_sucursal.nombre", read_only=True)
-    cuenta_bancaria_nombre = serializers.CharField(source="id_cuenta_bancaria_asociada.nombre_banco", read_only=True)
-    caja_nombre = serializers.CharField(source="id_caja.nombre", read_only=True)
-    caja_fisica_nombre = serializers.CharField(source="id_caja_fisica.nombre", read_only=True)
-    metodos_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all(), many=True)
-    monedas = serializers.PrimaryKeyRelatedField(queryset=Moneda.objects.all(), many=True)
-
-    class Meta:
-        model = Datafono
-        fields = "__all__"
-        read_only_fields = [
-            "empresa_nombre",
-            "sucursal_nombre",
-            "cuenta_bancaria_nombre",
-            "caja_nombre",
-            "caja_fisica_nombre",
-        ]
 
 
 class TransaccionDatafonoSerializer(serializers.ModelSerializer):

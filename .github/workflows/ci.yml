@@ -264,18 +264,18 @@ jobs:
       - name: Ruff (bugs reales — BLOQUEANTE)
         working-directory: backend
         # Códigos que indican bugs, no estilo: sintaxis (E9), f-strings rotos (F63),
-        # comparaciones inválidas (F7), nombres indefinidos (F82) y uso antes de
-        # asignación (F823). Este subconjunto está limpio y bloquea para impedir
-        # regresiones (p.ej. el UnboundLocalError de Decimal corregido en auditoría).
-        run: ruff check apps/ config/ --select E9,F63,F7,F82,F823
+        # comparaciones inválidas (F7), nombres indefinidos (F82), uso antes de
+        # asignación (F823) y redefiniciones (F811 — clases/funciones/imports
+        # duplicados, como los serializers/ViewSet de finanzas en BUG-DUP-1). Este
+        # subconjunto está limpio y bloquea para impedir regresiones.
+        run: ruff check apps/ config/ --select E9,F63,F7,F82,F823,F811
 
       - name: Ruff (limpieza gradual — no bloqueante aún)
         working-directory: backend
-        # F401 (imports sin usar) y F811 (redefiniciones, incl. serializers duplicados
-        # en finanzas — ver docs/tech-debt/INVENTORY.md). Se limpian por fases; al
-        # quedar en cero, mover estos códigos al paso bloqueante de arriba.
+        # F401 (imports sin usar): se limpia por fases; al quedar en cero, moverlo
+        # al paso bloqueante de arriba.
         continue-on-error: true
-        run: ruff check apps/ config/ --select F401,F811
+        run: ruff check apps/ config/ --select F401
 
       - name: Mypy (tipos — gradual, no bloqueante aún)
         working-directory: backend

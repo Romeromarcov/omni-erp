@@ -130,11 +130,8 @@ class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
         )
 
 
-from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.response import Response
 
-from .models import Datafono
 
 
 # NOTA: existía aquí una clase DatafonoViewSet duplicada (muerta, sombreada por
@@ -172,14 +169,10 @@ class MetodoPagoEmpresaActivaViewSet(viewsets.ModelViewSet):
         return qs
 
 
-from django.db import models
 from rest_framework import permissions, viewsets
 
-from apps.tesoreria.serializers import CajaSerializer
 
 from .models import (
-    Caja,
-    CajaUsuario,
     CuentaBancariaEmpresa,
     MetodoPago,
     Moneda,
@@ -189,7 +182,6 @@ from .models import (
     TransaccionFinanciera,
 )
 from .serializers import (
-    CajaUsuarioSerializer,
     CuentaBancariaEmpresaSerializer,
     MetodoPagoSerializer,
     MonedaEmpresaActivaSerializer,
@@ -202,7 +194,6 @@ from .serializers import (
 
 class MonedaViewSet(BaseModelViewSet):
     from rest_framework.decorators import action
-    from rest_framework.response import Response
 
     @action(detail=False, methods=["get"], url_path="activas")
     def activas(self, request):
@@ -261,9 +252,7 @@ class TasaCambioViewSet(BaseModelViewSet):
         )
 
 
-from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.response import Response
 
 from apps.core.models import Empresa
 
@@ -716,25 +705,6 @@ class CajaFisicaUsuarioViewSet(viewsets.ModelViewSet):
         return CajaFisicaUsuario.objects.filter(usuario=self.request.user).select_related("caja_fisica")
 
 
-class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
-    queryset = PlantillaMaestroCajasVirtuales.objects.all()
-    serializer_class = PlantillaMaestroCajasVirtualesSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.user
-
-        # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, "empresas", None)
-        if empresas_usuario and hasattr(empresas_usuario, "all"):
-            queryset = queryset.filter(empresa__in=empresas_usuario.all())
-
-        return queryset
-
-
-from .models import PlantillaMaestroCajasVirtuales
-from .serializers import PlantillaMaestroCajasVirtualesSerializer
 
 
 class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
