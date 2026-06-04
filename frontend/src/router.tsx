@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { shouldUseHashRouter } from './platform';
 import LoginPage from './pages/Core/Login/LoginPage';
 import AppLayout from './components/layout/AppLayout';
 import { useAuth } from './contexts/AuthContext';
@@ -25,8 +26,12 @@ export default function AppRouter() {
     );
   }
 
+  // Router adaptativo: rutas limpias en web, hash routing en shells nativos
+  // (Electron file:// / Capacitor) donde la recarga por ruta no resuelve.
+  const Router = shouldUseHashRouter() ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<LoginPage />} />
@@ -47,6 +52,6 @@ export default function AppRouter() {
 
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }

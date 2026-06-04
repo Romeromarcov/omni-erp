@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Native build artifacts (Capacitor / Electron)
+/release
+/android
+/ios
+.env.native.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

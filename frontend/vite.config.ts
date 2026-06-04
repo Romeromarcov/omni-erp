@@ -8,8 +8,14 @@ import { VitePWA } from 'vite-plugin-pwa'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const backendUrl: string = (globalThis as any).process?.env?.BACKEND_URL ?? 'http://localhost:8000'
 
+// Base de assets: '/' para web/PWA; './' (relativa) para builds nativos
+// (Electron carga con file:// y Capacitor desde un origen embebido).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const base: string = (globalThis as any).process?.env?.VITE_BASE ?? '/'
+
 // https://vite.dev/config/
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({

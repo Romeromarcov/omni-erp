@@ -1,0 +1,26 @@
+/* Ajustes de shell nativo (Capacitor iOS/Android, Electron).
+   Activos solo cuando <html> tiene la clase .omni-native (ver nativeShell.ts). */
+
+/* Respeta notch / Dynamic Island: la barra superior fija deja espacio del
+   safe-area en plataformas que superponen la status bar (iOS). */
+.omni-native .MuiAppBar-root {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Respeta gestos/safe-area lateral en contenido principal. */
+.omni-native main {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* En Electron no hay safe-areas de móvil; evita selección/arrastre accidental
+   del chrome y permite scroll suave del contenido. */
+.omni-electron,
+.omni-electron body {
+  user-select: none;
+}
+.omni-electron input,
+.omni-electron textarea,
+.omni-electron [contenteditable='true'] {
+  user-select: text;
+}
