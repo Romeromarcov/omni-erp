@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
-import PageLayout from '../../../components/PageLayout';
 import { useNavigate, useParams } from 'react-router-dom';
 import ModalBusquedaProducto from '../../../components/Pedidos/ModalBusquedaProducto';
 import ModalBusquedaCliente from '../../../components/Pedidos/ModalBusquedaCliente';
@@ -10,12 +9,13 @@ import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import FormularioProducto from '../../../components/Pedidos/FormularioProducto';
 import FormularioCliente from '../../../components/Pedidos/FormularioCliente';
 import ModalPago from '../../../components/Pedidos/ModalPago';
-import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import { useFacturaFiscalForm } from '../../../hooks/useFacturaFiscalForm';
 import type { Usuario } from '../../../services/users';
 import type { Producto } from '../../../services/productosService';
 import { pagosService } from '../../../services/pagosService';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
+import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const getFieldString = (obj: unknown, key: string) => {
   if (!obj || typeof obj !== 'object') return '';
@@ -106,22 +106,25 @@ const FacturaFiscalFormPage: React.FC = () => {
   };
 
   return (
-    <PageLayout>
-      <Typography variant="h4" component="h2" gutterBottom>
-        {isEditing ? 'Editar Factura Fiscal' : 'Nueva Factura Fiscal'}
-      </Typography>
+    <PageContainer maxWidth={900}>
+      <PageHeader
+        title={isEditing ? 'Editar Factura Fiscal' : 'Nueva Factura Fiscal'}
+        actions={
+          <Button variant="outlined" color="secondary" onClick={() => navigate('/ventas/facturas-fiscales')}>
+            Cancelar
+          </Button>
+        }
+      />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      <Paper sx={{ p: 3 }}>
+      <Card sx={{ p: { xs: 2, md: 3 } }}>
         <form onSubmit={onSubmit} noValidate>
           {/* Información del contexto */}
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Información de la Factura
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+            <SectionTitle>Información de la Factura</SectionTitle>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(auto-fit,minmax(280px,1fr))' }, gap: 2 }}>
               {sesionActiva ? (
                 <>
                   <TextField
@@ -211,7 +214,7 @@ const FacturaFiscalFormPage: React.FC = () => {
 
           {/* Cliente */}
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom>Cliente</Typography>
+            <SectionTitle>Cliente</SectionTitle>
             <FormularioCliente
               clienteManual={clienteManual}
               onChange={handleClienteManualChange}
@@ -223,12 +226,11 @@ const FacturaFiscalFormPage: React.FC = () => {
 
           {/* Productos */}
           <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Productos</Typography>
-              <Button type="button" variant="outlined" onClick={() => setShowProductoModal(true)}>
+            <SectionTitle action={
+              <Button type="button" variant="outlined" size="small" onClick={() => setShowProductoModal(true)}>
                 Buscar producto
               </Button>
-            </Box>
+            }>Productos</SectionTitle>
             <FormularioProducto
               productos={productos}
               detalleForm={detalleForm}
@@ -239,7 +241,7 @@ const FacturaFiscalFormPage: React.FC = () => {
             {/* Preview de productos */}
             {detalles.length > 0 && (
               <Box sx={{ mt: 3 }}>
-                <Typography variant="h6" gutterBottom>Preview de la Factura</Typography>
+                <SectionTitle>Preview de la Factura</SectionTitle>
                 <TablaProductos detalles={detalles} productos={productos} onRemove={handleRemoveDetalle} />
                 <ResumenTotales detalles={detalles} descuentoGeneral={descuentoGeneral} setDescuentoGeneral={setDescuentoGeneral} />
               </Box>
@@ -259,13 +261,12 @@ const FacturaFiscalFormPage: React.FC = () => {
 
           {/* Botones */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button type="submit" variant="contained" disabled={loading || !idCliente}>
+            <Button type="submit" variant="contained" disabled={loading || !idCliente}
+              sx={{ flex: { xs: '1 1 100%', sm: 'initial' } }}>
               {loading ? 'Guardando...' : 'Guardar Factura'}
             </Button>
-            <Button type="button" variant="contained" color="secondary" onClick={() => navigate('/ventas/facturas-fiscales')}>
-              Cancelar
-            </Button>
-            <Button type="button" variant="outlined" onClick={handlePagar}>Pagar</Button>
+            <Button type="button" variant="outlined" onClick={handlePagar}
+              sx={{ flex: { xs: '1 1 100%', sm: 'initial' } }}>Pagar</Button>
             {isEditing && (
               <>
                 <Button type="button" variant="outlined" onClick={handleEnviar}>Enviar</Button>
@@ -275,7 +276,8 @@ const FacturaFiscalFormPage: React.FC = () => {
             )}
           </Box>
         </form>
-      </Paper>
+      </Card>
+
       <ModalBusquedaCliente
         open={showClienteModal}
         idEmpresa={idEmpresa || localStorage.getItem('id_empresa') || ''}
@@ -310,7 +312,8 @@ const FacturaFiscalFormPage: React.FC = () => {
         idDocumento={id_factura || 'nuevo'}
         tipoOperacionInicial="INGRESO"
       />
-    </PageLayout>
+    </PageContainer>
   );
-}
+};
+
 export default FacturaFiscalFormPage;

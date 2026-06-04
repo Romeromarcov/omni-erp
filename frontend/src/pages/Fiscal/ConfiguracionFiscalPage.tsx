@@ -180,8 +180,8 @@ const ConfiguracionFiscalPage: React.FC = () => {
             {tasas.length > 0 && (
               <Paper variant="outlined" sx={{ p: 2.5 }}>
                 <Typography variant="h6" sx={{ color: 'success.dark' }} mb={1.5}>Tasas de IVA configuradas</Typography>
-                <TableContainer>
-                  <Table size="small">
+                <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
+                  <Table size="small" sx={{ minWidth: 360 }}>
                     <TableHead>
                       <TableRow>
                         <TableCell>Tipo</TableCell>

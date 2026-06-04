@@ -1,0 +1,30 @@
+{
+  "appId": "com.omnierp.app",
+  "productName": "Omni ERP",
+  "copyright": "Omni ERP",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": ["electron/**/*", "dist/**/*", "package.json"],
+  "extraMetadata": {
+    "main": "electron/main.cjs"
+  },
+  "win": {
+    "target": ["nsis", "portable"],
+    "artifactName": "OmniERP-${version}-${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "mac": {
+    "target": ["dmg"],
+    "category": "public.app-category.business"
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "category": "Office"
+  }
+}

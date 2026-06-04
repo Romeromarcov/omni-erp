@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, Typography, Button, FormControl, InputLabel, Select, MenuItem, TextField } from '@mui/material';
+import { Box, Typography, Button, FormControl, InputLabel, Select, MenuItem, TextField, Card, CardContent } from '@mui/material';
 import type { Pago, Moneda } from './types';
+import SectionTitle from '../ui/SectionTitle';
 
 interface SeccionVueltoProps {
   vueltoDisponible: number;
@@ -37,61 +38,80 @@ const SeccionVuelto: React.FC<SeccionVueltoProps> = ({
   if (vueltoDisponible <= 0) return null;
 
   return (
-    <Box sx={{ mb: 3, p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
-      <Typography variant="h6" color="warning.dark" gutterBottom>
-        💰 Vuelto Disponible: {monedaBase?.codigo_iso} {vueltoDisponible.toFixed(2)}
-      </Typography>
+    <Card
+      variant="outlined"
+      sx={{
+        mb: 3,
+        mt: 2,
+        borderRadius: 'var(--omni-radius-card, 16px)',
+        border: '1px solid',
+        borderColor: 'warning.light',
+        bgcolor: 'warning.50',
+        boxShadow: 'none',
+      }}
+    >
+      <CardContent sx={{ p: { xs: 2, md: 2.5 }, '&:last-child': { pb: { xs: 2, md: 2.5 } } }}>
+        <SectionTitle>
+          <Typography component="span" color="warning.dark" sx={{ fontWeight: 700, fontSize: 15 }}>
+            Vuelto disponible: {monedaBase?.codigo_iso} {vueltoDisponible.toFixed(2)}
+          </Typography>
+        </SectionTitle>
 
-      {!mostrarVueltos ? (
-        <Button variant="outlined" color="warning" onClick={onConfigurar}>
-          Configurar Vuelto
-        </Button>
-      ) : (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mt: 2 }}>
-          <Typography variant="body2">Entregar vuelto en:</Typography>
+        {!mostrarVueltos ? (
+          <Button variant="outlined" color="warning" size="small" onClick={onConfigurar}>
+            Configurar vuelto
+          </Button>
+        ) : (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mt: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ width: '100%' }}>
+              Entregar vuelto en:
+            </Typography>
 
-          <FormControl sx={{ minWidth: 120 }}>
-            <InputLabel>Moneda</InputLabel>
-            <Select
-              value={vuelto?.id_moneda ?? ''}
-              onChange={e => onMonedaChange(e.target.value)}
+            <FormControl sx={{ minWidth: 120 }} size="small">
+              <InputLabel>Moneda</InputLabel>
+              <Select
+                value={vuelto?.id_moneda ?? ''}
+                onChange={e => onMonedaChange(e.target.value)}
+                label="Moneda"
+              >
+                {monedas.map(m => (
+                  <MenuItem key={m.id_moneda} value={m.codigo_iso}>
+                    {m.codigo_iso}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Monto"
+              type="number"
+              value={vuelto?.monto ?? 0}
+              onChange={e => onMontoChange(Number(e.target.value))}
               size="small"
-            >
-              {monedas.map(m => (
-                <MenuItem key={m.id_moneda} value={m.codigo_iso}>
-                  {m.codigo_iso}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              sx={{ width: 120 }}
+            />
 
-          <TextField
-            label="Monto"
-            type="number"
-            value={vuelto?.monto ?? 0}
-            onChange={e => onMontoChange(Number(e.target.value))}
-            size="small"
-            sx={{ width: 120 }}
-          />
+            <TextField
+              label="Tasa"
+              type="number"
+              value={vuelto?.tasa ?? 1}
+              onChange={e => onTasaChange(Number(e.target.value))}
+              size="small"
+              sx={{ width: 100 }}
+            />
 
-          <TextField
-            label="Tasa"
-            type="number"
-            value={vuelto?.tasa ?? 1}
-            onChange={e => onTasaChange(Number(e.target.value))}
-            size="small"
-            sx={{ width: 100 }}
-          />
-
-          <Button variant="contained" color="success" size="small" onClick={onConfirmarVuelto}>
-            Confirmar Vuelto
-          </Button>
-          <Button variant="outlined" size="small" onClick={onCancelar}>
-            Cancelar
-          </Button>
-        </Box>
-      )}
-    </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button variant="contained" color="success" size="small" onClick={onConfirmarVuelto}>
+                Confirmar vuelto
+              </Button>
+              <Button variant="outlined" size="small" onClick={onCancelar}>
+                Cancelar
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

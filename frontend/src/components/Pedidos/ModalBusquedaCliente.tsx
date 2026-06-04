@@ -34,12 +34,12 @@ const ModalBusquedaCliente: React.FC<ModalBusquedaClienteProps> = ({ open, idEmp
       onInputChange={handleInputChange}
       items={resultados}
       renderItem={(cli, close) => (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <Box>
-            <Typography variant="body1" fontWeight="medium">
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 1 }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="body2" fontWeight={600} noWrap>
               {cli.razon_social}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="caption" color="text.secondary">
               RIF: {cli.rif} | Tel: {cli.telefono}
             </Typography>
           </Box>
@@ -47,6 +47,7 @@ const ModalBusquedaCliente: React.FC<ModalBusquedaClienteProps> = ({ open, idEmp
             type="button"
             variant="contained"
             size="small"
+            sx={{ flexShrink: 0 }}
             onClick={(e) => {
               e.stopPropagation();
               onSelect(cli);

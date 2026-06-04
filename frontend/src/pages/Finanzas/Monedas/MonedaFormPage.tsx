@@ -10,7 +10,7 @@ import { monedaSchema, type MonedaInput } from '../../../schemas/finanzas.schema
 import type { Moneda } from './MonedaListPage';
 import { finanzasKeys } from '../../../lib/queryKeys';
 import { PageContainer, PageHeader } from '../../../components/ui';
-import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
+import { Alert, Box, Button, Card, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 
 const defaultValues: MonedaInput = {
   tipo_moneda: 'fiat',
@@ -78,7 +78,8 @@ const MonedaFormPage: React.FC = () => {
   return (
     <PageContainer>
       <PageHeader title="Nueva Moneda" />
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ maxWidth: 480 }}>
+      <Card sx={{ p: { xs: 2, md: 3 }, maxWidth: 480 }}>
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
           <Controller
@@ -185,6 +186,7 @@ const MonedaFormPage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
+      </Card>
     </PageContainer>
   );
 };

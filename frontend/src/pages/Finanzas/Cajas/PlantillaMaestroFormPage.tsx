@@ -8,7 +8,7 @@ import { createPlantillaMaestro, updatePlantillaMaestro, getPlantillasMaestro } 
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { plantillaMaestroSchema, type PlantillaMaestroInput } from '../../../schemas/finanzas.schemas';
-import { Alert, Autocomplete, Box, Button, Chip, FormControlLabel, Stack, Switch, TextField } from '@mui/material';
+import { Alert, Autocomplete, Box, Button, Card, Chip, FormControlLabel, Stack, Switch, TextField } from '@mui/material';
 
 interface MetodoPago {
   id_metodo_pago: string;
@@ -117,7 +117,8 @@ const PlantillaMaestroFormPage: React.FC = () => {
   return (
     <PageContainer>
       <PageHeader title={isEditing ? 'Editar Plantilla Maestro' : 'Nueva Plantilla Maestro'} />
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ maxWidth: 800 }}>
+      <Card sx={{ p: { xs: 2, md: 3 }, maxWidth: 800 }}>
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Stack spacing={3}>
           <TextField
             label="Nombre"
@@ -231,6 +232,7 @@ const PlantillaMaestroFormPage: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
+      </Card>
     </PageContainer>
   );
 };

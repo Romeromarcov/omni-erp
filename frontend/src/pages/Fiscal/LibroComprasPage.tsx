@@ -123,8 +123,8 @@ const LibroComprasPage: React.FC = () => {
           </Box>
 
           {/* Table */}
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
+          <TableContainer component={Paper} variant="outlined" sx={{ width: '100%', overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: 700 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>RIF Emisor</TableCell>

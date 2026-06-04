@@ -67,12 +67,13 @@ const CamposDinamicos: React.FC<CamposDinamicosProps> = ({
     <>
       {esEfectivo && cajasCompatibles.length > 0 && (
         <Box sx={{ width: { xs: '100%', md: '20%' } }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Caja Virtual</InputLabel>
             <Select
               name="id_caja_virtual"
               value={form.id_caja_virtual ?? ''}
               onChange={onFormChange}
+              label="Caja Virtual"
             >
               {cajasCompatibles.map(c => (
                 <MenuItem key={c.id_caja} value={c.id_caja}>
@@ -86,12 +87,13 @@ const CamposDinamicos: React.FC<CamposDinamicosProps> = ({
 
       {cuentasCompatibles.length > 0 && (
         <Box sx={{ width: { xs: '100%', md: '20%' } }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Cuenta Bancaria</InputLabel>
             <Select
               name="id_cuenta_bancaria"
               value={form.id_cuenta_bancaria ?? ''}
               onChange={onFormChange}
+              label="Cuenta Bancaria"
             >
               <MenuItem value=""><em>Seleccionar cuenta bancaria</em></MenuItem>
               {cuentasCompatibles.map(cuenta => {
@@ -109,12 +111,13 @@ const CamposDinamicos: React.FC<CamposDinamicosProps> = ({
 
       {datafonosCompatibles.length > 0 && esTarjeta && (
         <Box sx={{ width: { xs: '100%', md: '20%' } }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Datáfono</InputLabel>
             <Select
               name="id_datafono"
               value={form.id_datafono ?? ''}
               onChange={onFormChange}
+              label="Datáfono"
             >
               <MenuItem value=""><em>Seleccionar datáfono</em></MenuItem>
               {datafonosCompatibles.map(d => {
@@ -134,6 +137,7 @@ const CamposDinamicos: React.FC<CamposDinamicosProps> = ({
         <Box sx={{ width: { xs: '100%', md: '20%' } }}>
           <TextField
             fullWidth
+            size="small"
             label="Banco Destino (opcional)"
             name="banco_destino"
             value={form.banco_destino ?? ''}

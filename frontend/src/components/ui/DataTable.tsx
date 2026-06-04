@@ -38,8 +38,8 @@ export default function DataTable<T>({
   onRowClick,
 }: DataTableProps<T>) {
   return (
-    <TableContainer component={Paper} variant="outlined">
-      <Table>
+    <TableContainer component={Paper} variant="outlined" sx={{ width: '100%', overflowX: 'auto' }}>
+      <Table sx={{ minWidth: 600 }}>
         <TableHead>
           <TableRow>
             {columns.map((c) => (

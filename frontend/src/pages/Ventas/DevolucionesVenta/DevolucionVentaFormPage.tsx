@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import PageLayout from '../../../components/PageLayout';
 import { devolucionVentaService } from '../../../services/ventas';
 import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
@@ -14,10 +13,11 @@ import { ventasKeys } from '../../../lib/queryKeys';
 import type { DevolucionVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
 import type { Producto } from '../../../services/productosService';
-import { Alert, Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, Checkbox, FormControlLabel, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { D, sumDecimals } from '../../../lib/decimal';
+import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const defaultValues: DevolucionVentaInput = {
   id_cliente: '',
@@ -154,170 +154,175 @@ const DevolucionVentaFormPage: React.FC = () => {
     saveMutation.mutate(payload);
   };
 
-  if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;
+  if (loading) return <PageContainer><div>Cargando...</div></PageContainer>;
 
   return (
-    <PageLayout>
-      <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
-        <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-          {isEditing ? 'Editar' : 'Crear'} Devolución de Venta
-        </Typography>
+    <PageContainer maxWidth={900}>
+      <PageHeader
+        title={`${isEditing ? 'Editar' : 'Crear'} Devolución de Venta`}
+        actions={
+          <Button variant="outlined" color="secondary" onClick={() => navigate('/ventas/devoluciones-venta')}>
+            Cancelar
+          </Button>
+        }
+      />
 
-        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3 }}>Información General</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 3, mb: 3 }}>
-              <Controller
-                name="id_cliente"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    fullWidth
-                    label="Cliente"
-                    select
-                    {...field}
-                    error={!!errors.id_cliente}
-                    helperText={errors.id_cliente?.message}
-                  >
-                    {clientes.map((cliente) => (
-                      <MenuItem key={cliente.id_cliente} value={cliente.id_cliente}>
-                        {cliente.razon_social} - {cliente.rif}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-              <TextField
-                fullWidth
-                label="Factura Origen"
-                {...register('id_factura_origen')}
-                error={!!errors.id_factura_origen}
-                helperText={errors.id_factura_origen?.message}
-                placeholder="ID de la factura fiscal origen"
-              />
-              <TextField
-                fullWidth
-                label="Fecha de Devolución"
-                type="date"
-                {...register('fecha_devolucion')}
-                error={!!errors.fecha_devolucion}
-                helperText={errors.fecha_devolucion?.message}
-                required
-                InputLabelProps={{ shrink: true }}
-              />
-              <Controller
-                name="motivo_devolucion"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    fullWidth
-                    label="Motivo de Devolución"
-                    select
-                    {...field}
-                    error={!!errors.motivo_devolucion}
-                    helperText={errors.motivo_devolucion?.message}
-                    required
-                  >
-                    <MenuItem value="DEFECTO">Producto defectuoso</MenuItem>
-                    <MenuItem value="GARANTIA">Garantía</MenuItem>
-                    <MenuItem value="ERROR_ENTREGA">Error en la entrega</MenuItem>
-                    <MenuItem value="CAMBIO_CLIENTE">Cambio por parte del cliente</MenuItem>
-                    <MenuItem value="VENCIMIENTO">Producto vencido</MenuItem>
-                    <MenuItem value="OTRO">Otro</MenuItem>
-                  </TextField>
-                )}
-              />
-              <Controller
-                name="estado"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    fullWidth
-                    label="Estado"
-                    select
-                    {...field}
-                    error={!!errors.estado}
-                    helperText={errors.estado?.message}
-                    required
-                  >
-                    <MenuItem value="PENDIENTE">Pendiente</MenuItem>
-                    <MenuItem value="APROBADA">Aprobada</MenuItem>
-                    <MenuItem value="PROCESADA">Procesada</MenuItem>
-                    <MenuItem value="RECHAZADA">Rechazada</MenuItem>
-                    <MenuItem value="ANULADA">Anulada</MenuItem>
-                  </TextField>
-                )}
-              />
-            </Box>
-
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <Card sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
+          <SectionTitle>Información General</SectionTitle>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(auto-fit,minmax(280px,1fr))' }, gap: 3, mb: 3 }}>
             <Controller
-              name="generar_nota_credito"
+              name="id_cliente"
               control={control}
               render={({ field }) => (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={field.value}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                    />
-                  }
-                  label="Generar automáticamente nota de crédito fiscal"
-                  sx={{ mb: 3 }}
-                />
+                <TextField
+                  fullWidth
+                  label="Cliente"
+                  select
+                  {...field}
+                  error={!!errors.id_cliente}
+                  helperText={errors.id_cliente?.message}
+                >
+                  {clientes.map((cliente) => (
+                    <MenuItem key={cliente.id_cliente} value={cliente.id_cliente}>
+                      {cliente.razon_social} - {cliente.rif}
+                    </MenuItem>
+                  ))}
+                </TextField>
               )}
             />
-
             <TextField
               fullWidth
-              label="Observaciones"
-              multiline
-              rows={3}
-              {...register('observaciones')}
-              error={!!errors.observaciones}
-              helperText={errors.observaciones?.message}
+              label="Factura Origen"
+              {...register('id_factura_origen')}
+              error={!!errors.id_factura_origen}
+              helperText={errors.id_factura_origen?.message}
+              placeholder="ID de la factura fiscal origen"
             />
-          </Paper>
+            <TextField
+              fullWidth
+              label="Fecha de Devolución"
+              type="date"
+              {...register('fecha_devolucion')}
+              error={!!errors.fecha_devolucion}
+              helperText={errors.fecha_devolucion?.message}
+              required
+              InputLabelProps={{ shrink: true }}
+            />
+            <Controller
+              name="motivo_devolucion"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  fullWidth
+                  label="Motivo de Devolución"
+                  select
+                  {...field}
+                  error={!!errors.motivo_devolucion}
+                  helperText={errors.motivo_devolucion?.message}
+                  required
+                >
+                  <MenuItem value="DEFECTO">Producto defectuoso</MenuItem>
+                  <MenuItem value="GARANTIA">Garantía</MenuItem>
+                  <MenuItem value="ERROR_ENTREGA">Error en la entrega</MenuItem>
+                  <MenuItem value="CAMBIO_CLIENTE">Cambio por parte del cliente</MenuItem>
+                  <MenuItem value="VENCIMIENTO">Producto vencido</MenuItem>
+                  <MenuItem value="OTRO">Otro</MenuItem>
+                </TextField>
+              )}
+            />
+            <Controller
+              name="estado"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  fullWidth
+                  label="Estado"
+                  select
+                  {...field}
+                  error={!!errors.estado}
+                  helperText={errors.estado?.message}
+                  required
+                >
+                  <MenuItem value="PENDIENTE">Pendiente</MenuItem>
+                  <MenuItem value="APROBADA">Aprobada</MenuItem>
+                  <MenuItem value="PROCESADA">Procesada</MenuItem>
+                  <MenuItem value="RECHAZADA">Rechazada</MenuItem>
+                  <MenuItem value="ANULADA">Anulada</MenuItem>
+                </TextField>
+              )}
+            />
+          </Box>
 
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6">Productos a Devolver</Typography>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={() =>
-                  append({
-                    id_producto: '',
-                    cantidad_devuelta: 1,
-                    precio_unitario: 0,
-                    estado_producto: 'BUENO',
-                    accion_inventario: 'REINTEGRAR',
-                    observaciones: '',
-                  })
+          <Controller
+            name="generar_nota_credito"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                  />
                 }
-              >
-                <AddIcon /> Agregar Producto
-              </Button>
-            </Box>
-
-            {errors.detalles?.message && (
-              <Alert severity="error" sx={{ mb: 2 }}>{errors.detalles.message}</Alert>
+                label="Generar automáticamente nota de crédito fiscal"
+                sx={{ mb: 3 }}
+              />
             )}
+          />
 
-            {fields.length > 0 ? (
+          <TextField
+            fullWidth
+            label="Observaciones"
+            multiline
+            rows={3}
+            {...register('observaciones')}
+            error={!!errors.observaciones}
+            helperText={errors.observaciones?.message}
+          />
+        </Card>
+
+        <Card sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
+          <SectionTitle action={
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              onClick={() =>
+                append({
+                  id_producto: '',
+                  cantidad_devuelta: 1,
+                  precio_unitario: 0,
+                  estado_producto: 'BUENO',
+                  accion_inventario: 'REINTEGRAR',
+                  observaciones: '',
+                })
+              }
+            >
+              <AddIcon fontSize="small" /> Agregar
+            </Button>
+          }>Productos a Devolver</SectionTitle>
+
+          {errors.detalles?.message && (
+            <Alert severity="error" sx={{ mb: 2 }}>{errors.detalles.message}</Alert>
+          )}
+
+          {fields.length > 0 ? (
+            <Box sx={{ overflowX: 'auto' }}>
               <TableContainer>
-                <Table>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Producto</TableCell>
                       <TableCell align="right">Cantidad</TableCell>
-                      <TableCell align="right">Precio Unitario</TableCell>
+                      <TableCell align="right">Precio Unit.</TableCell>
                       <TableCell align="right">Subtotal</TableCell>
-                      <TableCell>Estado del Producto</TableCell>
-                      <TableCell>Acción en Inventario</TableCell>
+                      <TableCell>Estado</TableCell>
+                      <TableCell>Acción Inventario</TableCell>
                       <TableCell>Observaciones</TableCell>
-                      <TableCell align="right">Acciones</TableCell>
+                      <TableCell align="right">Acc.</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -334,6 +339,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                                 <TextField
                                   select
                                   fullWidth
+                                  size="small"
                                   {...field}
                                   error={!!errors.detalles?.[index]?.id_producto}
                                   helperText={errors.detalles?.[index]?.id_producto?.message}
@@ -350,6 +356,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                           <TableCell align="right">
                             <TextField
                               type="number"
+                              size="small"
                               {...register(`detalles.${index}.cantidad_devuelta`)}
                               error={!!errors.detalles?.[index]?.cantidad_devuelta}
                               helperText={errors.detalles?.[index]?.cantidad_devuelta?.message}
@@ -359,6 +366,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                           <TableCell align="right">
                             <TextField
                               type="number"
+                              size="small"
                               {...register(`detalles.${index}.precio_unitario`)}
                               error={!!errors.detalles?.[index]?.precio_unitario}
                               helperText={errors.detalles?.[index]?.precio_unitario?.message}
@@ -373,7 +381,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                               name={`detalles.${index}.estado_producto`}
                               control={control}
                               render={({ field }) => (
-                                <TextField select fullWidth {...field}>
+                                <TextField select fullWidth size="small" {...field}>
                                   <MenuItem value="BUENO">Bueno</MenuItem>
                                   <MenuItem value="DEFECTUOSO">Defectuoso</MenuItem>
                                   <MenuItem value="VENCIDO">Vencido</MenuItem>
@@ -387,7 +395,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                               name={`detalles.${index}.accion_inventario`}
                               control={control}
                               render={({ field }) => (
-                                <TextField select fullWidth {...field}>
+                                <TextField select fullWidth size="small" {...field}>
                                   <MenuItem value="REINTEGRAR">Reintegrar al inventario</MenuItem>
                                   <MenuItem value="CUARENTENA">Poner en cuarentena</MenuItem>
                                   <MenuItem value="DESCARTAR">Descartar</MenuItem>
@@ -400,11 +408,12 @@ const DevolucionVentaFormPage: React.FC = () => {
                             <TextField
                               {...register(`detalles.${index}.observaciones`)}
                               fullWidth
+                              size="small"
                               placeholder="Observaciones..."
                             />
                           </TableCell>
                           <TableCell align="right">
-                            <IconButton onClick={() => remove(index)} color="error">
+                            <IconButton onClick={() => remove(index)} color="error" size="small">
                               <DeleteIcon />
                             </IconButton>
                           </TableCell>
@@ -414,37 +423,35 @@ const DevolucionVentaFormPage: React.FC = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
-            ) : (
-              <Typography color="text.secondary">
-                No hay productos agregados. Haga clic en "Agregar Producto" para comenzar.
-              </Typography>
-            )}
+            </Box>
+          ) : (
+            <Box sx={{ color: 'text.secondary', py: 2 }}>
+              No hay productos agregados. Haga clic en "Agregar" para comenzar.
+            </Box>
+          )}
 
-            {fields.length > 0 && (
-              <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                <Typography variant="h6" align="right">
-                  Total de la Devolución: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
-                </Typography>
-                {generarNotaCredito && (
-                  <Typography variant="body2" align="right" sx={{ mt: 1, color: 'success.main' }}>
-                    Se generará automáticamente una nota de crédito fiscal por este monto
-                  </Typography>
-                )}
+          {fields.length > 0 && (
+            <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Box sx={{ textAlign: 'right', fontWeight: 700 }}>
+                Total de la Devolución: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
               </Box>
-            )}
-          </Paper>
+              {generarNotaCredito && (
+                <Box sx={{ mt: 1, textAlign: 'right', color: 'success.main', fontSize: 14 }}>
+                  Se generará automáticamente una nota de crédito fiscal por este monto
+                </Box>
+              )}
+            </Box>
+          )}
+        </Card>
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-            <Button variant="contained" color="secondary" onClick={() => navigate('/ventas/devoluciones-venta')}>
-              Cancelar
-            </Button>
-            <Button variant="contained" type="submit" disabled={saving}>
-              {saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
-            </Button>
-          </Box>
-        </form>
-      </Box>
-    </PageLayout>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          <Button variant="contained" type="submit" disabled={saving}
+            sx={{ flex: { xs: '1 1 100%', sm: 'initial' } }}>
+            {saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+          </Button>
+        </Box>
+      </form>
+    </PageContainer>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -17,6 +17,8 @@ import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
 import QrCode2Outlined from '@mui/icons-material/QrCode2Outlined';
 import ContactlessOutlined from '@mui/icons-material/ContactlessOutlined';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import PhotoCameraOutlined from '@mui/icons-material/PhotoCameraOutlined';
+import StopCircleOutlined from '@mui/icons-material/StopCircleOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
@@ -32,6 +34,14 @@ import {
   type ScanMode,
   type ScanResult,
 } from '../../services/scannerService';
+import {
+  isCameraScanSupported,
+  isNfcSupported,
+  readNfcOnce,
+  startCameraScan,
+  type CameraScanHandle,
+} from '../../services/scannerHardware';
+import { useSnackbar } from '../../contexts/feedbackTypes';
 import './EscanerPage.css';
 
 const MODE_ICON: Record<ScanMode, React.ReactNode> = {
@@ -86,27 +96,92 @@ function Reticle({ mode }: { mode: ScanMode }) {
   );
 }
 
+const cameraSupported = isCameraScanSupported();
+const nfcSupported = isNfcSupported();
+
 export default function EscanerPage() {
   const navigate = useNavigate();
+  const snackbar = useSnackbar();
   const [mode, setMode] = useState<ScanMode>('barcode');
   const [code, setCode] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const handleRef = useRef<CameraScanHandle | null>(null);
+  const nfcAbortRef = useRef<AbortController | null>(null);
+
+  const resolveAndShow = useCallback(async (m: ScanMode, raw: string) => {
+    setCode(raw);
+    setScanning(true);
+    try {
+      const r = await resolveScan(m, raw);
+      setResult(r);
+    } finally {
+      setScanning(false);
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    handleRef.current?.stop();
+    handleRef.current = null;
+    nfcAbortRef.current?.abort();
+    nfcAbortRef.current = null;
+    setCameraActive(false);
+  }, []);
+
+  // Libera la cámara al desmontar.
+  useEffect(() => () => stopCamera(), [stopCamera]);
 
   const changeMode = (next: ScanMode | null) => {
     if (!next) return;
+    stopCamera();
     setMode(next);
     setResult(null);
     setCode(next === 'barcode' ? '7591234008821' : '');
   };
 
   const doScan = async () => {
-    setScanning(true);
+    await resolveAndShow(mode, code);
+  };
+
+  // Escaneo en vivo: cámara (barcode/QR) o lectura NFC según el modo.
+  const handleLiveScan = async () => {
+    setResult(null);
+    if (mode === 'nfc') {
+      if (!nfcSupported) {
+        snackbar.info('Este dispositivo no soporta NFC por web; use el lector manual.');
+        return;
+      }
+      try {
+        const controller = new AbortController();
+        nfcAbortRef.current = controller;
+        const serial = await readNfcOnce(controller.signal);
+        await resolveAndShow('nfc', serial);
+      } catch {
+        snackbar.warning('No se pudo leer la etiqueta NFC.');
+      } finally {
+        nfcAbortRef.current = null;
+      }
+      return;
+    }
+
+    if (!cameraSupported) {
+      snackbar.info('La cámara/detección no está disponible aquí; use el lector manual.');
+      return;
+    }
+    setCameraActive(true);
     try {
-      const r = await resolveScan(mode, code);
-      setResult(r);
-    } finally {
-      setScanning(false);
+      // Espera a que el <video> se monte antes de iniciar el stream.
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      if (!videoRef.current) throw new Error('video no disponible');
+      handleRef.current = await startCameraScan(videoRef.current, mode, (raw) => {
+        stopCamera();
+        void resolveAndShow(mode, raw);
+      });
+    } catch {
+      setCameraActive(false);
+      snackbar.warning('No se pudo iniciar la cámara. Verifique permisos.');
     }
   };
 
@@ -166,7 +241,23 @@ export default function EscanerPage() {
             </ToggleButtonGroup>
           </Box>
           <div className="omni-scan-stage">
-            <Reticle mode={mode} />
+            {cameraActive && mode !== 'nfc' ? (
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: 16,
+                }}
+              />
+            ) : (
+              <Reticle mode={mode} />
+            )}
           </div>
           <Typography
             sx={{
@@ -177,11 +268,39 @@ export default function EscanerPage() {
               fontSize: 13,
               fontWeight: 500,
               px: 4,
-              pb: 3,
+              pb: 1.5,
             }}
           >
-            {MODE_HINT[mode]}
+            {cameraActive ? 'Buscando código…' : MODE_HINT[mode]}
           </Typography>
+          <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'center', pb: 3 }}>
+            {cameraActive ? (
+              <Button
+                onClick={stopCamera}
+                variant="contained"
+                color="error"
+                startIcon={<StopCircleOutlined />}
+              >
+                Detener
+              </Button>
+            ) : (
+              <Button
+                onClick={handleLiveScan}
+                variant="contained"
+                startIcon={mode === 'nfc' ? <ContactlessOutlined /> : <PhotoCameraOutlined />}
+                disabled={mode === 'nfc' ? !nfcSupported : !cameraSupported}
+              >
+                {mode === 'nfc' ? 'Leer etiqueta NFC' : 'Escanear con cámara'}
+              </Button>
+            )}
+          </Box>
+          {((mode === 'nfc' && !nfcSupported) || (mode !== 'nfc' && !cameraSupported)) && (
+            <Typography
+              sx={{ position: 'relative', zIndex: 2, textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 11.5, px: 4, pb: 2.5 }}
+            >
+              No disponible en esta plataforma · use el lector manual
+            </Typography>
+          )}
         </Box>
 
         {/* Lector manual + resultado */}
