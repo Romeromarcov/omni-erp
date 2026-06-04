@@ -27,14 +27,6 @@ if not ALLOWED_HOSTS:
         "(ej: 'midominio.com,www.midominio.com')."
     )
 
-# Diagnóstico de arranque (temporal): deja en los logs qué ALLOWED_HOSTS resolvió
-# el contenedor. Útil para confirmar la propagación de variables en Railway.
-import sys as _sys  # noqa: E402
-print(f"[settings_prod] DJANGO_ENV={os.environ.get('DJANGO_ENV')!r} "
-      f"RAILWAY_ENVIRONMENT={os.environ.get('RAILWAY_ENVIRONMENT')!r} "
-      f"DJANGO_ALLOWED_HOSTS_env={os.environ.get('DJANGO_ALLOWED_HOSTS')!r} "
-      f"ALLOWED_HOSTS={ALLOWED_HOSTS}", file=_sys.stderr, flush=True)
-
 # CORS — solo orígenes explícitos en producción
 CORS_ALLOW_ALL_ORIGINS = False
 
