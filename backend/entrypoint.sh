@@ -23,6 +23,15 @@ fi
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 
+# Seed inicial opcional e idempotente. Activar con RUN_SEED=1 una sola vez en un
+# entorno nuevo para crear la empresa y el superusuario por defecto. El comando
+# ya verifica existencia, así que es seguro re-ejecutarlo; con RUN_SEED sin
+# definir, este bloque no hace nada.
+if [ "${RUN_SEED}" = "1" ]; then
+    echo "RUN_SEED=1: ejecutando create_initial_data (idempotente)..."
+    python manage.py create_initial_data || true
+fi
+
 # collectstatic solo en prod — en dev uvicorn sirve estáticos directamente
 # y el volume mount genera conflictos de permisos con el usuario no-root
 if [ "${DJANGO_ENV}" = "prod" ]; then
