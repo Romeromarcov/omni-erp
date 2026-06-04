@@ -1,0 +1,17 @@
+# Config-as-code de Railway para el servicio Celery WORKER.
+# Reutiliza el MISMO Dockerfile del backend (Root Directory = "backend"); sólo
+# cambia el comando de arranque. En el dashboard del servicio worker hay que
+# apuntar "Config-as-code path" a este archivo (backend/railway.worker.toml).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# startCommand sustituye al CMD del Dockerfile (que sirve el web con uvicorn).
+# OJO: el ENTRYPOINT (entrypoint.sh) SÍ se sigue ejecutando; por eso este
+# servicio define SKIP_MIGRATIONS=1 en sus variables para no re-migrar.
+# El worker escucha las colas "celery" y "auditoria".
+startCommand = "python -m celery -A config worker --loglevel=info --concurrency=2 --queues=celery,auditoria --hostname=worker@%h"
+# Sin healthcheck HTTP: celery no sirve HTTP. Railway reinicia ante fallo.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
