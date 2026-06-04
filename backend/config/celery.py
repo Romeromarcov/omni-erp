@@ -10,8 +10,14 @@ import os
 
 from celery import Celery
 
-# Asegurar que Django sepa qué settings usar antes de cargar Celery
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings_dev")
+# Asegurar que Django sepa qué settings usar antes de cargar Celery.
+# DEBE ser el dispatcher "config.settings" (no settings_dev): config/__init__.py
+# importa este módulo al cargar el paquete `config`, así que cuando uvicorn/gunicorn
+# importan `config.asgi`/`config.wsgi`, este setdefault corre PRIMERO. Si apuntara a
+# settings_dev, ganaría sobre el setdefault("config.settings") de asgi/wsgi y el
+# servidor arrancaría en modo dev (DEBUG=True, ALLOWED_HOSTS de dev) en producción.
+# Con el dispatcher, DJANGO_ENV decide dev/prod de forma coherente en todos los procesos.
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 app = Celery("omni_erp")
 
