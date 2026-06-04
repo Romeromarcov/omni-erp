@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import PageLayout from '../../../components/PageLayout';
 import { notaCreditoFiscalService } from '../../../services/ventas';
 import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
@@ -14,10 +13,11 @@ import { ventasKeys } from '../../../lib/queryKeys';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
 import type { Producto } from '../../../services/productosService';
-import { Alert, Box, Button, IconButton, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { D, sumDecimals } from '../../../lib/decimal';
+import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const IVA_RATE = 0.16;
 
@@ -176,150 +176,155 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
     saveMutation.mutate(payload);
   };
 
-  if (loading) return <PageLayout><div>Cargando...</div></PageLayout>;
+  if (loading) return <PageContainer><div>Cargando...</div></PageContainer>;
 
   return (
-    <PageLayout>
-      <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
-        <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-          {isEditing ? 'Editar' : 'Crear'} Nota de Crédito Fiscal
-        </Typography>
+    <PageContainer maxWidth={900}>
+      <PageHeader
+        title={`${isEditing ? 'Editar' : 'Crear'} Nota de Crédito Fiscal`}
+        actions={
+          <Button variant="outlined" color="secondary" onClick={() => navigate('/ventas/notas-credito-fiscal')}>
+            Cancelar
+          </Button>
+        }
+      />
 
-        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3 }}>Información General</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 3, mb: 3 }}>
-              <Controller
-                name="id_cliente"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    fullWidth
-                    label="Cliente"
-                    select
-                    {...field}
-                    error={!!errors.id_cliente}
-                    helperText={errors.id_cliente?.message}
-                  >
-                    {clientes.map((cliente) => (
-                      <MenuItem key={cliente.id_cliente} value={cliente.id_cliente}>
-                        {cliente.razon_social} - {cliente.rif}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-              <TextField
-                fullWidth
-                label="Factura Origen"
-                {...register('id_factura_origen')}
-                error={!!errors.id_factura_origen}
-                helperText={errors.id_factura_origen?.message}
-                placeholder="ID de la factura fiscal origen"
-              />
-              <TextField
-                fullWidth
-                label="Número de Control"
-                {...register('numero_control')}
-                error={!!errors.numero_control}
-                helperText={errors.numero_control?.message}
-                required
-              />
-              <TextField
-                fullWidth
-                label="Fecha de Emisión"
-                type="date"
-                {...register('fecha_emision')}
-                error={!!errors.fecha_emision}
-                helperText={errors.fecha_emision?.message}
-                required
-                InputLabelProps={{ shrink: true }}
-              />
-              <Controller
-                name="motivo"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    fullWidth
-                    label="Motivo"
-                    select
-                    {...field}
-                    error={!!errors.motivo}
-                    helperText={errors.motivo?.message}
-                    required
-                  >
-                    <MenuItem value="DEVOLUCION">Devolución</MenuItem>
-                    <MenuItem value="DESCUENTO">Descuento</MenuItem>
-                    <MenuItem value="ERROR_FACTURACION">Error de Facturación</MenuItem>
-                    <MenuItem value="ANULACION">Anulación</MenuItem>
-                    <MenuItem value="AJUSTE_PRECIO">Ajuste de Precio</MenuItem>
-                    <MenuItem value="OTRO">Otro</MenuItem>
-                  </TextField>
-                )}
-              />
-              <Controller
-                name="estado"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    fullWidth
-                    label="Estado"
-                    select
-                    {...field}
-                    error={!!errors.estado}
-                    helperText={errors.estado?.message}
-                    required
-                  >
-                    <MenuItem value="BORRADOR">Borrador</MenuItem>
-                    <MenuItem value="EMITIDA">Emitida</MenuItem>
-                    <MenuItem value="APLICADA">Aplicada</MenuItem>
-                    <MenuItem value="ANULADA">Anulada</MenuItem>
-                  </TextField>
-                )}
-              />
-            </Box>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <Card sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
+          <SectionTitle>Información General</SectionTitle>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(auto-fit,minmax(280px,1fr))' }, gap: 3, mb: 3 }}>
+            <Controller
+              name="id_cliente"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  fullWidth
+                  label="Cliente"
+                  select
+                  {...field}
+                  error={!!errors.id_cliente}
+                  helperText={errors.id_cliente?.message}
+                >
+                  {clientes.map((cliente) => (
+                    <MenuItem key={cliente.id_cliente} value={cliente.id_cliente}>
+                      {cliente.razon_social} - {cliente.rif}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
             <TextField
               fullWidth
-              label="Observaciones"
-              multiline
-              rows={3}
-              {...register('observaciones')}
-              error={!!errors.observaciones}
-              helperText={errors.observaciones?.message}
+              label="Factura Origen"
+              {...register('id_factura_origen')}
+              error={!!errors.id_factura_origen}
+              helperText={errors.id_factura_origen?.message}
+              placeholder="ID de la factura fiscal origen"
             />
-          </Paper>
+            <TextField
+              fullWidth
+              label="Número de Control"
+              {...register('numero_control')}
+              error={!!errors.numero_control}
+              helperText={errors.numero_control?.message}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Fecha de Emisión"
+              type="date"
+              {...register('fecha_emision')}
+              error={!!errors.fecha_emision}
+              helperText={errors.fecha_emision?.message}
+              required
+              InputLabelProps={{ shrink: true }}
+            />
+            <Controller
+              name="motivo"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  fullWidth
+                  label="Motivo"
+                  select
+                  {...field}
+                  error={!!errors.motivo}
+                  helperText={errors.motivo?.message}
+                  required
+                >
+                  <MenuItem value="DEVOLUCION">Devolución</MenuItem>
+                  <MenuItem value="DESCUENTO">Descuento</MenuItem>
+                  <MenuItem value="ERROR_FACTURACION">Error de Facturación</MenuItem>
+                  <MenuItem value="ANULACION">Anulación</MenuItem>
+                  <MenuItem value="AJUSTE_PRECIO">Ajuste de Precio</MenuItem>
+                  <MenuItem value="OTRO">Otro</MenuItem>
+                </TextField>
+              )}
+            />
+            <Controller
+              name="estado"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  fullWidth
+                  label="Estado"
+                  select
+                  {...field}
+                  error={!!errors.estado}
+                  helperText={errors.estado?.message}
+                  required
+                >
+                  <MenuItem value="BORRADOR">Borrador</MenuItem>
+                  <MenuItem value="EMITIDA">Emitida</MenuItem>
+                  <MenuItem value="APLICADA">Aplicada</MenuItem>
+                  <MenuItem value="ANULADA">Anulada</MenuItem>
+                </TextField>
+              )}
+            />
+          </Box>
+          <TextField
+            fullWidth
+            label="Observaciones"
+            multiline
+            rows={3}
+            {...register('observaciones')}
+            error={!!errors.observaciones}
+            helperText={errors.observaciones?.message}
+          />
+        </Card>
 
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6">Detalles</Typography>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={() => append({ id_producto: '', cantidad: 1, precio_unitario: 0, descuento_porcentaje: 0 })}
-              >
-                <AddIcon /> Agregar Producto
-              </Button>
-            </Box>
+        <Card sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
+          <SectionTitle action={
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              onClick={() => append({ id_producto: '', cantidad: 1, precio_unitario: 0, descuento_porcentaje: 0 })}
+            >
+              <AddIcon fontSize="small" /> Agregar
+            </Button>
+          }>Detalles</SectionTitle>
 
-            {errors.detalles?.message && (
-              <Alert severity="error" sx={{ mb: 2 }}>{errors.detalles.message}</Alert>
-            )}
+          {errors.detalles?.message && (
+            <Alert severity="error" sx={{ mb: 2 }}>{errors.detalles.message}</Alert>
+          )}
 
-            {fields.length > 0 ? (
+          {fields.length > 0 ? (
+            <Box sx={{ overflowX: 'auto' }}>
               <TableContainer>
-                <Table>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Producto</TableCell>
                       <TableCell align="right">Cantidad</TableCell>
-                      <TableCell align="right">Precio Unitario</TableCell>
-                      <TableCell align="right">% Descuento</TableCell>
+                      <TableCell align="right">Precio Unit.</TableCell>
+                      <TableCell align="right">% Desc.</TableCell>
                       <TableCell align="right">Subtotal</TableCell>
                       <TableCell align="right">Impuesto</TableCell>
                       <TableCell align="right">Total</TableCell>
-                      <TableCell align="right">Acciones</TableCell>
+                      <TableCell align="right">Acc.</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -335,6 +340,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                                 <TextField
                                   select
                                   fullWidth
+                                  size="small"
                                   {...field}
                                   error={!!errors.detalles?.[index]?.id_producto}
                                   helperText={errors.detalles?.[index]?.id_producto?.message}
@@ -351,6 +357,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                           <TableCell align="right">
                             <TextField
                               type="number"
+                              size="small"
                               {...register(`detalles.${index}.cantidad`)}
                               error={!!errors.detalles?.[index]?.cantidad}
                               helperText={errors.detalles?.[index]?.cantidad?.message}
@@ -360,6 +367,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                           <TableCell align="right">
                             <TextField
                               type="number"
+                              size="small"
                               {...register(`detalles.${index}.precio_unitario`)}
                               error={!!errors.detalles?.[index]?.precio_unitario}
                               helperText={errors.detalles?.[index]?.precio_unitario?.message}
@@ -369,6 +377,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                           <TableCell align="right">
                             <TextField
                               type="number"
+                              size="small"
                               {...register(`detalles.${index}.descuento_porcentaje`)}
                               error={!!errors.detalles?.[index]?.descuento_porcentaje}
                               helperText={errors.detalles?.[index]?.descuento_porcentaje?.message}
@@ -385,7 +394,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                             {linea?.totalLinea.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
                           </TableCell>
                           <TableCell align="right">
-                            <IconButton onClick={() => remove(index)} color="error">
+                            <IconButton onClick={() => remove(index)} color="error" size="small">
                               <DeleteIcon />
                             </IconButton>
                           </TableCell>
@@ -395,40 +404,38 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
-            ) : (
-              <Typography color="text.secondary">
-                No hay productos agregados. Haga clic en "Agregar Producto" para comenzar.
-              </Typography>
-            )}
+            </Box>
+          ) : (
+            <Box sx={{ color: 'text.secondary', py: 2 }}>
+              No hay productos agregados. Haga clic en "Agregar" para comenzar.
+            </Box>
+          )}
 
-            {fields.length > 0 && (
-              <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
-                  <Typography variant="body2">
-                    Base Imponible: {baseImponible.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
-                  </Typography>
-                  <Typography variant="body2">
-                    IVA: {montoIva.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
-                  </Typography>
-                  <Typography variant="h6" align="right">
-                    Total: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
-                  </Typography>
+          {fields.length > 0 && (
+            <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit,minmax(200px,1fr))' }, gap: 2 }}>
+                <Box sx={{ fontSize: 14 }}>
+                  Base Imponible: {baseImponible.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                </Box>
+                <Box sx={{ fontSize: 14 }}>
+                  IVA: {montoIva.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                </Box>
+                <Box sx={{ fontWeight: 700, textAlign: { sm: 'right' } }}>
+                  Total: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
                 </Box>
               </Box>
-            )}
-          </Paper>
+            </Box>
+          )}
+        </Card>
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-            <Button variant="contained" color="secondary" onClick={() => navigate('/ventas/notas-credito-fiscal')}>
-              Cancelar
-            </Button>
-            <Button variant="contained" type="submit" disabled={saving}>
-              {saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
-            </Button>
-          </Box>
-        </form>
-      </Box>
-    </PageLayout>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          <Button variant="contained" type="submit" disabled={saving}
+            sx={{ flex: { xs: '1 1 100%', sm: 'initial' } }}>
+            {saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+          </Button>
+        </Box>
+      </form>
+    </PageContainer>
   );
 };
 

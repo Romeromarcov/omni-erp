@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, ListItem, ListItemButton, Typography, Box } from '@mui/material';
-import './ModalBusqueda.css';
 
 interface ModalBusquedaProps<T> {
   open: boolean;
@@ -28,9 +27,25 @@ export function ModalBusqueda<T>({
   onEnterKey,
 }: ModalBusquedaProps<T>) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Typography variant="h6" component="h2">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 'var(--omni-radius-card-xl, 20px)',
+            boxShadow: 'var(--omni-shadow-card-soft, 0 4px 24px rgba(0,0,0,0.10))',
+            overflow: 'hidden',
+            width: { xs: '95vw', md: '80%' },
+            maxWidth: 700,
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1 }}>
+        <Typography variant="h6" component="h2" sx={{ fontWeight: 700, fontSize: 16, letterSpacing: '-0.2px' }}>
           {title}
         </Typography>
       </DialogTitle>
@@ -49,14 +64,22 @@ export function ModalBusqueda<T>({
             }}
             variant="outlined"
             size="small"
+            autoFocus
           />
         </Box>
-        <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
+        <Box sx={{ maxHeight: 340, overflowY: 'auto' }}>
           {items.length > 0 ? (
-            <List>
+            <List disablePadding>
               {items.map((item, index) => (
                 <ListItem key={index} disablePadding>
-                  <ListItemButton onClick={() => onClose()}>
+                  <ListItemButton
+                    onClick={() => onClose()}
+                    sx={{
+                      borderRadius: 1,
+                      mx: 0.5,
+                      '&:hover': { bgcolor: 'var(--omni-tint-primary, rgba(99,102,241,0.06))' },
+                    }}
+                  >
                     {renderItem(item, () => onClose())}
                   </ListItemButton>
                 </ListItem>
@@ -64,7 +87,7 @@ export function ModalBusqueda<T>({
             </List>
           ) : (
             inputValue && (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Box sx={{ textAlign: 'center', py: 5 }}>
                 <Typography variant="body2" color="text.secondary">
                   {emptyText}
                 </Typography>
@@ -73,7 +96,7 @@ export function ModalBusqueda<T>({
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button type="button" variant="outlined" onClick={onClose}>
           Cerrar
         </Button>

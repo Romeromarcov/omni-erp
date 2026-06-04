@@ -202,18 +202,27 @@ const ModalPago: React.FC<ModalPagoProps> = ({
       <Paper sx={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '80%', maxWidth: 900,
-        bgcolor: 'background.paper', boxShadow: 24, p: 4,
+        width: { xs: '95vw', md: '80%' },
+        maxWidth: 900,
+        borderRadius: 'var(--omni-radius-card-xl, 20px)',
+        boxShadow: 'var(--omni-shadow-card-soft, 0 8px 40px rgba(0,0,0,0.14))',
+        p: { xs: 2.5, md: 4 },
         maxHeight: '90vh', overflowY: 'auto',
       }}>
-        <Typography variant="h5" component="h2" gutterBottom>
-          Registrar Pago (Validación al Confirmar)
-        </Typography>
-        <Divider sx={{ my: 2 }} />
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+          <Typography
+            component="h2"
+            sx={{ fontWeight: 700, fontSize: { xs: 16, md: 18 }, letterSpacing: '-0.3px' }}
+          >
+            Registrar Pago
+          </Typography>
+        </Box>
+        <Divider sx={{ mb: 2.5 }} />
 
         {/* Tipo de operación */}
         <Box sx={{ mb: 3 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Tipo de Operación</InputLabel>
             <Select
               value={tipoOperacion}
@@ -225,7 +234,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
             </Select>
           </FormControl>
           {tipoDocumento && (
-            <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+            <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
               Detectado automáticamente del documento: {tipoDocumento}
             </Typography>
           )}
@@ -261,31 +270,31 @@ const ModalPago: React.FC<ModalPagoProps> = ({
         />
 
         {/* Formulario de nuevo pago */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>
           <Box sx={{ width: { xs: '100%', md: '20%' } }}>
-            <FormControl fullWidth>
+            <FormControl fullWidth size="small">
               <InputLabel>Método</InputLabel>
-              <Select name="id_metodo_pago" value={form.id_metodo_pago} onChange={handleFormChange}>
+              <Select name="id_metodo_pago" value={form.id_metodo_pago} onChange={handleFormChange} label="Método">
                 {metodos.map(m => <MenuItem key={m.id_metodo_pago} value={m.id_metodo_pago}>{m.nombre_metodo}</MenuItem>)}
               </Select>
             </FormControl>
           </Box>
           <Box sx={{ width: { xs: '100%', md: '15%' } }}>
-            <FormControl fullWidth>
+            <FormControl fullWidth size="small">
               <InputLabel>Moneda</InputLabel>
-              <Select name="id_moneda" value={form.id_moneda} onChange={handleFormChange}>
+              <Select name="id_moneda" value={form.id_moneda} onChange={handleFormChange} label="Moneda">
                 {monedas.map(m => <MenuItem key={m.id_moneda} value={m.id_moneda}>{m.codigo_iso}</MenuItem>)}
               </Select>
             </FormControl>
           </Box>
           <Box sx={{ width: { xs: '100%', md: '15%' } }}>
-            <TextField fullWidth label={`Tasa → ${monedaBase?.codigo_iso ?? 'BASE'}`} name="tasa" type="number" value={form.tasa} onChange={handleFormChange} />
+            <TextField fullWidth size="small" label={`Tasa → ${monedaBase?.codigo_iso ?? 'BASE'}`} name="tasa" type="number" value={form.tasa} onChange={handleFormChange} />
           </Box>
           <Box sx={{ width: { xs: '100%', md: '15%' } }}>
-            <TextField fullWidth label="Monto" name="monto" type="number" value={form.monto} onChange={handleFormChange} />
+            <TextField fullWidth size="small" label="Monto" name="monto" type="number" value={form.monto} onChange={handleFormChange} />
           </Box>
           <Box sx={{ width: { xs: '100%', md: '15%' } }}>
-            <TextField fullWidth label="Referencia" name="referencia" value={form.referencia ?? ''} onChange={handleFormChange} />
+            <TextField fullWidth size="small" label="Referencia" name="referencia" value={form.referencia ?? ''} onChange={handleFormChange} />
           </Box>
 
           {form.id_metodo_pago && form.id_moneda && (
@@ -301,9 +310,10 @@ const ModalPago: React.FC<ModalPagoProps> = ({
             />
           )}
 
-          <Box sx={{ width: { xs: '100%', md: '15%' } }}>
+          <Box sx={{ width: { xs: '100%', md: '15%' }, alignSelf: 'flex-end' }}>
             <Button
-              fullWidth variant="contained"
+              fullWidth
+              variant="contained"
               onClick={handleAddPago}
               disabled={!form.id_metodo_pago || !form.id_moneda || !form.monto || form.monto <= 0}
             >
@@ -328,19 +338,21 @@ const ModalPago: React.FC<ModalPagoProps> = ({
         />
 
         {/* Lista de pagos */}
-        <List sx={{ mt: 3 }}>
+        <List sx={{ mt: 2 }}>
           {pagos.map((p, idx) => (
             <ListItem
-              key={idx} divider
+              key={idx}
+              divider
               secondaryAction={
                 <IconButton edge="end" aria-label="delete" onClick={() => handleRemovePago(idx)}>
-                  <DeleteIcon />
+                  <DeleteIcon fontSize="small" />
                 </IconButton>
               }
             >
               <ListItemText
                 primary={`${metodos.find(m => m.id_metodo_pago === p.id_metodo_pago)?.nombre_metodo} – ${p.referencia}`}
                 secondary={`Monto: ${monedas.find(m => m.codigo_iso === p.moneda)?.codigo_iso} ${p.monto.toFixed(2)} | Base: ${monedaBase?.codigo_iso} ${p.monto_base?.toFixed(2)} | País: ${monedaPais?.codigo_iso} ${p.monto_pais?.toFixed(2)}`}
+                slotProps={{ primary: { sx: { fontWeight: 600, fontSize: 14 } }, secondary: { sx: { fontVariantNumeric: 'tabular-nums', fontSize: 12 } } }}
               />
             </ListItem>
           ))}
@@ -354,8 +366,8 @@ const ModalPago: React.FC<ModalPagoProps> = ({
             No se pudo cargar la tasa BCV. No es posible confirmar pagos hasta que la tasa esté disponible.
           </Typography>
         )}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-          <Button onClick={onClose} sx={{ mr: 1 }}>Cancelar</Button>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+          <Button onClick={onClose} variant="outlined">Cancelar</Button>
           <Button
             variant="contained"
             onClick={() => {

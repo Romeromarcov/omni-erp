@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageContainer, PageHeader } from '../../../components/ui';
+import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -9,7 +9,7 @@ import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActi
 import type { MonedaEmpresaActiva } from '../../../services/monedasEmpresaActiva';
 import { cajaFisicaSchema, type CajaFisicaInput } from '../../../schemas/finanzas.schemas';
 import { finanzasKeys } from '../../../lib/queryKeys';
-import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Switch, TextField } from '@mui/material';
+import { Alert, Box, Button, Card, FormControlLabel, Grid, MenuItem, Switch, TextField } from '@mui/material';
 
 type TipoCajaChoice = { value: string; display: string };
 
@@ -146,11 +146,12 @@ const CajaFisicaFormPage: React.FC = () => {
         </Alert>
       )}
 
-      <Paper sx={{ p: 3 }}>
+      <Card sx={{ p: { xs: 2, md: 3 } }}>
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              <Box sx={{ flex: '1 1 300px' }}>
+            <SectionTitle>Datos de la Caja</SectionTitle>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Nombre"
@@ -159,8 +160,8 @@ const CajaFisicaFormPage: React.FC = () => {
                   helperText={errors.nombre?.message}
                   required
                 />
-              </Box>
-              <Box sx={{ flex: '1 1 300px' }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="tipo_caja"
                   control={control}
@@ -181,21 +182,19 @@ const CajaFisicaFormPage: React.FC = () => {
                     </TextField>
                   )}
                 />
-              </Box>
-            </Box>
-
-            <TextField
-              fullWidth
-              label="Descripción"
-              {...register('descripcion')}
-              error={!!errors.descripcion}
-              helperText={errors.descripcion?.message}
-              multiline
-              rows={2}
-            />
-
-            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              <Box sx={{ flex: '1 1 300px' }}>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label="Descripción"
+                  {...register('descripcion')}
+                  error={!!errors.descripcion}
+                  helperText={errors.descripcion?.message}
+                  multiline
+                  rows={2}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="moneda"
                   control={control}
@@ -217,8 +216,12 @@ const CajaFisicaFormPage: React.FC = () => {
                     </TextField>
                   )}
                 />
-              </Box>
-              <Box sx={{ flex: '1 1 300px' }}>
+              </Grid>
+            </Grid>
+
+            <SectionTitle>Dispositivo</SectionTitle>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Nombre del Dispositivo"
@@ -227,11 +230,8 @@ const CajaFisicaFormPage: React.FC = () => {
                   helperText={errors.nombre_dispositivo?.message}
                   placeholder="Nombre descriptivo del dispositivo"
                 />
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              <Box sx={{ flex: '1 1 300px' }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="tipo_dispositivo"
                   control={control}
@@ -252,8 +252,8 @@ const CajaFisicaFormPage: React.FC = () => {
                     </TextField>
                   )}
                 />
-              </Box>
-              <Box sx={{ flex: '1 1 300px' }}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Identificador del Dispositivo"
@@ -262,59 +262,57 @@ const CajaFisicaFormPage: React.FC = () => {
                   helperText={errors.identificador_dispositivo?.message}
                   placeholder="MAC address, serial number, UUID, etc."
                 />
-              </Box>
-            </Box>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label="Descripción del Dispositivo"
+                  {...register('descripcion_dispositivo')}
+                  error={!!errors.descripcion_dispositivo}
+                  helperText={errors.descripcion_dispositivo?.message}
+                  placeholder="Descripción adicional del dispositivo"
+                  multiline
+                  rows={2}
+                />
+              </Grid>
+            </Grid>
 
-            <TextField
-              fullWidth
-              label="Descripción del Dispositivo"
-              {...register('descripcion_dispositivo')}
-              error={!!errors.descripcion_dispositivo}
-              helperText={errors.descripcion_dispositivo?.message}
-              placeholder="Descripción adicional del dispositivo"
-              multiline
-              rows={2}
-            />
-
+            <SectionTitle>Configuración</SectionTitle>
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              <Box sx={{ flex: '1 1 300px' }}>
-                <Controller
-                  name="requiere_sesion_activa"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={field.value}
-                          onChange={(e) => field.onChange(e.target.checked)}
-                        />
-                      }
-                      label="Requiere sesión activa"
-                    />
-                  )}
-                />
-              </Box>
-              <Box sx={{ flex: '1 1 300px' }}>
-                <Controller
-                  name="activa"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={field.value}
-                          onChange={(e) => field.onChange(e.target.checked)}
-                        />
-                      }
-                      label="Activa"
-                    />
-                  )}
-                />
-              </Box>
+              <Controller
+                name="requiere_sesion_activa"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                    }
+                    label="Requiere sesión activa"
+                  />
+                )}
+              />
+              <Controller
+                name="activa"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                    }
+                    label="Activa"
+                  />
+                )}
+              />
             </Box>
           </Box>
 
-          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+          <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Button
               type="submit"
               disabled={saveMutation.isPending}
@@ -329,7 +327,7 @@ const CajaFisicaFormPage: React.FC = () => {
             </Button>
           </Box>
         </form>
-      </Paper>
+      </Card>
     </PageContainer>
   );
 };

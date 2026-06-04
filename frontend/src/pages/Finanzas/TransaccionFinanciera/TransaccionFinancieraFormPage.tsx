@@ -18,13 +18,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageContainer, PageHeader } from '../../../components/ui';
+import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 // import { createTransaccion } from '../../../services/transaccionFinancieraService';
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { toList } from '../../../utils/api';
 import { registroTransaccionSchema, type RegistroTransaccionInput } from '../../../schemas/finanzas.schemas';
-import { Alert, Box, Button, MenuItem, Stack, TextField } from '@mui/material';
+import { Alert, Box, Button, Card, Grid, MenuItem, Stack, TextField } from '@mui/material';
 
 
 const tipoTransaccionOptions = [
@@ -285,141 +285,183 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   return (
     <PageContainer>
       <PageHeader title="Registrar Transacción" />
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ maxWidth: 480 }}>
-        <Stack spacing={2}>
-          <TextField
-            label="Fecha"
-            type="datetime-local"
-            {...register('fecha_hora_transaccion')}
-            error={!!errors.fecha_hora_transaccion}
-            helperText={errors.fecha_hora_transaccion?.message}
-            required
-            slotProps={{ inputLabel: { shrink: true } }}
-            fullWidth
-          />
-          <Controller
-            name="tipo_transaccion"
-            control={control}
-            render={({ field }) => (
+      <Card sx={{ p: { xs: 2, md: 3 } }}>
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <Stack spacing={3}>
+          <SectionTitle>Datos de la Transacción</SectionTitle>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                select
-                label="Tipo de Transacción"
-                {...field}
-                error={!!errors.tipo_transaccion}
-                helperText={errors.tipo_transaccion?.message}
+                label="Fecha"
+                type="datetime-local"
+                {...register('fecha_hora_transaccion')}
+                error={!!errors.fecha_hora_transaccion}
+                helperText={errors.fecha_hora_transaccion?.message}
+                required
+                slotProps={{ inputLabel: { shrink: true } }}
                 fullWidth
-              >
-                {tipoTransaccionOptions.map(opt => (
-                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-          <TextField
-            label="Monto"
-            type="number"
-            {...register('monto_transaccion')}
-            error={!!errors.monto_transaccion}
-            helperText={errors.monto_transaccion?.message}
-            required
-            fullWidth
-          />
-          <Controller
-            name="id_moneda_transaccion"
-            control={control}
-            render={({ field }) => (
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name="tipo_transaccion"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    select
+                    label="Tipo de Transacción"
+                    {...field}
+                    error={!!errors.tipo_transaccion}
+                    helperText={errors.tipo_transaccion?.message}
+                    fullWidth
+                  >
+                    {tipoTransaccionOptions.map(opt => (
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                select
-                label="Moneda de Transacción"
-                {...field}
-                error={!!errors.id_moneda_transaccion}
-                helperText={errors.id_moneda_transaccion?.message}
+                label="Monto"
+                type="number"
+                {...register('monto_transaccion')}
+                error={!!errors.monto_transaccion}
+                helperText={errors.monto_transaccion?.message}
                 required
                 fullWidth
-              >
-                <MenuItem value="">Seleccione una moneda</MenuItem>
-                {monedas.map(moneda => (
-                  <MenuItem key={moneda.id} value={moneda.moneda}>{moneda.moneda_nombre}</MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-          <Controller
-            name="id_metodo_pago"
-            control={control}
-            render={({ field }) => (
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name="id_moneda_transaccion"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    select
+                    label="Moneda de Transacción"
+                    {...field}
+                    error={!!errors.id_moneda_transaccion}
+                    helperText={errors.id_moneda_transaccion?.message}
+                    required
+                    fullWidth
+                  >
+                    <MenuItem value="">Seleccione una moneda</MenuItem>
+                    {monedas.map(moneda => (
+                      <MenuItem key={moneda.id} value={moneda.moneda}>{moneda.moneda_nombre}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name="id_metodo_pago"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    select
+                    label="Método de Pago"
+                    {...field}
+                    error={!!errors.id_metodo_pago}
+                    helperText={errors.id_metodo_pago?.message}
+                    required
+                    fullWidth
+                  >
+                    <MenuItem value="">Seleccione método de pago</MenuItem>
+                    {metodosPago.map(metodo => (
+                      <MenuItem key={metodo.id} value={metodo.metodo_pago}>{metodo.nombre}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+            </Grid>
+          </Grid>
+
+          <SectionTitle>Tasa de Cambio</SectionTitle>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
-                select
-                label="Método de Pago"
-                {...field}
-                error={!!errors.id_metodo_pago}
-                helperText={errors.id_metodo_pago?.message}
-                required
+                label="Moneda Base"
+                value={monedaBase}
+                slotProps={{ input: { readOnly: true } }}
                 fullWidth
-              >
-                <MenuItem value="">Seleccione método de pago</MenuItem>
-                {metodosPago.map(metodo => (
-                  <MenuItem key={metodo.id} value={metodo.metodo_pago}>{metodo.nombre}</MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-          <TextField
-            label="Moneda Base"
-            value={monedaBase}
-            slotProps={{ input: { readOnly: true } }}
-            fullWidth
-          />
-          <TextField
-            label="Tasa de Cambio"
-            type="number"
-            value={tasaCambio}
-            onChange={handleTasaCambio}
-            required
-            slotProps={{ htmlInput: { min: '0.0001', step: '0.0001' } }}
-            fullWidth
-          />
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                label="Tasa de Cambio"
+                type="number"
+                value={tasaCambio}
+                onChange={handleTasaCambio}
+                required
+                slotProps={{ htmlInput: { min: '0.0001', step: '0.0001' } }}
+                fullWidth
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                label="Monto Base"
+                value={montoBase}
+                slotProps={{ input: { readOnly: true } }}
+                fullWidth
+              />
+            </Grid>
+          </Grid>
           {tasaError && <Alert severity="error">{tasaError}</Alert>}
-          <TextField
-            label="Monto Base"
-            value={montoBase}
-            slotProps={{ input: { readOnly: true } }}
-            fullWidth
-          />
-          <TextField label="Referencia" {...register('referencia_pago')} fullWidth />
-          <TextField label="Descripción" {...register('descripcion')} fullWidth />
-          <TextField label="Caja" {...register('id_caja')} error={!!errors.id_caja} helperText={errors.id_caja?.message} required fullWidth />
-          <TextField label="Cuenta Bancaria" {...register('id_cuenta_bancaria')} fullWidth />
-          <Controller
-            name="tipo_documento_asociado"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                select
-                label="Tipo de Documento Asociado"
-                {...field}
-                error={!!errors.tipo_documento_asociado}
-                helperText={errors.tipo_documento_asociado?.message}
-                required
-                fullWidth
-              >
-                <MenuItem value="">Seleccione tipo de documento</MenuItem>
-                <MenuItem value="COMPRA">Compra</MenuItem>
-                <MenuItem value="VENTA">Venta</MenuItem>
-                <MenuItem value="GASTO">Gasto</MenuItem>
-                <MenuItem value="NOMINA">Nómina</MenuItem>
-                <MenuItem value="AJUSTE">Ajuste</MenuItem>
-              </TextField>
-            )}
-          />
-          <TextField label="Nro. Documento Asociado" {...register('nro_documento_asociado')} fullWidth />
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+
+          <SectionTitle>Referencias</SectionTitle>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Referencia" {...register('referencia_pago')} fullWidth />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Descripción" {...register('descripcion')} fullWidth />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Caja" {...register('id_caja')} error={!!errors.id_caja} helperText={errors.id_caja?.message} required fullWidth />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Cuenta Bancaria" {...register('id_cuenta_bancaria')} fullWidth />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name="tipo_documento_asociado"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    select
+                    label="Tipo de Documento Asociado"
+                    {...field}
+                    error={!!errors.tipo_documento_asociado}
+                    helperText={errors.tipo_documento_asociado?.message}
+                    required
+                    fullWidth
+                  >
+                    <MenuItem value="">Seleccione tipo de documento</MenuItem>
+                    <MenuItem value="COMPRA">Compra</MenuItem>
+                    <MenuItem value="VENTA">Venta</MenuItem>
+                    <MenuItem value="GASTO">Gasto</MenuItem>
+                    <MenuItem value="NOMINA">Nómina</MenuItem>
+                    <MenuItem value="AJUSTE">Ajuste</MenuItem>
+                  </TextField>
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Nro. Documento Asociado" {...register('nro_documento_asociado')} fullWidth />
+            </Grid>
+          </Grid>
+
+          <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ flexWrap: 'wrap' }}>
             <Button type="submit" variant="contained" disabled={loading}>
               {loading ? 'Registrando...' : 'Registrar transacción'}
             </Button>
           </Stack>
         </Stack>
       </Box>
+      </Card>
     </PageContainer>
   );
 }

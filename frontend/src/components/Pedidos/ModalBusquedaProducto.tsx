@@ -33,12 +33,12 @@ const ModalBusquedaProducto: React.FC<ModalBusquedaProductoProps> = ({ open, pro
       items={resultados}
       onEnterKey={handleEnterKey}
       renderItem={(prod, close) => (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <Box>
-            <Typography variant="body1" fontWeight="medium">
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 1 }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="body2" fontWeight={600} noWrap>
               {prod.nombre_producto}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="caption" color="text.secondary">
               SKU: {prod.sku} | Precio: {typeof prod.precio_venta_sugerido === 'number' ? prod.precio_venta_sugerido.toFixed(2) : 'N/A'}
             </Typography>
           </Box>
@@ -46,6 +46,7 @@ const ModalBusquedaProducto: React.FC<ModalBusquedaProductoProps> = ({ open, pro
             type="button"
             variant="contained"
             size="small"
+            sx={{ flexShrink: 0 }}
             onClick={(e) => {
               e.stopPropagation();
               onSelect(prod);
