@@ -33,9 +33,10 @@ class Command(BaseCommand):
                 username=username,
                 email="admin@innovasystems.com",
                 password="admin123",
-                id_empresa=empresa,
                 es_superusuario_omni=True,
             )
+            # Usuarios.empresas es ManyToMany (no FK id_empresa): se asocia tras crear.
+            admin_user.empresas.add(empresa)
             self.stdout.write(self.style.SUCCESS(f"Superusuario '{admin_user.username}' creado con éxito."))
         else:
             self.stdout.write(self.style.WARNING(f"El superusuario '{username}' ya existe."))
