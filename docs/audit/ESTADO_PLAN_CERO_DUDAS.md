@@ -122,7 +122,14 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
 - **TEST-4 — race tests (`select_for_update`). 🟡 EN CURSO.** ✅ `test_inventario_concurrencia.py`
   (reserva de stock: no overselling, verificado) + el existente `test_fiscal_concurrencia.py`
   (correlativos). *Pendiente:* saldos CxC/CxP.
-- **TEST-5** — integración de flujos críticos faltantes: compra, cobranza, manufactura.
+- **TEST-5 — integración de flujos críticos. 🟡 EN CURSO.** ✅ Compra: el ciclo
+  OC→recepción→factura→CxP→asiento ya estaba cubierto (`tests_api/test_m6_compras.py`);
+  se agregó la invariante que faltaba — **atomicidad a nivel de flujo**
+  (`tests/integration/test_compras_atomicidad.py`): con `contabilidad_activa` y sin mapeo,
+  `registrar_recepcion`/`registrar_factura_compra` fallan duro y **revierten todo**
+  (recepción, movimiento, stock, CxP), complementando `test_rcode11_centralizado` (helper con
+  mocks). *Pendiente:* cobranza (atomicidad de `cxc` acuerdos `registrar-pago` → asiento PAGO_CXC,
+  hoy sin test) y manufactura.
 - **TEST-6** — frontend: MSW (instalado, sin usar), `openapi-typescript` + drift, Playwright E2E,
   pisos de cobertura por carpeta.
 
