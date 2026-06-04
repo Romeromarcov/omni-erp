@@ -6,8 +6,10 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# El backend expone /api/health/ (devuelve {"status":"ok"}).
-healthcheckPath = "/api/health/"
-healthcheckTimeout = 300
+# NO usamos healthcheck HTTP de Railway: settings_prod fuerza SECURE_SSL_REDIRECT,
+# por lo que el probe interno (HTTP a healthcheck.railway.app) no devuelve 200 y
+# marcaba el deploy como FAILED aunque el contenedor estuviera sano. La salud a
+# nivel de contenedor la cubre el HEALTHCHECK del Dockerfile (curl a localhost),
+# y el tráfico real entra por el dominio público (sí está en ALLOWED_HOSTS).
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
