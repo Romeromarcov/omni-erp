@@ -1,0 +1,13 @@
+# Config-as-code de Railway para el servicio backend.
+# Railway lee este archivo desde el Root Directory del servicio (= "backend").
+# Fija el builder Dockerfile (en lugar del autodetect RAILPACK) y el healthcheck.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# El backend expone /api/health/ (devuelve {"status":"ok"}).
+healthcheckPath = "/api/health/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
