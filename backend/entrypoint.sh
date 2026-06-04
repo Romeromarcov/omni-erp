@@ -20,6 +20,17 @@ if [ -n "$DB_HOST" ]; then
     echo "PostgreSQL started"
 fi
 
+# SKIP_MIGRATIONS=1 lo usan los servicios celery worker/beat: comparten este
+# mismo ENTRYPOINT (el startCommand de Railway sólo sustituye al CMD, no al
+# ENTRYPOINT), pero NO deben re-correr migraciones ni collectstatic. Migrar es
+# tarea exclusiva del servicio web: hacerlo en worker/beat causa carreras de
+# migración y arranques lentos. Con la variable sin definir, el web migra normal.
+if [ "${SKIP_MIGRATIONS}" = "1" ]; then
+    echo "SKIP_MIGRATIONS=1: omito migrate/seed/collectstatic (servicio worker/beat)."
+    echo "Starting process..."
+    exec "$@"
+fi
+
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 

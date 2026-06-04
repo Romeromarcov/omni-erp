@@ -1,0 +1,18 @@
+# Config-as-code de Railway para el servicio Celery BEAT (scheduler periódico).
+# Reutiliza el MISMO Dockerfile del backend (Root Directory = "backend"); sólo
+# cambia el comando de arranque. En el dashboard del servicio beat hay que
+# apuntar "Config-as-code path" a este archivo (backend/railway.beat.toml).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# startCommand sustituye al CMD del Dockerfile (que sirve el web con uvicorn).
+# OJO: el ENTRYPOINT (entrypoint.sh) SÍ se sigue ejecutando; por eso este
+# servicio define SKIP_MIGRATIONS=1 en sus variables para no re-migrar.
+# Beat usa el DatabaseScheduler de django_celery_beat (las tablas las crea el
+# web al migrar). Debe correr UNA sola instancia para no duplicar tareas.
+startCommand = "python -m celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+# Sin healthcheck HTTP: beat es un scheduler sin endpoint. Railway reinicia ante fallo.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
