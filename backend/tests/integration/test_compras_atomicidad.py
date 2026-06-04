@@ -20,7 +20,6 @@ from django.utils import timezone
 
 from apps.compras.services import (
     CompraError,
-    aprobar_orden_compra,
     registrar_factura_compra,
     registrar_recepcion,
 )
