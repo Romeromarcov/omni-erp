@@ -18,3 +18,4 @@ class NotificacionSerializer(serializers.ModelSerializer):
             "fecha_creacion",
         ]
         read_only_fields = fields
+        ref_name = "NotificacionApp"  # evita colisión OpenAPI con core.NotificacionSerializer

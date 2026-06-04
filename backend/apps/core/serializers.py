@@ -293,3 +293,4 @@ class NotificacionSerializer(BaseModelSerializer):
         model = Notificacion
         fields = "__all__"
         read_only_fields = ["id_notificacion", "fecha_creacion"]
+        ref_name = "NotificacionCore"  # evita colisión OpenAPI con notificaciones.NotificacionSerializer

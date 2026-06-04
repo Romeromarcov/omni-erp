@@ -27,7 +27,11 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
-class DetallePedidoSerializer(serializers.ModelSerializer):
+# BUG-DUP-2: este serializer (con id_producto anidado para lectura) se usaba con el
+# MISMO nombre que el de validación de más abajo; Python ligaba según la posición
+# (PedidoSerializer.detalles usaba este; el ViewSet usaba el otro). Se renombra para
+# eliminar la colisión sin cambiar comportamiento.
+class DetallePedidoNestedSerializer(serializers.ModelSerializer):
     id_pedido = serializers.PrimaryKeyRelatedField(queryset=Pedido.objects.all(), required=False)
     id_producto = serializers.PrimaryKeyRelatedField(queryset=Producto.objects.all())
 
@@ -50,7 +54,7 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
 
 
 class PedidoSerializer(serializers.ModelSerializer):
-    detalles = DetallePedidoSerializer(many=True, required=False)
+    detalles = DetallePedidoNestedSerializer(many=True, required=False)
     # Cliente anidado para mostrar nombre, razon_social, rif, telefono
     id_cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all())
 

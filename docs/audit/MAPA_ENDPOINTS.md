@@ -1,960 +1,960 @@
 # Mapa de endpoints (A1 — generado por `manage.py mapa_superficie`)
 
-| Ruta | ViewSet | Modelo | Tenant | Override get_queryset |
-|---|---|---|---|---|
-| `` | APIRootView | — | — | — |
-| `<drf_format_suffix:format>` | APIRootView | — | — | — |
-| `^abonos-cxc/$` | AbonoCxCViewSet | AbonoCxC | — | ✅ |
-| `^abonos-cxc/(?P<pk>[^/.]+)/$` | AbonoCxCViewSet | AbonoCxC | — | ✅ |
-| `^abonos-cxc/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AbonoCxCViewSet | AbonoCxC | — | ✅ |
-| `^abonos-cxc\.(?P<format>[a-z0-9]+)/?$` | AbonoCxCViewSet | AbonoCxC | — | ✅ |
-| `^abonos-cxp/$` | AbonoCxPViewSet | AbonoCxP | — | ✅ |
-| `^abonos-cxp/(?P<pk>[^/.]+)/$` | AbonoCxPViewSet | AbonoCxP | — | ✅ |
-| `^abonos-cxp/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AbonoCxPViewSet | AbonoCxP | — | ✅ |
-| `^abonos-cxp\.(?P<format>[a-z0-9]+)/?$` | AbonoCxPViewSet | AbonoCxP | — | ✅ |
-| `^acuerdos/$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^acuerdos/(?P<pk>[^/.]+)/$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^acuerdos/(?P<pk>[^/.]+)/registrar-pago/$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^acuerdos/(?P<pk>[^/.]+)/registrar-pago\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^acuerdos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^acuerdos/vencimientos-proximos/$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^acuerdos/vencimientos-proximos\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^acuerdos\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ |
-| `^ajustes-caja-banco/crear_ajuste/$` | AjusteCajaBancoViewSet | — | — | — |
-| `^ajustes-caja-banco/crear_ajuste\.(?P<format>[a-z0-9]+)/?$` | AjusteCajaBancoViewSet | — | — | — |
-| `^almacenes/$` | AlmacenViewSet | Almacen | ✅ | ✅ |
-| `^almacenes/(?P<pk>[^/.]+)/$` | AlmacenViewSet | Almacen | ✅ | ✅ |
-| `^almacenes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AlmacenViewSet | Almacen | ✅ | ✅ |
-| `^almacenes\.(?P<format>[a-z0-9]+)/?$` | AlmacenViewSet | Almacen | ✅ | ✅ |
-| `^analisis-variacion-costo/$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ |
-| `^analisis-variacion-costo/(?P<pk>[^/.]+)/$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ |
-| `^analisis-variacion-costo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ |
-| `^analisis-variacion-costo\.(?P<format>[a-z0-9]+)/?$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ |
-| `^articulos-conocimiento/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/(?P<pk>[^/.]+)/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/(?P<pk>[^/.]+)/actualizar_revision/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/(?P<pk>[^/.]+)/actualizar_revision\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/buscar/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/buscar\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/publicos/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento/publicos\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^articulos-conocimiento\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ |
-| `^asientos-contables/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/(?P<pk>[^/.]+)/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/(?P<pk>[^/.]+)/anular/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/(?P<pk>[^/.]+)/aprobar/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/balance_comprobacion/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables/balance_comprobacion\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asientos-contables\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ |
-| `^asignaciones-horario/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/(?P<pk>[^/.]+)/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/(?P<pk>[^/.]+)/finalizar/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/(?P<pk>[^/.]+)/finalizar\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/activas/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/activas\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/por_empleado/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario/por_empleado\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^asignaciones-horario\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ |
-| `^beneficios-empleado/$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ |
-| `^beneficios-empleado/(?P<pk>[^/.]+)/$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ |
-| `^beneficios-empleado/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ |
-| `^beneficios-empleado\.(?P<format>[a-z0-9]+)/?$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ |
-| `^beneficios/$` | BeneficioViewSet | Beneficio | ✅ | ✅ |
-| `^beneficios/(?P<pk>[^/.]+)/$` | BeneficioViewSet | Beneficio | ✅ | ✅ |
-| `^beneficios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BeneficioViewSet | Beneficio | ✅ | ✅ |
-| `^beneficios\.(?P<format>[a-z0-9]+)/?$` | BeneficioViewSet | Beneficio | ✅ | ✅ |
-| `^cajas-fisicas-usuario/$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ |
-| `^cajas-fisicas-usuario/(?P<pk>[^/.]+)/$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ |
-| `^cajas-fisicas-usuario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ |
-| `^cajas-fisicas-usuario\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ |
-| `^cajas-fisicas/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/(?P<pk>[^/.]+)/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/tipo-caja-choices/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/tipo-caja-choices\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/tipos_documento/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/tipos_documento\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/tipos_operacion/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas/tipos_operacion\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-fisicas\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ |
-| `^cajas-usuario/$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ |
-| `^cajas-usuario/(?P<pk>[^/.]+)/$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ |
-| `^cajas-usuario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ |
-| `^cajas-usuario\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ |
-| `^cajas-virtuales-auto/$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ |
-| `^cajas-virtuales-auto/(?P<pk>[^/.]+)/$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ |
-| `^cajas-virtuales-auto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ |
-| `^cajas-virtuales-auto\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ |
-| `^cajas/$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/(?P<pk>[^/.]+)/$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/(?P<pk>[^/.]+)/cierre/$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/(?P<pk>[^/.]+)/cierre\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/(?P<pk>[^/.]+)/movimientos-caja-banco/$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/(?P<pk>[^/.]+)/movimientos-caja-banco\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/tipo-caja-choices/$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas/tipo-caja-choices\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cajas\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ |
-| `^cargos/$` | CargoViewSet | Cargo | ✅ | ✅ |
-| `^cargos/(?P<pk>[^/.]+)/$` | CargoViewSet | Cargo | ✅ | ✅ |
-| `^cargos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CargoViewSet | Cargo | ✅ | ✅ |
-| `^cargos\.(?P<format>[a-z0-9]+)/?$` | CargoViewSet | Cargo | ✅ | ✅ |
-| `^carpetas/$` | CarpetaViewSet | Carpeta | ✅ | ✅ |
-| `^carpetas/(?P<pk>[^/.]+)/$` | CarpetaViewSet | Carpeta | ✅ | ✅ |
-| `^carpetas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CarpetaViewSet | Carpeta | ✅ | ✅ |
-| `^carpetas\.(?P<format>[a-z0-9]+)/?$` | CarpetaViewSet | Carpeta | ✅ | ✅ |
-| `^catalogos-valor/$` | CatalogoValorViewSet | CatalogoValor | — | ✅ |
-| `^catalogos-valor/(?P<pk>[^/.]+)/$` | CatalogoValorViewSet | CatalogoValor | — | ✅ |
-| `^catalogos-valor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CatalogoValorViewSet | CatalogoValor | — | ✅ |
-| `^catalogos-valor\.(?P<format>[a-z0-9]+)/?$` | CatalogoValorViewSet | CatalogoValor | — | ✅ |
-| `^categorias-gasto/$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ |
-| `^categorias-gasto/(?P<pk>[^/.]+)/$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ |
-| `^categorias-gasto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ |
-| `^categorias-gasto/activas/$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ |
-| `^categorias-gasto/activas\.(?P<format>[a-z0-9]+)/?$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ |
-| `^categorias-gasto\.(?P<format>[a-z0-9]+)/?$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ |
-| `^categorias-producto/$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ |
-| `^categorias-producto/(?P<pk>[^/.]+)/$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ |
-| `^categorias-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ |
-| `^categorias-producto\.(?P<format>[a-z0-9]+)/?$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ |
-| `^categorias-ticket/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^categorias-ticket/(?P<pk>[^/.]+)/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^categorias-ticket/(?P<pk>[^/.]+)/estadisticas/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^categorias-ticket/(?P<pk>[^/.]+)/estadisticas\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^categorias-ticket/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^categorias-ticket/activas/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^categorias-ticket/activas\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^categorias-ticket\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ |
-| `^centros-trabajo/$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ |
-| `^centros-trabajo/(?P<pk>[^/.]+)/$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ |
-| `^centros-trabajo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ |
-| `^centros-trabajo\.(?P<format>[a-z0-9]+)/?$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ |
-| `^clientes/$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/(?P<pk>[^/.]+)/$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/(?P<pk>[^/.]+)/credito-disponible/$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/(?P<pk>[^/.]+)/credito-disponible\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/(?P<pk>[^/.]+)/historial-ventas/$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/(?P<pk>[^/.]+)/historial-ventas\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/buscar-por-rif/$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes/buscar-por-rif\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^clientes\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ |
-| `^conceptos-nomina/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/(?P<pk>[^/.]+)/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/deducciones/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/deducciones\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/devengados/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/devengados\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/por_tipo/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina/por_tipo\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conceptos-nomina\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ |
-| `^conciliaciones-bancarias/$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ |
-| `^conciliaciones-bancarias/(?P<pk>[^/.]+)/$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ |
-| `^conciliaciones-bancarias/(?P<pk>[^/.]+)/cerrar/$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ |
-| `^conciliaciones-bancarias/(?P<pk>[^/.]+)/cerrar\.(?P<format>[a-z0-9]+)/?$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ |
-| `^conciliaciones-bancarias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ |
-| `^conciliaciones-bancarias\.(?P<format>[a-z0-9]+)/?$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ |
-| `^configuracion-fiscal/$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ |
-| `^configuracion-fiscal/(?P<pk>[^/.]+)/$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ |
-| `^configuracion-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ |
-| `^configuracion-fiscal\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ |
-| `^configuracion-integracion/$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ |
-| `^configuracion-integracion/(?P<pk>[^/.]+)/$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ |
-| `^configuracion-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ |
-| `^configuracion-integracion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ |
-| `^configuraciones/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/(?P<pk>[^/.]+)/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/(?P<pk>[^/.]+)/activar/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/activa/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/activa\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/historial/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones/historial\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^configuraciones\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ |
-| `^consumos-material/$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ |
-| `^consumos-material/(?P<pk>[^/.]+)/$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ |
-| `^consumos-material/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ |
-| `^consumos-material\.(?P<format>[a-z0-9]+)/?$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ |
-| `^contactos-cliente/$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ |
-| `^contactos-cliente/(?P<pk>[^/.]+)/$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ |
-| `^contactos-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ |
-| `^contactos-cliente\.(?P<format>[a-z0-9]+)/?$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ |
-| `^contactos-proveedor/$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ |
-| `^contactos-proveedor/(?P<pk>[^/.]+)/$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ |
-| `^contactos-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ |
-| `^contactos-proveedor\.(?P<format>[a-z0-9]+)/?$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ |
-| `^contactos/$` | ContactoViewSet | Contacto | ✅ | ✅ |
-| `^contactos/(?P<pk>[^/.]+)/$` | ContactoViewSet | Contacto | ✅ | ✅ |
-| `^contactos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ |
-| `^contactos\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ |
-| `^conversiones-unidad-medida/$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ |
-| `^conversiones-unidad-medida/(?P<pk>[^/.]+)/$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ |
-| `^conversiones-unidad-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ |
-| `^conversiones-unidad-medida\.(?P<format>[a-z0-9]+)/?$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ |
-| `^costos-estandar-producto/$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ |
-| `^costos-estandar-producto/(?P<pk>[^/.]+)/$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ |
-| `^costos-estandar-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ |
-| `^costos-estandar-producto\.(?P<format>[a-z0-9]+)/?$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ |
-| `^costos-produccion/$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ |
-| `^costos-produccion/(?P<pk>[^/.]+)/$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ |
-| `^costos-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ |
-| `^costos-produccion\.(?P<format>[a-z0-9]+)/?$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ |
-| `^cotizaciones/$` | CotizacionViewSet | Cotizacion | ✅ | ✅ |
-| `^cotizaciones/(?P<pk>[^/.]+)/$` | CotizacionViewSet | Cotizacion | ✅ | ✅ |
-| `^cotizaciones/(?P<pk>[^/.]+)/pdf/$` | CotizacionViewSet | Cotizacion | ✅ | ✅ |
-| `^cotizaciones/(?P<pk>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | CotizacionViewSet | Cotizacion | ✅ | ✅ |
-| `^cotizaciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CotizacionViewSet | Cotizacion | ✅ | ✅ |
-| `^cotizaciones\.(?P<format>[a-z0-9]+)/?$` | CotizacionViewSet | Cotizacion | ✅ | ✅ |
-| `^cuentas-bancarias-empresa/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias-empresa\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias-proveedor/$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ |
-| `^cuentas-bancarias-proveedor/(?P<pk>[^/.]+)/$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ |
-| `^cuentas-bancarias-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ |
-| `^cuentas-bancarias-proveedor\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ |
-| `^cuentas-bancarias/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias/(?P<pk>[^/.]+)/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-bancarias\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ |
-| `^cuentas-por-cobrar/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/(?P<pk>[^/.]+)/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/(?P<pk>[^/.]+)/abonar/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/(?P<pk>[^/.]+)/abonar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/aging/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/aging\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/estado-cuenta/(?P<cliente_id>[^/.]+)/pdf/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar/estado-cuenta/(?P<cliente_id>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-cobrar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ |
-| `^cuentas-por-pagar/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^cuentas-por-pagar/(?P<pk>[^/.]+)/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^cuentas-por-pagar/(?P<pk>[^/.]+)/abonar/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^cuentas-por-pagar/(?P<pk>[^/.]+)/abonar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^cuentas-por-pagar/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^cuentas-por-pagar/aging/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^cuentas-por-pagar/aging\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^cuentas-por-pagar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ |
-| `^datafono/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafono/(?P<pk>[^/.]+)/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafono/(?P<pk>[^/.]+)/cerrar-sesion/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafono/(?P<pk>[^/.]+)/cerrar-sesion\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafono/(?P<pk>[^/.]+)/registrar-pago/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafono/(?P<pk>[^/.]+)/registrar-pago\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafono\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos/(?P<pk>[^/.]+)/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos/(?P<pk>[^/.]+)/cerrar-sesion/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos/(?P<pk>[^/.]+)/cerrar-sesion\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos/(?P<pk>[^/.]+)/registrar-pago/$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos/(?P<pk>[^/.]+)/registrar-pago\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^datafonos\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ |
-| `^departamentos/$` | DepartamentoViewSet | Departamento | ✅ | ✅ |
-| `^departamentos/(?P<pk>[^/.]+)/$` | DepartamentoViewSet | Departamento | ✅ | ✅ |
-| `^departamentos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DepartamentoViewSet | Departamento | ✅ | ✅ |
-| `^departamentos\.(?P<format>[a-z0-9]+)/?$` | DepartamentoViewSet | Departamento | ✅ | ✅ |
-| `^depositos-datafono/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^depositos-datafono/(?P<pk>[^/.]+)/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^depositos-datafono/(?P<pk>[^/.]+)/conciliar/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^depositos-datafono/(?P<pk>[^/.]+)/conciliar\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^depositos-datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^depositos-datafono/pendientes/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^depositos-datafono/pendientes\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^depositos-datafono\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ |
-| `^despachos/$` | DespachoViewSet | Despacho | ✅ | ✅ |
-| `^despachos/(?P<pk>[^/.]+)/$` | DespachoViewSet | Despacho | ✅ | ✅ |
-| `^despachos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ |
-| `^despachos\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ |
-| `^detalles-asiento/$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ |
-| `^detalles-asiento/(?P<pk>[^/.]+)/$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ |
-| `^detalles-asiento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ |
-| `^detalles-asiento\.(?P<format>[a-z0-9]+)/?$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ |
-| `^detalles-cotizacion/$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ |
-| `^detalles-cotizacion/(?P<pk>[^/.]+)/$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ |
-| `^detalles-cotizacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ |
-| `^detalles-cotizacion\.(?P<format>[a-z0-9]+)/?$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ |
-| `^detalles-despacho/$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ |
-| `^detalles-despacho/(?P<pk>[^/.]+)/$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ |
-| `^detalles-despacho/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ |
-| `^detalles-despacho\.(?P<format>[a-z0-9]+)/?$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ |
-| `^detalles-devolucion-venta/$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ |
-| `^detalles-devolucion-venta/(?P<pk>[^/.]+)/$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ |
-| `^detalles-devolucion-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ |
-| `^detalles-devolucion-venta\.(?P<format>[a-z0-9]+)/?$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ |
-| `^detalles-error-migracion/$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ |
-| `^detalles-error-migracion/(?P<pk>[^/.]+)/$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ |
-| `^detalles-error-migracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ |
-| `^detalles-error-migracion\.(?P<format>[a-z0-9]+)/?$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ |
-| `^detalles-factura-compra/$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ |
-| `^detalles-factura-compra/(?P<pk>[^/.]+)/$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ |
-| `^detalles-factura-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ |
-| `^detalles-factura-compra\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ |
-| `^detalles-factura-fiscal/$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ |
-| `^detalles-factura-fiscal/(?P<pk>[^/.]+)/$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ |
-| `^detalles-factura-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ |
-| `^detalles-factura-fiscal\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ |
-| `^detalles-nomina/$` | DetalleNominaViewSet | DetalleNomina | — | ✅ |
-| `^detalles-nomina/(?P<pk>[^/.]+)/$` | DetalleNominaViewSet | DetalleNomina | — | ✅ |
-| `^detalles-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNominaViewSet | DetalleNomina | — | ✅ |
-| `^detalles-nomina\.(?P<format>[a-z0-9]+)/?$` | DetalleNominaViewSet | DetalleNomina | — | ✅ |
-| `^detalles-nota-credito-fiscal/$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ |
-| `^detalles-nota-credito-fiscal/(?P<pk>[^/.]+)/$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ |
-| `^detalles-nota-credito-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ |
-| `^detalles-nota-credito-fiscal\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ |
-| `^detalles-nota-credito-venta/$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ |
-| `^detalles-nota-credito-venta/(?P<pk>[^/.]+)/$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ |
-| `^detalles-nota-credito-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ |
-| `^detalles-nota-credito-venta\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ |
-| `^detalles-nota-venta/$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ |
-| `^detalles-nota-venta/(?P<pk>[^/.]+)/$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ |
-| `^detalles-nota-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ |
-| `^detalles-nota-venta\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ |
-| `^detalles-oferta-proveedor/$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ |
-| `^detalles-oferta-proveedor/(?P<pk>[^/.]+)/$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ |
-| `^detalles-oferta-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ |
-| `^detalles-oferta-proveedor\.(?P<format>[a-z0-9]+)/?$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ |
-| `^detalles-orden-compra/$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ |
-| `^detalles-orden-compra/(?P<pk>[^/.]+)/$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ |
-| `^detalles-orden-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ |
-| `^detalles-orden-compra\.(?P<format>[a-z0-9]+)/?$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ |
-| `^detalles-pedido/$` | DetallePedidoViewSet | DetallePedido | — | ✅ |
-| `^detalles-pedido/(?P<pk>[^/.]+)/$` | DetallePedidoViewSet | DetallePedido | — | ✅ |
-| `^detalles-pedido/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetallePedidoViewSet | DetallePedido | — | ✅ |
-| `^detalles-pedido\.(?P<format>[a-z0-9]+)/?$` | DetallePedidoViewSet | DetallePedido | — | ✅ |
-| `^detalles-precio/$` | DetallePrecioViewSet | DetallePrecio | — | ✅ |
-| `^detalles-precio/(?P<pk>[^/.]+)/$` | DetallePrecioViewSet | DetallePrecio | — | ✅ |
-| `^detalles-precio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetallePrecioViewSet | DetallePrecio | — | ✅ |
-| `^detalles-precio\.(?P<format>[a-z0-9]+)/?$` | DetallePrecioViewSet | DetallePrecio | — | ✅ |
-| `^detalles-recepcion-mercancia/$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ |
-| `^detalles-recepcion-mercancia/(?P<pk>[^/.]+)/$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ |
-| `^detalles-recepcion-mercancia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ |
-| `^detalles-recepcion-mercancia\.(?P<format>[a-z0-9]+)/?$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ |
-| `^detalles-requisicion-compra/$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ |
-| `^detalles-requisicion-compra/(?P<pk>[^/.]+)/$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ |
-| `^detalles-requisicion-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ |
-| `^detalles-requisicion-compra\.(?P<format>[a-z0-9]+)/?$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ |
-| `^detalles-solicitud-cotizacion/$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ |
-| `^detalles-solicitud-cotizacion/(?P<pk>[^/.]+)/$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ |
-| `^detalles-solicitud-cotizacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ |
-| `^detalles-solicitud-cotizacion\.(?P<format>[a-z0-9]+)/?$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ |
-| `^devoluciones-venta/$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ |
-| `^devoluciones-venta/(?P<pk>[^/.]+)/$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ |
-| `^devoluciones-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ |
-| `^devoluciones-venta\.(?P<format>[a-z0-9]+)/?$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ |
-| `^direcciones-cliente/$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ |
-| `^direcciones-cliente/(?P<pk>[^/.]+)/$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ |
-| `^direcciones-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ |
-| `^direcciones-cliente\.(?P<format>[a-z0-9]+)/?$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ |
-| `^dispositivos/$` | DispositivoViewSet | Dispositivo | ✅ | ✅ |
-| `^dispositivos/(?P<pk>[^/.]+)/$` | DispositivoViewSet | Dispositivo | ✅ | ✅ |
-| `^dispositivos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DispositivoViewSet | Dispositivo | ✅ | ✅ |
-| `^dispositivos\.(?P<format>[a-z0-9]+)/?$` | DispositivoViewSet | Dispositivo | ✅ | ✅ |
-| `^documentos/$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/(?P<pk>[^/.]+)/$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/(?P<pk>[^/.]+)/descargar/$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/(?P<pk>[^/.]+)/descargar\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/(?P<pk>[^/.]+)/eliminar-archivo/$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/(?P<pk>[^/.]+)/eliminar-archivo\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/subir/$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos/subir\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^documentos\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ |
-| `^empleados/$` | EmpleadoViewSet | Empleado | ✅ | ✅ |
-| `^empleados/(?P<pk>[^/.]+)/$` | EmpleadoViewSet | Empleado | ✅ | ✅ |
-| `^empleados/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpleadoViewSet | Empleado | ✅ | ✅ |
-| `^empleados\.(?P<format>[a-z0-9]+)/?$` | EmpleadoViewSet | Empleado | ✅ | ✅ |
-| `^empresas/$` | EmpresaViewSet | Empresa | ✅ | ✅ |
-| `^empresas/(?P<pk>[^/.]+)/$` | EmpresaViewSet | Empresa | ✅ | ✅ |
-| `^empresas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ |
-| `^empresas\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ |
-| `^facturas-compra/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ |
-| `^facturas-compra/(?P<pk>[^/.]+)/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ |
-| `^facturas-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ |
-| `^facturas-compra/facturar/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ |
-| `^facturas-compra/facturar\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ |
-| `^facturas-compra\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ |
-| `^facturas-fiscales/$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ |
-| `^facturas-fiscales/(?P<pk>[^/.]+)/$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ |
-| `^facturas-fiscales/(?P<pk>[^/.]+)/pdf/$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ |
-| `^facturas-fiscales/(?P<pk>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ |
-| `^facturas-fiscales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ |
-| `^facturas-fiscales\.(?P<format>[a-z0-9]+)/?$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ |
-| `^feedback-cliente/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/(?P<pk>[^/.]+)/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/estadisticas_satisfaccion/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/estadisticas_satisfaccion\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/por_tipo/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/por_tipo\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/quejas_sugerencias/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente/quejas_sugerencias\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^feedback-cliente\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ |
-| `^flujo-documentos/$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ |
-| `^flujo-documentos/(?P<pk>[^/.]+)/$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ |
-| `^flujo-documentos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ |
-| `^flujo-documentos\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ |
-| `^flujos-aprobacion/$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ |
-| `^flujos-aprobacion/(?P<pk>[^/.]+)/$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ |
-| `^flujos-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ |
-| `^flujos-aprobacion\.(?P<format>[a-z0-9]+)/?$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ |
-| `^gastos/$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/(?P<pk>[^/.]+)/$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/(?P<pk>[^/.]+)/aprobar/$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/(?P<pk>[^/.]+)/rechazar/$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/(?P<pk>[^/.]+)/rechazar\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/pendientes_aprobacion/$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/pendientes_aprobacion\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/resumen_por_categoria/$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos/resumen_por_categoria\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gastos\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ |
-| `^gestiones/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/(?P<pk>[^/.]+)/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/(?P<pk>[^/.]+)/preview-plantilla/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/(?P<pk>[^/.]+)/preview-plantilla\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/agenda/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/agenda\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/prioridades/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones/prioridades\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^gestiones\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ |
-| `^horarios-trabajo/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^horarios-trabajo/(?P<pk>[^/.]+)/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^horarios-trabajo/(?P<pk>[^/.]+)/desactivar/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^horarios-trabajo/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^horarios-trabajo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^horarios-trabajo/activos/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^horarios-trabajo/activos\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^horarios-trabajo\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ |
-| `^instancias/$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/entidades/(?P<tipo_entidad>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/entidades/(?P<tipo_entidad>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/jobs/$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/jobs\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/preview/(?P<tipo_entidad>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/preview/(?P<tipo_entidad>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/sync/$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/sync\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/test/$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)/test\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^instancias\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ |
-| `^interacciones-ticket/$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ |
-| `^interacciones-ticket/(?P<pk>[^/.]+)/$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ |
-| `^interacciones-ticket/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ |
-| `^interacciones-ticket/agregar_comentario/$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ |
-| `^interacciones-ticket/agregar_comentario\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ |
-| `^interacciones-ticket\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ |
-| `^jobs/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^jobs/(?P<pk>[^/.]+)/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^jobs/(?P<pk>[^/.]+)/cancelar/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^jobs/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^jobs/(?P<pk>[^/.]+)/logs/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^jobs/(?P<pk>[^/.]+)/logs\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^jobs/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^jobs\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ |
-| `^licencias-empleado/$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ |
-| `^licencias-empleado/(?P<pk>[^/.]+)/$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ |
-| `^licencias-empleado/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ |
-| `^licencias-empleado\.(?P<format>[a-z0-9]+)/?$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ |
-| `^listas-materiales-detalle/$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ |
-| `^listas-materiales-detalle/(?P<pk>[^/.]+)/$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ |
-| `^listas-materiales-detalle/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ |
-| `^listas-materiales-detalle\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ |
-| `^listas-materiales/$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ |
-| `^listas-materiales/(?P<pk>[^/.]+)/$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ |
-| `^listas-materiales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ |
-| `^listas-materiales\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ |
-| `^listas-precio/$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ |
-| `^listas-precio/(?P<pk>[^/.]+)/$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ |
-| `^listas-precio/(?P<pk>[^/.]+)/importar-masivo/$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ |
-| `^listas-precio/(?P<pk>[^/.]+)/importar-masivo\.(?P<format>[a-z0-9]+)/?$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ |
-| `^listas-precio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ |
-| `^listas-precio\.(?P<format>[a-z0-9]+)/?$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ |
-| `^logs-auditoria/$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ |
-| `^logs-auditoria/(?P<pk>[^/.]+)/$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ |
-| `^logs-auditoria/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ |
-| `^logs-auditoria\.(?P<format>[a-z0-9]+)/?$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ |
-| `^logs-integracion/$` | LogIntegracionViewSet | LogIntegracion | — | ✅ |
-| `^logs-integracion/(?P<pk>[^/.]+)/$` | LogIntegracionViewSet | LogIntegracion | — | ✅ |
-| `^logs-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ |
-| `^logs-integracion\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ |
-| `^lotes/$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ |
-| `^lotes/(?P<pk>[^/.]+)/$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ |
-| `^lotes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ |
-| `^lotes\.(?P<format>[a-z0-9]+)/?$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ |
-| `^mapeo-campos/$` | MapeoCampoViewSet | MapeoCampo | — | ✅ |
-| `^mapeo-campos/(?P<pk>[^/.]+)/$` | MapeoCampoViewSet | MapeoCampo | — | ✅ |
-| `^mapeo-campos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ |
-| `^mapeo-campos\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ |
-| `^metodos-pago-empresa-activas/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ |
-| `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ |
-| `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ |
-| `^metodos-pago-empresa-activas\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ |
-| `^metodos-pago/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/monedas_info/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/monedas_info\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/reutilizar/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/reutilizar\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/buscar_reutilizar/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago/buscar_reutilizar\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^metodos-pago\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ |
-| `^monedas-empresa-activas/$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ |
-| `^monedas-empresa-activas/(?P<pk>[^/.]+)/$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ |
-| `^monedas-empresa-activas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ |
-| `^monedas-empresa-activas\.(?P<format>[a-z0-9]+)/?$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ |
-| `^monedas/$` | MonedaViewSet | Moneda | ✅ | ✅ |
-| `^monedas/(?P<pk>[^/.]+)/$` | MonedaViewSet | Moneda | ✅ | ✅ |
-| `^monedas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MonedaViewSet | Moneda | ✅ | ✅ |
-| `^monedas/activas/$` | MonedaViewSet | Moneda | ✅ | ✅ |
-| `^monedas/activas\.(?P<format>[a-z0-9]+)/?$` | MonedaViewSet | Moneda | ✅ | ✅ |
-| `^monedas\.(?P<format>[a-z0-9]+)/?$` | MonedaViewSet | Moneda | ✅ | ✅ |
-| `^movimientos-bancarios/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-bancarios/(?P<pk>[^/.]+)/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-bancarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-bancarios/conciliar-auto/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-bancarios/conciliar-auto\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-bancarios/importar-csv/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-bancarios/importar-csv\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-bancarios\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ |
-| `^movimientos-caja-banco/$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ |
-| `^movimientos-caja-banco/(?P<pk>[^/.]+)/$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ |
-| `^movimientos-caja-banco/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ |
-| `^movimientos-caja-banco\.(?P<format>[a-z0-9]+)/?$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ |
-| `^movimientos-internos-fondo/$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ |
-| `^movimientos-internos-fondo/(?P<pk>[^/.]+)/$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ |
-| `^movimientos-internos-fondo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ |
-| `^movimientos-internos-fondo\.(?P<format>[a-z0-9]+)/?$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ |
-| `^movimientos-inventario/$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ |
-| `^movimientos-inventario/(?P<pk>[^/.]+)/$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ |
-| `^movimientos-inventario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ |
-| `^movimientos-inventario\.(?P<format>[a-z0-9]+)/?$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ |
-| `^nominas-extrasalarial/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas-extrasalarial/(?P<pk>[^/.]+)/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas-extrasalarial/(?P<pk>[^/.]+)/aprobar/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas-extrasalarial/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas-extrasalarial/(?P<pk>[^/.]+)/marcar_pagada/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas-extrasalarial/(?P<pk>[^/.]+)/marcar_pagada\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas-extrasalarial/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas-extrasalarial\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ |
-| `^nominas/$` | NominaViewSet | Nomina | — | ✅ |
-| `^nominas/(?P<pk>[^/.]+)/$` | NominaViewSet | Nomina | — | ✅ |
-| `^nominas/(?P<pk>[^/.]+)/aprobar/$` | NominaViewSet | Nomina | — | ✅ |
-| `^nominas/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ |
-| `^nominas/(?P<pk>[^/.]+)/marcar_pagada/$` | NominaViewSet | Nomina | — | ✅ |
-| `^nominas/(?P<pk>[^/.]+)/marcar_pagada\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ |
-| `^nominas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ |
-| `^nominas\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ |
-| `^notas-credito-fiscal/$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ |
-| `^notas-credito-fiscal/(?P<pk>[^/.]+)/$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ |
-| `^notas-credito-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ |
-| `^notas-credito-fiscal\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ |
-| `^notas-credito-venta/$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ |
-| `^notas-credito-venta/(?P<pk>[^/.]+)/$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ |
-| `^notas-credito-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ |
-| `^notas-credito-venta\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ |
-| `^notas-venta/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ |
-| `^notas-venta/(?P<pk>[^/.]+)/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ |
-| `^notas-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ |
-| `^notas-venta\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ |
-| `^notificaciones/$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/(?P<pk>[^/.]+)/$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/(?P<pk>[^/.]+)/marcar-leida/$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/(?P<pk>[^/.]+)/marcar-leida\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/(?P<pk>[^/.]+)/marcar_leida/$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/(?P<pk>[^/.]+)/marcar_leida\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/marcar_todas_leidas/$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/marcar_todas_leidas\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/mis-notificaciones/$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/mis-notificaciones\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/no_leidas/$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones/no_leidas\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^notificaciones\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ |
-| `^ofertas-proveedor/$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ |
-| `^ofertas-proveedor/(?P<pk>[^/.]+)/$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ |
-| `^ofertas-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ |
-| `^ofertas-proveedor\.(?P<format>[a-z0-9]+)/?$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ |
-| `^operaciones-cambio-divisa/$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ |
-| `^operaciones-cambio-divisa/(?P<pk>[^/.]+)/$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ |
-| `^operaciones-cambio-divisa/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ |
-| `^operaciones-cambio-divisa\.(?P<format>[a-z0-9]+)/?$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ |
-| `^operaciones-produccion/$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ |
-| `^operaciones-produccion/(?P<pk>[^/.]+)/$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ |
-| `^operaciones-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ |
-| `^operaciones-produccion\.(?P<format>[a-z0-9]+)/?$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ |
-| `^ordenes-compra/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ |
-| `^ordenes-compra/(?P<pk>[^/.]+)/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ |
-| `^ordenes-compra/(?P<pk>[^/.]+)/aprobar/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ |
-| `^ordenes-compra/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ |
-| `^ordenes-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ |
-| `^ordenes-compra\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ |
-| `^ordenes-produccion/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ |
-| `^ordenes-produccion/(?P<pk>[^/.]+)/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ |
-| `^ordenes-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ |
-| `^ordenes-produccion\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ |
-| `^overrides-metodos-pago/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ |
-| `^overrides-metodos-pago/(?P<pk>[^/.]+)/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ |
-| `^overrides-metodos-pago/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ |
-| `^overrides-metodos-pago\.(?P<format>[a-z0-9]+)/?$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ |
-| `^pagos/$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^pagos/(?P<pk>[^/.]+)/$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^pagos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^pagos/tipos_documento/$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^pagos/tipos_documento\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^pagos/tipos_operacion/$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^pagos/tipos_operacion\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^pagos\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ |
-| `^parametros-sistema/$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ |
-| `^parametros-sistema/(?P<pk>[^/.]+)/$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ |
-| `^parametros-sistema/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ |
-| `^parametros-sistema\.(?P<format>[a-z0-9]+)/?$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ |
-| `^pedidos/$` | PedidoViewSet | Pedido | ✅ | ✅ |
-| `^pedidos/(?P<pk>[^/.]+)/$` | PedidoViewSet | Pedido | ✅ | ✅ |
-| `^pedidos/(?P<pk>[^/.]+)/confirmar/$` | PedidoViewSet | Pedido | ✅ | ✅ |
-| `^pedidos/(?P<pk>[^/.]+)/confirmar\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ |
-| `^pedidos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ |
-| `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ |
-| `^periodos-nomina/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/(?P<pk>[^/.]+)/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/(?P<pk>[^/.]+)/cerrar/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/(?P<pk>[^/.]+)/cerrar\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/abiertos/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/abiertos\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/activos/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina/activos\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^periodos-nomina\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ |
-| `^permisos-documento/$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ |
-| `^permisos-documento/(?P<pk>[^/.]+)/$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ |
-| `^permisos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ |
-| `^permisos-documento\.(?P<format>[a-z0-9]+)/?$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ |
-| `^permisos/$` | PermisosViewSet | Permisos | — | ✅ |
-| `^permisos/(?P<pk>[^/.]+)/$` | PermisosViewSet | Permisos | — | ✅ |
-| `^permisos/(?P<pk>[^/.]+)/activar/$` | PermisosViewSet | Permisos | — | ✅ |
-| `^permisos/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ |
-| `^permisos/(?P<pk>[^/.]+)/desactivar/$` | PermisosViewSet | Permisos | — | ✅ |
-| `^permisos/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ |
-| `^permisos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ |
-| `^permisos\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ |
-| `^plan-cuentas/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^plan-cuentas/(?P<pk>[^/.]+)/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^plan-cuentas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^plan-cuentas/activos/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^plan-cuentas/activos\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^plan-cuentas/por_tipo/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^plan-cuentas/por_tipo\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^plan-cuentas\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ |
-| `^planes/$` | PlanViewSet | Plan | — | ✅ |
-| `^planes/(?P<pk>[^/.]+)/$` | PlanViewSet | Plan | — | ✅ |
-| `^planes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlanViewSet | Plan | — | ✅ |
-| `^planes\.(?P<format>[a-z0-9]+)/?$` | PlanViewSet | Plan | — | ✅ |
-| `^plantillas-maestro-cajas/$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ |
-| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)/$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ |
-| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)/sincronizar/$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ |
-| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)/sincronizar\.(?P<format>[a-z0-9]+)/?$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ |
-| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ |
-| `^plantillas-maestro-cajas\.(?P<format>[a-z0-9]+)/?$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ |
-| `^plantillas-migracion/$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ |
-| `^plantillas-migracion/(?P<pk>[^/.]+)/$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ |
-| `^plantillas-migracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ |
-| `^plantillas-migracion\.(?P<format>[a-z0-9]+)/?$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ |
-| `^plantillas/$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ |
-| `^plantillas/(?P<pk>[^/.]+)/$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ |
-| `^plantillas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ |
-| `^plantillas\.(?P<format>[a-z0-9]+)/?$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ |
-| `^predicciones/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/(?P<pk>[^/.]+)/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/(?P<pk>[^/.]+)/evaluar/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/(?P<pk>[^/.]+)/evaluar\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/(?P<pk>[^/.]+)/responder/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/(?P<pk>[^/.]+)/responder\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/analizar-cobranza/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/analizar-cobranza\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/analizar-personalizacion/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/analizar-personalizacion\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/analizar-reorden/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/analizar-reorden\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/clasificar-gasto/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/clasificar-gasto\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/metricas-clasificador/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/metricas-clasificador\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/sugerencias-activas/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones/sugerencias-activas\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^predicciones\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ |
-| `^procesos-migracion/$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ |
-| `^procesos-migracion/(?P<pk>[^/.]+)/$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ |
-| `^procesos-migracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ |
-| `^procesos-migracion\.(?P<format>[a-z0-9]+)/?$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/aprobar/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/procesar/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/procesar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina-extrasalarial\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ |
-| `^procesos-nomina/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)/aprobar/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)/procesar/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)/procesar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)/resumen/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)/resumen\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^procesos-nomina\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ |
-| `^produccion-terminada/$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ |
-| `^produccion-terminada/(?P<pk>[^/.]+)/$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ |
-| `^produccion-terminada/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ |
-| `^produccion-terminada\.(?P<format>[a-z0-9]+)/?$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ |
-| `^productos/$` | ProductoViewSet | Producto | ✅ | ✅ |
-| `^productos/(?P<pk>[^/.]+)/$` | ProductoViewSet | Producto | ✅ | ✅ |
-| `^productos/(?P<pk>[^/.]+)/kardex/$` | ProductoViewSet | Producto | ✅ | ✅ |
-| `^productos/(?P<pk>[^/.]+)/kardex\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ |
-| `^productos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ |
-| `^productos\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ |
-| `^proveedores/$` | ConectorProveedorViewSet | ConectorProveedor | — | — |
-| `^proveedores/$` | ProveedorViewSet | Proveedor | ✅ | ✅ |
-| `^proveedores/(?P<pk>[^/.]+)/$` | ConectorProveedorViewSet | ConectorProveedor | — | — |
-| `^proveedores/(?P<pk>[^/.]+)/$` | ProveedorViewSet | Proveedor | ✅ | ✅ |
-| `^proveedores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | — |
-| `^proveedores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ |
-| `^proveedores/buscar-por-rif/$` | ProveedorViewSet | Proveedor | ✅ | ✅ |
-| `^proveedores/buscar-por-rif\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ |
-| `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | — |
-| `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ |
-| `^recepciones-mercancia/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ |
-| `^recepciones-mercancia/(?P<pk>[^/.]+)/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ |
-| `^recepciones-mercancia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ |
-| `^recepciones-mercancia/recepcionar/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ |
-| `^recepciones-mercancia/recepcionar\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ |
-| `^recepciones-mercancia\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ |
-| `^reembolsos-gasto/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/(?P<pk>[^/.]+)/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/(?P<pk>[^/.]+)/anular/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/(?P<pk>[^/.]+)/procesar_pago/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/(?P<pk>[^/.]+)/procesar_pago\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/pendientes_pago/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto/pendientes_pago\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^reembolsos-gasto\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ |
-| `^registros-aprobacion/$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ |
-| `^registros-aprobacion/(?P<pk>[^/.]+)/$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ |
-| `^registros-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ |
-| `^registros-aprobacion\.(?P<format>[a-z0-9]+)/?$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ |
-| `^registros-asistencia/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/(?P<pk>[^/.]+)/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/hoy/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/hoy\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/marcar_asistencia/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/marcar_asistencia\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/por_empleado_fecha/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia/por_empleado_fecha\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-asistencia\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ |
-| `^registros-operacion/$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ |
-| `^registros-operacion/(?P<pk>[^/.]+)/$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ |
-| `^registros-operacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ |
-| `^registros-operacion\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ |
-| `^requisiciones-compra/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ |
-| `^requisiciones-compra/(?P<pk>[^/.]+)/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ |
-| `^requisiciones-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ |
-| `^requisiciones-compra\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ |
-| `^resumenes-asistencia-diario/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)/aprobar/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/generar_resumen_diario/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/generar_resumen_diario\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/pendientes_revision/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/pendientes_revision\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/reporte_mensual/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario/reporte_mensual\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^resumenes-asistencia-diario\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ |
-| `^roles/$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^roles/(?P<pk>[^/.]+)/$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^roles/(?P<pk>[^/.]+)/activar/$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^roles/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^roles/(?P<pk>[^/.]+)/desactivar/$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^roles/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^roles/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^roles\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ |
-| `^rutas-produccion-detalle/$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ |
-| `^rutas-produccion-detalle/(?P<pk>[^/.]+)/$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ |
-| `^rutas-produccion-detalle/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ |
-| `^rutas-produccion-detalle\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ |
-| `^rutas-produccion/$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ |
-| `^rutas-produccion/(?P<pk>[^/.]+)/$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ |
-| `^rutas-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ |
-| `^rutas-produccion\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ |
-| `^sesiones-caja/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-caja/(?P<pk>[^/.]+)/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-caja/(?P<pk>[^/.]+)/cerrar/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-caja/(?P<pk>[^/.]+)/cerrar\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-caja/(?P<pk>[^/.]+)/transferir-entre-cajas/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-caja/(?P<pk>[^/.]+)/transferir-entre-cajas\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-caja/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-caja\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ |
-| `^sesiones-datafono/$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ |
-| `^sesiones-datafono/(?P<pk>[^/.]+)/$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ |
-| `^sesiones-datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ |
-| `^sesiones-datafono\.(?P<format>[a-z0-9]+)/?$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ |
-| `^solicitudes-aprobacion/$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ |
-| `^solicitudes-aprobacion/(?P<pk>[^/.]+)/$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ |
-| `^solicitudes-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ |
-| `^solicitudes-aprobacion\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ |
-| `^solicitudes-cotizacion/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ |
-| `^solicitudes-cotizacion/(?P<pk>[^/.]+)/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ |
-| `^solicitudes-cotizacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ |
-| `^solicitudes-cotizacion\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ |
-| `^stock-actual/$` | StockActualViewSet | StockActual | ✅ | ✅ |
-| `^stock-actual/(?P<pk>[^/.]+)/$` | StockActualViewSet | StockActual | ✅ | ✅ |
-| `^stock-actual/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockActualViewSet | StockActual | ✅ | ✅ |
-| `^stock-actual\.(?P<format>[a-z0-9]+)/?$` | StockActualViewSet | StockActual | ✅ | ✅ |
-| `^stock-consignacion-cliente/$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ |
-| `^stock-consignacion-cliente/(?P<pk>[^/.]+)/$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ |
-| `^stock-consignacion-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ |
-| `^stock-consignacion-cliente\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ |
-| `^stock-consignacion-proveedor/$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ |
-| `^stock-consignacion-proveedor/(?P<pk>[^/.]+)/$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ |
-| `^stock-consignacion-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ |
-| `^stock-consignacion-proveedor\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ |
-| `^sucursales/$` | SucursalViewSet | Sucursal | ✅ | ✅ |
-| `^sucursales/(?P<pk>[^/.]+)/$` | SucursalViewSet | Sucursal | ✅ | ✅ |
-| `^sucursales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SucursalViewSet | Sucursal | ✅ | ✅ |
-| `^sucursales\.(?P<format>[a-z0-9]+)/?$` | SucursalViewSet | Sucursal | ✅ | ✅ |
-| `^suscripciones/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/(?P<pk>[^/.]+)/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/(?P<pk>[^/.]+)/cancelar/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/(?P<pk>[^/.]+)/suspender/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/(?P<pk>[^/.]+)/suspender\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/activa/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones/activa\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^suscripciones\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ |
-| `^tasas-cambio/$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ |
-| `^tasas-cambio/(?P<pk>[^/.]+)/$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ |
-| `^tasas-cambio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ |
-| `^tasas-cambio\.(?P<format>[a-z0-9]+)/?$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ |
-| `^tasas-iva/$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ |
-| `^tasas-iva/(?P<pk>[^/.]+)/$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ |
-| `^tasas-iva/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ |
-| `^tasas-iva/calcular/$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ |
-| `^tasas-iva/calcular\.(?P<format>[a-z0-9]+)/?$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ |
-| `^tasas-iva\.(?P<format>[a-z0-9]+)/?$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ |
-| `^tickets-soporte/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)/asignar_agente/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)/asignar_agente\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)/cambiar_estado/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)/cambiar_estado\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)/escalar/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)/escalar\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/abiertos/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/abiertos\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/dashboard/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/dashboard\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/por_prioridad/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte/por_prioridad\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tickets-soporte\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ |
-| `^tipos-aprobacion/$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ |
-| `^tipos-aprobacion/(?P<pk>[^/.]+)/$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ |
-| `^tipos-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ |
-| `^tipos-aprobacion\.(?P<format>[a-z0-9]+)/?$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ |
-| `^tipos-documento/$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ |
-| `^tipos-documento/(?P<pk>[^/.]+)/$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ |
-| `^tipos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ |
-| `^tipos-documento\.(?P<format>[a-z0-9]+)/?$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ |
-| `^tipos-licencia/$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ |
-| `^tipos-licencia/(?P<pk>[^/.]+)/$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ |
-| `^tipos-licencia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ |
-| `^tipos-licencia\.(?P<format>[a-z0-9]+)/?$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ |
-| `^transacciones-datafono/$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ |
-| `^transacciones-datafono/(?P<pk>[^/.]+)/$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ |
-| `^transacciones-datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ |
-| `^transacciones-datafono\.(?P<format>[a-z0-9]+)/?$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ |
-| `^transacciones-financieras/$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ |
-| `^transacciones-financieras/(?P<pk>[^/.]+)/$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ |
-| `^transacciones-financieras/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ |
-| `^transacciones-financieras\.(?P<format>[a-z0-9]+)/?$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ |
-| `^ubicaciones-almacen/$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ |
-| `^ubicaciones-almacen/(?P<pk>[^/.]+)/$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ |
-| `^ubicaciones-almacen/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ |
-| `^ubicaciones-almacen\.(?P<format>[a-z0-9]+)/?$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ |
-| `^unidades-medida/$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ |
-| `^unidades-medida/(?P<pk>[^/.]+)/$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ |
-| `^unidades-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ |
-| `^unidades-medida\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ |
-| `^usuarios/$` | UsuariosViewSet | Usuarios | — | ✅ |
-| `^usuarios/(?P<pk>[^/.]+)/$` | UsuariosViewSet | Usuarios | — | ✅ |
-| `^usuarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ |
-| `^usuarios\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ |
-| `^variantes-producto/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ |
-| `^variantes-producto/(?P<pk>[^/.]+)/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ |
-| `^variantes-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VarianteProductoViewSet | VarianteProducto | — | ✅ |
-| `^variantes-producto\.(?P<format>[a-z0-9]+)/?$` | VarianteProductoViewSet | VarianteProducto | — | ✅ |
-| `^ventas-fraccionadas/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^ventas-fraccionadas/(?P<pk>[^/.]+)/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^ventas-fraccionadas/(?P<pk>[^/.]+)/confirmar/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^ventas-fraccionadas/(?P<pk>[^/.]+)/confirmar\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^ventas-fraccionadas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^ventas-fraccionadas/resumen/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^ventas-fraccionadas/resumen\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^ventas-fraccionadas\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ |
-| `^vinculos-documento/$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ |
-| `^vinculos-documento/(?P<pk>[^/.]+)/$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ |
-| `^vinculos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ |
-| `^vinculos-documento\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ |
-| `agente/` | CobranzaAgenteView | — | — | — |
-| `api/auth/change-password/` | change_password_view | — | — | — |
-| `api/auth/login/` | login_view | — | — | — |
-| `api/auth/logout/` | logout_view | — | — | — |
-| `api/auth/profile/` | user_profile_view | — | — | — |
-| `api/auth/profile/update/` | update_profile_view | — | — | — |
-| `api/auth/token/` | CustomTokenObtainPairView | — | — | — |
-| `api/auth/token/refresh/` | refresh_token_view | — | — | — |
-| `api/auth/token/verify/` | verify_token_view | — | — | — |
-| `api/docs/` | SchemaView | — | — | — |
-| `api/health/` | health_view | — | — | — |
-| `api/redoc/` | SchemaView | — | — | — |
-| `cartera/dashboard/` | CarteraDashboardView | — | — | — |
-| `chat/` | AsistenteChatView | — | — | — |
-| `dashboard/kpis/` | dashboard_kpis_view | — | — | — |
-| `dashboard/stats/` | dashboard_stats_view | — | — | — |
-| `dispositivos/accion/` | dispositivo_accion_view | — | — | — |
-| `libro-compras-pdf/` | LibroComprasPDFView | — | — | — |
-| `libro-compras/` | LibroComprasView | — | — | — |
-| `libro-ventas-pdf/` | LibroVentasPDFView | — | — | — |
-| `libro-ventas/` | LibroVentasView | — | — | — |
-| `periodos-fiscales/` | PeriodoFiscalView | — | — | — |
-| `periodos-fiscales/<int:año>/<int:mes>/cerrar/` | CerrarPeriodoFiscalView | — | — | — |
-| `status/` | IntegrationHubStatusView | — | — | — |
-| `tasa-oficial-bcv/` | TasaCambioOficialBCVView | — | — | — |
-| `usuario_roles/` | usuario_roles_view | — | — | — |
-| `usuarios/change_password/` | change_password_view | — | — | — |
-| `usuarios/me/` | me_view | — | — | — |
+| Ruta | ViewSet | Modelo | Tenant | Override get_queryset | Permiso |
+|---|---|---|---|---|---|
+| `` | APIRootView | — | — | — | IsAuthenticated |
+| `<drf_format_suffix:format>` | APIRootView | — | — | — | IsAuthenticated |
+| `^abonos-cxc/$` | AbonoCxCViewSet | AbonoCxC | — | ✅ | IsAuthenticated |
+| `^abonos-cxc/(?P<pk>[^/.]+)/$` | AbonoCxCViewSet | AbonoCxC | — | ✅ | IsAuthenticated |
+| `^abonos-cxc/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AbonoCxCViewSet | AbonoCxC | — | ✅ | IsAuthenticated |
+| `^abonos-cxc\.(?P<format>[a-z0-9]+)/?$` | AbonoCxCViewSet | AbonoCxC | — | ✅ | IsAuthenticated |
+| `^abonos-cxp/$` | AbonoCxPViewSet | AbonoCxP | — | ✅ | IsAuthenticated |
+| `^abonos-cxp/(?P<pk>[^/.]+)/$` | AbonoCxPViewSet | AbonoCxP | — | ✅ | IsAuthenticated |
+| `^abonos-cxp/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AbonoCxPViewSet | AbonoCxP | — | ✅ | IsAuthenticated |
+| `^abonos-cxp\.(?P<format>[a-z0-9]+)/?$` | AbonoCxPViewSet | AbonoCxP | — | ✅ | IsAuthenticated |
+| `^acuerdos/$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^acuerdos/(?P<pk>[^/.]+)/$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^acuerdos/(?P<pk>[^/.]+)/registrar-pago/$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^acuerdos/(?P<pk>[^/.]+)/registrar-pago\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^acuerdos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^acuerdos/vencimientos-proximos/$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^acuerdos/vencimientos-proximos\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^acuerdos\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
+| `^ajustes-caja-banco/crear_ajuste/$` | AjusteCajaBancoViewSet | — | — | — | IsAuthenticated |
+| `^ajustes-caja-banco/crear_ajuste\.(?P<format>[a-z0-9]+)/?$` | AjusteCajaBancoViewSet | — | — | — | IsAuthenticated |
+| `^almacenes/$` | AlmacenViewSet | Almacen | ✅ | ✅ | IsAuthenticated |
+| `^almacenes/(?P<pk>[^/.]+)/$` | AlmacenViewSet | Almacen | ✅ | ✅ | IsAuthenticated |
+| `^almacenes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AlmacenViewSet | Almacen | ✅ | ✅ | IsAuthenticated |
+| `^almacenes\.(?P<format>[a-z0-9]+)/?$` | AlmacenViewSet | Almacen | ✅ | ✅ | IsAuthenticated |
+| `^analisis-variacion-costo/$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ | IsAuthenticated |
+| `^analisis-variacion-costo/(?P<pk>[^/.]+)/$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ | IsAuthenticated |
+| `^analisis-variacion-costo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ | IsAuthenticated |
+| `^analisis-variacion-costo\.(?P<format>[a-z0-9]+)/?$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/(?P<pk>[^/.]+)/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/(?P<pk>[^/.]+)/actualizar_revision/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/(?P<pk>[^/.]+)/actualizar_revision\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/buscar/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/buscar\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/publicos/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento/publicos\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^articulos-conocimiento\.(?P<format>[a-z0-9]+)/?$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)/anular/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)/aprobar/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/balance_comprobacion/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/balance_comprobacion\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asignaciones-horario/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/(?P<pk>[^/.]+)/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/(?P<pk>[^/.]+)/finalizar/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/(?P<pk>[^/.]+)/finalizar\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/activas/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/activas\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/por_empleado/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario/por_empleado\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-horario\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^beneficios-empleado/$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ | IsAuthenticated |
+| `^beneficios-empleado/(?P<pk>[^/.]+)/$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ | IsAuthenticated |
+| `^beneficios-empleado/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ | IsAuthenticated |
+| `^beneficios-empleado\.(?P<format>[a-z0-9]+)/?$` | BeneficioEmpleadoViewSet | BeneficioEmpleado | — | ✅ | IsAuthenticated |
+| `^beneficios/$` | BeneficioViewSet | Beneficio | ✅ | ✅ | IsAuthenticated |
+| `^beneficios/(?P<pk>[^/.]+)/$` | BeneficioViewSet | Beneficio | ✅ | ✅ | IsAuthenticated |
+| `^beneficios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BeneficioViewSet | Beneficio | ✅ | ✅ | IsAuthenticated |
+| `^beneficios\.(?P<format>[a-z0-9]+)/?$` | BeneficioViewSet | Beneficio | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas-usuario/$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-fisicas-usuario/(?P<pk>[^/.]+)/$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-fisicas-usuario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-fisicas-usuario\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-fisicas/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/tipo-caja-choices/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/tipo-caja-choices\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/tipos_documento/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/tipos_documento\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/tipos_operacion/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/tipos_operacion\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-usuario/$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-usuario/(?P<pk>[^/.]+)/$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-usuario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-usuario\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualUsuarioViewSet | CajaVirtualUsuario | — | ✅ | IsAuthenticated |
+| `^cajas-virtuales-auto/$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ | IsAuthenticated |
+| `^cajas-virtuales-auto/(?P<pk>[^/.]+)/$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ | IsAuthenticated |
+| `^cajas-virtuales-auto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ | IsAuthenticated |
+| `^cajas-virtuales-auto\.(?P<format>[a-z0-9]+)/?$` | CajaVirtualAutoViewSet | CajaVirtualAuto | — | ✅ | IsAuthenticated |
+| `^cajas/$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/(?P<pk>[^/.]+)/$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/(?P<pk>[^/.]+)/cierre/$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/(?P<pk>[^/.]+)/cierre\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/(?P<pk>[^/.]+)/movimientos-caja-banco/$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/(?P<pk>[^/.]+)/movimientos-caja-banco\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/tipo-caja-choices/$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas/tipo-caja-choices\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cajas\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^cargos/$` | CargoViewSet | Cargo | ✅ | ✅ | IsAuthenticated |
+| `^cargos/(?P<pk>[^/.]+)/$` | CargoViewSet | Cargo | ✅ | ✅ | IsAuthenticated |
+| `^cargos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CargoViewSet | Cargo | ✅ | ✅ | IsAuthenticated |
+| `^cargos\.(?P<format>[a-z0-9]+)/?$` | CargoViewSet | Cargo | ✅ | ✅ | IsAuthenticated |
+| `^carpetas/$` | CarpetaViewSet | Carpeta | ✅ | ✅ | IsAuthenticated |
+| `^carpetas/(?P<pk>[^/.]+)/$` | CarpetaViewSet | Carpeta | ✅ | ✅ | IsAuthenticated |
+| `^carpetas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CarpetaViewSet | Carpeta | ✅ | ✅ | IsAuthenticated |
+| `^carpetas\.(?P<format>[a-z0-9]+)/?$` | CarpetaViewSet | Carpeta | ✅ | ✅ | IsAuthenticated |
+| `^catalogos-valor/$` | CatalogoValorViewSet | CatalogoValor | — | ✅ | IsAuthenticated |
+| `^catalogos-valor/(?P<pk>[^/.]+)/$` | CatalogoValorViewSet | CatalogoValor | — | ✅ | IsAuthenticated |
+| `^catalogos-valor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CatalogoValorViewSet | CatalogoValor | — | ✅ | IsAuthenticated |
+| `^catalogos-valor\.(?P<format>[a-z0-9]+)/?$` | CatalogoValorViewSet | CatalogoValor | — | ✅ | IsAuthenticated |
+| `^categorias-gasto/$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-gasto/(?P<pk>[^/.]+)/$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-gasto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-gasto/activas/$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-gasto/activas\.(?P<format>[a-z0-9]+)/?$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-gasto\.(?P<format>[a-z0-9]+)/?$` | CategoriaGastoViewSet | CategoriaGasto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-producto/$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-producto/(?P<pk>[^/.]+)/$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-producto\.(?P<format>[a-z0-9]+)/?$` | CategoriaProductoViewSet | CategoriaProducto | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket/(?P<pk>[^/.]+)/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket/(?P<pk>[^/.]+)/estadisticas/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket/(?P<pk>[^/.]+)/estadisticas\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket/activas/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket/activas\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^categorias-ticket\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^centros-trabajo/$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^centros-trabajo/(?P<pk>[^/.]+)/$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^centros-trabajo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^centros-trabajo\.(?P<format>[a-z0-9]+)/?$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^clientes/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/(?P<pk>[^/.]+)/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/(?P<pk>[^/.]+)/credito-disponible/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/(?P<pk>[^/.]+)/credito-disponible\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/(?P<pk>[^/.]+)/historial-ventas/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/(?P<pk>[^/.]+)/historial-ventas\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/buscar-por-rif/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes/buscar-por-rif\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^clientes\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/(?P<pk>[^/.]+)/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/deducciones/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/deducciones\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/devengados/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/devengados\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/por_tipo/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina/por_tipo\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-nomina\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
+| `^conciliaciones-bancarias/$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^conciliaciones-bancarias/(?P<pk>[^/.]+)/$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^conciliaciones-bancarias/(?P<pk>[^/.]+)/cerrar/$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^conciliaciones-bancarias/(?P<pk>[^/.]+)/cerrar\.(?P<format>[a-z0-9]+)/?$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^conciliaciones-bancarias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^conciliaciones-bancarias\.(?P<format>[a-z0-9]+)/?$` | ConciliacionBancariaViewSet | ConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-fiscal/$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-fiscal/(?P<pk>[^/.]+)/$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-fiscal\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFiscalEmpresaViewSet | ConfiguracionFiscalEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-integracion/$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-integracion/(?P<pk>[^/.]+)/$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
+| `^configuracion-integracion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/(?P<pk>[^/.]+)/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/(?P<pk>[^/.]+)/activar/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/activa/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/activa\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/historial/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones/historial\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^consumos-material/$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ | IsAuthenticated |
+| `^consumos-material/(?P<pk>[^/.]+)/$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ | IsAuthenticated |
+| `^consumos-material/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ | IsAuthenticated |
+| `^consumos-material\.(?P<format>[a-z0-9]+)/?$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ | IsAuthenticated |
+| `^contactos-cliente/$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ | IsAuthenticated |
+| `^contactos-cliente/(?P<pk>[^/.]+)/$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ | IsAuthenticated |
+| `^contactos-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ | IsAuthenticated |
+| `^contactos-cliente\.(?P<format>[a-z0-9]+)/?$` | ContactoClienteViewSet | ContactoCliente | ✅ | ✅ | IsAuthenticated |
+| `^contactos-proveedor/$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ | IsAuthenticated |
+| `^contactos-proveedor/(?P<pk>[^/.]+)/$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ | IsAuthenticated |
+| `^contactos-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ | IsAuthenticated |
+| `^contactos-proveedor\.(?P<format>[a-z0-9]+)/?$` | ContactoProveedorViewSet | ContactoProveedor | — | ✅ | IsAuthenticated |
+| `^contactos/$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
+| `^contactos/(?P<pk>[^/.]+)/$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
+| `^contactos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
+| `^contactos\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
+| `^conversiones-unidad-medida/$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^conversiones-unidad-medida/(?P<pk>[^/.]+)/$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^conversiones-unidad-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^conversiones-unidad-medida\.(?P<format>[a-z0-9]+)/?$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^costos-estandar-producto/$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ | IsAuthenticated |
+| `^costos-estandar-producto/(?P<pk>[^/.]+)/$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ | IsAuthenticated |
+| `^costos-estandar-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ | IsAuthenticated |
+| `^costos-estandar-producto\.(?P<format>[a-z0-9]+)/?$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ | IsAuthenticated |
+| `^costos-produccion/$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ | IsAuthenticated |
+| `^costos-produccion/(?P<pk>[^/.]+)/$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ | IsAuthenticated |
+| `^costos-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ | IsAuthenticated |
+| `^costos-produccion\.(?P<format>[a-z0-9]+)/?$` | CostoProduccionViewSet | CostoProduccion | ✅ | ✅ | IsAuthenticated |
+| `^cotizaciones/$` | CotizacionViewSet | Cotizacion | ✅ | ✅ | IsAuthenticated |
+| `^cotizaciones/(?P<pk>[^/.]+)/$` | CotizacionViewSet | Cotizacion | ✅ | ✅ | IsAuthenticated |
+| `^cotizaciones/(?P<pk>[^/.]+)/pdf/$` | CotizacionViewSet | Cotizacion | ✅ | ✅ | IsAuthenticated |
+| `^cotizaciones/(?P<pk>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | CotizacionViewSet | Cotizacion | ✅ | ✅ | IsAuthenticated |
+| `^cotizaciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CotizacionViewSet | Cotizacion | ✅ | ✅ | IsAuthenticated |
+| `^cotizaciones\.(?P<format>[a-z0-9]+)/?$` | CotizacionViewSet | Cotizacion | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-empresa/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-empresa/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-empresa\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-proveedor/$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-proveedor/(?P<pk>[^/.]+)/$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ | IsAuthenticated |
+| `^cuentas-bancarias-proveedor\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaProveedorViewSet | CuentaBancariaProveedor | — | ✅ | IsAuthenticated |
+| `^cuentas-bancarias/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias/(?P<pk>[^/.]+)/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria/$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias/(?P<pk>[^/.]+)/movimientos-cuenta-bancaria\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-bancarias\.(?P<format>[a-z0-9]+)/?$` | CuentaBancariaEmpresaViewSet | CuentaBancariaEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/(?P<pk>[^/.]+)/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/(?P<pk>[^/.]+)/abonar/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/(?P<pk>[^/.]+)/abonar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/aging/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/aging\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/estado-cuenta/(?P<cliente_id>[^/.]+)/pdf/$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar/estado-cuenta/(?P<cliente_id>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-cobrar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorCobrarViewSet | CuentaPorCobrar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar/(?P<pk>[^/.]+)/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar/(?P<pk>[^/.]+)/abonar/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar/(?P<pk>[^/.]+)/abonar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar/aging/$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar/aging\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^cuentas-por-pagar\.(?P<format>[a-z0-9]+)/?$` | CuentaPorPagarViewSet | CuentaPorPagar | ✅ | ✅ | IsAuthenticated |
+| `^datafono/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafono/(?P<pk>[^/.]+)/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafono/(?P<pk>[^/.]+)/cerrar-sesion/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafono/(?P<pk>[^/.]+)/cerrar-sesion\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafono/(?P<pk>[^/.]+)/registrar-pago/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafono/(?P<pk>[^/.]+)/registrar-pago\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafono\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos/(?P<pk>[^/.]+)/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos/(?P<pk>[^/.]+)/cerrar-sesion/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos/(?P<pk>[^/.]+)/cerrar-sesion\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos/(?P<pk>[^/.]+)/registrar-pago/$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos/(?P<pk>[^/.]+)/registrar-pago\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^datafonos\.(?P<format>[a-z0-9]+)/?$` | DatafonoViewSet | Datafono | ✅ | ✅ | IsAuthenticated |
+| `^departamentos/$` | DepartamentoViewSet | Departamento | ✅ | ✅ | IsAuthenticated |
+| `^departamentos/(?P<pk>[^/.]+)/$` | DepartamentoViewSet | Departamento | ✅ | ✅ | IsAuthenticated |
+| `^departamentos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DepartamentoViewSet | Departamento | ✅ | ✅ | IsAuthenticated |
+| `^departamentos\.(?P<format>[a-z0-9]+)/?$` | DepartamentoViewSet | Departamento | ✅ | ✅ | IsAuthenticated |
+| `^depositos-datafono/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^depositos-datafono/(?P<pk>[^/.]+)/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^depositos-datafono/(?P<pk>[^/.]+)/conciliar/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^depositos-datafono/(?P<pk>[^/.]+)/conciliar\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^depositos-datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^depositos-datafono/pendientes/$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^depositos-datafono/pendientes\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^depositos-datafono\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
+| `^despachos/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^detalles-asiento/$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ | IsAuthenticated |
+| `^detalles-asiento/(?P<pk>[^/.]+)/$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ | IsAuthenticated |
+| `^detalles-asiento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ | IsAuthenticated |
+| `^detalles-asiento\.(?P<format>[a-z0-9]+)/?$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ | IsAuthenticated |
+| `^detalles-cotizacion/$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ | IsAuthenticated |
+| `^detalles-cotizacion/(?P<pk>[^/.]+)/$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ | IsAuthenticated |
+| `^detalles-cotizacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ | IsAuthenticated |
+| `^detalles-cotizacion\.(?P<format>[a-z0-9]+)/?$` | DetalleCotizacionViewSet | DetalleCotizacion | — | ✅ | IsAuthenticated |
+| `^detalles-despacho/$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ | IsAuthenticated |
+| `^detalles-despacho/(?P<pk>[^/.]+)/$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ | IsAuthenticated |
+| `^detalles-despacho/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ | IsAuthenticated |
+| `^detalles-despacho\.(?P<format>[a-z0-9]+)/?$` | DetalleDespachoViewSet | DetalleDespacho | — | ✅ | IsAuthenticated |
+| `^detalles-devolucion-venta/$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ | IsAuthenticated |
+| `^detalles-devolucion-venta/(?P<pk>[^/.]+)/$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ | IsAuthenticated |
+| `^detalles-devolucion-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ | IsAuthenticated |
+| `^detalles-devolucion-venta\.(?P<format>[a-z0-9]+)/?$` | DetalleDevolucionVentaViewSet | DetalleDevolucionVenta | — | ✅ | IsAuthenticated |
+| `^detalles-error-migracion/$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ | IsAuthenticated |
+| `^detalles-error-migracion/(?P<pk>[^/.]+)/$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ | IsAuthenticated |
+| `^detalles-error-migracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ | IsAuthenticated |
+| `^detalles-error-migracion\.(?P<format>[a-z0-9]+)/?$` | DetalleErrorMigracionViewSet | DetalleErrorMigracion | — | ✅ | IsAuthenticated |
+| `^detalles-factura-compra/$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ | IsAuthenticated |
+| `^detalles-factura-compra/(?P<pk>[^/.]+)/$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ | IsAuthenticated |
+| `^detalles-factura-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ | IsAuthenticated |
+| `^detalles-factura-compra\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaCompraViewSet | DetalleFacturaCompra | — | ✅ | IsAuthenticated |
+| `^detalles-factura-fiscal/$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-factura-fiscal/(?P<pk>[^/.]+)/$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-factura-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-factura-fiscal\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nomina/$` | DetalleNominaViewSet | DetalleNomina | — | ✅ | IsAuthenticated |
+| `^detalles-nomina/(?P<pk>[^/.]+)/$` | DetalleNominaViewSet | DetalleNomina | — | ✅ | IsAuthenticated |
+| `^detalles-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNominaViewSet | DetalleNomina | — | ✅ | IsAuthenticated |
+| `^detalles-nomina\.(?P<format>[a-z0-9]+)/?$` | DetalleNominaViewSet | DetalleNomina | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-fiscal/$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-fiscal/(?P<pk>[^/.]+)/$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-fiscal\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoFiscalViewSet | DetalleNotaCreditoFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-venta/$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-venta/(?P<pk>[^/.]+)/$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-credito-venta\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-venta/$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-venta/(?P<pk>[^/.]+)/$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-venta\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ | IsAuthenticated |
+| `^detalles-oferta-proveedor/$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ | IsAuthenticated |
+| `^detalles-oferta-proveedor/(?P<pk>[^/.]+)/$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ | IsAuthenticated |
+| `^detalles-oferta-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ | IsAuthenticated |
+| `^detalles-oferta-proveedor\.(?P<format>[a-z0-9]+)/?$` | DetalleOfertaProveedorViewSet | DetalleOfertaProveedor | — | ✅ | IsAuthenticated |
+| `^detalles-orden-compra/$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ | IsAuthenticated |
+| `^detalles-orden-compra/(?P<pk>[^/.]+)/$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ | IsAuthenticated |
+| `^detalles-orden-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ | IsAuthenticated |
+| `^detalles-orden-compra\.(?P<format>[a-z0-9]+)/?$` | DetalleOrdenCompraViewSet | DetalleOrdenCompra | — | ✅ | IsAuthenticated |
+| `^detalles-pedido/$` | DetallePedidoViewSet | DetallePedido | — | ✅ | IsAuthenticated |
+| `^detalles-pedido/(?P<pk>[^/.]+)/$` | DetallePedidoViewSet | DetallePedido | — | ✅ | IsAuthenticated |
+| `^detalles-pedido/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetallePedidoViewSet | DetallePedido | — | ✅ | IsAuthenticated |
+| `^detalles-pedido\.(?P<format>[a-z0-9]+)/?$` | DetallePedidoViewSet | DetallePedido | — | ✅ | IsAuthenticated |
+| `^detalles-precio/$` | DetallePrecioViewSet | DetallePrecio | — | ✅ | IsAuthenticated |
+| `^detalles-precio/(?P<pk>[^/.]+)/$` | DetallePrecioViewSet | DetallePrecio | — | ✅ | IsAuthenticated |
+| `^detalles-precio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetallePrecioViewSet | DetallePrecio | — | ✅ | IsAuthenticated |
+| `^detalles-precio\.(?P<format>[a-z0-9]+)/?$` | DetallePrecioViewSet | DetallePrecio | — | ✅ | IsAuthenticated |
+| `^detalles-recepcion-mercancia/$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ | IsAuthenticated |
+| `^detalles-recepcion-mercancia/(?P<pk>[^/.]+)/$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ | IsAuthenticated |
+| `^detalles-recepcion-mercancia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ | IsAuthenticated |
+| `^detalles-recepcion-mercancia\.(?P<format>[a-z0-9]+)/?$` | DetalleRecepcionMercanciaViewSet | DetalleRecepcionMercancia | — | ✅ | IsAuthenticated |
+| `^detalles-requisicion-compra/$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ | IsAuthenticated |
+| `^detalles-requisicion-compra/(?P<pk>[^/.]+)/$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ | IsAuthenticated |
+| `^detalles-requisicion-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ | IsAuthenticated |
+| `^detalles-requisicion-compra\.(?P<format>[a-z0-9]+)/?$` | DetalleRequisicionCompraViewSet | DetalleRequisicionCompra | — | ✅ | IsAuthenticated |
+| `^detalles-solicitud-cotizacion/$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ | IsAuthenticated |
+| `^detalles-solicitud-cotizacion/(?P<pk>[^/.]+)/$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ | IsAuthenticated |
+| `^detalles-solicitud-cotizacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ | IsAuthenticated |
+| `^detalles-solicitud-cotizacion\.(?P<format>[a-z0-9]+)/?$` | DetalleSolicitudCotizacionViewSet | DetalleSolicitudCotizacion | — | ✅ | IsAuthenticated |
+| `^devoluciones-venta/$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ | IsAuthenticated |
+| `^devoluciones-venta/(?P<pk>[^/.]+)/$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ | IsAuthenticated |
+| `^devoluciones-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ | IsAuthenticated |
+| `^devoluciones-venta\.(?P<format>[a-z0-9]+)/?$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ | IsAuthenticated |
+| `^direcciones-cliente/$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
+| `^direcciones-cliente/(?P<pk>[^/.]+)/$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
+| `^direcciones-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
+| `^direcciones-cliente\.(?P<format>[a-z0-9]+)/?$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
+| `^dispositivos/$` | DispositivoViewSet | Dispositivo | ✅ | ✅ | IsAuthenticated |
+| `^dispositivos/(?P<pk>[^/.]+)/$` | DispositivoViewSet | Dispositivo | ✅ | ✅ | IsAuthenticated |
+| `^dispositivos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DispositivoViewSet | Dispositivo | ✅ | ✅ | IsAuthenticated |
+| `^dispositivos\.(?P<format>[a-z0-9]+)/?$` | DispositivoViewSet | Dispositivo | ✅ | ✅ | IsAuthenticated |
+| `^documentos/$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/(?P<pk>[^/.]+)/$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/(?P<pk>[^/.]+)/descargar/$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/(?P<pk>[^/.]+)/descargar\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/(?P<pk>[^/.]+)/eliminar-archivo/$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/(?P<pk>[^/.]+)/eliminar-archivo\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/subir/$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos/subir\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^documentos\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^empleados/$` | EmpleadoViewSet | Empleado | ✅ | ✅ | IsAuthenticated |
+| `^empleados/(?P<pk>[^/.]+)/$` | EmpleadoViewSet | Empleado | ✅ | ✅ | IsAuthenticated |
+| `^empleados/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpleadoViewSet | Empleado | ✅ | ✅ | IsAuthenticated |
+| `^empleados\.(?P<format>[a-z0-9]+)/?$` | EmpleadoViewSet | Empleado | ✅ | ✅ | IsAuthenticated |
+| `^empresas/$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^empresas/(?P<pk>[^/.]+)/$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^empresas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^empresas\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra/(?P<pk>[^/.]+)/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra/facturar/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra/facturar\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-fiscales/$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ | IsAuthenticated |
+| `^facturas-fiscales/(?P<pk>[^/.]+)/$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ | IsAuthenticated |
+| `^facturas-fiscales/(?P<pk>[^/.]+)/pdf/$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ | IsAuthenticated |
+| `^facturas-fiscales/(?P<pk>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ | IsAuthenticated |
+| `^facturas-fiscales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ | IsAuthenticated |
+| `^facturas-fiscales\.(?P<format>[a-z0-9]+)/?$` | FacturaFiscalViewSet | FacturaFiscal | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/(?P<pk>[^/.]+)/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/estadisticas_satisfaccion/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/estadisticas_satisfaccion\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/por_tipo/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/por_tipo\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/quejas_sugerencias/$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente/quejas_sugerencias\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^feedback-cliente\.(?P<format>[a-z0-9]+)/?$` | FeedbackClienteViewSet | FeedbackCliente | ✅ | ✅ | IsAuthenticated |
+| `^flujo-documentos/$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ | IsAuthenticated |
+| `^flujo-documentos/(?P<pk>[^/.]+)/$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ | IsAuthenticated |
+| `^flujo-documentos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ | IsAuthenticated |
+| `^flujo-documentos\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ | IsAuthenticated |
+| `^flujos-aprobacion/$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ | IsAuthenticated |
+| `^flujos-aprobacion/(?P<pk>[^/.]+)/$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ | IsAuthenticated |
+| `^flujos-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ | IsAuthenticated |
+| `^flujos-aprobacion\.(?P<format>[a-z0-9]+)/?$` | FlujoAprobacionViewSet | FlujoAprobacion | — | ✅ | IsAuthenticated |
+| `^gastos/$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/(?P<pk>[^/.]+)/$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/(?P<pk>[^/.]+)/aprobar/$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/(?P<pk>[^/.]+)/rechazar/$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/(?P<pk>[^/.]+)/rechazar\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/pendientes_aprobacion/$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/pendientes_aprobacion\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/resumen_por_categoria/$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos/resumen_por_categoria\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gastos\.(?P<format>[a-z0-9]+)/?$` | GastoViewSet | Gasto | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/(?P<pk>[^/.]+)/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/(?P<pk>[^/.]+)/preview-plantilla/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/(?P<pk>[^/.]+)/preview-plantilla\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/agenda/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/agenda\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/prioridades/$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones/prioridades\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^gestiones\.(?P<format>[a-z0-9]+)/?$` | GestionCobranzaViewSet | GestionCobranza | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo/(?P<pk>[^/.]+)/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo/(?P<pk>[^/.]+)/desactivar/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo/activos/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo/activos\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^horarios-trabajo\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^instancias/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/entidades/(?P<tipo_entidad>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/entidades/(?P<tipo_entidad>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/jobs/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/jobs\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/preview/(?P<tipo_entidad>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/preview/(?P<tipo_entidad>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/sync/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/sync\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/test/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/test\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^interacciones-ticket/$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
+| `^interacciones-ticket/(?P<pk>[^/.]+)/$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
+| `^interacciones-ticket/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
+| `^interacciones-ticket/agregar_comentario/$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
+| `^interacciones-ticket/agregar_comentario\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
+| `^interacciones-ticket\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
+| `^jobs/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^jobs/(?P<pk>[^/.]+)/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^jobs/(?P<pk>[^/.]+)/cancelar/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^jobs/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^jobs/(?P<pk>[^/.]+)/logs/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^jobs/(?P<pk>[^/.]+)/logs\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^jobs/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^jobs\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^licencias-empleado/$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
+| `^licencias-empleado/(?P<pk>[^/.]+)/$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
+| `^licencias-empleado/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
+| `^licencias-empleado\.(?P<format>[a-z0-9]+)/?$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
+| `^listas-materiales-detalle/$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ | IsAuthenticated |
+| `^listas-materiales-detalle/(?P<pk>[^/.]+)/$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ | IsAuthenticated |
+| `^listas-materiales-detalle/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ | IsAuthenticated |
+| `^listas-materiales-detalle\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesDetalleViewSet | ListaMaterialesDetalle | — | ✅ | IsAuthenticated |
+| `^listas-materiales/$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ | IsAuthenticated |
+| `^listas-materiales/(?P<pk>[^/.]+)/$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ | IsAuthenticated |
+| `^listas-materiales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ | IsAuthenticated |
+| `^listas-materiales\.(?P<format>[a-z0-9]+)/?$` | ListaMaterialesViewSet | ListaMateriales | ✅ | ✅ | IsAuthenticated |
+| `^listas-precio/$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ | IsAuthenticated |
+| `^listas-precio/(?P<pk>[^/.]+)/$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ | IsAuthenticated |
+| `^listas-precio/(?P<pk>[^/.]+)/importar-masivo/$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ | IsAuthenticated |
+| `^listas-precio/(?P<pk>[^/.]+)/importar-masivo\.(?P<format>[a-z0-9]+)/?$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ | IsAuthenticated |
+| `^listas-precio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ | IsAuthenticated |
+| `^listas-precio\.(?P<format>[a-z0-9]+)/?$` | ListaPrecioViewSet | ListaPrecio | ✅ | ✅ | IsAuthenticated |
+| `^logs-auditoria/$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ | IsAuthenticated |
+| `^logs-auditoria/(?P<pk>[^/.]+)/$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ | IsAuthenticated |
+| `^logs-auditoria/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ | IsAuthenticated |
+| `^logs-auditoria\.(?P<format>[a-z0-9]+)/?$` | LogAuditoriaViewSet | LogAuditoria | ✅ | ✅ | IsAuthenticated |
+| `^logs-integracion/$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
+| `^logs-integracion/(?P<pk>[^/.]+)/$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
+| `^logs-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
+| `^logs-integracion\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
+| `^lotes/$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ | IsAuthenticated |
+| `^lotes/(?P<pk>[^/.]+)/$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ | IsAuthenticated |
+| `^lotes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ | IsAuthenticated |
+| `^lotes\.(?P<format>[a-z0-9]+)/?$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ | IsAuthenticated |
+| `^mapeo-campos/$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
+| `^mapeo-campos/(?P<pk>[^/.]+)/$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
+| `^mapeo-campos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
+| `^mapeo-campos\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
+| `^metodos-pago-empresa-activas/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago-empresa-activas\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/monedas_info/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/monedas_info\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/reutilizar/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})/reutilizar\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/(?P<id_metodo_pago>[0-9a-f-]{36})\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/buscar_reutilizar/$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago/buscar_reutilizar\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^metodos-pago\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^monedas-empresa-activas/$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^monedas-empresa-activas/(?P<pk>[^/.]+)/$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^monedas-empresa-activas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^monedas-empresa-activas\.(?P<format>[a-z0-9]+)/?$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ | IsAuthenticated |
+| `^monedas/$` | MonedaViewSet | Moneda | ✅ | ✅ | IsAuthenticated |
+| `^monedas/(?P<pk>[^/.]+)/$` | MonedaViewSet | Moneda | ✅ | ✅ | IsAuthenticated |
+| `^monedas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MonedaViewSet | Moneda | ✅ | ✅ | IsAuthenticated |
+| `^monedas/activas/$` | MonedaViewSet | Moneda | ✅ | ✅ | IsAuthenticated |
+| `^monedas/activas\.(?P<format>[a-z0-9]+)/?$` | MonedaViewSet | Moneda | ✅ | ✅ | IsAuthenticated |
+| `^monedas\.(?P<format>[a-z0-9]+)/?$` | MonedaViewSet | Moneda | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios/(?P<pk>[^/.]+)/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios/conciliar-auto/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios/conciliar-auto\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios/importar-csv/$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios/importar-csv\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-bancarios\.(?P<format>[a-z0-9]+)/?$` | MovimientoBancarioViewSet | MovimientoBancario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-caja-banco/$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-caja-banco/(?P<pk>[^/.]+)/$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-caja-banco/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-caja-banco\.(?P<format>[a-z0-9]+)/?$` | MovimientoCajaBancoViewSet | MovimientoCajaBanco | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-internos-fondo/$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ | IsAuthenticated |
+| `^movimientos-internos-fondo/(?P<pk>[^/.]+)/$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ | IsAuthenticated |
+| `^movimientos-internos-fondo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ | IsAuthenticated |
+| `^movimientos-internos-fondo\.(?P<format>[a-z0-9]+)/?$` | MovimientoInternoFondoViewSet | MovimientoInternoFondo | — | ✅ | IsAuthenticated |
+| `^movimientos-inventario/$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-inventario/(?P<pk>[^/.]+)/$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-inventario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ | IsAuthenticated |
+| `^movimientos-inventario\.(?P<format>[a-z0-9]+)/?$` | MovimientoInventarioViewSet | MovimientoInventario | ✅ | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial/(?P<pk>[^/.]+)/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial/(?P<pk>[^/.]+)/aprobar/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial/(?P<pk>[^/.]+)/marcar_pagada/$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial/(?P<pk>[^/.]+)/marcar_pagada\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas-extrasalarial\.(?P<format>[a-z0-9]+)/?$` | NominaExtrasalarialViewSet | NominaExtrasalarial | — | ✅ | IsAuthenticated |
+| `^nominas/$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)/$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)/aprobar/$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)/marcar_pagada/$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)/marcar_pagada\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^notas-credito-fiscal/$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-credito-fiscal/(?P<pk>[^/.]+)/$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-credito-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-credito-fiscal\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-credito-venta/$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-credito-venta/(?P<pk>[^/.]+)/$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-credito-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-credito-venta\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/(?P<pk>[^/.]+)/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/(?P<pk>[^/.]+)/marcar-leida/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/(?P<pk>[^/.]+)/marcar-leida\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/(?P<pk>[^/.]+)/marcar_leida/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/(?P<pk>[^/.]+)/marcar_leida\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/marcar_todas_leidas/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/marcar_todas_leidas\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/mis-notificaciones/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/mis-notificaciones\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/no_leidas/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones/no_leidas\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^notificaciones\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
+| `^ofertas-proveedor/$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
+| `^ofertas-proveedor/(?P<pk>[^/.]+)/$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
+| `^ofertas-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
+| `^ofertas-proveedor\.(?P<format>[a-z0-9]+)/?$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
+| `^operaciones-cambio-divisa/$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ | IsAuthenticated |
+| `^operaciones-cambio-divisa/(?P<pk>[^/.]+)/$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ | IsAuthenticated |
+| `^operaciones-cambio-divisa/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ | IsAuthenticated |
+| `^operaciones-cambio-divisa\.(?P<format>[a-z0-9]+)/?$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ | IsAuthenticated |
+| `^operaciones-produccion/$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ | IsAuthenticated |
+| `^operaciones-produccion/(?P<pk>[^/.]+)/$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ | IsAuthenticated |
+| `^operaciones-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ | IsAuthenticated |
+| `^operaciones-produccion\.(?P<format>[a-z0-9]+)/?$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-compra/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-compra/(?P<pk>[^/.]+)/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-compra/(?P<pk>[^/.]+)/aprobar/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-compra/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-compra\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^overrides-metodos-pago/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
+| `^overrides-metodos-pago/(?P<pk>[^/.]+)/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
+| `^overrides-metodos-pago/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
+| `^overrides-metodos-pago\.(?P<format>[a-z0-9]+)/?$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
+| `^pagos/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/(?P<pk>[^/.]+)/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/tipos_documento/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/tipos_documento\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/tipos_operacion/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/tipos_operacion\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^parametros-sistema/$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
+| `^parametros-sistema/(?P<pk>[^/.]+)/$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
+| `^parametros-sistema/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
+| `^parametros-sistema\.(?P<format>[a-z0-9]+)/?$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/confirmar/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/confirmar\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/(?P<pk>[^/.]+)/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/(?P<pk>[^/.]+)/cerrar/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/(?P<pk>[^/.]+)/cerrar\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/abiertos/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/abiertos\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/activos/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina/activos\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^periodos-nomina\.(?P<format>[a-z0-9]+)/?$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
+| `^permisos-documento/$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ | IsAuthenticated |
+| `^permisos-documento/(?P<pk>[^/.]+)/$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ | IsAuthenticated |
+| `^permisos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ | IsAuthenticated |
+| `^permisos-documento\.(?P<format>[a-z0-9]+)/?$` | PermisoDocumentoViewSet | PermisoDocumento | — | ✅ | IsAuthenticated |
+| `^permisos/$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^permisos/(?P<pk>[^/.]+)/$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^permisos/(?P<pk>[^/.]+)/activar/$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^permisos/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^permisos/(?P<pk>[^/.]+)/desactivar/$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^permisos/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^permisos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^permisos\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^plan-cuentas/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^plan-cuentas/(?P<pk>[^/.]+)/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^plan-cuentas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^plan-cuentas/activos/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^plan-cuentas/activos\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^plan-cuentas/por_tipo/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^plan-cuentas/por_tipo\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^plan-cuentas\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
+| `^planes/$` | PlanViewSet | Plan | — | ✅ | IsAuthenticated |
+| `^planes/(?P<pk>[^/.]+)/$` | PlanViewSet | Plan | — | ✅ | IsAuthenticated |
+| `^planes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlanViewSet | Plan | — | ✅ | IsAuthenticated |
+| `^planes\.(?P<format>[a-z0-9]+)/?$` | PlanViewSet | Plan | — | ✅ | IsAuthenticated |
+| `^plantillas-maestro-cajas/$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ | IsAuthenticated |
+| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)/$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ | IsAuthenticated |
+| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)/sincronizar/$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ | IsAuthenticated |
+| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)/sincronizar\.(?P<format>[a-z0-9]+)/?$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ | IsAuthenticated |
+| `^plantillas-maestro-cajas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ | IsAuthenticated |
+| `^plantillas-maestro-cajas\.(?P<format>[a-z0-9]+)/?$` | PlantillaMaestroCajasVirtualesViewSet | PlantillaMaestroCajasVirtuales | ✅ | ✅ | IsAuthenticated |
+| `^plantillas-migracion/$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ | IsAuthenticated |
+| `^plantillas-migracion/(?P<pk>[^/.]+)/$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ | IsAuthenticated |
+| `^plantillas-migracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ | IsAuthenticated |
+| `^plantillas-migracion\.(?P<format>[a-z0-9]+)/?$` | PlantillaMigracionViewSet | PlantillaMigracion | — | ✅ | IsAuthenticated |
+| `^plantillas/$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ | IsAuthenticated |
+| `^plantillas/(?P<pk>[^/.]+)/$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ | IsAuthenticated |
+| `^plantillas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ | IsAuthenticated |
+| `^plantillas\.(?P<format>[a-z0-9]+)/?$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[^/.]+)/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[^/.]+)/evaluar/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[^/.]+)/evaluar\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[^/.]+)/responder/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[^/.]+)/responder\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/analizar-cobranza/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/analizar-cobranza\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/analizar-personalizacion/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/analizar-personalizacion\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/analizar-reorden/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/analizar-reorden\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/clasificar-gasto/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/clasificar-gasto\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/metricas-clasificador/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/metricas-clasificador\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/sugerencias-activas/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/sugerencias-activas\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^procesos-migracion/$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ | IsAuthenticated |
+| `^procesos-migracion/(?P<pk>[^/.]+)/$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ | IsAuthenticated |
+| `^procesos-migracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ | IsAuthenticated |
+| `^procesos-migracion\.(?P<format>[a-z0-9]+)/?$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/aprobar/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/procesar/$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)/procesar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina-extrasalarial\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaExtrasalarialViewSet | ProcesoNominaExtrasalarial | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/aprobar/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/procesar/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/procesar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/resumen/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/resumen\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^produccion-terminada/$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ | IsAuthenticated |
+| `^produccion-terminada/(?P<pk>[^/.]+)/$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ | IsAuthenticated |
+| `^produccion-terminada/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ | IsAuthenticated |
+| `^produccion-terminada\.(?P<format>[a-z0-9]+)/?$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ | IsAuthenticated |
+| `^productos/$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/(?P<pk>[^/.]+)/$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/(?P<pk>[^/.]+)/kardex/$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/(?P<pk>[^/.]+)/kardex\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^proveedores/$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores/$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
+| `^proveedores/(?P<pk>[^/.]+)/$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores/(?P<pk>[^/.]+)/$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
+| `^proveedores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
+| `^proveedores/buscar-por-rif/$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
+| `^proveedores/buscar-por-rif\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
+| `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
+| `^recepciones-mercancia/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
+| `^recepciones-mercancia/(?P<pk>[^/.]+)/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
+| `^recepciones-mercancia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
+| `^recepciones-mercancia/recepcionar/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
+| `^recepciones-mercancia/recepcionar\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
+| `^recepciones-mercancia\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/(?P<pk>[^/.]+)/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/(?P<pk>[^/.]+)/anular/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/(?P<pk>[^/.]+)/procesar_pago/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/(?P<pk>[^/.]+)/procesar_pago\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/pendientes_pago/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto/pendientes_pago\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^reembolsos-gasto\.(?P<format>[a-z0-9]+)/?$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
+| `^registros-aprobacion/$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ | IsAuthenticated |
+| `^registros-aprobacion/(?P<pk>[^/.]+)/$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ | IsAuthenticated |
+| `^registros-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ | IsAuthenticated |
+| `^registros-aprobacion\.(?P<format>[a-z0-9]+)/?$` | RegistroAprobacionViewSet | RegistroAprobacion | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/(?P<pk>[^/.]+)/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/hoy/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/hoy\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/marcar_asistencia/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/marcar_asistencia\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/por_empleado_fecha/$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia/por_empleado_fecha\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-asistencia\.(?P<format>[a-z0-9]+)/?$` | RegistroAsistenciaViewSet | RegistroAsistencia | — | ✅ | IsAuthenticated |
+| `^registros-operacion/$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
+| `^registros-operacion/(?P<pk>[^/.]+)/$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
+| `^registros-operacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
+| `^registros-operacion\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
+| `^requisiciones-compra/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^requisiciones-compra/(?P<pk>[^/.]+)/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^requisiciones-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^requisiciones-compra\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)/aprobar/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/generar_resumen_diario/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/generar_resumen_diario\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/pendientes_revision/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/pendientes_revision\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/reporte_mensual/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario/reporte_mensual\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^resumenes-asistencia-diario\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^roles/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/activar/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/desactivar/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^rutas-produccion-detalle/$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ | IsAuthenticated |
+| `^rutas-produccion-detalle/(?P<pk>[^/.]+)/$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ | IsAuthenticated |
+| `^rutas-produccion-detalle/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ | IsAuthenticated |
+| `^rutas-produccion-detalle\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ | IsAuthenticated |
+| `^rutas-produccion/$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^rutas-produccion/(?P<pk>[^/.]+)/$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^rutas-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^rutas-produccion\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja/(?P<pk>[^/.]+)/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja/(?P<pk>[^/.]+)/cerrar/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja/(?P<pk>[^/.]+)/cerrar\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja/(?P<pk>[^/.]+)/transferir-entre-cajas/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja/(?P<pk>[^/.]+)/transferir-entre-cajas\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-caja\.(?P<format>[a-z0-9]+)/?$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^sesiones-datafono/$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ | IsAuthenticated |
+| `^sesiones-datafono/(?P<pk>[^/.]+)/$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ | IsAuthenticated |
+| `^sesiones-datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ | IsAuthenticated |
+| `^sesiones-datafono\.(?P<format>[a-z0-9]+)/?$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ | IsAuthenticated |
+| `^solicitudes-aprobacion/$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
+| `^solicitudes-aprobacion/(?P<pk>[^/.]+)/$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
+| `^solicitudes-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
+| `^solicitudes-aprobacion\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion/(?P<pk>[^/.]+)/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-actual/$` | StockActualViewSet | StockActual | ✅ | ✅ | IsAuthenticated |
+| `^stock-actual/(?P<pk>[^/.]+)/$` | StockActualViewSet | StockActual | ✅ | ✅ | IsAuthenticated |
+| `^stock-actual/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockActualViewSet | StockActual | ✅ | ✅ | IsAuthenticated |
+| `^stock-actual\.(?P<format>[a-z0-9]+)/?$` | StockActualViewSet | StockActual | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-cliente/$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-cliente/(?P<pk>[^/.]+)/$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-cliente\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionClienteViewSet | StockConsignacionCliente | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-proveedor/$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-proveedor/(?P<pk>[^/.]+)/$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ | IsAuthenticated |
+| `^stock-consignacion-proveedor\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ | IsAuthenticated |
+| `^sucursales/$` | SucursalViewSet | Sucursal | ✅ | ✅ | IsAuthenticated |
+| `^sucursales/(?P<pk>[^/.]+)/$` | SucursalViewSet | Sucursal | ✅ | ✅ | IsAuthenticated |
+| `^sucursales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SucursalViewSet | Sucursal | ✅ | ✅ | IsAuthenticated |
+| `^sucursales\.(?P<format>[a-z0-9]+)/?$` | SucursalViewSet | Sucursal | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/(?P<pk>[^/.]+)/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/(?P<pk>[^/.]+)/cancelar/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/(?P<pk>[^/.]+)/suspender/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/(?P<pk>[^/.]+)/suspender\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/activa/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones/activa\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^suscripciones\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^tasas-cambio/$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ | IsAuthenticated |
+| `^tasas-cambio/(?P<pk>[^/.]+)/$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ | IsAuthenticated |
+| `^tasas-cambio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ | IsAuthenticated |
+| `^tasas-cambio\.(?P<format>[a-z0-9]+)/?$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ | IsAuthenticated |
+| `^tasas-iva/$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^tasas-iva/(?P<pk>[^/.]+)/$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^tasas-iva/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^tasas-iva/calcular/$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^tasas-iva/calcular\.(?P<format>[a-z0-9]+)/?$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^tasas-iva\.(?P<format>[a-z0-9]+)/?$` | TasaIVAEmpresaViewSet | TasaIVAEmpresa | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)/asignar_agente/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)/asignar_agente\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)/cambiar_estado/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)/cambiar_estado\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)/escalar/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)/escalar\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/abiertos/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/abiertos\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/dashboard/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/dashboard\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/por_prioridad/$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte/por_prioridad\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tickets-soporte\.(?P<format>[a-z0-9]+)/?$` | TicketSoporteViewSet | TicketSoporte | ✅ | ✅ | IsAuthenticated |
+| `^tipos-aprobacion/$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ | IsAuthenticated |
+| `^tipos-aprobacion/(?P<pk>[^/.]+)/$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ | IsAuthenticated |
+| `^tipos-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ | IsAuthenticated |
+| `^tipos-aprobacion\.(?P<format>[a-z0-9]+)/?$` | TipoAprobacionViewSet | TipoAprobacion | ✅ | ✅ | IsAuthenticated |
+| `^tipos-documento/$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ | IsAuthenticated |
+| `^tipos-documento/(?P<pk>[^/.]+)/$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ | IsAuthenticated |
+| `^tipos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ | IsAuthenticated |
+| `^tipos-documento\.(?P<format>[a-z0-9]+)/?$` | TipoDocumentoViewSet | TipoDocumento | — | ✅ | IsAuthenticated |
+| `^tipos-licencia/$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ | IsAuthenticated |
+| `^tipos-licencia/(?P<pk>[^/.]+)/$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ | IsAuthenticated |
+| `^tipos-licencia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ | IsAuthenticated |
+| `^tipos-licencia\.(?P<format>[a-z0-9]+)/?$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ | IsAuthenticated |
+| `^transacciones-datafono/$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ | IsAuthenticated |
+| `^transacciones-datafono/(?P<pk>[^/.]+)/$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ | IsAuthenticated |
+| `^transacciones-datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ | IsAuthenticated |
+| `^transacciones-datafono\.(?P<format>[a-z0-9]+)/?$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ | IsAuthenticated |
+| `^transacciones-financieras/$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ | IsAuthenticated |
+| `^transacciones-financieras/(?P<pk>[^/.]+)/$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ | IsAuthenticated |
+| `^transacciones-financieras/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ | IsAuthenticated |
+| `^transacciones-financieras\.(?P<format>[a-z0-9]+)/?$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ | IsAuthenticated |
+| `^ubicaciones-almacen/$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ | IsAuthenticated |
+| `^ubicaciones-almacen/(?P<pk>[^/.]+)/$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ | IsAuthenticated |
+| `^ubicaciones-almacen/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ | IsAuthenticated |
+| `^ubicaciones-almacen\.(?P<format>[a-z0-9]+)/?$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ | IsAuthenticated |
+| `^unidades-medida/$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^unidades-medida/(?P<pk>[^/.]+)/$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^unidades-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^unidades-medida\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^usuarios/$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
+| `^usuarios/(?P<pk>[^/.]+)/$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
+| `^usuarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
+| `^usuarios\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
+| `^variantes-producto/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
+| `^variantes-producto/(?P<pk>[^/.]+)/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
+| `^variantes-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
+| `^variantes-producto\.(?P<format>[a-z0-9]+)/?$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas/(?P<pk>[^/.]+)/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas/(?P<pk>[^/.]+)/confirmar/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas/(?P<pk>[^/.]+)/confirmar\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas/resumen/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas/resumen\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^ventas-fraccionadas\.(?P<format>[a-z0-9]+)/?$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
+| `^vinculos-documento/$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
+| `^vinculos-documento/(?P<pk>[^/.]+)/$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
+| `^vinculos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
+| `^vinculos-documento\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
+| `agente/` | CobranzaAgenteView | — | — | — | IsAuthenticated |
+| `api/auth/change-password/` | change_password_view | — | — | — | IsAuthenticated |
+| `api/auth/login/` | login_view | — | — | — | AllowAny |
+| `api/auth/logout/` | logout_view | — | — | — | IsAuthenticated |
+| `api/auth/profile/` | user_profile_view | — | — | — | IsAuthenticated |
+| `api/auth/profile/update/` | update_profile_view | — | — | — | IsAuthenticated |
+| `api/auth/token/` | CustomTokenObtainPairView | — | — | — | — |
+| `api/auth/token/refresh/` | refresh_token_view | — | — | — | AllowAny |
+| `api/auth/token/verify/` | verify_token_view | — | — | — | IsAuthenticated |
+| `api/docs/` | SchemaView | — | — | — | IsAuthenticated |
+| `api/health/` | health_view | — | — | — | AllowAny |
+| `api/redoc/` | SchemaView | — | — | — | IsAuthenticated |
+| `cartera/dashboard/` | CarteraDashboardView | — | — | — | IsAuthenticated |
+| `chat/` | AsistenteChatView | — | — | — | IsAuthenticated |
+| `dashboard/kpis/` | dashboard_kpis_view | — | — | — | IsAuthenticated |
+| `dashboard/stats/` | dashboard_stats_view | — | — | — | IsAuthenticated |
+| `dispositivos/accion/` | dispositivo_accion_view | — | — | — | IsAuthenticated |
+| `libro-compras-pdf/` | LibroComprasPDFView | — | — | — | IsAuthenticated |
+| `libro-compras/` | LibroComprasView | — | — | — | IsAuthenticated |
+| `libro-ventas-pdf/` | LibroVentasPDFView | — | — | — | IsAuthenticated |
+| `libro-ventas/` | LibroVentasView | — | — | — | IsAuthenticated |
+| `periodos-fiscales/` | PeriodoFiscalView | — | — | — | IsAuthenticated |
+| `periodos-fiscales/<int:año>/<int:mes>/cerrar/` | CerrarPeriodoFiscalView | — | — | — | IsAuthenticated |
+| `status/` | IntegrationHubStatusView | — | — | — | IsAuthenticated |
+| `tasa-oficial-bcv/` | TasaCambioOficialBCVView | — | — | — | IsAuthenticated |
+| `usuario_roles/` | usuario_roles_view | — | — | — | IsAuthenticated |
+| `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
+| `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
 _Total ViewSets: 187_

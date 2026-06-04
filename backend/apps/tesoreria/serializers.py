@@ -11,6 +11,7 @@ class CajaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Caja
         fields = "__all__"
+        ref_name = "CajaTesoreria"  # evita colisión OpenAPI con finanzas.CajaSerializer
 
 
 class MovimientoInternoFondoSerializer(serializers.ModelSerializer):

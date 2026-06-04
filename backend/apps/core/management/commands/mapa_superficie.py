@@ -57,16 +57,19 @@ def _es_tenant(model):
 def _matriz_endpoints() -> str:
     out = io.StringIO()
     out.write("# Mapa de endpoints (A1 — generado por `manage.py mapa_superficie`)\n\n")
-    out.write("| Ruta | ViewSet | Modelo | Tenant | Override get_queryset |\n")
-    out.write("|---|---|---|---|---|\n")
+    out.write("| Ruta | ViewSet | Modelo | Tenant | Override get_queryset | Permiso |\n")
+    out.write("|---|---|---|---|---|---|\n")
     filas = []
     for pattern, cls in _iter_viewsets():
         model = _model_de(cls)
         tenant = "✅" if _es_tenant(model) else "—"
         override = "✅" if "get_queryset" in cls.__dict__ else "—"
-        filas.append((pattern, cls.__name__, model.__name__ if model else "—", tenant, override))
+        perms = ", ".join(
+            getattr(p, "__name__", str(p)) for p in (getattr(cls, "permission_classes", None) or [])
+        ) or "—"
+        filas.append((pattern, cls.__name__, model.__name__ if model else "—", tenant, override, perms))
     for f in sorted(set(filas)):
-        out.write(f"| `{f[0]}` | {f[1]} | {f[2]} | {f[3]} | {f[4]} |\n")
+        out.write(f"| `{f[0]}` | {f[1]} | {f[2]} | {f[3]} | {f[4]} | {f[5]} |\n")
     out.write(f"\n_Total ViewSets: {len(set(c for _, c, *_ in filas))}_\n")
     return out.getvalue()
 
@@ -74,8 +77,8 @@ def _matriz_endpoints() -> str:
 def _matriz_modelos() -> str:
     out = io.StringIO()
     out.write("# Mapa de modelos (A1 — generado por `manage.py mapa_superficie`)\n\n")
-    out.write("| App | Modelo | Tenant-aware | PK UUID |\n")
-    out.write("|---|---|---|---|\n")
+    out.write("| App | Modelo | Tenant-aware | PK UUID | unique_together |\n")
+    out.write("|---|---|---|---|---|\n")
     filas = []
     for model in django_apps.get_models():
         if not model._meta.app_label.startswith(("apps.", "")):
@@ -84,14 +87,80 @@ def _matriz_modelos() -> str:
             continue
         pk = model._meta.pk
         es_uuid = pk.get_internal_type() == "UUIDField"
+        ut = model._meta.unique_together
+        ut_str = "; ".join("+".join(t) for t in ut) if ut else "—"
         filas.append((
             model._meta.app_label, model.__name__,
             "✅" if _es_tenant(model) else "—",
             "✅" if es_uuid else "—",
+            ut_str,
         ))
     for f in sorted(set(filas)):
-        out.write(f"| {f[0]} | {f[1]} | {f[2]} | {f[3]} |\n")
+        out.write(f"| {f[0]} | {f[1]} | {f[2]} | {f[3]} | {f[4]} |\n")
     out.write(f"\n_Total modelos: {len(set(filas))}_\n")
+    return out.getvalue()
+
+
+def _matriz_mcp_celery_commands() -> str:
+    import inspect
+
+    out = io.StringIO()
+    out.write("# Mapa MCP / Celery / Commands (A1 — generado por `manage.py mapa_superficie`)\n\n")
+
+    # ── Herramientas MCP ──────────────────────────────────────────────────────
+    out.write("## Herramientas MCP\n\n| Tool | Módulo |\n|---|---|\n")
+    tools = []
+    try:
+        import apps.core.mcp_server as mcp_mod
+        tools = sorted(
+            n for n, o in vars(mcp_mod).items()
+            if n.startswith("omni_") and inspect.isfunction(o)
+        )
+    except Exception:  # noqa: BLE001 — introspección best-effort
+        pass
+    for t in tools:
+        out.write(f"| `{t}` | apps.core.mcp_server |\n")
+    out.write(f"\n_Total tools MCP: {len(tools)}_\n\n")
+
+    # ── Tareas Celery ─────────────────────────────────────────────────────────
+    out.write("## Tareas Celery\n\n| Tarea | Módulo |\n|---|---|\n")
+    celery_filas = []
+    try:
+        import importlib
+        from config.celery import app as celery_app
+        # Forzar el registro importando cada apps.<app>.tasks (en un contexto sin
+        # worker, autodiscover es perezoso y app.tasks no estaría poblado).
+        for cfg in django_apps.get_app_configs():
+            if not cfg.name.startswith("apps."):
+                continue
+            try:
+                importlib.import_module(f"{cfg.name}.tasks")
+            except Exception:  # noqa: BLE001 — sin tasks.py o import fallido: se omite
+                continue
+        for name, task in celery_app.tasks.items():
+            if name.startswith("celery."):
+                continue  # tareas internas de Celery
+            celery_filas.append((name, getattr(task, "__module__", "—")))
+    except Exception:  # noqa: BLE001
+        pass
+    for name, mod in sorted(set(celery_filas)):
+        out.write(f"| `{name}` | {mod} |\n")
+    out.write(f"\n_Total tareas Celery: {len(set(celery_filas))}_\n\n")
+
+    # ── Management commands ───────────────────────────────────────────────────
+    out.write("## Management commands\n\n| Comando | App |\n|---|---|\n")
+    cmd_filas = []
+    try:
+        from django.core.management import get_commands
+        cmd_filas = [
+            (name, app) for name, app in get_commands().items()
+            if str(app).startswith("apps.")
+        ]
+    except Exception:  # noqa: BLE001
+        pass
+    for name, app in sorted(set(cmd_filas)):
+        out.write(f"| `{name}` | {app} |\n")
+    out.write(f"\n_Total commands: {len(set(cmd_filas))}_\n")
     return out.getvalue()
 
 
@@ -107,6 +176,7 @@ class Command(BaseCommand):
         artefactos = {
             DOCS / "MAPA_ENDPOINTS.md": _matriz_endpoints(),
             DOCS / "MAPA_MODELOS.md": _matriz_modelos(),
+            DOCS / "MAPA_MCP_CELERY_COMMANDS.md": _matriz_mcp_celery_commands(),
         }
         if opts["check"]:
             desactualizados = [

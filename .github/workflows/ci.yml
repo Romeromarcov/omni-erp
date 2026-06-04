@@ -82,16 +82,14 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: python -m pytest tests_api/ -v --tb=short --no-header
+        run: python -m pytest tests tests_api/ -v --tb=short --no-header
 
-      - name: Diff coverage — código nuevo ≥90% (cero-dudas)
+      - name: Diff coverage — código nuevo ≥90% (cero-dudas, BLOQUEANTE)
         if: github.event_name == 'pull_request'
         working-directory: backend
-        # Report-only durante el bootstrap del gate (esta rama acumula muchos
-        # commits previos a su introducción). Pasa a bloqueante (quitar
-        # continue-on-error) una vez mergeado a main: a partir de ahí compara solo
-        # las líneas nuevas de cada PR incremental contra el main ya cubierto.
-        continue-on-error: true
+        # BLOQUEANTE: cada PR debe cubrir ≥90% de sus líneas nuevas de apps/.
+        # El gate ya está mergeado a main, así que compara solo las líneas nuevas
+        # del PR contra el main ya cubierto. (Objetivo plan: subir a 95%.)
         run: |
           pip install diff-cover
           git fetch --no-tags origin main
@@ -257,14 +255,27 @@ jobs:
         working-directory: backend
         run: bandit -r apps/ config/ -c .bandit.yaml --severity-level medium
 
-      - name: Semgrep (OWASP/Django — bloqueante en severidad ERROR)
+      - name: Semgrep (OWASP/Django + reglas Omni — bloqueante en severidad ERROR)
         working-directory: backend
-        run: semgrep --config p/python --config p/django --severity ERROR --error apps/ config/
+        # ../.semgrep.yml: reglas propias (raw SQL, verify=False, eval/exec, shell=True),
+        # verificadas limpias (0 findings sobre 616 archivos) → bloqueantes.
+        run: semgrep --config p/python --config p/django --config ../.semgrep.yml --severity ERROR --error apps/ config/
 
-      - name: Ruff (lint — errores graves)
+      - name: Ruff (bugs reales — BLOQUEANTE)
         working-directory: backend
-        # Solo errores de sintaxis/nombres/imports indefinidos por ahora (gradual).
-        run: ruff check apps/ config/ --select E9,F63,F7,F82,F401,F811 || true
+        # Códigos que indican bugs, no estilo: sintaxis (E9), f-strings rotos (F63),
+        # comparaciones inválidas (F7), nombres indefinidos (F82), uso antes de
+        # asignación (F823) y redefiniciones (F811 — clases/funciones/imports
+        # duplicados, como los serializers/ViewSet de finanzas en BUG-DUP-1). Este
+        # subconjunto está limpio y bloquea para impedir regresiones.
+        run: ruff check apps/ config/ --select E9,F63,F7,F82,F823,F811
+
+      - name: Ruff (limpieza gradual — no bloqueante aún)
+        working-directory: backend
+        # F401 (imports sin usar): se limpia por fases; al quedar en cero, moverlo
+        # al paso bloqueante de arriba.
+        continue-on-error: true
+        run: ruff check apps/ config/ --select F401
 
       - name: Mypy (tipos — gradual, no bloqueante aún)
         working-directory: backend
@@ -272,3 +283,62 @@ jobs:
         run: |
           pip install -r requirements.txt
           mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura --ignore-missing-imports || true
+
+  # ──────────────────────────────────────────────────────────────
+  # Contract — OpenAPI (drf-yasg) + schemathesis. No-bloqueante al inicio
+  # (Fase 0): genera el esquema y hace fuzzing de contrato contra un server vivo.
+  # ──────────────────────────────────────────────────────────────
+  contract:
+    name: "Contract (OpenAPI + schemathesis)"
+    runs-on: ubuntu-latest
+    continue-on-error: true  # no-bloqueante al inicio (DoD A0)
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: omni_erp
+          POSTGRES_USER: omni_erp
+          POSTGRES_PASSWORD: omni_erp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      REDIS_URL: "redis://localhost:6379/0"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install deps
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+      - name: Migrar
+        working-directory: backend
+        run: python manage.py migrate --noinput
+      - name: Generar esquema OpenAPI (drf-yasg)
+        working-directory: backend
+        run: python manage.py generate_swagger /tmp/openapi.json -f json
+      - name: Levantar servidor
+        working-directory: backend
+        run: |
+          python manage.py runserver 0.0.0.0:8000 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/api/health/ >/dev/null && break || sleep 2; done
+      - name: Schemathesis (fuzzing de contrato — no-bloqueante)
+        working-directory: backend
+        run: |
+          schemathesis run /tmp/openapi.json --base-url http://localhost:8000 \
+            --checks not_a_server_error --hypothesis-max-examples=5 || true

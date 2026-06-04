@@ -290,7 +290,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 ### Implementación recomendada (strangler fig, sin big-bang)
 
 - **`apps/localizacion/`** — framework base: registro de localizaciones, resolución por empresa, definición de **puertos/interfaces** neutrales que el core invoca: `MotorImpuestos`, `GeneradorDocumentoLegal`, `CalculadoraNomina`, `ProveedorTasas`, `MetodosPagoLocales`, `LibroLegal`.
-- **`apps/localizacion_ve/`** — expansión de la app ya existente `vzla_localizacion`. Implementa los puertos para Venezuela (Capa A y Capa B). La lógica VE hoy dispersa (`apps/fiscal`, detección de IGTF en `apps/ventas`, métodos de pago IGTF, libros SENIAT, conector `tasas_ve` del Hub) se **migra gradualmente** hacia aquí dejando el core agnóstico. No se reescribe de golpe.
+- **`apps/localizacion_ve/`** — app de localización Venezuela (antes llamada `vzla_localizacion`). Implementa los puertos para Venezuela (Capa A y Capa B). La lógica VE hoy dispersa (`apps/fiscal`, detección de IGTF en `apps/ventas`, métodos de pago IGTF, libros SENIAT, conector `tasas_ve` del Hub) se **migra gradualmente** hacia aquí dejando el core agnóstico. No se reescribe de golpe.
 - **Futuras localizaciones** (Colombia DIAN/CUFE, México SAT/CFDI, Ecuador SRI, Perú SUNAT) son paquetes nuevos que implementan los mismos puertos. Ninguna toca el core.
 - **Regla desde hoy:** todo módulo nuevo con lógica país-específica debe entrar por un puerto de localización, no hardcodear Venezuela. Esto evita aumentar el acoplamiento mientras se completa la extracción.
 
@@ -356,7 +356,8 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - `control_asistencia` — FK reales a Empleado restauradas; marcajes básicos.
 
 **Estructura creada, lógica pendiente (🔲)**
-- `almacenes`, `despacho`, `logistica_transporte`, `flota`, `control_calidad`, `costos`, `gastos` (con aislamiento), `manufactura` (modelos + multi-tenant; MRP/OF pendiente), `servicio_cliente`, `banca_electronica`, `integracion_b2b`, `migracion_datos`, `vzla_localizacion`, `eventos`.
+- `almacenes`, `despacho`, `costos`, `gastos` (con aislamiento), `manufactura` (modelos + multi-tenant; MRP/OF pendiente), `servicio_cliente`, `banca_electronica`, `integracion_b2b`, `migracion_datos`, `gestion_aprobaciones`, `localizacion` (framework de puertos, ver §3.7), `localizacion_ve`, `eventos` (subsistema de eventos, sin `models.py`).
+  - *Nota (auditoría 2026-06-03):* se eliminaron de esta lista `logistica_transporte`, `flota` y `control_calidad` — **nunca se crearon** como apps. El nombre real de la localización VE es `localizacion_ve` (antes `vzla_localizacion`).
 
 ## 4.3 Deuda técnica conocida y abierta
 
@@ -366,7 +367,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **Prometheus/Grafana** — pendiente (Sentry ya está).
 - **`saas` middleware fail-open** — revisar a fail-closed al activar `SAAS_VERIFICAR_SUSCRIPCION`.
 - **Service Workers / offline real** (portales) — pendiente.
-- **Acoplamiento a Venezuela en el núcleo** — hoy la lógica VE está dispersa y semi-incrustada (`apps/fiscal`, detección de IGTF en `apps/ventas`, métodos de pago IGTF, libros SENIAT). Debe migrarse a la arquitectura de localización de dos capas (ver [§3.7](#37--arquitectura-de-localización-l10n-de-dos-capas)) vía strangler fig. La app `apps/vzla_localizacion` ya existe como punto de partida pero está casi vacía.
+- **Acoplamiento a Venezuela en el núcleo** — hoy la lógica VE está dispersa y semi-incrustada (`apps/fiscal`, detección de IGTF en `apps/ventas`, métodos de pago IGTF, libros SENIAT). Debe migrarse a la arquitectura de localización de dos capas (ver [§3.7](#37--arquitectura-de-localización-l10n-de-dos-capas)) vía strangler fig. La app `apps/localizacion_ve` (antes `vzla_localizacion`) ya existe como punto de partida.
 - **Capa B (dinámica de mercado) parcialmente cubierta** — multimoneda, tasas, CxC, métodos de pago y **`OperacionCambioDivisa` (apps/tesoreria, con comisiones y CRUD)** existen, pero faltan como capacidades de localización formalizadas: pagos de terceros (Zelle/nómina), doble tasa universal en cada operación, libro maestro de flujo de caja, ventas con/sin factura. Insumos disponibles en el proyecto `GestionCxC` (ver [§6](#6--localización-venezuela-l10n-ve)).
 - **Dos `PROJECT_LOG.md` divergentes** (raíz vs `backend/`) — consolidar: `backend/PROJECT_LOG.md` es el vigente; el de la raíz debe archivarse.
 - **Encoding (mojibake)** en `docs/_archive/OMNI_ERP_MASTER_PLAN.md` — documento archivado; su contenido vigente ya está consolidado aquí.

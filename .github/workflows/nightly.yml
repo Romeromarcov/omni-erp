@@ -1,0 +1,60 @@
+name: Nightly
+
+# Jobs lentos que no deben correr en cada PR (plan cero-dudas, Fase 0 → Fase 3).
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 06:00 UTC diario
+  workflow_dispatch: {}
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Mutation testing (mutmut) sobre módulos críticos. No-bloqueante al inicio;
+  # el objetivo de score ≥80% se endurece en Fase 3.
+  # ──────────────────────────────────────────────────────────────
+  mutation:
+    name: "Mutation (mutmut — módulos críticos)"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: omni_erp
+          POSTGRES_USER: omni_erp
+          POSTGRES_PASSWORD: omni_erp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      REDIS_URL: "redis://localhost:6379/0"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install deps
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+      - name: Migrar
+        working-directory: backend
+        run: python manage.py migrate --noinput
+      - name: Mutmut (módulos de cálculo críticos)
+        working-directory: backend
+        # Config en backend/setup.cfg [mutmut]. No-bloqueante; reporta el score.
+        run: |
+          mutmut run || true
+          mutmut results || true
