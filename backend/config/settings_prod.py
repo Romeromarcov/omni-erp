@@ -9,7 +9,12 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").s
 # (ver docs/_archive/RAILWAY_TROUBLESHOOTING_2026-06-03.md). El comodín
 # ".up.railway.app" cubre el dominio público asignado por Railway.
 if os.environ.get("RAILWAY_ENVIRONMENT"):
+    # localhost/127.0.0.1: NECESARIOS para el HEALTHCHECK del contenedor
+    # (`curl http://localhost:$PORT/api/health/` → Host: localhost). Sin ellos el
+    # healthcheck da DisallowedHost, el contenedor queda "unhealthy" y Railway no
+    # promueve el deploy nuevo (sigue sirviendo uno viejo).
     for _rh in (".up.railway.app", ".railway.app", ".railway.internal",
+                "localhost", "127.0.0.1",
                 os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip(),
                 os.environ.get("RAILWAY_PRIVATE_DOMAIN", "").strip()):
         if _rh and _rh not in ALLOWED_HOSTS:
