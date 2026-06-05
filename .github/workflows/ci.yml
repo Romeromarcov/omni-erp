@@ -317,10 +317,12 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Dependency audit (Node — npm audit)
+      - name: Dependency audit (Node — npm audit) — BLOQUEANTE (critical)
         working-directory: frontend
-        continue-on-error: true
-        run: npm audit --audit-level=high || true
+        # BLOQUEANTE en CRITICAL (Fase 5): npm audit fix cerró 11/12; el único HIGH
+        # restante (picomatch, build/lint-time vía typescript-eslint) está diferido en
+        # CTF-007. Se sube a --audit-level=high cuando ese CTF se cierre.
+        run: npm audit --audit-level=critical
 
       - name: Trivy — CVEs de dependencias e imágenes (fs scan)
         # Instalación vía script oficial (evita depender de tags de la action).
