@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(railway status)",
+      "Bash(railway status:*)",
+      "Bash(railway whoami)",
+      "Bash(railway list)",
+      "Bash(railway link:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway service list:*)",
+      "Bash(railway service status:*)",
+      "Bash(railway environment config:*)",
+      "Bash(npx -y @railway/cli status:*)",
+      "Bash(npx -y @railway/cli logs:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(git fetch:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)"
+    ],
+    "deny": [
+      "Bash(railway up:*)",
+      "Bash(railway redeploy:*)",
+      "Bash(railway down:*)",
+      "Bash(railway environment edit:*)",
+      "Bash(railway variables --set:*)",
+      "Bash(railway service delete:*)"
+    ]
+  }
+}

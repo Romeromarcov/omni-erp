@@ -40,3 +40,12 @@ Si un paso falla, **se arregla antes de continuar** — nunca "para el próximo 
 - **PRs:** se abren en **draft**; el agente **nunca** marca "ready" (lo hace el revisor humano).
 - **Plantilla de PR y auto-checklist:** [`docs/skills/omni-pr-discipline/SKILL.md`](docs/skills/omni-pr-discipline/SKILL.md).
 - **Auditorías:** planificación y logs en [`docs/auditorias/`](docs/auditorias/); finalizadas en `docs/auditorias/archivo/`.
+
+## 🌳 Flujo de trabajo y entornos (Git manda)
+
+Detalle completo en **[`docs/FLUJO_DE_TRABAJO.md`](docs/FLUJO_DE_TRABAJO.md)**. Lo esencial:
+
+- `main` = **producción** · `develop` = **staging** (ambos despliegan solos en Railway al merge).
+- **Feature nuevo:** `feature/*` desde `develop` → PR a `develop` → valida en staging → PR `develop`→`main` → prod. Un feature **nunca** salta directo a `main`.
+- **Audit / fix / hotfix:** `fix|hotfix/*` desde `main` → PR a `main` → prod; luego **sincroniza `develop`** (no dejarlo divergir).
+- **Diagnóstico en staging/prod:** **solo lectura** (logs, datos) vía Railway CLI — skill [`docs/skills/diagnostico-railway/`](docs/skills/diagnostico-railway/SKILL.md). **Nunca** editar código ni datos en el contenedor (efímero); todo cambio vuelve por Git.
