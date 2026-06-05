@@ -23,7 +23,7 @@ tests/
 
 ## Aislamiento multi-tenant (R-CODE-1): dos guards complementarios
 
-- **Estructural** — `tests_api/test_aislamiento_cobertura.py` (TEST-1): introspecta el URLconf
+- **Estructural** — `tenant/test_aislamiento_cobertura.py` (TEST-1): introspecta el URLconf
   y exige que **todo** ViewSet sobre un modelo con FK a `Empresa` sobreescriba `get_queryset`.
   Falla solo con agregar un ViewSet sin filtrar.
 - **De comportamiento** — `tenant/test_aislamiento_comportamiento.py` (TEST-2): tabla declarativa
