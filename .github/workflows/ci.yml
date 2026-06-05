@@ -238,6 +238,17 @@ jobs:
   static-analysis:
     name: "Static analysis (bandit + semgrep + ruff + mypy)"
     runs-on: ubuntu-latest
+    env:
+      # mypy con django-stubs importa config.settings; necesita estas vars para
+      # cargar settings (no se conecta a la BD, solo importa).
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      REDIS_URL: "redis://localhost:6379/0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -277,12 +288,14 @@ jobs:
         continue-on-error: true
         run: ruff check apps/ config/ --select F401
 
-      - name: Mypy (tipos — gradual, no bloqueante aún)
+      - name: Mypy (tipos — django-stubs/drf — BLOQUEANTE en módulos de dinero)
         working-directory: backend
-        continue-on-error: true
+        # requirements-dev trae django-stubs/djangorestframework-stubs; la config del
+        # plugin vive en setup.cfg [mypy]. Fase 5: con django-stubs el conteo bajó de
+        # ~1368 a 0 en contabilidad/finanzas/nomina/manufactura → ahora BLOQUEANTE.
         run: |
-          pip install -r requirements.txt
-          mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura --ignore-missing-imports || true
+          pip install -r requirements-dev.txt
+          mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura
 
   # ──────────────────────────────────────────────────────────────
   # Contract — OpenAPI (drf-yasg) + schemathesis. No-bloqueante al inicio

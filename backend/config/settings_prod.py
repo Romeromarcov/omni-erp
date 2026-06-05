@@ -59,7 +59,7 @@ SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = "DENY"
 
 # Logs solo INFO en producción (no DEBUG)
-LOGGING["handlers"]["console"]["level"] = "INFO"  # noqa: F821
+LOGGING["handlers"]["console"]["level"] = "INFO"  # type: ignore[index]  # noqa: F821
 
 # ── Sentry (GAP-10) ─────────────────────────────────────────────────────────
 # Configurar SENTRY_DSN en el entorno de producción para habilitar el monitoreo.

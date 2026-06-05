@@ -104,7 +104,7 @@ def finanzas_get_saldo_caja(
         raise PermissionError("empresa_id no coincide con el tenant del token.")
 
     try:
-        caja = CajaFisica.objects.get(pk=caja_id, id_empresa=empresa_id)
+        caja = CajaFisica.objects.get(pk=caja_id, empresa_id=empresa_id)
     except CajaFisica.DoesNotExist:
         return {"error": f"Caja {caja_id} no encontrada."}
 
@@ -115,12 +115,12 @@ def finanzas_get_saldo_caja(
 
     # Obtener la sesión activa si existe
     sesion_activa = caja.sesiones.filter(fecha_cierre__isnull=True).first()
-    saldo_apertura = sesion_activa.monto_apertura if sesion_activa else Decimal("0")  # BUG-NEW-2
+    saldo_apertura = sesion_activa.saldo_inicial if sesion_activa else Decimal("0")
 
     return {
         "caja_id": str(caja.id_caja_fisica),
         "nombre": caja.nombre,
-        "activa": caja.activo,
+        "activa": caja.activa,
         "sesion_activa": sesion_activa is not None,
         "saldo_apertura": saldo_apertura,
     }
