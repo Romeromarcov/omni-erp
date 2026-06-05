@@ -140,9 +140,94 @@ vi.mock('../services/api', () => ({
 }));
 ```
 
+### MSW — red real en tests (TEST-6)
+
+Para tests que ejercitan el camino completo de datos (hook/componente →
+`services/api` → `fetch` real) usamos [MSW](https://mswjs.io/) en lugar de
+mockear `services/api`:
+
+- `src/test/server.ts` — `setupServer(...)` arrancado en `src/test-setup.ts`
+  (`beforeAll` / `afterEach reset` / `afterAll close`, con
+  `onUnhandledRequest: 'bypass'` para no romper los tests que ya mockean `api`).
+- `src/test/handlers.ts` — handlers de endpoints **reales** (la base coincide con
+  `API_URL` = `http://localhost:8000/api`). Un test puede sobreescribir un handler
+  con `server.use(http.get(apiUrl('/...'), ...))`.
+
+Ejemplos: `src/__tests__/useEmpresas.msw.test.tsx` (hook) y
+`src/__tests__/NotificationBell.msw.test.tsx` (componente).
+
+### Pisos de cobertura por carpeta
+
+`vite.config.ts` define umbrales por carpeta además del global (todos son un
+**ratchet**: nunca bajar). Estado actual:
+
+| Carpeta | Piso fijado | Objetivo Plan Maestro |
+|---|---|---|
+| global | 52/41/45/55 | 60% |
+| `src/services/**` | 60/50/55/60 | **85% (pendiente)** |
+| `src/hooks/**` | 45/33/50/45 | **85% (pendiente)** |
+| `src/lib/**` | 85/70/85/85 | ✅ |
+
+> **Pendiente:** llevar `services/` y `hooks/` a ≥85%. El gap es grande
+> (`hooks/` ~50%, `services/` ~63%) y no se cierra con uno o dos tests; se sube
+> incrementalmente agregando tests con MSW. Los pisos actuales impiden regresión.
+
+## Contrato API — tipos OpenAPI + drift (TEST-6)
+
+El backend expone su contrato vía drf-yasg (**Swagger 2.0**). El frontend versiona
+ese contrato y deriva tipos TS de él:
+
+- `src/api/openapi.json` — esquema **fuente de verdad**, generado por el backend.
+- `src/api/schema.d.ts` — tipos TS **generados** (NO editar a mano).
+
+Pipeline (`scripts/gen-api-types.mjs`): `openapi.json` → `swagger2openapi`
+(2.0 → 3.0) → `openapi-typescript` → `schema.d.ts`.
+
+```bash
+npm run gen:api-types     # regenera src/api/schema.d.ts desde el esquema versionado
+npm run check:api-drift   # falla si schema.d.ts difiere (BLOQUEANTE en CI)
+```
+
+`check:api-drift` corre en el job frontend de CI y **bloquea** si los tipos están
+desactualizados respecto al esquema versionado.
+
+### Sincronizar el contrato con el backend
+
+Cuando cambian endpoints/serializers del backend, regenera el esquema y los tipos:
+
+```bash
+# 1) Regenerar el esquema desde el backend (requiere Django + entorno)
+cd backend
+PYTHONUTF8=1 python manage.py generate_swagger ../frontend/src/api/openapi.json -f json
+
+# 2) Regenerar los tipos y commitear ambos archivos
+cd ../frontend
+npm run gen:api-types
+git add src/api/openapi.json src/api/schema.d.ts
+```
+
+> En Windows, `PYTHONUTF8=1` evita un `UnicodeEncodeError` (cp1252) al escribir el
+> JSON con caracteres no-ASCII.
+
+## E2E — Playwright (TEST-6)
+
+Smoke E2E en `frontend/e2e/`. Requiere **frontend (y backend) vivos**; por eso
+NO corre en el job unit de CI, sino en un job aparte **no-bloqueante**.
+
+```bash
+npx playwright install   # una vez: descarga los navegadores
+npm run dev              # frontend en :5173 (con backend en :8000)
+npm run test:e2e         # corre los specs de e2e/
+```
+
+`playwright.config.ts` toma la baseURL de `E2E_BASE_URL` (default
+`http://localhost:5173`).
+
 ## CI
 
 El workflow `.github/workflows/ci.yml` ejecuta en cada PR:
-- `tsc --noEmit` — 0 errores de tipado requeridos
+- `tsc -b` — 0 errores de tipado requeridos
 - `npm run lint` — ESLint (errores bloquean el job)
-- `npm run build` — `tsc -b && vite build`
+- `npm run check:api-drift` — drift de contrato API (**bloqueante**)
+- `npm run test:coverage` — Vitest + gate de cobertura (global + por carpeta)
+- Playwright (job `e2e`) — smoke con backend+frontend vivos (**no-bloqueante**)

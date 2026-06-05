@@ -127,9 +127,107 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
+      - name: Drift de contrato API (TEST-6 — BLOQUEANTE)
+        working-directory: frontend
+        # Regenera los tipos TS desde el esquema OpenAPI versionado
+        # (src/api/openapi.json) y falla si difieren de src/api/schema.d.ts.
+        # Garantiza que los tipos del frontend siguen el contrato del backend.
+        run: npm run check:api-drift
+
       - name: Vitest unit tests (con gate de cobertura ≥60% — INFRA-NEW-3)
         working-directory: frontend
         run: npm run test:coverage -- --run
+
+  # ──────────────────────────────────────────────────────────────
+  # E2E — Playwright smoke (TEST-6). NO-BLOQUEANTE: requiere backend +
+  # frontend vivos; se ejecuta aparte del job unit. Cuando el flujo esté
+  # estable se puede escalar a bloqueante.
+  # ──────────────────────────────────────────────────────────────
+  e2e:
+    name: "E2E (Playwright smoke — no-bloqueante)"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: omni_erp
+          POSTGRES_USER: omni_erp
+          POSTGRES_PASSWORD: omni_erp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_ci
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      REDIS_URL: "redis://localhost:6379/0"
+      E2E_BASE_URL: "http://localhost:4173"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend deps
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Migrar
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
+      - name: Levantar backend
+        working-directory: backend
+        run: |
+          python manage.py runserver 0.0.0.0:8000 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/api/health/ >/dev/null && break || sleep 2; done
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build + servir frontend
+        working-directory: frontend
+        env:
+          # El preview server (vite preview) sirve en :4173 y proxya /api al backend.
+          BACKEND_URL: "http://localhost:8000"
+          VITE_API_URL: "http://localhost:8000/api"
+        run: |
+          npm run build
+          npm run preview -- --host 0.0.0.0 --port 4173 &
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/ >/dev/null && break || sleep 2; done
+
+      - name: Instalar navegadores Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright smoke
+        working-directory: frontend
+        run: npm run test:e2e
 
   # ──────────────────────────────────────────────────────────────
   # Agent eval — Shadow mode quality gate (CTF-003)
