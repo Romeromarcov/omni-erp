@@ -27,6 +27,24 @@ if not ALLOWED_HOSTS:
         "(ej: 'midominio.com,www.midominio.com')."
     )
 
+# CSRF — el admin de Django usa sesión + CSRF. Desde Django 4.0 todo POST por
+# HTTPS exige que el header Origin coincida con CSRF_TRUSTED_ORIGINS (CON esquema
+# https://). Sin esto, "Guardar" en el admin falla con 403 (Origin checking
+# failed) y el cambio no se persiste. Se permite definir orígenes extra por
+# entorno y, además, se derivan de ALLOWED_HOSTS añadiendo el esquema.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+for _host in ALLOWED_HOSTS:
+    # localhost/127.0.0.1 (healthcheck) y .railway.internal (red privada) no son
+    # orígenes de navegador; no aportan al chequeo de CSRF del admin.
+    if not _host or _host in ("localhost", "127.0.0.1") or _host.endswith(".railway.internal"):
+        continue
+    # Un host comodín (".up.railway.app") se traduce a "https://*.up.railway.app".
+    _origin = f"https://*{_host}" if _host.startswith(".") else f"https://{_host}"
+    if _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+
 # CORS — solo orígenes explícitos en producción
 CORS_ALLOW_ALL_ORIGINS = False
 

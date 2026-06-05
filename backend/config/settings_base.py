@@ -85,6 +85,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # WhiteNoise debe ir inmediatamente después de SecurityMiddleware para
+    # servir los estáticos (CSS/JS del admin incluidos) en producción.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -187,6 +190,20 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Almacenamiento de estáticos: WhiteNoise comprime y cachea los archivos que
+# `collectstatic` deja en STATIC_ROOT (CSS/JS del admin incluidos). El backend
+# de `default` (archivos subidos por usuarios) se sobreescribe a S3 más abajo
+# cuando USE_S3=True. Usamos CompressedStaticFilesStorage (sin manifest con
+# hash) para no romper el build si algún template referencia un estático ausente.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -331,13 +348,10 @@ USE_S3 = os.environ.get("USE_S3", "False") == "True"
 
 if USE_S3:
     # Backend S3-compatible (funciona con MinIO, AWS S3, Cloudflare R2, etc.)
-    STORAGES = {
-        "default": {
-            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        },
+    # Solo se sobreescribe "default" (archivos subidos por usuarios); los
+    # estáticos siguen sirviéndose con WhiteNoise (ver STORAGES más arriba).
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     }
 
     # Credenciales S3 / MinIO.
