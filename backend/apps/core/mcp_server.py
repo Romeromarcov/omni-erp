@@ -181,7 +181,7 @@ def omni_get_empresas(capability_token: str) -> list:
     empresas = Empresa.objects.filter(
         id_empresa=context["empresa_id"],
         activo=True,
-    ).values("id_empresa", "nombre_comercial", "rif", "activo")
+    ).values("id_empresa", "nombre_comercial", "identificador_fiscal", "activo")
 
     logger.info(
         "omni_get_empresas | actor=%s | tenant=%s | count=%d",
@@ -292,8 +292,8 @@ def omni_get_saldo_cliente(
         raise PermissionError("empresa_id no coincide con el tenant del token.")
 
     resultado = CuentaPorCobrar.objects.filter(
-        id_empresa=empresa_id,
-        id_cliente=cliente_id,
+        empresa_id=empresa_id,
+        cliente_id=cliente_id,
         estado__in=["PENDIENTE", "PARCIAL"],
     ).aggregate(
         total_pendiente=Sum("saldo_pendiente"),
