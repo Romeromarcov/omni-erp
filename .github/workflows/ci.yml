@@ -169,7 +169,8 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: pip install -r requirements.txt
+        # requirements-dev incluye -r requirements.txt + pytest (movido fuera de prod).
+        run: pip install -r requirements-dev.txt
 
       - name: Run eval suite (no-cov — umbral es precisión, no cobertura)
         working-directory: backend
@@ -204,14 +205,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Dependency audit (Python — pip-audit)
+      - name: Dependency audit (Python — pip-audit) — BLOQUEANTE
         working-directory: backend
-        # No bloqueante: reporta vulnerabilidades conocidas sin tumbar el pipeline
-        # ante un CVE recién publicado; el equipo prioriza y remedia.
-        continue-on-error: true
+        # BLOQUEANTE (Fase 5): requirements.txt quedó sin CVEs conocidos (deps de test
+        # movidas a requirements-dev; cryptography/lxml/mcp/httpx actualizados). Un CVE
+        # nuevo rompe el job a propósito → se remedia o se difiere con CTF fechado.
         run: |
           pip install pip-audit
-          pip-audit -r requirements.txt || true
+          pip-audit -r requirements.txt
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
