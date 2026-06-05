@@ -280,8 +280,6 @@ def omni_get_saldo_cliente(
     Returns:
         dict con total_pendiente, cantidad_facturas, moneda_base.
     """
-    from django.db.models import Sum  # noqa: PLC0415
-
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar  # noqa: PLC0415
 
     context = _resolve_token(capability_token)
@@ -291,16 +289,22 @@ def omni_get_saldo_cliente(
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
 
-    resultado = CuentaPorCobrar.objects.filter(
-        empresa_id=empresa_id,
-        cliente_id=cliente_id,
-        estado__in=["PENDIENTE", "PARCIAL"],
-    ).aggregate(
-        total_pendiente=Sum("saldo_pendiente"),
-        cantidad_facturas=Sum("id_cxc"),  # hack: cuenta rows
+    # CuentaPorCobrar NO tiene campo `saldo_pendiente`: el saldo se calcula como
+    # monto - abonos (igual que calcular_aging). Estados en minúscula como en el
+    # modelo (antes filtraba "PENDIENTE"/"PARCIAL" y agregaba campos inexistentes
+    # `saldo_pendiente`/`id_cxc` → FieldError en cada llamada).
+    cxcs = list(
+        CuentaPorCobrar.objects.filter(
+            empresa_id=empresa_id,
+            cliente_id=cliente_id,
+            estado__in=["pendiente", "parcial", "vencida"],
+        ).prefetch_related("abonos")
     )
+    total = Decimal("0")
+    for cxc in cxcs:
+        abonado = sum((a.monto for a in cxc.abonos.all()), Decimal("0"))
+        total += cxc.monto - abonado
 
-    total = resultado["total_pendiente"] or 0
     logger.info(
         "omni_get_saldo_cliente | actor=%s | tenant=%s | cliente=%s | saldo=%s",
         context["actor_id"],
@@ -311,7 +315,8 @@ def omni_get_saldo_cliente(
     return {
         "cliente_id": cliente_id,
         "empresa_id": empresa_id,
-        "total_pendiente": total,  # BUG-NEW-2: Decimal, no float
+        "total_pendiente": total,  # Decimal (R-CODE-4)
+        "cantidad_facturas": len(cxcs),
         "moneda_base": "USD",
     }
 
