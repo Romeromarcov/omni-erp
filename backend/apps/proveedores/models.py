@@ -21,9 +21,9 @@ class Proveedor(OmniBaseModel):
     direccion = models.TextField(null=True, blank=True)
     telefono = models.CharField(max_length=50, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
-    contacto = models.CharField(max_length=100, null=True, blank=True)
-
-    # Enlace al Contacto unificado (strangler fig — nullable durante transición)
+    # Enlace al Contacto unificado (strangler fig — nullable durante transición).
+    # (Antes existía un CharField `contacto` redefinido aquí mismo y, por tanto,
+    # muerto: Python conservaba sólo esta OneToOneField. Eliminado — BUG-DUP.)
     contacto = models.OneToOneField(
         "core.Contacto",
         on_delete=models.SET_NULL,

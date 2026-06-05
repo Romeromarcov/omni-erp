@@ -74,5 +74,5 @@ def priorizar(
             "score": str(score),
         })
 
-    scored.sort(key=lambda x: Decimal(x["score"]), reverse=True)
+    scored.sort(key=lambda x: Decimal(str(x["score"])), reverse=True)
     return scored

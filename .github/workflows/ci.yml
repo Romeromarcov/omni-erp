@@ -288,15 +288,14 @@ jobs:
         continue-on-error: true
         run: ruff check apps/ config/ --select F401
 
-      - name: Mypy (tipos — django-stubs/drf, gradual, no bloqueante aún)
+      - name: Mypy (tipos — django-stubs/drf — BLOQUEANTE en módulos de dinero)
         working-directory: backend
-        continue-on-error: true
         # requirements-dev trae django-stubs/djangorestframework-stubs; la config del
-        # plugin vive en setup.cfg [mypy]. Gradual: con django-stubs el conteo bajó de
-        # ~1368 a ~52; al llegar a 0 se moverá a bloqueante (Fase 5).
+        # plugin vive en setup.cfg [mypy]. Fase 5: con django-stubs el conteo bajó de
+        # ~1368 a 0 en contabilidad/finanzas/nomina/manufactura → ahora BLOQUEANTE.
         run: |
           pip install -r requirements-dev.txt
-          mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura || true
+          mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura
 
   # ──────────────────────────────────────────────────────────────
   # Contract — OpenAPI (drf-yasg) + schemathesis. No-bloqueante al inicio

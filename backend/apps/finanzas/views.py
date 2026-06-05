@@ -193,8 +193,6 @@ from .serializers import (
 
 
 class MonedaViewSet(BaseModelViewSet):
-    from rest_framework.decorators import action
-
     @action(detail=False, methods=["get"], url_path="activas")
     def activas(self, request):
         user = request.user
@@ -544,7 +542,6 @@ class CajaViewSet(BaseModelViewSet):
 
 
 class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
-    from rest_framework.decorators import action
     from rest_framework.response import Response
 
     from .models import MovimientoCajaBanco
