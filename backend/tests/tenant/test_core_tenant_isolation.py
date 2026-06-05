@@ -94,6 +94,7 @@ class TestAislamientoCoreRouter:
     def test_usuario_cross_tenant_no_puede_modificar(self, user_a, user_b):
         client = APIClient()
         client.force_authenticate(user=user_a)
+        email_original = user_b.email
         # UsuariosViewSet: usuario no-superuser solo ve su propio usuario.
         assert client.get(f"/api/core/usuarios/{user_b.id}/").status_code == 404
         resp = client.patch(
@@ -103,7 +104,9 @@ class TestAislamientoCoreRouter:
         )
         assert resp.status_code == 404
         user_b.refresh_from_db()
-        assert user_b.email == "user_b@empresabeta.com"
+        # No acoplar a la fixture: el email de B no fue modificado por A.
+        assert user_b.email == email_original
+        assert user_b.email != "hacked@evil.com"
 
 
 # ── 3. usuario_roles_view filtra por empresa (H-SEC-7) ─────────────────────
