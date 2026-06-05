@@ -16,6 +16,10 @@ ruff==0.8.4
 pip-audit==2.7.3  # CVEs de dependencias Python (cubre el rol de `safety`)
 
 # ── Testing ──
+# pytest/pytest-django/pytest-cov movidos desde requirements.txt (son test-only).
+pytest==8.2.2
+pytest-django==4.8.0
+pytest-cov==6.1.0
 factory_boy==3.3.1
 hypothesis==6.122.3
 pytest-xdist==3.6.1
