@@ -128,8 +128,15 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   (`tests/integration/test_compras_atomicidad.py`): con `contabilidad_activa` y sin mapeo,
   `registrar_recepcion`/`registrar_factura_compra` fallan duro y **revierten todo**
   (recepción, movimiento, stock, CxP), complementando `test_rcode11_centralizado` (helper con
-  mocks). *Pendiente:* cobranza (atomicidad de `cxc` acuerdos `registrar-pago` → asiento PAGO_CXC,
-  hoy sin test) y manufactura.
+  mocks). ✅ Cobranza: `tests/integration/test_cobranza_atomicidad.py` cubre el endpoint
+  `cxc` acuerdos `registrar-pago` (antes **sin test**): con `contabilidad_activa` y sin mapeo
+  `PAGO_CXC` responde 422 y **revierte todo** (sin `finanzas.Pago`, cuota intacta, acuerdo no
+  auto-completado) + camino feliz con mapeo. ✅ Manufactura:
+  `tests/integration/test_manufactura_atomicidad.py` — `consumir_materiales_orden` con BOM de 2
+  componentes (uno sin stock) lanza `StockInsuficienteError` y **revierte multi-escritura** (sin
+  ConsumoMaterial, sin descuento del componente que sí alcanzaba, orden sigue `pendiente`);
+  complementa `test_manufactura_orden_integracion` (camino feliz). **TEST-5 cubre compra, cobranza
+  y manufactura.** *Pendiente general de Fase 2:* migrar el resto de `tests_api/` por capas.
 - **TEST-6** — frontend: MSW (instalado, sin usar), `openapi-typescript` + drift, Playwright E2E,
   pisos de cobertura por carpeta.
 

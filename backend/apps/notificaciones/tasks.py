@@ -15,7 +15,7 @@ logger = logging.getLogger("apps.notificaciones")
     max_retries=3,
     default_retry_delay=60,
 )
-def enviar_notificacion_email(self, id_plantilla: str, destinatario: str, contexto: dict, id_log: str = None):
+def enviar_notificacion_email(self, id_plantilla: str, destinatario: str, contexto: dict, id_log: str | None = None):
     """
     Envía un email usando la plantilla especificada.
 

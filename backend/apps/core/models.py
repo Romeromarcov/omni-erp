@@ -966,7 +966,7 @@ def crear_notificacion(
     tipo: str = "INFO",
     usuario=None,
     url_accion: str = "",
-    metadata: dict = None,
+    metadata: dict | None = None,
 ) -> "Notificacion":
     """
     Helper para crear notificaciones desde cualquier parte del sistema.

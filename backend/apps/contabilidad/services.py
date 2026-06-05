@@ -56,7 +56,7 @@ class MapeoContableNoEncontrado(AsientoError):
 # ── R-CODE-11 centralizado ────────────────────────────────────────────────────
 
 
-def generar_asiento_o_fallar(tipo: str, documento, empresa=None, monto: Decimal = None):
+def generar_asiento_o_fallar(tipo: str, documento, empresa=None, monto: Decimal | None = None):
     """Aplica la política R-CODE-11 de forma uniforme en todos los callsites.
 
     - ``AsientoError`` (descuadre, error real del asiento) **siempre** se propaga,
@@ -126,7 +126,7 @@ def _descripcion(plantilla: str, tipo: str, documento) -> str:
 
 
 @transaction.atomic
-def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal = None) -> AsientoContable:
+def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal | None = None) -> AsientoContable:
     """
     Crea un AsientoContable con dos líneas (debe/haber) para el documento dado.
 

@@ -30,10 +30,11 @@ class BaseModelViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = PageNumberPagination
+    pagination_class: type[PageNumberPagination] | None = PageNumberPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["razon_social", "rif", "telefono", "nombre_comercial"]
-    ordering_fields = "__all__"
+    # DRF acepta lista de campos o el literal "__all__"; las subclases sobreescriben con listas.
+    ordering_fields: list[str] | str = "__all__"
 
     def paginate_queryset(self, queryset):
         # NEW-PAG-1: garantizar un orden determinístico antes de paginar.

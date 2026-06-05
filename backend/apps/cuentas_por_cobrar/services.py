@@ -11,7 +11,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # BUILD-1: solo para anotaciones (evita F821)
     from .models import AbonoCxC
@@ -121,7 +121,7 @@ def calcular_aging(empresa_id) -> dict:
         estado__in=["pendiente", "parcial", "vencida"],
     ).prefetch_related("abonos")
 
-    buckets = {
+    buckets: dict[str, dict[str, Any]] = {
         "corriente":   {"count": 0, "total": Decimal("0")},
         "dias_1_30":   {"count": 0, "total": Decimal("0")},
         "dias_31_60":  {"count": 0, "total": Decimal("0")},
