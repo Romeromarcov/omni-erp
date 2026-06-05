@@ -766,10 +766,15 @@ omni-erp/
 | Documento | Rol |
 |---|---|
 | **`docs/PLAN_MAESTRO_UNICO.md`** (este) | Único documento de planificación — fuente de verdad |
+| `CLAUDE.md` / `AGENTS.md` | Puerta de entrada para agentes (reglas + gate + flujo) |
+| `docs/DEFINITION_OF_DONE.md` | Gate de cierre obligatorio (R-PROC-*) |
+| **`docs/FLUJO_DE_TRABAJO.md`** | Branching + despliegue (feature→develop→main; fix→main) |
+| `docs/DESPLIEGUE_RAILWAY.md` | Topología y despliegue en Railway (prod + staging) |
 | `backend/PROJECT_LOG.md` | Registro cronológico de sesiones (append-only, inmutable) |
 | `docs/decisions/ADR-*.md` (001–006, +007 por redactar) | Decisiones arquitectónicas |
 | `docs/ctf/*` | Compromisos técnicos fechados (R-PROC-6) |
-| `docs/skills/*` | Skills de codificación del proyecto |
+| `docs/skills/*` | Skills del proyecto (incl. `diagnostico-railway` — diagnóstico read-only) |
+| `docs/auditorias/*`, `docs/audit/*`, `docs/tech-debt/*` | Auditorías/mapas vigentes y deuda rastreada |
 | `backend/docs/CIRCULAR_IMPORTS_ANALYSIS.md` | Análisis técnico puntual (no es plan) |
 
 ### Archivado en `docs/_archive/` (consolidado en este documento)
@@ -791,9 +796,12 @@ Planes históricos, conservados solo como referencia de origen. **No se actualiz
 | `CHANGELOG_FASE1.md` | Changelog M1–M7 (histórico) | `backend/PROJECT_LOG.md` |
 | `05_PLAN_CREACION_SKILLS.md`, `06_PLANTILLAS_PROMPTS_SKILLS.md` | Planes de creación de skills | `docs/skills/*` |
 | `PROJECT_LOG_root_obsoleto.md` | Log divergente de la raíz (paró en Sesión 18) | `backend/PROJECT_LOG.md` |
+| `AUDITORIA_2026-06-02.md` | Auditoría integral 2026-06-02 (Olas 1–5 resueltas y verificadas) | histórico; estado vigente en §4 |
+| `RAILWAY_TROUBLESHOOTING_2026-06-03.md` | Troubleshooting puntual de Railway | `docs/DESPLIEGUE_RAILWAY.md` |
 
 ### Eliminado
 - `docs/tmp/*` — duplicados temporales (un ADR-001 duplicado y un borrador de cambios), sin valor histórico.
+- `docs/_staging_smoke.md` — marcador de prueba del pipeline de staging (sin valor).
 
 ---
 

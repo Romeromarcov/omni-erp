@@ -1,8 +1,15 @@
 # Despliegue en Railway — Omni ERP
 
-> Estado: **operativo** en el proyecto Railway `laudable-eagerness`
-> (`f5c956c3-39dd-4b0c-9e9f-25f14283463d`), environment `production`.
-> Railway construye desde los **Dockerfiles** vía integración con GitHub (rama `main`).
+> Estado: **operativo** en el proyecto Railway `Omni-ERP`
+> (`f5c956c3-39dd-4b0c-9e9f-25f14283463d`).
+> Railway construye desde los **Dockerfiles** vía integración con GitHub.
+>
+> **Dos entornos (ver [`FLUJO_DE_TRABAJO.md`](FLUJO_DE_TRABAJO.md)):**
+> - `main` → environment **production** (deploy automático al merge).
+> - `develop` → environment **staging** (Postgres/Redis propios, aislados de prod).
+>
+> Un feature pasa por **develop (staging) → main (prod)**; un fix/hotfix puede ir directo
+> a `main` (con PR) y luego sincronizar `develop`.
 
 ## Servicios (proyecto nuevo)
 
@@ -160,4 +167,6 @@ npx -y @railway/cli variables --service <id> --kv       # variables (¡no expone
 ```
 
 > **Nota:** `.github/workflows/deploy.yml` es para despliegue self-hosted vía SSH/systemd,
-> NO para Railway. En Railway el deploy lo dispara el push a `main` (integración GitHub).
+> NO para Railway. En Railway el deploy lo dispara el merge a la rama del entorno:
+> **`main` → producción**, **`develop` → staging** (integración GitHub). Para investigar un
+> entorno sin desplegar, usa la skill `docs/skills/diagnostico-railway/` (solo lectura).
