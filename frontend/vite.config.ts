@@ -64,10 +64,15 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
+    // Los specs de Playwright viven en `e2e/` y NO los corre Vitest (requieren
+    // navegador + servidor vivos). Se excluyen para que el job unit no los tome.
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'src/test-setup.ts'],
+      // El contrato generado (schema.d.ts) y el esquema versionado no son código
+      // ejecutable: se excluyen del denominador de cobertura.
+      exclude: ['node_modules/', 'src/test-setup.ts', 'src/api/**', 'e2e/**'],
       // INFRA-NEW-3: el gate de cobertura ahora SÍ corre en CI (npm run
       // test:coverage). Los umbrales son un "ratchet" fijado al piso actual del
       // código para prevenir regresión; el objetivo del Plan Maestro es 60% en
@@ -77,6 +82,29 @@ export default defineConfig({
         branches: 41,
         functions: 45,
         lines: 55,
+        // TEST-6: pisos de cobertura por carpeta (ratchet, igual filosofía que el
+        // global). Fijados al piso ACTUAL de cada carpeta para impedir regresión.
+        // El objetivo del Plan Maestro (≥85% en services/ y hooks/) sigue pendiente:
+        // el gap es grande (hooks ~50%, services ~63%) y no se cierra con 1-2 tests;
+        // se sube conforme se agregan tests con MSW. NO bajar estos números.
+        'src/services/**': {
+          statements: 60,
+          branches: 50,
+          functions: 55,
+          lines: 60,
+        },
+        'src/hooks/**': {
+          statements: 45,
+          branches: 33,
+          functions: 50,
+          lines: 45,
+        },
+        'src/lib/**': {
+          statements: 85,
+          branches: 70,
+          functions: 85,
+          lines: 85,
+        },
       },
     },
   },
