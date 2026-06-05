@@ -11,6 +11,8 @@ def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, 
     Crea dos movimientos: salida en origen y entrada en destino.
     """
     monto = Decimal(monto)
+    if origen.empresa is None or destino.empresa is None:
+        raise ValueError("Las cajas de la transferencia deben tener empresa asignada.")
     ahora = timezone.now()
     mov_salida = MovimientoCajaBanco.objects.create(
         id_empresa=origen.empresa,

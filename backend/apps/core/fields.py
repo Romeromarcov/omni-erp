@@ -22,7 +22,8 @@ def _fernet() -> Fernet:
     if not key:
         # Fallback dev/test: derivar una clave Fernet determinística del SECRET_KEY.
         # En producción se DEBE configurar CRYPTOGRAPHY_KEY explícito (ver settings).
-        key = base64.urlsafe_b64encode(hashlib.sha256(settings.SECRET_KEY.encode()).digest())
+        secret_key = settings.SECRET_KEY or ""
+        key = base64.urlsafe_b64encode(hashlib.sha256(secret_key.encode()).digest())
     if isinstance(key, str):
         key = key.encode()
     return Fernet(key)
