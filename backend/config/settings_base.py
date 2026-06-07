@@ -253,6 +253,11 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    # Rate-limit por scope. Solo aplica donde una vista declara throttle_scope
+    # (p. ej. el signup público de SaaS), no globalmente.
+    "DEFAULT_THROTTLE_RATES": {
+        "signup": "10/hour",
+    },
 }
 
 # drf-yasg — DEFAULT_INFO permite `manage.py generate_swagger` (esquema OpenAPI

@@ -14,6 +14,7 @@ import {
   fetchSuscripciones,
   deactivatePlan,
   cancelarSuscripcion,
+  signup,
   type Plan,
   type Suscripcion,
 } from '../services/saasService';
@@ -136,5 +137,21 @@ describe('saasService — llamadas API', () => {
     vi.mocked(post).mockResolvedValue(sus({}));
     await cancelarSuscripcion('s1', 'impago');
     expect(post).toHaveBeenCalledWith('/saas/suscripciones/s1/cancelar/', { notas: 'impago' });
+  });
+
+  it('signup hace POST al endpoint público con el payload', async () => {
+    vi.mocked(post).mockResolvedValue({
+      empresa_id: 'e1', usuario_id: 'u1', username: 'admin', suscripcion_id: 's1',
+      plan: 'Free', estado: 'TRIAL', trial_fin: '2026-07-07',
+    });
+    const payload = {
+      empresa_nombre_legal: 'Prospecto SA',
+      username: 'admin',
+      email: 'a@b.com',
+      password: 'ContraseñaSegura123',
+    };
+    const res = await signup(payload);
+    expect(post).toHaveBeenCalledWith('/saas/signup/', payload);
+    expect(res.estado).toBe('TRIAL');
   });
 });

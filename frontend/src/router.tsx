@@ -1,6 +1,7 @@
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { shouldUseHashRouter } from './platform';
 import LoginPage from './pages/Core/Login/LoginPage';
+import SignupPage from './pages/Core/Signup/SignupPage';
 import AppLayout from './components/layout/AppLayout';
 import { useAuth } from './contexts/AuthContext';
 import { ventasRoutes } from './routes/ventasRoutes';
@@ -35,6 +36,7 @@ export default function AppRouter() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<LoginPage />} />
 
         {token && (

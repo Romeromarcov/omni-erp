@@ -153,6 +153,35 @@ export async function cancelarSuscripcion(idSuscripcion: string, notas = ''): Pr
   return post<Suscripcion>(`/saas/suscripciones/${idSuscripcion}/cancelar/`, { notas });
 }
 
+// ── Auto-registro (signup, público — Fase C3) ────────────────────────────────
+export interface SignupPayload {
+  empresa_nombre_legal: string;
+  empresa_nombre_comercial?: string;
+  empresa_identificador_fiscal?: string;
+  empresa_email?: string;
+  username: string;
+  email: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  plan_nivel?: PlanNivel;
+}
+
+export interface SignupResult {
+  empresa_id: string;
+  usuario_id: string;
+  username: string;
+  suscripcion_id: string;
+  plan: string;
+  estado: SuscripcionEstado;
+  trial_fin: string;
+}
+
+/** Endpoint PÚBLICO: crea empresa + admin + suscripción TRIAL. No requiere auth. */
+export async function signup(payload: SignupPayload): Promise<SignupResult> {
+  return post<SignupResult>('/saas/signup/', payload as unknown as Record<string, unknown>);
+}
+
 // ── Métricas del dashboard (cálculo en cliente) ──────────────────────────────
 const ESTADOS_VIGENTES: SuscripcionEstado[] = ['ACTIVA', 'TRIAL'];
 
