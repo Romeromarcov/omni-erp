@@ -3,7 +3,7 @@ uvicorn[standard]==0.34.0
 # Sirve los archivos estáticos (incl. los del admin de Django) en producción
 # sin depender de un servidor web aparte. Ver MIDDLEWARE y STORAGES en settings_base.
 whitenoise==6.9.0
-Django==5.2.14
+Django==5.2.15
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.1
 django-filter==24.3
