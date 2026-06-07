@@ -7,12 +7,25 @@ Expone:
 """
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import Plan, Suscripcion, suscripcion_activa
 from .serializers import PlanSerializer, SuscripcionSerializer
+
+
+def _exigir_superusuario_omni(user, accion: str = "gestionar suscripciones") -> None:
+    """
+    Gate de escritura del negocio SaaS: solo el dueño del software (Omni) puede
+    crear o cambiar el estado de las suscripciones. Un tenant NO debe poder
+    auto-asignarse un plan ni reactivar/suspender su propia suscripción (eso
+    rompería la integridad de facturación). La LECTURA sigue abierta y acotada
+    por tenant en get_queryset (R-CODE-1).
+    """
+    if not getattr(user, "es_superusuario_omni", False):
+        raise PermissionDenied(f"Solo superusuarios Omni pueden {accion}.")
 
 
 class PlanViewSet(BaseModelViewSet):
@@ -93,6 +106,18 @@ class SuscripcionViewSet(BaseModelViewSet):
 
         return qs
 
+    def perform_create(self, serializer):
+        _exigir_superusuario_omni(self.request.user, "crear suscripciones")
+        serializer.save()
+
+    def perform_update(self, serializer):
+        _exigir_superusuario_omni(self.request.user, "modificar suscripciones")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        _exigir_superusuario_omni(self.request.user, "eliminar suscripciones")
+        instance.delete()
+
     @action(detail=False, methods=["get"], url_path="activa")
     def activa(self, request):
         """
@@ -121,6 +146,7 @@ class SuscripcionViewSet(BaseModelViewSet):
 
         Cancela la suscripción. Body (opcional): {"notas": "motivo de cancelación"}
         """
+        _exigir_superusuario_omni(request.user, "cancelar suscripciones")
         sus = self.get_object()
         if sus.estado in ("CANCELADA",):
             return Response({"detail": "La suscripción ya está cancelada."}, status=status.HTTP_400_BAD_REQUEST)
@@ -135,6 +161,7 @@ class SuscripcionViewSet(BaseModelViewSet):
 
         Suspende la suscripción (bloquea acceso sin cancelar definitivamente).
         """
+        _exigir_superusuario_omni(request.user, "suspender suscripciones")
         sus = self.get_object()
         if sus.estado in ("SUSPENDIDA", "CANCELADA"):
             return Response(

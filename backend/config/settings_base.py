@@ -94,7 +94,15 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # SaaS (Plan C — C2): verificación de suscripción activa. Inerte salvo que
+    # SAAS_VERIFICAR_SUSCRIPCION=True. Va al final para resolver el usuario JWT.
+    "apps.saas.middleware.SuscripcionActivaMiddleware",
 ]
+
+# SaaS — control de acceso por pago (Plan C — Fase C2).
+# Off por defecto (fail-open). Se activa primero en staging para validar el
+# flujo 402 end-to-end antes de producción.
+SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
 
 ROOT_URLCONF = "config.urls"
 
