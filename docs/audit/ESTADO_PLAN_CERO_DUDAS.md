@@ -3,15 +3,50 @@
 > Seguimiento de [`docs/PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md`](../PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md).
 > Cada ítem se cierra con **CI verde** y bajo el [gate de cierre](../DEFINITION_OF_DONE.md).
 >
-> **Última evaluación:** 2026-06-02 (10 subagentes read-only + verificación adversarial manual).
-> **Rama de trabajo:** `fix/audit-2026-06-01`.
+> **Última evaluación:** 2026-06-07 (auditoría ejecutada: Postgres + venv reales, gates corridos
+> uno por uno, no solo lectura del doc).
+> **Rama de trabajo:** `claude/gallant-sagan-I1nRI` (PR #26).
 
 ## Veredicto honesto
 
-El plan está **parcialmente implementado**: la **Fase 0 (tooling + mapa)** y buena parte de la
-**Fase 1 (seguridad)** están hechas y sólidas (PR #6/#7). El criterio de "cero dudas" (cobertura
-90/80, mutation ≥80%, contract fuzzing, E2E, gates bloqueantes) **todavía NO se cumple** — es el
-grueso de las Fases 2–5, estimado en semanas. **No se debe afirmar "100% / cero dudas" aún.**
+El plan está **parcialmente implementado**: **Fases 0–1 cerradas y verificadas**, Fase 2 ~70%, y
+la **Fase 3 arrancó de verdad** (mutation testing dejó de ser un no-op y ahora mide baselines
+reales por módulo). El criterio de "cero dudas" (cobertura 90/80, mutation ≥80%, E2E, gates
+finales bloqueantes) **todavía NO se cumple**. **No se debe afirmar "100% / cero dudas" aún.**
+
+### Verificación 2026-06-07 (ejecutada en este entorno)
+
+Se levantó Postgres + venv y se corrieron los gates de verdad:
+- Build verde (`check`, `makemigrations --check`, `mapa_superficie --check`). ✅
+- ruff (bugs) / bandit (MEDIUM+) / semgrep (0 findings/616 archivos) / mypy (módulos de dinero). ✅
+- Suite: **2134 passed, 8 skipped, cobertura 69.13%**. ✅
+- **pip-audit detectó 5 CVEs en Django 5.2.14** (PYSEC-2026-197..201) → corregido a **5.2.15**.
+
+### Los 8 criterios de cierre (estado medido)
+
+| # | Criterio | Estado | Medido |
+|---|---|---|---|
+| 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; trivy/eslint-security aún no bloqueantes |
+| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **69.1%**, front **~55%**; diff-cover **ya 95%** |
+| 3 | Mutation ≥80% críticos | 🟡 | fiscal 46%, nómina 64%, cxc_scoring 70%, cxc_aging 52% (antes: no-op) |
+| 4 | Aislamiento multi-tenant | 🟢 | guard parametrizado ~99 ViewSets + comportamiento |
+| 5 | Authz + contrato por endpoint | 🟡 | guard authz ✅; schemathesis no-bloqueante |
+| 6 | E2E flujos críticos | 🔴 | solo login smoke |
+| 7 | mypy dinero + tsc | 🟢 | mypy bloqueante verde; `tsc -b` verde |
+| 8 | Revisión seguridad adversarial | 🟢 | SECURITY_REVIEW + `/security-review` |
+
+### Avance sesión 2026-06-07 (rama `claude/gallant-sagan-I1nRI`, PR #26)
+- **Mutation testing reparado:** `mutmut` estaba roto (su pin permitía `junit-xml` 1.8 sin
+  `to_xml_report_string` → fallaba al arrancar; el nightly `mutmut run || true` era un no-op
+  silencioso). Fijado `junit-xml==1.9`. El nightly pasó a **matrix por módulo** (mutmut usa un
+  runner por corrida) con runners unit puros. **Baselines reales:** fiscal 46%, nómina/calculo_lottt
+  63.9%, cxc_scoring 70%, cxc_aging 52.3%.
+- **Backfill:** `nomina/services.py` 0%→100% (orquestación LOTTT, hueco documentado del plan);
+  helpers puros de `contabilidad/services.py`; property-based de aging/scoring CxC; race test de
+  abonos CxC (`select_for_update`, completa el pendiente CxC/CxP de TEST-4).
+- **Gates:** diff-cover **90→95** (objetivo definitivo). Fix de seguridad **Django 5.2.15** (5 CVEs).
+- **Runners de cálculo rápidos creados** (prerequisito de mutación): `test_fiscal_calculos.py`,
+  `test_cxc_calculos.py`, `test_nomina_orquestacion.py`, `test_contabilidad_helpers.py`.
 
 ### Avance sesión 2026-06-03 (rama `fix/audit-2026-06-01`)
 - **Bug real corregido:** BUG-1 (`UnboundLocalError` de Decimal en pago en divisa, `ventas/views.py`).
@@ -46,9 +81,9 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 | **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟢 **CERRADA** (2026-06-03) | bandit/semgrep(+reglas Omni)/ruff/mypy/pip-audit/npm audit/trivy/gitleaks + **contract (OpenAPI+schemathesis)** + **mutmut nightly** + factory_boy/hypothesis/xdist; **3 matrices A1** con columnas; diff-cover bloqueante. Único diferimiento (`eslint-plugin-security`) formalizado en **CTF-006** (frontend pausado) → DoD cumplida. |
 | **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
 | **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟡 iniciada | ✅ TEST-1 (aislamiento auto-descubierto), **TEST-2 (estructura `tests/` + aislamiento de comportamiento parametrizado)**, TEST-3 (property), TEST-4 (race), contract en CI. *Falta:* migrar el resto de `tests_api/` por capas, más flujos (TEST-5). |
-| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🔴 falta | cobertura backend **68%** (ratchet 67), frontend ~55%; mutmut cableado (score pendiente) |
-| **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright; FE en ~55%; ALTAs de frontend del 2026-06-02 |
-| **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff F823/F811, semgrep Omni, diff-cover. *Falta:* mypy/audits bloqueantes, branch protection |
+| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟡 arrancada | cobertura backend **69.1%** (ratchet 67), frontend ~55%; **mutation matrix real** con baselines (fiscal 46/nómina 64/cxc_scoring 70/cxc_aging 52) — falta subir a 80 y cobertura a 90 |
+| **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright (solo login smoke); FE en ~55% |
+| **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**. *Falta:* trivy/schemathesis/E2E bloqueantes, branch protection (requiere permisos del owner) |
 
 Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
 
