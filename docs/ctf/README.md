@@ -19,6 +19,7 @@ sin que la condición de cierre se cumpla, el item bloquea el siguiente hito.
 | CTF-008  | Offline-first real (ADR-001)                     | 2026-10-01 | equipo-frontend        | ABIERTO  |
 | CTF-009  | Drift `es_superusuario_innova` vs `_omni`        | 2026-07-15 | equipo-frontend        | CERRADO  |
 | CTF-010  | Firma de código + CI de empaquetado de apps      | 2026-09-01 | equipo-frontend/devops | ABIERTO  |
+| CTF-011  | Push de cobranza a Odoo (outbound, Plan D D3)    | 2026-09-01 | equipo-integraciones   | ABIERTO  |
 
 ## Proceso
 

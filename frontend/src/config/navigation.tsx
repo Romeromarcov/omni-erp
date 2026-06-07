@@ -12,6 +12,7 @@ import HubOutlined from '@mui/icons-material/HubOutlined';
 import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
 import AppsOutlined from '@mui/icons-material/AppsOutlined';
 import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlined';
+import { isModuleEnabled } from './appProfile';
 
 export interface NavItem {
   label: string;
@@ -172,5 +173,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
     });
   }
 
-  return sections;
+  // Perfil de build (D4): el standalone de cobranza oculta los módulos no
+  // imprescindibles (ventas, inventario, fiscal, escáner). En 'full' pasa todo.
+  return sections.filter((s) => isModuleEnabled(s.id));
 }

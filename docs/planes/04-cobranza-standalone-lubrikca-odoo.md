@@ -46,9 +46,16 @@
 
 ## Definition of Done (MVP standalone, sin push)
 
-- [ ] FK `cliente` desacoplada (nullable + `cliente_id` string), migración + tests.
-- [ ] `OdooCarteraProvider` validado contra el Odoo real de Lubrikca.
-- [ ] Sync inbound programado y operativo (cartera + pagos).
-- [ ] Shell frontend standalone funcional.
-- [ ] Tests de aislamiento multi-tenant verdes; gate de cierre por PR.
-- [ ] Push a Odoo (D3) documentado como siguiente hito con CTF fechado.
+- [x] FK `cliente` desacoplada (nullable + `cliente_externo_id` string), migración 0002 + tests.
+- [~] `OdooCarteraProvider` validado contra el Odoo real de Lubrikca. — Tooling listo (`validar_conector_odoo`); la validación final es acción de ops con credenciales reales.
+- [x] Sync inbound programado y operativo (cartera + pagos). — `sync_automatico_todos` (15 min, pagos/entidades) + `sync_cartera_odoo_todos` (30 min, cache de cartera Mode A) en `CELERY_BEAT_SCHEDULE`. Fix de la task `sync_cartera_odoo` (estaba rota por import).
+- [x] Shell frontend standalone funcional. — Perfil de build `cobranza` (`npm run build:cobranza`); ver `clients/cobranza-standalone/`.
+- [x] Tests de aislamiento multi-tenant verdes; gate de cierre por PR.
+- [x] Push a Odoo (D3) documentado como siguiente hito con CTF fechado. — [CTF-011](../ctf/CTF-011.md) (vence 2026-09-01).
+
+### Estado de avance (2026-06-07)
+
+- **D1 — Desacople del ledger:** ✅ FK opcional + `cliente_externo_id`/`cliente_externo_nombre` + CheckConstraint; providers, aging, pagos, serializer y admin operan con el deudor agnóstico. El asiento contable ya es tolerante vía `Empresa.contabilidad_activa`.
+- **D2 — Conexión Odoo:** ✅ comandos `configurar_conector_odoo` / `validar_conector_odoo`, sync inbound programado, fix de task. Validación contra el Odoo real = acción de ops.
+- **D3 — Push a Odoo:** ⏸️ diferido → [CTF-011](../ctf/CTF-011.md).
+- **D4 — Shell standalone:** ✅ perfil de build `cobranza` (recorta ventas/inventario/fiscal/escáner).

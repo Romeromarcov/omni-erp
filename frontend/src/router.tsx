@@ -14,6 +14,7 @@ import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
+import { isModuleEnabled } from './config/appProfile';
 
 export default function AppRouter() {
   const { token, isLoading } = useAuth();
@@ -42,14 +43,14 @@ export default function AppRouter() {
         {token && (
           <Route element={<AppLayout />}>
             {coreRoutes()}
-            {ventasRoutes()}
+            {isModuleEnabled('ventas') ? ventasRoutes() : null}
             {finanzasRoutes()}
             {configuracionRoutes()}
             {integracionesRoutes()}
-            {inventarioRoutes()}
-            {fiscalRoutes()}
+            {isModuleEnabled('inventario') ? inventarioRoutes() : null}
+            {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
-            {escanerRoutes()}
+            {isModuleEnabled('escaner') ? escanerRoutes() : null}
             {saasRoutes()}
           </Route>
         )}
