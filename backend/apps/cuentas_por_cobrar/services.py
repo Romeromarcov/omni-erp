@@ -89,7 +89,7 @@ def registrar_abono(cxc, monto: Decimal, usuario, descripcion: str = "") -> "Abo
         tenant_id=str(cxc.empresa_id) if hasattr(cxc, "empresa_id") else "unknown",
         payload={
             "cxc_id": str(cxc.pk),
-            "cliente_id": str(cxc.cliente_id),
+            "cliente_id": cxc.cliente_ref,
             "monto_abono": str(monto),
             "saldo_restante": str(nuevo_saldo),
         },

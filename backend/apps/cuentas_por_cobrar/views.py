@@ -31,7 +31,19 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
         if empresa_id:
             qs = qs.filter(empresa=empresa_id)
         if cliente_id:
-            qs = qs.filter(cliente=cliente_id)
+            # Plan D-D1: el filtro acepta el PK del crm.Cliente (FK) o el id
+            # externo (Odoo). La FK solo se filtra si el valor es UUID válido.
+            import uuid
+
+            from django.db.models import Q
+
+            filtro_cliente = Q(cliente_externo_id=cliente_id)
+            try:
+                uuid.UUID(str(cliente_id))
+                filtro_cliente |= Q(cliente=cliente_id)
+            except (ValueError, TypeError, AttributeError):
+                pass
+            qs = qs.filter(filtro_cliente)
         if estado:
             qs = qs.filter(estado=estado)
 
