@@ -30478,6 +30478,23 @@
                 }
             ]
         },
+        "/saas/signup/": {
+            "post": {
+                "operationId": "saas_signup_create",
+                "summary": "POST /api/saas/signup/ — auto-registro de un prospecto (Plan C — Fase C3).",
+                "description": "Endpoint PÚBLICO y con rate-limit. Crea, en una sola transacción:\n  - una Empresa nueva,\n  - su usuario administrador (es_superusuario_omni e is_staff forzados a\n    False — nunca se aceptan del cliente),\n  - una Suscripcion TRIAL de 30 días sobre un plan activo.\n\nNo devuelve tokens: el frontend hace login con las credenciales recién\ncreadas, reutilizando el flujo seguro de sesión (cookie httpOnly de refresh).",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "saas"
+                ]
+            },
+            "parameters": []
+        },
         "/saas/suscripciones/": {
             "get": {
                 "operationId": "saas_suscripciones_list",
