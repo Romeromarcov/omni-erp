@@ -11,6 +11,7 @@ import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import HubOutlined from '@mui/icons-material/HubOutlined';
 import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
 import AppsOutlined from '@mui/icons-material/AppsOutlined';
+import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlined';
 
 export interface NavItem {
   label: string;
@@ -26,13 +27,19 @@ export interface NavSection {
   items?: NavItem[];
 }
 
+export interface NavOptions {
+  /** Si el usuario es el dueño del software (Omni), se muestra el Panel SaaS. */
+  esSuperusuarioOmni?: boolean;
+}
+
 /**
  * Fuente única de verdad de la navegación del ERP.
  * Algunas rutas dependen de la empresa activa, por eso se construye con su id.
+ * El Panel SaaS solo se incluye para el proveedor (es_superusuario_omni).
  */
-export function buildNavigation(empresaId: string): NavSection[] {
+export function buildNavigation(empresaId: string, options: NavOptions = {}): NavSection[] {
   const emp = empresaId || '_';
-  return [
+  const sections: NavSection[] = [
     {
       id: 'inicio',
       label: 'Aplicaciones',
@@ -150,4 +157,20 @@ export function buildNavigation(empresaId: string): NavSection[] {
       items: [{ label: 'Hub de Integraciones', path: '/integraciones' }],
     },
   ];
+
+  if (options.esSuperusuarioOmni) {
+    sections.push({
+      id: 'admin-saas',
+      label: 'Panel SaaS',
+      icon: <WorkspacePremiumOutlined />,
+      items: [
+        { label: 'Dashboard', path: '/admin-saas' },
+        { label: 'Tenants', path: '/admin-saas/tenants' },
+        { label: 'Planes', path: '/admin-saas/planes' },
+        { label: 'Suscripciones', path: '/admin-saas/suscripciones' },
+      ],
+    });
+  }
+
+  return sections;
 }
