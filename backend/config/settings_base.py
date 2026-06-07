@@ -472,6 +472,18 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": _crontab(hour=2, minute=0),
         "kwargs": {"dias": 30},
     },
+    # Sync inbound por conector según su intervalo (pagos/contactos/…) — Plan D D2.
+    # Cada instancia decide su cadencia con intervalo_sync_minutos; esta tarea solo
+    # despierta cada 15 min y dispara las que ya vencieron.
+    "hub-sync-automatico-conectores": {
+        "task": "integration_hub.sync_automatico_todos",
+        "schedule": _crontab(minute="*/15"),
+    },
+    # Refresco de cache de cartera vencida para tenants Mode A (Odoo) — Plan D D2.
+    "hub-sync-cartera-odoo": {
+        "task": "integration_hub.sync_cartera_odoo_todos",
+        "schedule": _crontab(minute="*/30"),
+    },
 }
 
 # ── Event Store (Redpanda/Kafka) ───────────────────────────────────────────────

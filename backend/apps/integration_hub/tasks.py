@@ -208,6 +208,29 @@ def sync_tasas_ve(self):
         raise self.retry(exc=exc, countdown=60)
 
 
+@shared_task(name="integration_hub.sync_cartera_odoo_todos")
+def sync_cartera_odoo_todos():
+    """
+    Fan-out periódico (Plan D — D2): refresca el cache de aging de TODOS los
+    tenants Mode A (cxc.datasource='odoo'). Programado vía django-celery-beat.
+    """
+    from apps.configuracion_motor.models import ParametroSistema
+
+    params = ParametroSistema.objects.filter(
+        codigo_parametro="cxc.datasource",
+        activo=True,
+        id_empresa__isnull=False,
+    )
+    disparados = 0
+    for p in params:
+        if (p.valor_parametro or "").strip().lower() == "odoo":
+            sync_cartera_odoo.delay(str(p.id_empresa_id))
+            disparados += 1
+
+    logger.info("sync_cartera_odoo_todos: %d tenants Odoo encolados", disparados)
+    return {"tenants_odoo": disparados}
+
+
 @shared_task(name="integration_hub.sync_cartera_odoo")
 def sync_cartera_odoo(empresa_id: str):
     """
@@ -217,10 +240,10 @@ def sync_cartera_odoo(empresa_id: str):
     from django.core.cache import cache
 
     try:
-        from apps.cuentas_por_cobrar.services.cartera_provider import (
+        from apps.cuentas_por_cobrar.services_cartera_provider import (
             get_cartera_provider,
         )
-        from apps.cuentas_por_cobrar.services.aging import calcular_aging
+        from apps.cuentas_por_cobrar.services_aging import calcular_aging
         from apps.core.models import Empresa
 
         empresa = Empresa.objects.get(pk=empresa_id)
