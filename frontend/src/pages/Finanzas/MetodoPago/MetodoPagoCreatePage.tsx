@@ -34,7 +34,7 @@ const MetodoPagoCreatePage: React.FC = () => {
   const { id_empresa } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const esSuperusuario = user?.es_superusuario_innova ?? false;
+  const esSuperusuario = user?.es_superusuario_omni ?? false;
   const { data: empresasData = [] } = useEmpresas();
   const empresas = empresasData.map(e => ({ id: e.id_empresa, nombre_comercial: e.nombre_comercial }));
 

@@ -23,7 +23,7 @@ export interface Usuario {
   first_name: string;
   last_name: string;
   is_active: boolean;
-  es_superusuario_innova: boolean;
+  es_superusuario_omni: boolean;
   fecha_ultimo_login?: string;
   empresas?: EmpresaRef[];
   sucursales?: SucursalRef[];
