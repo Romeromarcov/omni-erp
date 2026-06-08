@@ -393,8 +393,10 @@ class TestSaasMiddlewareInfrastructure:
 
         factory = RequestFactory()
         request = factory.get("/api/ventas/facturas/")
-        # El middleware usa user.empresas.first() — mockear correctamente
-        request.user = MagicMock(is_authenticated=True, pk="mock-user-pk")
+        # El middleware usa user.empresas.first() — mockear correctamente.
+        # es_superusuario_omni=False: es un tenant regular (si no, un MagicMock
+        # devuelve un atributo truthy y el bypass de proveedor lo eximiría del 402).
+        request.user = MagicMock(is_authenticated=True, pk="mock-user-pk", es_superusuario_omni=False)
         request.user.empresas.first.return_value = empresa_m10
 
         response = middleware(request)
