@@ -47,6 +47,6 @@
 ### Estado de avance (2026-06-07)
 
 - **C1 — Consola de proveedor:** ✅ completa (CRUD planes, tenants, suscripciones con activar/suspender/cancelar, dashboard con MRR; navegación y guard solo-proveedor).
-- **C2 — Control de acceso por pago:** ✅ middleware registrado y env-driven; authz de suscripciones endurecida (escritura solo proveedor); `apps/saas/admin.py` registrado. Falta solo el *toggle* operativo del env en staging.
+- **C2 — Control de acceso por pago:** ✅ middleware registrado y env-driven; authz de suscripciones híbrida (crear/modificar/eliminar/**reactivar** solo proveedor; cancelar/suspender la propia = self-service del tenant); `apps/saas/admin.py` registrado. Falta solo el *toggle* operativo del env en staging.
 - **C3 — Auto-provisioning (signup):** ✅ endpoint público `/api/saas/signup/` (TRIAL 30 días, rate-limit) + onboarding `/signup`.
 - **C4 — Facturación + medición LLM:** ⏸️ DIFERIDO por diseño (hasta cobrar).
