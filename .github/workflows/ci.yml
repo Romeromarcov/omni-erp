@@ -84,16 +84,17 @@ jobs:
         working-directory: backend
         run: python -m pytest tests tests_api/ -v --tb=short --no-header
 
-      - name: Diff coverage — código nuevo ≥90% (cero-dudas, BLOQUEANTE)
+      - name: Diff coverage — código nuevo ≥95% (cero-dudas, BLOQUEANTE)
         if: github.event_name == 'pull_request'
         working-directory: backend
-        # BLOQUEANTE: cada PR debe cubrir ≥90% de sus líneas nuevas de apps/.
+        # BLOQUEANTE: cada PR debe cubrir ≥95% de sus líneas nuevas de apps/.
         # El gate ya está mergeado a main, así que compara solo las líneas nuevas
-        # del PR contra el main ya cubierto. (Objetivo plan: subir a 95%.)
+        # del PR contra el main ya cubierto. 95% es el objetivo definitivo del plan
+        # cero-dudas (criterio 2: diff-coverage ≥95%).
         run: |
           pip install diff-cover
           git fetch --no-tags origin main
-          diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
+          diff-cover coverage.xml --compare-branch=origin/main --fail-under=95
 
   # ──────────────────────────────────────────────────────────────
   # Frontend — TypeScript + ESLint

@@ -153,9 +153,18 @@ El backend respondía `DisallowedHost` con página de DEBUG en el dominio públi
   devolvía 200, marcando el deploy como FAILED pese a estar sano. La salud de contenedor
   la cubre el `HEALTHCHECK` del Dockerfile (curl a `localhost`); el tráfico real entra por
   el dominio público (sí está en `ALLOWED_HOSTS`).
-- **Seed inicial:** `entrypoint.sh` corre `create_initial_data` (empresa + superusuario
-  `admin`) solo si `RUN_SEED=1`. Se activa una vez en un entorno nuevo y luego se deja en `0`.
-  ⚠️ La contraseña por defecto (`admin123`) **debe cambiarse** tras el primer login.
+- **Seed inicial:** `entrypoint.sh` corre `create_initial_data` solo si `RUN_SEED=1`, pero
+  ese comando es **dev-only** y ahora está **bloqueado fuera de DEBUG** (creaba un superusuario
+  `admin/admin123`). Para sembrar una empresa en **producción** usa el comando parametrizado y
+  sin secretos hardcodeados:
+
+  ```bash
+  railway run -- python manage.py seed_empresa_inicial \
+      --nombre-legal "..." --rif "J-..." --admin-username ... --admin-email ...
+  # contraseña vía OMNI_SEED_ADMIN_PASSWORD o --admin-password (validada); si no, se genera.
+  ```
+
+  Detalle paso a paso en [`docs/planes/runbook-arranque-piloto.md`](planes/runbook-arranque-piloto.md).
 
 ## Diagnóstico rápido (CLI)
 

@@ -60,6 +60,7 @@ _Total tareas Celery: 14_
 | `mapa_superficie` | apps.core |
 | `migrar_contactos` | apps.core |
 | `run_mcp_server` | apps.core |
+| `seed_empresa_inicial` | apps.core |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 12_
+_Total commands: 13_

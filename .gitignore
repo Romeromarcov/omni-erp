@@ -83,3 +83,9 @@ test_frontend_api.py
 # Caché de Hypothesis (property-based testing)
 .hypothesis/
 backend/.hypothesis/
+
+# Mutation testing (mutmut)
+.mutmut-cache
+backend/.mutmut-cache
+backend/mutants/
+backend/html/

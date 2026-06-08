@@ -28,3 +28,8 @@ diff-cover==10.3.0
 # ── Contract testing (OpenAPI via drf-yasg) y mutation testing ──
 schemathesis==3.39.5
 mutmut==2.5.1
+# mutmut 2.5.1 importa `to_xml_report_string`, que sólo existe en junit-xml ≥1.9;
+# su propio pin (`junit-xml<2,>=1.8`) permite la 1.8 rota → `mutmut` fallaba al
+# arrancar y el job nightly (`mutmut run || true`) era un no-op silencioso. Se fija
+# 1.9 para que la mutación realmente se ejecute.
+junit-xml==1.9
