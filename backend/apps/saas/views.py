@@ -226,7 +226,10 @@ class SignupView(APIView):
 
         from apps.core.models import Empresa
 
-        hoy = timezone.now().date()
+        # localdate() (fecha en TIME_ZONE), NO now().date() (UTC con USE_TZ): si no,
+        # cerca de medianoche UTC el trial nacería con fecha_inicio=mañana y
+        # suscripcion_activa (que usa la fecha local) no lo vería como vigente.
+        hoy = timezone.localdate()
         with transaction.atomic():
             empresa = Empresa.objects.create(
                 nombre_legal=data["empresa_nombre_legal"],

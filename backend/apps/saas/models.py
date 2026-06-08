@@ -142,17 +142,16 @@ class Suscripcion(models.Model):
     @property
     def esta_vigente(self) -> bool:
         """Retorna True si la suscripción está activa y dentro del período."""
-        from datetime import date
+        hoy = timezone.localdate()  # fecha en TIME_ZONE, no UTC (ver suscripcion_activa)
         return (
             self.estado in ("ACTIVA", "TRIAL")
-            and self.fecha_inicio <= date.today() <= self.fecha_fin
+            and self.fecha_inicio <= hoy <= self.fecha_fin
         )
 
     @property
     def dias_restantes(self) -> int:
         """Días hasta el vencimiento (puede ser negativo si ya venció)."""
-        from datetime import date
-        return (self.fecha_fin - date.today()).days
+        return (self.fecha_fin - timezone.localdate()).days
 
     def cancelar(self, notas: str = "") -> None:
         self.estado = "CANCELADA"
@@ -180,14 +179,18 @@ def suscripcion_activa(empresa) -> "Suscripcion | None":
     Returns:
         Suscripcion activa/trial más reciente, o None.
     """
-    from datetime import date
+    from django.utils import timezone
 
+    # localdate() = fecha en TIME_ZONE (no UTC), consistente con cómo se crean
+    # las fechas de las suscripciones (p. ej. el signup). Evita falsos negativos
+    # de vigencia cerca de medianoche en servidores UTC (Railway).
+    hoy = timezone.localdate()
     return (
         Suscripcion.objects.filter(
             id_empresa=empresa,
             estado__in=("ACTIVA", "TRIAL"),
-            fecha_inicio__lte=date.today(),
-            fecha_fin__gte=date.today(),
+            fecha_inicio__lte=hoy,
+            fecha_fin__gte=hoy,
         )
         .select_related("id_plan")
         .order_by("-fecha_inicio")
