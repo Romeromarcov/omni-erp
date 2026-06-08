@@ -92,6 +92,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # RLS: fija el contexto multi-tenant en la conexión tras autenticar.
+    # Se descarta solo (MiddlewareNotUsed) si RLS_ENABLED es False.
+    "apps.core.middleware.RLSContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # SaaS (Plan C — C2): verificación de suscripción activa. Inerte salvo que
@@ -103,6 +106,12 @@ MIDDLEWARE = [
 # Off por defecto (fail-open). Se activa primero en staging para validar el
 # flujo 402 end-to-end antes de producción.
 SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
+
+# --- Row Level Security (P0-1 plan de hardening) ---
+# Gobierna únicamente si el middleware aplica el enforcement por request. Las
+# políticas RLS y el contexto por defecto de conexión existen siempre (ver
+# apps/core/rls.py). Activar gradualmente: staging antes que producción.
+RLS_ENABLED = os.environ.get("RLS_ENABLED", "False").lower() in ("1", "true", "yes", "on")
 
 ROOT_URLCONF = "config.urls"
 
