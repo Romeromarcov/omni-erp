@@ -1,6 +1,7 @@
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { shouldUseHashRouter } from './platform';
 import LoginPage from './pages/Core/Login/LoginPage';
+import SignupPage from './pages/Core/Signup/SignupPage';
 import AppLayout from './components/layout/AppLayout';
 import { useAuth } from './contexts/AuthContext';
 import { ventasRoutes } from './routes/ventasRoutes';
@@ -12,6 +13,8 @@ import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
+import { saasRoutes } from './routes/saasRoutes';
+import { isModuleEnabled } from './config/appProfile';
 
 export default function AppRouter() {
   const { token, isLoading } = useAuth();
@@ -34,19 +37,21 @@ export default function AppRouter() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<LoginPage />} />
 
         {token && (
           <Route element={<AppLayout />}>
             {coreRoutes()}
-            {ventasRoutes()}
+            {isModuleEnabled('ventas') ? ventasRoutes() : null}
             {finanzasRoutes()}
             {configuracionRoutes()}
             {integracionesRoutes()}
-            {inventarioRoutes()}
-            {fiscalRoutes()}
+            {isModuleEnabled('inventario') ? inventarioRoutes() : null}
+            {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
-            {escanerRoutes()}
+            {isModuleEnabled('escaner') ? escanerRoutes() : null}
+            {saasRoutes()}
           </Route>
         )}
 

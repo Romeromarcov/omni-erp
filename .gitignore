@@ -13,6 +13,8 @@ __pycache__/
 .env.*
 !.env.example
 !**/.env.example
+# Perfil de build no-secreto del standalone de cobranza (ADR-008 / Plan D D4).
+!**/.env.cobranza
 
 # Django
 /staticfiles/

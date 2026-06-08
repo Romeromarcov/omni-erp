@@ -36,7 +36,7 @@ export default function Sidebar({ collapsed, onNavigate }: SidebarProps) {
   const { user } = useAuth();
   const { setOpen: setAssistantOpen } = useAssistant();
   const empresaId = user?.empresas?.[0]?.id_empresa || '';
-  const sections = buildNavigation(empresaId);
+  const sections = buildNavigation(empresaId, { esSuperusuarioOmni: user?.es_superusuario_omni ?? false });
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 

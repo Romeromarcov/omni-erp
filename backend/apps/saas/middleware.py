@@ -1,18 +1,21 @@
 """
-M10-T5: Middleware de verificación de suscripción SaaS.
+M10-T5 / Plan C — Fase C2: Middleware de verificación de suscripción SaaS.
 
 SuscripcionActivaMiddleware:
   Verifica que la empresa del usuario autenticado tenga una suscripción vigente.
   Si no la tiene, retorna HTTP 402 Payment Required.
 
-Configuración en settings:
-  MIDDLEWARE = [
-      ...
-      "apps.saas.middleware.SuscripcionActivaMiddleware",
-  ]
+Activación (off por defecto, fail-open):
+  SAAS_VERIFICAR_SUSCRIPCION=True  (variable de entorno) — se activa en staging
+  antes que en producción para validar el flujo 402 de punta a punta.
 
   # Rutas excluidas de verificación (siempre pasan):
   SAAS_RUTAS_EXCLUIDAS = ["/api/auth/", "/admin/", "/swagger/", "/api/saas/"]
+
+Nota de diseño (auth JWT): la API se autentica con Bearer JWT, que DRF resuelve
+DENTRO de la vista. A nivel de middleware Django, `request.user` es AnonymousUser
+para esas requests. Por eso el middleware resuelve el usuario él mismo con
+JWTAuthentication, además de respetar la sesión de Django (admin).
 """
 
 from __future__ import annotations
@@ -44,39 +47,63 @@ class SuscripcionActivaMiddleware:
     SaaS vigente en su empresa.
 
     Retorna 402 Payment Required si:
-      - El usuario está autenticado
+      - El usuario está autenticado (sesión Django o Bearer JWT)
+      - NO es superusuario Omni (el proveedor no requiere suscripción)
       - La ruta no está en RUTAS_EXCLUIDAS
       - La empresa del usuario no tiene suscripción activa
 
     No actúa sobre:
-      - Usuarios anónimos
+      - Usuarios anónimos / tokens inválidos
       - Rutas excluidas
-      - Empresas sin campo 'suscripciones' (compatibilidad)
+      - Usuarios sin empresa asignada
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
-        from django.conf import settings
-        self.rutas_excluidas = getattr(
-            settings, "SAAS_RUTAS_EXCLUIDAS", RUTAS_EXCLUIDAS_DEFAULT
-        )
-        self.activo = getattr(settings, "SAAS_VERIFICAR_SUSCRIPCION", False)
-
     def __call__(self, request):
-        if self.activo and self._debe_verificar(request):
+        # El flag se lee por request (no en __init__) para poder activarlo en
+        # staging sin reiniciar y para que los tests lo puedan sobreescribir.
+        from django.conf import settings
+
+        activo = getattr(settings, "SAAS_VERIFICAR_SUSCRIPCION", False)
+        if activo and self._ruta_verificable(request):
             respuesta_error = self._verificar_suscripcion(request)
             if respuesta_error:
                 return respuesta_error
 
         return self.get_response(request)
 
-    def _debe_verificar(self, request) -> bool:
-        """Determina si esta request debe ser verificada."""
-        if not request.user or not request.user.is_authenticated:
-            return False
+    @staticmethod
+    def _ruta_verificable(request) -> bool:
+        """True si la ruta NO está excluida (la auth se evalúa después)."""
+        from django.conf import settings
+
+        rutas_excluidas = getattr(settings, "SAAS_RUTAS_EXCLUIDAS", RUTAS_EXCLUIDAS_DEFAULT)
         ruta = request.path_info
-        return not any(ruta.startswith(excluida) for excluida in self.rutas_excluidas)
+        return not any(ruta.startswith(excluida) for excluida in rutas_excluidas)
+
+    @staticmethod
+    def _resolver_usuario(request):
+        """
+        Devuelve el usuario autenticado por sesión Django o por Bearer JWT, o
+        None si la request es anónima o el token es inválido (en cuyo caso la
+        propia vista responderá 401; el middleware no debe enmascararlo con 402).
+        """
+        user = getattr(request, "user", None)
+        if user is not None and user.is_authenticated:
+            return user
+
+        try:
+            from rest_framework_simplejwt.authentication import JWTAuthentication
+
+            resultado = JWTAuthentication().authenticate(request)
+            if resultado is not None:
+                return resultado[0]
+        except Exception:
+            # Token ausente/ inválido/ expirado → tratar como anónimo (no 402).
+            return None
+        return None
 
     def _verificar_suscripcion(self, request) -> HttpResponse | None:
         """
@@ -85,7 +112,14 @@ class SuscripcionActivaMiddleware:
         try:
             from apps.saas.models import suscripcion_activa
 
-            user = request.user
+            user = self._resolver_usuario(request)
+            if user is None:
+                return None  # anónimo → la vista decide (401), no 402
+
+            # El proveedor (dueño del software) no requiere suscripción.
+            if getattr(user, "es_superusuario_omni", False):
+                return None
+
             empresa = user.empresas.first() if hasattr(user, "empresas") else None
             if empresa is None:
                 return None  # usuario sin empresa → no verificar
@@ -107,9 +141,7 @@ class SuscripcionActivaMiddleware:
                 )
         except Exception as exc:
             logger.error("saas_middleware ERROR: %s", exc, exc_info=True)
-            # BUG-06 — Decisión de política: fail-open (permitir el paso ante error interno).
-            # Justificación: disponibilidad > control de billing durante la fase de despliegue.
-            # El middleware está desactivado (SAAS_VERIFICAR_SUSCRIPCION=False) hasta que
-            # la lógica de suscripción esté completamente validada en staging.
-            # CUANDO SE ACTIVE: reevaluar si cambiar a fail-closed (503) para billing estricto.
+            # BUG-06 — Política fail-open: ante un error interno se permite el paso.
+            # Justificación: disponibilidad > control de billing. La verificación
+            # solo se activa con SAAS_VERIFICAR_SUSCRIPCION=True (staging primero).
         return None

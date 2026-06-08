@@ -39,7 +39,14 @@
 
 ## Definition of Done (para administrar pilotos: C1+C2)
 
-- [ ] Consola de proveedor operativa (planes, tenants, suscripciones, dashboard).
-- [ ] Middleware 402 activado y validado en staging.
-- [ ] Drift de rol corregido ([CTF-009](../ctf/CTF-009.md)).
-- [ ] Gate de cierre ejecutado en cada PR.
+- [x] Consola de proveedor operativa (planes, tenants, suscripciones, dashboard). — `frontend/src/pages/SaaS/`, ruta `/admin-saas` con guard de rol.
+- [x] Middleware 402 activado y validado en staging. — Código listo y testeado end-to-end (JWT real); se activa con `SAAS_VERIFICAR_SUSCRIPCION=True` (env, staging primero). El middleware quedó registrado en `MIDDLEWARE` y resuelve el usuario por JWT.
+- [x] Drift de rol corregido ([CTF-009](../ctf/CTF-009.md)).
+- [x] Gate de cierre ejecutado en cada PR.
+
+### Estado de avance (2026-06-07)
+
+- **C1 — Consola de proveedor:** ✅ completa (CRUD planes, tenants, suscripciones con activar/suspender/cancelar, dashboard con MRR; navegación y guard solo-proveedor).
+- **C2 — Control de acceso por pago:** ✅ middleware registrado y env-driven; authz de suscripciones híbrida (crear/modificar/eliminar/**reactivar** solo proveedor; cancelar/suspender la propia = self-service del tenant); `apps/saas/admin.py` registrado. Falta solo el *toggle* operativo del env en staging.
+- **C3 — Auto-provisioning (signup):** ✅ endpoint público `/api/saas/signup/` (TRIAL 30 días, rate-limit) + onboarding `/signup`.
+- **C4 — Facturación + medición LLM:** ⏸️ DIFERIDO por diseño (hasta cobrar).

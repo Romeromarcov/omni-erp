@@ -94,7 +94,15 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # SaaS (Plan C — C2): verificación de suscripción activa. Inerte salvo que
+    # SAAS_VERIFICAR_SUSCRIPCION=True. Va al final para resolver el usuario JWT.
+    "apps.saas.middleware.SuscripcionActivaMiddleware",
 ]
+
+# SaaS — control de acceso por pago (Plan C — Fase C2).
+# Off por defecto (fail-open). Se activa primero en staging para validar el
+# flujo 402 end-to-end antes de producción.
+SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
 
 ROOT_URLCONF = "config.urls"
 
@@ -245,6 +253,11 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    # Rate-limit por scope. Solo aplica donde una vista declara throttle_scope
+    # (p. ej. el signup público de SaaS), no globalmente.
+    "DEFAULT_THROTTLE_RATES": {
+        "signup": "10/hour",
+    },
 }
 
 # drf-yasg — DEFAULT_INFO permite `manage.py generate_swagger` (esquema OpenAPI
@@ -458,6 +471,18 @@ CELERY_BEAT_SCHEDULE = {
         "task": "integration_hub.limpiar_logs_antiguos",
         "schedule": _crontab(hour=2, minute=0),
         "kwargs": {"dias": 30},
+    },
+    # Sync inbound por conector según su intervalo (pagos/contactos/…) — Plan D D2.
+    # Cada instancia decide su cadencia con intervalo_sync_minutos; esta tarea solo
+    # despierta cada 15 min y dispara las que ya vencieron.
+    "hub-sync-automatico-conectores": {
+        "task": "integration_hub.sync_automatico_todos",
+        "schedule": _crontab(minute="*/15"),
+    },
+    # Refresco de cache de cartera vencida para tenants Mode A (Odoo) — Plan D D2.
+    "hub-sync-cartera-odoo": {
+        "task": "integration_hub.sync_cartera_odoo_todos",
+        "schedule": _crontab(minute="*/30"),
     },
 }
 

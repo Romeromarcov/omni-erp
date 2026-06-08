@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:cobranza": "tsc -b && vite build --mode cobranza",
     "build:native": "node scripts/build-native.mjs",
     "lint": "eslint .",
     "preview": "vite preview",

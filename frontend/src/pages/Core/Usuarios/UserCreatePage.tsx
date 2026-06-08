@@ -26,7 +26,7 @@ const UserCreatePage: React.FC = () => {
     first_name: '',
     last_name: '',
     is_active: true,
-    es_superusuario_innova: false,
+    es_superusuario_omni: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +39,7 @@ const UserCreatePage: React.FC = () => {
     mutationFn: (data: typeof form & { id_empresa?: string }) => createUsuario(data),
     onSuccess: () => {
       setMessage('Usuario creado exitosamente');
-      setForm({ username: '', email: '', password: '', first_name: '', last_name: '', is_active: true, es_superusuario_innova: false });
+      setForm({ username: '', email: '', password: '', first_name: '', last_name: '', is_active: true, es_superusuario_omni: false });
       setConfirmPassword('');
       setEmailError('');
     },

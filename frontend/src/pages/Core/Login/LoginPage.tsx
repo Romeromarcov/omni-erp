@@ -182,6 +182,9 @@ const LoginPage: React.FC = () => {
                 Iniciar sesión
               </Typography>
               <LoginForm onSubmit={handleLogin} loading={loading} error={error} />
+              <Button variant="text" fullWidth onClick={() => navigate('/signup')} disabled={loading}>
+                ¿No tienes cuenta? Regístrate gratis
+              </Button>
             </>
           )}
           {step === 'select' && (

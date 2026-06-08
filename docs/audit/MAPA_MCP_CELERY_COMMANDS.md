@@ -39,15 +39,17 @@ _Total tools MCP: 17_
 | `integration_hub.limpiar_logs_antiguos` | apps.integration_hub.tasks |
 | `integration_hub.sync_automatico_todos` | apps.integration_hub.tasks |
 | `integration_hub.sync_cartera_odoo` | apps.integration_hub.tasks |
+| `integration_hub.sync_cartera_odoo_todos` | apps.integration_hub.tasks |
 | `integration_hub.sync_tasas_ve` | apps.integration_hub.tasks |
 | `notificaciones.enviar_notificacion_email` | apps.notificaciones.tasks |
 
-_Total tareas Celery: 13_
+_Total tareas Celery: 14_
 
 ## Management commands
 
 | Comando | App |
 |---|---|
+| `configurar_conector_odoo` | apps.integration_hub |
 | `consumir_eventos` | apps.eventos |
 | `create_initial_data` | apps.core |
 | `importar_clientes` | apps.migracion_datos |
@@ -59,5 +61,6 @@ _Total tareas Celery: 13_
 | `migrar_contactos` | apps.core |
 | `run_mcp_server` | apps.core |
 | `seed_empresa_inicial` | apps.core |
+| `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 11_
+_Total commands: 13_
