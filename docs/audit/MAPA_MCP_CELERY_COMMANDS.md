@@ -58,5 +58,6 @@ _Total tareas Celery: 13_
 | `mapa_superficie` | apps.core |
 | `migrar_contactos` | apps.core |
 | `run_mcp_server` | apps.core |
+| `seed_empresa_inicial` | apps.core |
 
-_Total commands: 10_
+_Total commands: 11_
