@@ -133,21 +133,40 @@ class TestSuscripcionAuthz:
         resp = client.post(reverse("suscripcion-list"), self._payload(empresa_a, plan_c2), format="json")
         assert resp.status_code == 201
 
-    def test_tenant_no_puede_suspender(self, empresa_a, plan_c2, user_a):
+    def test_tenant_puede_suspender_la_suya(self, empresa_a, plan_c2, user_a):
+        """Self-service: el tenant suspende su propia suscripción (200)."""
         sus = _suscripcion_activa(empresa_a, plan_c2)
         client = APIClient()
         client.force_authenticate(user=user_a)
         resp = client.post(reverse("suscripcion-suspender", kwargs={"pk": sus.pk}), {}, format="json")
-        assert resp.status_code == 403
+        assert resp.status_code == 200
         sus.refresh_from_db()
-        assert sus.estado == "ACTIVA"
+        assert sus.estado == "SUSPENDIDA"
 
-    def test_tenant_no_puede_cancelar(self, empresa_a, plan_c2, user_a):
+    def test_tenant_puede_cancelar_la_suya(self, empresa_a, plan_c2, user_a):
+        """Self-service churn: el tenant cancela su propia suscripción (200)."""
         sus = _suscripcion_activa(empresa_a, plan_c2)
         client = APIClient()
         client.force_authenticate(user=user_a)
         resp = client.post(reverse("suscripcion-cancelar", kwargs={"pk": sus.pk}), {}, format="json")
+        assert resp.status_code == 200
+        sus.refresh_from_db()
+        assert sus.estado == "CANCELADA"
+
+    def test_tenant_no_puede_reactivar(self, empresa_a, plan_c2, user_a):
+        """La reactivación (PATCH estado=ACTIVA) es solo del proveedor: un tenant
+        no puede revertir una suspensión que le impusieron."""
+        sus = _suscripcion_activa(empresa_a, plan_c2)
+        sus.suspender()
+        client = APIClient()
+        client.force_authenticate(user=user_a)
+        resp = client.patch(
+            reverse("suscripcion-detail", kwargs={"pk": sus.pk}),
+            {"estado": "ACTIVA"}, format="json",
+        )
         assert resp.status_code == 403
+        sus.refresh_from_db()
+        assert sus.estado == "SUSPENDIDA"
 
     def test_proveedor_puede_suspender(self, empresa_a, plan_c2, superusuario_omni):
         sus = _suscripcion_activa(empresa_a, plan_c2)

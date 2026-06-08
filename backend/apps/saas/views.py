@@ -31,11 +31,13 @@ TRIAL_DIAS = 30
 
 def _exigir_superusuario_omni(user, accion: str = "gestionar suscripciones") -> None:
     """
-    Gate de escritura del negocio SaaS: solo el dueño del software (Omni) puede
-    crear o cambiar el estado de las suscripciones. Un tenant NO debe poder
-    auto-asignarse un plan ni reactivar/suspender su propia suscripción (eso
-    rompería la integridad de facturación). La LECTURA sigue abierta y acotada
-    por tenant en get_queryset (R-CODE-1).
+    Gate de escritura del negocio SaaS. Política (Plan C — C2):
+      - Crear, modificar (PATCH/PUT) o eliminar suscripciones: SOLO el proveedor
+        (es_superusuario_omni). Esto evita que un tenant se auto-asigne un plan o
+        REACTIVE (PATCH estado=ACTIVA) una suscripción que el proveedor suspendió.
+      - Cancelar / suspender la PROPIA suscripción: permitido al tenant
+        (self-service), acotado por get_queryset a sus empresas visibles.
+      - Leer: abierto y acotado por tenant (R-CODE-1).
     """
     if not getattr(user, "es_superusuario_omni", False):
         raise PermissionDenied(f"Solo superusuarios Omni pueden {accion}.")
@@ -158,8 +160,10 @@ class SuscripcionViewSet(BaseModelViewSet):
         POST /saas/suscripciones/{pk}/cancelar/
 
         Cancela la suscripción. Body (opcional): {"notas": "motivo de cancelación"}
+
+        Self-service: el tenant puede cancelar la suya (get_object la acota a sus
+        empresas visibles); el proveedor puede cancelar cualquiera.
         """
-        _exigir_superusuario_omni(request.user, "cancelar suscripciones")
         sus = self.get_object()
         if sus.estado in ("CANCELADA",):
             return Response({"detail": "La suscripción ya está cancelada."}, status=status.HTTP_400_BAD_REQUEST)
@@ -173,8 +177,11 @@ class SuscripcionViewSet(BaseModelViewSet):
         POST /saas/suscripciones/{pk}/suspender/
 
         Suspende la suscripción (bloquea acceso sin cancelar definitivamente).
+
+        Self-service: el tenant puede suspender la suya; el proveedor cualquiera.
+        La REACTIVACIÓN (estado=ACTIVA) NO pasa por aquí — es un PATCH y queda
+        restringida al proveedor en perform_update.
         """
-        _exigir_superusuario_omni(request.user, "suspender suscripciones")
         sus = self.get_object()
         if sus.estado in ("SUSPENDIDA", "CANCELADA"):
             return Response(

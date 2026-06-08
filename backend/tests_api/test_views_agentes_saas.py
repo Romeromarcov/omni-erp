@@ -262,7 +262,10 @@ class TestSuscripcionViewSet:
         assert isinstance(dias, int)
         assert dias > 0  # suscripcion_a termina en 20 días
 
-    def test_crear_suscripcion(self, client_a, empresa_a, plan_free):
+    def test_crear_suscripcion_solo_proveedor(self, client_a, empresa_a, plan_free):
+        """Plan C — C2: crear suscripciones es exclusivo del proveedor
+        (es_superusuario_omni). Un tenant no puede auto-asignarse un plan, así que
+        recibe 403 (el camino del proveedor → 201 se cubre en test_saas_c2_acceso)."""
         hoy = date.today()
         payload = {
             "id_empresa": str(empresa_a.id_empresa),
@@ -273,8 +276,7 @@ class TestSuscripcionViewSet:
             "fecha_fin": str(hoy + timedelta(days=30)),
         }
         r = client_a.post(self.BASE, payload, format="json")
-        assert r.status_code == 201
-        assert r.data["estado"] == "TRIAL"
+        assert r.status_code == 403
 
 
 # ─────────────────────────────────────────────────────────────────────────────
