@@ -162,6 +162,36 @@ class TestObtenerTasaCambio:
         tasa = obtener_tasa_cambio(moneda_usd, moneda_ves, fecha=fecha)
         assert tasa.valor_tasa == Decimal("35.00000000")
 
+    def test_fallback_reciente_empresa_tiene_prioridad(
+        self, db, empresa_a, moneda_usd, moneda_ves
+    ):
+        """Sin tasa de la fecha exacta, el fallback de 30 días prefiere la
+        tasa empresa-específica sobre la global (cubre la rama empresa del
+        bloque de recientes en services.obtener_tasa_cambio)."""
+        from apps.finanzas.models import TasaCambio
+
+        hace_5 = timezone.now().date() - timedelta(days=5)
+        # Global reciente (más nueva) y empresa reciente (más vieja): debe ganar
+        # la de la empresa pese a ser anterior, por la prioridad empresa>global.
+        TasaCambio.objects.create(
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            valor_tasa=Decimal("36.00000000"),
+            fecha_tasa=timezone.now().date() - timedelta(days=2),
+            tipo_tasa="OFICIAL_BCV",
+            id_empresa=None,
+        )
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            valor_tasa=Decimal("38.00000000"),
+            fecha_tasa=hace_5,
+            tipo_tasa="ESPECIAL_USUARIO",
+        )
+        tasa = obtener_tasa_cambio(moneda_usd, moneda_ves, empresa=empresa_a)
+        assert tasa.valor_tasa == Decimal("38.00000000")
+
 
 # ─────────────────────────────────────────────
 # Tests convertir_monto
