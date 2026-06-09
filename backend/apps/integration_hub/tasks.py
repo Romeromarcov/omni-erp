@@ -3,9 +3,11 @@ Tareas Celery del Integration Hub.
 
 Permite sincronizaciones automáticas y manuales asíncronas.
 """
+
 import logging
 
 from celery import shared_task
+
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,9 @@ def ejecutar_job_sincronizacion(self, job_id: str):
 
     logger.info(
         "Iniciando job [%s] tipo=%s instancia=%s",
-        job_id, job.tipo_entidad, job.id_instancia.nombre,
+        job_id,
+        job.tipo_entidad,
+        job.id_instancia.nombre,
     )
 
     engine = SyncEngine()
@@ -94,7 +98,8 @@ def sync_automatico_todos():
             if en_progreso:
                 logger.info(
                     "Sync automático omitido para %s/%s — ya hay un job en progreso",
-                    instancia.nombre, tipo_entidad,
+                    instancia.nombre,
+                    tipo_entidad,
                 )
                 continue
 
@@ -112,6 +117,113 @@ def sync_automatico_todos():
     return {"jobs_disparados": disparados}
 
 
+@shared_task(name="integration_hub.exportar_instancia")
+def ejecutar_export_instancia(instancia_id: str, tipos=None, incremental: bool = True):
+    """
+    Ejecuta una exportación outbound (origen → Google Sheets) para una instancia.
+
+    Carga la ConectorInstancia indicada y delega en ExportEngine().exportar().
+    Maneja con gracia que la instancia no exista o esté inactiva.
+
+    Args:
+        instancia_id: PK (str) de la ConectorInstancia destino.
+        tipos: lista de tipos de entidad a exportar, o None → entidades_activas.
+        incremental: si False, fuerza export completo (sin filtro 'desde').
+    """
+    from apps.integration_hub.models import ConectorInstancia
+    from apps.integration_hub.services.export_engine import ExportEngine
+
+    try:
+        instancia = ConectorInstancia.objects.select_related(
+            "id_proveedor", "id_empresa"
+        ).get(pk=instancia_id, activo=True)
+    except ConectorInstancia.DoesNotExist:
+        logger.error("Export: instancia no encontrada o inactiva: %s", instancia_id)
+        return {"error": f"Instancia {instancia_id} no encontrada o inactiva"}
+
+    logger.info(
+        "Iniciando export instancia=%s tipos=%s incremental=%s",
+        instancia.nombre,
+        tipos,
+        incremental,
+    )
+
+    jobs = ExportEngine().exportar(instancia, tipos=tipos, incremental=incremental)
+
+    resultado = {
+        "instancia_id": str(instancia.pk),
+        "jobs": [
+            {
+                "job_id": str(job.id_job),
+                "tipo_entidad": job.tipo_entidad,
+                "estado": job.estado,
+                "creados": job.creados,
+                "actualizados": job.actualizados,
+                "omitidos": job.omitidos,
+                "fallidos": job.fallidos,
+            }
+            for job in jobs
+        ],
+    }
+    logger.info("export instancia=%s: %d jobs generados", instancia.nombre, len(jobs))
+    return resultado
+
+
+@shared_task(name="integration_hub.export_automatico_todos")
+def export_automatico_todos():
+    """
+    Tarea periódica que dispara exportaciones automáticas a Google Sheets para
+    todas las instancias del proveedor 'google_sheets' con
+    intervalo_sync_minutos > 0 cuyo próximo export ya venció.
+
+    Imita a sync_automatico_todos pero acotada a destinos Sheets. Encola
+    ejecutar_export_instancia.delay(...) por instancia (no por entidad), pasando
+    sus entidades_activas. Omite instancias con un job outbound ya en progreso.
+    Se programa típicamente cada 15 minutos vía django-celery-beat.
+    """
+    from datetime import timedelta
+
+    from apps.integration_hub.models import ConectorInstancia, JobSincronizacion
+
+    ahora = timezone.now()
+    instancias = ConectorInstancia.objects.filter(
+        activo=True,
+        estado="activo",
+        intervalo_sync_minutos__gt=0,
+        id_proveedor__codigo="google_sheets",
+    ).select_related("id_proveedor")
+
+    encolados = 0
+    for instancia in instancias:
+        # ¿Ya venció el próximo export?
+        if instancia.ultimo_sync:
+            proximo = instancia.ultimo_sync + timedelta(
+                minutes=instancia.intervalo_sync_minutos
+            )
+            if ahora < proximo:
+                continue  # Aún no toca
+
+        # Evitar solapamiento: si hay un job outbound en progreso, omitir.
+        en_progreso = JobSincronizacion.objects.filter(
+            id_instancia=instancia,
+            direccion="outbound",
+            estado__in=["pendiente", "en_progreso"],
+        ).exists()
+        if en_progreso:
+            logger.info(
+                "Export automático omitido para %s — ya hay un job outbound en progreso",
+                instancia.nombre,
+            )
+            continue
+
+        tipos = list(instancia.entidades_activas or [])
+        ejecutar_export_instancia.delay(str(instancia.pk), tipos, incremental=True)
+        encolados += 1
+
+    logger.info("export_automatico_todos: %d exports encolados", encolados)
+    return {"exports_encolados": encolados}
+
+
 @shared_task(name="integration_hub.limpiar_logs_antiguos")
 def limpiar_logs_antiguos(dias: int = 30):
     """
@@ -127,11 +239,18 @@ def limpiar_logs_antiguos(dias: int = 30):
         creado_en__lt=corte
     ).delete()
 
-    logger.info("limpiar_logs_antiguos: %d registros eliminados (>%d días)", eliminados, dias)
+    logger.info(
+        "limpiar_logs_antiguos: %d registros eliminados (>%d días)", eliminados, dias
+    )
     return {"eliminados": eliminados}
 
 
-@shared_task(name="integration_hub.sync_tasas_ve", bind=True, max_retries=3, default_retry_delay=120)
+@shared_task(
+    name="integration_hub.sync_tasas_ve",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=120,
+)
 def sync_tasas_ve(self):
     """
     Sincroniza BCV + Binance P2P.
@@ -140,11 +259,12 @@ def sync_tasas_ve(self):
     Binance → tipo PROMEDIO_MERCADO, empresa=None
     """
     from datetime import date
+
     from django.utils import timezone
 
     try:
+        from apps.finanzas.models import Moneda, TasaCambio
         from apps.integration_hub.connectors.tasas_ve.connector import TasasVeConnector
-        from apps.finanzas.models import TasaCambio, Moneda
 
         connector = TasasVeConnector()
         hoy = date.today()
@@ -195,8 +315,13 @@ def sync_tasas_ve(self):
                     "referencia_externa": "hub:binance_p2p",
                 },
             )
-            resultados["binance_p2p"] = {"tasa": str(tasa_binance), "created": created_b}
-            logger.info("sync_tasas_ve Binance: tasa=%s created=%s", tasa_binance, created_b)
+            resultados["binance_p2p"] = {
+                "tasa": str(tasa_binance),
+                "created": created_b,
+            }
+            logger.info(
+                "sync_tasas_ve Binance: tasa=%s created=%s", tasa_binance, created_b
+            )
 
         return resultados
 
@@ -240,11 +365,11 @@ def sync_cartera_odoo(empresa_id: str):
     from django.core.cache import cache
 
     try:
+        from apps.core.models import Empresa
+        from apps.cuentas_por_cobrar.services_aging import calcular_aging
         from apps.cuentas_por_cobrar.services_cartera_provider import (
             get_cartera_provider,
         )
-        from apps.cuentas_por_cobrar.services_aging import calcular_aging
-        from apps.core.models import Empresa
 
         empresa = Empresa.objects.get(pk=empresa_id)
         provider = get_cartera_provider(empresa)

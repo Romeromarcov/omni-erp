@@ -21,10 +21,14 @@ CRYPTOGRAPHY_KEY = os.environ.get("CRYPTOGRAPHY_KEY")
 # Si el frontend vive en un dominio/subdominio distinto del backend (p. ej.
 # servicios separados en Railway), poné "None" en el entorno (requiere Secure,
 # que ya se aplica en prod) para que el refresh cross-site funcione.
-REFRESH_TOKEN_COOKIE_SAMESITE = os.environ.get("REFRESH_TOKEN_COOKIE_SAMESITE", "Strict")
+REFRESH_TOKEN_COOKIE_SAMESITE = os.environ.get(
+    "REFRESH_TOKEN_COOKIE_SAMESITE", "Strict"
+)
 
 DEBUG = os.environ.get("DEBUG", "False") == "True"
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver"
+).split(",")
 
 INSTALLED_APPS = [
     "drf_yasg",
@@ -105,13 +109,20 @@ MIDDLEWARE = [
 # SaaS — control de acceso por pago (Plan C — Fase C2).
 # Off por defecto (fail-open). Se activa primero en staging para validar el
 # flujo 402 end-to-end antes de producción.
-SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
+SAAS_VERIFICAR_SUSCRIPCION = (
+    os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
+)
 
 # --- Row Level Security (P0-1 plan de hardening) ---
 # Gobierna únicamente si el middleware aplica el enforcement por request. Las
 # políticas RLS y el contexto por defecto de conexión existen siempre (ver
 # apps/core/rls.py). Activar gradualmente: staging antes que producción.
-RLS_ENABLED = os.environ.get("RLS_ENABLED", "False").lower() in ("1", "true", "yes", "on")
+RLS_ENABLED = os.environ.get("RLS_ENABLED", "False").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 
 ROOT_URLCONF = "config.urls"
 
@@ -509,6 +520,13 @@ CELERY_BEAT_SCHEDULE = {
     # despierta cada 15 min y dispara las que ya vencieron.
     "hub-sync-automatico-conectores": {
         "task": "integration_hub.sync_automatico_todos",
+        "schedule": _crontab(minute="*/15"),
+    },
+    # Export outbound automático a Google Sheets según intervalo del destino — PR 3.
+    # Cada instancia Sheets decide su cadencia con intervalo_sync_minutos; esta
+    # tarea despierta cada 15 min y dispara las que ya vencieron.
+    "export-sheets-automatico": {
+        "task": "integration_hub.export_automatico_todos",
         "schedule": _crontab(minute="*/15"),
     },
     # Refresco de cache de cartera vencida para tenants Mode A (Odoo) — Plan D D2.

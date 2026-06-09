@@ -1,6 +1,7 @@
 """
 Serializers del Integration Hub.
 """
+
 from rest_framework import serializers
 
 from .models import (
@@ -16,9 +17,18 @@ class ConectorProveedorSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConectorProveedor
         fields = [
-            "id_proveedor", "codigo", "nombre", "descripcion",
-            "icono_url", "versiones_soportadas", "capacidades",
-            "requiere_url", "requiere_db", "estado", "activo", "orden",
+            "id_proveedor",
+            "codigo",
+            "nombre",
+            "descripcion",
+            "icono_url",
+            "versiones_soportadas",
+            "capacidades",
+            "requiere_url",
+            "requiere_db",
+            "estado",
+            "activo",
+            "orden",
         ]
         read_only_fields = fields
 
@@ -40,23 +50,39 @@ class ConectorInstanciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConectorInstancia
         fields = [
-            "id_conector", "id_empresa", "id_proveedor",
-            "proveedor_nombre", "proveedor_codigo", "proveedor_capacidades",
-            "nombre", "configuracion_publica",
-            "estado", "mensaje_estado",
-            "ultimo_test_conexion", "ultimo_sync",
-            "intervalo_sync_minutos", "entidades_activas",
-            "version_detectada", "activo",
-            "fecha_creacion", "fecha_actualizacion",
+            "id_conector",
+            "id_empresa",
+            "id_proveedor",
+            "proveedor_nombre",
+            "proveedor_codigo",
+            "proveedor_capacidades",
+            "nombre",
+            "configuracion_publica",
+            "estado",
+            "mensaje_estado",
+            "ultimo_test_conexion",
+            "ultimo_sync",
+            "intervalo_sync_minutos",
+            "entidades_activas",
+            "version_detectada",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
         ]
         read_only_fields = [
-            "id_conector", "id_empresa",
-            "proveedor_nombre", "proveedor_codigo", "proveedor_capacidades",
+            "id_conector",
+            "id_empresa",
+            "proveedor_nombre",
+            "proveedor_codigo",
+            "proveedor_capacidades",
             "configuracion_publica",
-            "estado", "mensaje_estado",
-            "ultimo_test_conexion", "ultimo_sync",
+            "estado",
+            "mensaje_estado",
+            "ultimo_test_conexion",
+            "ultimo_sync",
             "version_detectada",
-            "fecha_creacion", "fecha_actualizacion",
+            "fecha_creacion",
+            "fecha_actualizacion",
         ]
 
     def get_configuracion_publica(self, obj) -> dict:
@@ -77,21 +103,65 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConectorInstancia
         fields = [
-            "id_proveedor", "nombre", "configuracion",
-            "intervalo_sync_minutos", "entidades_activas", "activo",
+            "id_proveedor",
+            "nombre",
+            "configuracion",
+            "intervalo_sync_minutos",
+            "entidades_activas",
+            "activo",
         ]
 
     def validate_configuracion(self, value: dict) -> dict:
-        """Valida que la configuracion tenga los campos mínimos."""
+        """Valida que la configuracion sea un objeto JSON."""
         if not isinstance(value, dict):
-            raise serializers.ValidationError("La configuración debe ser un objeto JSON.")
-        if not value.get("host"):
-            raise serializers.ValidationError("Se requiere el campo 'host'.")
-        if not value.get("user"):
-            raise serializers.ValidationError("Se requiere el campo 'user'.")
-        if not value.get("api_key"):
-            raise serializers.ValidationError("Se requiere el campo 'api_key'.")
+            raise serializers.ValidationError(
+                "La configuración debe ser un objeto JSON."
+            )
         return value
+
+    def validate(self, attrs: dict) -> dict:
+        """Valida los campos mínimos de configuracion según el proveedor.
+
+        Google Sheets autentica con cuenta de servicio (no host/user/api_key) y
+        necesita una instancia origen de la que exportar. El resto de
+        proveedores (Odoo, etc.) usa credenciales de conexión clásicas.
+        """
+        configuracion = attrs.get("configuracion")
+        if configuracion is None:
+            return attrs  # PATCH parcial sin configuracion: nada que validar
+
+        proveedor = attrs.get("id_proveedor") or (
+            self.instance.id_proveedor if self.instance else None
+        )
+        codigo = getattr(proveedor, "codigo", "")
+
+        if codigo == "google_sheets":
+            sa = configuracion.get("service_account")
+            if not isinstance(sa, dict) or not sa.get("client_email"):
+                raise serializers.ValidationError(
+                    {
+                        "configuracion": (
+                            "Se requiere 'service_account' (JSON de la cuenta de "
+                            "servicio de Google, con 'client_email')."
+                        )
+                    }
+                )
+            if not configuracion.get("source_instancia_id"):
+                raise serializers.ValidationError(
+                    {
+                        "configuracion": (
+                            "Se requiere 'source_instancia_id' (instancia origen "
+                            "de la que exportar, p. ej. el conector Odoo)."
+                        )
+                    }
+                )
+        else:
+            for campo in ("host", "user", "api_key"):
+                if not configuracion.get(campo):
+                    raise serializers.ValidationError(
+                        {"configuracion": f"Se requiere el campo '{campo}'."}
+                    )
+        return attrs
 
     def validate_nombre(self, value: str) -> str:
         """El nombre debe ser único por empresa."""
@@ -119,29 +189,52 @@ class JobSincronizacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobSincronizacion
         fields = [
-            "id_job", "id_instancia", "instancia_nombre",
-            "tipo_entidad", "direccion", "estado",
-            "total_registros", "procesados",
-            "creados", "actualizados", "omitidos", "fallidos",
+            "id_job",
+            "id_instancia",
+            "instancia_nombre",
+            "tipo_entidad",
+            "direccion",
+            "estado",
+            "total_registros",
+            "procesados",
+            "creados",
+            "actualizados",
+            "omitidos",
+            "fallidos",
             "resumen_errores",
-            "iniciado_en", "completado_en", "duracion_segundos",
-            "iniciado_por", "iniciado_por_nombre",
+            "iniciado_en",
+            "completado_en",
+            "duracion_segundos",
+            "iniciado_por",
+            "iniciado_por_nombre",
             "parametros",
         ]
-        read_only_fields = [f for f in fields if f not in ("tipo_entidad", "direccion", "parametros")]
+        read_only_fields = [
+            f for f in fields if f not in ("tipo_entidad", "direccion", "parametros")
+        ]
 
     def get_iniciado_por_nombre(self, obj) -> str:
         if obj.iniciado_por:
-            return getattr(obj.iniciado_por, "get_full_name", lambda: "")() or str(obj.iniciado_por)
+            return getattr(obj.iniciado_por, "get_full_name", lambda: "")() or str(
+                obj.iniciado_por
+            )
         return "Automático"
 
 
 class JobSincronizacionTriggerSerializer(serializers.Serializer):
     """Serializer para disparar un job manualmente."""
-    tipo_entidad = serializers.ChoiceField(choices=[
-        "contactos", "productos", "pedidos_venta", "pedidos_compra",
-        "facturas_venta", "pagos", "inventario",
-    ])
+
+    tipo_entidad = serializers.ChoiceField(
+        choices=[
+            "contactos",
+            "productos",
+            "pedidos_venta",
+            "pedidos_compra",
+            "facturas_venta",
+            "pagos",
+            "inventario",
+        ]
+    )
     direccion = serializers.ChoiceField(
         choices=["inbound", "outbound", "bidireccional"],
         default="inbound",
@@ -161,9 +254,14 @@ class LogDetalleSincronizacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = LogDetalleSincronizacion
         fields = [
-            "id_log", "id_job",
-            "id_externo", "id_omni", "operacion",
-            "resumen_externo", "mensaje_error", "creado_en",
+            "id_log",
+            "id_job",
+            "id_externo",
+            "id_omni",
+            "operacion",
+            "resumen_externo",
+            "mensaje_error",
+            "creado_en",
         ]
         read_only_fields = fields
 
@@ -172,8 +270,13 @@ class EntidadSincronizadaSerializer(serializers.ModelSerializer):
     class Meta:
         model = EntidadSincronizada
         fields = [
-            "id_entidad_sync", "id_instancia",
-            "tipo_entidad", "id_externo", "id_omni",
-            "modelo_omni", "ultimo_sync", "activo",
+            "id_entidad_sync",
+            "id_instancia",
+            "tipo_entidad",
+            "id_externo",
+            "id_omni",
+            "modelo_omni",
+            "ultimo_sync",
+            "activo",
         ]
         read_only_fields = fields

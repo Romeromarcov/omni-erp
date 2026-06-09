@@ -444,6 +444,8 @@
 | `^instancias/(?P<pk>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
 | `^instancias/(?P<pk>[^/.]+)/entidades/(?P<tipo_entidad>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
 | `^instancias/(?P<pk>[^/.]+)/entidades/(?P<tipo_entidad>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/exportar/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
+| `^instancias/(?P<pk>[^/.]+)/exportar\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
 | `^instancias/(?P<pk>[^/.]+)/jobs/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
 | `^instancias/(?P<pk>[^/.]+)/jobs\.(?P<format>[a-z0-9]+)/?$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
 | `^instancias/(?P<pk>[^/.]+)/preview/(?P<tipo_entidad>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |

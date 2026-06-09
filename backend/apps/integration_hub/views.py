@@ -12,6 +12,7 @@ Endpoints:
   GET  /api/integration-hub/jobs/{id}/logs/           — logs de un job
   GET  /api/integration-hub/status/                   — estado general del hub
 """
+
 import logging
 
 from django.utils import timezone
@@ -20,7 +21,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
@@ -56,8 +57,10 @@ def _empresa(request):
 
 # ── Catálogo de proveedores (solo lectura) ────────────────────────────────────
 
+
 class ConectorProveedorViewSet(ReadOnlyModelViewSet):
     """Lista los conectores disponibles en el sistema."""
+
     queryset = ConectorProveedor.objects.filter(activo=True).order_by("orden", "nombre")
     serializer_class = ConectorProveedorSerializer
     permission_classes = [IsAuthenticated]
@@ -66,11 +69,13 @@ class ConectorProveedorViewSet(ReadOnlyModelViewSet):
 
 # ── Instancias de conectores ─────────────────────────────────────────────────
 
+
 class ConectorInstanciaViewSet(BaseModelViewSet):
     """
     CRUD de conectores configurados por empresa.
     Acciones adicionales: test, sync, jobs, entidades.
     """
+
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -108,7 +113,9 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             instancia.estado = "error"
             instancia.mensaje_estado = str(exc)[:500]
             instancia.ultimo_test_conexion = timezone.now()
-            instancia.save(update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"])
+            instancia.save(
+                update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"]
+            )
             return Response(
                 {"success": False, "message": str(exc)},
                 status=status.HTTP_502_BAD_GATEWAY,
@@ -123,16 +130,23 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         else:
             instancia.estado = "error"
 
-        instancia.save(update_fields=[
-            "estado", "mensaje_estado", "version_detectada", "ultimo_test_conexion"
-        ])
+        instancia.save(
+            update_fields=[
+                "estado",
+                "mensaje_estado",
+                "version_detectada",
+                "ultimo_test_conexion",
+            ]
+        )
 
-        return Response({
-            "success": resultado.success,
-            "message": resultado.message,
-            "version": resultado.version,
-            "details": resultado.details,
-        })
+        return Response(
+            {
+                "success": resultado.success,
+                "message": resultado.message,
+                "version": resultado.version,
+                "details": resultado.details,
+            }
+        )
 
     @action(detail=True, methods=["post"], url_path="sync")
     def trigger_sync(self, request, pk=None):
@@ -146,7 +160,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             return Response(
                 {
                     "error": "La instancia está en estado de error. "
-                             "Realice un test de conexión antes de sincronizar."
+                    "Realice un test de conexión antes de sincronizar."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -161,11 +175,14 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         desde_fecha = params.get("desde")
 
         # Verificar que la entidad esté activa en la instancia
-        if tipo_entidad not in instancia.entidades_activas and instancia.entidades_activas:
+        if (
+            tipo_entidad not in instancia.entidades_activas
+            and instancia.entidades_activas
+        ):
             return Response(
                 {
                     "error": f"La entidad '{tipo_entidad}' no está habilitada en este conector. "
-                             f"Entidades activas: {instancia.entidades_activas}"
+                    f"Entidades activas: {instancia.entidades_activas}"
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -189,15 +206,18 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         # Encolar en Celery
         try:
             from .tasks import ejecutar_job_sincronizacion
+
             task = ejecutar_job_sincronizacion.delay(str(job.id_job))
             job.celery_task_id = task.id
             job.save(update_fields=["celery_task_id"])
         except Exception as exc:
             logger.warning(
-                "No se pudo encolar job en Celery — ejecutando sincrónicamente. Error: %s", exc
+                "No se pudo encolar job en Celery — ejecutando sincrónicamente. Error: %s",
+                exc,
             )
             # Fallback: ejecutar sincrónicamente (ej. si Celery no está disponible)
             from .services.sync_engine import SyncEngine
+
             engine = SyncEngine()
             engine.ejecutar_job(job)
             job.refresh_from_db()
@@ -207,13 +227,54 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             status=status.HTTP_202_ACCEPTED,
         )
 
+    @action(detail=True, methods=["post"], url_path="exportar")
+    def exportar(self, request, pk=None):
+        """
+        Dispara una exportación outbound a Google Sheets de forma asíncrona.
+
+        Body JSON (opcional):
+          - tipos: ["contactos", "productos", ...] | null → usa entidades_activas
+          - full: bool (default false). true → export completo (no incremental).
+
+        Solo válido para instancias del proveedor 'google_sheets'. Los resultados
+        se consultan puleando la acción ``jobs`` (JobSincronizacion outbound).
+        """
+        instancia = self.get_object()  # respeta aislamiento de empresa (get_queryset)
+
+        if instancia.id_proveedor.codigo != "google_sheets":
+            return Response(
+                {
+                    "error": "La exportación a hojas de cálculo solo está disponible "
+                    "para conectores del proveedor 'google_sheets'."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tipos = request.data.get("tipos")
+        full = bool(request.data.get("full", False))
+
+        from .tasks import ejecutar_export_instancia
+
+        task = ejecutar_export_instancia.delay(
+            str(instancia.pk), tipos, incremental=not full
+        )
+
+        return Response(
+            {
+                "mensaje": "Exportación encolada. Consulta el historial de jobs "
+                "para ver el progreso.",
+                "task_id": task.id,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
     @action(detail=True, methods=["get"], url_path="jobs")
     def list_jobs(self, request, pk=None):
         """Lista el historial de jobs de sincronización de esta instancia."""
         instancia = self.get_object()
-        jobs = JobSincronizacion.objects.filter(
-            id_instancia=instancia
-        ).order_by("-iniciado_en")[:50]
+        jobs = JobSincronizacion.objects.filter(id_instancia=instancia).order_by(
+            "-iniciado_en"
+        )[:50]
         return Response(JobSincronizacionSerializer(jobs, many=True).data)
 
     @action(detail=True, methods=["get"], url_path="entidades/(?P<tipo_entidad>[^/.]+)")
@@ -247,6 +308,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             )
 
         from apps.integration_hub.services.sync_engine import SyncEngine
+
         pull_methods = SyncEngine.PULL_METHODS
         method_name = pull_methods.get(tipo_entidad)
         if not method_name:
@@ -259,36 +321,44 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             method = getattr(conector, method_name)
             # Preview: máximo 10 registros
             registros = method(desde=None)[:10]
-            return Response({
-                "tipo_entidad": tipo_entidad,
-                "total_disponible": "desconocido (preview)",
-                "muestra": registros,
-            })
+            return Response(
+                {
+                    "tipo_entidad": tipo_entidad,
+                    "total_disponible": "desconocido (preview)",
+                    "muestra": registros,
+                }
+            )
         except Exception as exc:
-            logger.error("preview_data error [%s / %s]: %s", instancia.nombre, tipo_entidad, exc)
+            logger.error(
+                "preview_data error [%s / %s]: %s", instancia.nombre, tipo_entidad, exc
+            )
             return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 # ── Jobs de sincronización ────────────────────────────────────────────────────
 
+
 class JobSincronizacionViewSet(ReadOnlyModelViewSet):
     """Vista de solo lectura para jobs de sincronización."""
+
     serializer_class = JobSincronizacionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         empresas = get_empresas_visible(self.request.user)
-        return JobSincronizacion.objects.filter(
-            id_instancia__id_empresa__in=empresas
-        ).select_related("id_instancia", "iniciado_por").order_by("-iniciado_en")
+        return (
+            JobSincronizacion.objects.filter(id_instancia__id_empresa__in=empresas)
+            .select_related("id_instancia", "iniciado_por")
+            .order_by("-iniciado_en")
+        )
 
     @action(detail=True, methods=["get"], url_path="logs")
     def list_logs(self, request, pk=None):
         """Logs detallados de un job específico."""
         job = self.get_object()
-        logs = LogDetalleSincronizacion.objects.filter(
-            id_job=job
-        ).order_by("-creado_en")[:500]
+        logs = LogDetalleSincronizacion.objects.filter(id_job=job).order_by(
+            "-creado_en"
+        )[:500]
         return Response(LogDetalleSincronizacionSerializer(logs, many=True).data)
 
     @action(detail=True, methods=["post"], url_path="cancelar")
@@ -304,6 +374,7 @@ class JobSincronizacionViewSet(ReadOnlyModelViewSet):
         if job.celery_task_id:
             try:
                 from config.celery import app as celery_app
+
                 celery_app.control.revoke(job.celery_task_id, terminate=True)
             except Exception:
                 pass
@@ -317,8 +388,10 @@ class JobSincronizacionViewSet(ReadOnlyModelViewSet):
 
 # ── Estado general del hub ────────────────────────────────────────────────────
 
+
 class IntegrationHubStatusView(APIView):
     """Estado general del Integration Hub para el tenant actual."""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -333,26 +406,31 @@ class IntegrationHubStatusView(APIView):
 
         # Jobs recientes (últimas 24h)
         from django.utils.timezone import timedelta
+
         hace_24h = timezone.now() - timedelta(hours=24)
         jobs_recientes = JobSincronizacion.objects.filter(
             id_instancia__id_empresa=empresa,
             iniciado_en__gte=hace_24h,
         )
 
-        return Response({
-            "conectores": {
-                "total": conectores.count(),
-                "activos": activos,
-                "con_error": con_error,
-                "configurando": configurando,
-                "inactivos": conectores.filter(estado="inactivo").count(),
-            },
-            "jobs_24h": {
-                "total": jobs_recientes.count(),
-                "completados": jobs_recientes.filter(estado="completado").count(),
-                "con_errores": jobs_recientes.filter(estado="completado_con_errores").count(),
-                "fallidos": jobs_recientes.filter(estado="fallido").count(),
-                "en_progreso": jobs_recientes.filter(estado="en_progreso").count(),
-            },
-            "proveedores_disponibles": registry.list_registered(),
-        })
+        return Response(
+            {
+                "conectores": {
+                    "total": conectores.count(),
+                    "activos": activos,
+                    "con_error": con_error,
+                    "configurando": configurando,
+                    "inactivos": conectores.filter(estado="inactivo").count(),
+                },
+                "jobs_24h": {
+                    "total": jobs_recientes.count(),
+                    "completados": jobs_recientes.filter(estado="completado").count(),
+                    "con_errores": jobs_recientes.filter(
+                        estado="completado_con_errores"
+                    ).count(),
+                    "fallidos": jobs_recientes.filter(estado="fallido").count(),
+                    "en_progreso": jobs_recientes.filter(estado="en_progreso").count(),
+                },
+                "proveedores_disponibles": registry.list_registered(),
+            }
+        )
