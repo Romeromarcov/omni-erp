@@ -33,12 +33,19 @@ class RLSContextMiddleware:
 
     def __call__(self, request):
         self._apply_context(request)
+        response = None
         try:
-            return self.get_response(request)
+            response = self.get_response(request)
+            return response
         finally:
-            # Restaura el default de conexión (bypass on) por si en el futuro
-            # se habilita reutilización de conexiones / pooling.
-            rls.apply_system_default()
+            # En respuestas en streaming (SSE) el cuerpo se genera DESPUÉS de
+            # salir de este middleware; resetear aquí dejaría al generador sin
+            # contexto RLS (correría con bypass on, perdiendo el aislamiento).
+            # Con CONN_MAX_AGE=0 la conexión se cierra al terminar el stream, así
+            # que no reseteamos. Si se habilita pooling/pgbouncer habrá que fijar
+            # el contexto dentro del generador (ver docs/planes/05-seguridad-hardening.md).
+            if response is None or not getattr(response, "streaming", False):
+                rls.apply_system_default()
 
     def _apply_context(self, request) -> None:
         user = self._resolve_user(request)

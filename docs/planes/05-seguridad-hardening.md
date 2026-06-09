@@ -90,6 +90,29 @@ ningún queryset olvide el filtro por empresa. Un solo bug = fuga entre tenants 
 verde con el filtro de aplicación deshabilitado; sin regresión en `tests_api/`.
 **Esfuerzo:** ~4–6 días. **Owner:** equipo-backend.
 
+#### Estado — `🟡 EN CURSO` (PR `fix/seguridad-hardening`)
+**Entregado (infra + piloto):** `apps/core/rls.py` (builders DDL + helpers de runtime),
+`signals.py` (default de conexión), `middleware.py` (`RLSContextMiddleware`, resuelve
+usuario por sesión/JWT), flag `RLS_ENABLED`, y RLS **forzado** en 7 tablas piloto que
+cubren las 3 variantes de columna (`sucursales`, `ventas_pedido/nota_venta/factura_fiscal`,
+`finanzas_transaccion_financiera`, `cxc_gestioncobranza/acuerdopago`). 21 tests (aislamiento
+a nivel BD con filtro de app ausente, fail-closed, bypass, `WITH CHECK`, streaming, middleware).
+Gate verde (2240 passed, cobertura 69.97%). `RLS_ENABLED=False` por defecto.
+
+**Criterios de rollout / follow-ups (antes de activar en prod y extender a las ~92 tablas):**
+1. **Rol de BD dedicado no-dueño** (sin `BYPASSRLS`) para el runtime, con migraciones
+   corriendo como dueño. Da fail-closed *natural* a nivel de app sin depender del default
+   `bypass='on'` de conexión (hoy fail-open para paths que no pasen por el middleware, p. ej.
+   tareas Celery que agregan cross-tenant). Es la forma correcta de cerrar la observación
+   MEDIA de la revisión de seguridad. **Bloqueante para `RLS_ENABLED=True` en prod.**
+2. **Memoización por request** de `get_empresas_visible(user)` en el middleware (hoy recorre
+   subsidiarias en cada request con RLS activo).
+3. **Documentar** que con RLS activo el acceso de Django admin requiere `es_superusuario_omni`
+   (un `is_superuser` que no lo sea queda acotado por tenant).
+4. **Streaming + pooling:** si se habilita `CONN_MAX_AGE`/pgbouncer, fijar el contexto RLS
+   dentro del generador SSE (hoy resuelto no-reseteando en `finally` con `CONN_MAX_AGE=0`).
+5. Extender RLS al resto de tablas multi-tenant, un PR por grupo de apps, reusando los builders.
+
 ### P0-2 · `pip-audit` + `npm audit` en CI (R1) — `❌`
 **Por qué:** ya hubo 5 CVEs de Django parcheados a mano (commit `c96c25a`). Hay que detectarlos
 solos, no por suerte.

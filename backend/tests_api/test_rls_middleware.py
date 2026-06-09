@@ -87,6 +87,30 @@ def test_jwt_invalido_es_fail_closed(sucursales):
     assert _run(user=AnonymousUser(), auth_header="Bearer token-basura") == set()
 
 
+@override_settings(RLS_ENABLED=True)
+def test_streaming_conserva_contexto_rls(sucursales, user_a, empresa_a):
+    """En SSE el cuerpo se genera tras salir del middleware: el contexto RLS no
+    debe resetearse o el generador vería todas las empresas (bypass on)."""
+    from django.http import StreamingHttpResponse
+
+    seen = {}
+
+    def gen():
+        seen["ids"] = set(Sucursal.objects.values_list("id_empresa_id", flat=True))
+        yield b"data: x\n\n"
+
+    def get_response(request):
+        return StreamingHttpResponse(gen(), content_type="text/event-stream")
+
+    mw = RLSContextMiddleware(get_response)
+    request = RequestFactory().get("/api/stream/")
+    request.user = user_a
+    response = mw(request)
+    # El generador corre al consumir el stream (después del middleware).
+    list(response.streaming_content)
+    assert seen["ids"] == {empresa_a.id_empresa}
+
+
 @override_settings(RLS_ENABLED=False)
 def test_middleware_se_descarta_si_rls_desactivado():
     with pytest.raises(MiddlewareNotUsed):
