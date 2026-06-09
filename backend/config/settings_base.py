@@ -92,6 +92,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # RLS: fija el contexto multi-tenant en la conexión tras autenticar.
+    # Se descarta solo (MiddlewareNotUsed) si RLS_ENABLED es False.
+    "apps.core.middleware.RLSContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # SaaS (Plan C — C2): verificación de suscripción activa. Inerte salvo que
@@ -103,6 +106,12 @@ MIDDLEWARE = [
 # Off por defecto (fail-open). Se activa primero en staging para validar el
 # flujo 402 end-to-end antes de producción.
 SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
+
+# --- Row Level Security (P0-1 plan de hardening) ---
+# Gobierna únicamente si el middleware aplica el enforcement por request. Las
+# políticas RLS y el contexto por defecto de conexión existen siempre (ver
+# apps/core/rls.py). Activar gradualmente: staging antes que producción.
+RLS_ENABLED = os.environ.get("RLS_ENABLED", "False").lower() in ("1", "true", "yes", "on")
 
 ROOT_URLCONF = "config.urls"
 
@@ -253,9 +262,32 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
-    # Rate-limit por scope. Solo aplica donde una vista declara throttle_scope
-    # (p. ej. el signup público de SaaS), no globalmente.
+    # P1-1 Hardening: Throttling global DRF (capa de defensa en profundidad).
+    # El login/token ya tiene su propio rate-limit via django-ratelimit (SEC-07,
+    # 5/min por IP). Estas tasas son GENEROSAS a propósito para no interferir con
+    # la suite de tests (que hace muchas requests dentro del mismo test) ni con
+    # usuarios legítimos en producción. El objetivo es proteger contra scraping
+    # masivo y ataques de fuerza bruta en endpoints no protegidos por SEC-07.
+    #
+    # Tasas elegidas:
+    #   anon   100/min  — visitantes sin sesión (p. ej. health, schema público).
+    #                     100 req/min = ~1.7 req/s, suficiente para monitoreo.
+    #   user   1000/min — usuarios autenticados. Un ERP en uso normal genera
+    #                     decenas de requests por operación (listados + filtros);
+    #                     1000/min deja margen amplio incluso para automatizaciones.
+    #   signup 10/hour  — scope preexistente para el registro público de SaaS
+    #                     (apps/saas/views.py declara throttle_scope='signup').
+    #                     NO borrar: sin esta clave DRF lanza ImproperlyConfigured.
+    #
+    # Para endpoints de mayor riesgo (escritura masiva, importación, exportación)
+    # se puede añadir un throttle_scope por vista, sin tocar estas tasas base.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
     "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/min",
+        "user": "1000/min",
         "signup": "10/hour",
     },
 }

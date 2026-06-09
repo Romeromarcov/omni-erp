@@ -7,6 +7,43 @@ from apps.core.models import Empresa
 from apps.finanzas.models import Moneda  # Moneda está en finanzas, no en core
 
 
+@pytest.fixture(scope="session")
+def rls_test_role(django_db_setup, django_db_blocker):
+    """Rol no-superusuario para verificar el enforcement de RLS.
+
+    Si el rol de conexión ya está sujeto a RLS (dev local, rol no-super) devuelve
+    ``None`` y los tests corren tal cual. Si el rol salta RLS (p. ej. el
+    superusuario ``postgres`` de CI), crea un rol ``NOSUPERUSER NOBYPASSRLS`` con
+    privilegios sobre el esquema, para que los tests hagan ``SET ROLE`` y RLS se
+    aplique de verdad. Devuelve el nombre del rol o ``None``.
+    """
+    from django.db import connection
+
+    from apps.core import rls
+
+    with django_db_blocker.unblock():
+        if not rls.current_role_bypasses_rls():
+            return None
+        with connection.cursor() as cur:
+            cur.execute(
+                "DO $$ BEGIN "
+                "IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='omni_rls_test_role') THEN "
+                "DROP OWNED BY omni_rls_test_role; DROP ROLE omni_rls_test_role; "
+                "END IF; END $$;"
+            )
+            cur.execute("CREATE ROLE omni_rls_test_role NOSUPERUSER NOBYPASSRLS")
+            cur.execute("GRANT USAGE ON SCHEMA public TO omni_rls_test_role")
+            cur.execute(
+                "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES "
+                "IN SCHEMA public TO omni_rls_test_role"
+            )
+            cur.execute(
+                "GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES "
+                "IN SCHEMA public TO omni_rls_test_role"
+            )
+    return "omni_rls_test_role"
+
+
 @pytest.fixture(autouse=True)
 def _clear_rate_limit_cache():
     """

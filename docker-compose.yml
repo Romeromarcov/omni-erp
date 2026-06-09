@@ -179,6 +179,11 @@ services:
       S3_REGION: us-east-1
       # Event Store — Redpanda/Kafka
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      # worker NO migra: migrar es tarea exclusiva del web (servicio backend).
+      # Sin esto, cada arranque corre `migrate` y compite con backend y con beat
+      # (carreras de migración). Coincide con el contrato de entrypoint.sh y con
+      # el diseño de Railway.
+      SKIP_MIGRATIONS: "1"
     volumes:
       - ./backend:/app
       - /app/.venv
@@ -227,6 +232,11 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-omni-erp}
       S3_REGION: us-east-1
+      # beat NO migra: migrar es tarea exclusiva del web (servicio backend). Sin
+      # esto, cada arranque corre `migrate` y compite con backend y con worker
+      # (carreras de migración). Coincide con railway.beat.toml (SKIP_MIGRATIONS=1)
+      # y con el contrato de entrypoint.sh.
+      SKIP_MIGRATIONS: "1"
     volumes:
       - ./backend:/app
       - /app/.venv
