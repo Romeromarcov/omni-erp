@@ -42,7 +42,7 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
 | # | Criterio | Estado | Medido |
 |---|---|---|---|
 | 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; trivy/eslint-security aún no bloqueantes |
-| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **71.41%** (ratchet 71), front **~55%**; diff-cover **ya 95%** |
+| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **71.58%** (ratchet 71), front **~55%**; diff-cover **ya 95%** |
 | 3 | Mutation ≥80% críticos | 🟡 | fiscal 46%, nómina 64%, cxc_scoring 70%, cxc_aging 52% (antes: no-op) |
 | 4 | Aislamiento multi-tenant | 🟢 | guard parametrizado ~99 ViewSets + comportamiento |
 | 5 | Authz + contrato por endpoint | 🟡 | guard authz ✅; schemathesis no-bloqueante |
@@ -76,8 +76,21 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
   conserva—, `_require_scope`, y nivel de herramienta (`omni_ping`, `omni_get_empresas`).
   **`mcp_server.py` 44.7%→46.6%** (cubierto el núcleo de scope; resto = cuerpos de tools con queries).
 - **Cobertura total:** 71.08%→**71.41%**; ratchet **70→71**. Suite: **2343 passed, 9 skipped, 0 failed**.
-- *Pendiente inmediato (siguiente PR focal):* ventas/compras por API (tarea #4), seguir subiendo el
-  ratchet 71→75→…→90; mutation ≥80%; E2E de los 5 flujos; gates finales bloqueantes.
+
+### Avance sesión 2026-06-09 (cont.) — rama `claude/cero-dudas-ventas` (PR #45)
+- **Backfill ventas (COV/ventas):** `tests_api/test_ventas_views_cobertura.py` — 38 tests por la API:
+  lista 200 + 401 sin token de los **16 ViewSets** de ventas (cubre sus `get_queryset`/filtro
+  `get_empresas_visible`), aislamiento cross-tenant de `PedidoViewSet` (lista/retrieve→404), y los
+  caminos de error de `pedidos/{id}/confirmar` (almacén faltante→400, almacén de otra empresa→400,
+  pedido cross-tenant→404) sin tocar stock. **`ventas/views.py` 46%→48.6%**.
+  *Nota:* el grueso sin cubrir de `ventas/views.py` es la función monetaria
+  `crear_transaccion_financiera_pago` (≈440 líneas); requiere un test de integración de pago
+  completo — se aborda en un PR posterior.
+- **Cobertura total:** 71.41%→**71.58%**; ratchet se mantiene en **71** (la ganancia no alcanza 72
+  con margen). Suite: **2400 passed, 9 skipped, 0 failed**.
+- *Pendiente inmediato:* integración del pago de ventas (`crear_transaccion_financiera_pago`),
+  seguir subiendo el ratchet 71→75→…→90; mutation ≥80%; E2E de los 5 flujos; gates finales
+  bloqueantes; **branch protection (requiere al owner)**.
 
 ### Avance sesión 2026-06-07 (rama `claude/gallant-sagan-I1nRI`, PR #26)
 - **Mutation testing reparado:** `mutmut` estaba roto (su pin permitía `junit-xml` 1.8 sin
