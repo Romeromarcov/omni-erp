@@ -36,6 +36,8 @@ _Total tools MCP: 17_
 | `gestion_documental.eliminar_archivo_s3` | apps.gestion_documental.tasks |
 | `gestion_documental.limpiar_archivos_huerfanos` | apps.gestion_documental.tasks |
 | `integration_hub.ejecutar_job_sincronizacion` | apps.integration_hub.tasks |
+| `integration_hub.export_automatico_todos` | apps.integration_hub.tasks |
+| `integration_hub.exportar_instancia` | apps.integration_hub.tasks |
 | `integration_hub.limpiar_logs_antiguos` | apps.integration_hub.tasks |
 | `integration_hub.sync_automatico_todos` | apps.integration_hub.tasks |
 | `integration_hub.sync_cartera_odoo` | apps.integration_hub.tasks |
@@ -43,7 +45,7 @@ _Total tools MCP: 17_
 | `integration_hub.sync_tasas_ve` | apps.integration_hub.tasks |
 | `notificaciones.enviar_notificacion_email` | apps.notificaciones.tasks |
 
-_Total tareas Celery: 14_
+_Total tareas Celery: 16_
 
 ## Management commands
 
