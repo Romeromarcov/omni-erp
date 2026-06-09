@@ -1,0 +1,21 @@
+{
+  "name": "Omni ERP",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/omni-erp",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [5432],
+  "postCreateCommand": "CLAUDE_CODE_REMOTE=true CLAUDE_PROJECT_DIR=${containerWorkspaceFolder} bash .claude/hooks/session-start.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

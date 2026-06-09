@@ -1,0 +1,34 @@
+# Devcontainer de Omni ERP — entorno reproducible para Claude Code / Codespaces.
+# Levanta el contenedor de trabajo (app) + un PostgreSQL de pruebas aislado,
+# espejo del que usa CI (postgres:17-alpine). Ver docs/ENTORNO_DE_TRABAJO.md.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/python:3.11
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/omni-erp:cached
+    environment:
+      DJANGO_ENV: dev
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: omni_erp
+      DB_USER: omni_erp
+      DB_PASSWORD: omni_erp_dev
+      REDIS_URL: redis://localhost:6379/0
+      # SECRET_KEY local de desarrollo: NO es un secreto real ni de producción.
+      SECRET_KEY: dev-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: omni_erp
+      POSTGRES_USER: omni_erp
+      POSTGRES_PASSWORD: omni_erp_dev
+    volumes:
+      - omni-pgdata:/var/lib/postgresql/data
+
+volumes:
+  omni-pgdata:
