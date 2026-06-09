@@ -3,7 +3,10 @@
 > Documento para **continuar el plan en un entorno estable**. Resume el estado real
 > (verificado ejecutando los gates), lo hecho, lo pendiente y **cómo completarlo paso a paso**.
 >
-> - Rama: `claude/gallant-sagan-I1nRI` · PR: **#26** (draft, base `develop`).
+> - Rama: `claude/gallant-sagan-I1nRI` · PR: **#26** (draft, base `develop`) — **ya mergeado**.
+> - **Continuación 2026-06-09** en `claude/cero-dudas-reanudar`: fix de gate flaky (perfil
+>   Hypothesis `deadline=None` en `backend/conftest.py`) + backfill de `finanzas/views` (38.9→52.6%);
+>   cobertura total 70.53→**71.08%**, ratchet **69→70**. Detalle en el seguimiento vivo.
 > - Fuente de verdad del plan: [`docs/PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md`](../PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md).
 > - Seguimiento vivo: [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](ESTADO_PLAN_CERO_DUDAS.md).
 
@@ -13,11 +16,11 @@
 
 | Métrica | Inicio sesión | Ahora | Objetivo |
 |---|---|---|---|
-| Cobertura backend | 68.69% | **69.66%** (ratchet 69) | 90% |
+| Cobertura backend | 68.69% | **71.08%** (ratchet 70, 2026-06-09) | 90% |
 | Cobertura frontend | ~55% | ~55% | 80% |
 | diff-cover (PR) | 90% | **95%** ✅ | 95% |
 | Mutation (críticos) | **no-op (roto)** | matrix real: fiscal 46 / nómina 64 / cxc_scoring 70 / cxc_aging 52 | ≥80% |
-| Suite backend | 2105 passed | **2216 passed, 8 skipped** | verde |
+| Suite backend | 2105 passed | **2293 passed, 9 skipped** (06-09, 0 flaky) | verde |
 | SAST/deps (bandit/semgrep/mypy/pip-audit) | verde | **verde** (Django 5.2.15) | 0 High/Crit |
 
 **Veredicto:** Fases 0–1 cerradas y verificadas; Fase 2 ~70%; **Fase 3 arrancada** (mutation real);

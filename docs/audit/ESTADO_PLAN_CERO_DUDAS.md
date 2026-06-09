@@ -3,9 +3,9 @@
 > Seguimiento de [`docs/PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md`](../PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md).
 > Cada ítem se cierra con **CI verde** y bajo el [gate de cierre](../DEFINITION_OF_DONE.md).
 >
-> **Última evaluación:** 2026-06-07 (auditoría ejecutada: Postgres + venv reales, gates corridos
-> uno por uno, no solo lectura del doc).
-> **Rama de trabajo:** `claude/gallant-sagan-I1nRI` (PR #26).
+> **Última evaluación:** 2026-06-09 (auditoría ejecutada: Postgres real `omni-erp-db-1` + venv,
+> gates corridos uno por uno, no solo lectura del doc).
+> **Rama de trabajo:** `claude/cero-dudas-reanudar`. Anterior: `claude/gallant-sagan-I1nRI` (PR #26, ya mergeado).
 
 ## Veredicto honesto
 
@@ -13,6 +13,21 @@ El plan está **parcialmente implementado**: **Fases 0–1 cerradas y verificada
 la **Fase 3 arrancó de verdad** (mutation testing dejó de ser un no-op y ahora mide baselines
 reales por módulo). El criterio de "cero dudas" (cobertura 90/80, mutation ≥80%, E2E, gates
 finales bloqueantes) **todavía NO se cumple**. **No se debe afirmar "100% / cero dudas" aún.**
+
+### Verificación 2026-06-09 (ejecutada en este entorno)
+
+Postgres real (contenedor `omni-erp-db-1`, puerto 5434) + Python 3.11/Django 5.2.15:
+- Build verde (`check`, `makemigrations --check`, `mapa_superficie --check`). ✅
+- ruff (bugs E9/F63/F7/F82/F823/F811) verde sobre `apps/ config/ tests/ tests_api/`. ✅
+- Suite completa `tests tests_api/` con `-n auto`: **2293 passed, 9 skipped, cobertura 71.08%**. ✅
+- **Gate rojo detectado y corregido:** `test_score_monotono_en_cada_entrada` fallaba de forma
+  intermitente. No es un bug — la propiedad es estrictamente monótona y no admite contraejemplo;
+  era un `DeadlineExceeded` de Hypothesis (el `deadline` de 200 ms mide tiempo de **pared**, que
+  bajo `-n auto` se excede al competir por CPU). Cura idiomática: perfil Hypothesis `ci` con
+  `deadline=None` en un `backend/conftest.py` raíz → aplica a todos los property tests.
+- *Nota de entorno (Windows):* `bandit`/`semgrep` no instalados localmente y `mypy` crashea por un
+  bug de encoding cp1252 al leer su config; en CI (Linux) corren bien y los cambios de esta sesión
+  son **solo tests + conftest de test** (no tocan código de apps bajo su scope).
 
 ### Verificación 2026-06-07 (ejecutada en este entorno)
 
@@ -27,13 +42,28 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
 | # | Criterio | Estado | Medido |
 |---|---|---|---|
 | 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; trivy/eslint-security aún no bloqueantes |
-| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **69.1%**, front **~55%**; diff-cover **ya 95%** |
+| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **71.08%** (ratchet 70), front **~55%**; diff-cover **ya 95%** |
 | 3 | Mutation ≥80% críticos | 🟡 | fiscal 46%, nómina 64%, cxc_scoring 70%, cxc_aging 52% (antes: no-op) |
 | 4 | Aislamiento multi-tenant | 🟢 | guard parametrizado ~99 ViewSets + comportamiento |
 | 5 | Authz + contrato por endpoint | 🟡 | guard authz ✅; schemathesis no-bloqueante |
 | 6 | E2E flujos críticos | 🔴 | solo login smoke |
 | 7 | mypy dinero + tsc | 🟢 | mypy bloqueante verde; `tsc -b` verde |
 | 8 | Revisión seguridad adversarial | 🟢 | SECURITY_REVIEW + `/security-review` |
+
+### Avance sesión 2026-06-09 (rama `claude/cero-dudas-reanudar`)
+- **Gate flaky corregido (bloqueante real):** nuevo `backend/conftest.py` raíz registra/carga el
+  perfil Hypothesis `ci` (`deadline=None`, suprime `HealthCheck.too_slow`). Elimina el
+  `DeadlineExceeded` intermitente de `test_score_monotono_en_cada_entrada` bajo `-n auto`. Aplica a
+  **todos** los property tests (`tests/` y `tests_api/`).
+- **Backfill finanzas (COV/finanzas):** `tests_api/test_finanzas_views_cobertura.py` — 20 tests de
+  API sobre los ViewSets de dinero ejercitando ramas de visibilidad multi-tenant, acciones
+  (`monedas/activas`, `cajas/tipo-caja-choices`, `cajas/{id}/movimientos-caja-banco`,
+  `cuentas-bancarias/{id}/movimientos-cuenta-bancaria`, `metodos-pago/buscar_reutilizar`) y
+  aislamiento cross-tenant (B no ve objetos privados de A; ambas ven la tasa BCV global).
+  **`finanzas/views.py` 38.9%→52.6%**, `serializers.py` 46.1%→48.9%.
+- **Cobertura total:** 70.53%→**71.08%**; ratchet **69→70** en `pytest.ini`.
+- *Pendiente inmediato (siguiente PR focal):* auth_views + mcp_server (tarea #3), ventas/compras
+  por API (tarea #4), seguir subiendo el ratchet 70→75→…→90.
 
 ### Avance sesión 2026-06-07 (rama `claude/gallant-sagan-I1nRI`, PR #26)
 - **Mutation testing reparado:** `mutmut` estaba roto (su pin permitía `junit-xml` 1.8 sin
@@ -81,7 +111,7 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 | **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟢 **CERRADA** (2026-06-03) | bandit/semgrep(+reglas Omni)/ruff/mypy/pip-audit/npm audit/trivy/gitleaks + **contract (OpenAPI+schemathesis)** + **mutmut nightly** + factory_boy/hypothesis/xdist; **3 matrices A1** con columnas; diff-cover bloqueante. Único diferimiento (`eslint-plugin-security`) formalizado en **CTF-006** (frontend pausado) → DoD cumplida. |
 | **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
 | **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟡 iniciada | ✅ TEST-1 (aislamiento auto-descubierto), **TEST-2 (estructura `tests/` + aislamiento de comportamiento parametrizado)**, TEST-3 (property), TEST-4 (race), contract en CI. *Falta:* migrar el resto de `tests_api/` por capas, más flujos (TEST-5). |
-| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟡 arrancada | cobertura backend **69.1%** (ratchet 67), frontend ~55%; **mutation matrix real** con baselines (fiscal 46/nómina 64/cxc_scoring 70/cxc_aging 52) — falta subir a 80 y cobertura a 90 |
+| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟡 en curso | cobertura backend **71.08%** (ratchet 70), frontend ~55%; backfill de finanzas/views (38.9→52.6%); **mutation matrix real** con baselines (fiscal 46/nómina 64/cxc_scoring 70/cxc_aging 52) — falta subir a 80 y cobertura a 90 |
 | **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright (solo login smoke); FE en ~55% |
 | **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**. *Falta:* trivy/schemathesis/E2E bloqueantes, branch protection (requiere permisos del owner) |
 
@@ -176,7 +206,8 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   pisos de cobertura por carpeta.
 
 ### Backfill de cobertura (semanas, por ratchet)
-- **COV-1** — subir `--cov-fail-under` por escalones 65→75→85→90 (backend) conforme entra backfill.
+- **COV-1** — subir `--cov-fail-under` por escalones conforme entra backfill (backend). Estado: **70**
+  (medido 71.08% al 2026-06-09); siguientes escalones 75→85→90.
 - **COV-2** — subir thresholds vitest 55→65→75→80 (frontend).
 - **COV-3** — `diff-cover --fail-under=95` bloqueante en PR.
 - **MUT-1** — `mutmut` score ≥80% en módulos críticos (job nightly).
