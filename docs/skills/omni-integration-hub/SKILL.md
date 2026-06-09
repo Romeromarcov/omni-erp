@@ -98,6 +98,31 @@ Para sincronizaciones grandes (Odoo), `services/sync_engine.py` orquesta:
 
 No reimplementes sincronización a mano: usá el SyncEngine.
 
+## ExportEngine (outbound: origen → destino)
+
+El `SyncEngine` cubre el flujo **inbound** (externo → Omni). Para el flujo
+**outbound** (sacar datos de un sistema hacia otro) está
+`services/export_engine.py`. Caso típico: **exportar Odoo → Google Sheets**.
+
+- Lee del conector de **origen** con `pull_*` (datos ya canónicos) y escribe en
+  el conector de **destino** con `push_entidades(tipo, registros)`.
+- El dato fluye **en forma canónica** entre ambos; el destino no se acopla a la
+  API del origen (ADR-003).
+- Registra un `JobSincronizacion` (`direccion="outbound"`) por entidad.
+- **Multi-tenant (R-CODE-1):** origen y destino deben ser de la **misma empresa**
+  (`source_instancia_id` en la config del destino se valida contra `id_empresa`).
+
+Conector de destino (ej. `connectors/google_sheets/`): implementa
+`push_entidades()` en vez de `pull_*`. El conector Google Sheets autentica con
+**cuenta de servicio** (JSON cifrado en `configuracion`), crea la planilla/pestañas
+automáticamente y escribe por **upsert** (clave `id_externo`). Las libs `gspread`
+y `google-auth` se importan de forma **perezosa** para no romper `manage.py check`.
+
+```python
+from apps.integration_hub.services.export_engine import ExportEngine
+jobs = ExportEngine().exportar(instancia_sheets, tipos=["contactos", "productos"])
+```
+
 ## Multi-tenant y secretos
 
 - Las credenciales de integración viven en config del Hub / variables de entorno, **nunca en código ni en logs** (R-CODE-8).
@@ -157,11 +182,15 @@ return Decimal(str(raw["rate"]))
 
 ## Referencias
 
-- Código: `apps/integration_hub/connectors/` (`base.py`, `registry.py`, `odoo/`, `tasas_ve/`), `apps/integration_hub/services/sync_engine.py`, `apps/integration_hub/mcp.py`.
+- Código: `apps/integration_hub/connectors/` (`base.py`, `registry.py`, `odoo/`, `google_sheets/`, `tasas_ve/`), `apps/integration_hub/services/sync_engine.py`, `apps/integration_hub/services/export_engine.py`, `apps/integration_hub/mcp.py`.
 - Skill: `omni-multimoneda-tasas`, `omni-localizacion-l10n`, `omni-mcp-capacidades`, `omni-multi-tenant-isolation`.
 - ADR-003 (Integration Hub centralizado con MCP), Plan Maestro §3.5.
 
 ## Changelog
+
+### v1.1
+- Agrega el flujo **outbound** (`ExportEngine`) y el conector de destino
+  **Google Sheets** (export Odoo→Sheets con upsert por fila).
 
 ### v1.0
 - Versión inicial, basada en `apps/integration_hub/`.
