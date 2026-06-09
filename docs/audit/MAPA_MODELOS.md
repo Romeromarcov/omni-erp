@@ -32,6 +32,7 @@
 | control_asistencia | RegistroAsistencia | — | ✅ | — |
 | control_asistencia | ResumenAsistenciaDiario | — | ✅ | id_empleado+fecha |
 | core | CapabilityToken | ✅ | — | — |
+| core | ClaveIdempotencia | ✅ | ✅ | — |
 | core | ConfiguracionFlujoDocumentos | ✅ | ✅ | id_empresa+tipo_documento+paso |
 | core | Contacto | ✅ | ✅ | — |
 | core | Departamento | ✅ | ✅ | id_empresa+nombre_departamento |
@@ -193,4 +194,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 190_
+_Total modelos: 191_
