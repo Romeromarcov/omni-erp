@@ -42,8 +42,8 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 
 | # | Recomendación | Estado |
 |---|---------------|--------|
-| R1 | `pip-audit` + `npm audit` en CI (escaneo de dependencias) | ❌ |
-| R2 | Secret scanning (gitleaks/trufflehog) pre-commit + CI | ❌ |
+| R1 | `pip-audit` + `npm audit` en CI (escaneo de dependencias) | ✅ ya en `develop` (CI job "Security scan") |
+| R2 | Secret scanning (gitleaks/trufflehog) pre-commit + CI | ✅ ya en `develop` (gitleaks en CI) |
 | R3 | Throttling DRF global (más allá del login) | ❌ |
 | R4 | Rotación/revocación de JWT (blacklist al logout) | ⚠️ verificar |
 | R5 | 2FA/MFA para admin/superusuario Omni | ❌ |
@@ -113,27 +113,16 @@ Gate verde (2240 passed, cobertura 69.97%). `RLS_ENABLED=False` por defecto.
    dentro del generador SSE (hoy resuelto no-reseteando en `finally` con `CONN_MAX_AGE=0`).
 5. Extender RLS al resto de tablas multi-tenant, un PR por grupo de apps, reusando los builders.
 
-### P0-2 · `pip-audit` + `npm audit` en CI (R1) — `❌`
-**Por qué:** ya hubo 5 CVEs de Django parcheados a mano (commit `c96c25a`). Hay que detectarlos
-solos, no por suerte.
+### P0-2 · `pip-audit` + `npm audit` en CI (R1) — `✅ YA HECHO en develop`
+Verificado en `.github/workflows/ci.yml` (job **"Security scan (gitleaks + deps audit)"**,
+INFRA-NEW-4): `pip-audit -r requirements.txt` **bloqueante** y `npm audit --audit-level=critical`
+**bloqueante**. El salto a `--audit-level=high` está fechado en **CTF-007** (un HIGH pendiente).
+Nada que hacer aquí salvo cerrar CTF-007 a su tiempo.
 
-**Tareas:**
-1. Job de CI `pip-audit -r backend/requirements.txt` (falla en severidad alta/crítica).
-2. Job `npm audit --audit-level=high` en `frontend/`.
-3. Documentar excepción temporal vía CTF si una CVE no tiene fix inmediato.
-
-**DoD:** CI rojo ante CVE alta/crítica nueva; ambos jobs corriendo en cada PR.
-**Esfuerzo:** ~0.5 día. **Owner:** devops.
-
-### P0-3 · Secret scanning (R2) — `❌`
-**Por qué:** complementa "no secretos en código" detectándolos **antes** del push, no después.
-
-**Tareas:**
-1. `gitleaks` como hook pre-commit + job de CI sobre el diff.
-2. Barrido histórico una vez; rotar cualquier secreto que aparezca.
-
-**DoD:** gitleaks en pre-commit y CI; barrido histórico limpio (o secretos rotados).
-**Esfuerzo:** ~0.5 día. **Owner:** devops.
+### P0-3 · Secret scanning (R2) — `✅ YA HECHO en develop`
+Verificado en `.github/workflows/ci.yml`: **gitleaks** (`gitleaks/gitleaks-action@v2`) corre en
+CI con `fetch-depth: 0` (historial completo). Mejora opcional pendiente: agregar gitleaks
+también como **hook pre-commit** (defensa antes del push). Esfuerzo ~0.25 día.
 
 ---
 
