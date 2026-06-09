@@ -99,6 +99,15 @@ cubren las 3 variantes de columna (`sucursales`, `ventas_pedido/nota_venta/factu
 a nivel BD con filtro de app ausente, fail-closed, bypass, `WITH CHECK`, streaming, middleware).
 Gate verde (2240 passed, cobertura 69.97%). `RLS_ENABLED=False` por defecto.
 
+**Lote 2 (rollout, follow-up 5):** RLS **forzado** en 8 tablas más de inventario / compras /
+crm (todas con columna `id_empresa_id`): `inventario_producto`, `inventario_stock_actual`,
+`inventario_movimiento_inventario`, `compras_orden_compra`, `compras_recepcion_mercancia`,
+`crm_cliente`, `crm_contacto_cliente`, `crm_direccion_cliente`. Una migración RLS por app
+(`inventario/0008_rls_lote2_inventario`, `compras/0010_rls_lote2_compras`,
+`crm/0009_rls_lote2_crm`) reusando los builders, con `reverse_sql`. 7 tests nuevos a nivel BD
+(`tests_api/test_rls_lote2.py`) sobre `crm_cliente` y `crm_contacto_cliente`: aislamiento sin
+filtro de app, fail-closed, bypass, `WITH CHECK`. `RLS_ENABLED=False` sigue por defecto.
+
 **Criterios de rollout / follow-ups (antes de activar en prod y extender a las ~92 tablas):**
 1. **Rol de BD dedicado no-dueño** (sin `BYPASSRLS`) para el runtime, con migraciones
    corriendo como dueño. Da fail-closed *natural* a nivel de app sin depender del default

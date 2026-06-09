@@ -158,10 +158,11 @@ def rls_bypass(using: str = DEFAULT_DB_ALIAS):
         apply_system_default(using)
 
 
-# Tablas multi-tenant incluidas en el piloto de RLS (tabla -> columna empresa).
-# Cubre las tres variantes de nombre de columna del esquema. El resto de tablas
-# se incorporará en PRs siguientes (ver docs/planes/05-seguridad-hardening.md).
+# Tablas multi-tenant con RLS forzado (tabla -> columna empresa). Cubre las tres
+# variantes de nombre de columna del esquema. El rollout avanza por lotes, un PR
+# por grupo de apps (ver docs/planes/05-seguridad-hardening.md, P0-1 follow-up 5).
 PILOT_TABLES = {
+    # Lote 1 — piloto inicial.
     "sucursales": "id_empresa",
     "ventas_pedido": "id_empresa_id",
     "ventas_nota_venta": "id_empresa_id",
@@ -169,4 +170,13 @@ PILOT_TABLES = {
     "finanzas_transaccion_financiera": "id_empresa_id",
     "cxc_gestioncobranza": "empresa_id",
     "cxc_acuerdopago": "empresa_id",
+    # Lote 2 — inventario / compras / crm.
+    "inventario_producto": "id_empresa_id",
+    "inventario_stock_actual": "id_empresa_id",
+    "inventario_movimiento_inventario": "id_empresa_id",
+    "compras_orden_compra": "id_empresa_id",
+    "compras_recepcion_mercancia": "id_empresa_id",
+    "crm_cliente": "id_empresa_id",
+    "crm_contacto_cliente": "id_empresa_id",
+    "crm_direccion_cliente": "id_empresa_id",
 }
