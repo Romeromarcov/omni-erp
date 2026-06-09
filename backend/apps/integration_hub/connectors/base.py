@@ -12,6 +12,7 @@ Convenciones:
 - Errores de conexión: levantar ConnectorConnectionError
 - Errores de datos: levantar ConnectorDataError
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 # ── Excepciones ──────────────────────────────────────────────────────────────
+
 
 class ConnectorError(Exception):
     """Base para todos los errores de conectores."""
@@ -45,6 +47,7 @@ class ConnectorNotSupportedError(ConnectorError):
 
 
 # ── Resultados normalizados ───────────────────────────────────────────────────
+
 
 @dataclass
 class TestConnectionResult:
@@ -76,6 +79,7 @@ class SyncResult:
 
 # ── Clase base abstracta ──────────────────────────────────────────────────────
 
+
 class BaseConnector(ABC):
     """
     Interfaz base que todos los conectores deben implementar.
@@ -93,9 +97,7 @@ class BaseConnector(ABC):
     def __init__(self, instancia: "ConectorInstancia"):
         self.instancia = instancia
         self._config = instancia.get_config()
-        self.logger = logging.getLogger(
-            f"{__name__}.{self.__class__.__name__}"
-        )
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     # ── Conexión ──────────────────────────────────────────────────────────────
 
@@ -112,7 +114,9 @@ class BaseConnector(ABC):
 
     # ── Lectura (pull) ────────────────────────────────────────────────────────
 
-    def pull_contactos(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
+    def pull_contactos(
+        self, desde: datetime | None = None, limite: int = 500
+    ) -> list[dict]:
         """
         Trae contactos (clientes/proveedores) del sistema externo.
         Retorna lista de dicts normalizados con claves estándar.
@@ -121,37 +125,49 @@ class BaseConnector(ABC):
             f"{self.PROVIDER_NAME} no soporta sync de contactos"
         )
 
-    def pull_productos(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
+    def pull_productos(
+        self, desde: datetime | None = None, limite: int = 500
+    ) -> list[dict]:
         """Trae productos del sistema externo."""
         raise ConnectorNotSupportedError(
             f"{self.PROVIDER_NAME} no soporta sync de productos"
         )
 
-    def pull_pedidos_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
+    def pull_pedidos_venta(
+        self, desde: datetime | None = None, limite: int = 200
+    ) -> list[dict]:
         """Trae pedidos de venta del sistema externo."""
         raise ConnectorNotSupportedError(
             f"{self.PROVIDER_NAME} no soporta sync de pedidos de venta"
         )
 
-    def pull_pedidos_compra(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
+    def pull_pedidos_compra(
+        self, desde: datetime | None = None, limite: int = 200
+    ) -> list[dict]:
         """Trae órdenes de compra del sistema externo."""
         raise ConnectorNotSupportedError(
             f"{self.PROVIDER_NAME} no soporta sync de pedidos de compra"
         )
 
-    def pull_facturas_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
+    def pull_facturas_venta(
+        self, desde: datetime | None = None, limite: int = 200
+    ) -> list[dict]:
         """Trae facturas de venta del sistema externo."""
         raise ConnectorNotSupportedError(
             f"{self.PROVIDER_NAME} no soporta sync de facturas de venta"
         )
 
-    def pull_pagos(self, desde: datetime | None = None, limite: int = 300) -> list[dict]:
+    def pull_pagos(
+        self, desde: datetime | None = None, limite: int = 300
+    ) -> list[dict]:
         """Trae pagos del sistema externo."""
         raise ConnectorNotSupportedError(
             f"{self.PROVIDER_NAME} no soporta sync de pagos"
         )
 
-    def pull_inventario(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
+    def pull_inventario(
+        self, desde: datetime | None = None, limite: int = 500
+    ) -> list[dict]:
         """Trae movimientos o niveles de inventario del sistema externo."""
         raise ConnectorNotSupportedError(
             f"{self.PROVIDER_NAME} no soporta sync de inventario"
@@ -172,6 +188,18 @@ class BaseConnector(ABC):
         """Crea o actualiza un producto en el sistema externo."""
         raise ConnectorNotSupportedError(
             f"{self.PROVIDER_NAME} no soporta push de productos"
+        )
+
+    def push_entidades(self, tipo_entidad: str, registros: list[dict]) -> "SyncResult":
+        """
+        Exporta un lote de registros canónicos al sistema externo de destino.
+
+        Vía de salida genérica usada por conectores de destino (p. ej. Google
+        Sheets) en flujos outbound: el ExportEngine lee del origen con ``pull_*``
+        y vuelca aquí. Retorna un SyncResult con los contadores de la operación.
+        """
+        raise ConnectorNotSupportedError(
+            f"{self.PROVIDER_NAME} no soporta exportación masiva de entidades"
         )
 
     # ── Utilidades ────────────────────────────────────────────────────────────

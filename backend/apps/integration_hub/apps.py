@@ -10,4 +10,8 @@ class IntegrationHubConfig(AppConfig):
         # Registrar conectores al iniciar la app
         from apps.integration_hub.connectors.registry import registry
         from apps.integration_hub.connectors.odoo.connector import OdooConnector
+        from apps.integration_hub.connectors.google_sheets.connector import (
+            GoogleSheetsConnector,
+        )
         registry.register(OdooConnector)
+        registry.register(GoogleSheetsConnector)

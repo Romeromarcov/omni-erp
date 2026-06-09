@@ -39,6 +39,12 @@ django-ratelimit>=4.0
 # mayor riesgoso, y aligera la imagen de producción).
 httpx==0.28.1  # requerido por mcp>=1.23.0 (httpx>=0.27.1)
 
+# ── Integration Hub: conector Google Sheets (export Odoo→Sheets) ─────────────
+# Escritura a Google Sheets con cuenta de servicio. Se importan de forma
+# perezosa en el conector → no rompen `manage.py check` si faltaran.
+gspread==6.2.1
+google-auth==2.53.0
+
 # ── CxC — Cobranza Inteligente ───────────────────────────────────────────────
 # BCV scraping (bcv_scrape.py en integration_hub/connectors/tasas_ve/)
 beautifulsoup4==4.13.4

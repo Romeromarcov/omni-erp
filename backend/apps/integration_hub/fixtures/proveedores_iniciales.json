@@ -66,5 +66,22 @@
       "activo": true,
       "orden": 4
     }
+  },
+  {
+    "model": "integration_hub.conectorproveedor",
+    "pk": "00000000-0000-0000-0000-000000000005",
+    "fields": {
+      "codigo": "google_sheets",
+      "nombre": "Google Sheets",
+      "descripcion": "Exporta datos de otro conector (p. ej. Odoo) a hojas de Google Sheets, una pestaña por entidad. Autenticación con cuenta de servicio; la planilla y las pestañas se crean automáticamente. Escritura por upsert (clave id_externo).",
+      "icono_url": "/static/integration_hub/icons/google_sheets.svg",
+      "versiones_soportadas": ["v4"],
+      "capacidades": ["contactos", "productos", "pedidos_venta", "pedidos_compra", "facturas_venta", "pagos", "inventario"],
+      "requiere_url": false,
+      "requiere_db": false,
+      "estado": "activo",
+      "activo": true,
+      "orden": 5
+    }
   }
 ]
