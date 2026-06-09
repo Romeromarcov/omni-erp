@@ -45,7 +45,9 @@ def test_constantes_seniat_valores_literales():
 
 
 def test_iva_negativo_mensaje_exacto():
-    with pytest.raises(ImpuestoError, match="El subtotal no puede ser negativo."):
+    # Anclado (^...$): un match sin anclar haría sobrevivir al mutante que
+    # envuelve el mensaje (XX...XX contiene el patrón como substring).
+    with pytest.raises(ImpuestoError, match=r"^El subtotal no puede ser negativo\.$"):
         calcular_iva(Decimal("-0.01"), "GENERAL")
 
 
@@ -175,6 +177,32 @@ def test_pedido_tipo_iva_default_general():
     assert r["iva_general"] == Decimal("16.00")
 
 
+def test_pedido_varias_lineas_del_mismo_tipo_ACUMULAN():
+    """Dos líneas por tipo: los acumuladores deben SUMAR, no reasignar.
+
+    Mata los mutantes `+=` → `=` de base_exenta/base_reducida/base_general/
+    iva_reducido/iva_general (sobrevivían porque el test mixto usaba UNA línea
+    por tipo, donde sumar y reasignar son indistinguibles).
+    """
+    lineas = [
+        {"subtotal": Decimal("100"), "tipo_iva": "GENERAL"},
+        {"subtotal": Decimal("200"), "tipo_iva": "GENERAL"},
+        {"subtotal": Decimal("50"), "tipo_iva": "REDUCIDO"},
+        {"subtotal": Decimal("150"), "tipo_iva": "REDUCIDO"},
+        {"subtotal": Decimal("30"), "tipo_iva": "EXENTO"},
+        {"subtotal": Decimal("70"), "tipo_iva": "EXENTO"},
+    ]
+    r = calcular_impuestos_pedido(lineas, metodo_pago="EFECTIVO_BS")
+    assert r["subtotal"] == Decimal("600")
+    assert r["base_general"] == Decimal("300")    # 100+200, no 200
+    assert r["base_reducida"] == Decimal("200")   # 50+150, no 150
+    assert r["base_exenta"] == Decimal("100")     # 30+70, no 70
+    assert r["iva_general"] == Decimal("48.00")   # 16+32, no 32
+    assert r["iva_reducido"] == Decimal("16.00")  # 4+12, no 12
+    assert r["total_iva"] == Decimal("64.00")
+    assert r["total"] == Decimal("664.00")
+
+
 # ── Ramas con `empresa` (mocks de los modelos — sigue siendo unit, sin BD) ──────
 
 from types import SimpleNamespace
@@ -192,13 +220,33 @@ def _empresa_ve(**kwargs):
 def test_iva_con_tasa_configurada_por_empresa():
     from apps.fiscal.models import TasaIVAEmpresa
 
-    with mock.patch.object(
-        TasaIVAEmpresa.objects, "get", return_value=SimpleNamespace(tasa="0.10")
-    ):
+    def _get(**kwargs):
+        # Consciente de kwargs: el lookup DEBE pedir activo=True (mata el
+        # mutante activo=True→False, que un return_value ciego dejaba vivo).
+        if kwargs.get("activo") is True:
+            return SimpleNamespace(tasa="0.10")
+        raise TasaIVAEmpresa.DoesNotExist
+
+    with mock.patch.object(TasaIVAEmpresa.objects, "get", side_effect=_get):
         r = calcular_iva(Decimal("100"), "GENERAL", empresa=_empresa_ve())
     assert r["tasa"] == Decimal("0.10")
     assert r["monto_iva"] == Decimal("10.00")
     assert r["total"] == Decimal("110.00")
+
+
+def test_igtf_empresa_sin_atributo_localizacion_aplica():
+    """Empresa SIN el atributo localizacion_legal_activa: el default del getattr
+    es True → el IGTF aplica (mata el mutante default True→False)."""
+    from apps.fiscal.models import ConfiguracionFiscalEmpresa
+
+    empresa = SimpleNamespace(pais_codigo_iso="VE")  # sin localizacion_legal_activa
+    with mock.patch.object(
+        ConfiguracionFiscalEmpresa.objects, "get",
+        side_effect=ConfiguracionFiscalEmpresa.DoesNotExist,
+    ):
+        r = calcular_igtf(Decimal("100"), "DIVISA_EFECTIVO", empresa=empresa)
+    assert r["aplica"] is True
+    assert r["monto_igtf"] == Decimal("3.00")
 
 
 def test_iva_empresa_sin_config_usa_default_por_tipo():
@@ -285,7 +333,12 @@ def _patch_fiscal_config(config=None, tasa_general=None):
         )
 
     def _tasa_get(**kwargs):
-        if kwargs.get("tipo") == "GENERAL" and tasa_general is not None:
+        # Exigir activo=True mata el mutante activo=True→False del lookup.
+        if (
+            kwargs.get("tipo") == "GENERAL"
+            and kwargs.get("activo") is True
+            and tasa_general is not None
+        ):
             return SimpleNamespace(tasa=tasa_general)
         raise TasaIVAEmpresa.DoesNotExist
 
