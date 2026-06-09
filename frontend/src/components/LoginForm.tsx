@@ -28,7 +28,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading, error }) => {
 
   return (
     <PageLayout maxWidth={350}>
-      <h2 style={{ marginBottom: 24, color: '#1a237e', fontWeight: 700, fontSize: 26, textAlign: 'center' }}>Iniciar sesión</h2>
       <form onSubmit={handleSubmit(submit)} style={{ display: 'flex', flexDirection: 'column', gap: 18 }} noValidate>
         <TextField
           label="Usuario"
