@@ -9,10 +9,10 @@
 
 ## Veredicto honesto
 
-El plan está **parcialmente implementado**: **Fases 0, 1 y 2 cerradas y verificadas**, y
-la **Fase 3 en curso** (mutation testing mide baselines reales; cobertura backend subiendo por
-ratchet). El criterio de "cero dudas" (cobertura 90/80, mutation ≥80%, E2E, gates
-finales bloqueantes) **todavía NO se cumple**. **No se debe afirmar "100% / cero dudas" aún.**
+El plan está **mayormente implementado**: **Fases 0, 1, 2 y 3 cerradas y verificadas** (cobertura
+backend **93.25%**, mutation ≥80% en los 4 módulos críticos). Quedan la **Fase 4** (frontend a 80%
++ E2E de los 5 flujos) y la **Fase 5** (gates finales bloqueantes + branch protection del owner).
+El criterio integral de "cero dudas" **aún no se cumple completo** por las fases 4–5 pendientes.
 
 > **Fase 2 CERRADA al 2026-06-09.** Su DoD formal (plan §Fases: *"aislamiento R-CODE-1 cubre
 > todos los ViewSets; contract-drift en CI"*) está **cumplida y verificada**: los guards de
@@ -22,6 +22,39 @@ finales bloqueantes) **todavía NO se cumple**. **No se debe afirmar "100% / cer
 > restantes (**cambio de divisa, nómina**) dependen de features rotas/no implementadas —no de
 > falta de test— y se difieren con **CTF-013** (defectos verificados documentados). La migración
 > de `tests_api/` por capas se difiere con **CTF-014** (limpieza, sin pérdida de cobertura).
+
+### Cierre de Fase 3 — 2026-06-09 (rama `claude/fase3-backfill-1`)
+
+**La DoD de Fase 3 ("cobertura objetivo + mutation ≥80% en críticos") está CUMPLIDA y medida:**
+
+- **Cobertura backend: 71.58% → 93.25%** (objetivo 90% superado; ratchet 71→93 por escalones
+  74→86→93). Suite final: **3534 passed, 12 skipped, 0 failed** (el único "error" de la corrida
+  paralela —`test_rls_lote2`— pasa en aislamiento: contención de roles de clúster por las 4 BDs
+  de agentes paralelos del propio backfill; preexistente de CTF-012, no introducido aquí).
+- **Mutation ≥80% en los 4 módulos críticos** (medición local reproducible, `PYTHONUTF8=1`):
+  fiscal **84.5%** (163/193) · cxc_scoring **90.0%** (27/30) · cxc_aging **90.5%** (95/105) ·
+  nómina LOTTT **93.5%** (202/216). Sobrevivientes restantes: `siguiente_numero` (requiere BD;
+  cubierto por `test_fiscal_concurrencia` en la suite normal) y mutantes equivalentes.
+
+**Cómo se logró (1 día, ~1100 tests nuevos en 2 lotes de backfill paralelo):**
+1. *Palancas:* `testpaths` colecta los tests in-app huérfanos (34 tests del connector Odoo/tasas
+   VE que nunca corrían) y `.coveragerc` omite código de test de la medición (estándar).
+2. *Backfill por frentes:* hub (sync_engine 0→85%, odoo client→100%), mcp_server 47→92%,
+   agentes 0→100%, finanzas (models 98%, serializers 94%, views 94%), core (auth_views 99%,
+   models/viewsets/email 100%), ventas (serializers 94%, mcp 96%), servicio_cliente/asistencia/
+   nómina/gastos/cxc-api ~100%, contabilidad/tesorería/acuerdos 100%, dsl/pdf/misc 100%.
+3. *Fix de medición de mutación:* mutmut solo cuenta como killed el exit 1; los mutantes que
+   rompen el import (exit 2 de pytest, error de colección) contaban como survived →
+   **los scores históricos estaban subestimados** (nómina real 93.5% vs 69.4% reportado).
+   `backend/scripts/mut_runner.py` normaliza el exit code; el nightly ya lo usa.
+
+**Bonus crítico:** el backfill destapó **~30 bugs reales de producto** documentados en los tests
+con comentario BUG (sin enmascarar): jobs de sync que quedan colgados (`SyncResult.procesados`),
+upserts del hub rotos contra los modelos reales, `OperacionCambioDivisa` importa un modelo
+inexistente (peor que CTF-013), `finanzas/utils` importa `SesionCaja` inexistente, sesiones de
+caja por API rotas, `rapidfuzz` usado sin estar en requirements, tools MCP de inventario/ventas
+rotas contra el modelo real, 500s en analizar-cobranza/reorden, horas UTC en asistencia, y más.
+Estos pasan al backlog de corrección (cada fix deberá actualizar el test que lo fija).
 
 ### Verificación 2026-06-09 (ejecutada en este entorno)
 
@@ -51,8 +84,8 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
 | # | Criterio | Estado | Medido |
 |---|---|---|---|
 | 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; trivy/eslint-security aún no bloqueantes |
-| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **71.58%** (ratchet 71), front **~55%**; diff-cover **ya 95%** |
-| 3 | Mutation ≥80% críticos | 🟡 | fiscal 46%, nómina 64%, cxc_scoring 70%, cxc_aging 52% (antes: no-op) |
+| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🟡 | back **93.25% ✅** (ratchet 93); front **~55%** (Fase 4); diff-cover **95% ✅** |
+| 3 | Mutation ≥80% críticos | 🟢 | fiscal **84.5%**, nómina **93.5%**, cxc_scoring **90%**, cxc_aging **90.5%** (medición corregida con `scripts/mut_runner.py`) |
 | 4 | Aislamiento multi-tenant | 🟢 | guard parametrizado ~99 ViewSets + comportamiento |
 | 5 | Authz + contrato por endpoint | 🟡 | guard authz ✅; schemathesis no-bloqueante |
 | 6 | E2E flujos críticos | 🔴 | solo login smoke |
@@ -147,7 +180,7 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 | **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟢 **CERRADA** (2026-06-03) | bandit/semgrep(+reglas Omni)/ruff/mypy/pip-audit/npm audit/trivy/gitleaks + **contract (OpenAPI+schemathesis)** + **mutmut nightly** + factory_boy/hypothesis/xdist; **3 matrices A1** con columnas; diff-cover bloqueante. Único diferimiento (`eslint-plugin-security`) formalizado en **CTF-006** (frontend pausado) → DoD cumplida. |
 | **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
 | **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟢 **CERRADA** (2026-06-09) | ✅ TEST-1 (aislamiento auto-descubierto), TEST-2 (estructura `tests/` + aislamiento de comportamiento), TEST-3 (property), TEST-4 (races), **contract-drift bloqueante en CI**. **DoD formal cumplida** (aislamiento cubre todos los ViewSets + contract-drift). TEST-5: compra/cobranza/manufactura/venta ✅; cambio-divisa y nómina → **CTF-013** (feature rota/stub). Migración `tests_api/`→capas → **CTF-014**. |
-| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟡 en curso | cobertura backend **71.41%** (ratchet 71), frontend ~55%; backfill finanzas/views (38.9→52.6%), auth_views (55→62%), mcp_server scope (44→47%); **mutation matrix real** con baselines (fiscal 46/nómina 64/cxc_scoring 70/cxc_aging 52) — falta subir a 80 y cobertura a 90 |
+| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟢 **CERRADA** (2026-06-09) | cobertura backend **93.25%** (objetivo 90% superado; ratchet 93), **3534 tests verdes**; mutation **≥80% en los 4 críticos** (fiscal 84.5/cxc 90-90.5/nómina 93.5, medición corregida — `scripts/mut_runner.py`); ~30 bugs reales destapados y documentados en los tests. El frontend (~55%) pertenece a la **Fase 4** según el plan. |
 | **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright (solo login smoke); FE en ~55% |
 | **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**. *Falta:* trivy/schemathesis/E2E bloqueantes, branch protection (requiere permisos del owner) |
 
@@ -246,12 +279,13 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
 - **TEST-6** — frontend: MSW (instalado, sin usar), `openapi-typescript` + drift, Playwright E2E,
   pisos de cobertura por carpeta.
 
-### Backfill de cobertura (semanas, por ratchet)
-- **COV-1** — subir `--cov-fail-under` por escalones conforme entra backfill (backend). Estado: **71**
-  (medido 71.41% al 2026-06-09); siguientes escalones 75→85→90.
-- **COV-2** — subir thresholds vitest 55→65→75→80 (frontend).
-- **COV-3** — `diff-cover --fail-under=95` bloqueante en PR.
-- **MUT-1** — `mutmut` score ≥80% en módulos críticos (job nightly).
+### Backfill de cobertura (por ratchet)
+- **COV-1 — ✅ CUMPLIDO (2026-06-09).** `--cov-fail-under=93` (medido 93.25%; objetivo 90 superado).
+- **COV-2** — subir thresholds vitest 55→65→75→80 (frontend) — Fase 4.
+- **COV-3 — ✅** `diff-cover --fail-under=95` bloqueante en PR.
+- **MUT-1 — ✅ CUMPLIDO (2026-06-09).** Score ≥80% en los 4 módulos críticos (fiscal 84.5, cxc
+  90/90.5, nómina 93.5) con `scripts/mut_runner.py` (corrige la clasificación de exit codes; el
+  nightly lo usa).
 
 ---
 
