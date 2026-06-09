@@ -178,7 +178,11 @@ const LoginPage: React.FC = () => {
                   Gestión empresarial integral · multimoneda
                 </Typography>
               </Box>
-              <Typography variant="h6" sx={{ textAlign: 'center' }}>
+              <Typography
+                variant="h5"
+                component="h1"
+                sx={{ textAlign: 'center', fontWeight: 700, color: '#1a237e' }}
+              >
                 Iniciar sesión
               </Typography>
               <LoginForm onSubmit={handleLogin} loading={loading} error={error} />

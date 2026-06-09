@@ -29,3 +29,8 @@ dist-ssr
 *.sln
 *.sw?
 /coverage
+
+# Playwright (E2E)
+/test-results
+/playwright-report
+/playwright/.cache
