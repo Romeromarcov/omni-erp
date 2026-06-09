@@ -8,35 +8,44 @@ on:
 
 jobs:
   # ──────────────────────────────────────────────────────────────
-  # Mutation testing (mutmut) sobre módulos críticos. No-bloqueante al inicio;
-  # el objetivo de score ≥80% se endurece en Fase 3.
+  # Mutation testing (mutmut) — MATRIX por módulo de cálculo puro.
+  #
+  # mutmut usa UN runner por corrida, así que la mutación por-módulo se hace con
+  # una entrada de matrix por archivo, cada una con su runner rápido (test unit
+  # puro y determinista). Se apunta a la lógica de CÁLCULO (no a la orquestación
+  # ORM, que es lenta de mutar y de bajo valor). No-bloqueante: reporta el score;
+  # el objetivo ≥80% se endurece en Fase 3.
   # ──────────────────────────────────────────────────────────────
   mutation:
-    name: "Mutation (mutmut — módulos críticos)"
+    name: "Mutation (${{ matrix.nombre }})"
     runs-on: ubuntu-latest
     continue-on-error: true
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_DB: omni_erp
-          POSTGRES_USER: omni_erp
-          POSTGRES_PASSWORD: omni_erp_ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nombre: "fiscal"
+            paths: "apps/fiscal/services.py"
+            runner: "python -m pytest tests/unit/test_fiscal_calculos.py -x -q --no-cov -p no:cacheprovider"
+          - nombre: "nomina_lottt"
+            paths: "apps/nomina/calculo_lottt.py"
+            runner: "python -m pytest tests_api/test_nomina_lottt.py -x -q --no-cov -p no:cacheprovider"
+          - nombre: "cxc_scoring"
+            paths: "apps/cuentas_por_cobrar/services_scoring.py"
+            runner: "python -m pytest tests/unit/test_cxc_calculos.py -x -q --no-cov -p no:cacheprovider"
+          - nombre: "cxc_aging"
+            paths: "apps/cuentas_por_cobrar/services_aging.py"
+            runner: "python -m pytest tests/unit/test_cxc_calculos.py -x -q --no-cov -p no:cacheprovider"
     env:
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      # Los runners son unit puros (sin BD); declaramos las vars solo para que
+      # config.settings importe sin fallar.
       DB_HOST: localhost
       DB_PORT: "5432"
       DB_NAME: omni_erp
       DB_USER: omni_erp
       DB_PASSWORD: omni_erp_ci
-      DJANGO_ENV: dev
-      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
       REDIS_URL: "redis://localhost:6379/0"
     steps:
       - uses: actions/checkout@v4
@@ -49,12 +58,13 @@ jobs:
       - name: Install deps
         working-directory: backend
         run: pip install -r requirements-dev.txt
-      - name: Migrar
+      - name: "Mutmut — ${{ matrix.nombre }}"
         working-directory: backend
-        run: python manage.py migrate --noinput
-      - name: Mutmut (módulos de cálculo críticos)
-        working-directory: backend
-        # Config en backend/setup.cfg [mutmut]. No-bloqueante; reporta el score.
+        # No-bloqueante; reporta el score del módulo.
         run: |
-          mutmut run || true
+          mutmut run \
+            --paths-to-mutate="${{ matrix.paths }}" \
+            --runner="${{ matrix.runner }}" \
+            --no-progress || true
+          echo "===== Resultados ${{ matrix.nombre }} ====="
           mutmut results || true

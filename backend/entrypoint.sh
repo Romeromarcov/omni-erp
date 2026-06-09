@@ -34,12 +34,14 @@ fi
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 
-# Seed inicial opcional e idempotente. Activar con RUN_SEED=1 una sola vez en un
-# entorno nuevo para crear la empresa y el superusuario por defecto. El comando
-# ya verifica existencia, así que es seguro re-ejecutarlo; con RUN_SEED sin
-# definir, este bloque no hace nada.
+# Seed demo opcional e idempotente, SOLO para entornos de desarrollo. Activar con
+# RUN_SEED=1 en un entorno nuevo para crear la empresa y el superusuario demo. El
+# comando create_initial_data está bloqueado fuera de DEBUG (crea admin/admin123),
+# así que en prod este bloque no siembra nada aunque RUN_SEED=1 (|| true lo absorbe).
+# Para sembrar una empresa en PRODUCCIÓN usar:
+#   python manage.py seed_empresa_inicial --nombre-legal ... --rif ... (ver docs/planes/runbook-arranque-piloto.md)
 if [ "${RUN_SEED}" = "1" ]; then
-    echo "RUN_SEED=1: ejecutando create_initial_data (idempotente)..."
+    echo "RUN_SEED=1: ejecutando create_initial_data (dev-only, idempotente)..."
     python manage.py create_initial_data || true
 fi
 

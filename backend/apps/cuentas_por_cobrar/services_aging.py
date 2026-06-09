@@ -73,13 +73,9 @@ class PartidaCartera:
         total_abonado = cxc.abonos.aggregate(t=Sum("monto"))["t"] or Decimal("0")
         saldo = cxc.monto - total_abonado
 
-        cliente_nombre = ""
-        if hasattr(cxc, "cliente") and cxc.cliente:
-            cliente_nombre = getattr(cxc.cliente, "razon_social", str(cxc.cliente))
-
         return cls(
-            cliente_id=str(cxc.cliente_id),
-            cliente_nombre=cliente_nombre,
+            cliente_id=cxc.cliente_ref,
+            cliente_nombre=cxc.cliente_display,
             orden_ref=cxc.referencia_externa or str(cxc.pk),
             monto_total=cxc.monto,
             monto_pendiente=saldo,

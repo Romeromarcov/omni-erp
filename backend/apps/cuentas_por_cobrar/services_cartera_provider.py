@@ -120,10 +120,25 @@ class NativeCarteraProvider(CarteraProvider):
         return partidas
 
     def get_pagos_cliente(self, cliente_id: str) -> list[dict]:
+        import uuid
+
+        from django.db.models import Q
+
         from apps.cuentas_por_cobrar.models import AbonoCxC
 
+        # El cliente_id puede ser el PK de crm.Cliente (UUID, FK) o un id externo
+        # (Odoo, no-UUID). Plan D-D1: se hace match contra ambas formas. La FK solo
+        # se filtra si el valor es un UUID válido (filtrar un UUIDField con un id
+        # externo no-UUID lanzaría error).
+        filtro = Q(cuenta_por_cobrar__cliente_externo_id=cliente_id)
+        try:
+            uuid.UUID(str(cliente_id))
+            filtro |= Q(cuenta_por_cobrar__cliente_id=cliente_id)
+        except (ValueError, TypeError, AttributeError):
+            pass
+
         abonos = AbonoCxC.objects.filter(
-            cuenta_por_cobrar__cliente_id=cliente_id,
+            filtro,
             cuenta_por_cobrar__empresa=self.empresa,
         ).select_related("cuenta_por_cobrar").order_by("-fecha_abono")
 

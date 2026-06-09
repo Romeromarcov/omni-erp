@@ -4,7 +4,10 @@ from .models import CuentaPorCobrar
 
 
 class CuentaPorCobrarSerializer(serializers.ModelSerializer):
-    cliente_nombre = serializers.CharField(source="cliente.razon_social", read_only=True)
+    # Nombre resuelto del deudor: razón social del crm.Cliente (FK) o el nombre
+    # externo denormalizado (Odoo). Plan D-D1: la FK es opcional.
+    cliente_nombre = serializers.CharField(source="cliente_display", read_only=True)
+    cliente_ref = serializers.CharField(read_only=True)
     saldo_pendiente = serializers.SerializerMethodField()
 
     class Meta:

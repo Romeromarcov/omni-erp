@@ -7853,6 +7853,33 @@ export interface paths {
         patch: operations["saas_planes_partial_update"];
         trace?: never;
     };
+    "/saas/signup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/saas/signup/ — auto-registro de un prospecto (Plan C — Fase C3).
+         * @description Endpoint PÚBLICO y con rate-limit. Crea, en una sola transacción:
+         *       - una Empresa nueva,
+         *       - su usuario administrador (es_superusuario_omni e is_staff forzados a
+         *         False — nunca se aceptan del cliente),
+         *       - una Suscripcion TRIAL de 30 días sobre un plan activo.
+         *
+         *     No devuelve tokens: el frontend hace login con las credenciales recién
+         *     creadas, reutilizando el flujo seguro de sesión (cookie httpOnly de refresh).
+         */
+        post: operations["saas_signup_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/saas/suscripciones/": {
         parameters: {
             query?: never;
@@ -40224,6 +40251,23 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Plan"];
                 };
+            };
+        };
+    };
+    saas_signup_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

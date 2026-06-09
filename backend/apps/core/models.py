@@ -526,7 +526,7 @@ class Dispositivo(models.Model):
     def puede_crear_caja_fisica(self):
         """Retorna True si el usuario creador tiene permisos para crear cajas físicas"""
         # Por ahora, solo superusuarios pueden crear cajas
-        return getattr(self.creado_por, "es_superusuario_innova", False)
+        return getattr(self.creado_por, "es_superusuario_omni", False)
 
     def marcar_no_preguntar_caja(self):
         """Marca que no se debe volver a preguntar sobre crear caja física"""
