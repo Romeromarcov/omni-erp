@@ -27,6 +27,31 @@ fi
 # migración y arranques lentos. Con la variable sin definir, el web migra normal.
 if [ "${SKIP_MIGRATIONS}" = "1" ]; then
     echo "SKIP_MIGRATIONS=1: omito migrate/seed/collectstatic (servicio worker/beat)."
+
+    # worker/beat no migran, pero SÍ necesitan el esquema ya aplicado (p. ej.
+    # beat con DatabaseScheduler consulta tablas de django_celery_beat). El
+    # `nc -z` de arriba solo garantiza que Postgres acepta conexiones, no que el
+    # servicio web ya haya migrado. En entornos efímeros (previews de PR) worker/
+    # beat arrancan antes que termine el migrate del web y crashean con tablas
+    # inexistentes. Para evitar esa carrera, esperamos a que NO haya migraciones
+    # pendientes. Desactivable con WAIT_FOR_MIGRATIONS=0 (p. ej. primer arranque
+    # de un entorno donde el web aún no existe).
+    if [ "${WAIT_FOR_MIGRATIONS:-1}" = "1" ]; then
+        echo "Esperando a que el servicio web aplique las migraciones (migrate --check)..."
+        MAX_MIG_RETRIES="${WAIT_FOR_MIGRATIONS_RETRIES:-60}"
+        MIG_RETRIES=0
+        until python manage.py migrate --check >/dev/null 2>&1; do
+            MIG_RETRIES=$((MIG_RETRIES + 1))
+            if [ "$MIG_RETRIES" -ge "$MAX_MIG_RETRIES" ]; then
+                echo "Error: hay migraciones pendientes tras ${MAX_MIG_RETRIES} reintentos." >&2
+                exit 1
+            fi
+            echo "  migraciones pendientes; reintento ${MIG_RETRIES}/${MAX_MIG_RETRIES} en 5s..."
+            sleep 5
+        done
+        echo "Migraciones aplicadas."
+    fi
+
     echo "Starting process..."
     exec "$@"
 fi
