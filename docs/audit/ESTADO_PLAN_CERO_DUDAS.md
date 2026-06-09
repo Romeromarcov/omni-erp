@@ -42,7 +42,7 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
 | # | Criterio | Estado | Medido |
 |---|---|---|---|
 | 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; trivy/eslint-security aún no bloqueantes |
-| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **71.08%** (ratchet 70), front **~55%**; diff-cover **ya 95%** |
+| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🔴 | back **71.41%** (ratchet 71), front **~55%**; diff-cover **ya 95%** |
 | 3 | Mutation ≥80% críticos | 🟡 | fiscal 46%, nómina 64%, cxc_scoring 70%, cxc_aging 52% (antes: no-op) |
 | 4 | Aislamiento multi-tenant | 🟢 | guard parametrizado ~99 ViewSets + comportamiento |
 | 5 | Authz + contrato por endpoint | 🟡 | guard authz ✅; schemathesis no-bloqueante |
@@ -50,7 +50,7 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
 | 7 | mypy dinero + tsc | 🟢 | mypy bloqueante verde; `tsc -b` verde |
 | 8 | Revisión seguridad adversarial | 🟢 | SECURITY_REVIEW + `/security-review` |
 
-### Avance sesión 2026-06-09 (rama `claude/cero-dudas-reanudar`)
+### Avance sesión 2026-06-09 (rama `claude/cero-dudas-reanudar`, PR #39 ✅ mergeado)
 - **Gate flaky corregido (bloqueante real):** nuevo `backend/conftest.py` raíz registra/carga el
   perfil Hypothesis `ci` (`deadline=None`, suprime `HealthCheck.too_slow`). Elimina el
   `DeadlineExceeded` intermitente de `test_score_monotono_en_cada_entrada` bajo `-n auto`. Aplica a
@@ -61,9 +61,23 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
   `cuentas-bancarias/{id}/movimientos-cuenta-bancaria`, `metodos-pago/buscar_reutilizar`) y
   aislamiento cross-tenant (B no ve objetos privados de A; ambas ven la tasa BCV global).
   **`finanzas/views.py` 38.9%→52.6%**, `serializers.py` 46.1%→48.9%.
+- **Fix E2E:** `login.smoke.spec.ts` corregido (strict-mode violation — `/login` muestra el título
+  "Iniciar sesión" en dos headings; acotado con `.first()`). E2E vuelve a verde.
 - **Cobertura total:** 70.53%→**71.08%**; ratchet **69→70** en `pytest.ini`.
-- *Pendiente inmediato (siguiente PR focal):* auth_views + mcp_server (tarea #3), ventas/compras
-  por API (tarea #4), seguir subiendo el ratchet 70→75→…→90.
+
+### Avance sesión 2026-06-09 (cont.) — rama `claude/cero-dudas-authz` (PR #40)
+- **Backfill auth_views (COV/auth, seguridad):** `tests_api/test_auth_views_cobertura.py` — 16 tests
+  de los endpoints que faltaban: `login_view` (200 + cookie httpOnly de refresh, 400/401/inactivo,
+  rate-limit 429), `verify_token_view`, `user_profile_view`, `update_profile_view` (allowlist de
+  campos), rotación de refresh + rate-limit. **`auth_views.py` 55.4%→62.3%**.
+- **Backfill mcp_server (COV/mcp, A2-8 enforcement de scope):** `tests_api/test_mcp_server_scope.py`
+  — 16 tests del núcleo de seguridad: `_resolve_token` (UUID inválido/inexistente/inactivo/expirado),
+  **gate del comodín `*` (SEC-NEW-4)** —`*` auto-otorgado por usuario normal se filtra; de sistema se
+  conserva—, `_require_scope`, y nivel de herramienta (`omni_ping`, `omni_get_empresas`).
+  **`mcp_server.py` 44.7%→46.6%** (cubierto el núcleo de scope; resto = cuerpos de tools con queries).
+- **Cobertura total:** 71.08%→**71.41%**; ratchet **70→71**. Suite: **2343 passed, 9 skipped, 0 failed**.
+- *Pendiente inmediato (siguiente PR focal):* ventas/compras por API (tarea #4), seguir subiendo el
+  ratchet 71→75→…→90; mutation ≥80%; E2E de los 5 flujos; gates finales bloqueantes.
 
 ### Avance sesión 2026-06-07 (rama `claude/gallant-sagan-I1nRI`, PR #26)
 - **Mutation testing reparado:** `mutmut` estaba roto (su pin permitía `junit-xml` 1.8 sin
@@ -111,7 +125,7 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 | **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟢 **CERRADA** (2026-06-03) | bandit/semgrep(+reglas Omni)/ruff/mypy/pip-audit/npm audit/trivy/gitleaks + **contract (OpenAPI+schemathesis)** + **mutmut nightly** + factory_boy/hypothesis/xdist; **3 matrices A1** con columnas; diff-cover bloqueante. Único diferimiento (`eslint-plugin-security`) formalizado en **CTF-006** (frontend pausado) → DoD cumplida. |
 | **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
 | **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟡 iniciada | ✅ TEST-1 (aislamiento auto-descubierto), **TEST-2 (estructura `tests/` + aislamiento de comportamiento parametrizado)**, TEST-3 (property), TEST-4 (race), contract en CI. *Falta:* migrar el resto de `tests_api/` por capas, más flujos (TEST-5). |
-| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟡 en curso | cobertura backend **71.08%** (ratchet 70), frontend ~55%; backfill de finanzas/views (38.9→52.6%); **mutation matrix real** con baselines (fiscal 46/nómina 64/cxc_scoring 70/cxc_aging 52) — falta subir a 80 y cobertura a 90 |
+| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟡 en curso | cobertura backend **71.41%** (ratchet 71), frontend ~55%; backfill finanzas/views (38.9→52.6%), auth_views (55→62%), mcp_server scope (44→47%); **mutation matrix real** con baselines (fiscal 46/nómina 64/cxc_scoring 70/cxc_aging 52) — falta subir a 80 y cobertura a 90 |
 | **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright (solo login smoke); FE en ~55% |
 | **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**. *Falta:* trivy/schemathesis/E2E bloqueantes, branch protection (requiere permisos del owner) |
 
@@ -206,8 +220,8 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   pisos de cobertura por carpeta.
 
 ### Backfill de cobertura (semanas, por ratchet)
-- **COV-1** — subir `--cov-fail-under` por escalones conforme entra backfill (backend). Estado: **70**
-  (medido 71.08% al 2026-06-09); siguientes escalones 75→85→90.
+- **COV-1** — subir `--cov-fail-under` por escalones conforme entra backfill (backend). Estado: **71**
+  (medido 71.41% al 2026-06-09); siguientes escalones 75→85→90.
 - **COV-2** — subir thresholds vitest 55→65→75→80 (frontend).
 - **COV-3** — `diff-cover --fail-under=95` bloqueante en PR.
 - **MUT-1** — `mutmut` score ≥80% en módulos críticos (job nightly).
