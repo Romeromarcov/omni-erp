@@ -98,6 +98,29 @@ def test_flag_superusuario_omni(monkeypatch):
     assert admin.es_superusuario_omni is True
 
 
+@pytest.mark.django_db
+def test_password_generada_si_no_se_provee(monkeypatch):
+    """Sin --admin-password ni env, el comando genera una contraseña válida."""
+    monkeypatch.delenv("OMNI_SEED_ADMIN_PASSWORD", raising=False)
+    _run()  # ni env ni --admin-password → se genera
+    admin = Usuarios.objects.get(username="admin_dist")
+    assert admin.has_usable_password()
+
+
+@pytest.mark.django_db
+def test_empresa_existente_sin_moneda_recibe_moneda_base(monkeypatch):
+    """Si la empresa ya existe sin moneda base, el seed se la asigna (idempotente)."""
+    from apps.core.models import Empresa
+
+    monkeypatch.setenv("OMNI_SEED_ADMIN_PASSWORD", PASSWORD)
+    Empresa.objects.create(
+        nombre_legal="Pre-existente", identificador_fiscal=RIF, id_moneda_base=None
+    )
+    _run()
+    empresa = Empresa.objects.get(identificador_fiscal=RIF)
+    assert empresa.id_moneda_base is not None
+
+
 # ── create_initial_data deprecado: bloqueado fuera de DEBUG ─────────────────
 
 
@@ -111,8 +134,10 @@ def test_create_initial_data_bloqueado_en_produccion(settings):
 
 
 @pytest.mark.django_db
-def test_create_initial_data_funciona_en_dev(settings):
-    """En DEBUG=True sigue sirviendo para bootstrap de desarrollo."""
+def test_create_initial_data_funciona_en_dev_y_es_idempotente(settings):
+    """En DEBUG=True sirve para bootstrap; re-ejecutarlo no duplica (ramas 'ya existe')."""
     settings.DEBUG = True
     call_command("create_initial_data")
-    assert Usuarios.objects.filter(username="admin").exists()
+    # Segunda corrida: empresa y superusuario ya existen → ramas WARNING, sin duplicar.
+    call_command("create_initial_data")
+    assert Usuarios.objects.filter(username="admin").count() == 1
