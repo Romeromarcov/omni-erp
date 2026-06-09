@@ -54,8 +54,12 @@ function signalLogout(): void {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function isAuthEndpoint(endpoint: string): boolean {
-  // Auth endpoints must never trigger the refresh+retry loop.
-  return /\/auth\//.test(endpoint);
+  // Solo los endpoints de INTERCAMBIO de credenciales van sin Bearer y no deben
+  // disparar el ciclo refresh+retry: login, logout y los token/* (token,
+  // token/refresh, token/verify). El resto bajo /auth/ (profile, profile/update,
+  // change-password) SÍ requieren Authorization: Bearer — tratarlos como endpoints
+  // de auth les quitaba el header y producía 401 (rompía hydrateSession → logout).
+  return /\/auth\/(login|logout|token)\b/.test(endpoint);
 }
 
 function resolveUrl(endpoint: string): string {
