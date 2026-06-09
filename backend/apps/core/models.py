@@ -721,6 +721,93 @@ class CapabilityToken(OmniBaseModel):
         self.save(update_fields=["ultimo_uso"])
 
 
+# ── Idempotencia (R9 — hardening) ─────────────────────────────────────────────
+
+
+class ClaveIdempotencia(models.Model):
+    """
+    Registro de una clave de idempotencia consumida por un endpoint de escritura.
+
+    P1-2 del plan de hardening: en un ERP financiero un doble-submit o un reintento
+    de red NO debe duplicar un pago, un abono o una factura. El cliente envía la
+    cabecera ``Idempotency-Key`` y el servidor:
+
+    - Si la clave ya existe (misma ``empresa`` + ``scope``): devuelve la respuesta
+      guardada (mismo status + body) sin volver a ejecutar la lógica de negocio.
+    - Si no existe: ejecuta la operación dentro de una transacción atómica y
+      persiste el snapshot de la respuesta junto a la clave.
+    - Si la misma clave llega con un payload distinto: es un conflicto (409); la
+      clave se usó para otra cosa y no se puede reutilizar.
+
+    Aislamiento multi-tenant (R-CODE-1): la unicidad es por ``(empresa, scope,
+    clave)``, así dos tenants distintos pueden usar la misma cadena de clave sin
+    colisionar, y un tenant nunca lee la respuesta cacheada de otro.
+
+    No se almacena PII ni secretos: solo un hash SHA-256 del payload (no el payload
+    en claro) y el body de la respuesta que el propio cliente ya recibió.
+    """
+
+    id_clave_idempotencia = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+
+    empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="claves_idempotencia",
+        verbose_name="Empresa",
+        help_text="Tenant dueño de la clave (R-CODE-1).",
+    )
+
+    scope = models.CharField(
+        max_length=100,
+        verbose_name="Scope / endpoint",
+        help_text="Identificador del endpoint protegido. Ej: 'cxc:abonar'.",
+    )
+
+    clave = models.CharField(
+        max_length=255,
+        verbose_name="Idempotency-Key",
+        help_text="Valor de la cabecera Idempotency-Key enviada por el cliente.",
+    )
+
+    payload_hash = models.CharField(
+        max_length=64,
+        verbose_name="Hash del payload",
+        help_text="SHA-256 hex del cuerpo de la petición; detecta reuso de clave con datos distintos.",
+    )
+
+    status_respuesta = models.PositiveSmallIntegerField(
+        verbose_name="Status HTTP guardado",
+        help_text="Código HTTP de la respuesta original que se reproduce en reintentos.",
+    )
+
+    cuerpo_respuesta = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="Cuerpo de la respuesta",
+        help_text="Snapshot JSON del body devuelto en la primera ejecución.",
+    )
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de creación",
+    )
+
+    class Meta:
+        db_table = "core_clave_idempotencia"
+        verbose_name = "Clave de idempotencia"
+        verbose_name_plural = "Claves de idempotencia"
+        ordering = ["-fecha_creacion"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["empresa", "scope", "clave"],
+                name="uniq_idempotencia_empresa_scope_clave",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.scope}:{self.clave[:16]}… ({self.empresa_id})"
+
+
 # ── Contacto Unificado ────────────────────────────────────────────────────────
 
 

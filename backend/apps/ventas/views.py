@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.idempotency import idempotent
 from apps.core.viewsets import BaseModelViewSet, EmpresaInjectMixin, get_empresas_visible
 
 logger = logging.getLogger(__name__)
@@ -522,6 +523,7 @@ class PedidoViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
                 response.data["numero_pedido"] = instance.numero_pedido
         return response
 
+    @idempotent("ventas:confirmar")
     @action(detail=True, methods=["post"], url_path="confirmar")
     def confirmar(self, request, pk=None):
         """
@@ -529,6 +531,10 @@ class PedidoViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
         Body: {"almacen_id": "uuid", "generar_cxc": true|false (opcional)}
 
         Cambia estado a APROBADO, descuenta stock e (opcionalmente) genera CxC.
+
+        Idempotente: con la cabecera ``Idempotency-Key``, un reintento con la misma
+        clave devuelve el mismo resultado sin volver a descontar stock ni duplicar
+        la CxC generada.
         """
         from apps.almacenes.models import Almacen
         from .services import PedidoConfirmacionError, confirmar_pedido
