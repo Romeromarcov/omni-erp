@@ -28,6 +28,27 @@ from apps.fiscal.services import (
 pytestmark = pytest.mark.unit
 
 
+# ── Constantes SENIAT: fijadas con LITERALES ────────────────────────────────────
+# (comparar contra la constante importada no mata mutantes de la constante misma)
+
+
+def test_constantes_seniat_valores_literales():
+    from apps.fiscal.services import METODOS_PAGO_IGTF
+
+    assert TASA_IVA_GENERAL == Decimal("0.16")
+    assert TASA_IVA_REDUCIDO == Decimal("0.08")
+    assert TASA_IVA_EXENTO == Decimal("0")
+    assert TASA_IGTF_DEFAULT == Decimal("0.03")
+    assert METODOS_PAGO_IGTF == frozenset(
+        {"DIVISA_EFECTIVO", "DIVISA_TRANSFERENCIA", "CRYPTO", "PETRO"}
+    )
+
+
+def test_iva_negativo_mensaje_exacto():
+    with pytest.raises(ImpuestoError, match="El subtotal no puede ser negativo."):
+        calcular_iva(Decimal("-0.01"), "GENERAL")
+
+
 # ── calcular_iva ───────────────────────────────────────────────────────────────
 
 
