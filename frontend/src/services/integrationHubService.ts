@@ -39,18 +39,34 @@ export interface ConectorInstancia {
   creado_en: string;
 }
 
+/** Configuración de un conector tipo Odoo / fuente de datos vía API. */
+export interface ConectorConfiguracionApi {
+  host: string;
+  db?: string;
+  user: string;
+  api_key: string;
+  timeout?: number;
+}
+
+/**
+ * Configuración del conector Google Sheets (destino/outbound).
+ * `service_account` es el JSON de la cuenta de servicio — SECRETO: nunca se
+ * vuelve a leer ni se muestra tras guardarlo (R-CODE-8).
+ */
+export interface ConectorConfiguracionSheets {
+  service_account: Record<string, unknown>;
+  source_instancia_id: string;
+  drive_folder_id?: string;
+  spreadsheet_id?: string;
+  titulo?: string;
+}
+
 export interface ConectorInstanciaCreate {
   id_proveedor: string;
   nombre: string;
   entidades_activas?: string[];
   intervalo_sync_minutos?: number;
-  configuracion: {
-    host: string;
-    db?: string;
-    user: string;
-    api_key: string;
-    timeout?: number;
-  };
+  configuracion: ConectorConfiguracionApi | ConectorConfiguracionSheets;
 }
 
 export interface JobSincronizacion {
@@ -81,6 +97,12 @@ export interface TriggerSyncResult {
   job_id?: string;
   mensaje?: string;
   error?: string;
+}
+
+/** Respuesta 202 del endpoint de exportación a Google Sheets. */
+export interface TriggerExportResult {
+  mensaje: string;
+  task_id: string;
 }
 
 export interface IntegrationHubStatus {
@@ -133,6 +155,23 @@ export async function triggerSync(
   return post<TriggerSyncResult>(`/integration-hub/instancias/${id}/sync/`, {
     tipo_entidad: tipoEntidad,
   });
+}
+
+/**
+ * Dispara una exportación outbound (p. ej. a Google Sheets). Responde 202 con un
+ * `task_id`; el avance se sigue puleando `getJobsDeConector` (jobs `outbound`).
+ *
+ * @param tipos  entidades a exportar; `null`/omitido = todas las activas.
+ * @param full   `true` para reexportar todo el histórico, no solo lo nuevo.
+ */
+export async function exportarConector(
+  id: string,
+  opts: { tipos?: string[] | null; full?: boolean } = {},
+): Promise<TriggerExportResult> {
+  const body: Record<string, unknown> = {};
+  if (opts.tipos != null) body.tipos = opts.tipos;
+  if (opts.full != null) body.full = opts.full;
+  return post<TriggerExportResult>(`/integration-hub/instancias/${id}/exportar/`, body);
 }
 
 export async function getJobsDeConector(id: string): Promise<PaginatedResponse<JobSincronizacion>> {

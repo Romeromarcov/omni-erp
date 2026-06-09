@@ -1,11 +1,27 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Card, CardActionArea, CardContent, Chip, Stack, Typography } from '@mui/material';
-import type { ConectorInstancia } from '../../services/integrationHubService';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardActions,
+  CardContent,
+  Chip,
+  Stack,
+  Typography,
+} from '@mui/material';
+import {
+  exportarConector,
+  type ConectorInstancia,
+} from '../../services/integrationHubService';
 
 interface Props {
   conector: ConectorInstancia;
 }
+
+const PROVEEDOR_SHEETS = 'google_sheets';
 
 type ChipColor = 'success' | 'warning' | 'error' | 'default';
 
@@ -18,7 +34,17 @@ const ESTADO_COLORS: Record<string, { color: ChipColor; label: string }> = {
 
 const ConectorCard: React.FC<Props> = ({ conector }) => {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const estado = ESTADO_COLORS[conector.estado] ?? ESTADO_COLORS.inactivo;
+  const esSheets = conector.proveedor_codigo === PROVEEDOR_SHEETS;
+
+  const exportMutation = useMutation({
+    mutationFn: () => exportarConector(conector.id_conector),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [`/integration-hub/instancias/${conector.id_conector}/jobs/`] });
+      qc.invalidateQueries({ queryKey: ['/integration-hub/status/'] });
+    },
+  });
 
   const ultimoSync = conector.ultimo_sync
     ? new Date(conector.ultimo_sync).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })
@@ -65,6 +91,30 @@ const ConectorCard: React.FC<Props> = ({ conector }) => {
           </Stack>
         </CardContent>
       </CardActionArea>
+
+      {/* Acción rápida de exportación para conectores Google Sheets */}
+      {esSheets && (
+        <CardActions sx={{ px: 2, pb: 1.5, flexDirection: 'column', alignItems: 'flex-start' }}>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={exportMutation.isPending}
+            onClick={() => exportMutation.mutate()}
+          >
+            {exportMutation.isPending ? 'Encolando…' : 'Exportar ahora'}
+          </Button>
+          {exportMutation.isSuccess && (
+            <Typography variant="caption" color="success.main" sx={{ mt: 0.5 }}>
+              Exportación encolada
+            </Typography>
+          )}
+          {exportMutation.isError && (
+            <Typography variant="caption" color="error.main" sx={{ mt: 0.5 }}>
+              {(exportMutation.error as Error).message}
+            </Typography>
+          )}
+        </CardActions>
+      )}
     </Card>
   );
 };

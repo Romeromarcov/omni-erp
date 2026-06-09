@@ -23,10 +23,13 @@ import {
   getConector,
   testConector,
   triggerSync,
+  exportarConector,
   getJobsDeConector,
   type JobSincronizacion,
 } from '../../services/integrationHubService';
 import { PageContainer, PageHeader, StatusChip, SectionTitle } from '../../components/ui';
+
+const PROVEEDOR_SHEETS = 'google_sheets';
 
 type ChipColor = 'success' | 'warning' | 'error' | 'info' | 'default';
 
@@ -38,8 +41,15 @@ const ESTADO_JOB_COLORS: Record<string, ChipColor> = {
   pendiente: 'default',
 };
 
+/** Etiqueta legible de la dirección de un job (los jobs Sheets son outbound). */
+function etiquetaDireccion(direccion: string): { label: string; outbound: boolean } {
+  const outbound = direccion === 'outbound';
+  return { label: outbound ? 'Exportación' : 'Importación', outbound };
+}
+
 const JobRow: React.FC<{ job: JobSincronizacion }> = ({ job }) => {
   const color = ESTADO_JOB_COLORS[job.estado] ?? ESTADO_JOB_COLORS.pendiente;
+  const dir = etiquetaDireccion(job.direccion);
   const inicio = job.iniciado_en
     ? new Date(job.iniciado_en).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })
     : '—';
@@ -47,6 +57,14 @@ const JobRow: React.FC<{ job: JobSincronizacion }> = ({ job }) => {
 
   return (
     <TableRow>
+      <TableCell>
+        <Chip
+          size="small"
+          label={dir.label}
+          color={dir.outbound ? 'secondary' : 'default'}
+          variant="outlined"
+        />
+      </TableCell>
       <TableCell>{job.tipo_entidad}</TableCell>
       <TableCell>
         <Chip size="small" label={job.estado.replace(/_/g, ' ')} color={color} variant={color === 'default' ? 'outlined' : 'filled'} />
@@ -97,6 +115,15 @@ const ConectorDetallePage: React.FC = () => {
     },
   });
 
+  // Exportación outbound (Google Sheets). `full` reexporta todo el histórico.
+  const exportMutation = useMutation({
+    mutationFn: (full: boolean) => exportarConector(id!, { full }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [`/integration-hub/instancias/${id}/jobs/`] });
+      qc.invalidateQueries({ queryKey: ['/integration-hub/status/'] });
+    },
+  });
+
   if (isLoading) return (
     <PageContainer><Box display="flex" justifyContent="center" py={6}><CircularProgress /></Box></PageContainer>
   );
@@ -105,6 +132,7 @@ const ConectorDetallePage: React.FC = () => {
   );
 
   const jobs = jobsData?.results ?? [];
+  const esSheets = conector.proveedor_codigo === PROVEEDOR_SHEETS;
 
   return (
     <PageContainer>
@@ -170,7 +198,45 @@ const ConectorDetallePage: React.FC = () => {
         )}
       </Paper>
 
-      {/* Disparar sync */}
+      {/* Exportar ahora — solo conectores Google Sheets (outbound) */}
+      {esSheets && (
+        <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
+          <SectionTitle>Exportar a Google Sheets</SectionTitle>
+          <Typography variant="body2" color="text.secondary" mb={1.5}>
+            Exporta las entidades activas del conector de origen a la planilla. Se encola
+            una tarea en segundo plano; sigue el avance en el historial de jobs.
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              disabled={exportMutation.isPending}
+              onClick={() => exportMutation.mutate(false)}
+            >
+              {exportMutation.isPending ? 'Encolando…' : 'Exportar ahora'}
+            </Button>
+            <Button
+              variant="outlined"
+              disabled={exportMutation.isPending}
+              onClick={() => exportMutation.mutate(true)}
+            >
+              Exportar todo (full)
+            </Button>
+          </Stack>
+          {exportMutation.isSuccess && (
+            <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
+              Exportación encolada — {exportMutation.data.mensaje}
+            </Typography>
+          )}
+          {exportMutation.isError && (
+            <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1 }}>
+              Error: {(exportMutation.error as Error).message}
+            </Typography>
+          )}
+        </Paper>
+      )}
+
+      {/* Disparar sync — solo conectores de entrada (no aplica a Google Sheets) */}
+      {!esSheets && (
       <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
         <SectionTitle>Sincronización manual</SectionTitle>
         <Stack direction="row" spacing={1}>
@@ -205,6 +271,7 @@ const ConectorDetallePage: React.FC = () => {
           </Typography>
         )}
       </Paper>
+      )}
 
       {/* Jobs recientes */}
       <Paper variant="outlined">
@@ -218,6 +285,7 @@ const ConectorDetallePage: React.FC = () => {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell>Tipo</TableCell>
                   <TableCell>Entidad</TableCell>
                   <TableCell>Estado</TableCell>
                   <TableCell>Inicio</TableCell>
