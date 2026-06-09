@@ -65,16 +65,28 @@ describe('api access token store', () => {
     localStorage.removeItem('token');
   });
 
-  it('does NOT attach Authorization to /auth/* endpoints', async () => {
+  it('does NOT attach Authorization to credential endpoints (login/logout/token)', async () => {
     setAccessToken('mem-token');
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ access: 'x' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await get('/auth/token/verify/');
+
+    const [, init] = fetchMock.mock.calls[0];
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
+  });
+
+  it('DOES attach Authorization to /auth/profile/ (needs the bearer — fixes 401 logout loop)', async () => {
+    setAccessToken('mem-token');
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: '1' }));
     vi.stubGlobal('fetch', fetchMock);
 
     await get('/auth/profile/');
 
     const [, init] = fetchMock.mock.calls[0];
     const headers = init.headers as Record<string, string>;
-    expect(headers.Authorization).toBeUndefined();
+    expect(headers.Authorization).toBe('Bearer mem-token');
   });
 });
 
