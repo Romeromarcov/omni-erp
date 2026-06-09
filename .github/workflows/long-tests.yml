@@ -1,0 +1,118 @@
+name: Long tests
+
+# Suite/cargas de larga duración (horas o días) ejecutadas en el self-hosted
+# runner de Railway (`runs-on: [self-hosted, omni]`), sin el tope de 6 h de los
+# runners alojados por GitHub. Se dispara a mano desde cualquier parte
+# (Actions → Long tests → Run workflow) y deja los resultados como artefacto y,
+# opcionalmente, commiteados al repo. Ver infra/ci-runner/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pytest_args:
+        description: "Argumentos extra para pytest (p. ej. -k patron, -m slow)"
+        required: false
+        default: ""
+      timeout_minutes:
+        description: "Tiempo máximo del job en minutos (def. 1440 = 24 h)"
+        required: false
+        default: "1440"
+      commit_report:
+        description: "Commitear el reporte a la rama ci/long-test-reports"
+        type: boolean
+        default: true
+
+concurrency:
+  group: long-tests
+  cancel-in-progress: false
+
+jobs:
+  long-tests:
+    name: "Suite larga (self-hosted)"
+    runs-on: [self-hosted, omni]
+    timeout-minutes: ${{ fromJSON(inputs.timeout_minutes) }}
+
+    env:
+      DJANGO_ENV: dev
+      SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      REDIS_URL: "redis://localhost:6379/0"
+      # DB_*: se inyectan desde las variables/secretos del runner (Postgres de
+      # pruebas dedicado en Railway). Aquí solo damos valores por defecto.
+      DB_HOST: ${{ vars.DB_HOST || 'localhost' }}
+      DB_PORT: ${{ vars.DB_PORT || '5432' }}
+      DB_NAME: ${{ vars.DB_NAME || 'omni_erp' }}
+      DB_USER: ${{ vars.DB_USER || 'omni_erp' }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Crear venv e instalar dependencias
+        working-directory: backend
+        run: |
+          python3.11 -m venv .venv
+          .venv/bin/pip install --upgrade pip setuptools wheel
+          .venv/bin/pip install -r requirements-dev.txt
+
+      - name: Ejecutar suite larga
+        id: run
+        working-directory: backend
+        run: |
+          mkdir -p ../artifacts
+          set +e
+          .venv/bin/python -m pytest tests tests_api/ \
+            -v --tb=short \
+            --junitxml=../artifacts/junit.xml \
+            ${{ inputs.pytest_args }} | tee ../artifacts/pytest.log
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Resumen del run
+        if: always()
+        run: |
+          {
+            echo "## Long tests — resultado"
+            echo ""
+            echo "- Fecha: $(date -u +'%Y-%m-%d %H:%M:%SZ')"
+            echo "- pytest exit code: ${{ steps.run.outputs.exit_code }}"
+            echo "- Args: \`${{ inputs.pytest_args }}\`"
+            echo ""
+            echo "Últimas líneas:"
+            echo '```'
+            tail -n 30 artifacts/pytest.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir artefactos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: long-tests-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 30
+
+      - name: Commitear reporte al repo
+        if: always() && inputs.commit_report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          REPORT_DIR="reports/$(date -u +'%Y-%m-%d')"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin ci/long-test-reports || true
+          git switch ci/long-test-reports 2>/dev/null \
+            || git switch --orphan ci/long-test-reports
+          mkdir -p "$REPORT_DIR"
+          cp artifacts/pytest.log "$REPORT_DIR/pytest-${{ github.run_id }}.log"
+          cp artifacts/junit.xml "$REPORT_DIR/junit-${{ github.run_id }}.xml" 2>/dev/null || true
+          git add "$REPORT_DIR"
+          git commit -m "ci: reporte long-tests run ${{ github.run_id }} (exit ${{ steps.run.outputs.exit_code }})" || exit 0
+          git push origin ci/long-test-reports
+
+      - name: Propagar estado de pytest
+        if: always()
+        run: exit ${{ steps.run.outputs.exit_code }}
+
+permissions:
+  contents: write
