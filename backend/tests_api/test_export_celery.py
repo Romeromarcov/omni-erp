@@ -282,3 +282,82 @@ def test_endpoint_exportar_aislamiento_empresa(empresa_a, user_b):
 
     assert resp.status_code == 404
     mock_delay.assert_not_called()
+
+
+# ── Alta de instancias por API (validación por proveedor) ────────────────────
+
+
+def _crear_instancia_api(user, payload):
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client.post("/api/integration-hub/instancias/", payload, format="json")
+
+
+def test_crear_instancia_sheets_por_api(empresa_a, user_a):
+    """El alta de google_sheets no exige host/user/api_key (usa service account)."""
+    prov_odoo = _proveedor("odoo", "Odoo")
+    prov_sheets = _proveedor("google_sheets", "Google Sheets")
+    origen = ConectorInstancia.objects.create(
+        id_empresa=empresa_a,
+        id_proveedor=prov_odoo,
+        nombre="Odoo Origen API",
+        configuracion={"host": "h", "user": "u", "api_key": "k"},
+    )
+    resp = _crear_instancia_api(
+        user_a,
+        {
+            "id_proveedor": str(prov_sheets.pk),
+            "nombre": "Sheets vía API",
+            "configuracion": {
+                "service_account": {"client_email": "svc@p.iam.gserviceaccount.com"},
+                "source_instancia_id": str(origen.pk),
+            },
+            "entidades_activas": ["contactos"],
+        },
+    )
+    assert resp.status_code == 201, resp.data
+
+
+def test_crear_instancia_sheets_sin_service_account_400(empresa_a, user_a):
+    prov_sheets = _proveedor("google_sheets", "Google Sheets")
+    resp = _crear_instancia_api(
+        user_a,
+        {
+            "id_proveedor": str(prov_sheets.pk),
+            "nombre": "Sheets sin SA",
+            "configuracion": {"source_instancia_id": "algo"},
+        },
+    )
+    assert resp.status_code == 400
+    assert "service_account" in str(resp.data)
+
+
+def test_crear_instancia_sheets_sin_origen_400(empresa_a, user_a):
+    prov_sheets = _proveedor("google_sheets", "Google Sheets")
+    resp = _crear_instancia_api(
+        user_a,
+        {
+            "id_proveedor": str(prov_sheets.pk),
+            "nombre": "Sheets sin origen",
+            "configuracion": {
+                "service_account": {"client_email": "svc@p.iam.gserviceaccount.com"}
+            },
+        },
+    )
+    assert resp.status_code == 400
+    assert "source_instancia_id" in str(resp.data)
+
+
+def test_crear_instancia_odoo_sigue_exigiendo_credenciales(empresa_a, user_a):
+    """La validación clásica (host/user/api_key) se mantiene para otros proveedores."""
+    prov_odoo = _proveedor("odoo", "Odoo")
+    resp = _crear_instancia_api(
+        user_a,
+        {
+            "id_proveedor": str(prov_odoo.pk),
+            "nombre": "Odoo incompleto",
+            "configuracion": {"host": "https://x.odoo.com"},
+        },
+    )
+    assert resp.status_code == 400
+    assert "user" in str(resp.data)
