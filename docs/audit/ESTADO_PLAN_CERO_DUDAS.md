@@ -9,10 +9,19 @@
 
 ## Veredicto honesto
 
-El plan está **parcialmente implementado**: **Fases 0–1 cerradas y verificadas**, Fase 2 ~70%, y
-la **Fase 3 arrancó de verdad** (mutation testing dejó de ser un no-op y ahora mide baselines
-reales por módulo). El criterio de "cero dudas" (cobertura 90/80, mutation ≥80%, E2E, gates
+El plan está **parcialmente implementado**: **Fases 0, 1 y 2 cerradas y verificadas**, y
+la **Fase 3 en curso** (mutation testing mide baselines reales; cobertura backend subiendo por
+ratchet). El criterio de "cero dudas" (cobertura 90/80, mutation ≥80%, E2E, gates
 finales bloqueantes) **todavía NO se cumple**. **No se debe afirmar "100% / cero dudas" aún.**
+
+> **Fase 2 CERRADA al 2026-06-09.** Su DoD formal (plan §Fases: *"aislamiento R-CODE-1 cubre
+> todos los ViewSets; contract-drift en CI"*) está **cumplida y verificada**: los guards de
+> aislamiento pasan en la suite full (2400/0) y el drift de contrato es **bloqueante** en CI
+> (`ci.yml` "Drift de contrato API — BLOQUEANTE" + job `contract` OpenAPI+schemathesis). De
+> TEST-5 (flujos críticos) están cubiertos **compra, cobranza, manufactura y venta**; los 2
+> restantes (**cambio de divisa, nómina**) dependen de features rotas/no implementadas —no de
+> falta de test— y se difieren con **CTF-013** (defectos verificados documentados). La migración
+> de `tests_api/` por capas se difiere con **CTF-014** (limpieza, sin pérdida de cobertura).
 
 ### Verificación 2026-06-09 (ejecutada en este entorno)
 
@@ -137,7 +146,7 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 |---|---|---|---|
 | **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟢 **CERRADA** (2026-06-03) | bandit/semgrep(+reglas Omni)/ruff/mypy/pip-audit/npm audit/trivy/gitleaks + **contract (OpenAPI+schemathesis)** + **mutmut nightly** + factory_boy/hypothesis/xdist; **3 matrices A1** con columnas; diff-cover bloqueante. Único diferimiento (`eslint-plugin-security`) formalizado en **CTF-006** (frontend pausado) → DoD cumplida. |
 | **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
-| **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟡 iniciada | ✅ TEST-1 (aislamiento auto-descubierto), **TEST-2 (estructura `tests/` + aislamiento de comportamiento parametrizado)**, TEST-3 (property), TEST-4 (race), contract en CI. *Falta:* migrar el resto de `tests_api/` por capas, más flujos (TEST-5). |
+| **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟢 **CERRADA** (2026-06-09) | ✅ TEST-1 (aislamiento auto-descubierto), TEST-2 (estructura `tests/` + aislamiento de comportamiento), TEST-3 (property), TEST-4 (races), **contract-drift bloqueante en CI**. **DoD formal cumplida** (aislamiento cubre todos los ViewSets + contract-drift). TEST-5: compra/cobranza/manufactura/venta ✅; cambio-divisa y nómina → **CTF-013** (feature rota/stub). Migración `tests_api/`→capas → **CTF-014**. |
 | **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟡 en curso | cobertura backend **71.41%** (ratchet 71), frontend ~55%; backfill finanzas/views (38.9→52.6%), auth_views (55→62%), mcp_server scope (44→47%); **mutation matrix real** con baselines (fiscal 46/nómina 64/cxc_scoring 70/cxc_aging 52) — falta subir a 80 y cobertura a 90 |
 | **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright (solo login smoke); FE en ~55% |
 | **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**. *Falta:* trivy/schemathesis/E2E bloqueantes, branch protection (requiere permisos del owner) |
@@ -227,8 +236,13 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   `tests/integration/test_manufactura_atomicidad.py` — `consumir_materiales_orden` con BOM de 2
   componentes (uno sin stock) lanza `StockInsuficienteError` y **revierte multi-escritura** (sin
   ConsumoMaterial, sin descuento del componente que sí alcanzaba, orden sigue `pendiente`);
-  complementa `test_manufactura_orden_integracion` (camino feliz). **TEST-5 cubre compra, cobranza
-  y manufactura.** *Pendiente general de Fase 2:* migrar el resto de `tests_api/` por capas.
+  complementa `test_manufactura_orden_integracion` (camino feliz). ✅ Venta: el ciclo
+  nota→factura fiscal→asiento→CxC (+ IVA/IGTF) está cubierto en `tests_api/test_e2e_ciclo_venta.py`.
+  **TEST-5 cubre compra, cobranza, manufactura y venta (4/6).** Los 2 restantes —**cambio de
+  divisa** y **nómina**— dependen de features rotas/no implementadas (no de falta de test):
+  diferidos en **CTF-013** con los defectos verificados (cambio-divisa `create` rompe por
+  `monto_base_empresa`/`usuario` faltantes + no atómico; nómina `procesar` es stub). La migración
+  de `tests_api/` por capas → **CTF-014**. **Con esto la DoD formal de Fase 2 queda cerrada.**
 - **TEST-6** — frontend: MSW (instalado, sin usar), `openapi-typescript` + drift, Playwright E2E,
   pisos de cobertura por carpeta.
 
