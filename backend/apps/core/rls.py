@@ -115,6 +115,24 @@ def apply_context(empresa_ids, *, bypass: bool = False, using: str = DEFAULT_DB_
         _set_config(cursor, GUC_EMPRESAS, csv)
 
 
+def current_role_bypasses_rls(using: str = DEFAULT_DB_ALIAS) -> bool:
+    """True si el rol de conexión salta RLS (``SUPERUSER`` o ``BYPASSRLS``).
+
+    Un superusuario o un rol con ``BYPASSRLS`` ignora las políticas RLS aunque
+    estén ``FORCE``; en ese caso el aislamiento no es verificable directamente
+    (p. ej. el rol ``postgres`` por defecto en CI). Los tests usan esto para,
+    cuando aplica, hacer ``SET ROLE`` a un rol no-privilegiado y poder verificar
+    el enforcement. En prod, el blocker documentado es conectar la app con un rol
+    dedicado no-dueño y sin estos atributos.
+    """
+    with connections[using].cursor() as cursor:
+        cursor.execute(
+            "SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user"
+        )
+        row = cursor.fetchone()
+    return bool(row and row[0])
+
+
 def apply_system_default(using: str = DEFAULT_DB_ALIAS) -> None:
     """Estado por defecto de conexiones no-web: ``bypass='on'``, sin empresas.
 

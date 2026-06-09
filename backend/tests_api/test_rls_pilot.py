@@ -15,6 +15,25 @@ from apps.core.models import Sucursal
 pytestmark = [pytest.mark.django_db, pytest.mark.tenant]
 
 
+@pytest.fixture(autouse=True)
+def _enforce_rls_role(rls_test_role):
+    """Si el rol de conexión salta RLS (CI superusuario), corre el test con
+    ``SET ROLE`` a un rol no-privilegiado para que las políticas RLS se apliquen.
+    No-op cuando el rol ya está sujeto a RLS (dev local)."""
+    if rls_test_role is None:
+        yield
+        return
+    from django.db import connection
+
+    with connection.cursor() as cur:
+        cur.execute(f'SET ROLE "{rls_test_role}"')
+    try:
+        yield
+    finally:
+        with connection.cursor() as cur:
+            cur.execute("RESET ROLE")
+
+
 @pytest.fixture
 def sucursales(empresa_a, empresa_b):
     """Crea una sucursal por empresa con el contexto de sistema (bypass on)."""
