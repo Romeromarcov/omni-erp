@@ -27,8 +27,8 @@ El criterio integral de "cero dudas" **aún no se cumple completo** por las fase
 
 **La DoD de Fase 3 ("cobertura objetivo + mutation ≥80% en críticos") está CUMPLIDA y medida:**
 
-- **Cobertura backend: 71.58% → 93.25%** (objetivo 90% superado; ratchet 71→93 por escalones
-  74→86→93). Suite final: **3534 passed, 12 skipped, 0 failed** (el único "error" de la corrida
+- **Cobertura backend: 71.58% → 93.25%** (objetivo 90% superado; ratchet 71→92 por escalones
+  74→86→92; CI mide 92.79% por deps opcionales del entorno). Suite final: **3534 passed, 12 skipped, 0 failed** (el único "error" de la corrida
   paralela —`test_rls_lote2`— pasa en aislamiento: contención de roles de clúster por las 4 BDs
   de agentes paralelos del propio backfill; preexistente de CTF-012, no introducido aquí).
 - **Mutation ≥80% en los 4 módulos críticos** (medición local reproducible, `PYTHONUTF8=1`):
@@ -84,7 +84,7 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
 | # | Criterio | Estado | Medido |
 |---|---|---|---|
 | 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; trivy/eslint-security aún no bloqueantes |
-| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🟡 | back **93.25% ✅** (ratchet 93); front **~55%** (Fase 4); diff-cover **95% ✅** |
+| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🟡 | back **93.25% local / 92.79% CI ✅** (ratchet 92); front **~55%** (Fase 4); diff-cover **95% ✅** |
 | 3 | Mutation ≥80% críticos | 🟢 | fiscal **84.5%**, nómina **93.5%**, cxc_scoring **90%**, cxc_aging **90.5%** (medición corregida con `scripts/mut_runner.py`) |
 | 4 | Aislamiento multi-tenant | 🟢 | guard parametrizado ~99 ViewSets + comportamiento |
 | 5 | Authz + contrato por endpoint | 🟡 | guard authz ✅; schemathesis no-bloqueante |
@@ -180,7 +180,7 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 | **0 · Tooling + mapa** | herramientas en CI, matrices A1, diff-cover | 🟢 **CERRADA** (2026-06-03) | bandit/semgrep(+reglas Omni)/ruff/mypy/pip-audit/npm audit/trivy/gitleaks + **contract (OpenAPI+schemathesis)** + **mutmut nightly** + factory_boy/hypothesis/xdist; **3 matrices A1** con columnas; diff-cover bloqueante. Único diferimiento (`eslint-plugin-security`) formalizado en **CTF-006** (frontend pausado) → DoD cumplida. |
 | **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
 | **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟢 **CERRADA** (2026-06-09) | ✅ TEST-1 (aislamiento auto-descubierto), TEST-2 (estructura `tests/` + aislamiento de comportamiento), TEST-3 (property), TEST-4 (races), **contract-drift bloqueante en CI**. **DoD formal cumplida** (aislamiento cubre todos los ViewSets + contract-drift). TEST-5: compra/cobranza/manufactura/venta ✅; cambio-divisa y nómina → **CTF-013** (feature rota/stub). Migración `tests_api/`→capas → **CTF-014**. |
-| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟢 **CERRADA** (2026-06-09) | cobertura backend **93.25%** (objetivo 90% superado; ratchet 93), **3534 tests verdes**; mutation **≥80% en los 4 críticos** (fiscal 84.5/cxc 90-90.5/nómina 93.5, medición corregida — `scripts/mut_runner.py`); ~30 bugs reales destapados y documentados en los tests. El frontend (~55%) pertenece a la **Fase 4** según el plan. |
+| **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟢 **CERRADA** (2026-06-09) | cobertura backend **93.25%** (objetivo 90% superado; ratchet 92), **3534 tests verdes**; mutation **≥80% en los 4 críticos** (fiscal 84.5/cxc 90-90.5/nómina 93.5, medición corregida — `scripts/mut_runner.py`); ~30 bugs reales destapados y documentados en los tests. El frontend (~55%) pertenece a la **Fase 4** según el plan. |
 | **4 · E2E + frontend** | flujos E2E verdes | 🔴 falta | sin Playwright (solo login smoke); FE en ~55% |
 | **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**. *Falta:* trivy/schemathesis/E2E bloqueantes, branch protection (requiere permisos del owner) |
 
@@ -280,7 +280,7 @@ Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
   pisos de cobertura por carpeta.
 
 ### Backfill de cobertura (por ratchet)
-- **COV-1 — ✅ CUMPLIDO (2026-06-09).** `--cov-fail-under=93` (medido 93.25%; objetivo 90 superado).
+- **COV-1 — ✅ CUMPLIDO (2026-06-09).** `--cov-fail-under=92` (medido 93.25% local / 92.79% CI; objetivo 90 superado).
 - **COV-2** — subir thresholds vitest 55→65→75→80 (frontend) — Fase 4.
 - **COV-3 — ✅** `diff-cover --fail-under=95` bloqueante en PR.
 - **MUT-1 — ✅ CUMPLIDO (2026-06-09).** Score ≥80% en los 4 módulos críticos (fiscal 84.5, cxc
