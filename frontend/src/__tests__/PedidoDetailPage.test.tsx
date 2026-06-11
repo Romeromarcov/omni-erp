@@ -41,6 +41,19 @@ vi.mock('../components/Pedidos/ModalPago', () => ({
   default: () => null,
 }));
 
+// Componentes presentacionales pesados, fuera del alcance de este test (el
+// flujo de confirmación). Mockearlos evita arrastrar al denominador de
+// cobertura archivos que ningún test ejercita aún.
+vi.mock('../components/Pedidos/TablaProductos', () => ({
+  default: () => null,
+}));
+vi.mock('../components/Pedidos/LineasProductoTabla', () => ({
+  default: () => null,
+}));
+vi.mock('../components/Pedidos/ResumenTotales', () => ({
+  default: () => null,
+}));
+
 import { get } from '../services/api';
 import { pedidoService } from '../services/ventas';
 import { almacenesService } from '../services/almacenesService';
