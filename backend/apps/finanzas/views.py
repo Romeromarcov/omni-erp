@@ -118,7 +118,14 @@ class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
             caja_destino = sesion.cajas.get(id_caja=caja_destino_id)
         except Exception:
             return Response({"error": "Caja origen o destino no pertenece a la sesión."}, status=400)
-        mov_salida, mov_entrada = transferencia_entre_cajas(caja_origen, caja_destino, monto, usuario=usuario)
+        try:
+            mov_salida, mov_entrada = transferencia_entre_cajas(
+                caja_origen, caja_destino, monto, usuario=usuario
+            )
+        except ValueError as exc:
+            # Mensajes de negocio controlados (monto, saldo, moneda); no se
+            # expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
         return Response(
             {
                 "movimiento_salida_id": mov_salida.id_movimiento,
@@ -996,83 +1003,11 @@ class CajaFisicaViewSet(BaseModelViewSet):
                 queryset = queryset.filter(empresa__in=empresas_usuario.all())
         return queryset
 
-    def perform_create(self, serializer):
-        """Crear el pago y generar la transacción financiera correspondiente"""
-        pago = serializer.save()
-
-        # Crear transacción financiera
-        from .models import TransaccionFinanciera
-
-        transaccion = TransaccionFinanciera.objects.create(
-            id_empresa=pago.id_empresa,
-            fecha_hora_transaccion=pago.fecha_pago,
-            tipo_transaccion=pago.tipo_operacion,
-            monto_transaccion=pago.monto,
-            id_moneda_transaccion=pago.id_moneda,
-            id_moneda_base=pago.id_moneda,  # Simplificación
-            monto_base_empresa=pago.monto,
-            id_metodo_pago=pago.id_metodo_pago,
-            referencia_pago=pago.referencia,
-            descripcion=f"Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}",
-            tipo_documento_asociado=pago.tipo_documento,
-            nro_documento_asociado=str(pago.id_documento),
-            id_caja=pago.id_caja_virtual,
-            id_cuenta_bancaria=pago.id_cuenta_bancaria,
-            id_usuario_registro=pago.id_usuario_registro,
-        )
-
-        # Asociar la transacción financiera al pago
-        pago.id_transaccion_financiera = transaccion
-        pago.save(update_fields=["id_transaccion_financiera"])
-
-        # Si es pago con tarjeta, crear TransaccionDatafono
-        if pago.id_datafono:
-            from .models import TransaccionDatafono
-
-            TransaccionDatafono.objects.create(
-                id_datafono=pago.id_datafono,
-                monto=pago.monto,
-                referencia_bancaria=pago.referencia,
-                id_transaccion_financiera_origen=transaccion,  # Usar la transacción ya creada
-                id_usuario_registro=pago.id_usuario_registro,
-            )
-
-        # Crear movimiento de caja/banco si corresponde
-        if pago.id_caja_virtual or pago.id_cuenta_bancaria:
-            saldo_anterior = 0
-            if pago.id_caja_virtual:
-                saldo_anterior = pago.id_caja_virtual.saldo_actual
-            elif pago.id_cuenta_bancaria:
-                saldo_anterior = pago.id_cuenta_bancaria.saldo_actual
-
-            # Determinar el tipo de movimiento (INGRESO/EGRESO)
-            tipo_movimiento = "INGRESO" if pago.tipo_operacion == "INGRESO" else "EGRESO"
-
-            from .models import MovimientoCajaBanco
-
-            movimiento = MovimientoCajaBanco.objects.create(
-                id_empresa=pago.id_empresa,
-                fecha_movimiento=pago.fecha_pago.date(),
-                hora_movimiento=pago.fecha_pago.time(),
-                tipo_movimiento=tipo_movimiento,
-                monto=pago.monto,
-                id_moneda=pago.id_moneda,
-                concepto=f"{pago.tipo_operacion} - {pago.get_tipo_documento_display()}",
-                referencia=pago.referencia or f"Pago {pago.id_pago}",
-                id_caja=pago.id_caja_virtual,
-                id_cuenta_bancaria=pago.id_cuenta_bancaria,
-                saldo_anterior=saldo_anterior,
-                saldo_nuevo=saldo_anterior + (pago.monto if tipo_movimiento == "INGRESO" else -pago.monto),
-                id_usuario_registro=pago.id_usuario_registro,
-            )
-
-            # Actualizar saldo
-            if pago.id_caja_virtual:
-                pago.id_caja_virtual.saldo_actual = movimiento.saldo_nuevo
-                pago.id_caja_virtual.save()
-            elif pago.id_cuenta_bancaria:
-                pago.id_cuenta_bancaria.saldo_actual = movimiento.saldo_nuevo
-                pago.id_cuenta_bancaria.save()
+    # BUG-C2: aquí vivía un perform_create que trataba la CajaFisica creada
+    # como si fuera un Pago (creaba TransaccionFinanciera/MovimientoCajaBanco)
+    # → todo POST de caja física reventaba con AttributeError 500. Esa lógica
+    # ahora vive en apps.finanzas.services.registrar_efectos_pago y la invoca
+    # PagoViewSet.perform_create.
 
     @action(detail=False, methods=["get"])
     def tipos_documento(self, request):
@@ -1103,7 +1038,18 @@ class PagoViewSet(BaseModelViewSet):
     serializer_class = PagoSerializer
 
     def perform_create(self, serializer):
-        pago = serializer.save()
+        # BUG-C2: los side-effects financieros (TransaccionFinanciera +
+        # MovimientoCajaBanco + saldos) van en la MISMA transacción que el
+        # Pago (R-CODE-11); el service aplica select_for_update sobre la
+        # caja/cuenta afectada.
+        from django.db import transaction
+
+        from .services import registrar_efectos_pago
+
+        with transaction.atomic():
+            pago = serializer.save()
+            registrar_efectos_pago(pago)
+
         if pago.tipo_operacion == "INGRESO":
             try:
                 from apps.notificaciones.services import emitir_notificacion
