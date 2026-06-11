@@ -42,6 +42,12 @@ def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, 
         origen_lock = cajas[origen.pk]
         destino_lock = cajas[destino.pk]
 
+        # Re-validación sobre los objetos lockeados (y narrowing para mypy:
+        # `empresa` es Optional en el modelo).
+        empresa_origen = origen_lock.empresa
+        empresa_destino = destino_lock.empresa
+        if empresa_origen is None or empresa_destino is None:
+            raise ValueError("Las cajas de la transferencia deben tener empresa asignada.")
         if origen_lock.moneda_id != destino_lock.moneda_id:
             raise ValueError("Las cajas origen y destino deben tener la misma moneda.")
         if origen_lock.saldo_actual < monto:
@@ -49,7 +55,7 @@ def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, 
 
         ahora = timezone.now()
         mov_salida = MovimientoCajaBanco.objects.create(
-            id_empresa=origen_lock.empresa,
+            id_empresa=empresa_origen,
             fecha_movimiento=ahora.date(),
             hora_movimiento=ahora.time(),
             tipo_movimiento="TRANSFERENCIA_SALIDA",
@@ -66,7 +72,7 @@ def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, 
         origen_lock.save(update_fields=["saldo_actual"])
 
         mov_entrada = MovimientoCajaBanco.objects.create(
-            id_empresa=destino_lock.empresa,
+            id_empresa=empresa_destino,
             fecha_movimiento=ahora.date(),
             hora_movimiento=ahora.time(),
             tipo_movimiento="TRANSFERENCIA_ENTRADA",
