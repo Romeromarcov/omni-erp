@@ -43,7 +43,9 @@ class TasaIVAEmpresaViewSet(BaseModelViewSet):
         if empresa_id:
             from apps.core.models import Empresa
             try:
-                empresa = Empresa.objects.get(pk=empresa_id, id__in=_empresas(request))
+                # SEC-B2: el pk de Empresa es id_empresa (no id); con id__in el
+                # ORM lanzaba FieldError (500). Se filtra por empresas visibles.
+                empresa = Empresa.objects.get(pk=empresa_id, id_empresa__in=_empresas(request))
             except Empresa.DoesNotExist:
                 pass
 

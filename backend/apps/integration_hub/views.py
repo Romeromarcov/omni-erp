@@ -108,16 +108,19 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         try:
             conector = registry.get_connector(instancia)
             resultado = conector.test_connection()
-        except Exception as exc:
-            logger.error("test_connection error [%s]: %s", instancia.nombre, exc)
+        except Exception:
+            # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
+            # mensaje_estado también se expone vía serializer → mensaje genérico.
+            logger.exception("test_connection error [%s]", instancia.nombre)
+            mensaje = "Error de conexión con el sistema externo. Revise la configuración del conector."
             instancia.estado = "error"
-            instancia.mensaje_estado = str(exc)[:500]
+            instancia.mensaje_estado = mensaje
             instancia.ultimo_test_conexion = timezone.now()
             instancia.save(
                 update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"]
             )
             return Response(
-                {"success": False, "message": str(exc)},
+                {"success": False, "message": mensaje},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
@@ -298,8 +301,13 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
 
         try:
             conector = registry.get_connector(instancia)
-        except Exception as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        except Exception:
+            # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("preview_data: error obteniendo conector [%s]", instancia.nombre)
+            return Response(
+                {"error": "No se pudo inicializar el conector. Revise la configuración."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
         if not conector.supports(tipo_entidad):
             return Response(
@@ -328,11 +336,15 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
                     "muestra": registros,
                 }
             )
-        except Exception as exc:
-            logger.error(
-                "preview_data error [%s / %s]: %s", instancia.nombre, tipo_entidad, exc
+        except Exception:
+            # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception(
+                "preview_data error [%s / %s]", instancia.nombre, tipo_entidad
             )
-            return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response(
+                {"error": "Error consultando datos del sistema externo."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
 
 # ── Jobs de sincronización ────────────────────────────────────────────────────
