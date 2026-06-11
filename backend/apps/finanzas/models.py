@@ -277,142 +277,35 @@ class Caja(models.Model):
     def __str__(self):
         return f"{self.nombre} (Virtual - {self.get_tipo_caja_display()}) - {self.moneda.codigo_iso}"
 
+    def realizar_cierre(self, saldo_real, usuario=None, hasta=None):
+        """
+        Realiza el cierre de la caja virtual (FIX endpoint roto: el endpoint
+        ``POST /finanzas/cajas/{id}/cierre/`` llamaba este método, que no
+        existía → siempre 400). Reutiliza el patrón de corte persistente del
+        PR #73 (MovimientoCajaBanco tipo 'CIERRE'); además reconcilia
+        ``saldo_actual`` con el saldo real contado. Ver
+        ``services.realizar_cierre_caja``.
+        """
+        from .services import realizar_cierre_caja
+
+        return realizar_cierre_caja(self, saldo_real, usuario=usuario, hasta=hasta)
+
 
 # Modelo para cajas físicas (puestos de trabajo con hardware específico)
 class CajaFisica(models.Model):
 
     def realizar_cierre(self, saldo_real, usuario=None, hasta=None):
         """
-        Realiza el cierre de caja física:
-        - Calcula ingresos y egresos desde el último cierre (o desde el inicio).
-        - Compara con el saldo real contado.
-        - Registra MovimientoCajaBanco de tipo 'CIERRE' (corte persistente).
-        - Si hay descuadre, crea ajuste para cuadrar el saldo.
-        - Devuelve resumen del cierre.
-
-        FIX (hallazgo P0-8): este método leía/escribía ``self.saldo_actual`` y
-        ``self.fecha_ultimo_cierre``, campos eliminados del modelo en la
-        migración finanzas/0021 → AttributeError en runtime y el corte nunca
-        persistía. Decisión (Opción A, sin restaurar campos): el corte se
-        re-deriva de los datos persistentes — el último MovimientoCajaBanco de
-        tipo 'CIERRE' de esta caja es la fuente de verdad:
-        - su ``saldo_nuevo`` (= saldo real contado) es el saldo base del
-          período siguiente;
-        - su (fecha_movimiento, hora_movimiento) es el inicio EXCLUSIVO de la
-          ventana siguiente (semántica BUG-M4: comparación por fecha+hora).
-        El ajuste por descuadre se registra con la misma fecha/hora del límite
-        del cierre, de modo que queda DENTRO de la ventana recién cerrada y el
-        siguiente cierre no lo vuelve a contar (el saldo base ya lo incorpora).
+        Realiza el cierre de caja física (FIX hallazgo P0-8 / PR #73):
+        - Calcula ingresos y egresos desde el último corte (movimiento
+          'CIERRE'), compara con el saldo real contado, crea ajuste si hay
+          descuadre y persiste el corte como MovimientoCajaBanco 'CIERRE'.
+        - La lógica común (también usada por Caja virtual) vive en
+          ``services.realizar_cierre_caja``.
         """
-        from decimal import Decimal
+        from .services import realizar_cierre_caja
 
-        from django.db import transaction
-        from django.utils import timezone
-
-        from apps.finanzas.ajustes import crear_ajuste_caja_banco
-
-        from .models import MovimientoCajaBanco
-
-        from django.db.models import Q
-
-        ahora = timezone.now()
-        limite = hasta or ahora
-        fecha_limite = limite.date()
-        hora_limite = limite.time()
-        # R-CODE-4: nunca Decimal(float) — pasar por str preserva el valor.
-        saldo_real = saldo_real if isinstance(saldo_real, Decimal) else Decimal(str(saldo_real))
-
-        with transaction.atomic():
-            # Lock de la caja: serializa cierres concurrentes sobre la misma
-            # caja física (dos cierres simultáneos leerían el mismo corte y
-            # doble-contarían la ventana).
-            CajaFisica.objects.select_for_update().get(pk=self.pk)
-            ultimo_cierre = (
-                self.movimientos.filter(tipo_movimiento="CIERRE")
-                .order_by("-fecha_movimiento", "-hora_movimiento", "-fecha_creacion")
-                .first()
-            )
-            # BUG-M4: la ventana se compara con (fecha, hora) del movimiento,
-            # no solo con la fecha, para no recontar movimientos del mismo día
-            # anteriores al cierre previo ni incluir los posteriores al límite.
-            if ultimo_cierre:
-                inicio_fecha = ultimo_cierre.fecha_movimiento
-                inicio_hora = ultimo_cierre.hora_movimiento
-                if (fecha_limite, hora_limite) < (inicio_fecha, inicio_hora):
-                    raise ValueError("El límite del cierre no puede ser anterior al último cierre.")
-                saldo_base = ultimo_cierre.saldo_nuevo
-                # Estrictamente DESPUÉS del último cierre
-                movimientos = self.movimientos.filter(
-                    Q(fecha_movimiento__gt=inicio_fecha)
-                    | Q(fecha_movimiento=inicio_fecha, hora_movimiento__gt=inicio_hora)
-                )
-            else:
-                saldo_base = Decimal("0.00")
-                movimientos = self.movimientos.all()
-            # Hasta el límite del cierre, inclusive
-            movimientos = movimientos.filter(
-                Q(fecha_movimiento__lt=fecha_limite)
-                | Q(fecha_movimiento=fecha_limite, hora_movimiento__lte=hora_limite)
-            )
-            ingresos = sum(
-                (m.monto for m in movimientos.filter(tipo_movimiento__in=["INGRESO", "AJUSTE_POSITIVO"])),
-                Decimal("0.00"),
-            )
-            egresos = sum(
-                (m.monto for m in movimientos.filter(tipo_movimiento__in=["EGRESO", "AJUSTE_NEGATIVO"])),
-                Decimal("0.00"),
-            )
-            saldo_teorico = saldo_base + ingresos - egresos
-            descuadre = saldo_real - saldo_teorico
-
-            movimiento_ajuste = None
-            if descuadre != 0:
-                # Crear ajuste para cuadrar el saldo. Se fecha en el límite del
-                # cierre (no en now()) para que pertenezca a la ventana recién
-                # cerrada y no se doble-cuente en el cierre siguiente.
-                tipo_ajuste = "POSITIVO" if descuadre > 0 else "NEGATIVO"
-                movimiento_ajuste = crear_ajuste_caja_banco(
-                    empresa=self.empresa,
-                    monto=abs(descuadre),
-                    moneda=None,
-                    caja_fisica=self,
-                    usuario=usuario,
-                    motivo=f"Ajuste por descuadre en cierre de caja física {self.nombre}",
-                    tipo_ajuste=tipo_ajuste,
-                    referencia=f'Ajuste cierre {self.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
-                    fecha_movimiento=fecha_limite,
-                    hora_movimiento=hora_limite,
-                )
-            # Registrar movimiento de cierre (corte persistente: saldo_nuevo y
-            # fecha/hora son la base y el inicio de la ventana del siguiente
-            # cierre).
-            movimiento_cierre = MovimientoCajaBanco.objects.create(
-                id_empresa=self.empresa,
-                fecha_movimiento=fecha_limite,
-                hora_movimiento=hora_limite,
-                tipo_movimiento="CIERRE",
-                monto=Decimal("0.00"),
-                id_moneda=None,
-                concepto=f"Cierre de caja física. Saldo real: {saldo_real}, saldo teórico: {saldo_teorico}, descuadre: {descuadre}",
-                referencia=f'Cierre {self.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
-                id_caja_fisica=self,
-                saldo_anterior=saldo_base,
-                saldo_nuevo=saldo_real,
-                id_usuario_registro=usuario if usuario else None,
-            )
-        return {
-            "ingresos": ingresos,
-            "egresos": egresos,
-            "saldo_teorico": saldo_teorico,
-            "saldo_real": saldo_real,
-            "descuadre": descuadre,
-            "movimiento_cierre_id": movimiento_cierre.id_movimiento,
-            "movimiento_ajuste_id": movimiento_ajuste.id_movimiento if movimiento_ajuste else None,
-            "fecha_cierre": limite,
-            "mensaje": (
-                "Cierre de caja física realizado." if descuadre == 0 else "Cierre de caja física realizado con ajuste."
-            ),
-        }
+        return realizar_cierre_caja(self, saldo_real, usuario=usuario, hasta=hasta)
 
     TIPO_CAJA_CHOICES = [
         ("REGISTRADORA", "Caja Registradora"),
@@ -1102,15 +995,79 @@ class SesionCajaFisica(models.Model):
             return (self.fecha_cierre - self.fecha_apertura).total_seconds() / 60
         return (timezone.now() - self.fecha_apertura).total_seconds() / 60
 
-    def cerrar_sesion(self, notas_cierre=None):
-        """Cierra la sesión de caja"""
+    def cerrar_sesion(self, notas_cierre=None, saldos_reales=None, usuario=None, hasta=None):
+        """
+        Cierra la sesión de caja de forma ATÓMICA.
+
+        FIX (endpoint roto): la vista llamaba este método con
+        ``saldos_reales/usuario/hasta`` pero la firma solo aceptaba
+        ``notas_cierre`` → TypeError 500. Ahora, si se pasa ``saldos_reales``
+        (dict {id_caja: saldo_real_contado}), se realiza el cierre de cada
+        caja de la sesión — la caja física principal y/o sus cajas virtuales
+        asociadas — reutilizando el corte persistente del PR #73
+        (``services.realizar_cierre_caja``), y se marca la sesión CERRADA en
+        la misma transacción.
+
+        Args:
+            notas_cierre:  Notas a guardar en la sesión (opcional).
+            saldos_reales: dict {id_caja (str/UUID): saldo real contado}.
+                           Las claves deben ser la caja física de la sesión o
+                           una de sus cajas virtuales; otra cosa → ValueError.
+            usuario:       Usuario que cierra (para los movimientos de cierre).
+            hasta:         datetime límite de los cierres (opcional).
+
+        Returns:
+            dict {id_caja: resumen del cierre} (vacío si no se pidieron cierres).
+
+        Raises:
+            ValueError con mensaje de negocio (sesión ya cerrada, caja ajena a
+            la sesión, saldo no numérico, límite anterior al último cierre).
+        """
+        from decimal import Decimal, InvalidOperation
+
+        from django.db import transaction
         from django.utils import timezone
 
-        self.estado = "CERRADA"
-        self.fecha_cierre = timezone.now()
-        if notas_cierre:
-            self.notas = notas_cierre
-        self.save()
+        from .services import realizar_cierre_caja
+
+        cierres = {}
+        with transaction.atomic():
+            # Lock de la sesión: serializa cierres concurrentes y fija el
+            # estado leído (no cerrar dos veces / no cerrar sobre cerrada).
+            sesion = type(self).objects.select_for_update().get(pk=self.pk)
+            if sesion.estado == "CERRADA":
+                raise ValueError("La sesión ya está cerrada.")
+
+            for caja_id, saldo in (saldos_reales or {}).items():
+                caja = self._resolver_caja_de_sesion(caja_id)
+                try:
+                    # R-CODE-4: nunca Decimal(float) — pasar por str.
+                    saldo_decimal = Decimal(str(saldo))
+                except (InvalidOperation, ValueError, TypeError):
+                    raise ValueError(f"El saldo_real enviado para la caja {caja_id} no es un número válido.")
+                cierres[str(caja_id)] = realizar_cierre_caja(
+                    caja, saldo_decimal, usuario=usuario, hasta=hasta
+                )
+
+            self.estado = "CERRADA"
+            self.fecha_cierre = timezone.now()
+            if notas_cierre:
+                self.notas = notas_cierre
+            self.save()
+        return cierres
+
+    def _resolver_caja_de_sesion(self, caja_id):
+        """
+        Resuelve una caja perteneciente a la sesión: la caja física principal
+        o una de sus cajas virtuales asociadas. Cualquier otra cosa →
+        ValueError (no se filtra existencia de cajas ajenas).
+        """
+        if str(caja_id) == str(self.caja_fisica_id):
+            return self.caja_fisica
+        try:
+            return self.caja_fisica.cajas_virtuales.get(id_caja=caja_id)
+        except (Caja.DoesNotExist, ValueError, TypeError, ValidationError):
+            raise ValueError(f"La caja {caja_id} no pertenece a esta sesión.")
 
     @classmethod
     def obtener_sesion_activa(cls, caja_fisica, usuario=None):
