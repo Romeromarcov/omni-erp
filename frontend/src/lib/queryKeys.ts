@@ -27,6 +27,17 @@ export const pagosKeys = {
     ['pagos', tipoDocumento, idDocumento] as const,
 };
 
+export const pedidosKeys = {
+  // Prefijo compartido con la lista paginada (`['pedidos', page]`) para que
+  // `invalidateQueries({queryKey: all()})` refresque lista y detalle a la vez.
+  all: () => ['pedidos'] as const,
+  detail: (id: string) => ['pedidos', 'detail', id] as const,
+};
+
+export const almacenesKeys = {
+  all: () => ['almacenes'] as const,
+};
+
 export const productosKeys = {
   all: () => ['productos'] as const,
   porEmpresa: (empresaId: string) => ['productos', empresaId] as const,
@@ -65,6 +76,8 @@ export const cxcKeys = {
   tasasAll: () => ['cxc', 'tasas'] as const,
   acuerdos: (estado?: string | null) => ['cxc', 'acuerdos', estado ?? null] as const,
   acuerdosAll: () => ['cxc', 'acuerdos'] as const,
+  cuentas: (page?: number) => ['cxc', 'cuentas', page ?? 1] as const,
+  cuentasAll: () => ['cxc', 'cuentas'] as const,
 };
 
 // ── Finanzas ──────────────────────────────────────────────────────────────────
