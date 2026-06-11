@@ -89,9 +89,21 @@ class TestLoginView:
         # authenticate() devuelve None para inactivos → 401 credenciales inválidas.
         assert resp.status_code == 401
 
-    def test_login_rate_limit_429(self, user_a):
+    def test_login_rate_limit_429(self, user_a, monkeypatch):
         """SEC-07: >5 POST/min por IP → 429 (con credenciales inválidas para no
-        depender del flujo feliz)."""
+        depender del flujo feliz).
+
+        Flaky-fix (R-PROC-4): la ventana de django-ratelimit se calcula con
+        time.time(); si los 7 POST cruzan el límite del minuto en un runner
+        lento, el contador se resetea y el 429 nunca llega. Se congela el
+        reloj que usa django_ratelimit.core para que todos los intentos
+        caigan en la misma ventana.
+        """
+        import django_ratelimit.core as rl_core
+
+        ts_fijo = rl_core.time.time()
+        monkeypatch.setattr(rl_core, "time", type("_T", (), {"time": staticmethod(lambda: ts_fijo)}))
+
         client = APIClient()
         codigos = [
             client.post(
