@@ -4,8 +4,19 @@
 
 ## Punto de partida
 
-- **[`PLAN_MAESTRO_UNICO.md`](PLAN_MAESTRO_UNICO.md)** — Única fuente de verdad del producto: visión, reglas, arquitectura, estado real y roadmap. **Empieza aquí.**
+- **[`PLAN_MAESTRO_UNICO.md`](PLAN_MAESTRO_UNICO.md)** — Única fuente de verdad del producto: visión, reglas, arquitectura, estado real y roadmap consolidado (§5.2: próximos pasos con DoD). **Empieza aquí.**
+- [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md) — Gate de cierre obligatorio (lectura obligatoria).
+- [`FLUJO_DE_TRABAJO.md`](FLUJO_DE_TRABAJO.md) — Branching y entornos (main=prod, develop=staging).
+- [`DESPLIEGUE_RAILWAY.md`](DESPLIEGUE_RAILWAY.md) — Topología y despliegue en Railway.
+- [`ENTORNO_DE_TRABAJO.md`](ENTORNO_DE_TRABAJO.md) — Entorno de trabajo (local y nube).
 - [`../README.md`](../README.md) — Cómo levantar y trabajar con el monorepo.
+
+## Planes y auditorías
+
+- [`planes/`](planes/) — Planes de ejecución vivos (piloto distribuidora, offline-first, multiplataforma, panel SaaS, cobranza/Odoo, hardening de seguridad).
+- [`PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md`](PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md) — Plan de calidad "cero dudas"; estado vivo en [`audit/ESTADO_PLAN_CERO_DUDAS.md`](audit/ESTADO_PLAN_CERO_DUDAS.md).
+- [`auditorias/`](auditorias/) — Auditoría activa en la raíz (hoy: [`AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md)); cerradas en `archivo/`.
+- [`audit/`](audit/) — Artefactos del plan cero-dudas: mapas A1 auto-generados, security review, checklist R-CODE.
 
 ## Backend
 
@@ -29,6 +40,9 @@
 - [ADR-004](decisions/ADR-004-agent-stack-anthropic-sdk.md) — Stack de agentes (Anthropic SDK).
 - [ADR-005](decisions/ADR-005-dsl-personalizacion-declarativo.md) — DSL de personalización declarativo.
 - [ADR-006](decisions/ADR-006-asientos-contables-automaticos.md) — Asientos contables automáticos.
+- [ADR-007](decisions/ADR-007-arquitectura-localizacion-dos-capas.md) — Localización de dos capas (legal + mercado).
+- [ADR-008](decisions/ADR-008-monorepo-shells-multiplataforma.md) — Monorepo + shells mobile/desktop.
+- [ADR-009](decisions/ADR-009-cxc-vs-cuentas-por-cobrar.md) — `cuentas_por_cobrar` (ledger) vs `cxc` (cobranza IA).
 
 ## Skills (guías de implementación reutilizables)
 
@@ -42,7 +56,7 @@
 
 ## Otros
 
-- [`ctf/`](ctf/) — ejercicios/retos de seguridad (CTF) internos.
+- [`ctf/`](ctf/) — **Compromisos Técnicos Fechados** (deuda diferida con `vence_en` y dueño, R-PROC-6).
 - [`tech-debt/`](tech-debt/) — registro de deuda técnica.
 - [`_archive/`](_archive/) — **planes históricos archivados.** Material superado por el plan maestro; se conserva solo como referencia histórica, no refleja el estado actual.
 

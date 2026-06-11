@@ -7,12 +7,17 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | PLANIFICADO                            |
-| **Fecha**    | 2026-06-07                             |
+| **Estado**   | EN CURSO — P0-1 (RLS) infra hecha, activación bloqueada por [CTF-012](../ctf/CTF-012.md); P1–P3 pendientes |
+| **Fecha**    | 2026-06-07 (estado actualizado 2026-06-10) |
 | **Esfuerzo** | ~3–4 semanas (repartibles en paralelo) |
 | **Owner**    | equipo-backend / equipo-agentes / devops |
 
 ---
+
+> ⚠️ **Nota cruzada:** este plan es *hardening proactivo*; los hallazgos puntuales de seguridad
+> viven en las auditorías ([`SECURITY_REVIEW_2026-06-02.md`](../audit/SECURITY_REVIEW_2026-06-02.md)
+> cerrada; [`AUDITORIA_INTEGRAL_2026-06-10.md`](../auditorias/AUDITORIA_INTEGRAL_2026-06-10.md)
+> **activa**, con fixes P0 en el Plan Maestro §5.2). "Hallazgos cerrados" ≠ "hardening completo", y viceversa.
 
 ## 0. Resumen — estado actual por hallazgo
 

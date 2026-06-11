@@ -2,8 +2,15 @@
 
 > **DoD A2.** Reporte consolidado de la auditoría de seguridad adversarial, con cada
 > hallazgo por **severidad + CWE + archivo:línea + estado**, y por cada uno un **fix
-> mergeado** o **riesgo aceptado con dueño** (CTF). Fuente extensa: [`docs/AUDITORIA_2026-06-02.md`](../AUDITORIA_2026-06-02.md).
+> mergeado** o **riesgo aceptado con dueño** (CTF). Fuente extensa: [`docs/_archive/AUDITORIA_2026-06-02.md`](../_archive/AUDITORIA_2026-06-02.md) (archivada).
 > Estado verificado al **2026-06-03** (auditoría plan cero-dudas).
+>
+> ⚠️ **Nota de alcance:** "0 High/Critical abiertos" refería a los hallazgos de *esa* auditoría;
+> no significa "seguridad completa". El hardening proactivo pendiente vive en
+> [`docs/planes/05-seguridad-hardening.md`](../planes/05-seguridad-hardening.md), y la
+> **auditoría integral 2026-06-10** encontró hallazgos nuevos ALTOS (cross-tenant en métodos de
+> pago) — ver [`docs/auditorias/AUDITORIA_INTEGRAL_2026-06-10.md`](../auditorias/AUDITORIA_INTEGRAL_2026-06-10.md)
+> y el workstream P0 del Plan Maestro §5.2.
 
 ## Veredicto
 

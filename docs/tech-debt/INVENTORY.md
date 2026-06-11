@@ -5,7 +5,7 @@
 > Fechado en [`docs/ctf/`](../ctf/) (R-PROC-6). Este inventario es la referencia histórica
 > y de baja prioridad; al promover un ítem a crítico, se le crea su CTF.
 >
-> Última actualización: 2026-06-03 (auditoría plan cero-dudas).
+> Última actualización: 2026-06-10 (auditoría integral).
 
 ## TODOs activos en código
 
@@ -50,9 +50,25 @@
 - Varios checks de CI en `continue-on-error` (ruff/mypy/diff-cover/audits) — endurecer por
   GATE-1 (ver [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md)).
 
+## Bugs reales destapados por el backfill Fase 3 (2026-06-09)
+
+~30 bugs de producto documentados en los propios tests con comentario `BUG` (sin enmascarar):
+jobs de sync colgados (`SyncResult.procesados`), upserts del hub rotos contra modelos reales,
+`OperacionCambioDivisa` importa modelo inexistente (CTF-013), `finanzas/utils` importa
+`SesionCaja` inexistente, sesiones de caja por API rotas, `rapidfuzz` usado sin estar en
+requirements, tools MCP de inventario/ventas rotas, 500s en analizar-cobranza/reorden, horas
+UTC en asistencia, y más. Fuente: [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md)
+(§Cierre de Fase 3). **Triage:** los que solapan con el workstream P0 del Plan Maestro §5.2 se
+corrigen ahí; el resto se corrige al tocar cada módulo (cada fix actualiza el test que lo fija).
+
 ## Hallazgos BAJA/MEDIA abiertos de auditorías
 
-Ver el detalle por severidad + CWE + archivo:línea en
-[`docs/AUDITORIA_2026-06-02.md`](../AUDITORIA_2026-06-02.md) (15 BAJA + 12 MEDIA registrados).
-Los residuales con seguimiento activo (SEC-1, COOP/CORP, CSP) están en
-[`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md).
+- **Auditoría integral 2026-06-10** (la vigente): hallazgos CRÍTICO/ALTO van como workstream P0
+  del Plan Maestro §5.2; los BAJO quedan registrados en
+  [`docs/auditorias/AUDITORIA_INTEGRAL_2026-06-10.md`](../auditorias/AUDITORIA_INTEGRAL_2026-06-10.md)
+  (SEC-B1..B4 y bugs BAJO: fechas UTC en aging/tasas, asiento `PAGO_CXC` ausente en abonos directos,
+  PATCH directo de `monto`/`estado` en CxC, `Decimal(monto)` sin validar).
+- Histórico 2026-06-02: 15 BAJA + 12 MEDIA en
+  [`docs/_archive/AUDITORIA_2026-06-02.md`](../_archive/AUDITORIA_2026-06-02.md) (archivada).
+  Los residuales con seguimiento activo (SEC-1 ✅, COOP/CORP ✅, CSP diferido) están en
+  [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md).

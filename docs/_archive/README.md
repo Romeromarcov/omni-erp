@@ -19,3 +19,6 @@ Se conservan solo como referencia de origen (cómo se llegó a las decisiones ac
 | `CHANGELOG_FASE1.md` | Changelog de módulos M1–M7 (histórico) | `backend/PROJECT_LOG.md` |
 | `05_PLAN_CREACION_SKILLS.md`, `06_PLANTILLAS_PROMPTS_SKILLS.md` | Planes de creación de skills | `docs/skills/*` |
 | `PROJECT_LOG_root_obsoleto.md` | Log cronológico divergente de la raíz (paró en Sesión 18) | `backend/PROJECT_LOG.md` (vigente) |
+| `AUDITORIA_2026-06-02.md` | Auditoría integral 2026-06-02 (Olas 1–5 resueltas) | `docs/audit/SECURITY_REVIEW_2026-06-02.md` (consolidado) |
+| `RAILWAY_TROUBLESHOOTING_2026-06-03.md` | Troubleshooting puntual de Railway | `docs/DESPLIEGUE_RAILWAY.md` |
+| `HANDOFF_CERO_DUDAS_2026-06-07.md` | Handoff del plan cero-dudas (superado en 48 h) | `docs/audit/ESTADO_PLAN_CERO_DUDAS.md` |
