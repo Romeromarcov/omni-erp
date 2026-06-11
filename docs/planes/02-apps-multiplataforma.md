@@ -44,6 +44,6 @@ Ver [CTF-009](../ctf/CTF-009.md).
 
 - [ ] Windows `.exe` firmado y auto-actualizable, publicado vía CI.
 - [ ] Android `.aab` firmado generado en CI.
-- [ ] Drift de rol corregido ([CTF-009](../ctf/CTF-009.md)).
+- [x] Drift de rol corregido ([CTF-009](../ctf/CTF-009.md) — CERRADO 2026-06-07).
 - [ ] Documentación de release por plataforma actualizada en `frontend/MULTIPLATAFORMA.md`.
 - [ ] [CTF-010](../ctf/CTF-010.md) cerrado con fecha real.

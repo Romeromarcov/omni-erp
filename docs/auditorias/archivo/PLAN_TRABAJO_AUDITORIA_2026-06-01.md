@@ -1,5 +1,14 @@
 # Plan de Trabajo — Auditoría 2026-06-01
 
+> ⚠️ **CERRADO Y ARCHIVADO (2026-06-10, auditoría integral).** Este plan de 127 ítems fue
+> parcialmente ejecutado sin tablero de cierre: Semana 1 (CRIT-1..3, H-SEC-1/2) cerrada en `main`
+> (Plan 0 tarea 0.1); TRACK-1F-1..5, GAP-1 (ADR-007), GAP-3 (§5.2-quater), GAP-6, NEW-MIG-1,
+> NEW-DOC-1/2 y los headers de seguridad hechos; gran parte de M-SEC quedó cubierta por el
+> plan 05 de hardening y el plan cero-dudas. **Lo vivo migró:** la sección §11 (frontend) es ahora
+> el workstream F del [`PLAN_MAESTRO_UNICO.md` §5.2](../../PLAN_MAESTRO_UNICO.md) (este doc queda
+> como referencia de detalle); GAP-4/4-bis (backups) está en P0-9 + Plan 05 P1-7; GAP-2 (l10n)
+> en §5.2-bis. No usar este documento para planificar.
+
 **Fuente:** auditoría multi-agente backend (203 agentes, 162 hallazgos confirmados, 71 items gap) + auditoría profunda frontend (189 agentes, 153 hallazgos confirmados) + ejecución de validaciones del 2026-06-01.
 **Fuente de verdad de planificación:** este documento solo lista trabajo derivado de la auditoría; el roadmap mayor sigue en [`PLAN_MAESTRO_UNICO.md`](PLAN_MAESTRO_UNICO.md).
 **Responsable:** Marco + agente IA co-desarrollador.

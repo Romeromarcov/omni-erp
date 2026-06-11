@@ -18,6 +18,12 @@ Validación: `manage.py check` 0 issues · `makemigrations --check` sin drift ·
 suite backend completa verde. PyJWT 2.13.0 validado con 64 tests de auth/JWT/
 capability (el bump fue posible porque simplejwt 5.5.1 ya no fija `pyjwt<2.10`).
 
+> **Actualización 2026-06-10 (auditoría integral):** Django subió luego a **5.2.15**
+> (PR #26, 5 CVEs PYSEC-2026-197..201) y **3 de los 4 bumps major de la tabla siguiente
+> ya están hechos** en `requirements.txt`: `mcp>=1.23.0`, `lxml==6.1.0`,
+> `cryptography==46.0.7`. Único pendiente: **pytest 8.2.2 → 9.x** (solo dev/CI,
+> CVE-2025-71176) — riesgo bajo, hacer al tocar tooling de tests. No requiere CTF.
+
 ## ⏳ Pendiente — requieren PR dedicado con pruebas de compatibilidad (CTF)
 
 Estos son bumps **major** o con conflictos de constraints; cambiarlos a ciegas

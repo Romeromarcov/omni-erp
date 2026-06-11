@@ -1,5 +1,11 @@
 # Handoff — Plan "Cero Dudas" (estado al 2026-06-07)
 
+> ⚠️ **ARCHIVADO (2026-06-10, auditoría integral).** Este handoff quedó superado en 48 h:
+> decía cobertura 71.08% y "Fase 3 arrancada"; al 2026-06-09 la Fase 3 cerró con **93.25%**.
+> El estado vigente vive en [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md).
+> Sigue siendo útil como referencia de: §1 (setup del entorno), §4.3 (mutation testing local),
+> §5 (bloqueos: branch protection del owner) y §6 (convenciones de test).
+
 > Documento para **continuar el plan en un entorno estable**. Resume el estado real
 > (verificado ejecutando los gates), lo hecho, lo pendiente y **cómo completarlo paso a paso**.
 >

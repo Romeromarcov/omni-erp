@@ -1,7 +1,8 @@
 # Omni ERP — Plan Maestro Único
 
-**Versión:** 1.0 — Documento consolidado y única fuente de verdad
-**Fecha de consolidación:** 2026-05-28
+**Versión:** 1.1 — Documento consolidado y única fuente de verdad
+**Fecha de consolidación:** 2026-05-28 · **Última actualización integral:** 2026-06-10
+(auditoría integral: ver [`docs/auditorias/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md))
 **Autor del proyecto:** Marco · Caracas, Venezuela
 **Mantenido por:** founder + agentes de IA co-desarrolladores
 
@@ -174,7 +175,7 @@ agentes es **[`CLAUDE.md`](../CLAUDE.md)** (y `AGENTS.md`) en la raíz del repo.
 | PDF | ReportLab (activo); WeasyPrint evaluado (ADR/A-019) | ✅ |
 | Monitoreo | Sentry (`sentry-sdk[django]`) en `settings_prod.py` | ✅ |
 | Rate limiting | django-ratelimit (login) + nginx (prod) | ✅ |
-| Calidad | pytest + pytest-cov (gate 75%), pre-commit (black, isort, flake8) | ✅ |
+| Calidad | pytest + pytest-cov (**ratchet `--cov-fail-under=92`**, medido 93.25%), pre-commit (black, isort, flake8), mutation nightly (mutmut, ≥80% en 4 módulos críticos) | ✅ |
 
 **Frontend**
 | Componente | Tecnología | Estado |
@@ -198,9 +199,9 @@ agentes es **[`CLAUDE.md`](../CLAUDE.md)** (y `AGENTS.md`) en la raíz del repo.
 | **Deploy Railway (topología activa)** | ✅ `backend/Dockerfile` (con appuser non-root) + `frontend/Dockerfile.prod` + `frontend/nginx.conf` (Railway termina TLS upstream). PRs #3, #4, #5 — 2026-06-01 |
 | CI/CD | ✅ GitHub Actions (`.github/workflows/ci.yml`): jobs backend, frontend, agent-eval |
 | Monitoreo APM | ⚠️ Sentry configurado; Prometheus/Grafana pendiente |
-| Backup automático PostgreSQL | ⚠️ Railway: addon Postgres gestiona backups; verificar retención (GAP-4-bis en plan de trabajo). Self-hosted: pendiente (GAP-4) cuando se reactive |
+| Backup automático PostgreSQL | ⚠️ `backup.yml` (pg_dump diario → S3) existe pero **se omite en silencio si falta el secret `BACKUP_DB_HOST`** — verificar secret + restore probado (GAP-4-bis, Plan 05 P1-7) |
 | SSL automático (Let's Encrypt) | ⚠️ Railway: TLS upstream automático (cubierto). Self-hosted: diferido (GAP-5) hasta que el negocio justifique la migración |
-| Security headers en nginx (Railway) | ❌ pendiente — ver `docs/auditorias/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` NEW-INFRA-1 |
+| Security headers en nginx (Railway) | ✅ hecho — Django prod + nginx con CSP (ver `docs/planes/05-seguridad-hardening.md` #3) |
 
 ## 3.2 Estrategia multi-tenant
 
@@ -294,7 +295,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **Futuras localizaciones** (Colombia DIAN/CUFE, México SAT/CFDI, Ecuador SRI, Perú SUNAT) son paquetes nuevos que implementan los mismos puertos. Ninguna toca el core.
 - **Regla desde hoy:** todo módulo nuevo con lógica país-específica debe entrar por un puerto de localización, no hardcodear Venezuela. Esto evita aumentar el acoplamiento mientras se completa la extracción.
 
-> Esta decisión debe formalizarse en **ADR-007 — Arquitectura de localización de dos capas** (pendiente de redactar).
+> Decisión formalizada en **[ADR-007](decisions/ADR-007-arquitectura-localizacion-dos-capas.md)** (aceptado 2026-06-01). Implementación actual: `apps/localizacion` (framework/registry, app instalada) + `apps/localizacion_ve` (paquete de adapters consumido vía el registry; **no** es app Django instalada).
 
 ## 3.8 Decisiones arquitectónicas (ADRs)
 
@@ -306,22 +307,33 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 | ADR-004 | Stack de agentes: Anthropic SDK directo (no LangChain/CrewAI/AutoGen) | ✅ |
 | ADR-005 | DSL de personalización declarativo (no JSON Schema/Pydantic/parser propio) | ✅ |
 | ADR-006 | Asientos contables automáticos (R-CODE-11) | ✅ |
-| ADR-007 | **Arquitectura de localización de dos capas (legal + mercado), activable por empresa** | 📝 Por redactar |
+| ADR-007 | **Arquitectura de localización de dos capas (legal + mercado), activable por empresa** | ✅ Aceptado 2026-06-01 |
 | ADR-008 | Monorepo de clientes + shells mobile (RN/Expo) y desktop (Tauri 2) sobre la Capa 1 | ✅ |
+| ADR-009 | Separar `cuentas_por_cobrar` (ledger) de `cxc` (cobranza IA) | ✅ Aceptado 2026-06-01 |
 
 ---
 
 # 4 — Estado actual real del proyecto
 
-> Esta sección es la **foto verificada** del proyecto al 2026-05-28 (rama `main`, último commit `463c502`, tag `v0.1.0-phase0-complete`). Reemplaza los campos de estado desactualizados del antiguo Master Plan §2.2.
+> Esta sección es la **foto verificada** del proyecto al **2026-06-10** (rama `main` @ `97cb662`,
+> auditoría integral con gate corrido). Foto anterior: 2026-05-28 (`463c502`, tag `v0.1.0-phase0-complete`).
 
 ## 4.1 Resumen ejecutivo
 
 - **Fase 0 (Fundación AI-nativa): CERRADA al 100%.** Tag `v0.1.0-phase0-complete`.
 - **Fase 1 / Bloque 1 — núcleo común (M1–M10): COMPLETO** (M9 agentes solo en modo sombra/sugerencia).
-- **Plan de hardening post-auditoría (39 ítems, `PLAN_TRABAJO_COMPLETO`): TODO COMPLETO.** Seguridad, tests, infra prod, Sentry, rate limiting, cookies httpOnly, paginación, validación zod.
-- **Módulo `cxc` (Cobranza Inteligente): implementado** (Bloques 0–10 del plan CxC); frontend shell ERP moderno + asistente IA shippeado en commit `84f7ab4` (2026-05-31).
-- **~37 apps Django**, **850 tests backend verdes** (verificado 2026-06-01, exit 0 en pytest) + eval suite, **~92 tests frontend**, cobertura backend gate ≥65% / frontend ≥60%.
+- **Plan de hardening post-auditoría (39 ítems, `PLAN_TRABAJO_COMPLETO`): TODO COMPLETO.**
+- **Módulo `cxc` (Cobranza Inteligente): implementado**; frontend shell ERP moderno + asistente IA shippeado (`84f7ab4`, 2026-05-31).
+- **Plan "cero dudas" Fases 0–3 CERRADAS** (2026-06-09): cobertura backend **93.25%** (ratchet CI 92),
+  **~3.5k tests backend verdes**, mutation **≥80%** en los 4 módulos críticos (fiscal 84.5 / cxc_scoring 90 /
+  cxc_aging 90.5 / nómina 93.5), aislamiento multi-tenant con guards automáticos. Faltan Fases 4 (frontend 80% + E2E)
+  y 5 (gates finales + branch protection). Detalle vivo: [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](audit/ESTADO_PLAN_CERO_DUDAS.md).
+- **Planes C (consola SaaS C1–C3) y D (Cobranza standalone Lubrikca/Odoo D1/D2/D4): completados** (2026-06-07);
+  diferidos C4 (billing) y D3 (push Odoo, CTF-011). Conector **Google Sheets** añadido al Hub (posterior a la foto 05-28).
+- **36 apps Django instaladas** (+`localizacion_ve` como paquete de adapters), **205 tests frontend verdes**, cobertura frontend ~55% (gate 60% en vitest sobre lo medido).
+- **⚠️ Auditoría integral 2026-06-10:** detectó **1 fuga cross-tenant activa** (métodos de pago) y
+  **bugs críticos de integridad financiera** (abonos CxC por CRUD abierto; pagos por API no mueven saldos).
+  Son el **workstream P0** de §5.2. Detalle: [`docs/auditorias/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md).
 
 ## 4.2 Módulos — estado verificado
 
@@ -412,13 +424,64 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 
 **Conclusión:** El núcleo común del MVP (sub-fases 1.A–1.E) está construido y endurecido. **El trabajo ya no es "construir más módulos en abstracto" — es poner la distribuidora a operar (1.F).** Eso es lo que cumple R-PROC-8 y cierra el riesgo de "60 módulos a medias".
 
-## 5.2 Próximos pasos inmediatos (orden recomendado)
+## 5.2 Próximos pasos — roadmap consolidado hasta producto vendible
 
-### Paso 0 — Higiene de documentación (esta entrega)
-- [x] Consolidar planificación en este documento único.
-- [ ] Archivar planes ejecutados y el `PROJECT_LOG.md` de la raíz (ver §10).
-- [x] Frontend shell ERP moderno + asistente IA shippeado en `84f7ab4` (2026-05-31). Cierra ítem "pulido cxc" del plan original.
-- [ ] **Auditoría 2026-06-01:** ejecutar `docs/auditorias/PLAN_TRABAJO_AUDITORIA_2026-06-01.md` (33 hallazgos + 4 deltas vs plan). Bloqueante de pasos siguientes para ítems CRIT-1..3 y H-SEC-1..2.
+> **Consolidado 2026-06-10.** Esta sección absorbe y ordena TODO el trabajo pendiente declarado en:
+> auditoría integral 2026-06-10, plan cero-dudas (Fases 4–5), planes 0/A/B/C/D/05 (`docs/planes/`),
+> auditoría 2026-06-01 (su §11 frontend migra aquí como workstream F), CTFs abiertos y §5.2-bis/ter.
+> Cada paquete = PRs pequeños y focales (R-PROC-2) que pasan el [gate completo](DEFINITION_OF_DONE.md).
+>
+> **Definición de "producto soñado listo para vender":** los workstreams P0 + 1.F + S1 + Q1 cerrados
+> (seguro y operando con un cliente real) habilitan **vender a pilotos**; Bloque 2 (5+ clientes pagando,
+> retención >70%) es el producto vendible a escala.
+
+### P0 — Correcciones de auditoría 2026-06-10 ⛔ BLOQUEANTE (antes de operar con datos reales)
+
+Hallazgos verificados línea por línea — detalle y explotabilidad en
+[`AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md). Orden por riesgo:
+
+| # | PR (focal) | Contenido | DoD |
+|---|---|---|---|
+| P0-1 | `fix/finanzas-metodos-pago-tenant` | SEC-A1/A2/A3 + SEC-M2: quitar override de `get_object`, validar empresa destino contra `get_empresas_visible`, restringir `buscar_reutilizar` a `es_publico\|es_generico` con proyección de campos, `empresa` read-only en `MetodoPagoEmpresaActivaSerializer` | Tests cross-tenant: GET/POST con UUID/empresa ajena → 404/400; `buscar_reutilizar` no expone privados de terceros ni `documento_json`; gate completo verde |
+| P0-2 | `fix/cxc-abonos-crud` | BUG-C1: `AbonoCxCViewSet` deja de ser CRUD libre — create delega en `registrar_abono` (atómico+lock+tope) validando tenant; update/delete bloqueados (anulación con proceso) | Test: abono por API actualiza saldo/estado; monto ≤0 o > saldo → 400; CxC ajena → 404; DELETE → 405 |
+| P0-3 | `fix/finanzas-pagos-saldos` | BUG-C2 + BUG-A1: mover side-effects (TransaccionFinanciera + MovimientoCajaBanco + saldos) de `CajaFisicaViewSet` a un service invocado por `PagoViewSet`, con `transaction.atomic` + `select_for_update`; `transferencia_entre_cajas` atómica, con lock, validando monto>0, saldo y misma moneda | Test de integración: POST pago → transacción+movimiento+saldo correctos; POST caja física ya no 500; transferencia concurrente no pierde saldo; rollback total ante fallo a mitad |
+| P0-4 | `fix/cxc-acuerdos-cuotas` | BUG-A2 + BUG-M3: acumular `monto_pagado` (no sobrescribir), `min_value` en monto, lock + check dentro de `atomic`, conversión de moneda pago→acuerdo, capear `generar_cuotas` al total y validar serializer (total>0, coherencia, tenant del FK `cxc`) | Tests: pagos parciales suman; doble pago concurrente → uno falla; 100 VES no saldan 100 USD; cuotas nunca exceden el total |
+| P0-5 | `fix/ventas-cxc-duplicada` | BUG-A4: anular/reutilizar la CxC del pedido al facturar (no crear segunda); crear CxC en entrega de venta CONTADO con pedido no facturada (o decidir y documentar el flujo) | Test flujo crédito: 1 sola CxC por el total; test contado+pedido: CxC presente; `tests_api/test_e2e_ciclo_venta` sigue verde |
+| P0-6 | `fix/serializers-fk-tenant` | SEC-M1 + SEC-B1 (sistémico): mixin que acota el queryset de toda FK tenant-aware a `get_empresas_visible`; extender guard TEST-1 a modelos "detalle" (FK a Empresa a 2 saltos) | Test paramétrico nuevo "POST con FK ajena → 400" sobre los ViewSets de escritura; guard estructural cubre detalle-ViewSets |
+| P0-7 | `fix/fugas-y-comandos` | SEC-M3 + SEC-M4 + SEC-B2/B3: borrar/gatear `create_initial_data` (admin/admin123); `str(exc)`→mensaje genérico + `logger.exception` en integration_hub/cxc-agente/ventas/cuentas_por_cobrar; fix `fiscal/views.py:46` (`id__in`→`id_empresa__in`); validar `?empresa=` en `monedas_info` | Grep guard: 0 `str(exc)` en Responses; comando inseguro inejecutable en prod; tests de los 2 fixes puntuales |
+| P0-8 | `fix/correctness-medios` | BUG-M1 (promedio nómina), BUG-M2 (N+1 saldos CxC → annotate), BUG-M4 (ventana de cierre de caja), BUG-M5 (lock en conciliación), BUG-A5 (eliminar código muerto `crear_transaccion_financiera_pago` o corregir la conversión + tests) | Tests unitarios de cada fix; aging sin N+1 (assertNumQueries) |
+| P0-9 | Operativo (sin PR de código) | Sincronizar `develop` con `main` (6 commits); verificar secret `BACKUP_DB_HOST` y **probar un restore**; borrar `backend/db.sqlite3` y `sqlite-tools/` locales | `develop` == `main`; un backup nocturno real en S3 + restore documentado en runbook |
+
+**DoD del workstream P0:** los 9 paquetes cerrados con gate completo; re-corrida de la suite de
+aislamiento + los tests nuevos de FK-injection en verde; los ~30 bugs del backfill Fase 3 que
+solapan con P0 quedan cubiertos y el resto triagéado en `docs/tech-debt/INVENTORY.md`.
+
+### Orden maestro desde P0 (cada flecha = el anterior cierra su DoD)
+
+```
+P0 (auditoría, ~1-2 sem) ──→ 1.F Distribuidora en producción (30 días operando)
+   ├─ en paralelo: S1 (Plan 05 P0/P1: RLS+CTF-012, throttling, idempotencia, axes, backups)
+   ├─ en paralelo: Q1 (cero-dudas Fase 4: frontend 80% + E2E 5 flujos; Fase 5: gates bloqueantes + branch protection)
+   └─ en paralelo: CTF-013 (cambio divisa + nómina procesar — solapa con P0-8/BUG-A3)
+1.F cerrado ──→ 1.G POS distribuidora · 1.H BOM fábrica · 1.I OF+costeo · 1.J estabilización
+   └─ transversales: l10n (§5.2-bis) · monorepo/shells (§5.2-ter, Plan B/CTF-010) · Plan A offline (CTF-008)
+Bloque 1 cerrado (DoD: distribuidora 90d + fábrica 60d) ──→ BLOQUE 2: vender (5+ clientes, Plan C4 billing, S2/S3 hardening P2-P3)
+```
+
+### S1 — Seguridad para producción real (Plan 05, fases P0–P1) — detalle en [`planes/05-seguridad-hardening.md`](planes/05-seguridad-hardening.md)
+- [ ] **CTF-012** (vence 2026-08-01): rol de BD no-dueño → `RLS_ENABLED=True` en staging→prod; extender RLS de 15 a ~92 tablas. **DoD:** RLS activo en prod, suite RLS verde, paths sin middleware fail-closed.
+- [ ] P1: throttling DRF global · idempotencia de pagos · django-axes · revocación JWT · auditoría inmutable · pasada IDOR · backups con restore probado. **DoD:** cada ítem con test/verificación según el plan 05.
+
+### Q1 — Calidad "cero dudas" Fases 4–5 — detalle en [`audit/ESTADO_PLAN_CERO_DUDAS.md`](audit/ESTADO_PLAN_CERO_DUDAS.md)
+- [ ] Frontend 55%→80% (ratchet por escalones) + `eslint-plugin-security` (CTF-006, vence 2026-08-01) + decimal.js en flujo pago/vuelto (BUG-M6 / FE-HIGH-7).
+- [ ] E2E Playwright de los 5 flujos críticos (hoy solo login smoke) → job bloqueante.
+- [ ] Gates finales: trivy y schemathesis bloqueantes; `npm audit --audit-level=high` al cerrar CTF-007.
+- [ ] **Branch protection en GitHub — acción exclusiva del owner (Marco).**
+- **DoD Q1:** los 8 criterios de cierre del plan cero-dudas en 🟢.
+
+### F — Workstream frontend (migrado de la auditoría 2026-06-01 §11, coordinar con Q1 para no duplicar)
+- [ ] FE-CRIT-1: react-hook-form+zod en los 14 formularios restantes · FE-HIGH-13: JWT fuera de `localStorage` · FE-HIGH-11: interceptor 401+refresh · FE-HIGH-3/4/15: TanStack en páginas que aún usan `useEffect`+fetch · cola FE-MED/LOW (ver el plan archivado en [`auditorias/archivo/`](auditorias/archivo/PLAN_TRABAJO_AUDITORIA_2026-06-01.md) §11 como referencia de detalle).
+- [ ] UI faltante para módulos API-only cuando un piloto la exija: compras, CxP, contabilidad, tesorería, RRHH/nómina (gap detectado 2026-06-10).
 
 ### Sub-fase 1.F — Distribuidora en producción (PRÓXIMO, métrica que cierra Bloque 1 parcial)
 **Objetivo único:** la distribuidora opera diariamente con Omni durante **30 días continuos** sin volver a su sistema anterior.
@@ -771,10 +834,14 @@ omni-erp/
 | **`docs/FLUJO_DE_TRABAJO.md`** | Branching + despliegue (feature→develop→main; fix→main) |
 | `docs/DESPLIEGUE_RAILWAY.md` | Topología y despliegue en Railway (prod + staging) |
 | `backend/PROJECT_LOG.md` | Registro cronológico de sesiones (append-only, inmutable) |
-| `docs/decisions/ADR-*.md` (001–006, +007 por redactar) | Decisiones arquitectónicas |
-| `docs/ctf/*` | Compromisos técnicos fechados (R-PROC-6) |
+| **`docs/planes/*`** | Planes de ejecución que aterrizan este roadmap (0/A/B/C/D/05 + runbook piloto) |
+| `docs/PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md` | Plan de calidad "cero dudas"; su estado vive en `docs/audit/ESTADO_PLAN_CERO_DUDAS.md` |
+| `docs/decisions/ADR-*.md` (001–009, todos aceptados) | Decisiones arquitectónicas |
+| `docs/ctf/*` | Compromisos técnicos fechados (R-PROC-6) — único registro de deuda con fecha |
 | `docs/skills/*` | Skills del proyecto (incl. `diagnostico-railway` — diagnóstico read-only) |
-| `docs/auditorias/*`, `docs/audit/*`, `docs/tech-debt/*` | Auditorías/mapas vigentes y deuda rastreada |
+| `docs/auditorias/*` | Auditoría **activa** en la raíz (hoy: `AUDITORIA_INTEGRAL_2026-06-10.md`); cerradas en `archivo/` |
+| `docs/audit/*` | Artefactos del plan cero-dudas: estado vivo + mapas A1 auto-generados (`mapa_superficie`) + reportes A2/A3 |
+| `docs/tech-debt/INVENTORY.md` | Deuda baja/media sin fecha (la fechada va a CTF) |
 | `backend/docs/CIRCULAR_IMPORTS_ANALYSIS.md` | Análisis técnico puntual (no es plan) |
 
 ### Archivado en `docs/_archive/` (consolidado en este documento)
@@ -821,4 +888,4 @@ Planes históricos, conservados solo como referencia de origen. **No se actualiz
 ---
 
 *Documento consolidado a partir de: OMNI_ERP_MASTER_PLAN, OMNI_AI_NATIVE_EXECUTION_PLAN, 02_PLAN_EJECUCION_FOUNDER_SOLO, 01_MVP_SCOPE_NEGOCIOS_PILOTO, AGENTE_IA_PROTOCOLO_EJECUCION, PLAN_FASE1_DETALLADO, PLAN_TRABAJO_POST_AUDIT, PLAN_TRABAJO_COMPLETO, CXC-PLAN-IMPLEMENTACION, ADR-001…006, DIAGNOSTICO_INICIAL y ambos PROJECT_LOG. Verificado contra el estado real del código (37 apps, tag v0.1.0-phase0-complete, commit 463c502).*
-*Próxima revisión: al cerrar la sub-fase 1.F (distribuidora en producción).*
+*Revisión integral 2026-06-10 (auditoría integral + consolidación de estado). Próxima revisión: al cerrar el workstream P0 de §5.2 y luego al cerrar la sub-fase 1.F (distribuidora en producción).*
