@@ -105,9 +105,10 @@ mentir. Un check marcado sin verificar rompe la confianza del revisor (anti-patr
 
 ## Después del gate
 
-- **PR en draft.** El agente **nunca** marca "ready"; lo hace el revisor humano (R-PROC-3).
-- **Code review humano obligatorio**, aunque el código lo escriba un agente. Auto-merge de
-  PR de agente está prohibido.
+- **PR a `develop`:** con CI completo en verde y este gate corrido, el PR es
+  **autoaprobable** — un agente revisor distinto del autor revisa el diff, aprueba y mergea
+  (autorizado por el owner, 2026-06-11; ver [`FLUJO_DE_TRABAJO.md`](FLUJO_DE_TRABAJO.md)).
+- **PR `develop`→`main` (producción): revisión humana del owner obligatoria** (R-PROC-3).
 - CI verde es no-negociable (R-PROC-4); el gate local existe para que CI **nunca** sea la
   primera vez que se ve un fallo.
 

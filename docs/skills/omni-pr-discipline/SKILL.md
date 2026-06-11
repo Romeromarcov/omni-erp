@@ -258,13 +258,16 @@ Buen resumen:
 
 ## Estado del PR: draft vs ready
 
-**EN ESTE PROYECTO, EL AGENTE NUNCA MARCA UN PR COMO "READY FOR REVIEW".**
+Depende de la rama base (política actualizada por el owner el 2026-06-11, ver
+`docs/FLUJO_DE_TRABAJO.md`):
 
-- Vos abrís el PR como **draft** (borrador).
-- El revisor humano (responsable) decide cuándo pasarlo a ready.
-- Si el operador no técnico está revisando primero, él tampoco lo pasa a ready; solo verifica completitud.
+- **PR a `develop`:** se abre en draft; con **CI completo en verde + gate corrido**, un
+  agente revisor **distinto del autor** revisa el diff, lo marca ready, aprueba y mergea.
+- **PR `develop`→`main` (producción):** el agente **NUNCA** lo marca ready ni lo mergea;
+  esa puerta es exclusiva del revisor humano (owner).
 
-Marcar ready prematuramente da señal falsa de "está listo" y causa que se mergeé sin revisión adecuada.
+Marcar ready/mergear sin CI verde o sin revisión del segundo agente da señal falsa de
+"está listo" y rompe la confianza del flujo.
 
 ## Después de abrir el PR
 
@@ -377,11 +380,13 @@ git branch -d feature/tarea-completada
 **Por qué falla:** no aporta información. El revisor pierde tiempo.
 **Antídoto:** descripción concreta del qué, por qué, y los detalles relevantes.
 
-### Anti-patrón 7: Marcar ready sin permiso
+### Anti-patrón 7: Marcar ready / mergear sin cumplir la política
 
-**Síntoma:** marcás el PR como ready cuando solo está en draft.
-**Por qué falla:** salta la fase de revisión técnica humana, riesgo de merge prematuro.
-**Antídoto:** **NUNCA**. El agente abre en draft, el revisor humano decide cuándo pasarlo a ready.
+**Síntoma:** marcás ready o mergeás un PR a `develop` sin CI verde o sin revisión de un
+segundo agente; o tocás la puerta `develop`→`main` que es exclusiva del humano.
+**Por qué falla:** salta la fase de revisión, riesgo de merge prematuro a staging o prod.
+**Antídoto:** PR a `develop` solo se autoaprueba con CI verde + revisión de otro agente;
+`develop`→`main` lo decide únicamente el revisor humano.
 
 ### Anti-patrón 8: Responder review con resistencia
 

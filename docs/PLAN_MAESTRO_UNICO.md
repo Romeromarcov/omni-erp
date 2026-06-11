@@ -117,7 +117,7 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 |---|---|---|
 | **R-PROC-1** | Una sola fuente de verdad por dominio | Este documento es la fuente de verdad de lo que se construye desde ahora. No se duplica documentación; se enlaza. |
 | **R-PROC-2** | PRs pequeños, focales | Un PR hace una cosa. >800 líneas (sin tests/migraciones/locks) → se divide. Excepción: refactors mecánicos marcados como tales. |
-| **R-PROC-3** | Code review humano obligatorio | Aunque el código lo escriba un agente. **Auto-merge desde PR de agente está prohibido.** |
+| **R-PROC-3** | Review humano en la puerta a producción | Todo PR `develop`→`main` requiere revisión humana del owner. **PRs a `develop` son autoaprobables con CI verde + gate completo** (un agente revisor distinto del autor revisa el diff antes de aprobar; autorizado por el owner 2026-06-11, ver `docs/FLUJO_DE_TRABAJO.md`). |
 | **R-PROC-4** | CI verde es no-negociable | Tests + lint + type-check + build. Flaky = bug que se arregla, no se ignora. |
 | **R-PROC-5** | Migraciones reversibles | Toda migración Django se prueba en reverse, o se documenta explícitamente por qué no lo es. |
 | **R-PROC-6** | Los compromisos técnicos se vencen | Toda excepción a una regla es un "Compromiso técnico fechado" con `vence_en` y `dueño`. Se rastrean en `docs/ctf/`. |
@@ -760,7 +760,7 @@ Modelos con `id_empresa`+UUIDv7 · unique_together correcto · ViewSet `BaseMode
 6. **Cerrar:** commit con Conventional Commits; **append** al `backend/PROJECT_LOG.md` (nunca editar/borrar entradas previas).
 7. **Ritual del lunes:** responder en 5 min — ¿qué se construyó la semana pasada y sirve a un piloto? ¿qué se construye esta semana? ¿qué regla podría romperse y cómo se evita?
 
-**Lo que un agente NO hace jamás:** auto-merge, borrar datos sin proceso, saltarse el test de aislamiento, introducir SQLite, exponer secretos, llamar APIs externas fuera del Integration Hub, ampliar alcance sin cerrar un flujo.
+**Lo que un agente NO hace jamás:** mergear a `main` sin revisión humana, mergear a `develop` sin CI verde + revisión de otro agente, borrar datos sin proceso, saltarse el test de aislamiento, introducir SQLite, exponer secretos, llamar APIs externas fuera del Integration Hub, ampliar alcance sin cerrar un flujo.
 
 ---
 
