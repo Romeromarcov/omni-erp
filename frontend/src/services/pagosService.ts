@@ -34,6 +34,10 @@ export interface Pago {
   // Objetos relacionados (opcionales, para UI)
   id_metodo_pago_obj?: { id_metodo_pago: string; nombre_metodo: string };
   id_moneda_obj?: { id_moneda: string; codigo_iso: string; nombre: string };
+  // Campos read-only del PagoSerializer del backend (gap E2E PR #76: la UI
+  // mostraba UUIDs porque esperaba `*_obj`, que el API no devuelve).
+  metodo_pago_nombre?: string | null;
+  moneda_codigo?: string | null;
 }
 
 export interface PagoFilters {
