@@ -3,7 +3,9 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     CentroTrabajoViewSet,
+    ConfiguracionManufacturaViewSet,
     ConsumoMaterialViewSet,
+    EtapaProduccionViewSet,
     ListaMaterialesDetalleViewSet,
     ListaMaterialesViewSet,
     OperacionProduccionViewSet,
@@ -25,6 +27,8 @@ router.register(r"centros-trabajo", CentroTrabajoViewSet)
 router.register(r"operaciones-produccion", OperacionProduccionViewSet)
 router.register(r"rutas-produccion-detalle", RutaProduccionDetalleViewSet)
 router.register(r"registros-operacion", RegistroOperacionViewSet)
+router.register(r"etapas-produccion", EtapaProduccionViewSet)
+router.register(r"configuracion", ConfiguracionManufacturaViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

@@ -174,6 +174,10 @@
 | `^configuracion-integracion/(?P<pk>[^/.]+)/$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
 | `^configuracion-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
 | `^configuracion-integracion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
+| `^configuracion/$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
+| `^configuracion/(?P<pk>[^/.]+)/$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
+| `^configuracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
+| `^configuracion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/(?P<pk>[^/.]+)/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/(?P<pk>[^/.]+)/activar/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
@@ -386,6 +390,16 @@
 | `^empresas/(?P<pk>[^/.]+)/$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/activar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/desactivar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/crear-estandar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/crear-estandar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
@@ -616,6 +630,18 @@
 | `^ordenes-compra\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion/(?P<pk>[^/.]+)/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/avanzar-etapa/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/avanzar-etapa\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/completar/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/completar\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/consumir-materiales/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/consumir-materiales\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/costeo/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/costeo\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/etapas/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/etapas\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/mrp/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/mrp\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^overrides-metodos-pago/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
@@ -966,4 +992,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 188_
+_Total ViewSets: 190_

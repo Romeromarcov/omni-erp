@@ -1782,3 +1782,22 @@ campos fantasma de 0021), test flaky de rate-limit (#71).
 
 - PR #76 (E2E) re-validando CI tras merge de develop.
 - Agente trabajando: endpoints rotos de sesiones de caja (`fix/sesiones-caja-endpoints`).
+
+### 1.I — OF con etapas + costeo real + MRP básico (2026-06-11)
+
+- `apps/manufactura`: etapas de OF configurables por empresa (`EtapaProduccion`
+  catálogo + `EtapaOrdenProduccion` por OF; secuencia estándar de mueblería
+  corte → ensamble → lijado → pintura → tapizado → control final).
+- Costeo real por OF: materiales al costo del consumo (snapshot
+  `ConsumoMaterial.costo_unitario`) + mano de obra (horas × tarifa y/o destajo
+  por etapa) + overhead configurable (`ConfiguracionManufactura.porcentaje_overhead`).
+- PT entra al inventario valorado al costo real; una OF no cierra con etapas
+  pendientes.
+- MRP básico: explosión de BOM vs StockActual (disponible neto) → faltantes.
+- API: acciones `consumir-materiales`, `avanzar-etapa`, `etapas`, `completar`,
+  `costeo`, `mrp` en `ordenes-produccion`; ViewSets `etapas-produccion`
+  (soft-delete) y `configuracion`. Tools MCP `manufactura_calcular_mrp` y
+  `manufactura_get_costeo_orden` (scope `manufactura:read`).
+- Tests: `tests_api/test_manufactura_etapas_costeo.py` (ciclo completo con
+  costeo verificado a mano, MRP, aislamiento multi-tenant, MCP); atomicidad
+  existente sigue verde. Migración 0007 reversible (probada ida y vuelta).
