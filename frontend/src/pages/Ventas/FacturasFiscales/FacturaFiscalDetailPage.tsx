@@ -262,7 +262,7 @@ const FacturaFiscalDetailPage: React.FC = () => {
                 {pagos.map(pago => (
                   <ListItem key={pago.id_pago} divider>
                     <ListItemText
-                      primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
+                      primary={`${pago.metodo_pago_nombre || pago.id_metodo_pago_obj?.nombre_metodo || 'N/A'} - ${pago.moneda_codigo || pago.id_moneda_obj?.codigo_iso || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
                       secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
                     />
                     {pago.observaciones && (

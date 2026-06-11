@@ -105,6 +105,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       icon: <RequestQuoteOutlined />,
       items: [
         { label: 'Dashboard Cartera', path: '/cobranza/dashboard' },
+        { label: 'Cuentas por Cobrar', path: '/cobranza/cuentas' },
         { label: 'Gestiones', path: '/cobranza/gestiones' },
         { label: 'Acuerdos de Pago', path: '/cobranza/acuerdos' },
         { label: 'Agente IA', path: '/cobranza/agente' },

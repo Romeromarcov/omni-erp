@@ -1,6 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
+import { pedidoService } from '../../../services/ventas';
+import { almacenesService } from '../../../services/almacenesService';
 import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
 import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProductos';
@@ -9,10 +12,30 @@ import type { ColumnDef } from '../../../hooks/useColumnVisibility';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
 import { D } from '../../../lib/decimal';
 import { fetchProductos } from '../../../services/productosService';
-import { toList } from '../../../utils/api';
+import { mensajeDeError, toList } from '../../../utils/api';
+import { almacenesKeys, cxcKeys, inventarioKeys, pagosKeys, pedidosKeys } from '../../../lib/queryKeys';
+import { useSnackbar } from '../../../contexts/feedbackTypes';
 
 type ProductoItem = React.ComponentProps<typeof TablaProductos>['productos'][number];
-import { Alert, Box, Button, Card, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  MenuItem,
+  TextField,
+  Typography,
+} from '@mui/material';
 import ModalPago from '../../../components/Pedidos/ModalPago';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
 import type { Pago as PagoFinanzas } from '../../../services/pagosService';
@@ -76,38 +99,62 @@ const LINE_COLUMNS: ColumnDef<PedidoDetalle>[] = [
 
 const PedidoDetailPage: React.FC = () => {
   const { id_pedido } = useParams();
-  const [pedido, setPedido] = useState<Pedido | null>(null);
-  const [pagos, setPagos] = useState<PagoFinanzas[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
   // Catálogo de productos de la empresa (precargado para acciones futuras de edición).
   const [, setProductos] = useState<ProductoItem[]>([]);
   const [descuentoGeneral, setDescuentoGeneral] = useState<string>('');
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [pagoSuccess, setPagoSuccess] = useState('');
   const [pagoError, setPagoError] = useState('');
+  // Confirmación de pedido (gap E2E PR #76: no existía botón en la UI)
+  const [showConfirmarDialog, setShowConfirmarDialog] = useState(false);
+  const [almacenSeleccionado, setAlmacenSeleccionado] = useState('');
+  const [confirmarError, setConfirmarError] = useState('');
   const navigate = useNavigate();
 
-  const loadPagos = async (pedidoId: string) => {
-    try {
-      const pagosData = await pagosService.getPagosPedido(pedidoId);
-      setPagos(pagosData);
-    } catch (error) {
-      console.error('Error al cargar pagos:', error);
-    }
-  };
+  const { data: pedido = null, isLoading: loading } = useQuery<Pedido | null>({
+    queryKey: pedidosKeys.detail(id_pedido ?? ''),
+    queryFn: async () => (await get(`/ventas/pedidos/${id_pedido}/`)) as Pedido,
+    enabled: !!id_pedido,
+  });
 
-  useEffect(() => {
-    if (!id_pedido) return;
-    setLoading(true);
-    get(`/ventas/pedidos/${id_pedido}/`)
-      .then((res) => {
-        setPedido(res as Pedido);
-        // Cargar pagos del pedido
-        loadPagos(id_pedido);
-      })
-      .catch(() => setPedido(null))
-      .finally(() => setLoading(false));
-  }, [id_pedido]);
+  const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
+    queryKey: pagosKeys.porDocumento('PEDIDO', id_pedido ?? ''),
+    queryFn: () => pagosService.getPagosPedido(id_pedido!),
+    enabled: !!id_pedido,
+  });
+
+  const { data: almacenes = [], isLoading: almacenesLoading } = useQuery({
+    queryKey: almacenesKeys.all(),
+    queryFn: () => almacenesService.getAll(),
+    enabled: showConfirmarDialog,
+  });
+
+  const almacenesEmpresa = almacenes.filter(
+    (a) => !pedido?.id_empresa?.id_empresa || a.id_empresa === pedido.id_empresa.id_empresa,
+  );
+
+  const confirmarMutation = useMutation({
+    mutationFn: () => pedidoService.confirmar(id_pedido!, almacenSeleccionado),
+    onSuccess: (res) => {
+      setShowConfirmarDialog(false);
+      setConfirmarError('');
+      snackbar.success(
+        `Pedido ${res.numero_pedido} confirmado: ${res.reservas_creadas} reserva(s) de stock` +
+          (res.cxc_generada ? ' y cuenta por cobrar generada' : ''),
+      );
+      // El estado del pedido, el stock comprometido y la cartera CxC cambian.
+      queryClient.invalidateQueries({ queryKey: pedidosKeys.all() });
+      queryClient.invalidateQueries({ queryKey: inventarioKeys.stockActualAll() });
+      queryClient.invalidateQueries({ queryKey: cxcKeys.carteraAll() });
+    },
+    onError: (err: unknown) => {
+      setConfirmarError(mensajeDeError(err, 'Error al confirmar el pedido.'));
+    },
+  });
+
+  const puedeConfirmar = pedido?.estado === 'PENDIENTE' || pedido?.estado === 'ENVIADO';
 
   useEffect(() => {
     if (pedido?.id_empresa && pedido.id_empresa.id_empresa) {
@@ -178,9 +225,7 @@ const PedidoDetailPage: React.FC = () => {
       setShowPagoModal(false);
 
       // Recargar los pagos para mostrar los nuevos
-      if (id_pedido) {
-        loadPagos(id_pedido);
-      }
+      queryClient.invalidateQueries({ queryKey: pagosKeys.porDocumento('PEDIDO', id_pedido) });
 
       // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => setPagoSuccess(''), 3000);
@@ -208,7 +253,21 @@ const PedidoDetailPage: React.FC = () => {
             title={`Pedido ${pedido.numero_pedido}`}
             subtitle={`${pedido.fecha_pedido} · ${pedido.id_empresa?.nombre || ''}`}
             actions={
-              <Button variant="outlined" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {puedeConfirmar && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => {
+                      setConfirmarError('');
+                      setShowConfirmarDialog(true);
+                    }}
+                  >
+                    Confirmar pedido
+                  </Button>
+                )}
+                <Button variant="outlined" color="secondary" onClick={() => navigate(-1)}>Volver</Button>
+              </Box>
             }
           />
           <Card sx={{ p: 3, mb: 2 }}>
@@ -281,7 +340,7 @@ const PedidoDetailPage: React.FC = () => {
                 {pagos.map(pago => (
                   <ListItem key={pago.id_pago} divider>
                     <ListItemText
-                      primary={`${pago.id_metodo_pago_obj?.nombre_metodo || pago.id_metodo_pago || 'N/A'} - ${pago.id_moneda_obj?.codigo_iso || pago.id_moneda || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
+                      primary={`${pago.metodo_pago_nombre || pago.id_metodo_pago_obj?.nombre_metodo || 'N/A'} - ${pago.moneda_codigo || pago.id_moneda_obj?.codigo_iso || 'N/A'} ${pago.monto} - Tasa: ${pago.tasa}`}
                       secondary={pago.referencia ? `Ref: ${pago.referencia}` : undefined}
                     />
                     {pago.observaciones && (
@@ -298,6 +357,56 @@ const PedidoDetailPage: React.FC = () => {
           </Card>
         </>
       )}
+      <Dialog
+        open={showConfirmarDialog}
+        onClose={() => !confirmarMutation.isPending && setShowConfirmarDialog(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Confirmar pedido</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Al confirmar, el pedido pasa a APROBADO y se reserva el stock en el almacén
+            seleccionado. Si el cliente es a crédito, se genera la cuenta por cobrar.
+          </DialogContentText>
+          {confirmarError && <Alert severity="error" sx={{ mb: 2 }}>{confirmarError}</Alert>}
+          <TextField
+            select
+            fullWidth
+            required
+            label="Almacén de despacho"
+            value={almacenSeleccionado}
+            onChange={(e) => setAlmacenSeleccionado(e.target.value)}
+            disabled={almacenesLoading}
+            helperText={
+              almacenesLoading
+                ? 'Cargando almacenes…'
+                : almacenesEmpresa.length === 0
+                  ? 'No hay almacenes disponibles para esta empresa.'
+                  : undefined
+            }
+          >
+            {almacenesEmpresa.map((a) => (
+              <MenuItem key={a.id_almacen} value={a.id_almacen}>
+                {a.nombre_almacen}
+              </MenuItem>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowConfirmarDialog(false)} disabled={confirmarMutation.isPending}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => confirmarMutation.mutate()}
+            disabled={!almacenSeleccionado || confirmarMutation.isPending}
+            startIcon={confirmarMutation.isPending ? <CircularProgress size={16} /> : undefined}
+          >
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
       {!loading && pedido && (
         <ModalPago
           open={showPagoModal}

@@ -580,6 +580,8 @@
 | `^notas-credito-venta\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/convertir-factura/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/convertir-factura\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notificaciones/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
@@ -638,6 +640,8 @@
 | `^pedidos/(?P<pk>[^/.]+)/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/confirmar/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/confirmar\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/convertir-nota-venta/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/convertir-nota-venta\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^periodos-nomina/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |

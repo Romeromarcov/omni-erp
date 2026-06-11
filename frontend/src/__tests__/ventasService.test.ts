@@ -113,6 +113,13 @@ describe('acciones específicas de cada documento de venta', () => {
     expect(mockPost).toHaveBeenCalledWith('/ventas/pedidos/p1/agregar-pago/', pago);
   });
 
+  it('pedido: confirmar envia almacen_id al endpoint confirmar', async () => {
+    mockPost.mockResolvedValueOnce({ estado: 'APROBADO', reservas_creadas: 1, cxc_generada: true });
+    const res = await pedidoService.confirmar('p1', 'alm-1');
+    expect(mockPost).toHaveBeenCalledWith('/ventas/pedidos/p1/confirmar/', { almacen_id: 'alm-1' });
+    expect(res.estado).toBe('APROBADO');
+  });
+
   it('nota de venta: convertirAFactura y getByCliente', async () => {
     mockPost.mockResolvedValueOnce({ id: 'f1' });
     await notaVentaService.convertirAFactura('nv1', { serie: 'A' });

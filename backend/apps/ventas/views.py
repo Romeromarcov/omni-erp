@@ -130,6 +130,26 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
             status=status.HTTP_200_OK,
         )
 
+    @idempotent("ventas:convertir-nota-venta")
+    @action(detail=True, methods=["post"], url_path="convertir-nota-venta")
+    def convertir_nota_venta(self, request, pk=None):
+        """
+        POST /api/ventas/pedidos/{pk}/convertir-nota-venta/
+
+        Crea la NotaVenta (BORRADOR) desde un pedido APROBADO copiando sus
+        detalles, y marca el pedido como convertido. Gap E2E (PR #76): el
+        botón del frontend llamaba a este endpoint y no existía (404).
+        """
+        from .services import VentaError, convertir_pedido_a_nota_venta
+
+        pedido = self.get_object()
+        try:
+            nota = convertir_pedido_a_nota_venta(pedido, usuario=request.user)
+        except VentaError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        return Response(NotaVentaSerializer(nota).data, status=status.HTTP_201_CREATED)
+
 
 class DetallePedidoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = DetallePedido.objects.all()
@@ -149,6 +169,30 @@ class NotaVentaViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelVie
     def get_queryset(self):
         # R-CODE-1
         return NotaVenta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_creacion")
+
+    @idempotent("ventas:convertir-factura")
+    @action(detail=True, methods=["post"], url_path="convertir-factura")
+    def convertir_factura(self, request, pk=None):
+        """
+        POST /api/ventas/notas-venta/{pk}/convertir-factura/
+
+        Emite la FacturaFiscal desde una nota ENTREGADA delegando en
+        ``emitir_factura_fiscal`` (asiento contable R-CODE-11 + CxC única del
+        flujo, BUG-A4). Gap E2E (PR #76): el botón "Convertir a Factura" del
+        frontend llamaba a este endpoint y no existía (404).
+        """
+        from .services import VentaError, emitir_factura_fiscal
+
+        nota = self.get_object()
+        try:
+            resultado = emitir_factura_fiscal(nota)
+        except VentaError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        return Response(
+            FacturaFiscalSerializer(resultado["factura"]).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class DetalleNotaVentaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
