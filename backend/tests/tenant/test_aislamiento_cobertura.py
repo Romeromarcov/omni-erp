@@ -33,11 +33,24 @@ ALLOWLIST: dict[str, str] = {
 }
 
 
-def _empresa_fk_field(model):
-    """Devuelve el nombre del campo FK a Empresa, o None si el modelo no es tenant-aware."""
+def _empresa_fk_field(model, _depth=2):
+    """
+    Devuelve la ruta ORM al campo FK a Empresa, o None si el modelo no es tenant-aware.
+
+    SEC-B1: además de la FK directa, cubre modelos "detalle" cuya pertenencia a la
+    empresa es vía su padre (FK a Empresa a 2 saltos, p. ej.
+    DetallePedido→Pedido→Empresa); devuelve la ruta ``padre__id_empresa``.
+    """
     for field in model._meta.get_fields():
         if getattr(field, "many_to_one", False) and getattr(field, "related_model", None) is Empresa:
             return field.name
+    if _depth > 1:
+        for field in model._meta.get_fields():
+            related = getattr(field, "related_model", None)
+            if getattr(field, "many_to_one", False) and related is not None and related is not model:
+                sub = _empresa_fk_field(related, _depth=1)
+                if sub is not None:
+                    return f"{field.name}__{sub}"
     return None
 
 

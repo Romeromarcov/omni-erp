@@ -4,6 +4,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from .models import Departamento, Dispositivo, Empresa, Permisos, Roles, Sucursal, Usuarios
+from .serializer_mixins import TenantFKScopeMixin
 from .serializers import (
     DepartamentoSerializer,
     DispositivoSerializer,
@@ -15,7 +16,7 @@ from .serializers import (
 )
 
 
-class BaseModelViewSet(viewsets.ModelViewSet):
+class BaseModelViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     """
     ViewSet base para CRUD genérico con paginación, búsqueda y permisos estándar.
 
@@ -27,6 +28,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
     - Paginación con PageNumberPagination
     - Filtros de búsqueda y ordenamiento
     - Campos de búsqueda por defecto para modelos de empresa
+    - SEC-M1: FKs writable acotadas a empresas visibles (TenantFKScopeMixin)
     """
 
     permission_classes = [permissions.IsAuthenticated]

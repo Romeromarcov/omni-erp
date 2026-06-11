@@ -1,4 +1,5 @@
 import logging
+from apps.core.serializer_mixins import TenantFKScopeMixin
 
 from django.db import models
 from rest_framework import serializers, status, viewsets
@@ -44,7 +45,7 @@ from .serializers import (
 )
 
 
-class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
+class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = SesionCajaFisica.objects.all()
     serializer_class = SesionCajaFisicaSerializer
     permission_classes = [IsAuthenticated]
@@ -154,7 +155,7 @@ from .models import MetodoPagoEmpresaActiva
 from .serializers import MetodoPagoEmpresaActivaSerializer
 
 
-class MetodoPagoEmpresaActivaViewSet(viewsets.ModelViewSet):
+class MetodoPagoEmpresaActivaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = MetodoPagoEmpresaActiva.objects.all()
     serializer_class = MetodoPagoEmpresaActivaSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -676,7 +677,7 @@ class MonedaEmpresaActivaViewSet(BaseModelViewSet):
 
 
 # ViewSet para CajaUsuario
-class CajaUsuarioViewSet(viewsets.ModelViewSet):
+class CajaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = CajaUsuario.objects.all()
     serializer_class = CajaUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -722,7 +723,7 @@ class CajaUsuarioViewSet(viewsets.ModelViewSet):
 
 
 # ViewSet para CajaVirtualUsuario
-class CajaVirtualUsuarioViewSet(viewsets.ModelViewSet):
+class CajaVirtualUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = CajaVirtualUsuario.objects.all()
     serializer_class = CajaVirtualUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -735,7 +736,7 @@ class CajaVirtualUsuarioViewSet(viewsets.ModelViewSet):
 
 
 # ViewSet para CajaFisicaUsuario
-class CajaFisicaUsuarioViewSet(viewsets.ModelViewSet):
+class CajaFisicaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = CajaFisicaUsuario.objects.all()
     serializer_class = CajaFisicaUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated]

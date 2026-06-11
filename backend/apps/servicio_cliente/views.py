@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from apps.core.serializer_mixins import TenantFKScopeMixin
 
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
@@ -23,7 +24,7 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class CategoriaTicketViewSet(viewsets.ModelViewSet):
+class CategoriaTicketViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = CategoriaTicket.objects.all()
     serializer_class = CategoriaTicketSerializer
     permission_classes = [IsAuthenticated]
@@ -64,7 +65,7 @@ class CategoriaTicketViewSet(viewsets.ModelViewSet):
         )
 
 
-class TicketSoporteViewSet(viewsets.ModelViewSet):
+class TicketSoporteViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = TicketSoporte.objects.all()
     serializer_class = TicketSoporteSerializer
     permission_classes = [IsAuthenticated]
@@ -254,7 +255,7 @@ class TicketSoporteViewSet(viewsets.ModelViewSet):
         )
 
 
-class InteraccionTicketViewSet(viewsets.ModelViewSet):
+class InteraccionTicketViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = InteraccionTicket.objects.all()
     serializer_class = InteraccionTicketSerializer
     permission_classes = [IsAuthenticated]
@@ -292,7 +293,7 @@ class InteraccionTicketViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class BaseConocimientoArticuloViewSet(viewsets.ModelViewSet):
+class BaseConocimientoArticuloViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = BaseConocimientoArticulo.objects.all()
     serializer_class = BaseConocimientoArticuloSerializer
     permission_classes = [IsAuthenticated]
@@ -343,7 +344,7 @@ class BaseConocimientoArticuloViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class FeedbackClienteViewSet(viewsets.ModelViewSet):
+class FeedbackClienteViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = FeedbackCliente.objects.all()
     serializer_class = FeedbackClienteSerializer
     permission_classes = [IsAuthenticated]
