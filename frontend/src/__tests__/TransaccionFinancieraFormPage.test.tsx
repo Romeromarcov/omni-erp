@@ -171,15 +171,26 @@ describe('TransaccionFinancieraFormPage (react-hook-form + zod)', () => {
     await waitFor(() => expect(screen.getByLabelText(/monto base/i)).toHaveValue('2.50'));
 
     // Bajar la tasa por debajo de la oficial dispara el error de validación.
-    // (La tasa visible puede ser repuesta por la re-consulta BCV del efecto,
-    // pero el error solo lo limpia una edición manual válida.)
-    fireEvent.change(screen.getByLabelText(/tasa de cambio/i), { target: { value: '35' } });
-    expect(await screen.findByText(/no puede ser menor a la oficial bcv \(40\)/i)).toBeInTheDocument();
+    // La re-consulta BCV del efecto puede reponer el valor del campo en un
+    // runner lento (visto en CI), pisando el change antes de que la validación
+    // registre el error — por eso se reintenta el change dentro del waitFor.
+    await waitFor(
+      () => {
+        fireEvent.change(screen.getByLabelText(/tasa de cambio/i), { target: { value: '35' } });
+        expect(
+          screen.getByText(/no puede ser menor a la oficial bcv \(40\)/i),
+        ).toBeInTheDocument();
+      },
+      { timeout: 10000 },
+    );
 
     // Subirla de nuevo limpia el error.
-    fireEvent.change(screen.getByLabelText(/tasa de cambio/i), { target: { value: '45' } });
-    await waitFor(() =>
-      expect(screen.queryByText(/no puede ser menor a la oficial bcv/i)).not.toBeInTheDocument(),
+    await waitFor(
+      () => {
+        fireEvent.change(screen.getByLabelText(/tasa de cambio/i), { target: { value: '45' } });
+        expect(screen.queryByText(/no puede ser menor a la oficial bcv/i)).not.toBeInTheDocument();
+      },
+      { timeout: 10000 },
     );
   });
 
