@@ -78,9 +78,10 @@ class CobranzaAgenteView(APIView):
 
                 for event in loop.run_until_complete(_alist(run())):
                     yield event
-            except Exception as exc:
-                logger.exception("SSE streaming error: %s", exc)
-                yield f"data: {json.dumps({'error': str(exc)})}\n\n"
+            except Exception:
+                # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
+                logger.exception("SSE streaming error")
+                yield f"data: {json.dumps({'error': 'Error interno del agente de cobranza.'})}\n\n"
             finally:
                 loop.close()
 

@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 
 from rest_framework import status
@@ -10,6 +11,8 @@ from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import CuentaPorCobrar
 from .serializers import CuentaPorCobrarSerializer
+
+logger = logging.getLogger(__name__)
 
 
 def _empresas(request):
@@ -125,8 +128,12 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
 
         try:
             pdf_bytes = generar_pdf_estado_cuenta(empresa, cliente)
-        except ImportError as exc:
-            return Response({"error": str(exc)}, status=503)
+        except ImportError:
+            # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("Generación de PDF de estado de cuenta no disponible")
+            return Response(
+                {"error": "Generación de PDF no disponible en este servidor."}, status=503
+            )
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = (

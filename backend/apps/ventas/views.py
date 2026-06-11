@@ -630,8 +630,12 @@ class FacturaFiscalViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-
         factura = self.get_object()
         try:
             pdf_bytes = generar_pdf_factura(factura)
-        except ImportError as exc:
-            return Response({"error": str(exc)}, status=503)
+        except ImportError:
+            # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("Generación de PDF de factura no disponible")
+            return Response(
+                {"error": "Generación de PDF no disponible en este servidor."}, status=503
+            )
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = (
@@ -741,8 +745,12 @@ class CotizacionViewSet(EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
         cotizacion = self.get_object()
         try:
             pdf_bytes = generar_pdf_cotizacion(cotizacion)
-        except ImportError as exc:
-            return Response({"error": str(exc)}, status=503)
+        except ImportError:
+            # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
+            logger.exception("Generación de PDF de cotización no disponible")
+            return Response(
+                {"error": "Generación de PDF no disponible en este servidor."}, status=503
+            )
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = (

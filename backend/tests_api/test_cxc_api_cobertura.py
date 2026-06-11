@@ -566,7 +566,8 @@ class TestCobranzaAgente:
         assert resp.status_code == 200
         body = b"".join(resp.streaming_content).decode()
         assert '"error"' in body
-        assert "agente roto" in body
+        # SEC-M4 (R-CODE-8): el detalle interno NO se filtra al cliente.
+        assert "agente roto" not in body
 
     def test_consume_cuota_del_rate_limit(self, client_a, empresa_a, monkeypatch):
         import apps.cxc.agents.cobranza_agent as agent_mod

@@ -373,9 +373,23 @@ class MetodoPagoViewSet(BaseModelViewSet):
         empresa_id = request.query_params.get("empresa")
         empresa = None
         if empresa_id:
-            from apps.core.models import Empresa
+            # SEC-B3 (R-CODE-1): el query param `empresa` se valida contra las
+            # empresas visibles del usuario; un id ajeno o malformado → 404.
+            from django.core.exceptions import ValidationError
 
-            empresa = Empresa.objects.filter(id_empresa=empresa_id).first()
+            from apps.core.viewsets import get_empresas_visible
+
+            try:
+                empresa = get_empresas_visible(request.user).filter(
+                    id_empresa=empresa_id
+                ).first()
+            except (ValueError, ValidationError):
+                empresa = None
+            if empresa is None:
+                return Response(
+                    {"detail": "Empresa no encontrada o sin acceso."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
         if not empresa and hasattr(request.user, "empresas"):
             empresa = request.user.empresas.first() if request.user.empresas.exists() else None
         # Monedas asociadas globalmente
