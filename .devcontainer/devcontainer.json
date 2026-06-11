@@ -5,8 +5,12 @@
   "workspaceFolder": "/workspaces/omni-erp",
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "22" },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
+  "mounts": [
+    "source=omni-claude-config,target=/home/vscode/.claude,type=volume"
+  ],
   "forwardPorts": [5432],
   "postCreateCommand": "CLAUDE_CODE_REMOTE=true CLAUDE_PROJECT_DIR=${containerWorkspaceFolder} bash .claude/hooks/session-start.sh",
   "customizations": {
