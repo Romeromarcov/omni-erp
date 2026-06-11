@@ -30,6 +30,8 @@ class TestConectorInstanciaAislamiento:
             email="user_a@test.com",
             password="testpass123",
         )
+        # `Usuarios.empresa` es una property derivada (sin setter); la membresía
+        # se asigna por el M2M `empresas`.
         self.user_a.empresas.add(self.empresa_a)
 
         self.user_b = Usuarios.objects.create_user(
