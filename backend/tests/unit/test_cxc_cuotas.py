@@ -119,19 +119,27 @@ def test_porcentaje_abono():
     assert _suma(cuotas) == Decimal("1000.00")
 
 
-# ── generar_cuotas: no genera cuotas negativas ──────────────────────────────────
+# ── generar_cuotas: no genera cuotas negativas ni excede el total (BUG-M3) ──────
 
 
 def test_no_genera_cuotas_negativas_por_monto_fijo_alto():
     # monto_cuota 60 con total 100, mensual plazo 90 → num=3.
-    # i=1,2 usan 60 (60,60); la última sería 100-120 = -20 → se OMITE
-    # (la guarda `monto_esta <= 0: continue`). Resultado: 2 cuotas, sin negativos.
+    # BUG-M3 (corregido): antes emitía [60, 60] = 120 > total. Ahora cada cuota
+    # se capea al restante: [60, 40] y la suma == monto_total.
     cuotas = generar_cuotas(
         _ACUERDO, date(2026, 1, 1), 90, "mensual", Decimal("100.00"),
         monto_cuota=Decimal("60.00"),
     )
     assert all(c["monto"] > 0 for c in cuotas)
-    assert [c["monto"] for c in cuotas] == [Decimal("60.00"), Decimal("60.00")]
+    assert [c["monto"] for c in cuotas] == [Decimal("60.00"), Decimal("40.00")]
+    assert _suma(cuotas) == Decimal("100.00")
+
+
+def test_monto_total_no_positivo_lanza_valueerror():
+    with pytest.raises(ValueError):
+        generar_cuotas(_ACUERDO, date(2026, 1, 1), 30, "unico", Decimal("0"))
+    with pytest.raises(ValueError):
+        generar_cuotas(_ACUERDO, date(2026, 1, 1), 30, "mensual", Decimal("-10"))
 
 
 def test_quincenal_numero_y_fechas():

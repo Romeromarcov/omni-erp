@@ -225,14 +225,20 @@ class TestRegistrarPago:
         acuerdo.refresh_from_db()
         assert acuerdo.estado == "cumplido"
 
-    def test_moneda_distinta_sin_tasa_usa_fallback_1(self, client_a, acuerdo_a, metodo_a):
-        """M-BUG-9: si no hay TasaCambio moneda→base, fallback conservador tasa=1."""
+    def test_pago_misma_moneda_acuerdo_sin_tasa_base_usa_fallback_1(self, client_a, metodo_a):
+        """M-BUG-9: si la moneda del pago coincide con la del acuerdo pero no hay
+        TasaCambio moneda→base de la empresa, la tasa del Pago cae a 1 (fallback
+        conservador) sin bloquear el pago. (BUG-A2: si la moneda difiere de la del
+        acuerdo y no hay tasa, el pago se RECHAZA — ver test_cxc_acuerdos_p04.)"""
         ves = Moneda.objects.create(
             nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
             tipo_moneda="fiat", es_generica=True,
         )
-        cuota = acuerdo_a.cuotas.first()
-        resp = self._pagar(client_a, acuerdo_a, cuota.id, "100.0000", ves, metodo_a)
+        resp = client_a.post(URL, _payload_acuerdo(moneda_codigo="VES"), format="json")
+        assert resp.status_code == 201, resp.content
+        acuerdo = AcuerdoPago.objects.get()
+        cuota = acuerdo.cuotas.first()
+        resp = self._pagar(client_a, acuerdo, cuota.id, "100.0000", ves, metodo_a)
         assert resp.status_code == 200, resp.content
         pago = Pago.objects.get()
         assert pago.id_moneda == ves
