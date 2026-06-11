@@ -1147,6 +1147,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.inventario.mcp",
     "apps.finanzas.mcp",
     "apps.manufactura.mcp",
+    "apps.nomina.mcp",
 ]
 
 

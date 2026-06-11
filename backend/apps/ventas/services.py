@@ -236,6 +236,73 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
     return {"reservas": reservas, "cxc": cxc}
 
 
+# ── convertir_pedido_a_nota_venta ─────────────────────────────────────────────
+
+
+@transaction.atomic
+def convertir_pedido_a_nota_venta(pedido, usuario=None):
+    """
+    Crea la NotaVenta (BORRADOR) a partir de un Pedido APROBADO, copiando sus
+    líneas de detalle, y marca el pedido como convertido.
+
+    Gap E2E (PR #76): el botón "Convertir a Nota Venta" del frontend llamaba a
+    un endpoint inexistente. Este service respalda ese endpoint.
+
+    Args:
+        pedido:  Instancia Pedido en estado APROBADO y no convertido aún.
+        usuario: Usuario que ejecuta la conversión (auditoría/eventos).
+
+    Returns:
+        NotaVenta creada (estado BORRADOR, lista para entregar/facturar).
+    """
+    from apps.fiscal.services import siguiente_numero
+    from apps.ventas.models import DetalleNotaVenta, NotaVenta, Pedido
+
+    # Lock de fila: dos clics simultáneos no deben crear dos notas (doble submit).
+    pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+
+    if pedido.convertido_a_nota_venta:
+        raise VentaError("El pedido ya fue convertido a nota de venta.")
+    if pedido.estado != "APROBADO":
+        raise VentaError(
+            f"Solo se convierten pedidos APROBADOS. Estado actual: {pedido.estado}"
+        )
+
+    detalles = list(pedido.detalles.select_related("id_producto"))
+    if not detalles:
+        raise VentaError("El pedido no tiene líneas de detalle.")
+
+    numero_nota = siguiente_numero(pedido.id_empresa, "NOTA_VENTA")
+    nota = NotaVenta.objects.create(
+        id_empresa=pedido.id_empresa,
+        id_cliente=pedido.id_cliente,
+        id_pedido_origen=pedido,
+        numero_nota=numero_nota,
+        fecha_nota=timezone.now().date(),
+        estado="BORRADOR",
+        observaciones=pedido.observaciones,
+    )
+    DetalleNotaVenta.objects.bulk_create(
+        [
+            DetalleNotaVenta(
+                id_nota_venta=nota,
+                id_producto=detalle.id_producto,
+                cantidad=detalle.cantidad,
+                precio_unitario=detalle.precio_unitario,
+                subtotal=detalle.subtotal,
+                observaciones=detalle.observaciones,
+            )
+            for detalle in detalles
+        ]
+    )
+
+    pedido.convertido_a_nota_venta = True
+    pedido.id_nota_venta_resultante = nota
+    pedido.save(update_fields=["convertido_a_nota_venta", "id_nota_venta_resultante"])
+
+    return nota
+
+
 # ── CxC del flujo de venta (BUG-A4) ───────────────────────────────────────────
 
 

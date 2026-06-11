@@ -58,6 +58,29 @@ export interface KardexEntry {
   almacen_destino_nombre: string | null;
 }
 
+/** Forma cruda de cada ítem de `{kardex: [...]}` que devuelve el backend. */
+interface KardexItemApi {
+  id_movimiento: string;
+  fecha_hora: string;
+  tipo_movimiento: string;
+  cantidad: string;
+  delta: string;
+  almacen_origen: string | null;
+  almacen_destino: string | null;
+  costo_unitario: string | null;
+  saldo_anterior: string;
+  saldo_posterior: string;
+  observaciones: string | null;
+}
+
+interface KardexResponseApi {
+  producto_id: string;
+  producto_nombre: string;
+  almacen_id: string | null;
+  saldo_final: string;
+  kardex: KardexItemApi[];
+}
+
 export interface AjusteInventarioPayload {
   id_empresa: string;
   id_producto: string;
@@ -118,9 +141,30 @@ export const productoInventarioService = {
     if (params?.fecha_desde) qs.set('fecha_desde', params.fecha_desde);
     if (params?.fecha_hasta) qs.set('fecha_hasta', params.fecha_hasta);
     const query = qs.toString();
-    const response = await get<PaginatedResponse<MovimientoInventario> | MovimientoInventario[]>(
-      `/inventario/productos/${productoId}/kardex/${query ? '?' + query : ''}`
-    );
+    // Gap E2E (PR #76): el backend NO devuelve una lista paginada sino
+    // `{kardex: [...]}` con nombres de campo propios; normalizamos aquí a la
+    // forma MovimientoInventario que consume la UI (antes siempre quedaba []).
+    const response = await get<
+      KardexResponseApi | PaginatedResponse<MovimientoInventario> | MovimientoInventario[]
+    >(`/inventario/productos/${productoId}/kardex/${query ? '?' + query : ''}`);
+    if (response && typeof response === 'object' && 'kardex' in response) {
+      return response.kardex.map((item) => ({
+        id_movimiento_inventario: item.id_movimiento,
+        id_empresa: '',
+        fecha_hora_movimiento: item.fecha_hora,
+        tipo_movimiento: item.tipo_movimiento,
+        id_producto: response.producto_id,
+        id_almacen_origen: null,
+        id_almacen_destino: null,
+        cantidad: item.cantidad,
+        costo_unitario_movimiento: item.costo_unitario,
+        observaciones: item.observaciones,
+        producto_nombre: response.producto_nombre,
+        almacen_origen_nombre: item.almacen_origen,
+        almacen_destino_nombre: item.almacen_destino,
+        fecha_creacion: item.fecha_hora,
+      }));
+    }
     return toList<MovimientoInventario>(response);
   },
 };

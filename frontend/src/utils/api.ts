@@ -28,3 +28,29 @@ export function toCount<T = unknown>(raw: unknown): number {
   }
   return 0;
 }
+
+/**
+ * Convierte el `Error` que lanzan los helpers de `services/api` (cuyo message
+ * es el body JSON del backend serializado) en un texto legible para la UI.
+ * Soporta los formatos de DRF: `["msg"]`, `{"detail": "..."}` y
+ * `{"campo": ["msg", ...]}`.
+ */
+export function mensajeDeError(err: unknown, fallback = 'Error inesperado'): string {
+  if (!(err instanceof Error) || !err.message) return fallback;
+  try {
+    const parsed: unknown = JSON.parse(err.message);
+    if (Array.isArray(parsed)) return parsed.map(String).join(' · ') || fallback;
+    if (parsed && typeof parsed === 'object') {
+      const partes: string[] = [];
+      for (const [campo, valor] of Object.entries(parsed as Record<string, unknown>)) {
+        const texto = Array.isArray(valor) ? valor.map(String).join(' ') : String(valor);
+        const esGenerico = ['detail', 'error', 'non_field_errors'].includes(campo);
+        partes.push(esGenerico ? texto : `${campo}: ${texto}`);
+      }
+      return partes.join(' · ') || fallback;
+    }
+    return String(parsed) || fallback;
+  } catch {
+    return err.message;
+  }
+}
