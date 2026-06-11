@@ -1,0 +1,20 @@
+# Configuración de coverage.py (la lee pytest-cov automáticamente).
+#
+# La cobertura mide CÓDIGO DE PRODUCTO. Los archivos de test que viven dentro de
+# `apps/` (tests in-app de integration_hub, los `tests.py`/`tests_api.py` legacy
+# de cada app) no deben contar ni en el numerador ni en el denominador: medir
+# "cobertura de los tests" es ruido y distorsiona el ratchet en ambas direcciones
+# (un test huérfano sin ejecutar resta, un test ejecutado suma sin aportar
+# garantía sobre el producto). Práctica estándar de coverage.py.
+[run]
+omit =
+    apps/*/tests/*
+    apps/*/tests.py
+    apps/*/tests_api.py
+    apps/*/connectors/*/tests/*
+    apps/*/test_*.py
+
+[report]
+# Mantener el default de precisión; los umbrales los gobierna pytest.ini
+# (--cov-fail-under, ratchet) y diff-cover en CI.
+precision = 2

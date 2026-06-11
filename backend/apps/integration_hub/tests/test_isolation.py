@@ -30,16 +30,16 @@ class TestConectorInstanciaAislamiento:
             email="user_a@test.com",
             password="testpass123",
         )
-        self.user_a.empresa = self.empresa_a
-        self.user_a.save()
+        # `Usuarios.empresa` es una property derivada (sin setter); la membresía
+        # se asigna por el M2M `empresas`.
+        self.user_a.empresas.add(self.empresa_a)
 
         self.user_b = Usuarios.objects.create_user(
             username="user_b@test.com",
             email="user_b@test.com",
             password="testpass123",
         )
-        self.user_b.empresa = self.empresa_b
-        self.user_b.save()
+        self.user_b.empresas.add(self.empresa_b)
 
         # Crear un proveedor de prueba
         self.proveedor = ConectorProveedor.objects.create(

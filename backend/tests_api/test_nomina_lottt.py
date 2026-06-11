@@ -131,3 +131,110 @@ def test_resultado_as_dict_serializable():
     d = r.as_dict()
     assert d["neto_pagar"] == D("2835.00")
     assert all(isinstance(v, Decimal) for v in d.values())
+
+
+# ── Ramas de ISLR no cubiertas (runner de mutación) ──────────────────────────
+
+
+def test_islr_base_cero_o_negativa_devuelve_cero():
+    params = ParametrosLOTTT(aplica_islr=True)
+    assert calcular_islr(D("0"), params) == D("0")
+    assert calcular_islr(D("-100"), params) == D("0")
+
+
+def test_islr_tramo_medio_12pct():
+    params = ParametrosLOTTT(aplica_islr=True, valor_ut=D("9.00"))
+    # base 1200/mes → anual 14400 → /9 = 1600 UT (tramo 1500–2000, 12%, sustraendo 75)
+    # 1600*0.12 − 75 = 117 UT → *9 = 1053 → /12 = 87.75
+    assert calcular_islr(D("1200"), params) == D("87.75")
+
+
+def test_islr_tramo_superior_sin_tope():
+    params = ParametrosLOTTT(aplica_islr=True, valor_ut=D("9.00"))
+    # base 5000/mes → anual 60000 → /9 ≈ 6666.67 UT (tramo 6000+, 34%, sustraendo 875)
+    # 60000*0.34 = 20400 − 875*9 = 7875 → 12525 → /12 = 1043.75
+    assert calcular_islr(D("5000"), params) == D("1043.75")
+
+
+def test_islr_impuesto_negativo_se_trunca_a_cero():
+    """Tramo artificial con sustraendo mayor que el impuesto → 0 (rama <= 0)."""
+    from apps.nomina.calculo_lottt import TramoISLR
+
+    tramos = (TramoISLR(D("0"), None, D("0.06"), D("100")),)
+    params = ParametrosLOTTT(aplica_islr=True, valor_ut=D("9.00"), tramos_islr=tramos)
+    # base 600/mes → 800 UT → 48 − 100 = −52 → 0
+    assert calcular_islr(D("600"), params) == D("0")
+
+
+def test_islr_se_incluye_en_total_deducciones():
+    params = ParametrosLOTTT(aplica_islr=True, valor_ut=D("9.00"))
+    r = calcular_nomina(EntradaNomina(salario_mensual=D("3000")), params)
+    # base 3000 → anual 36000 → 4000 UT exactas (tramo 2000–2500? no: 4000 está
+    # en el borde del tramo 3000–4000, 24%, sustraendo 375):
+    # 4000*0.24 − 375 = 585 UT → *9 = 5265 → /12 = 438.75
+    assert r.islr == D("438.75")
+    # total = sso 120 + faov 30 + rpe 15 + islr 438.75 = 603.75
+    assert r.total_deducciones == D("603.75")
+    assert r.neto_pagar == D("2396.25")  # 3000 − 603.75
+
+
+# ── Otras asignaciones / deducciones ─────────────────────────────────────────
+
+
+def test_otras_asignaciones_engordan_base_salarial():
+    r = calcular_nomina(
+        EntradaNomina(salario_mensual=D("3000"), otras_asignaciones=D("200")), P
+    )
+    assert r.otras_asignaciones == D("200.00")
+    assert r.total_devengado_salarial == D("3200.00")
+    # las deducciones se calculan sobre 3200: sso 128, faov 32, rpe 16
+    assert r.sso == D("128.00")
+    assert r.faov == D("32.00")
+    assert r.rpe == D("16.00")
+    assert r.neto_pagar == D("3024.00")  # 3200 − 176
+
+
+def test_otras_deducciones_restan_del_neto():
+    r = calcular_nomina(
+        EntradaNomina(salario_mensual=D("3000"), otras_deducciones=D("100")), P
+    )
+    assert r.otras_deducciones == D("100.00")
+    assert r.total_deducciones == D("265.00")  # 165 + 100
+    assert r.neto_pagar == D("2735.00")
+
+
+def test_total_asignaciones_es_salarial_mas_cestaticket():
+    r = calcular_nomina(
+        EntradaNomina(salario_mensual=D("3000"), cestaticket_mensual=D("400")), P
+    )
+    assert r.total_asignaciones == D("3400.00")
+
+
+def test_combinado_todos_los_conceptos():
+    """Caso integral: cada término con valor exacto (mata mutantes de suma)."""
+    r = calcular_nomina(
+        EntradaNomina(
+            salario_mensual=D("3600"),
+            dias_trabajados=30,
+            horas_extra_diurnas=D("6"),    # 3600/180=20 → 6*20*1.5 = 180
+            horas_extra_nocturnas=D("3"),  # 3*20*2 = 120
+            horas_nocturnas=D("10"),       # 10*20*0.30 = 60
+            otras_asignaciones=D("40"),
+            cestaticket_mensual=D("500"),
+            otras_deducciones=D("25"),
+        ),
+        P,
+    )
+    assert r.salario_periodo == D("3600.00")
+    assert r.monto_horas_extra_diurnas == D("180.00")
+    assert r.monto_horas_extra_nocturnas == D("120.00")
+    assert r.monto_bono_nocturno == D("60.00")
+    assert r.total_devengado_salarial == D("4000.00")  # 3600+180+120+60+40
+    assert r.sso == D("160.00")      # 4% de 4000
+    assert r.faov == D("40.00")      # 1%
+    assert r.rpe == D("20.00")       # 0.5%
+    assert r.total_deducciones == D("245.00")  # 220 + 25
+    assert r.total_asignaciones == D("4500.00")  # 4000 + 500
+    assert r.neto_pagar == D("4255.00")  # 4500 − 245
+    assert r.aporte_patronal_sso == D("360.00")     # 9%
+    assert r.total_aportes_patronales == D("600.00")  # 15% de 4000
