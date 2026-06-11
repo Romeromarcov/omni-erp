@@ -286,10 +286,23 @@ class CajaFisica(models.Model):
         Realiza el cierre de caja física:
         - Calcula ingresos y egresos desde el último cierre (o desde el inicio).
         - Compara con el saldo real contado.
-        - Registra MovimientoCajaBanco de tipo 'CIERRE'.
+        - Registra MovimientoCajaBanco de tipo 'CIERRE' (corte persistente).
         - Si hay descuadre, crea ajuste para cuadrar el saldo.
-        - Actualiza fecha_ultimo_cierre.
         - Devuelve resumen del cierre.
+
+        FIX (hallazgo P0-8): este método leía/escribía ``self.saldo_actual`` y
+        ``self.fecha_ultimo_cierre``, campos eliminados del modelo en la
+        migración finanzas/0021 → AttributeError en runtime y el corte nunca
+        persistía. Decisión (Opción A, sin restaurar campos): el corte se
+        re-deriva de los datos persistentes — el último MovimientoCajaBanco de
+        tipo 'CIERRE' de esta caja es la fuente de verdad:
+        - su ``saldo_nuevo`` (= saldo real contado) es el saldo base del
+          período siguiente;
+        - su (fecha_movimiento, hora_movimiento) es el inicio EXCLUSIVO de la
+          ventana siguiente (semántica BUG-M4: comparación por fecha+hora).
+        El ajuste por descuadre se registra con la misma fecha/hora del límite
+        del cierre, de modo que queda DENTRO de la ventana recién cerrada y el
+        siguiente cierre no lo vuelve a contar (el saldo base ya lo incorpora).
         """
         from decimal import Decimal
 
@@ -304,55 +317,59 @@ class CajaFisica(models.Model):
 
         ahora = timezone.now()
         limite = hasta or ahora
-        # BUG-M4: la ventana se compara con (fecha, hora) del movimiento, no
-        # solo con la fecha. Antes se comparaba el DateField contra el datetime
-        # del último cierre (Django lo truncaba a fecha), de modo que los
-        # movimientos del mismo día anteriores al cierre previo se volvían a
-        # contar (saldo_teorico doble-contaba) y los posteriores al límite
-        # dentro del mismo día se incluían de más.
-        if self.fecha_ultimo_cierre:
-            inicio = self.fecha_ultimo_cierre
-            # Estrictamente DESPUÉS del último cierre
-            movimientos = self.movimientos.filter(
-                Q(fecha_movimiento__gt=inicio.date())
-                | Q(fecha_movimiento=inicio.date(), hora_movimiento__gt=inicio.time())
-            )
-        else:
-            movimientos = self.movimientos.all()
-        # Hasta el límite del cierre, inclusive
-        movimientos = movimientos.filter(
-            Q(fecha_movimiento__lt=limite.date())
-            | Q(fecha_movimiento=limite.date(), hora_movimiento__lte=limite.time())
-        )
-        ingresos = sum(
-            (m.monto for m in movimientos.filter(tipo_movimiento__in=["INGRESO", "AJUSTE_POSITIVO"])), Decimal("0.00")
-        )
-        egresos = sum(
-            (m.monto for m in movimientos.filter(tipo_movimiento__in=["EGRESO", "AJUSTE_NEGATIVO"])), Decimal("0.00")
-        )
-        saldo_teorico = self.saldo_actual + ingresos - egresos
-        saldo_real = Decimal(saldo_real)
-        descuadre = saldo_real - saldo_teorico
+        fecha_limite = limite.date()
+        hora_limite = limite.time()
+        # R-CODE-4: nunca Decimal(float) — pasar por str preserva el valor.
+        saldo_real = saldo_real if isinstance(saldo_real, Decimal) else Decimal(str(saldo_real))
 
         with transaction.atomic():
-            # Registrar movimiento de cierre
-            movimiento_cierre = MovimientoCajaBanco.objects.create(
-                id_empresa=self.empresa,
-                fecha_movimiento=limite.date(),
-                hora_movimiento=limite.time(),
-                tipo_movimiento="CIERRE",
-                monto=Decimal("0.00"),
-                id_moneda=None,
-                concepto=f"Cierre de caja física. Saldo real: {saldo_real}, saldo teórico: {saldo_teorico}, descuadre: {descuadre}",
-                referencia=f'Cierre {self.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
-                id_caja_fisica=self,
-                saldo_anterior=self.saldo_actual,
-                saldo_nuevo=saldo_real,
-                id_usuario_registro=usuario if usuario else None,
+            # Lock de la caja: serializa cierres concurrentes sobre la misma
+            # caja física (dos cierres simultáneos leerían el mismo corte y
+            # doble-contarían la ventana).
+            CajaFisica.objects.select_for_update().get(pk=self.pk)
+            ultimo_cierre = (
+                self.movimientos.filter(tipo_movimiento="CIERRE")
+                .order_by("-fecha_movimiento", "-hora_movimiento", "-fecha_creacion")
+                .first()
             )
+            # BUG-M4: la ventana se compara con (fecha, hora) del movimiento,
+            # no solo con la fecha, para no recontar movimientos del mismo día
+            # anteriores al cierre previo ni incluir los posteriores al límite.
+            if ultimo_cierre:
+                inicio_fecha = ultimo_cierre.fecha_movimiento
+                inicio_hora = ultimo_cierre.hora_movimiento
+                if (fecha_limite, hora_limite) < (inicio_fecha, inicio_hora):
+                    raise ValueError("El límite del cierre no puede ser anterior al último cierre.")
+                saldo_base = ultimo_cierre.saldo_nuevo
+                # Estrictamente DESPUÉS del último cierre
+                movimientos = self.movimientos.filter(
+                    Q(fecha_movimiento__gt=inicio_fecha)
+                    | Q(fecha_movimiento=inicio_fecha, hora_movimiento__gt=inicio_hora)
+                )
+            else:
+                saldo_base = Decimal("0.00")
+                movimientos = self.movimientos.all()
+            # Hasta el límite del cierre, inclusive
+            movimientos = movimientos.filter(
+                Q(fecha_movimiento__lt=fecha_limite)
+                | Q(fecha_movimiento=fecha_limite, hora_movimiento__lte=hora_limite)
+            )
+            ingresos = sum(
+                (m.monto for m in movimientos.filter(tipo_movimiento__in=["INGRESO", "AJUSTE_POSITIVO"])),
+                Decimal("0.00"),
+            )
+            egresos = sum(
+                (m.monto for m in movimientos.filter(tipo_movimiento__in=["EGRESO", "AJUSTE_NEGATIVO"])),
+                Decimal("0.00"),
+            )
+            saldo_teorico = saldo_base + ingresos - egresos
+            descuadre = saldo_real - saldo_teorico
+
             movimiento_ajuste = None
             if descuadre != 0:
-                # Crear ajuste para cuadrar el saldo
+                # Crear ajuste para cuadrar el saldo. Se fecha en el límite del
+                # cierre (no en now()) para que pertenezca a la ventana recién
+                # cerrada y no se doble-cuente en el cierre siguiente.
                 tipo_ajuste = "POSITIVO" if descuadre > 0 else "NEGATIVO"
                 movimiento_ajuste = crear_ajuste_caja_banco(
                     empresa=self.empresa,
@@ -363,12 +380,26 @@ class CajaFisica(models.Model):
                     motivo=f"Ajuste por descuadre en cierre de caja física {self.nombre}",
                     tipo_ajuste=tipo_ajuste,
                     referencia=f'Ajuste cierre {self.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
+                    fecha_movimiento=fecha_limite,
+                    hora_movimiento=hora_limite,
                 )
-                self.saldo_actual = saldo_real
-            else:
-                self.saldo_actual = saldo_real
-            self.fecha_ultimo_cierre = limite
-            self.save()
+            # Registrar movimiento de cierre (corte persistente: saldo_nuevo y
+            # fecha/hora son la base y el inicio de la ventana del siguiente
+            # cierre).
+            movimiento_cierre = MovimientoCajaBanco.objects.create(
+                id_empresa=self.empresa,
+                fecha_movimiento=fecha_limite,
+                hora_movimiento=hora_limite,
+                tipo_movimiento="CIERRE",
+                monto=Decimal("0.00"),
+                id_moneda=None,
+                concepto=f"Cierre de caja física. Saldo real: {saldo_real}, saldo teórico: {saldo_teorico}, descuadre: {descuadre}",
+                referencia=f'Cierre {self.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
+                id_caja_fisica=self,
+                saldo_anterior=saldo_base,
+                saldo_nuevo=saldo_real,
+                id_usuario_registro=usuario if usuario else None,
+            )
         return {
             "ingresos": ingresos,
             "egresos": egresos,
@@ -959,6 +990,10 @@ class MovimientoCajaBanco(models.Model):
         ("TRANSFERENCIA_SALIDA", "Transferencia Salida"),
         ("AJUSTE_POSITIVO", "Ajuste Positivo"),
         ("AJUSTE_NEGATIVO", "Ajuste Negativo"),
+        # Corte de cierre de caja física: monto 0, saldo_nuevo = saldo real
+        # contado. Es el registro persistente del que CajaFisica.realizar_cierre
+        # re-deriva la ventana y el saldo base del siguiente cierre.
+        ("CIERRE", "Cierre"),
     ]
 
     id_movimiento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
