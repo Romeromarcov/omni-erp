@@ -103,40 +103,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (username: string, password: string): Promise<DispositivoInfo | null> => {
-    setIsLoading(true);
-    try {
-      // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie.
-      const { token: newToken, usuario, dispositivo } = await loginAndFetchUser(username, password);
-      setTokenState(newToken);
-      setUser(usuario);
+    // OJO: NO tocar `isLoading` aquí. Ese flag protege solo la rehidratación
+    // inicial; mientras está en true AppRouter desmonta el árbol completo
+    // (incluida LoginPage), lo que reseteaba el paso de selección de
+    // empresa/sucursal tras el login (bug detectado por el E2E de TEST-6).
+    // El spinner del formulario lo maneja LoginPage con su estado local.
+    // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie.
+    const { token: newToken, usuario, dispositivo } = await loginAndFetchUser(username, password);
+    setTokenState(newToken);
+    setUser(usuario);
 
-      if (dispositivo) {
-        setDispositivoInfo(dispositivo);
-      }
-
-      // Si se abrió sesión automáticamente, actualizar caja física (en memoria).
-      if (dispositivo?.sesion_abierta) {
-        const caja: CajaFisicaSel = {
-          id_caja_fisica: dispositivo.sesion_abierta.caja_fisica.id_caja_fisica,
-          nombre: dispositivo.sesion_abierta.caja_fisica.nombre,
-          tipo_caja: 'VENTA',
-        };
-        setSessionCajaFisica(caja);
-        setCajaFisicaState(caja);
-      }
-
-      // UI selection (non-PII) — first empresa/sucursal as defaults.
-      if (usuario.empresas && usuario.empresas.length > 0) {
-        localStorage.setItem('id_empresa', usuario.empresas[0].id_empresa);
-      }
-      if (usuario.sucursales && usuario.sucursales.length > 0) {
-        localStorage.setItem('id_sucursal', usuario.sucursales[0].id_sucursal);
-      }
-
-      return dispositivo || null;
-    } finally {
-      setIsLoading(false);
+    if (dispositivo) {
+      setDispositivoInfo(dispositivo);
     }
+
+    // Si se abrió sesión automáticamente, actualizar caja física (en memoria).
+    if (dispositivo?.sesion_abierta) {
+      const caja: CajaFisicaSel = {
+        id_caja_fisica: dispositivo.sesion_abierta.caja_fisica.id_caja_fisica,
+        nombre: dispositivo.sesion_abierta.caja_fisica.nombre,
+        tipo_caja: 'VENTA',
+      };
+      setSessionCajaFisica(caja);
+      setCajaFisicaState(caja);
+    }
+
+    // UI selection (non-PII) — first empresa/sucursal as defaults.
+    if (usuario.empresas && usuario.empresas.length > 0) {
+      localStorage.setItem('id_empresa', usuario.empresas[0].id_empresa);
+    }
+    if (usuario.sucursales && usuario.sucursales.length > 0) {
+      localStorage.setItem('id_sucursal', usuario.sucursales[0].id_sucursal);
+    }
+
+    return dispositivo || null;
   };
 
   return (
