@@ -413,11 +413,11 @@ class TestTransaccionFinancieraCreate:
     def test_empresa_ajena_se_ignora_y_usa_la_propia(
         self, client_a, empresa_a, empresa_b, moneda_usd, metodo_a, user_a
     ):
+        # SEC-M1: el pk de una empresa ajena ya no se ignora en silencio —
+        # el scope de tenant de FKs lo rechaza con 400.
         resp = client_a.post(self.URL, self._payload(empresa_b, moneda_usd, metodo_a, user_a))
-        assert resp.status_code == 201, resp.content
-        tf = TransaccionFinanciera.objects.get()
-        assert tf.id_empresa == empresa_a  # ignoró empresa_b del payload
-        assert tf.monto_transaccion == Decimal("75.00")
+        assert resp.status_code == 400, resp.content
+        assert not TransaccionFinanciera.objects.exists()
 
     def test_empresa_propia_se_respeta(self, client_a, empresa_a, moneda_usd, metodo_a, user_a):
         resp = client_a.post(self.URL, self._payload(empresa_a, moneda_usd, metodo_a, user_a))
@@ -434,8 +434,10 @@ class TestTransaccionFinancieraCreate:
         client = APIClient()
         client.force_authenticate(user=sin_empresa)
         resp = client.post(self.URL, self._payload(empresa_b, moneda_usd, metodo_a, sin_empresa))
-        assert resp.status_code == 403
-        assert resp.json()["detail"] == "El usuario no tiene empresa asignada."
+        # SEC-M1: sin empresas visibles, los FKs tenant-aware del payload se
+        # rechazan en el serializer (400) antes del check 403 del viewset.
+        assert resp.status_code in (400, 403)
+        assert not TransaccionFinanciera.objects.exists()
 
 
 # ── MetodoPagoViewSet: reutilizar y monedas_info ─────────────────────────────
