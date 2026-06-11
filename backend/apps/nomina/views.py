@@ -1,4 +1,5 @@
 from django.db.models import Count, Sum
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -30,7 +31,7 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class PeriodoNominaViewSet(viewsets.ModelViewSet):
+class PeriodoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = PeriodoNomina.objects.all()
     serializer_class = PeriodoNominaSerializer
     filterset_fields = ["estado", "tipo_periodo", "id_empresa", "activo"]
@@ -74,7 +75,7 @@ class PeriodoNominaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ConceptoNominaViewSet(viewsets.ModelViewSet):
+class ConceptoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = ConceptoNomina.objects.all()
     serializer_class = ConceptoNominaSerializer
     filterset_fields = ["tipo_concepto", "categoria", "activo", "id_empresa", "es_fijo", "es_porcentaje"]
@@ -114,7 +115,7 @@ class ConceptoNominaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ProcesoNominaViewSet(viewsets.ModelViewSet):
+class ProcesoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = ProcesoNomina.objects.all()
     serializer_class = ProcesoNominaSerializer
     filterset_fields = ["estado", "id_empresa", "id_periodo_nomina"]
@@ -183,7 +184,7 @@ class ProcesoNominaViewSet(viewsets.ModelViewSet):
         return Response(resumen)
 
 
-class NominaViewSet(viewsets.ModelViewSet):
+class NominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = Nomina.objects.all()
     serializer_class = NominaSerializer
     filterset_fields = ["estado", "id_proceso_nomina", "id_empleado"]
@@ -227,7 +228,7 @@ class NominaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class DetalleNominaViewSet(viewsets.ModelViewSet):
+class DetalleNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = DetalleNomina.objects.all()
     serializer_class = DetalleNominaSerializer
     filterset_fields = ["id_nomina", "id_concepto_nomina"]
@@ -242,7 +243,7 @@ class DetalleNominaViewSet(viewsets.ModelViewSet):
         )
 
 
-class ProcesoNominaExtrasalarialViewSet(viewsets.ModelViewSet):
+class ProcesoNominaExtrasalarialViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = ProcesoNominaExtrasalarial.objects.all()
     serializer_class = ProcesoNominaExtrasalarialSerializer
     filterset_fields = ["estado", "tipo_proceso", "id_empresa"]
@@ -292,7 +293,7 @@ class ProcesoNominaExtrasalarialViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class NominaExtrasalarialViewSet(viewsets.ModelViewSet):
+class NominaExtrasalarialViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = NominaExtrasalarial.objects.all()
     serializer_class = NominaExtrasalarialSerializer
     filterset_fields = ["estado", "id_proceso_extrasalarial", "id_empleado"]

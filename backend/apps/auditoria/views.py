@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from rest_framework.permissions import IsAuthenticated
 
 from apps.core.viewsets import get_empresas_visible
@@ -7,7 +8,7 @@ from .models import LogAuditoria
 from .serializers import LogAuditoriaSerializer
 
 
-class LogAuditoriaViewSet(viewsets.ModelViewSet):
+class LogAuditoriaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = LogAuditoria.objects.all()
     serializer_class = LogAuditoriaSerializer
     permission_classes = [IsAuthenticated]

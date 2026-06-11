@@ -1,4 +1,5 @@
 from django.db.models import Sum
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -14,7 +15,7 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class PlanCuentasViewSet(viewsets.ModelViewSet):
+class PlanCuentasViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = PlanCuentas.objects.all()
     serializer_class = PlanCuentasSerializer
     permission_classes = [IsAuthenticated]
@@ -48,7 +49,7 @@ class PlanCuentasViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class AsientoContableViewSet(viewsets.ModelViewSet):
+class AsientoContableViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = AsientoContable.objects.all()
     serializer_class = AsientoContableSerializer
     permission_classes = [IsAuthenticated]
@@ -152,7 +153,7 @@ class AsientoContableViewSet(viewsets.ModelViewSet):
         )
 
 
-class DetalleAsientoViewSet(viewsets.ModelViewSet):
+class DetalleAsientoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = DetalleAsiento.objects.all()
     serializer_class = DetalleAsientoSerializer
     permission_classes = [IsAuthenticated]
