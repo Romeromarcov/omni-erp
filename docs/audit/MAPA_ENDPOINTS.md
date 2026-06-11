@@ -74,6 +74,8 @@
 | `^cajas-fisicas-usuario\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ | IsAuthenticated |
 | `^cajas-fisicas/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cierre/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cierre\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/tipo-caja-choices/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/tipo-caja-choices\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
