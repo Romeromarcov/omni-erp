@@ -74,6 +74,10 @@
 | `^cajas-fisicas-usuario\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ | IsAuthenticated |
 | `^cajas-fisicas/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/abrir-sesion/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/abrir-sesion\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cerrar-sesion/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cerrar-sesion\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)/cierre/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)/cierre\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |

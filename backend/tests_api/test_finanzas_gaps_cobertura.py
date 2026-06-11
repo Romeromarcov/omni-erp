@@ -293,13 +293,17 @@ class TestSesionCajaFisicaRamasRotas:
                 "caja_fisica_principal": str(caja_virtual_a.id_caja),
             }, format="json")
 
-    def test_cerrar_llama_firma_incompatible(self, client_a, caja_fisica_a, user_a):
-        # BUG (documentado, sin enmascarar): la acción `cerrar` invoca
-        # sesion.cerrar_sesion(saldos_reales=..., usuario=..., hasta=...) pero el
-        # modelo define cerrar_sesion(self, notas_cierre=None) → TypeError.
+    def test_cerrar_funciona_y_marca_sesion_cerrada(self, client_a, caja_fisica_a, user_a):
+        # FIX (hallazgo PR #73): el modelo acepta saldos_reales/usuario/hasta
+        # y la acción `cerrar` responde 200 marcando la sesión CERRADA.
+        # Flujo completo (cierres por caja, atomicidad, multi-tenant) en
+        # test_finanzas_sesion_caja_cierre.py.
         sesion = SesionCajaFisica.abrir_sesion(caja_fisica_a, user_a)
-        with pytest.raises(TypeError):
-            client_a.post(f"{self.URL}{sesion.id_sesion}/cerrar/", {"saldos_reales": {}}, format="json")
+        resp = client_a.post(f"{self.URL}{sesion.id_sesion}/cerrar/", {"saldos_reales": {}}, format="json")
+        assert resp.status_code == 200
+        assert resp.json()["sesion"]["estado"] == "CERRADA"
+        sesion.refresh_from_db()
+        assert sesion.estado == "CERRADA"
 
 
 class TestMetodoPagoEmpresaActivaViewSet:

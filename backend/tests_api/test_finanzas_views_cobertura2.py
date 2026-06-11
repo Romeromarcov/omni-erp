@@ -138,15 +138,20 @@ class TestCajaCierre:
         assert resp.status_code == 400
         assert resp.json() == {"error": "Debe enviar el saldo_real contado."}
 
-    def test_cierre_falla_controladamente_400(self, client_a, caja_virtual_a):
-        # HALLAZGO: el modelo Caja (virtual) NO define realizar_cierre →
-        # AttributeError capturado por el except genérico → 400 controlado.
+    def test_cierre_exitoso_200(self, client_a, caja_virtual_a):
+        # FIX (hallazgo PR #73): Caja (virtual) ya define realizar_cierre →
+        # cierre con corte persistente; el descuadre (sin movimientos, saldo
+        # contado 100) genera ajuste positivo. Flujo completo en
+        # test_finanzas_sesion_caja_cierre.py.
         resp = client_a.post(
             f"/api/finanzas/cajas/{caja_virtual_a.id_caja}/cierre/",
             {"saldo_real": "100.00"},
         )
-        assert resp.status_code == 400
-        assert resp.json() == {"error": "No se pudo realizar el cierre. Intente de nuevo."}
+        assert resp.status_code == 200
+        data = resp.json()
+        assert Decimal(str(data["descuadre"])) == Decimal("100.00")
+        assert data["movimiento_cierre_id"] is not None
+        assert data["movimiento_ajuste_id"] is not None
 
 
 # ── DatafonoViewSet ──────────────────────────────────────────────────────────
