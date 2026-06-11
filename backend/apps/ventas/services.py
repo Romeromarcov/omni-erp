@@ -5,9 +5,16 @@ Flujo correcto (R-CODE-11 en emitir_factura_fiscal):
 
   obtener_precio()        → resuelve precio de un producto según lista del contacto o Lista 1
   confirmar_pedido()      → APROBADO + reserva cantidad_comprometida (sin mover stock físico)
+                            + CuentaPorCobrar del flujo si el cliente es CREDITO
   entregar_nota_venta()   → ENTREGADA + DESPACHO_VENTA (mueve stock físico, libera reserva)
-                            + genera CuentaPorCobrar si no existe
+                            + genera CuentaPorCobrar si el flujo aún no tiene una
   emitir_factura_fiscal() → EMITIDA + AsientoContable automático (R-CODE-11)
+                            + REUTILIZA la CxC del flujo (monto → total con impuestos)
+
+BUG-A4: existe **una sola CuentaPorCobrar por flujo de venta**, vinculada vía
+documento_json (id_pedido / id_nota_venta / id_factura). Nace en confirmar_pedido
+(crédito) o en entregar_nota_venta (contado o venta directa) y al facturar se
+actualiza al total fiscal — nunca se crea una segunda.
 """
 
 import logging
@@ -180,6 +187,9 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
 
         subtotal = sum(d.subtotal for d in detalles)
         dias = cliente.dias_credito or 30
+        # BUG-A4: documento_json["id_pedido"] vincula la CxC al pedido para que
+        # entregar_nota_venta no cree una segunda y emitir_factura_fiscal la
+        # reutilice (actualizando el monto al total con impuestos).
         cxc = CuentaPorCobrar.objects.create(
             cliente=cliente,
             empresa=pedido.id_empresa,
@@ -187,7 +197,10 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
             fecha_emision=timezone.now().date(),
             fecha_vencimiento=timezone.now().date() + timedelta(days=dias),
             estado="pendiente",
+            referencia_externa=pedido.numero_pedido,
+            tipo_operacion="PEDIDO_VENTA",
             descripcion=f"Pedido {pedido.numero_pedido}",
+            documento_json={"id_pedido": str(pedido.id_pedido)},
         )
 
     from apps.core.events import VentasEvents, publish
@@ -223,20 +236,57 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
     return {"reservas": reservas, "cxc": cxc}
 
 
+# ── CxC del flujo de venta (BUG-A4) ───────────────────────────────────────────
+
+
+def _buscar_cxc_flujo_venta(nota_venta, pedido=None, para_actualizar: bool = False):
+    """
+    Devuelve la CuentaPorCobrar ya creada para este flujo de venta (la del
+    pedido en confirmar_pedido o la de la nota en entregar_nota_venta), o None.
+
+    El vínculo es documento_json["id_pedido"] / documento_json["id_nota_venta"],
+    siempre acotado a la empresa de la nota (multi-tenant).
+    """
+    from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
+    filtros = models.Q(documento_json__id_nota_venta=str(nota_venta.id_nota_venta))
+    if pedido is not None:
+        filtros |= models.Q(documento_json__id_pedido=str(pedido.id_pedido))
+
+    qs = (
+        CuentaPorCobrar.objects.filter(empresa=nota_venta.id_empresa)
+        .filter(filtros)
+        .order_by("pk")
+    )
+    if para_actualizar:
+        qs = qs.select_for_update()
+    return qs.first()
+
+
 # ── entregar_nota_venta ───────────────────────────────────────────────────────
 
 
 @transaction.atomic
 def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
     """
-    Despacha la NotaVenta: mueve stock físico, libera reservas, genera CxC si no existe.
+    Despacha la NotaVenta: mueve stock físico, libera reservas, genera CxC si
+    el flujo aún no tiene una.
+
+    BUG-A4 — decisión de flujo de CxC: la entrega despacha mercancía, así que el
+    derecho de cobro debe quedar registrado SIEMPRE. Si el pedido origen ya creó
+    la CxC del flujo (cliente CREDITO en confirmar_pedido) se reutiliza esa; si
+    no existe (venta CONTADO con pedido, o venta directa sin pedido) se crea
+    aquí por el subtotal. Antes solo se verificaba que el pedido tuviera cliente
+    (siempre cierto), por lo que la venta CONTADO con pedido entregada y no
+    facturada quedaba sin CxC.
 
     Precondiciones:
       - nota_venta.estado == 'BORRADOR'
       - El Pedido origen (si existe) debe estar en estado APROBADO.
 
     Returns:
-        {"movimientos": [MovimientoInventario, ...], "cxc": CuentaPorCobrar | None}
+        {"movimientos": [MovimientoInventario, ...], "cxc": CuentaPorCobrar}
+        (cxc es la del flujo: la preexistente del pedido o la recién creada)
     """
     if nota_venta.estado != "BORRADOR":
         raise VentaError(
@@ -298,15 +348,20 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
     nota_venta.estado = "ENTREGADA"
     nota_venta.save(update_fields=["estado"])
 
-    # Generar CxC si no viene de un pedido que ya la creó
-    cxc = None
-    tiene_cxc_de_pedido = pedido is not None and getattr(pedido, "id_cliente", None)
-    if not tiene_cxc_de_pedido:
+    # BUG-A4: generar la CxC del flujo solo si NO existe ya una (la del pedido,
+    # creada en confirmar_pedido para clientes CREDITO). Antes se asumía "ya
+    # tiene CxC" con solo verificar que el pedido tenía cliente, dejando la
+    # venta CONTADO con pedido sin CxC.
+    cxc = _buscar_cxc_flujo_venta(nota_venta, pedido)
+    if cxc is None:
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
         cliente = nota_venta.id_cliente
         subtotal = sum(d.subtotal for d in detalles)
         dias = getattr(cliente, "dias_credito", None) or 30
+        documento_json = {"id_nota_venta": str(nota_venta.id_nota_venta)}
+        if pedido is not None:
+            documento_json["id_pedido"] = str(pedido.id_pedido)
         cxc = CuentaPorCobrar.objects.create(
             cliente=cliente,
             empresa=nota_venta.id_empresa,
@@ -314,7 +369,10 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
             fecha_emision=timezone.now().date(),
             fecha_vencimiento=timezone.now().date() + timedelta(days=dias),
             estado="pendiente",
+            referencia_externa=nota_venta.numero_nota,
+            tipo_operacion="NOTA_VENTA",
             descripcion=f"Nota de venta {nota_venta.numero_nota}",
+            documento_json=documento_json,
         )
 
     return {"movimientos": movimientos, "cxc": cxc}
@@ -379,6 +437,10 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
 def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura: str = None, moneda=None) -> dict:
     """
     Crea la FacturaFiscal desde la NotaVenta y genera el asiento contable (R-CODE-11).
+
+    BUG-A4 — CxC: si el flujo ya tiene CuentaPorCobrar (creada en confirmar_pedido
+    o entregar_nota_venta) se reutiliza, actualizando el monto al total fiscal;
+    NUNCA se crea una segunda. Solo se crea CxC nueva si el flujo no tiene una.
 
     Precondiciones:
       - nota_venta.estado == 'ENTREGADA'
@@ -475,31 +537,70 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     nota_venta.estado = "FACTURADA"
     nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado"])
 
-    # GAP-01: Create CuentaPorCobrar for the full invoice total
+    # GAP-01 + BUG-A4: una sola CuentaPorCobrar por el total del flujo.
+    # Si el pedido (confirmar_pedido) o la entrega (entregar_nota_venta) ya
+    # crearon la CxC del flujo, se REUTILIZA actualizando el monto al total
+    # fiscal (base + IVA + IGTF) — así se preservan los abonos ya registrados
+    # y el cliente nunca aparece debiendo dos veces. Solo si no existe ninguna
+    # (datos previos al fix, o nota ENTREGADA creada fuera del flujo) se crea.
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
     from datetime import timedelta
 
     cliente = nota_venta.id_cliente
     dias_credito = getattr(cliente, "dias_credito", None) or 30
     fecha_emision = factura.fecha_emision
-    cxc = CuentaPorCobrar.objects.create(
-        cliente=cliente,
-        empresa=empresa,
-        monto=total,
-        fecha_emision=fecha_emision,
-        fecha_vencimiento=fecha_emision + timedelta(days=dias_credito),
-        estado="pendiente",
-        referencia_externa=factura.numero_factura,
-        tipo_operacion="FACTURA_VENTA",
-        descripcion=f"Factura Fiscal {factura.numero_factura}",
-        documento_json={
-            "id_factura": str(factura.id_factura),
-            "base_imponible": str(subtotal),
-            "monto_iva": str(monto_iva),
-            "monto_igtf": str(monto_igtf),
-            "monto_total": str(total),
-        },
-    )
+    documento_json_cxc = {
+        "id_factura": str(factura.id_factura),
+        "id_nota_venta": str(nota_venta.id_nota_venta),
+        "base_imponible": str(subtotal),
+        "monto_iva": str(monto_iva),
+        "monto_igtf": str(monto_igtf),
+        "monto_total": str(total),
+    }
+    pedido_origen = getattr(nota_venta, "id_pedido_origen", None)
+    if pedido_origen is not None:
+        documento_json_cxc["id_pedido"] = str(pedido_origen.id_pedido)
+
+    cxc = _buscar_cxc_flujo_venta(nota_venta, pedido_origen, para_actualizar=True)
+    if cxc is not None:
+        cxc.monto = total
+        cxc.fecha_vencimiento = fecha_emision + timedelta(days=dias_credito)
+        cxc.referencia_externa = factura.numero_factura
+        cxc.tipo_operacion = "FACTURA_VENTA"
+        cxc.descripcion = f"Factura Fiscal {factura.numero_factura}"
+        cxc.documento_json = {**(cxc.documento_json or {}), **documento_json_cxc}
+        # Recalcular el estado contra el nuevo total (los abonos previos cuentan)
+        abonado = cxc.abonos.aggregate(s=models.Sum("monto"))["s"] or Decimal("0")
+        if abonado >= cxc.monto:
+            cxc.estado = "pagada"
+        elif abonado > Decimal("0"):
+            cxc.estado = "parcial"
+        else:
+            cxc.estado = "pendiente"
+        cxc.save(
+            update_fields=[
+                "monto",
+                "fecha_vencimiento",
+                "referencia_externa",
+                "tipo_operacion",
+                "descripcion",
+                "documento_json",
+                "estado",
+            ]
+        )
+    else:
+        cxc = CuentaPorCobrar.objects.create(
+            cliente=cliente,
+            empresa=empresa,
+            monto=total,
+            fecha_emision=fecha_emision,
+            fecha_vencimiento=fecha_emision + timedelta(days=dias_credito),
+            estado="pendiente",
+            referencia_externa=factura.numero_factura,
+            tipo_operacion="FACTURA_VENTA",
+            descripcion=f"Factura Fiscal {factura.numero_factura}",
+            documento_json=documento_json_cxc,
+        )
 
     return {
         "factura": factura,
