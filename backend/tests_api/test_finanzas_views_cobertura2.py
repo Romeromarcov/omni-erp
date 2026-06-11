@@ -445,8 +445,15 @@ class TestMetodoPagoAcciones:
 
     @pytest.fixture
     def metodo_b(self, empresa_b):
+        # SEC-A1 (auditoría 2026-06-10): antes este fixture era PRIVADO de la
+        # empresa B y el test fijaba el comportamiento inseguro (cualquier
+        # usuario podía reutilizarlo por UUID). Ahora `reutilizar` solo acepta
+        # fuentes visibles (genéricas/públicas/propias), así que el método
+        # compartido debe ser público; el caso "privado ajeno → 404" se cubre
+        # en tests_api/test_metodos_pago_aislamiento.py.
         return MetodoPago.objects.create(
-            nombre_metodo="Pago Móvil Banesco", tipo_metodo="ELECTRONICO", empresa=empresa_b
+            nombre_metodo="Pago Móvil Banesco", tipo_metodo="ELECTRONICO",
+            empresa=empresa_b, es_publico=True,
         )
 
     def test_reutilizar_sin_empresa_400(self, client_a, metodo_b):

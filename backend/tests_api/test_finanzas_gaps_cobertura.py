@@ -367,8 +367,14 @@ class TestMetodoPagoRamas:
         assert "Privado B" in nombres
 
     def test_buscar_reutilizar_con_filtros(self, client_a, empresa_a, empresa_b):
+        # SEC-A3 (auditoría 2026-06-10): este test fijaba el comportamiento
+        # inseguro (un método PRIVADO de B aparecía para A). Ahora solo los
+        # métodos públicos/genéricos son reutilizables, así que el método de B
+        # debe ser público para listarse; el caso "privado ajeno NO se lista"
+        # se cubre en tests_api/test_metodos_pago_aislamiento.py.
         MetodoPago.objects.create(
-            nombre_metodo="Pago Móvil B", tipo_metodo="ELECTRONICO", empresa=empresa_b
+            nombre_metodo="Pago Móvil B", tipo_metodo="ELECTRONICO",
+            empresa=empresa_b, es_publico=True,
         )
         # Sin id_empresa_actual los filtros nombre/tipo aplican y la
         # serialización es segura (get_aplicado retorna False sin contexto).
