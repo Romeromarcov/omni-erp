@@ -75,29 +75,31 @@ export default defineConfig({
       exclude: ['node_modules/', 'src/test-setup.ts', 'src/api/**', 'e2e/**'],
       // INFRA-NEW-3: el gate de cobertura ahora SÍ corre en CI (npm run
       // test:coverage). Los umbrales son un "ratchet" fijado al piso actual del
-      // código para prevenir regresión; el objetivo del Plan Maestro es 60% en
-      // las cuatro métricas y se sube conforme se agregan tests. No bajar.
+      // código para prevenir regresión; el objetivo de la Fase 4 del plan
+      // cero-dudas es 80% y se sube por escalones conforme se agregan tests.
+      // No bajar. Piso actual (Q1/COV-2 escalón 1): stmts 63.7 / branches 53.2
+      // / funcs 59.2 / lines 65.6 — umbral con ~1 punto de margen.
       thresholds: {
-        statements: 52,
-        branches: 41,
-        functions: 45,
-        lines: 55,
+        statements: 62,
+        branches: 52,
+        functions: 58,
+        lines: 64,
         // TEST-6: pisos de cobertura por carpeta (ratchet, igual filosofía que el
         // global). Fijados al piso ACTUAL de cada carpeta para impedir regresión.
-        // El objetivo del Plan Maestro (≥85% en services/ y hooks/) sigue pendiente:
-        // el gap es grande (hooks ~50%, services ~63%) y no se cierra con 1-2 tests;
+        // El objetivo del Plan Maestro (≥85% en services/ y hooks/) sigue pendiente;
         // se sube conforme se agregan tests con MSW. NO bajar estos números.
+        // Piso actual: services 78.7/63.8/83/80.1 · hooks 55.2/37.8/61.5/57.3.
         'src/services/**': {
-          statements: 60,
-          branches: 50,
-          functions: 55,
-          lines: 60,
+          statements: 77,
+          branches: 62,
+          functions: 81,
+          lines: 79,
         },
         'src/hooks/**': {
-          statements: 45,
-          branches: 33,
-          functions: 50,
-          lines: 45,
+          statements: 54,
+          branches: 36,
+          functions: 60,
+          lines: 56,
         },
         'src/lib/**': {
           statements: 85,
