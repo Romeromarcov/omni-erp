@@ -38,6 +38,7 @@ TIPOS_ASIENTO = frozenset(
         "SALIDA_INTERNA",
         "PAGO_CXC",
         "PAGO_CXP",
+        "NOMINA",              # CTF-013: asiento del proceso de nómina LOTTT
     }
 )
 
