@@ -170,31 +170,38 @@ def conciliar_automatico(
     Returns:
         dict con claves: conciliados, sin_match, total_procesados.
     """
-    from datetime import timedelta
-
-    from apps.finanzas.models import Pago
+    from django.db import transaction
 
     from .models import MovimientoBancario
-
-    movimientos_pendientes = MovimientoBancario.objects.filter(
-        id_empresa=empresa,
-        id_cuenta_bancaria=cuenta_bancaria,
-        estado="PENDIENTE",
-        tipo="CREDITO",
-    ).order_by("fecha_mov")
 
     conciliados = 0
     sin_match = 0
 
-    for mov in movimientos_pendientes:
-        pago = _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias)
-        if pago:
-            mov.estado = "CONCILIADO"
-            mov.id_pago_conciliado = pago
-            mov.save(update_fields=["estado", "id_pago_conciliado"])
-            conciliados += 1
-        else:
-            sin_match += 1
+    # BUG-M5: todo el emparejamiento corre en una transacción con lock sobre
+    # los movimientos pendientes y sobre el Pago candidato, para que dos
+    # ejecuciones concurrentes no concilien el mismo Pago contra dos
+    # movimientos distintos.
+    with transaction.atomic():
+        movimientos_pendientes = (
+            MovimientoBancario.objects.select_for_update()
+            .filter(
+                id_empresa=empresa,
+                id_cuenta_bancaria=cuenta_bancaria,
+                estado="PENDIENTE",
+                tipo="CREDITO",
+            )
+            .order_by("fecha_mov")
+        )
+
+        for mov in movimientos_pendientes:
+            pago = _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias)
+            if pago:
+                mov.estado = "CONCILIADO"
+                mov.id_pago_conciliado = pago
+                mov.save(update_fields=["estado", "id_pago_conciliado"])
+                conciliados += 1
+            else:
+                sin_match += 1
 
     return {
         "conciliados": conciliados,
@@ -204,10 +211,18 @@ def conciliar_automatico(
 
 
 def _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias: int):
-    """Busca un Pago que coincida con el MovimientoBancario."""
+    """
+    Busca un Pago que coincida con el MovimientoBancario.
+
+    Debe llamarse dentro de una transacción: bloquea (``select_for_update``)
+    el Pago elegido y re-verifica que siga sin conciliar antes de devolverlo
+    (BUG-M5: evita que dos conciliaciones concurrentes usen el mismo Pago).
+    """
     from datetime import timedelta
 
     from apps.finanzas.models import Pago
+
+    from .models import MovimientoBancario
 
     ventana_inicio = mov.fecha_mov - timedelta(days=tolerancia_dias)
     ventana_fin = mov.fecha_mov + timedelta(days=tolerancia_dias)
@@ -221,14 +236,28 @@ def _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias: int):
         movimientos_bancarios_conciliados__isnull=True,  # no conciliado antes
     )
 
+    def _lock_y_verificar(pago):
+        """Bloquea el Pago y confirma que nadie lo concilió en paralelo."""
+        if pago is None:
+            return None
+        pago = Pago.objects.select_for_update().get(pk=pago.pk)
+        if MovimientoBancario.objects.filter(id_pago_conciliado=pago).exists():
+            return None
+        return pago
+
     # Prioridad 1: referencia exacta (si existe en ambos)
     if mov.referencia:
-        por_referencia = pagos_candidatos.filter(referencia=mov.referencia).first()
-        if por_referencia:
-            return por_referencia
+        for candidato in pagos_candidatos.filter(referencia=mov.referencia):
+            pago = _lock_y_verificar(candidato)
+            if pago:
+                return pago
 
     # Prioridad 2: monto + ventana de fecha (tomar el más cercano)
-    return pagos_candidatos.order_by("fecha_pago").first()
+    for candidato in pagos_candidatos.order_by("fecha_pago"):
+        pago = _lock_y_verificar(candidato)
+        if pago:
+            return pago
+    return None
 
 
 # ── iniciar / cerrar conciliación ─────────────────────────────────────────────

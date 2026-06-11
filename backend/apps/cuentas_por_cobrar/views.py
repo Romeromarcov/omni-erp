@@ -24,9 +24,22 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
     serializer_class = CuentaPorCobrarSerializer
 
     def get_queryset(self):
-        qs = CuentaPorCobrar.objects.filter(
-            empresa__in=_empresas(self.request)
-        ).select_related("cliente", "empresa").prefetch_related("abonos")
+        from django.db.models import DecimalField, Sum
+        from django.db.models.functions import Coalesce
+
+        # BUG-M2: anotar el total abonado evita el N+1 del serializer
+        # (un aggregate por fila al calcular saldo_pendiente).
+        qs = (
+            CuentaPorCobrar.objects.filter(empresa__in=_empresas(self.request))
+            .select_related("cliente", "empresa")
+            .annotate(
+                total_abonado_agg=Coalesce(
+                    Sum("abonos__monto"),
+                    Decimal("0"),
+                    output_field=DecimalField(max_digits=18, decimal_places=2),
+                )
+            )
+        )
 
         empresa_id = self.request.query_params.get("empresa")
         cliente_id = self.request.query_params.get("cliente")

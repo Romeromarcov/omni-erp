@@ -300,12 +300,29 @@ class CajaFisica(models.Model):
 
         from .models import MovimientoCajaBanco
 
+        from django.db.models import Q
+
         ahora = timezone.now()
         limite = hasta or ahora
-        # Buscar movimientos desde el último cierre
-        movimientos = self.movimientos.filter(
-            fecha_movimiento__gte=self.fecha_ultimo_cierre if self.fecha_ultimo_cierre else self.fecha_creacion,
-            fecha_movimiento__lte=limite.date(),
+        # BUG-M4: la ventana se compara con (fecha, hora) del movimiento, no
+        # solo con la fecha. Antes se comparaba el DateField contra el datetime
+        # del último cierre (Django lo truncaba a fecha), de modo que los
+        # movimientos del mismo día anteriores al cierre previo se volvían a
+        # contar (saldo_teorico doble-contaba) y los posteriores al límite
+        # dentro del mismo día se incluían de más.
+        if self.fecha_ultimo_cierre:
+            inicio = self.fecha_ultimo_cierre
+            # Estrictamente DESPUÉS del último cierre
+            movimientos = self.movimientos.filter(
+                Q(fecha_movimiento__gt=inicio.date())
+                | Q(fecha_movimiento=inicio.date(), hora_movimiento__gt=inicio.time())
+            )
+        else:
+            movimientos = self.movimientos.all()
+        # Hasta el límite del cierre, inclusive
+        movimientos = movimientos.filter(
+            Q(fecha_movimiento__lt=limite.date())
+            | Q(fecha_movimiento=limite.date(), hora_movimiento__lte=limite.time())
         )
         ingresos = sum(
             (m.monto for m in movimientos.filter(tipo_movimiento__in=["INGRESO", "AJUSTE_POSITIVO"])), Decimal("0.00")
