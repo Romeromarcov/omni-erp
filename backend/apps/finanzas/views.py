@@ -91,13 +91,41 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="cerrar")
     def cerrar_sesion(self, request, pk=None):
         """
-        Cierra la sesión de caja, realiza el cierre de todas las cajas asociadas y retorna el reporte.
+        Cierra la sesión de caja: realiza el cierre de las cajas indicadas en
+        ``saldos_reales`` ({id_caja: saldo real contado} — la caja física de
+        la sesión y/o sus cajas virtuales) y marca la sesión CERRADA, todo en
+        una sola transacción. Retorna la sesión y el reporte de cierres.
+
+        FIX (endpoint roto): llamaba ``sesion.cerrar_sesion(saldos_reales=...)``
+        con una firma del modelo que solo aceptaba ``notas_cierre`` →
+        TypeError 500 en toda invocación.
         """
+        from django.utils.dateparse import parse_datetime
+
         sesion = self.get_object()
-        saldos_reales = request.data.get("saldos_reales", {})
+        saldos_reales = request.data.get("saldos_reales") or {}
+        if not isinstance(saldos_reales, dict):
+            return Response({"error": "saldos_reales debe ser un objeto {id_caja: saldo_real}."}, status=400)
         hasta = request.data.get("hasta")
+        hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
         usuario = request.user if request.user.is_authenticated else None
-        resultados = sesion.cerrar_sesion(saldos_reales=saldos_reales, usuario=usuario, hasta=hasta)
+        try:
+            resultados = sesion.cerrar_sesion(
+                notas_cierre=request.data.get("notas_cierre"),
+                saldos_reales=saldos_reales,
+                usuario=usuario,
+                hasta=hasta_dt,
+            )
+        except ValueError as exc:
+            # Mensajes de negocio controlados (sesión cerrada, caja ajena,
+            # saldo inválido); no se expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Error al cerrar sesión de caja")
+            return Response({"error": "No se pudo cerrar la sesión. Intente de nuevo."}, status=400)
+        sesion.refresh_from_db()
         return Response({"sesion": SesionCajaFisicaSerializer(sesion).data, "cierres": resultados})
 
     @action(detail=True, methods=["post"], url_path="transferir-entre-cajas")
@@ -514,20 +542,40 @@ class CajaViewSet(BaseModelViewSet):
     @action(detail=True, methods=["post"], url_path="cierre")
     def cierre_caja(self, request, pk=None):
         """
-        Endpoint para realizar el cierre de una caja.
-        Recibe el saldo real contado y opcionalmente una fecha/hora límite.
+        Realiza el cierre de la caja virtual. Recibe el saldo real contado y
+        opcionalmente 'hasta' (fecha/hora límite ISO). El corte queda
+        persistido como MovimientoCajaBanco tipo CIERRE (patrón PR #73).
+
+        FIX (endpoint roto): llamaba ``caja.realizar_cierre`` pero ``Caja``
+        (virtual) no definía ese método → siempre 400. Ahora el método existe
+        y reutiliza el helper común ``services.realizar_cierre_caja``.
         """
+        from decimal import Decimal, InvalidOperation
+
         from django.utils.dateparse import parse_datetime
 
+        # R-CODE-1: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la caja pertenece a otra empresa.
         caja = self.get_object()
         saldo_real = request.data.get("saldo_real")
-        hasta = request.data.get("hasta")
-        usuario = request.user if request.user.is_authenticated else None
         if saldo_real is None:
             return Response({"error": "Debe enviar el saldo_real contado."}, status=400)
+        try:
+            # R-CODE-4: nunca Decimal(float); pasar por str preserva el valor.
+            saldo_real = Decimal(str(saldo_real))
+        except (InvalidOperation, ValueError, TypeError):
+            return Response({"error": "El saldo_real enviado no es un número válido."}, status=400)
+        hasta = request.data.get("hasta")
         hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
+        usuario = request.user if request.user.is_authenticated else None
         try:
             resultado = caja.realizar_cierre(saldo_real=saldo_real, usuario=usuario, hasta=hasta_dt)
+        except ValueError as exc:
+            # Mensajes de negocio controlados (límite anterior al último
+            # cierre); no se expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
         except Exception:
             logger.exception("Error al realizar cierre de caja")
             return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
@@ -1072,6 +1120,91 @@ class CajaFisicaViewSet(BaseModelViewSet):
             logger.exception("Error al realizar cierre de caja física")
             return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
         return Response(resultado)
+
+    @action(detail=True, methods=["post"], url_path="abrir-sesion")
+    def abrir_sesion(self, request, pk=None):
+        """
+        Abre una sesión de trabajo sobre esta caja física (FIX endpoint roto:
+        el frontend llama POST /finanzas/cajas-fisicas/{id}/abrir-sesion/ y la
+        ruta no existía). Si había una sesión abierta, se cierra
+        automáticamente (comportamiento de SesionCajaFisica.abrir_sesion).
+        """
+        from .models import SesionCajaFisica
+
+        # R-CODE-1: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la caja física pertenece a otra empresa.
+        caja = self.get_object()
+        sesion = SesionCajaFisica.abrir_sesion(
+            caja_fisica=caja,
+            usuario=request.user,
+            ip_address=request.META.get("REMOTE_ADDR"),
+            user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:1000] or None,
+        )
+        return Response(
+            {
+                "mensaje": f"Sesión abierta para la caja {caja.nombre}.",
+                "sesion": {
+                    "id_sesion": str(sesion.id_sesion),
+                    "estado": sesion.estado,
+                    "fecha_apertura": sesion.fecha_apertura,
+                    "usuario": sesion.usuario.username,
+                },
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="cerrar-sesion")
+    def cerrar_sesion(self, request, pk=None):
+        """
+        Cierra la sesión ABIERTA de esta caja física (FIX endpoint roto: el
+        frontend llama POST /finanzas/cajas-fisicas/{id}/cerrar-sesion/ y la
+        ruta no existía). Acepta opcionalmente ``notas_cierre``,
+        ``saldos_reales`` ({id_caja: saldo real contado} — la propia caja
+        física y/o sus cajas virtuales) y ``hasta``; los cierres por caja y el
+        cambio de estado de la sesión son atómicos
+        (SesionCajaFisica.cerrar_sesion).
+        """
+        from django.utils.dateparse import parse_datetime
+
+        from .models import SesionCajaFisica
+
+        # R-CODE-1: tenant via get_object() → 404 si la caja es ajena.
+        caja = self.get_object()
+        sesion = SesionCajaFisica.obtener_sesion_activa(caja)
+        if sesion is None:
+            return Response({"error": "No hay una sesión abierta para esta caja física."}, status=400)
+        saldos_reales = request.data.get("saldos_reales") or {}
+        if not isinstance(saldos_reales, dict):
+            return Response({"error": "saldos_reales debe ser un objeto {id_caja: saldo_real}."}, status=400)
+        hasta = request.data.get("hasta")
+        hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
+        try:
+            cierres = sesion.cerrar_sesion(
+                notas_cierre=request.data.get("notas_cierre"),
+                saldos_reales=saldos_reales,
+                usuario=request.user,
+                hasta=hasta_dt,
+            )
+        except ValueError as exc:
+            # Mensajes de negocio controlados; sin detalles internos.
+            return Response({"error": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Error al cerrar sesión de caja física")
+            return Response({"error": "No se pudo cerrar la sesión. Intente de nuevo."}, status=400)
+        sesion.refresh_from_db()
+        return Response(
+            {
+                "mensaje": f"Sesión cerrada para la caja {caja.nombre}.",
+                "sesion": {
+                    "id_sesion": str(sesion.id_sesion),
+                    "estado": sesion.estado,
+                    "fecha_cierre": sesion.fecha_cierre,
+                    "duracion_minutos": sesion.duracion,
+                },
+                "cierres": cierres,
+            }
+        )
 
     @action(detail=False, methods=["get"])
     def tipos_documento(self, request):

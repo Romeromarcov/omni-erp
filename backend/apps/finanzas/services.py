@@ -5,6 +5,8 @@ obtener_tasa_cambio()      — busca la mejor tasa disponible entre dos monedas.
 convertir_monto()          — convierte un monto usando la tasa vigente.
 registrar_efectos_pago()   — side-effects financieros de un Pago (transacción,
                              movimiento de caja/banco y saldos) con atomic + lock.
+realizar_cierre_caja()     — cierre con corte persistente (patrón PR #73) común
+                             a Caja virtual y CajaFisica.
 """
 
 from decimal import ROUND_HALF_UP, Decimal
@@ -236,3 +238,176 @@ def registrar_efectos_pago(pago):
         contenedor.save(update_fields=["saldo_actual"])
 
     return transaccion, movimiento
+
+
+def realizar_cierre_caja(caja, saldo_real, usuario=None, hasta=None):
+    """
+    Cierre de caja con corte persistente (patrón PR #73), común a ``Caja``
+    (virtual) y ``CajaFisica``.
+
+    - La fuente de verdad del corte es el último ``MovimientoCajaBanco`` de
+      tipo ``CIERRE`` de la caja: su ``saldo_nuevo`` (= saldo real contado) es
+      el saldo base del período siguiente y su (fecha, hora) el inicio
+      EXCLUSIVO de la ventana siguiente (semántica BUG-M4: comparación por
+      fecha + hora).
+    - Calcula ingresos/egresos de la ventana (hasta el límite, inclusive),
+      compara con el saldo real contado y, si hay descuadre, registra un
+      ajuste fechado en el límite del cierre — queda DENTRO de la ventana
+      recién cerrada y el siguiente cierre no lo vuelve a contar.
+    - Persiste el corte como movimiento ``CIERRE`` (monto 0,
+      ``saldo_nuevo`` = saldo real contado).
+    - Para cajas virtuales además reconcilia ``saldo_actual`` (saldo real
+      contado + movimientos posteriores al límite, que la ventana cerrada no
+      cubre); las cajas físicas no mantienen saldo vivo (finanzas/0021).
+
+    Args:
+        caja:       Instancia ``Caja`` (virtual) o ``CajaFisica``.
+        saldo_real: Saldo contado (Decimal o str; R-CODE-4: nunca float).
+        usuario:    Usuario que realiza el cierre (opcional).
+        hasta:      datetime límite del cierre (opcional; default ahora).
+
+    Returns:
+        dict con ingresos, egresos, saldo_teorico, saldo_real, descuadre,
+        movimiento_cierre_id, movimiento_ajuste_id, fecha_cierre y mensaje.
+
+    Raises:
+        ValueError si el límite es anterior al último cierre.
+    """
+    from django.db.models import Q
+
+    from .ajustes import crear_ajuste_caja_banco
+    from .models import Caja, MovimientoCajaBanco
+
+    es_virtual = isinstance(caja, Caja)
+    if es_virtual:
+        # Las cajas virtuales también mueven saldo vía transferencias internas.
+        tipos_ingreso = ["INGRESO", "AJUSTE_POSITIVO", "TRANSFERENCIA_ENTRADA"]
+        tipos_egreso = ["EGRESO", "AJUSTE_NEGATIVO", "TRANSFERENCIA_SALIDA"]
+        etiqueta = "caja"
+    else:
+        tipos_ingreso = ["INGRESO", "AJUSTE_POSITIVO"]
+        tipos_egreso = ["EGRESO", "AJUSTE_NEGATIVO"]
+        etiqueta = "caja física"
+
+    ahora = timezone.now()
+    limite = hasta or ahora
+    fecha_limite = limite.date()
+    hora_limite = limite.time()
+    # R-CODE-4: nunca Decimal(float) — pasar por str preserva el valor.
+    saldo_real = saldo_real if isinstance(saldo_real, Decimal) else Decimal(str(saldo_real))
+
+    with transaction.atomic():
+        # Lock de la caja: serializa cierres concurrentes sobre la misma caja
+        # (dos cierres simultáneos leerían el mismo corte y doble-contarían la
+        # ventana).
+        caja = type(caja).objects.select_for_update().get(pk=caja.pk)
+        ultimo_cierre = (
+            caja.movimientos.filter(tipo_movimiento="CIERRE")
+            .order_by("-fecha_movimiento", "-hora_movimiento", "-fecha_creacion")
+            .first()
+        )
+        # BUG-M4: la ventana se compara con (fecha, hora) del movimiento, no
+        # solo con la fecha, para no recontar movimientos del mismo día
+        # anteriores al cierre previo ni incluir los posteriores al límite.
+        if ultimo_cierre:
+            inicio_fecha = ultimo_cierre.fecha_movimiento
+            inicio_hora = ultimo_cierre.hora_movimiento
+            if (fecha_limite, hora_limite) < (inicio_fecha, inicio_hora):
+                raise ValueError("El límite del cierre no puede ser anterior al último cierre.")
+            saldo_base = ultimo_cierre.saldo_nuevo
+            # Estrictamente DESPUÉS del último cierre
+            movimientos = caja.movimientos.filter(
+                Q(fecha_movimiento__gt=inicio_fecha)
+                | Q(fecha_movimiento=inicio_fecha, hora_movimiento__gt=inicio_hora)
+            )
+        else:
+            saldo_base = Decimal("0.00")
+            movimientos = caja.movimientos.all()
+        # Hasta el límite del cierre, inclusive
+        movimientos = movimientos.filter(
+            Q(fecha_movimiento__lt=fecha_limite)
+            | Q(fecha_movimiento=fecha_limite, hora_movimiento__lte=hora_limite)
+        )
+        ingresos = sum(
+            (m.monto for m in movimientos.filter(tipo_movimiento__in=tipos_ingreso)),
+            Decimal("0.00"),
+        )
+        egresos = sum(
+            (m.monto for m in movimientos.filter(tipo_movimiento__in=tipos_egreso)),
+            Decimal("0.00"),
+        )
+        saldo_teorico = saldo_base + ingresos - egresos
+        descuadre = saldo_real - saldo_teorico
+
+        movimiento_ajuste = None
+        if descuadre != 0:
+            # Crear ajuste para cuadrar el saldo. Se fecha en el límite del
+            # cierre (no en now()) para que pertenezca a la ventana recién
+            # cerrada y no se doble-cuente en el cierre siguiente.
+            tipo_ajuste = "POSITIVO" if descuadre > 0 else "NEGATIVO"
+            movimiento_ajuste = crear_ajuste_caja_banco(
+                empresa=caja.empresa,
+                monto=abs(descuadre),
+                moneda=caja.moneda if es_virtual else None,
+                caja=caja if es_virtual else None,
+                caja_fisica=None if es_virtual else caja,
+                usuario=usuario,
+                motivo=f"Ajuste por descuadre en cierre de {etiqueta} {caja.nombre}",
+                tipo_ajuste=tipo_ajuste,
+                referencia=f'Ajuste cierre {caja.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
+                fecha_movimiento=fecha_limite,
+                hora_movimiento=hora_limite,
+            )
+        # Registrar movimiento de cierre (corte persistente: saldo_nuevo y
+        # fecha/hora son la base y el inicio de la ventana del siguiente
+        # cierre).
+        movimiento_cierre = MovimientoCajaBanco.objects.create(
+            id_empresa=caja.empresa,
+            fecha_movimiento=fecha_limite,
+            hora_movimiento=hora_limite,
+            tipo_movimiento="CIERRE",
+            monto=Decimal("0.00"),
+            id_moneda=caja.moneda if es_virtual else None,
+            concepto=(
+                f"Cierre de {etiqueta}. Saldo real: {saldo_real}, "
+                f"saldo teórico: {saldo_teorico}, descuadre: {descuadre}"
+            ),
+            referencia=f'Cierre {caja.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
+            id_caja=caja if es_virtual else None,
+            id_caja_fisica=None if es_virtual else caja,
+            saldo_anterior=saldo_base,
+            saldo_nuevo=saldo_real,
+            id_usuario_registro=usuario if usuario else None,
+        )
+        if es_virtual:
+            # Reconciliar el saldo vivo de la caja virtual: el saldo real
+            # contado más los movimientos posteriores al límite (fuera de la
+            # ventana cerrada, ya reflejados en el saldo incremental).
+            posteriores = caja.movimientos.filter(
+                Q(fecha_movimiento__gt=fecha_limite)
+                | Q(fecha_movimiento=fecha_limite, hora_movimiento__gt=hora_limite)
+            )
+            delta_posterior = sum(
+                (m.monto for m in posteriores.filter(tipo_movimiento__in=tipos_ingreso)),
+                Decimal("0.00"),
+            ) - sum(
+                (m.monto for m in posteriores.filter(tipo_movimiento__in=tipos_egreso)),
+                Decimal("0.00"),
+            )
+            caja.saldo_actual = saldo_real + delta_posterior
+            caja.save(update_fields=["saldo_actual"])
+    return {
+        "ingresos": ingresos,
+        "egresos": egresos,
+        "saldo_teorico": saldo_teorico,
+        "saldo_real": saldo_real,
+        "descuadre": descuadre,
+        "movimiento_cierre_id": movimiento_cierre.id_movimiento,
+        "movimiento_ajuste_id": movimiento_ajuste.id_movimiento if movimiento_ajuste else None,
+        "fecha_cierre": limite,
+        "mensaje": (
+            f"Cierre de {etiqueta} realizado."
+            if descuadre == 0
+            else f"Cierre de {etiqueta} realizado con ajuste."
+        ),
+    }
