@@ -24,18 +24,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Los runners van por scripts/mut_runner.py, que normaliza el exit code
+          # de pytest: mutmut solo cuenta como "killed" el exit 1, pero un mutante
+          # que rompe el import del módulo hace fallar la COLECCIÓN (exit 2) y se
+          # contaba como survived, subestimando el score (fix 2026-06-09).
           - nombre: "fiscal"
             paths: "apps/fiscal/services.py"
-            runner: "python -m pytest tests/unit/test_fiscal_calculos.py -x -q --no-cov -p no:cacheprovider"
+            runner: "python scripts/mut_runner.py tests/unit/test_fiscal_calculos.py"
           - nombre: "nomina_lottt"
             paths: "apps/nomina/calculo_lottt.py"
-            runner: "python -m pytest tests_api/test_nomina_lottt.py -x -q --no-cov -p no:cacheprovider"
+            runner: "python scripts/mut_runner.py tests_api/test_nomina_lottt.py"
           - nombre: "cxc_scoring"
             paths: "apps/cuentas_por_cobrar/services_scoring.py"
-            runner: "python -m pytest tests/unit/test_cxc_calculos.py -x -q --no-cov -p no:cacheprovider"
+            runner: "python scripts/mut_runner.py tests/unit/test_cxc_calculos.py"
           - nombre: "cxc_aging"
             paths: "apps/cuentas_por_cobrar/services_aging.py"
-            runner: "python -m pytest tests/unit/test_cxc_calculos.py -x -q --no-cov -p no:cacheprovider"
+            runner: "python scripts/mut_runner.py tests/unit/test_cxc_calculos.py"
     env:
       DJANGO_ENV: dev
       SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
