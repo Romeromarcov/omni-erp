@@ -142,12 +142,26 @@ class TestCierreCajaVentana:
         las 10:00 (ya contado en ese cierre) NO entra en el cierre siguiente;
         el de las 14:00 sí. El límite (16:00) es inclusivo y lo posterior queda
         fuera."""
+        from apps.finanzas.models import MovimientoCajaBanco
+
         dia = datetime.date(2026, 6, 10)
         caja = caja_fisica_a
-        # CajaFisica no persiste estos campos (hallazgo documentado); se
-        # inyectan como atributos para ejercitar la aritmética del cierre.
-        caja.saldo_actual = Decimal("100.00")
-        caja.fecha_ultimo_cierre = datetime.datetime(2026, 6, 10, 12, 0, 0)
+        # FIX hallazgo P0-8: el corte del último cierre ya no vive en campos
+        # del modelo (eliminados en finanzas/0021) sino en el último
+        # MovimientoCajaBanco de tipo CIERRE: saldo_nuevo = saldo base,
+        # (fecha, hora) = inicio exclusivo de la ventana.
+        MovimientoCajaBanco.objects.create(
+            id_empresa=caja.empresa,
+            fecha_movimiento=dia,
+            hora_movimiento=datetime.time(12, 0),
+            tipo_movimiento="CIERRE",
+            monto=Decimal("0.00"),
+            concepto="cierre previo p0-8",
+            id_caja_fisica=caja,
+            saldo_anterior=Decimal("0.00"),
+            saldo_nuevo=Decimal("100.00"),
+            id_usuario_registro=user_a,
+        )
 
         m = moneda_usd
         _crear_mov(caja, user_a, dia, datetime.time(10, 0), "INGRESO", "50.00", m)   # antes del cierre previo → fuera
@@ -171,13 +185,22 @@ class TestCierreCajaVentana:
         assert resultado["saldo_teorico"] == Decimal("131.00")  # 100 + 35 - 4
         assert resultado["descuadre"] == Decimal("0.00")
         assert resultado["movimiento_ajuste_id"] is None
+        # El corte queda persistido como movimiento CIERRE (FIX P0-8)
+        from apps.finanzas.models import MovimientoCajaBanco
+
+        cierre = MovimientoCajaBanco.objects.get(id_movimiento=resultado["movimiento_cierre_id"])
+        assert cierre.tipo_movimiento == "CIERRE"
+        assert cierre.saldo_anterior == Decimal("100.00")
+        assert cierre.saldo_nuevo == Decimal("131.00")
+        assert cierre.fecha_movimiento == dia
+        assert cierre.hora_movimiento == datetime.time(16, 0)
 
     def test_primer_cierre_cuenta_todo_hasta_el_limite(self, caja_fisica_a, user_a, moneda_usd):
         """Sin cierre previo, entran todos los movimientos hasta el límite."""
         dia = datetime.date(2026, 6, 10)
         caja = caja_fisica_a
-        caja.saldo_actual = Decimal("0.00")
-        caja.fecha_ultimo_cierre = None
+        # Sin movimiento CIERRE previo → saldo base 0.00 y ventana desde el
+        # inicio (FIX P0-8: el corte se deriva de los datos persistentes).
 
         _crear_mov(caja, user_a, dia, datetime.time(8, 0), "INGRESO", "20.00", moneda_usd)
         _crear_mov(caja, user_a, dia, datetime.time(18, 0), "INGRESO", "9.00", moneda_usd)  # tras el límite

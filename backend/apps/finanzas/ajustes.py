@@ -16,17 +16,23 @@ def crear_ajuste_caja_banco(
     motivo="",
     tipo_ajuste="POSITIVO",
     referencia=None,
+    fecha_movimiento=None,
+    hora_movimiento=None,
 ):
     """
     Crea un ajuste positivo o negativo en una caja (virtual o física) o banco.
     tipo_ajuste: 'POSITIVO' o 'NEGATIVO'
+
+    fecha_movimiento/hora_movimiento permiten fechar el ajuste explícitamente
+    (p. ej. en el límite de un cierre de caja para que pertenezca a la ventana
+    recién cerrada); por defecto se usa el momento actual.
     """
     tipo_movimiento = "AJUSTE_POSITIVO" if tipo_ajuste == "POSITIVO" else "AJUSTE_NEGATIVO"
     now = timezone.now()
     movimiento = MovimientoCajaBanco.objects.create(
         id_empresa=empresa,
-        fecha_movimiento=now.date(),
-        hora_movimiento=now.time(),
+        fecha_movimiento=fecha_movimiento or now.date(),
+        hora_movimiento=hora_movimiento or now.time(),
         tipo_movimiento=tipo_movimiento,
         monto=Decimal(monto),
         id_moneda=moneda,

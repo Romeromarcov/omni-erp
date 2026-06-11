@@ -1033,6 +1033,45 @@ class CajaFisicaViewSet(BaseModelViewSet):
     # ahora vive en apps.finanzas.services.registrar_efectos_pago y la invoca
     # PagoViewSet.perform_create.
 
+    @action(detail=True, methods=["post"], url_path="cierre")
+    def cierre(self, request, pk=None):
+        """
+        Realiza el cierre de la caja física (hallazgo P0-8): el frontend llama
+        POST /finanzas/cajas-fisicas/{id}/cierre, ruta que no existía. Recibe
+        saldo_real (contado) y opcionalmente 'hasta' (fecha/hora límite ISO).
+        El corte queda persistido como MovimientoCajaBanco tipo CIERRE.
+        """
+        from decimal import Decimal, InvalidOperation
+
+        from django.utils.dateparse import parse_datetime
+
+        # R-CODE-1: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la caja física pertenece a otra empresa.
+        caja = self.get_object()
+        saldo_real = request.data.get("saldo_real")
+        if saldo_real is None:
+            return Response({"error": "Debe enviar el saldo_real contado."}, status=400)
+        try:
+            # R-CODE-4: nunca Decimal(float); pasar por str preserva el valor.
+            saldo_real = Decimal(str(saldo_real))
+        except (InvalidOperation, ValueError, TypeError):
+            return Response({"error": "El saldo_real enviado no es un número válido."}, status=400)
+        hasta = request.data.get("hasta")
+        hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
+        usuario = request.user if request.user.is_authenticated else None
+        try:
+            resultado = caja.realizar_cierre(saldo_real=saldo_real, usuario=usuario, hasta=hasta_dt)
+        except ValueError as exc:
+            # Mensajes de negocio controlados (límite anterior al último
+            # cierre); no se expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Error al realizar cierre de caja física")
+            return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
+        return Response(resultado)
+
     @action(detail=False, methods=["get"])
     def tipos_documento(self, request):
         """Retorna los tipos de documento disponibles"""
