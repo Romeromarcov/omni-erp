@@ -256,12 +256,11 @@ from apps.core.models import Empresa
 
 
 class MetodoPagoViewSet(BaseModelViewSet):
-
-    def get_object(self):
-        # Permitir reutilizar métodos de pago de cualquier empresa
-        if hasattr(self, "action") and self.action == "reutilizar":
-            return MetodoPago.objects.get(id_metodo_pago=self.kwargs[self.lookup_field])
-        return super().get_object()
+    # SEC-A1 (auditoría 2026-06-10): se eliminó el override de get_object que
+    # bypaseaba get_queryset() para la acción `reutilizar` — permitía operar
+    # métodos de pago privados de otra empresa por UUID (IDOR, CWE-639).
+    # Ahora `reutilizar` solo acepta fuentes visibles para el usuario
+    # (genéricas, públicas o propias), vía el get_object estándar.
 
     queryset = MetodoPago.objects.all()
     serializer_class = MetodoPagoSerializer
@@ -285,18 +284,35 @@ class MetodoPagoViewSet(BaseModelViewSet):
     @action(detail=False, methods=["get"], url_path="buscar_reutilizar")
     def buscar_reutilizar(self, request):
         """
-        Devuelve métodos de pago reutilizables (de otras empresas, genéricos o públicos) para la empresa actual.
+        Devuelve métodos de pago reutilizables (genéricos o públicos) para la empresa actual.
         Marca con 'aplicado' los que ya están en la empresa actual (por nombre y tipo).
+
+        SEC-A3 (auditoría 2026-06-10): antes el queryset incluía los métodos
+        privados de TODOS los demás tenants serializados con `__all__`
+        (`documento_json`, `referencia_externa`). Ahora solo expone métodos
+        `es_generico`/`es_publico` y proyecta únicamente campos no sensibles
+        (MetodoPagoReutilizableSerializer).
         """
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from apps.core.viewsets import get_empresas_visible
+
+        from .serializers import MetodoPagoReutilizableSerializer
+
         id_empresa_actual = request.query_params.get("id_empresa_actual")
-        empresas_excluir = []
         if id_empresa_actual:
-            empresas_excluir.append(id_empresa_actual)
-        queryset = MetodoPago.objects.filter(
-            models.Q(es_generico=True)
-            | models.Q(es_publico=True)
-            | (~models.Q(empresa__in=empresas_excluir) & ~models.Q(empresa=None))
-        )
+            # R-CODE-1: la "empresa actual" debe ser visible para el usuario;
+            # si no, sería un oráculo sobre los métodos de otro tenant (vía
+            # `aplicado` y la exclusión por empresa).
+            try:
+                empresa_visible = (
+                    get_empresas_visible(request.user).filter(id_empresa=id_empresa_actual).exists()
+                )
+            except (ValueError, DjangoValidationError):
+                empresa_visible = False
+            if not empresa_visible:
+                return Response({"detail": "Empresa no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        queryset = MetodoPago.objects.filter(models.Q(es_generico=True) | models.Q(es_publico=True))
         if id_empresa_actual:
             queryset = queryset.exclude(empresa=id_empresa_actual)
         nombre_metodo = request.query_params.get("nombre_metodo")
@@ -309,9 +325,9 @@ class MetodoPagoViewSet(BaseModelViewSet):
         serializer_context = self.get_serializer_context()
         serializer_context["id_empresa_actual"] = id_empresa_actual
         if page is not None:
-            serializer = self.get_serializer(page, many=True, context=serializer_context)
+            serializer = MetodoPagoReutilizableSerializer(page, many=True, context=serializer_context)
             return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(queryset, many=True, context=serializer_context)
+        serializer = MetodoPagoReutilizableSerializer(queryset, many=True, context=serializer_context)
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="reutilizar")
@@ -324,9 +340,17 @@ class MetodoPagoViewSet(BaseModelViewSet):
         id_empresa = request.data.get("id_empresa")
         if not id_empresa:
             return Response({"detail": "id_empresa es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+        # SEC-A2 (auditoría 2026-06-10): la empresa destino DEBE ser visible
+        # para el usuario (R-CODE-1). Antes se resolvía con
+        # Empresa.objects.get(...) sin scope, permitiendo crear métodos de
+        # pago (copiando documento_json) en cualquier tenant.
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from apps.core.viewsets import get_empresas_visible
+
         try:
-            empresa = Empresa.objects.get(id_empresa=id_empresa)
-        except Empresa.DoesNotExist:
+            empresa = get_empresas_visible(request.user).get(id_empresa=id_empresa)
+        except (Empresa.DoesNotExist, ValueError, DjangoValidationError):
             return Response({"detail": "Empresa no encontrada."}, status=status.HTTP_404_NOT_FOUND)
         # Validación fuzzy robusta: rapidfuzz ratio, distancia Levenshtein, substring y normalización de acentos
         import unicodedata
