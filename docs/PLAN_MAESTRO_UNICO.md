@@ -2,7 +2,7 @@
 
 **Versión:** 1.1 — Documento consolidado y única fuente de verdad
 **Fecha de consolidación:** 2026-05-28 · **Última actualización integral:** 2026-06-10
-(auditoría integral: ver [`docs/auditorias/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md))
+(auditoría integral: ver [`docs/auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md))
 **Autor del proyecto:** Marco · Caracas, Venezuela
 **Mantenido por:** founder + agentes de IA co-desarrolladores
 
@@ -333,7 +333,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **36 apps Django instaladas** (+`localizacion_ve` como paquete de adapters), **205 tests frontend verdes**, cobertura frontend ~55% (gate 60% en vitest sobre lo medido).
 - **⚠️ Auditoría integral 2026-06-10:** detectó **1 fuga cross-tenant activa** (métodos de pago) y
   **bugs críticos de integridad financiera** (abonos CxC por CRUD abierto; pagos por API no mueven saldos).
-  Son el **workstream P0** de §5.2. Detalle: [`docs/auditorias/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md).
+  Son el **workstream P0** de §5.2. Detalle: [`docs/auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md).
 
 ## 4.2 Módulos — estado verificado
 
@@ -435,10 +435,15 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 > (seguro y operando con un cliente real) habilitan **vender a pilotos**; Bloque 2 (5+ clientes pagando,
 > retención >70%) es el producto vendible a escala.
 
-### P0 — Correcciones de auditoría 2026-06-10 ⛔ BLOQUEANTE (antes de operar con datos reales)
+### P0 — Correcciones de auditoría 2026-06-10 — ✅ CÓDIGO CERRADO (2026-06-11)
+
+> **Cierre 2026-06-11:** los 8 paquetes de código (P0-1…P0-8) están mergeados a `develop`
+> con CI verde (PRs #64–#69, #72; extras #71 flaky-fix y #73 cierre de caja física).
+> La auditoría se movió a `docs/auditorias/archivo/`. **Queda P0-9 (operativo, owner):**
+> verificar el secret `BACKUP_DB_HOST` y probar un restore real.
 
 Hallazgos verificados línea por línea — detalle y explotabilidad en
-[`AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md). Orden por riesgo:
+[`AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md). Orden por riesgo:
 
 | # | PR (focal) | Contenido | DoD |
 |---|---|---|---|
@@ -839,7 +844,7 @@ omni-erp/
 | `docs/decisions/ADR-*.md` (001–009, todos aceptados) | Decisiones arquitectónicas |
 | `docs/ctf/*` | Compromisos técnicos fechados (R-PROC-6) — único registro de deuda con fecha |
 | `docs/skills/*` | Skills del proyecto (incl. `diagnostico-railway` — diagnóstico read-only) |
-| `docs/auditorias/*` | Auditoría **activa** en la raíz (hoy: `AUDITORIA_INTEGRAL_2026-06-10.md`); cerradas en `archivo/` |
+| `docs/auditorias/*` | Auditoría **activa** en la raíz (hoy: ninguna — P0 cerrado 2026-06-11); cerradas en `archivo/` |
 | `docs/audit/*` | Artefactos del plan cero-dudas: estado vivo + mapas A1 auto-generados (`mapa_superficie`) + reportes A2/A3 |
 | `docs/tech-debt/INVENTORY.md` | Deuda baja/media sin fecha (la fechada va a CTF) |
 | `backend/docs/CIRCULAR_IMPORTS_ANALYSIS.md` | Análisis técnico puntual (no es plan) |
