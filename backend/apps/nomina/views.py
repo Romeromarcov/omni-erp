@@ -174,8 +174,10 @@ class ProcesoNominaViewSet(viewsets.ModelViewSet):
             "total_devengado": nominas.aggregate(Sum("total_devengado"))["total_devengado__sum"] or 0,
             "total_deducciones": nominas.aggregate(Sum("total_deducciones"))["total_deducciones__sum"] or 0,
             "total_neto": nominas.aggregate(Sum("total_neto"))["total_neto__sum"] or 0,
-            "promedio_sueldo": nominas.aggregate(Sum("sueldo_base"))["sueldo_base__sum"]
-            or 0 / max(nominas.count(), 1),
+            # BUG-M1: paréntesis obligatorios — sin ellos la precedencia hacía
+            # `sum or (0 / n)` y promedio_sueldo devolvía la suma completa.
+            "promedio_sueldo": (nominas.aggregate(Sum("sueldo_base"))["sueldo_base__sum"] or 0)
+            / max(nominas.count(), 1),
         }
 
         return Response(resumen)

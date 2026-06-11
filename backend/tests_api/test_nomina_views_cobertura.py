@@ -386,6 +386,9 @@ class TestProcesoNominaActions:
         assert Decimal(str(data["total_devengado"])) == Decimal("880.0000")
         assert Decimal(str(data["total_deducciones"])) == Decimal("80.0000")
         assert Decimal(str(data["total_neto"])) == Decimal("800.0000")
+        # BUG-M1: antes la precedencia (`sum or 0 / n`) devolvía la SUMA (800);
+        # el promedio correcto es (500 + 300) / 2 = 400.
+        assert Decimal(str(data["promedio_sueldo"])) == Decimal("400")
 
     def test_resumen_proceso_vacio(self, client_a, proceso_a):
         resp = client_a.get(f"{BASE}procesos-nomina/{proceso_a.id_proceso_nomina}/resumen/")
@@ -393,6 +396,7 @@ class TestProcesoNominaActions:
         data = resp.json()
         assert data["total_empleados"] == 0
         assert data["total_neto"] == 0
+        assert Decimal(str(data["promedio_sueldo"])) == Decimal("0")
 
 
 class TestNominaActions:

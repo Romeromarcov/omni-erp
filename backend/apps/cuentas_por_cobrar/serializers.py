@@ -15,7 +15,14 @@ class CuentaPorCobrarSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_saldo_pendiente(self, obj):
-        from django.db.models import Sum
-        from decimal import Decimal
-        total_abonado = obj.abonos.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+        # BUG-M2: el queryset del list anota `total_abonado_agg` (una sola
+        # consulta); el aggregate por instancia queda solo como fallback
+        # para instancias sin anotación (p. ej. retrieve/create).
+        total_abonado = getattr(obj, "total_abonado_agg", None)
+        if total_abonado is None:
+            from decimal import Decimal
+
+            from django.db.models import Sum
+
+            total_abonado = obj.abonos.aggregate(t=Sum("monto"))["t"] or Decimal("0")
         return str(obj.monto - total_abonado)
