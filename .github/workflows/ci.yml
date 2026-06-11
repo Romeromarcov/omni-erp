@@ -140,12 +140,14 @@ jobs:
         run: npm run test:coverage -- --run
 
   # ──────────────────────────────────────────────────────────────
-  # E2E — Playwright smoke (TEST-6). NO-BLOQUEANTE: requiere backend +
-  # frontend vivos; se ejecuta aparte del job unit. Cuando el flujo esté
-  # estable se puede escalar a bloqueante.
+  # E2E — Playwright flujos críticos (TEST-6 / Fase 4). NO-BLOQUEANTE:
+  # requiere backend + frontend vivos; se ejecuta aparte del job unit.
+  # Cubre: venta (pedido→confirmar→stock/CxC), abono CxC, caja (pago→
+  # movimiento; sustituye compras, que es API-only), ajuste de inventario
+  # +kardex, y login multi-empresa. Escalar a bloqueante es Fase 5.
   # ──────────────────────────────────────────────────────────────
   e2e:
-    name: "E2E (Playwright smoke — no-bloqueante)"
+    name: "E2E (Playwright flujos críticos — no-bloqueante)"
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -174,6 +176,9 @@ jobs:
       SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
       REDIS_URL: "redis://localhost:6379/0"
       E2E_BASE_URL: "http://localhost:4173"
+      # Credencial CI-only del admin del seed E2E (no es un secreto de prod;
+      # mismo criterio que el SECRET_KEY dummy de arriba).
+      E2E_ADMIN_PASSWORD: "ci-only-E2e-Admin-2026!"
 
     steps:
       - name: Checkout
@@ -193,6 +198,16 @@ jobs:
       - name: Migrar
         working-directory: backend
         run: python manage.py migrate --noinput
+
+      - name: Seed E2E (2 empresas + admin multi-empresa)
+        working-directory: backend
+        env:
+          OMNI_SEED_ADMIN_PASSWORD: ${{ env.E2E_ADMIN_PASSWORD }}
+        run: |
+          python manage.py seed_empresa_inicial --nombre-legal "Empresa E2E Uno C.A." --rif "J-11111111-1" \
+            --admin-username admin_e2e --admin-email admin.e2e@example.com
+          python manage.py seed_empresa_inicial --nombre-legal "Empresa E2E Dos C.A." --rif "J-22222222-2" \
+            --admin-username admin_e2e --admin-email admin.e2e@example.com
 
       - name: Levantar backend
         working-directory: backend
@@ -226,7 +241,7 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Playwright smoke
+      - name: Playwright — flujos críticos
         working-directory: frontend
         run: npm run test:e2e
 
