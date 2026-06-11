@@ -1,5 +1,6 @@
 """ViewSet para GestionCobranza y PlantillaCobranza."""
 import logging
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -26,7 +27,7 @@ def _empresa_actual(user):
     return get_empresas_visible(user).first()
 
 
-class PlantillaCobranzaViewSet(viewsets.ModelViewSet):
+class PlantillaCobranzaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = PlantillaCobranzaSerializer
 
@@ -43,7 +44,7 @@ class PlantillaCobranzaViewSet(viewsets.ModelViewSet):
         instance.soft_delete()
 
 
-class GestionCobranzaViewSet(viewsets.ModelViewSet):
+class GestionCobranzaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = GestionCobranzaSerializer
 

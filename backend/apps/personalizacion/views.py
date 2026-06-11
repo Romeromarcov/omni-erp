@@ -1,4 +1,5 @@
 from rest_framework import status, viewsets
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class PersonalizacionConfigViewSet(viewsets.ModelViewSet):
+class PersonalizacionConfigViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = PersonalizacionConfig.objects.all()
     serializer_class = PersonalizacionConfigSerializer
     permission_classes = [IsAuthenticated]

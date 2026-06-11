@@ -204,9 +204,10 @@ class TestMovimientoBancarioCreate:
         assert mov.estado == "PENDIENTE"  # estado es read-only en el serializer
 
     def test_create_empresa_ajena_403(self, client_b, empresa_a, cuenta_a):
+        # SEC-M1: el scope de tenant de FKs rechaza el pk ajeno en el
+        # serializer (400, sin revelar existencia) antes del check 403 viejo.
         resp = client_b.post(URL_MOV_BANC, self._payload(empresa_a, cuenta_a), format="json")
-        assert resp.status_code == 403
-        assert resp.json()["detail"] == "Sin acceso a esta empresa."
+        assert resp.status_code == 400
         assert MovimientoBancario.objects.count() == 0
 
     def test_filtro_por_cuenta(self, client_a, empresa_a, cuenta_a, moneda_usd):

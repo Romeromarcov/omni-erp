@@ -1,5 +1,6 @@
 """ViewSet para AcuerdoPago."""
 import logging
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from datetime import date, timedelta
 
 from django.db import transaction
@@ -21,7 +22,7 @@ from apps.cxc.api.serializers import (
 )
 
 
-class AcuerdoPagoViewSet(viewsets.ModelViewSet):
+class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
