@@ -632,16 +632,16 @@ class TestDatafonoFiltroEmpresa:
 
 
 class TestPerformCreatePagoDobleRegistro:
-    """Cubre el perform_create huérfano de CajaFisicaViewSet (código de pagos):
-    crea TransaccionFinanciera + TransaccionDatafono + MovimientoCajaBanco y
-    actualiza saldos. Invocación directa con un serializer fake porque la ruta
-    POST /cajas-fisicas/ pasaría una CajaFisica (no un Pago) y reventaría."""
+    """Cubre los side-effects financieros de un Pago: TransaccionFinanciera +
+    TransaccionDatafono + MovimientoCajaBanco y actualización de saldos.
+    P0-3 (BUG-C2): esta lógica vivía huérfana en CajaFisicaViewSet.perform_create;
+    ahora es el service apps.finanzas.services.registrar_efectos_pago, invocado
+    por PagoViewSet.perform_create dentro de transaction.atomic."""
 
     def _perform(self, pago):
-        from apps.finanzas.views import CajaFisicaViewSet
+        from apps.finanzas.services import registrar_efectos_pago
 
-        vs = CajaFisicaViewSet()
-        vs.perform_create(SimpleNamespace(save=lambda: pago))
+        registrar_efectos_pago(pago)
         pago.refresh_from_db()
         return pago
 

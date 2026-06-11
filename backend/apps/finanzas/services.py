@@ -1,12 +1,15 @@
 """
 Servicios de negocio para Finanzas.
 
-obtener_tasa_cambio()  — busca la mejor tasa disponible entre dos monedas.
-convertir_monto()      — convierte un monto usando la tasa vigente.
+obtener_tasa_cambio()      — busca la mejor tasa disponible entre dos monedas.
+convertir_monto()          — convierte un monto usando la tasa vigente.
+registrar_efectos_pago()   — side-effects financieros de un Pago (transacción,
+                             movimiento de caja/banco y saldos) con atomic + lock.
 """
 
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.db import transaction
 from django.utils import timezone
 
 
@@ -139,3 +142,97 @@ def convertir_monto(monto: Decimal, moneda_origen, moneda_destino, empresa=None,
     tasa = obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=empresa, fecha=fecha)
     resultado = monto * tasa.valor_tasa
     return resultado.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+
+
+@transaction.atomic
+def registrar_efectos_pago(pago):
+    """
+    Genera los side-effects financieros de un ``Pago`` recién creado (BUG-C2).
+
+    En la MISMA transacción (R-CODE-11):
+    1. Crea la ``TransaccionFinanciera`` y la asocia al pago.
+    2. Si el pago usó datafono, crea la ``TransaccionDatafono``.
+    3. Si el pago afecta caja virtual o cuenta bancaria, bloquea el registro
+       (``select_for_update``), crea el ``MovimientoCajaBanco`` con los saldos
+       correctos y actualiza ``saldo_actual``.
+
+    Args:
+        pago: Instancia ``Pago`` ya persistida (con empresa, moneda y método).
+
+    Returns:
+        tuple (TransaccionFinanciera, MovimientoCajaBanco | None)
+    """
+    from .models import (
+        Caja,
+        CuentaBancariaEmpresa,
+        MovimientoCajaBanco,
+        TransaccionDatafono,
+        TransaccionFinanciera,
+    )
+
+    transaccion = TransaccionFinanciera.objects.create(
+        id_empresa=pago.id_empresa,
+        fecha_hora_transaccion=pago.fecha_pago,
+        tipo_transaccion=pago.tipo_operacion,
+        monto_transaccion=pago.monto,
+        id_moneda_transaccion=pago.id_moneda,
+        id_moneda_base=pago.id_moneda,  # Simplificación: misma moneda del pago
+        monto_base_empresa=pago.monto,
+        id_metodo_pago=pago.id_metodo_pago,
+        referencia_pago=pago.referencia,
+        descripcion=f"Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}",
+        tipo_documento_asociado=pago.tipo_documento,
+        nro_documento_asociado=str(pago.id_documento),
+        id_caja=pago.id_caja_virtual,
+        id_cuenta_bancaria=pago.id_cuenta_bancaria,
+        id_usuario_registro=pago.id_usuario_registro,
+    )
+
+    pago.id_transaccion_financiera = transaccion
+    pago.save(update_fields=["id_transaccion_financiera"])
+
+    if pago.id_datafono_id:
+        TransaccionDatafono.objects.create(
+            id_datafono=pago.id_datafono,
+            monto=pago.monto,
+            referencia_bancaria=pago.referencia,
+            id_transaccion_financiera_origen=transaccion,
+            id_usuario_registro=pago.id_usuario_registro,
+        )
+
+    movimiento = None
+    if pago.id_caja_virtual_id or pago.id_cuenta_bancaria_id:
+        # Lock pesimista sobre el contenedor de saldo para evitar carreras.
+        if pago.id_caja_virtual_id:
+            contenedor = Caja.objects.select_for_update().get(pk=pago.id_caja_virtual_id)
+        else:
+            contenedor = CuentaBancariaEmpresa.objects.select_for_update().get(
+                pk=pago.id_cuenta_bancaria_id
+            )
+
+        tipo_movimiento = "INGRESO" if pago.tipo_operacion == "INGRESO" else "EGRESO"
+        saldo_anterior = contenedor.saldo_actual
+        delta = pago.monto if tipo_movimiento == "INGRESO" else -pago.monto
+        saldo_nuevo = saldo_anterior + delta
+
+        movimiento = MovimientoCajaBanco.objects.create(
+            id_empresa=pago.id_empresa,
+            fecha_movimiento=pago.fecha_pago.date(),
+            hora_movimiento=pago.fecha_pago.time(),
+            tipo_movimiento=tipo_movimiento,
+            monto=pago.monto,
+            id_moneda=pago.id_moneda,
+            concepto=f"{pago.tipo_operacion} - {pago.get_tipo_documento_display()}",
+            referencia=pago.referencia or f"Pago {pago.id_pago}",
+            id_caja=pago.id_caja_virtual,
+            id_cuenta_bancaria=pago.id_cuenta_bancaria,
+            id_transaccion_financiera=transaccion,
+            saldo_anterior=saldo_anterior,
+            saldo_nuevo=saldo_nuevo,
+            id_usuario_registro=pago.id_usuario_registro,
+        )
+
+        contenedor.saldo_actual = saldo_nuevo
+        contenedor.save(update_fields=["saldo_actual"])
+
+    return transaccion, movimiento
