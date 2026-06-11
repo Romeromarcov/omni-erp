@@ -25,7 +25,7 @@ y **verificación manual de los hallazgos críticos** (línea por línea) antes 
 |---|---|
 | `manage.py check` | ✅ verde (0 issues) |
 | `makemigrations --check --dry-run` | ✅ sin migraciones pendientes |
-| Suite backend completa (`tests/` + `tests_api/`, ratchet cov 92) | ✅ ver nota al cierre de este doc |
+| Suite backend completa (`tests/` + `tests_api/`, `-n auto`, Postgres real) | ✅ **3620 passed, 12 skipped, 0 failed** · cobertura **92.97%** (gate 92 superado) · 10m03s |
 | Frontend `tsc -b` | ✅ verde |
 | Frontend `npm run lint` | ✅ verde (0 findings) |
 | Frontend `npm test -- --run` | ✅ 205/205 tests verdes (40 archivos) |
