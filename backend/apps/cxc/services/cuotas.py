@@ -65,6 +65,10 @@ def generar_cuotas(
     """
     CENTAVOS = Decimal("0.01")
 
+    # BUG-M3: defensa en el service además del serializer.
+    if monto_total <= 0:
+        raise ValueError("monto_total debe ser mayor que cero.")
+
     if periodicidad == "unico":
         return [{
             "acuerdo": acuerdo,
@@ -102,13 +106,19 @@ def generar_cuotas(
     for i in range(1, num_cuotas + 1):
         fecha_vcto = _proxima_fecha(fecha_inicio, periodicidad, i - 1)
 
+        # BUG-M3: nunca emitir cuotas por más del total del acuerdo.
+        restante = monto_total - acumulado
+        if restante <= 0:
+            break
+
         if i == num_cuotas:
             # Última cuota: ajustar diferencia de redondeo
-            monto_esta = (monto_total - acumulado).quantize(CENTAVOS, rounding=ROUND_HALF_UP)
+            monto_esta = restante.quantize(CENTAVOS, rounding=ROUND_HALF_UP)
         else:
-            monto_esta = monto_unit
+            # Capear cada cuota intermedia al restante (monto_cuota fijo puede
+            # exceder el total: 100 total / cuotas de 80 → 80 + 20, no 80 + 80).
+            monto_esta = min(monto_unit, restante.quantize(CENTAVOS, rounding=ROUND_HALF_UP))
 
-        # Evitar cuotas negativas por redondeo agresivo
         if monto_esta <= 0:
             continue
 
