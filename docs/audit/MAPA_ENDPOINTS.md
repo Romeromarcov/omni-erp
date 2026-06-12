@@ -650,6 +650,20 @@
 | `^overrides-metodos-pago/(?P<pk>[^/.]+)/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
 | `^overrides-metodos-pago/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
 | `^overrides-metodos-pago\.(?P<format>[a-z0-9]+)/?$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
+| `^pagos-terceros/$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/abonar/$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/abonar\.(?P<format>[a-z0-9]+)/?$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/anular/$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/asociar-proveedor/$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/asociar-proveedor\.(?P<format>[a-z0-9]+)/?$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/marcar-reintegrado/$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/marcar-reintegrado\.(?P<format>[a-z0-9]+)/?$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/solicitar-reintegro/$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)/solicitar-reintegro\.(?P<format>[a-z0-9]+)/?$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
+| `^pagos-terceros\.(?P<format>[a-z0-9]+)/?$` | PagoTerceroViewSet | PagoTercero | ✅ | ✅ | IsAuthenticated |
 | `^pagos/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
@@ -996,4 +1010,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 190_
+_Total ViewSets: 191_
