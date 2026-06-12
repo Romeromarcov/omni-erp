@@ -2,25 +2,30 @@
 Idempotencia para endpoints de escritura financiera (P1-2 hardening, R9).
 
 En un ERP financiero un doble-submit o un reintento de red NO debe duplicar un
-pago, un abono o una factura. Este módulo provee un decorador reutilizable que
-envuelve una acción DRF de escritura: si el cliente envía la cabecera
-``Idempotency-Key`` y esa clave ya se consumió (mismo tenant + scope), se
-reproduce la respuesta original sin re-ejecutar la lógica de negocio.
+pago, un abono o una factura. Este módulo provee un decorador reutilizable (y un
+mixin para ``create`` de ViewSets) que envuelve una acción DRF de escritura: si
+el cliente envía la cabecera ``Idempotency-Key`` y esa clave ya se consumió
+(mismo tenant + usuario + scope), se reproduce la respuesta original sin
+re-ejecutar la lógica de negocio.
 
 Diseño:
-- La unicidad ``(empresa, scope, clave)`` aísla por tenant (R-CODE-1): dos
-  empresas pueden usar la misma cadena de clave sin colisionar.
-- La operación corre dentro de ``transaction.atomic`` y el registro de la clave
-  se crea en la MISMA transacción que la lógica de negocio: si la vista falla, la
-  clave NO queda consumida y un reintento legítimo puede volver a intentar.
-- La concurrencia (dos peticiones idénticas en paralelo) se resuelve con la
-  restricción ``UniqueConstraint`` de la BD: la segunda inserción lanza
-  ``IntegrityError`` y se traduce en la respuesta cacheada de la primera (o 409
-  si el snapshot aún no está visible).
-- Reuso de clave con payload distinto → 409 (la clave ya identifica otra cosa).
-- No se guarda PII ni secretos: solo un hash SHA-256 del payload.
+- La unicidad ``(empresa, usuario, scope, clave)`` aísla por tenant (R-CODE-1)
+  y por usuario: dos empresas (o dos usuarios) pueden usar la misma cadena de
+  clave sin colisionar ni leerse las respuestas mutuamente.
+- El registro de la clave se INSERTA al inicio, "en vuelo" (status NULL), en la
+  MISMA transacción atómica que la lógica de negocio. Una segunda petición
+  concurrente con la misma clave se bloquea en el índice único de la BD hasta
+  que la primera commitea, y entonces recibe la respuesta de la ganadora (o un
+  409 si la ganadora aún no es visible). Si la vista falla, la transacción se
+  revierte y la clave NO queda consumida: un reintento legítimo puede reintentar.
+- Reuso de clave con payload distinto → 422 (la clave ya identifica otra
+  operación; el cliente debe usar una clave nueva).
+- Las claves expiran (TTL 24 h) y se purgan de forma perezosa al registrar
+  claves nuevas del mismo tenant (sin Celery).
+- No se guarda PII ni secretos: solo un hash SHA-256 del payload (no el payload
+  en claro) y el body de la respuesta que el propio cliente ya recibió.
 
-Uso::
+Uso con acciones::
 
     class MiViewSet(...):
         @idempotent("cxc:abonar")
@@ -30,7 +35,13 @@ Uso::
 
 El decorador ``@idempotent`` debe ir POR ENCIMA de ``@action`` para envolver el
 handler que DRF invoca. Si la petición no trae cabecera ``Idempotency-Key``, la
-acción se ejecuta normalmente (idempotencia opt-in del cliente).
+acción se ejecuta normalmente (idempotencia opt-in del cliente; no rompe
+clientes existentes).
+
+Uso con ``create`` de un ModelViewSet (diff mínimo en la clase)::
+
+    class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
+        idempotency_scope = "finanzas:pago"
 """
 
 from __future__ import annotations
@@ -39,8 +50,10 @@ import functools
 import hashlib
 import json
 import logging
+from datetime import timedelta
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from rest_framework import status as http_status
 from rest_framework.response import Response
 
@@ -49,6 +62,10 @@ logger = logging.getLogger(__name__)
 HEADER_NAME = "Idempotency-Key"
 _META_KEY = "HTTP_IDEMPOTENCY_KEY"
 MAX_CLAVE_LEN = 255
+
+#: Tiempo de vida de una clave consumida. Pasado el TTL, la clave se trata como
+#: inexistente (un reintento re-ejecuta) y se purga de la tabla.
+TTL = timedelta(hours=24)
 
 
 def _hash_payload(data) -> str:
@@ -106,52 +123,93 @@ def idempotent(scope: str):
 
             from apps.core.models import ClaveIdempotencia
 
+            usuario = request.user if request.user.is_authenticated else None
             payload_hash = _hash_payload(request.data)
+            filtro = {
+                "empresa": empresa,
+                "usuario": usuario,
+                "scope": scope,
+                "clave": clave,
+            }
 
-            # 1) ¿Ya existe la clave? → reproducir o conflicto por payload distinto.
-            existente = ClaveIdempotencia.objects.filter(
-                empresa=empresa, scope=scope, clave=clave
-            ).first()
+            # 0) Limpieza perezosa de claves vencidas del tenant (TTL).
+            ClaveIdempotencia.purgar_expiradas(empresa)
+
+            # 1) Camino rápido: la clave ya fue consumida → reproducir (o 422).
+            existente = (
+                ClaveIdempotencia.objects.filter(**filtro)
+                .filter(expira_en__gt=timezone.now())
+                .first()
+            )
             if existente is not None:
                 return _respuesta_desde_registro(existente, payload_hash)
 
-            # 2) Primera ejecución: lógica de negocio + persistencia de la clave
-            #    en la MISMA transacción atómica.
-            try:
-                with transaction.atomic():
-                    response = view_func(self, request, *args, **kwargs)
-                    # Solo persistimos respuestas exitosas (2xx). Un 4xx/5xx no
-                    # consume la clave: un reintento legítimo puede reintentar.
-                    if 200 <= response.status_code < 300:
-                        ClaveIdempotencia.objects.create(
-                            empresa=empresa,
-                            scope=scope,
-                            clave=clave,
+            # 2) Primera ejecución: se inserta la clave "en vuelo" ANTES de la
+            #    lógica de negocio, en la misma transacción. Una petición gemela
+            #    concurrente se bloquea en el índice único hasta nuestro commit.
+            with transaction.atomic():
+                try:
+                    with transaction.atomic():  # savepoint para el INSERT
+                        registro = ClaveIdempotencia.objects.create(
                             payload_hash=payload_hash,
-                            status_respuesta=response.status_code,
-                            cuerpo_respuesta=_json_safe(response.data),
+                            status_respuesta=None,
+                            expira_en=timezone.now() + TTL,
+                            **filtro,
                         )
-                    return response
-            except IntegrityError:
-                # Carrera: otra petición idéntica creó la clave entre el SELECT y
-                # el INSERT. La lógica de negocio de ESTA transacción se revierte;
-                # reproducimos la respuesta de la ganadora.
-                ganadora = ClaveIdempotencia.objects.filter(
-                    empresa=empresa, scope=scope, clave=clave
-                ).first()
-                if ganadora is not None:
-                    return _respuesta_desde_registro(ganadora, payload_hash)
-                logger.warning(
-                    "IntegrityError de idempotencia sin registro visible (scope=%s)", scope
-                )
-                return Response(
-                    {"error": "Conflicto de concurrencia; reintente la operación."},
-                    status=http_status.HTTP_409_CONFLICT,
-                )
+                except IntegrityError:
+                    # Carrera de doble-submit: otra petición idéntica ganó el
+                    # INSERT y ya commiteó. Reproducimos su respuesta.
+                    ganadora = (
+                        ClaveIdempotencia.objects.select_for_update()
+                        .filter(**filtro)
+                        .first()
+                    )
+                    if ganadora is not None and ganadora.status_respuesta is not None:
+                        return _respuesta_desde_registro(ganadora, payload_hash)
+                    logger.warning(
+                        "Carrera de idempotencia sin respuesta visible (scope=%s)", scope
+                    )
+                    return Response(
+                        {"error": "Operación en curso con la misma Idempotency-Key; reintente."},
+                        status=http_status.HTTP_409_CONFLICT,
+                    )
+
+                response = view_func(self, request, *args, **kwargs)
+                # Solo persistimos respuestas exitosas (2xx). Un 4xx/5xx no
+                # consume la clave: un reintento legítimo puede reintentar.
+                if 200 <= response.status_code < 300:
+                    registro.status_respuesta = response.status_code
+                    registro.cuerpo_respuesta = _json_safe(response.data)
+                    registro.save(update_fields=["status_respuesta", "cuerpo_respuesta"])
+                else:
+                    registro.delete()
+                return response
 
         return wrapper
 
     return decorator
+
+
+class IdempotentCreateMixin:
+    """
+    Mixin para ModelViewSets cuyo ``create`` debe ser idempotente por
+    ``Idempotency-Key`` (opt-in del cliente). Diff mínimo en el ViewSet::
+
+        class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
+            idempotency_scope = "finanzas:pago"
+    """
+
+    #: Identificador estable del endpoint; si no se define se deriva del basename.
+    idempotency_scope: str | None = None
+
+    def create(self, request, *args, **kwargs):
+        scope = self.idempotency_scope or f"{getattr(self, 'basename', type(self).__name__)}:create"
+
+        @idempotent(scope)
+        def _create(view, req, *a, **kw):
+            return super(IdempotentCreateMixin, view).create(req, *a, **kw)
+
+        return _create(self, request, *args, **kwargs)
 
 
 def _json_safe(data):
@@ -168,8 +226,9 @@ def _json_safe(data):
 
 def _respuesta_desde_registro(registro, payload_hash: str) -> Response:
     """
-    Reproduce la respuesta guardada, o devuelve 409 si la misma clave se está
-    reusando con un payload distinto (la clave ya identifica otra operación).
+    Reproduce la respuesta guardada; 422 si la misma clave se está reusando con
+    un payload distinto (la clave ya identifica otra operación); 409 si la
+    operación original sigue "en vuelo" (sin respuesta commiteada).
     """
     if registro.payload_hash != payload_hash:
         return Response(
@@ -179,6 +238,11 @@ def _respuesta_desde_registro(registro, payload_hash: str) -> Response:
                     "distinto. Use una clave nueva para una operación distinta."
                 ),
             },
+            status=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+    if registro.status_respuesta is None:
+        return Response(
+            {"error": "Operación en curso con la misma Idempotency-Key; reintente."},
             status=http_status.HTTP_409_CONFLICT,
         )
     return Response(registro.cuerpo_respuesta, status=registro.status_respuesta)

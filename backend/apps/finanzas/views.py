@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+from apps.core.idempotency import IdempotentCreateMixin
 from apps.core.viewsets import BaseModelViewSet
 from apps.tesoreria.serializers import CajaSerializer
 
@@ -1230,9 +1231,11 @@ class CajaFisicaViewSet(BaseModelViewSet):
         return Response([{"value": value, "display": display} for value, display in CajaFisica.TIPO_CAJA_CHOICES])
 
 
-class PagoViewSet(BaseModelViewSet):
+class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
+    # P1-2: POST /pagos/ idempotente por cabecera Idempotency-Key (opt-in).
+    idempotency_scope = "finanzas:pago"
 
     def perform_create(self, serializer):
         # BUG-C2: los side-effects financieros (TransaccionFinanciera +
