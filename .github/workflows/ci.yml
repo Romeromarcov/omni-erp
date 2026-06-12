@@ -85,12 +85,14 @@ jobs:
         run: python -m pytest tests tests_api/ -v --tb=short --no-header
 
       - name: Diff coverage — código nuevo ≥95% (cero-dudas, BLOQUEANTE)
-        if: github.event_name == 'pull_request'
         working-directory: backend
-        # BLOQUEANTE: cada PR debe cubrir ≥95% de sus líneas nuevas de apps/.
-        # El gate ya está mergeado a main, así que compara solo las líneas nuevas
-        # del PR contra el main ya cubierto. 95% es el objetivo definitivo del plan
-        # cero-dudas (criterio 2: diff-coverage ≥95%).
+        # BLOQUEANTE: todo lo nuevo vs main debe cubrir ≥95% de sus líneas de
+        # apps/ (plan cero-dudas, criterio 2). Corre en TODOS los eventos, no
+        # solo pull_request: `on.pull_request` filtra por base=main, así que los
+        # PRs a develop solo generan runs de push — con el `if` anterior el gate
+        # se saltaba silenciosamente en cada merge a develop y la deuda se
+        # acumuló hasta reventar en el PR de release (#100, 91% agregado).
+        # En push a main el diff vs origin/main queda vacío y pasa trivialmente.
         run: |
           pip install diff-cover
           git fetch --no-tags origin main
