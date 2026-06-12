@@ -89,3 +89,4 @@ backend/.hypothesis/
 backend/.mutmut-cache
 backend/mutants/
 backend/html/
+instalables/

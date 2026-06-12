@@ -6,6 +6,8 @@ import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWall
 import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
+import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
+import SavingsOutlined from '@mui/icons-material/SavingsOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import BadgeOutlined from '@mui/icons-material/BadgeOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
@@ -115,6 +117,26 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Transacciones', path: `/empresas/${emp}/transacciones-financieras` },
         { label: 'Plantillas Maestro', path: '/finanzas/plantillas-maestro' },
         { label: 'Overrides por Sucursal', path: '/finanzas/overrides-metodos-pago' },
+      ],
+    },
+    {
+      id: 'contabilidad',
+      label: 'Contabilidad',
+      icon: <MenuBookOutlined />,
+      items: [
+        { label: 'Plan de Cuentas', path: '/contabilidad/plan-cuentas' },
+        { label: 'Asientos Contables', path: '/contabilidad/asientos' },
+        { label: 'Mapeos Contables', path: '/contabilidad/mapeos' },
+      ],
+    },
+    {
+      id: 'tesoreria',
+      label: 'Tesorería',
+      icon: <SavingsOutlined />,
+      items: [
+        { label: 'Movimientos Bancarios', path: '/tesoreria/movimientos-bancarios' },
+        { label: 'Conciliación Bancaria', path: '/tesoreria/conciliaciones' },
+        { label: 'Cambio de Divisa', path: '/tesoreria/cambio-divisa' },
       ],
     },
     {

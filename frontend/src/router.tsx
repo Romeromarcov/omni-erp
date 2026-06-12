@@ -16,6 +16,8 @@ import { cxcRoutes } from './routes/cxcRoutes';
 import { manufacturaRoutes } from './routes/manufacturaRoutes';
 import { comprasRoutes } from './routes/comprasRoutes';
 import { rrhhRoutes } from './routes/rrhhRoutes';
+import { contabilidadRoutes } from './routes/contabilidadRoutes';
+import { tesoreriaRoutes } from './routes/tesoreriaRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
 import { isModuleEnabled } from './config/appProfile';
@@ -71,6 +73,8 @@ export default function AppRouter() {
             {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
             {isModuleEnabled('compras') ? comprasRoutes() : null}
             {isModuleEnabled('rrhh') ? rrhhRoutes() : null}
+            {isModuleEnabled('contabilidad') ? contabilidadRoutes() : null}
+            {isModuleEnabled('tesoreria') ? tesoreriaRoutes() : null}
             {isModuleEnabled('escaner') ? escanerRoutes() : null}
             {saasRoutes()}
           </Route>

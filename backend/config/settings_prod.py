@@ -60,6 +60,19 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if origin.strip()
 ]
 
+# Shells nativos (Plan B apps multiplataforma / ADR-008):
+#   - app://omni        → Electron escritorio (scheme propio; ver electron/main.cjs.
+#                         NUNCA permitir el origen "null" de file://: lo comparten
+#                         los iframes sandboxeados de cualquier web).
+#   - https://localhost → Capacitor Android (androidScheme https).
+#   - capacitor://localhost → Capacitor iOS (futuro; inocuo hoy).
+# Activable por entorno; default on porque son orígenes que solo existen dentro
+# de los empaquetados propios. CORS_NATIVE_SHELLS=False los apaga.
+if os.environ.get("CORS_NATIVE_SHELLS", "True").lower() in ("1", "true", "yes", "on"):
+    for _native_origin in ("app://omni", "https://localhost", "capacitor://localhost"):
+        if _native_origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(_native_origin)
+
 # HTTPS security headers
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000
