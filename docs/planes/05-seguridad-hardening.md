@@ -37,7 +37,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | 6 | RAG | ❌ | Sin pgvector / embeddings / vector store / retrieval |
 | 7 | Frontend comprimido sin source maps | ✅ | Vite sin `build.sourcemap`, bundle minificado, gzip nginx |
 | 8 | Rate limiting | ✅ | Nginx (`login 5/m`, `api 60/m`) + `django-ratelimit` en login + tests |
-| 9 | Cache | ⚠️ | Redis/Celery, WhiteNoise, nginx `expires 1y`, PWA Workbox. **Falta** `CACHES` de Django (cache de ORM) |
+| 9 | Cache | ⚠️ | Redis/Celery, WhiteNoise, nginx `expires 1y`, PWA Workbox. `CACHES` de Django con Redis ✅ (P2-4, `config/caches.py`). **Falta** cachear consultas calientes |
 | 10 | Escalabilidad | ✅ | uvicorn workers, Celery `concurrency=4`, stateless, Docker |
 | 11 | Monitoreo | ✅ | Sentry (`send_default_pii=False`), logging estructurado, healthchecks, `RegistroAuditoria` |
 | 12 | Sin API keys/secretos en código | ✅ | `SECRET_KEY` obligatorio desde env; todo desde env; `.env` en `.gitignore` |
@@ -60,7 +60,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | R11 | Observabilidad de costos LLM (tokens por tenant) | ❌ |
 | R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ |
 | R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ⚠️ verificar |
-| R14 | CSP a nivel Django (`django-csp`, nonce por request) | ❌ (existe en nginx) |
+| R14 | CSP a nivel Django (`django-csp`, nonce por request) | ✅ (P2-5: `django-csp==4.0` enforce; sin nonce porque no hay inline que autorizar) |
 
 ---
 
@@ -256,6 +256,23 @@ N+1 con `select_related`/`prefetch_related` en ViewSets de mayor tráfico.
 **DoD:** `CACHES` configurado; invalidación correcta; sin N+1 en endpoints calientes.
 **Esfuerzo:** ~1.5 días. **Owner:** equipo-backend.
 
+#### Estado — `🟡 PARCIAL: CACHES hecho` (PR `feature/p2-4-redis-p2-5-csp`)
+`CACHES["default"]` configurado con el backend **nativo** de Django
+(`django.core.cache.backends.redis.RedisCache`, sin necesidad del paquete
+`django-redis`) vía `config/caches.py`: con `REDIS_URL` usa Redis en una **DB
+distinta** de la del broker Celery (`REDIS_CACHE_DB`, default 1 vs. DB 0;
+colisión → `ImproperlyConfigured` fail-closed, porque `cache.clear()` hace
+`FLUSHDB`), `KEY_PREFIX` por entorno (`CACHE_KEY_PREFIX`, default
+`omni:<RAILWAY_ENVIRONMENT|dev>`); sin `REDIS_URL` cae a LocMem (dev local).
+**Bajo pytest se fuerza LocMem siempre** (CI exporta `REDIS_URL` sin servicio
+Redis en los jobs de pytest; determinismo de throttle/SEC-07/idempotencia).
+Los jobs CI con servidor vivo (e2e, contract) ahora levantan un service
+`redis:7-alpine` y ejercitan el path real. Con esto, rate-limiting SEC-07,
+throttling DRF (P1-1) y el futuro circuit breaker del gateway LLM (P2-1)
+comparten estado entre workers en producción. Tests:
+`tests_api/test_p24_caches_redis.py`. **Pendiente de P2-4:** cachear
+catálogos/consultas frecuentes + barrido N+1 (no entra en este PR focal).
+
 ### P2-5 · CSP a nivel Django (R14, #3) — `❌ (existe en nginx)`
 **Por qué:** defensa en profundidad si alguna vez se sirve HTML fuera de nginx, y para
 `nonce` por request.
@@ -263,6 +280,22 @@ N+1 con `select_related`/`prefetch_related` en ViewSets de mayor tráfico.
 **Tareas:** `django-csp`; política equivalente a la de nginx; alinear ambas capas.
 **DoD:** header CSP emitido por Django en prod; sin romper assets.
 **Esfuerzo:** ~0.5 día. **Owner:** equipo-backend.
+
+#### Estado — `🟢 HECHO` (PR `feature/p2-4-redis-p2-5-csp`)
+`django-csp==4.0` + `CSPMiddleware` (tras WhiteNoise: los estáticos no llevan
+header) con política **enforce** en todos los entornos —no report-only: la capa
+nginx equivalente ya es enforce y en Railway el backend sirve el admin sin
+nginx delante, así que report-only lo dejaría sin protección real—. Base
+estricta sin `'unsafe-inline'` global ni nonce: `default-src/script-src/
+style-src/img-src/font-src/connect-src/base-uri/form-action 'self'`,
+`object-src/frame-ancestors 'none'` (alineada con `X_FRAME_OPTIONS=DENY` y más
+estricta que la de nginx, que cubre el SPA). Verificado template a template que
+el admin de Django 5.2 no tiene inline ejecutable (solo bloques
+`type="application/json"`). Las vistas de docs drf-yasg (solo DEBUG, SEC-05)
+llevan su relajación mínima **por vista** (`csp_update`: `style-src
+'unsafe-inline'` —estilos inyectados por JS—, `img-src data:` —iconos del CSS
+de swagger-ui—, `worker-src blob:` —worker de búsqueda de redoc—). Tests:
+`tests_api/test_p25_csp.py`.
 
 ### P2-6 · Tracing distribuido — OpenTelemetry (R12) — `❌`
 **Por qué:** hay Celery + Kafka + agentes; sin trace correlacionado es difícil diagnosticar.

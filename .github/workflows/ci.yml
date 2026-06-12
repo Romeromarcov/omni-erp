@@ -174,6 +174,17 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      # P2-4: el backend vivo usa Redis real para CACHES (DB 1) — sin este
+      # service, rate-limit/throttle (cache compartido) darían 500 al conectar.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     env:
       DB_HOST: localhost
@@ -183,6 +194,8 @@ jobs:
       DB_PASSWORD: omni_erp_ci
       DJANGO_ENV: dev
       SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      # Broker Celery (DB 0) y CACHES de Django (REDIS_CACHE_DB, default 1) —
+      # mismo layout que Railway. El service redis de arriba la respalda.
       REDIS_URL: "redis://localhost:6379/0"
       E2E_BASE_URL: "http://localhost:4173"
       # Credencial CI-only del admin del seed E2E (no es un secreto de prod;
@@ -443,6 +456,17 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      # P2-4: el runserver del fuzzing usa Redis real para CACHES (DB 1);
+      # el throttling DRF toca el cache en cada request del fuzzer.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10

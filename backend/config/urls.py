@@ -1,5 +1,7 @@
 """URL configuration for Omni ERP project."""
 
+from csp.constants import SELF
+from csp.decorators import csp_update
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -34,6 +36,23 @@ schema_view = get_schema_view(
 )
 
 from apps.core.views import health_view
+
+# P2-5: relajación CSP MÍNIMA y POR VISTA para la UI de docs (drf-yasg), que
+# solo existe con DEBUG (SEC-05). La política global queda estricta ('self');
+# aquí se suma únicamente lo que swagger-ui/redoc necesitan en runtime:
+#   * style-src 'unsafe-inline' — ambos inyectan estilos vía JS (CSS-in-JS de
+#     React/styled-components) y no aceptan nonce del servidor.
+#   * img-src data: — swagger-ui.css embebe iconos como data:image.
+#   * worker-src blob: — redoc lanza su web worker de búsqueda desde un blob.
+# Definido a nivel de módulo (no dentro del `if settings.DEBUG`) para poder
+# testearlo de forma determinista sin reimportar el URLconf.
+docs_csp_update = csp_update(
+    {
+        "style-src": ["'unsafe-inline'"],
+        "img-src": ["data:"],
+        "worker-src": [SELF, "blob:"],
+    }
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -89,8 +108,8 @@ urlpatterns = [
 if settings.DEBUG:
     # API docs — solo disponibles en modo desarrollo (SEC-05)
     urlpatterns += [
-        path("api/docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
-        path("api/redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+        path("api/docs/", docs_csp_update(schema_view.with_ui("swagger", cache_timeout=0)), name="schema-swagger-ui"),
+        path("api/redoc/", docs_csp_update(schema_view.with_ui("redoc", cache_timeout=0)), name="schema-redoc"),
     ]
     # En modo S3 no hay MEDIA_ROOT local — solo servir static y media local si aplica
     if not getattr(settings, "USE_S3", False):
