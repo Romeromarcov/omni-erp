@@ -525,6 +525,26 @@ class TestPagar:
         )
         assert resp.status_code == 400
 
+    def test_pagar_cuenta_de_otra_empresa_retorna_404(
+        self, client_a, empresa_b, moneda_usd, pago_parafiscal_a, metodo_pago_a
+    ):
+        cuenta_b = CuentaBancariaEmpresa.objects.create(
+            id_empresa=empresa_b,
+            nombre_banco="Banco B",
+            numero_cuenta="0102-3333-0000000004",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=moneda_usd,
+            saldo_actual=Decimal("500.00"),
+        )
+        resp = client_a.post(
+            f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/",
+            {"metodo_pago": str(metodo_pago_a.pk), "cuenta_bancaria": str(cuenta_b.pk)},
+            format="json",
+        )
+        assert resp.status_code == 404
+        cuenta_b.refresh_from_db()
+        assert cuenta_b.saldo_actual == Decimal("500.00")
+
     def test_pagar_caja_de_otra_empresa_retorna_404(
         self, client_a, empresa_b, moneda_usd, pago_parafiscal_a, metodo_pago_a
     ):
@@ -910,6 +930,81 @@ class TestServiceDirecto:
                 cuenta_bancaria=cuenta_ves,
             )
 
+    def test_cuenta_inactiva_falla_en_service(
+        self, empresa_a, moneda_usd, pago_parafiscal_a, metodo_pago_a, user_a
+    ):
+        from apps.fiscal.services_parafiscales import (
+            PagoParafiscalError,
+            pagar_contribucion_parafiscal,
+        )
+
+        cuenta_inactiva = CuentaBancariaEmpresa.objects.create(
+            id_empresa=empresa_a,
+            nombre_banco="Banco Cerrado",
+            numero_cuenta="0102-2222-0000000003",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=moneda_usd,
+            activo=False,
+        )
+        with pytest.raises(PagoParafiscalError):
+            pagar_contribucion_parafiscal(
+                pago_parafiscal=pago_parafiscal_a,
+                usuario=user_a,
+                metodo_pago=metodo_pago_a,
+                cuenta_bancaria=cuenta_inactiva,
+            )
+
+    def test_metodo_privado_de_otro_tenant_falla_en_service(
+        self, empresa_b, pago_parafiscal_a, caja_usd_a, user_a
+    ):
+        """Defensa en profundidad: aunque la vista no filtre, el service exige tenant."""
+        from apps.fiscal.services_parafiscales import (
+            PagoParafiscalError,
+            pagar_contribucion_parafiscal,
+        )
+
+        metodo_b = MetodoPago.objects.create(
+            empresa=empresa_b, nombre_metodo="Privado B", tipo_metodo="EFECTIVO"
+        )
+        with pytest.raises(PagoParafiscalError):
+            pagar_contribucion_parafiscal(
+                pago_parafiscal=pago_parafiscal_a,
+                usuario=user_a,
+                metodo_pago=metodo_b,
+                caja_virtual=caja_usd_a,
+            )
+
+    def test_contribucion_ajena_creada_por_fuera_falla_al_pagar(
+        self, empresa_a, contribucion_b, moneda_usd, caja_usd_a, metodo_pago_a, user_a
+    ):
+        """Pago._validar_documento (ValueError) se traduce a PagoParafiscalError."""
+        from apps.fiscal.services_parafiscales import (
+            PagoParafiscalError,
+            pagar_contribucion_parafiscal,
+        )
+
+        # Registro inconsistente creado por fuera de la API (sin serializer):
+        # la contribución pertenece a la empresa B.
+        declarado = PagoContribucionParafiscal.objects.create(
+            id_empresa=empresa_a,
+            contribucion=contribucion_b,
+            periodo_año=2026,
+            periodo_mes=2,
+            monto=Decimal("50.00"),
+            id_moneda=moneda_usd,
+        )
+        with pytest.raises(PagoParafiscalError):
+            pagar_contribucion_parafiscal(
+                pago_parafiscal=declarado,
+                usuario=user_a,
+                metodo_pago=metodo_pago_a,
+                caja_virtual=caja_usd_a,
+            )
+        declarado.refresh_from_db()
+        assert declarado.estado == "pendiente"
+        caja_usd_a.refresh_from_db()
+        assert caja_usd_a.saldo_actual == Decimal("5000.00")
+
     def test_monto_no_positivo_falla_en_service(
         self, empresa_a, contribucion_global, moneda_usd, caja_usd_a, metodo_pago_a, user_a
     ):
@@ -933,6 +1028,96 @@ class TestServiceDirecto:
                 metodo_pago=metodo_pago_a,
                 caja_virtual=caja_usd_a,
             )
+
+
+# ─────────────────────────────────────────────
+# Serializer directo y carrera de doble declaración
+# ─────────────────────────────────────────────
+
+
+class TestSerializerYCarrera:
+    def test_serializer_rechaza_contribucion_ajena(self, empresa_a, contribucion_b, moneda_usd):
+        """Sin el scoping del ViewSet, validate() también cierra la puerta."""
+        from apps.fiscal.serializers_parafiscales import PagoContribucionParafiscalSerializer
+
+        ser = PagoContribucionParafiscalSerializer(
+            data={
+                "id_empresa": str(empresa_a.id_empresa),
+                "contribucion": contribucion_b.pk,
+                "periodo_año": 2026,
+                "periodo_mes": 5,
+                "monto": "10.00",
+                "id_moneda": str(moneda_usd.id_moneda),
+            }
+        )
+        assert not ser.is_valid()
+        assert "contribucion" in ser.errors
+
+    def test_serializer_rechaza_proceso_nomina_ajeno(
+        self, empresa_a, empresa_b, contribucion_a, moneda_usd
+    ):
+        from apps.nomina.models import PeriodoNomina, ProcesoNomina
+        from apps.fiscal.serializers_parafiscales import PagoContribucionParafiscalSerializer
+
+        periodo_b = PeriodoNomina.objects.create(
+            id_empresa=empresa_b,
+            nombre_periodo="P-B",
+            fecha_inicio=_today(),
+            fecha_fin=_today(),
+            fecha_pago=_today(),
+            tipo_periodo="MENSUAL",
+        )
+        proceso_b = ProcesoNomina.objects.create(
+            id_empresa=empresa_b,
+            id_periodo_nomina=periodo_b,
+            numero_proceso="NOM-B-1",
+            fecha_proceso=timezone.now(),
+        )
+        ser = PagoContribucionParafiscalSerializer(
+            data={
+                "id_empresa": str(empresa_a.id_empresa),
+                "contribucion": contribucion_a.pk,
+                "periodo_año": 2026,
+                "periodo_mes": 5,
+                "monto": "10.00",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_proceso_nomina": str(proceso_b.pk),
+            }
+        )
+        assert not ser.is_valid()
+        assert "id_proceso_nomina" in ser.errors
+
+    def test_carrera_de_doble_declaracion_retorna_400(
+        self, empresa_a, contribucion_a, moneda_usd, pago_parafiscal_a
+    ):
+        """
+        Simula la carrera que validate() no alcanza a ver (dos POST simultáneos):
+        el constraint condicional de BD dispara IntegrityError y el ViewSet lo
+        traduce a un 400 de negocio (no un 500).
+        """
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+
+        from apps.fiscal.views_parafiscales import PagoContribucionParafiscalViewSet
+
+        class _SerializerGanadoPorLaCarrera:
+            def save(self, **kwargs):
+                # El "otro" request ya insertó pago_parafiscal_a: este INSERT
+                # golpea uniq_pago_parafiscal_periodo_no_anulado de verdad.
+                return PagoContribucionParafiscal.objects.create(
+                    id_empresa=empresa_a,
+                    contribucion=contribucion_a,
+                    periodo_año=2026,
+                    periodo_mes=5,
+                    monto=Decimal("1.00"),
+                    id_moneda=moneda_usd,
+                )
+
+        viewset = PagoContribucionParafiscalViewSet()
+        with pytest.raises(DRFValidationError) as exc_info:
+            viewset.perform_create(_SerializerGanadoPorLaCarrera())
+        assert "doble pago" in str(exc_info.value)
+        # Solo la fila original sobrevive
+        assert PagoContribucionParafiscal.objects.count() == 1
 
 
 # ─────────────────────────────────────────────
