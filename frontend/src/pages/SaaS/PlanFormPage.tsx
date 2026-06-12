@@ -29,6 +29,7 @@ const EMPTY: PlanPayload = {
 };
 
 // Acepta enteros/decimales con punto, hasta 2 decimales. Rechaza negativos.
+// eslint-disable-next-line security/detect-unsafe-regex -- FP del heurístico star-height de safe-regex: `\.` y `\d` son disjuntos, no hay backtracking ambiguo (matching lineal)
 const DECIMAL_RE = /^\d+(\.\d{1,2})?$/;
 
 const PlanFormPage: React.FC = () => {

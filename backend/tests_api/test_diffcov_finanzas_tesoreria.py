@@ -3,7 +3,10 @@ Diff-coverage ≥95 — ramas reales no cubiertas de finanzas / tesorería / ven
 (rama develop d19403a). Cada test cita la(s) línea(s) objetivo que ejercita.
 
 Objetivos cubiertos aquí:
-- apps/finanzas/views.py: 114, 127-129, 349-350, 1121-1123, 1179, 1183, 1194-1196
+- apps/finanzas/views.py: SesionCajaFisicaViewSet (cerrar, transferir-entre-cajas
+  reparado en CTF-015.1, perform_create reparado en bugs lote 3),
+  buscar_reutilizar, CajaFisicaViewSet cierre/cerrar-sesion, scope de tenant del
+  serializer de overrides (CajaMetodoPagoOverride).
 - apps/finanzas/serializers.py: 43
 - apps/finanzas/utils_transferencias.py: 22-23, 25, 50
 - apps/tesoreria/serializers.py: 89, 106, 110-111, 118-119, 122, 129-130, 133, 191
@@ -11,10 +14,13 @@ Objetivos cubiertos aquí:
 - apps/ventas/services.py: 642
 
 No-cubribles (justificación en cada clase):
-- apps/finanzas/views.py 152-153, 156, 159 (endpoint roto aguas arriba), 368
-  (paginación global siempre activa).
+- apps/finanzas/views.py 368 (paginación global siempre activa).
 - apps/tesoreria/services.py 242, 245 (defensa de carreras BUG-M5; solo
   alcanzable con interleaving concurrente real).
+
+Nota CTF-015.1: las líneas del flujo de transferencia (antes 152-159,
+documentadas como no-cubribles por el AttributeError fosilizado) quedaron
+cubiertas al reparar el endpoint — ver TestSesionCajaTransferirEntreCajas.
 """
 import datetime
 import uuid
@@ -41,8 +47,10 @@ from apps.tesoreria.models import MovimientoBancario, OperacionCambioDivisa
 
 pytestmark = pytest.mark.django_db
 
+URL_SESIONES = "/api/finanzas/sesiones-caja/"
 URL_SESION_CERRAR = "/api/finanzas/sesiones-caja/{}/cerrar/"
 URL_SESION_TRANSFERIR = "/api/finanzas/sesiones-caja/{}/transferir-entre-cajas/"
+URL_OVERRIDES = "/api/finanzas/overrides-metodos-pago/"
 URL_CF_CIERRE = "/api/finanzas/cajas-fisicas/{}/cierre/"
 URL_CF_CERRAR_SESION = "/api/finanzas/cajas-fisicas/{}/cerrar-sesion/"
 URL_BUSCAR_REUTILIZAR = "/api/finanzas/metodos-pago/buscar_reutilizar/"
@@ -113,28 +121,60 @@ class TestSesionCajaCerrarValidaciones:
 
 
 class TestSesionCajaTransferirEntreCajas:
-    """views.py 152-153/156/159: NO-CUBRIBLES por API hoy — el endpoint está
-    roto aguas arriba: ``SesionCajaFisica`` no tiene relación ``cajas``, por lo
-    que ``sesion.cajas.get(...)`` (líneas 148-149) lanza AttributeError y el
-    ``except Exception`` de las líneas 150-151 responde SIEMPRE 400 antes de
-    llegar a la transferencia. Cubrirlas exigiría modificar código de la app
-    (prohibido en esta tarea). Este test documenta el comportamiento actual."""
+    """CTF-015.1 — transferir-entre-cajas REPARADO: antes ``sesion.cajas`` no
+    existía (la relación real es ``caja_fisica.cajas_virtuales``), el
+    AttributeError caía en un ``except Exception`` y el endpoint respondía 400
+    SIEMPRE. Estos tests exigen el comportamiento correcto: camino feliz 200
+    con efectos en BD y ramas de error reales (caja ajena/inexistente/
+    malformada, monto inválido, saldo insuficiente)."""
 
-    def test_endpoint_responde_400_incluso_con_cajas_validas(
-        self, client_a, sesion_abierta, caja_virtual_a, empresa_a, moneda_usd, caja_fisica_a
-    ):
-        otra_caja = Caja.objects.create(
+    @pytest.fixture
+    def caja_gerencia_a(self, empresa_a, moneda_usd, caja_fisica_a):
+        """Segunda caja virtual de la MISMA sesión, con saldo para transferir."""
+        return Caja.objects.create(
             empresa=empresa_a,
             nombre="Gerencia DC95",
             moneda=moneda_usd,
             caja_fisica=caja_fisica_a,
             saldo_actual=Decimal("50.00"),
         )
+
+    def test_transferencia_feliz_200_con_efectos_en_bd(
+        self, client_a, sesion_abierta, caja_virtual_a, caja_gerencia_a
+    ):
+        """Camino feliz: 200, doble movimiento persistido y saldos Decimal
+        actualizados en ambas cajas de la sesión."""
         resp = client_a.post(
             URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
             {
-                "caja_origen": str(otra_caja.id_caja),
+                "caja_origen": str(caja_gerencia_a.id_caja),
                 "caja_destino": str(caja_virtual_a.id_caja),
+                "monto": "10.50",
+            },
+            format="json",
+        )
+        assert resp.status_code == 200, resp.content
+        assert resp.data["monto"] == "10.50"
+        mov_salida = MovimientoCajaBanco.objects.get(tipo_movimiento="TRANSFERENCIA_SALIDA")
+        mov_entrada = MovimientoCajaBanco.objects.get(tipo_movimiento="TRANSFERENCIA_ENTRADA")
+        assert resp.data["movimiento_salida_id"] == mov_salida.id_movimiento
+        assert resp.data["movimiento_entrada_id"] == mov_entrada.id_movimiento
+        assert mov_salida.monto == Decimal("10.50")
+        assert mov_salida.id_caja_id == caja_gerencia_a.pk
+        assert mov_entrada.id_caja_id == caja_virtual_a.pk
+        caja_gerencia_a.refresh_from_db()
+        caja_virtual_a.refresh_from_db()
+        assert caja_gerencia_a.saldo_actual == Decimal("39.50")
+        assert caja_virtual_a.saldo_actual == Decimal("10.50")
+
+    def test_caja_destino_inexistente_400_sin_efectos(
+        self, client_a, sesion_abierta, caja_gerencia_a
+    ):
+        resp = client_a.post(
+            URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
+            {
+                "caja_origen": str(caja_gerencia_a.id_caja),
+                "caja_destino": str(uuid.uuid4()),
                 "monto": "10.00",
             },
             format="json",
@@ -144,6 +184,262 @@ class TestSesionCajaTransferirEntreCajas:
         assert not MovimientoCajaBanco.objects.filter(
             tipo_movimiento__in=["TRANSFERENCIA_SALIDA", "TRANSFERENCIA_ENTRADA"]
         ).exists()
+
+    def test_caja_de_otra_empresa_400_sin_filtrar_existencia(
+        self, client_a, sesion_abierta, caja_gerencia_a, empresa_b, moneda_usd
+    ):
+        """R-CODE-1: una caja virtual REAL de otra empresa (otra caja física)
+        no es transferible desde esta sesión — mismo mensaje que inexistente."""
+        from apps.finanzas.models import CajaFisica
+
+        caja_fisica_b = CajaFisica.objects.create(
+            empresa=empresa_b, nombre="Caja B", identificador_dispositivo="dev-b-transf"
+        )
+        caja_b = Caja.objects.create(
+            empresa=empresa_b,
+            nombre="Registradora B",
+            moneda=moneda_usd,
+            caja_fisica=caja_fisica_b,
+            saldo_actual=Decimal("500.00"),
+        )
+        resp = client_a.post(
+            URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
+            {
+                "caja_origen": str(caja_gerencia_a.id_caja),
+                "caja_destino": str(caja_b.id_caja),
+                "monto": "10.00",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["error"] == "Caja origen o destino no pertenece a la sesión."
+        caja_b.refresh_from_db()
+        assert caja_b.saldo_actual == Decimal("500.00")
+        assert MovimientoCajaBanco.objects.count() == 0
+
+    def test_caja_malformada_400_controlado(self, client_a, sesion_abierta, caja_gerencia_a):
+        """Un id no-UUID no revienta en 500: la ValidationError del lookup se
+        traduce al mismo 400 de negocio."""
+        resp = client_a.post(
+            URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
+            {
+                "caja_origen": "no-es-un-uuid",
+                "caja_destino": str(caja_gerencia_a.id_caja),
+                "monto": "10.00",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["error"] == "Caja origen o destino no pertenece a la sesión."
+
+    def test_monto_invalido_400_mensaje_de_negocio(
+        self, client_a, sesion_abierta, caja_virtual_a, caja_gerencia_a
+    ):
+        """Rama ValueError del helper: monto no numérico → 400 con mensaje de
+        negocio, sin detalles internos y sin efectos en BD."""
+        resp = client_a.post(
+            URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
+            {
+                "caja_origen": str(caja_gerencia_a.id_caja),
+                "caja_destino": str(caja_virtual_a.id_caja),
+                "monto": "abc",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["error"] == "El monto de la transferencia no es un número válido."
+        assert MovimientoCajaBanco.objects.count() == 0
+
+    def test_saldo_insuficiente_400_sin_efectos(
+        self, client_a, sesion_abierta, caja_virtual_a, caja_gerencia_a
+    ):
+        resp = client_a.post(
+            URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
+            {
+                "caja_origen": str(caja_virtual_a.id_caja),  # saldo 0.00
+                "caja_destino": str(caja_gerencia_a.id_caja),
+                "monto": "10.00",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["error"] == "Saldo insuficiente en la caja origen para la transferencia."
+        caja_gerencia_a.refresh_from_db()
+        assert caja_gerencia_a.saldo_actual == Decimal("50.00")
+        assert MovimientoCajaBanco.objects.count() == 0
+
+
+# ── apps/finanzas/views.py — SesionCajaFisicaViewSet.perform_create ──────────
+
+
+class TestSesionCajaFisicaCreacion:
+    """Bug lote 3 — POST /sesiones-caja/ reventaba con FieldError 500: buscaba
+    ``Caja`` (virtual) con el campo inexistente ``es_fisica``; además pasaba
+    kwargs que ``abrir_sesion`` no acepta y llamaba un método inexistente, y la
+    búsqueda no estaba acotada al tenant. Estos tests exigen la creación feliz
+    y el aislamiento R-CODE-1."""
+
+    @pytest.fixture
+    def caja_fisica_b(self, empresa_b):
+        from apps.finanzas.models import CajaFisica
+
+        return CajaFisica.objects.create(
+            empresa=empresa_b, nombre="Caja B", identificador_dispositivo="dev-b-sesion"
+        )
+
+    def test_creacion_feliz_201_con_sesion_abierta(self, client_a, caja_fisica_a, user_a, empresa_a):
+        resp = client_a.post(
+            URL_SESIONES,
+            {
+                "caja_fisica_principal": str(caja_fisica_a.id_caja_fisica),
+                "observaciones": "apertura turno mañana",
+            },
+            format="json",
+        )
+        assert resp.status_code == 201, resp.content
+        sesion = SesionCajaFisica.objects.get(caja_fisica=caja_fisica_a)
+        assert sesion.estado == "ABIERTA"
+        assert sesion.usuario == user_a
+        assert sesion.empresa == empresa_a  # R-CODE-1: derivada de la caja, no del payload
+        assert sesion.notas == "apertura turno mañana"
+        # La respuesta refleja la sesión REAL creada (no el eco del payload).
+        assert resp.data["id_sesion"] == str(sesion.id_sesion)
+        assert resp.data["estado"] == "ABIERTA"
+        assert resp.data["caja_fisica_principal"]["id_caja"] == str(caja_fisica_a.id_caja_fisica)
+
+    def test_sin_caja_fisica_principal_400(self, client_a):
+        resp = client_a.post(URL_SESIONES, {}, format="json")
+        assert resp.status_code == 400
+        assert resp.data["caja_fisica_principal"] == (
+            "Debe especificar la caja física para abrir la sesión"
+        )
+        assert SesionCajaFisica.objects.count() == 0
+
+    def test_caja_de_otra_empresa_400_sin_filtrar_existencia(self, client_a, caja_fisica_b):
+        """R-CODE-1: una caja física REAL de otra empresa responde el mismo 400
+        que una inexistente — no se puede abrir sesión ni inferir existencia."""
+        resp = client_a.post(
+            URL_SESIONES,
+            {"caja_fisica_principal": str(caja_fisica_b.id_caja_fisica)},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
+        assert SesionCajaFisica.objects.count() == 0
+
+    def test_caja_inexistente_400(self, client_a, empresa_a):
+        resp = client_a.post(
+            URL_SESIONES, {"caja_fisica_principal": str(uuid.uuid4())}, format="json"
+        )
+        assert resp.status_code == 400
+        assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
+        assert SesionCajaFisica.objects.count() == 0
+
+    def test_caja_malformada_400_controlado(self, client_a, empresa_a):
+        """Un id no-UUID no revienta en 500: ValidationError del lookup → 400."""
+        resp = client_a.post(
+            URL_SESIONES, {"caja_fisica_principal": "no-es-un-uuid"}, format="json"
+        )
+        assert resp.status_code == 400
+        assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
+        assert SesionCajaFisica.objects.count() == 0
+
+    def test_caja_inactiva_400(self, client_a, caja_fisica_a):
+        caja_fisica_a.activa = False
+        caja_fisica_a.save(update_fields=["activa"])
+        resp = client_a.post(
+            URL_SESIONES,
+            {"caja_fisica_principal": str(caja_fisica_a.id_caja_fisica)},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
+        assert SesionCajaFisica.objects.count() == 0
+
+
+# ── apps/finanzas/serializers.py — CajaMetodoPagoOverrideSerializer (tenant) ──
+
+
+class TestCajaMetodoPagoOverrideScopeTenant:
+    """Revisión bugs lote 3 — scoping multi-tenant del serializer de overrides.
+
+    El serializer declara querysets SIN filtrar (``CajaFisica.objects.all()``,
+    ``MetodoPago.objects.all()``, ``Sucursal.objects.all()``), pero el ViewSet
+    hereda de BaseModelViewSet → TenantFKScopeMixin (SEC-M1), que en
+    ``get_serializer`` acota TODO RelatedField writable a las empresas
+    visibles del usuario. Estos tests fijan ese comportamiento como contrato:
+    un id de la Empresa B debe responder 400 para un usuario de la Empresa A
+    (sin persistir nada) y el camino feliz same-tenant sigue funcionando."""
+
+    @pytest.fixture
+    def setup_b(self, empresa_b):
+        from apps.core.models import Sucursal
+        from apps.finanzas.models import CajaFisica
+
+        sucursal_b = Sucursal.objects.create(
+            id_empresa=empresa_b, nombre="Sucursal B", codigo_sucursal="SB-OV"
+        )
+        caja_fisica_b = CajaFisica.objects.create(
+            empresa=empresa_b, nombre="Caja B Override", identificador_dispositivo="dev-b-override"
+        )
+        metodo_b = MetodoPago.objects.create(
+            nombre_metodo="Zelle Privado B",
+            tipo_metodo="ELECTRONICO",
+            empresa=empresa_b,
+            es_generico=False,
+            es_publico=False,
+        )
+        return {"sucursal": sucursal_b, "caja_fisica": caja_fisica_b, "metodo": metodo_b}
+
+    def test_post_con_fks_de_otra_empresa_400_y_nada_persiste(self, client_a, setup_b):
+        from apps.finanzas.models import CajaMetodoPagoOverride
+
+        resp = client_a.post(
+            URL_OVERRIDES,
+            {
+                "caja_fisica": str(setup_b["caja_fisica"].id_caja_fisica),
+                "metodo_pago": str(setup_b["metodo"].id_metodo_pago),
+                "sucursal": str(setup_b["sucursal"].id_sucursal),
+                "deshabilitado": True,
+                "motivo": "intento cross-tenant",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.content
+        # Los tres FKs ajenos deben rechazarse como inexistentes (no se filtra
+        # que el objeto exista en otra empresa).
+        for campo in ("caja_fisica", "metodo_pago", "sucursal"):
+            assert campo in resp.data, resp.data
+            assert "no existe" in str(resp.data[campo][0])
+        assert CajaMetodoPagoOverride.objects.count() == 0
+
+    def test_post_same_tenant_201_con_creado_por_del_request(
+        self, client_a, user_a, empresa_a, caja_fisica_a
+    ):
+        from apps.core.models import Sucursal
+        from apps.finanzas.models import CajaMetodoPagoOverride
+
+        sucursal_a = Sucursal.objects.create(
+            id_empresa=empresa_a, nombre="Sucursal A", codigo_sucursal="SA-OV"
+        )
+        metodo_a = MetodoPago.objects.create(
+            nombre_metodo="Efectivo A Override", tipo_metodo="EFECTIVO", empresa=empresa_a
+        )
+        resp = client_a.post(
+            URL_OVERRIDES,
+            {
+                "caja_fisica": str(caja_fisica_a.id_caja_fisica),
+                "metodo_pago": str(metodo_a.id_metodo_pago),
+                "sucursal": str(sucursal_a.id_sucursal),
+                "deshabilitado": True,
+                "motivo": "POS dañado",
+            },
+            format="json",
+        )
+        assert resp.status_code == 201, resp.content
+        override = CajaMetodoPagoOverride.objects.get()
+        assert override.caja_fisica == caja_fisica_a
+        assert override.creado_por == user_a  # inyectado del request, no del payload
 
 
 # ── apps/finanzas/views.py — MetodoPagoViewSet.buscar_reutilizar ─────────────

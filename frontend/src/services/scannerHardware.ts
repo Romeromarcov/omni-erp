@@ -76,6 +76,7 @@ export async function startCameraScan(
   let raf = 0;
   let stopped = false;
   let delivered = false;
+  // eslint-disable-next-line security/detect-object-injection -- FP: `mode` está restringido al union 'barcode' | 'qr' (Record exhaustivo verificado por TS)
   const detector = new Ctor({ formats: FORMATS[mode] });
 
   const stop = () => {

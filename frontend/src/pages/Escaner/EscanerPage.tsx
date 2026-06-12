@@ -271,6 +271,7 @@ export default function EscanerPage() {
               pb: 1.5,
             }}
           >
+            {/* eslint-disable-next-line security/detect-object-injection -- FP: `mode` está restringido al union ScanMode (Record exhaustivo verificado por TS) */}
             {cameraActive ? 'Buscando código…' : MODE_HINT[mode]}
           </Typography>
           <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'center', pb: 3 }}>

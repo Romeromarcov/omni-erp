@@ -117,6 +117,7 @@ describe('api 401 refresh + retry (FE-HIGH-11)', () => {
         return Promise.resolve(jsonResponse({ access: 'new' }));
       }
       // First protected call (old token) → 401; retry (new token) → 200.
+      // eslint-disable-next-line security/detect-possible-timing-attacks -- FP: comparación dentro de un mock de fetch de tests; no hay secreto real ni canal de timing observable
       if (auth === 'Bearer old') return Promise.resolve(jsonResponse({ detail: 'expired' }, 401));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -158,6 +159,7 @@ describe('api 401 refresh + retry (FE-HIGH-11)', () => {
           setTimeout(() => resolve(jsonResponse({ access: 'new' })), 10),
         );
       }
+      // eslint-disable-next-line security/detect-possible-timing-attacks -- FP: comparación dentro de un mock de fetch de tests; no hay secreto real ni canal de timing observable
       if (auth === 'Bearer old') return Promise.resolve(jsonResponse({ detail: 'expired' }, 401));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -402,5 +404,35 @@ describe('api refresh — ramas de fallo y combinación de señales', () => {
     } finally {
       (AbortSignal as unknown as Record<string, unknown>).any = abortSignalAny;
     }
+  });
+});
+
+describe('api error status (workstream F: 422 mapeo NOMINA vs 400 negocio)', () => {
+  beforeEach(() => {
+    clearAccessToken();
+    setUnauthorizedHandler(null);
+    vi.restoreAllMocks();
+  });
+  afterEach(() => {
+    clearAccessToken();
+    setUnauthorizedHandler(null);
+  });
+
+  it('adjunta status=422 al Error sin alterar el message JSON', async () => {
+    const body = { error: 'Configure el Mapeo Contable antes de continuar (contabilidad activa, NOMINA)' };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(body, 422)));
+
+    const err = await post('/nomina/procesos-nomina/p1/procesar/', {}).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error & { status?: number }).status).toBe(422);
+    expect(JSON.parse((err as Error).message)).toEqual(body);
+  });
+
+  it('adjunta status=400 a los errores de regla de negocio', async () => {
+    const body = { error: 'El proceso está en estado COMPLETADO; solo se procesan procesos EN_PROCESO.' };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(body, 400)));
+
+    const err = await post('/nomina/procesos-nomina/p1/procesar/', {}).catch((e: unknown) => e);
+    expect((err as Error & { status?: number }).status).toBe(400);
   });
 });

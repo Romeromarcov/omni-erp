@@ -23,6 +23,8 @@ Se crea un ADR cuando se toma una decisión que:
 | 007 | Arquitectura de Localización en Dos Capas | 2026-06-01 | Aceptado |
 | 008 | Monorepo de Clientes + Shells Mobile y Desktop sobre la Capa 1 | 2026-06-01 | Aceptado |
 | 009 | Separación entre cuentas_por_cobrar (ledger) y cxc (cobranza IA) | 2026-06-01 | Aceptado |
+| 010 | Extensibilidad: escalera de customización L0–L4 y marketplace de plugins | 2026-06-12 | Aceptado |
+| 011 | Servicios hermanos: fábrica de software y fábrica de marketing/contenido | 2026-06-12 | Aceptado |
 
 ## Cómo se escriben
 
