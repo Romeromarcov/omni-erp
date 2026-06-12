@@ -7,8 +7,13 @@ from rest_framework.response import Response
 
 from apps.core.viewsets import get_empresas_visible
 
-from .models import AsientoContable, DetalleAsiento, PlanCuentas
-from .serializers import AsientoContableSerializer, DetalleAsientoSerializer, PlanCuentasSerializer
+from .models import AsientoContable, DetalleAsiento, MapeoContable, PlanCuentas
+from .serializers import (
+    AsientoContableSerializer,
+    DetalleAsientoSerializer,
+    MapeoContableSerializer,
+    PlanCuentasSerializer,
+)
 
 
 def _empresas(request):
@@ -164,3 +169,28 @@ class DetalleAsientoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1 via parent AsientoContable
         return DetalleAsiento.objects.filter(id_asiento__id_empresa__in=_empresas(self.request))
+
+
+class MapeoContableViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
+    """
+    CRUD de mapeos contables (tipo de asiento automático → cuentas debe/haber).
+    Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
+    """
+
+    queryset = MapeoContable.objects.all()
+    serializer_class = MapeoContableSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["tipo_asiento", "activo", "id_empresa"]
+    ordering_fields = ["tipo_asiento", "fecha_creacion"]
+    ordering = ["tipo_asiento"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        return MapeoContable.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
+            "cuenta_debe", "cuenta_haber"
+        )
+
+    @action(detail=False, methods=["get"], url_path="tipos-asiento")
+    def tipos_asiento(self, request):
+        """Catálogo de tipos de asiento automático soportados por el motor."""
+        return Response([{"value": v, "label": etiqueta} for v, etiqueta in MapeoContable.TIPOS_ASIENTO])
