@@ -307,6 +307,12 @@ class CajaFisica(models.Model):
 
         return realizar_cierre_caja(self, saldo_real, usuario=usuario, hasta=hasta)
 
+    def metodo_pago_deshabilitado(self, metodo_pago):
+        """FIX: este método no existía y las plantillas maestras lo invocaban →
+        AttributeError. Devuelve True si hay un override que deshabilita el
+        método de pago para esta caja física."""
+        return self.metodo_pago_overrides.filter(metodo_pago=metodo_pago, deshabilitado=True).exists()
+
     TIPO_CAJA_CHOICES = [
         ("REGISTRADORA", "Caja Registradora"),
         ("GERENCIA", "Caja Gerente Sucursal"),
@@ -1307,8 +1313,9 @@ class CajaVirtualAuto(models.Model):
     id_caja_virtual = models.UUIDField(primary_key=True, default=uuid7, editable=False)
 
     # Asociación: puede ser con caja física O con empleado (para vendedores móviles)
+    # FIX: el FK apuntaba a Caja (virtual) en vez de CajaFisica — modelado roto.
     caja_fisica = models.ForeignKey(
-        "Caja", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
+        "CajaFisica", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
     )
     empleado = models.ForeignKey(
         "core.Usuarios", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
@@ -1791,7 +1798,9 @@ class Pago(models.Model):
                 raise ValueError(f"Nota de Venta {self.id_nota_venta.id_nota_venta} no existe")
 
         elif self.tipo_documento == "FACTURA" and self.id_factura:
-            from apps.fiscal.models import FacturaFiscal
+            # FIX: FacturaFiscal vive en apps.ventas (el FK es "ventas.FacturaFiscal");
+            # importarla desde apps.fiscal rompía con ImportError toda validación de factura.
+            from apps.ventas.models import FacturaFiscal
 
             try:
                 factura = FacturaFiscal.objects.get(id_factura=self.id_factura.id_factura)
@@ -1817,10 +1826,11 @@ class Pago(models.Model):
         elif self.tipo_documento == "REEMBOLSO_GASTO" and self.id_reembolso_gasto:
             from apps.gastos.models import ReembolsoGasto
 
+            # FIX: la PK del modelo es `id_reembolso` (no `id_reembolso_gasto`).
             try:
-                reembolso = ReembolsoGasto.objects.get(id_reembolso_gasto=self.id_reembolso_gasto.id_reembolso_gasto)
+                reembolso = ReembolsoGasto.objects.get(id_reembolso=self.id_reembolso_gasto.id_reembolso)
             except ReembolsoGasto.DoesNotExist:
-                raise ValueError(f"Reembolso de Gasto {self.id_reembolso_gasto.id_reembolso_gasto} no existe")
+                raise ValueError(f"Reembolso de Gasto {self.id_reembolso_gasto.id_reembolso} no existe")
 
         elif self.tipo_documento == "NOMINA" and self.id_nomina:
             from apps.nomina.models import Nomina
@@ -1833,10 +1843,11 @@ class Pago(models.Model):
         elif self.tipo_documento == "IMPUESTO" and self.id_contribucion:
             from apps.fiscal.models import ContribucionParafiscal
 
+            # FIX: ContribucionParafiscal usa la PK implícita `pk`/`id`, no `id_contribucion`.
             try:
-                contribucion = ContribucionParafiscal.objects.get(id_contribucion=self.id_contribucion.id_contribucion)
+                contribucion = ContribucionParafiscal.objects.get(pk=self.id_contribucion.pk)
             except ContribucionParafiscal.DoesNotExist:
-                raise ValueError(f"Contribución Parafiscal {self.id_contribucion.id_contribucion} no existe")
+                raise ValueError(f"Contribución Parafiscal {self.id_contribucion.pk} no existe")
 
     @property
     def documento_relacionado(self):

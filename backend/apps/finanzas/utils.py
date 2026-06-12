@@ -93,7 +93,7 @@ def crear_configuracion_inicial_venezolana(empresa):
     # Obtener monedas y métodos de pago disponibles
     try:
         ves = Moneda.objects.get(codigo_iso="VES", empresa=empresa)
-        usd = Moneda.objects.get(codigo_iso="USD", empresa=empresa)
+        Moneda.objects.get(codigo_iso="USD", empresa=empresa)  # debe existir también
     except Moneda.DoesNotExist:
         return {"error": "Monedas VES y USD no encontradas"}
 
@@ -113,13 +113,14 @@ def crear_configuracion_inicial_venezolana(empresa):
             "aplicar_a_todas_cajas_fisicas": True,
             "aplicar_a_empleados_con_rol": None,
             "activa": True,
+            # FIX: moneda_base es FK NOT NULL sin default; sin esto el insert
+            # reventaba con IntegrityError. La base venezolana es VES.
+            "moneda_base": ves,
         },
     )
 
     if created_fisica:
-        plantilla_fisica.monedas_base.set([ves, usd])
         plantilla_fisica.metodos_pago_base.set([efectivo, tarjeta, credito])
-        plantilla_fisica.save()
 
     # Crear plantilla para vendedores móviles
     plantilla_movil, created_movil = PlantillaMaestroCajasVirtuales.objects.get_or_create(
@@ -130,13 +131,12 @@ def crear_configuracion_inicial_venezolana(empresa):
             "aplicar_a_todas_cajas_fisicas": False,
             "aplicar_a_empleados_con_rol": "vendedor",  # Ajustar según el rol real
             "activa": True,
+            "moneda_base": ves,
         },
     )
 
     if created_movil:
-        plantilla_movil.monedas_base.set([ves, usd])
         plantilla_movil.metodos_pago_base.set([efectivo, tarjeta])
-        plantilla_movil.save()
 
     return {
         "plantilla_fisica": plantilla_fisica,

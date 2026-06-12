@@ -136,26 +136,34 @@ class PedidoSerializer(serializers.ModelSerializer):
         if self.context and "request" in self.context:
             usuario = self.context["request"].user
 
-        # Buscar sesión activa del usuario
+        # Buscar sesión activa del usuario (acotada a la empresa — multi-tenant)
+        # FIX: la rama era inalcanzable — hacía select_related("caja_fisica_principal"),
+        # campo que no existe en SesionCajaFisica (el FK es `caja_fisica`); el
+        # FieldError se tragaba en un except Exception y siempre caía al fallback.
         sesion_activa = None
-        if usuario:
-            try:
-                sesion_activa = (
-                    SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA")
-                    .select_related("caja_fisica_principal")
-                    .first()
-                )
-            except Exception:
-                sesion_activa = None
-
-        if sesion_activa and sesion_activa.caja_fisica_principal:
-            # Usar la caja física principal de la sesión activa
-            caja = sesion_activa.caja_fisica_principal
-            sucursal = caja.sucursal
-            logger.debug(
-                f"DEBUG: Usando caja de sesión activa: {caja.nombre}, sucursal: {sucursal.nombre if sucursal else 'N/A'}"
+        if usuario is not None and getattr(usuario, "is_authenticated", False):
+            sesion_activa = (
+                SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA", empresa=id_empresa)
+                .select_related("caja_fisica__sucursal")
+                .first()
             )
-        else:
+
+        if sesion_activa and sesion_activa.caja_fisica_id:
+            # Usar la caja virtual activa asociada a la caja física de la sesión
+            # (el resto del flujo — prefijo y filtro por id_caja — trabaja con Caja).
+            caja = (
+                Caja.objects.filter(caja_fisica=sesion_activa.caja_fisica, activa=True)
+                .select_related("sucursal")
+                .first()
+            )
+            sucursal = caja.sucursal if caja else sesion_activa.caja_fisica.sucursal
+            logger.debug(
+                "Usando caja de sesión activa: %s, sucursal: %s",
+                caja.nombre if caja else "N/A",
+                sucursal.nombre if sucursal else "N/A",
+            )
+
+        if caja is None:
             # Fallback: Si el frontend envía sucursal/caja en documento_json, extraerlo
             doc_json = validated_data.get("documento_json", {})
             sucursal_id = doc_json.get("id_sucursal")
