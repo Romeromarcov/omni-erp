@@ -18,11 +18,12 @@ Uso:
 from __future__ import annotations
 
 import logging
-import os
 import time
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
+
+from apps.core import llm_gateway
 
 from .eval_dataset import CATEGORIAS_CANONICAS
 
@@ -119,12 +120,14 @@ class ClasificadorGastos:
 
     Args:
         empresa: instancia de Empresa (para contexto del tenant).
-        llm_client: cliente Anthropic inyectable (permite mock en tests).
-            Si None, intentará crear uno si hay ANTHROPIC_API_KEY.
+        llm_client: cliente LLM inyectable (permite mock en tests). Si None,
+            el gateway usa el proveedor configurado por env (LLM_PROVIDER).
+        gateway: LLMGateway inyectable (tiene prioridad sobre llm_client).
     """
 
     AGENTE_ID = "clasificador_gastos"
-    MODELO_DEFAULT = "claude-haiku-4-5-20251001"
+    # Resuelto por el gateway (env LLM_MODEL); aquí solo informativo.
+    MODELO_DEFAULT = llm_gateway.modelo_configurado(llm_gateway.USO_AGENTE)
     SYSTEM_PROMPT = """Eres un asistente contable para empresas venezolanas.
 Tu tarea es clasificar gastos empresariales en categorías contables.
 
@@ -141,20 +144,11 @@ Responde SOLO con un JSON válido con esta estructura exacta:
   ]
 }}"""
 
-    def __init__(self, empresa, llm_client=None):
+    def __init__(self, empresa, llm_client=None, gateway=None):
         self.empresa = empresa
         self._llm_client = llm_client
-        self._usar_llm = False
-
-        if llm_client is not None:
-            self._usar_llm = True
-        elif os.environ.get("ANTHROPIC_API_KEY"):
-            try:
-                import anthropic  # type: ignore[import-untyped]
-                self._llm_client = anthropic.Anthropic()
-                self._usar_llm = True
-            except ImportError:
-                logger.warning("anthropic SDK no instalado; usando fallback determinista")
+        self._gateway = gateway if gateway is not None else llm_gateway.get_gateway(client=llm_client)
+        self._usar_llm = self._gateway.disponible()
 
     def clasificar(
         self,
@@ -225,26 +219,26 @@ Responde SOLO con un JSON válido con esta estructura exacta:
         user_msg = f"Gasto: {descripcion}{contexto_monto}"
 
         try:
-            response = self._llm_client.messages.create(
-                model=self.MODELO_DEFAULT,
-                max_tokens=256,
+            respuesta = self._gateway.generate(
+                prompt=user_msg,
                 system=system,
-                messages=[{"role": "user", "content": user_msg}],
+                max_tokens=256,
+                uso=llm_gateway.USO_AGENTE,
+                empresa=self.empresa,
             )
-            raw = response.content[0].text.strip()
-            data = json.loads(raw)
+            data = json.loads(respuesta.text.strip())
 
             return ResultadoClasificacion(
                 categoria=data.get("categoria", "otros"),
                 confianza=float(data.get("confianza", 0.5)),
                 razonamiento=data.get("razonamiento", ""),
                 alternativas=data.get("alternativas", []),
-                modelo_llm=self.MODELO_DEFAULT,
+                modelo_llm=respuesta.model,
             )
         except Exception as exc:
             logger.error("LLM clasificacion fallo, usando fallback: %s", exc)
             resultado = self._clasificar_fallback(descripcion)
-            resultado.modelo_llm = f"fallback-error:{type(exc).__name__}"
+            resultado.modelo_llm = f"fallback-error:{llm_gateway.nombre_error(exc)}"
             return resultado
 
     def _persistir(

@@ -6,7 +6,6 @@ POST /api/agentes/chat/  →  recibe {messages:[{role, content}]} y devuelve SSE
 """
 import json
 import logging
-import os
 from datetime import date
 from decimal import Decimal
 
@@ -15,19 +14,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import llm_gateway
+
 logger = logging.getLogger(__name__)
 
-CHAT_MODEL = "claude-sonnet-4-6"
+# El modelo del chat lo resuelve el gateway (env LLM_MODEL_CHAT).
 MAX_TOKENS = 2048
 MAX_HISTORY = 20
 MAX_TOOL_ROUNDS = 5
-
-try:
-    import anthropic
-
-    _ANTHROPIC_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    _ANTHROPIC_AVAILABLE = False
 
 
 # ── Serialización segura ───────────────────────────────────────────────────────
@@ -310,14 +304,14 @@ class AsistenteChatView(APIView):
             empresa = visibles[0] if visibles else None
 
         ctx = _ChatCtx(user, empresa, visibles)
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        gateway = llm_gateway.get_gateway()
         system_prompt = _build_system_prompt(user, empresa)
 
         def sse(payload: dict) -> str:
             return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
         def event_stream():
-            if not (_ANTHROPIC_AVAILABLE and api_key):
+            if not gateway.disponible():
                 yield sse({
                     "text": "⚠️ El asistente IA no está configurado en este entorno "
                             "(falta ANTHROPIC_API_KEY). Aun así puedo orientarte: usa el menú "
@@ -327,16 +321,18 @@ class AsistenteChatView(APIView):
                 return
 
             try:
-                client = anthropic.Anthropic(api_key=api_key)
                 conversation = list(mensajes)
 
                 for _ in range(MAX_TOOL_ROUNDS):
-                    with client.messages.stream(
-                        model=CHAT_MODEL,
-                        max_tokens=MAX_TOKENS,
+                    # ctx.empresa puede cambiar entre rondas (tool usar_empresa);
+                    # se pasa en cada ronda para que el consumo quede bien atribuido.
+                    with gateway.stream(
+                        messages=conversation,
                         system=system_prompt,
                         tools=TOOLS,
-                        messages=conversation,
+                        max_tokens=MAX_TOKENS,
+                        uso=llm_gateway.USO_CHAT,
+                        empresa=ctx.empresa,
                     ) as stream:
                         for text in stream.text_stream:
                             yield sse({"text": text})

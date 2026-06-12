@@ -202,7 +202,11 @@ export default function OrdenCompraFormPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {fields.map((field, idx) => (
+              {fields.map((field, idx) => {
+                // eslint-disable-next-line security/detect-object-injection -- FP: `idx` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
+                const erroresLinea = errors.detalles?.[idx];
+                const lineaWatch = detallesWatch?.at(idx);
+                return (
                 <TableRow key={field.id}>
                   <TableCell>
                     <TextField
@@ -211,8 +215,8 @@ export default function OrdenCompraFormPage() {
                       size="small"
                       defaultValue=""
                       label={t('compras.form.producto')}
-                      error={!!errors.detalles?.[idx]?.id_producto}
-                      helperText={errors.detalles?.[idx]?.id_producto?.message}
+                      error={!!erroresLinea?.id_producto}
+                      helperText={erroresLinea?.id_producto?.message}
                       {...register(`detalles.${idx}.id_producto`)}
                     >
                       {productos.map((p) => (
@@ -227,8 +231,8 @@ export default function OrdenCompraFormPage() {
                       size="small"
                       inputMode="decimal"
                       label={t('compras.form.cantidad')}
-                      error={!!errors.detalles?.[idx]?.cantidad}
-                      helperText={errors.detalles?.[idx]?.cantidad?.message}
+                      error={!!erroresLinea?.cantidad}
+                      helperText={erroresLinea?.cantidad?.message}
                       {...register(`detalles.${idx}.cantidad`)}
                     />
                   </TableCell>
@@ -237,15 +241,15 @@ export default function OrdenCompraFormPage() {
                       size="small"
                       inputMode="decimal"
                       label={t('compras.form.precioUnitario')}
-                      error={!!errors.detalles?.[idx]?.precio_unitario}
-                      helperText={errors.detalles?.[idx]?.precio_unitario?.message}
+                      error={!!erroresLinea?.precio_unitario}
+                      helperText={erroresLinea?.precio_unitario?.message}
                       {...register(`detalles.${idx}.precio_unitario`)}
                     />
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>
                       {toFixedStr(
-                        subtotalLinea(detallesWatch?.[idx]?.cantidad, detallesWatch?.[idx]?.precio_unitario),
+                        subtotalLinea(lineaWatch?.cantidad, lineaWatch?.precio_unitario),
                       )}
                     </Typography>
                   </TableCell>
@@ -260,7 +264,8 @@ export default function OrdenCompraFormPage() {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>

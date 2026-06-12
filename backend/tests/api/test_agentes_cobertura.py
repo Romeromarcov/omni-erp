@@ -688,9 +688,14 @@ class TestChatView:
         assert "data: [DONE]" in cuerpo
 
     def test_stream_con_tool_use_mockeado(self, client_a, empresa_a, monkeypatch):
-        """Cubre el loop de tool-calling: ronda 1 usa una tool, ronda 2 termina."""
+        """Cubre el loop de tool-calling: ronda 1 usa una tool, ronda 2 termina.
+
+        El SDK se inyecta por el punto de monkeypatch del gateway
+        (``llm_gateway.anthropic``): la vista ya no instancia anthropic directo.
+        """
+        from apps.core import llm_gateway
+
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-falso")
-        monkeypatch.setattr(chatmod, "_ANTHROPIC_AVAILABLE", True)
 
         bloque_tool = SimpleNamespace(
             type="tool_use", name="listar_empresas", input={}, id="toolu_1"
@@ -714,7 +719,7 @@ class TestChatView:
         ]
         anthropic_falso = MagicMock()
         anthropic_falso.Anthropic.return_value = cliente_falso
-        monkeypatch.setattr(chatmod, "anthropic", anthropic_falso, raising=False)
+        monkeypatch.setattr(llm_gateway, "anthropic", anthropic_falso)
 
         resp = client_a.post(
             self.URL, {"messages": [{"role": "user", "content": "mis empresas?"}]},

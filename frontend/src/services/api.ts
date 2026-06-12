@@ -74,12 +74,11 @@ function authHeaders(endpoint: string, extra?: HeadersInit): Record<string, stri
   if (!isAuthEndpoint(endpoint) && accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
-  // Merge caller-provided headers last so they win.
+  // Merge caller-provided headers last so they win. Headers normaliza los
+  // nombres y el spread crea propiedades de datos propias (CreateDataProperty),
+  // inmune a claves especiales como "__proto__" (CTF-006).
   if (extra) {
-    const normalized = new Headers(extra);
-    normalized.forEach((value, key) => {
-      headers[key] = value;
-    });
+    return { ...headers, ...Object.fromEntries(new Headers(extra)) };
   }
   return headers;
 }
@@ -188,6 +187,9 @@ async function request(endpoint: string, options: RequestOptions = {}): Promise<
   return res;
 }
 
+/** Error HTTP con el status adjunto (el message sigue siendo el body JSON). */
+export type HttpError = Error & { status?: number };
+
 async function buildError(res: Response, url: string): Promise<Error> {
   const errorText = await res.text();
   let errorObj: Record<string, string>;
@@ -203,7 +205,12 @@ async function buildError(res: Response, url: string): Promise<Error> {
       errorObj = { error: errorText };
     }
   }
-  return new Error(JSON.stringify(errorObj));
+  // Workstream F: el status HTTP viaja como propiedad del Error para que la UI
+  // distinga p. ej. 422 (falta mapeo contable NOMINA) de 400 (regla de negocio)
+  // sin parsear mensajes. `message` no cambia: mensajeDeError() sigue funcionando.
+  const error: HttpError = new Error(JSON.stringify(errorObj));
+  error.status = res.status;
+  return error;
 }
 
 // ── JSON fetcher (public API preserved) ───────────────────────────────────────

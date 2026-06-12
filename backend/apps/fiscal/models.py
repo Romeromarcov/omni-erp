@@ -3,6 +3,8 @@ from apps.core.uuid import uuid7
 
 from django.db import models
 
+from apps.core.base_models import IntegrationFieldsMixin, TenantModel
+
 
 class NumeroCorrelativo(models.Model):
     """Contador atómico de numeración correlativa por empresa y tipo de documento."""
@@ -265,6 +267,133 @@ class TasaIVAEmpresa(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({float(self.tasa) * 100:.0f}%)"
+
+
+# ── Pago de contribuciones parafiscales (Capa B §6.7, plan §6.3) ──────────────
+
+
+class PagoContribucionParafiscal(TenantModel, IntegrationFieldsMixin):
+    """
+    Pago de una contribución parafiscal (IVSS, FAOV/BANAVIH, INCES, RPE/paro
+    forzoso…) calculada por la nómina, para un período mensual (año + mes).
+
+    Ciclo de vida (las transiciones las gobiernan los services de
+    ``apps.fiscal.services_parafiscales`` — transición inválida → 400)::
+
+        pendiente ──pagar──→ pagado    (egreso en caja/banco + Pago genérico
+                                        + asiento PAGO_PARAFISCAL, R-CODE-11)
+        pendiente ──anular─→ anulado   (sin efectos financieros que revertir)
+
+    No-doble-pago: a nivel de BD solo puede existir UNA fila no anulada por
+    ``(empresa, contribución, período)`` — ver el ``UniqueConstraint``
+    condicional. Anular libera el período para re-declarar.
+
+    El pago efectivo reusa el flujo financiero canónico: se crea un
+    ``finanzas.Pago`` (EGRESO, tipo_documento=IMPUESTO) y
+    ``registrar_efectos_pago`` genera la TransaccionFinanciera + el
+    ``MovimientoCajaBanco`` de egreso (visible en el libro maestro de caja,
+    §6.8) con ``select_for_update`` sobre la caja/cuenta afectada.
+    """
+
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente de pago"),
+        ("pagado", "Pagado"),
+        ("anulado", "Anulado"),
+    ]
+
+    id_pago_parafiscal = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="pagos_parafiscales"
+    )
+    contribucion = models.ForeignKey(
+        "ContribucionParafiscal",
+        on_delete=models.PROTECT,
+        related_name="pagos_parafiscales",
+        help_text="Contribución parafiscal que se paga (IVSS, FAOV, INCES…).",
+    )
+    periodo_año = models.PositiveSmallIntegerField(
+        help_text="Año del período declarado (ej. 2026)."
+    )
+    periodo_mes = models.PositiveSmallIntegerField(
+        help_text="Mes del período declarado (1–12)."
+    )
+    monto = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        help_text="Monto a pagar de la contribución para el período (R-CODE-4).",
+    )
+    id_moneda = models.ForeignKey(
+        "finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_parafiscales"
+    )
+    referencia = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Referencia del pago (planilla, comprobante o transferencia).",
+    )
+    id_proceso_nomina = models.ForeignKey(
+        "nomina.ProcesoNomina",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pagos_parafiscales",
+        help_text="Proceso de nómina del que proviene el cálculo (trazabilidad, opcional).",
+    )
+    estado = models.CharField(
+        max_length=15, choices=ESTADO_CHOICES, default="pendiente", db_index=True
+    )
+    fecha_pago = models.DateField(
+        null=True, blank=True, help_text="Fecha en que se ejecutó el pago (se fija al pagar)."
+    )
+    # Trazabilidad del documento financiero generado por la acción 'pagar'
+    # (SET_NULL: si el Pago se eliminara, este registro conserva su historia).
+    id_pago = models.ForeignKey(
+        "finanzas.Pago",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pagos_parafiscales",
+        help_text="Pago genérico de finanzas generado por la acción 'pagar'.",
+    )
+
+    class Meta:
+        db_table = "fiscal_pago_contribucion_parafiscal"
+        verbose_name = "Pago de Contribución Parafiscal"
+        verbose_name_plural = "Pagos de Contribuciones Parafiscales"
+        ordering = ["-periodo_año", "-periodo_mes", "-fecha_creacion"]
+        constraints = [
+            # No doble pago: solo una fila NO anulada por período + contribución.
+            models.UniqueConstraint(
+                fields=["id_empresa", "contribucion", "periodo_año", "periodo_mes"],
+                condition=~models.Q(estado="anulado"),
+                name="uniq_pago_parafiscal_periodo_no_anulado",
+            ),
+            # Backstop de BD del validate() del serializer (bugs lote 4): un
+            # período imposible no entra ni por ORM directo / scripts.
+            models.CheckConstraint(
+                condition=models.Q(periodo_mes__gte=1, periodo_mes__lte=12),
+                name="ck_pago_parafiscal_mes_entre_1_y_12",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(periodo_año__gte=2000, periodo_año__lte=2100),
+                name="ck_pago_parafiscal_anio_entre_2000_y_2100",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["id_empresa", "estado"]),
+            models.Index(fields=["id_empresa", "periodo_año", "periodo_mes"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.contribucion.codigo} {self.periodo_año:04d}-{self.periodo_mes:02d} "
+            f"— {self.monto} [{self.estado}]"
+        )
+
+    @property
+    def periodo(self) -> str:
+        """Período en formato 'YYYY-MM' (para API y reportes)."""
+        return f"{self.periodo_año:04d}-{self.periodo_mes:02d}"
 
 
 # ── Período Fiscal ─────────────────────────────────────────────────────────────
