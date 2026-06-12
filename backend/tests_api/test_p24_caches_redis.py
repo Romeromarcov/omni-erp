@@ -17,22 +17,35 @@ pytestmark = pytest.mark.unit
 
 
 class TestRedisDbFromUrl:
-    """Convención redis-py/Kombu: DB en el path, o ``?db=``, o 0 por defecto."""
+    """Convención de KOMBU (broker de Celery): DB = path entero, o 0 — el
+    query ``?db=`` NO lo lee Kombu (bugs lote 4)."""
 
     def test_db_en_path(self):
-        assert redis_db_from_url("redis://localhost:6379/3") == "3"
+        assert redis_db_from_url("redis://localhost:6379/3") == 3
 
     def test_sin_path_es_db_cero(self):
-        assert redis_db_from_url("redis://localhost:6379") == "0"
+        assert redis_db_from_url("redis://localhost:6379") == 0
 
     def test_path_vacio_es_db_cero(self):
-        assert redis_db_from_url("redis://localhost:6379/") == "0"
+        assert redis_db_from_url("redis://localhost:6379/") == 0
 
-    def test_db_en_query(self):
-        assert redis_db_from_url("redis://localhost:6379?db=2") == "2"
+    def test_query_db_se_ignora_broker_en_cero(self):
+        """Kombu no lee ``?db=`` (kombu.Connection ni siquiera lo acepta):
+        el broker real queda en la DB 0, no en la 2."""
+        assert redis_db_from_url("redis://localhost:6379?db=2") == 0
 
     def test_path_gana_sobre_query(self):
-        assert redis_db_from_url("redis://localhost:6379/4?db=2") == "4"
+        assert redis_db_from_url("redis://localhost:6379/4?db=2") == 4
+
+    def test_path_con_cero_a_la_izquierda_es_entero(self):
+        """Kombu hace int(path): ``/01`` es la MISMA DB que ``/1``."""
+        assert redis_db_from_url("redis://localhost:6379/01") == 1
+
+    def test_path_no_numerico_falla_cerrado(self):
+        """Un path del que Kombu no puede derivar DB es un error de config,
+        no un 'sin colisión' silencioso (fail-closed)."""
+        with pytest.raises(ImproperlyConfigured, match="DB numérica"):
+            redis_db_from_url("redis://localhost:6379/cola")
 
 
 class TestBuildDefaultCache:
@@ -98,10 +111,34 @@ class TestBuildDefaultCache:
                 key_prefix="omni:dev",
             )
 
-    def test_colision_con_db_en_query_falla(self):
+    def test_query_db_no_es_colision_el_broker_vive_en_cero(self):
+        """``?db=1`` + cache_db=1 NO colisiona: Kombu ignora la query y el
+        broker real está en la DB 0 — el cache puede usar la 1 (bugs lote 4:
+        antes esto fallaba por modelar a redis-py en vez de a Kombu)."""
+        config = build_default_cache(
+            "redis://localhost:6379?db=1",
+            testing=False,
+            cache_db="1",
+            key_prefix="omni:dev",
+        )
+        # El db= de la query tampoco se filtra al LOCATION del cache.
+        assert config["LOCATION"] == "redis://localhost:6379/1"
+
+    def test_colision_implicita_con_query_db_falla(self):
+        """``?db=2`` + cache_db=0 SÍ colisiona: el broker real está en la 0."""
         with pytest.raises(ImproperlyConfigured, match="colisiona"):
             build_default_cache(
-                "redis://localhost:6379?db=1",
+                "redis://localhost:6379?db=2",
+                testing=False,
+                cache_db="0",
+                key_prefix="omni:dev",
+            )
+
+    def test_colision_compara_enteros_no_strings(self):
+        """``/01`` y cache_db="1" son la MISMA DB (int), aunque difieran como str."""
+        with pytest.raises(ImproperlyConfigured, match="colisiona"):
+            build_default_cache(
+                "redis://localhost:6379/01",
                 testing=False,
                 cache_db="1",
                 key_prefix="omni:dev",

@@ -380,6 +380,35 @@ class TestNoDoblePago:
         )
         assert otro.pk is not None
 
+    def test_check_de_bd_rechaza_mes_imposible(self, empresa_a, contribucion_a, moneda_usd):
+        """Bugs lote 4 (5a): el CHECK de BD rechaza mes fuera de 1–12 aunque
+        se salte la API (ORM directo, scripts, fixtures)."""
+        from django.db import IntegrityError
+
+        with pytest.raises(IntegrityError, match="ck_pago_parafiscal_mes_entre_1_y_12"):
+            PagoContribucionParafiscal.objects.create(
+                id_empresa=empresa_a,
+                contribucion=contribucion_a,
+                periodo_año=2026,
+                periodo_mes=13,
+                monto=Decimal("1.00"),
+                id_moneda=moneda_usd,
+            )
+
+    def test_check_de_bd_rechaza_anio_irrazonable(self, empresa_a, contribucion_a, moneda_usd):
+        """Bugs lote 4 (5a): el CHECK de BD rechaza años fuera de 2000–2100."""
+        from django.db import IntegrityError
+
+        with pytest.raises(IntegrityError, match="ck_pago_parafiscal_anio_entre_2000_y_2100"):
+            PagoContribucionParafiscal.objects.create(
+                id_empresa=empresa_a,
+                contribucion=contribucion_a,
+                periodo_año=1999,
+                periodo_mes=5,
+                monto=Decimal("1.00"),
+                id_moneda=moneda_usd,
+            )
+
 
 # ─────────────────────────────────────────────
 # Pagar (egreso en caja + asiento balanceado)
@@ -1118,6 +1147,35 @@ class TestSerializerYCarrera:
         assert "doble pago" in str(exc_info.value)
         # Solo la fila original sobrevive
         assert PagoContribucionParafiscal.objects.count() == 1
+
+    def test_otra_integrityerror_no_se_disfraza_de_doble_pago(
+        self, empresa_a, contribucion_a, moneda_usd
+    ):
+        """
+        Bugs lote 4 (5b): _guardar_sin_doble_pago verifica el NOMBRE del
+        constraint violado — una IntegrityError DISTINTA (aquí el CHECK de
+        período de BD) se re-lanza tal cual, no se traduce al 400 de
+        "doble pago" (sería diagnosticar mal un bug real).
+        """
+        from django.db import IntegrityError
+
+        from apps.fiscal.views_parafiscales import PagoContribucionParafiscalViewSet
+
+        class _SerializerConPeriodoImposible:
+            def save(self, **kwargs):
+                return PagoContribucionParafiscal.objects.create(
+                    id_empresa=empresa_a,
+                    contribucion=contribucion_a,
+                    periodo_año=2026,
+                    periodo_mes=13,
+                    monto=Decimal("1.00"),
+                    id_moneda=moneda_usd,
+                )
+
+        viewset = PagoContribucionParafiscalViewSet()
+        with pytest.raises(IntegrityError, match="ck_pago_parafiscal_mes_entre_1_y_12"):
+            viewset.perform_create(_SerializerConPeriodoImposible())
+        assert PagoContribucionParafiscal.objects.count() == 0
 
 
 # ─────────────────────────────────────────────

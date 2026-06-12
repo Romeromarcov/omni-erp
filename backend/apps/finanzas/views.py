@@ -92,12 +92,17 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             # ajena — no se filtra existencia de cajas de otros tenants.
             raise serializers.ValidationError({"caja_fisica_principal": "Caja física no encontrada o no válida"})
 
-        instance = SesionCajaFisica.abrir_sesion(
-            caja_fisica=caja_fisica,
-            usuario=self.request.user,
-            ip_address=self.request.META.get("REMOTE_ADDR"),
-            user_agent=(self.request.META.get("HTTP_USER_AGENT") or "")[:1000] or None,
-        )
+        try:
+            instance = SesionCajaFisica.abrir_sesion(
+                caja_fisica=caja_fisica,
+                usuario=self.request.user,
+                ip_address=self.request.META.get("REMOTE_ADDR"),
+                user_agent=(self.request.META.get("HTTP_USER_AGENT") or "")[:1000] or None,
+            )
+        except ValueError as exc:
+            # Carrera de doble apertura (bugs lote 4): el perdedor del INSERT
+            # concurrente recibe un 400 de negocio, no un 500.
+            raise serializers.ValidationError({"detail": str(exc)})
         observaciones = self.request.data.get("observaciones")
         if observaciones:
             instance.notas = observaciones
@@ -168,7 +173,11 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         caja_destino_id = request.data.get("caja_destino")
         monto = request.data.get("monto")
         usuario = request.user if request.user.is_authenticated else None
-        if not (caja_origen_id and caja_destino_id and monto):
+        # FIX (bugs lote 4): monto se valida como AUSENTE solo si es None o
+        # string en blanco — un 0 numérico (falsy) debe llegar a la validación
+        # de negocio y responder "mayor a cero", no el mensaje genérico.
+        monto_ausente = monto is None or (isinstance(monto, str) and not monto.strip())
+        if not (caja_origen_id and caja_destino_id) or monto_ausente:
             return Response({"error": "Debe indicar caja_origen, caja_destino y monto."}, status=400)
         cajas_de_sesion = sesion.caja_fisica.cajas_virtuales
         try:
@@ -178,6 +187,15 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             # R-CODE-1: mismo mensaje para caja inexistente, malformada o de
             # otra sesión/tenant — no se filtra existencia de cajas ajenas.
             return Response({"error": "Caja origen o destino no pertenece a la sesión."}, status=400)
+        if not caja_origen.activa or not caja_destino.activa:
+            # Las cajas resueltas ya pertenecen a la sesión (mismo tenant), así
+            # que el mensaje específico no filtra existencia ajena (R-CODE-1).
+            # Transferir desde/hacia una caja desactivada movería saldo a una
+            # caja fuera de operación (invisible en cierres y libro por defecto).
+            return Response(
+                {"error": "No se puede transferir desde o hacia una caja virtual desactivada."},
+                status=400,
+            )
         try:
             mov_salida, mov_entrada = transferencia_entre_cajas(
                 caja_origen, caja_destino, monto, usuario=usuario
@@ -771,35 +789,50 @@ class CajaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="crear-caja-virtual")
     def crear_caja_virtual(self, request, pk=None):
         """
-        Crea una caja virtual dentro de la sesión activa.
-        Útil para escenarios venezolanos donde un mismo puesto atiende diferentes tipos de pago.
-        """
-        sesion = self.get_object()
+        Crea una caja virtual en la sesión ABIERTA de la caja física asociada
+        a esta asignación usuario-caja. Útil para escenarios venezolanos donde
+        un mismo puesto atiende diferentes tipos de pago.
 
-        # Validar que la sesión esté abierta
-        if sesion.estado != "ABIERTA":
+        FIX (bugs lote 4): trataba la ``CajaUsuario`` como si fuera una sesión
+        (``sesion.estado`` / ``sesion.crear_caja_virtual``), atributos que el
+        modelo no tiene → AttributeError 500 en toda invocación (mismo patrón
+        del lote 3). Ahora resuelve la sesión ABIERTA real de la caja física
+        de la caja asignada y delega en ``SesionCajaFisica.crear_caja_virtual``
+        (creación real de la ``Caja`` + métodos de pago + asignación al usuario).
+        """
+        from .models import SesionCajaFisica
+
+        # R-CODE-1: get_object() está acotado por get_queryset al usuario actual.
+        caja_usuario = self.get_object()
+        caja_fisica = caja_usuario.caja.caja_fisica
+        if caja_fisica is None:
+            return Response(
+                {"error": "La caja asignada no está asociada a una caja física."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        sesion = SesionCajaFisica.obtener_sesion_activa(caja_fisica)
+        if sesion is None:
             return Response(
                 {"error": "No se pueden crear cajas virtuales en una sesión cerrada"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        nombre = request.data.get("nombre")
-        monedas_ids = request.data.get("monedas", [])
-        metodos_pago_ids = request.data.get("metodos_pago", [])
-
-        if not nombre:
-            return Response(
-                {"error": "Debe especificar un nombre para la caja virtual"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
         try:
             caja_virtual = sesion.crear_caja_virtual(
-                nombre=nombre, monedas_ids=monedas_ids, metodos_pago_ids=metodos_pago_ids, usuario=request.user
+                nombre=request.data.get("nombre"),
+                monedas_ids=request.data.get("monedas", []),
+                metodos_pago_ids=request.data.get("metodos_pago", []),
+                usuario=request.user,
             )
-            return Response({"mensaje": f"Caja virtual '{nombre}' creada exitosamente", "caja_virtual": caja_virtual})
-        except ValueError:
-            logger.exception("Error al crear caja virtual")
-            return Response({"error": "No se pudo crear la caja virtual. Verifique los datos."}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as exc:
+            # Mensajes de negocio controlados (nombre/moneda/método); el de
+            # moneda/método es neutro — no filtra existencia ajena (R-CODE-1).
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "mensaje": f"Caja virtual '{caja_virtual.nombre}' creada exitosamente",
+                "caja_virtual": CajaSerializer(caja_virtual).data,
+            }
+        )
 
 
 # ViewSet para CajaVirtualUsuario
@@ -1166,12 +1199,16 @@ class CajaFisicaViewSet(BaseModelViewSet):
         # R-CODE-1: get_object() aplica el filtro de tenant del ViewSet → 404
         # si la caja física pertenece a otra empresa.
         caja = self.get_object()
-        sesion = SesionCajaFisica.abrir_sesion(
-            caja_fisica=caja,
-            usuario=request.user,
-            ip_address=request.META.get("REMOTE_ADDR"),
-            user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:1000] or None,
-        )
+        try:
+            sesion = SesionCajaFisica.abrir_sesion(
+                caja_fisica=caja,
+                usuario=request.user,
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:1000] or None,
+            )
+        except ValueError as exc:
+            # Carrera de doble apertura (bugs lote 4): 400 de negocio, no 500.
+            return Response({"error": str(exc)}, status=400)
         return Response(
             {
                 "mensaje": f"Sesión abierta para la caja {caja.nombre}.",

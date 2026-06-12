@@ -44,18 +44,31 @@ LOCMEM_CACHE: dict = {
 }
 
 
-def redis_db_from_url(redis_url: str) -> str:
-    """DB que usa una URL de Redis: path ``/N``, o ``?db=N``, o ``0`` (default).
+def redis_db_from_url(redis_url: str) -> int:
+    """DB de Redis a la que conecta el broker de Celery (Kombu) según la URL.
 
-    Es la misma convención que aplican redis-py y Kombu (broker de Celery):
-    sin path ni query, la conexión va a la DB 0.
+    Modela EXACTAMENTE a Kombu (``transport.redis.Channel._prepare_virtual_host``),
+    que es quien conecta el broker — no a redis-py:
+
+    * la DB sale del **path** convertido a entero (``redis://host/2`` → 2;
+      ``/01`` ≡ 1); sin path o con ``/`` solo, es la DB **0**;
+    * un query ``?db=N`` **NO** selecciona DB en Kombu (``kombu.Connection``
+      ni siquiera acepta ese parámetro) — redis-py sí lo honra, pero el broker
+      jamás vive en esa DB, así que aquí se ignora para la colisión;
+    * path no numérico → ``ImproperlyConfigured`` (fail-closed: Kombu tampoco
+      puede derivar una DB de eso y revienta al conectar).
     """
-    parts = urlsplit(redis_url)
-    path_db = parts.path.strip("/")
-    if path_db:
-        return path_db
-    query_db = dict(parse_qsl(parts.query)).get("db")
-    return query_db or "0"
+    path = urlsplit(redis_url).path
+    if not path or path == "/":
+        return 0
+    path_db = path[1:] if path.startswith("/") else path
+    try:
+        return int(path_db)
+    except ValueError:
+        raise ImproperlyConfigured(
+            f"REDIS_URL tiene un path que no es una DB numérica de Redis: {path_db!r} "
+            "(Kombu deriva la DB del broker del path, p. ej. redis://host:6379/0)."
+        ) from None
 
 
 def build_default_cache(
@@ -82,8 +95,9 @@ def build_default_cache(
             f"REDIS_CACHE_DB debe ser un entero (DB de Redis), recibido: {cache_db!r}."
         ) from None
 
+    # Comparación de ENTEROS (bugs lote 4): "/01" y "1" son la misma DB.
     celery_db = redis_db_from_url(redis_url)
-    if str(db_num) == celery_db:
+    if db_num == celery_db:
         raise ImproperlyConfigured(
             f"REDIS_CACHE_DB={db_num} colisiona con la DB del broker de Celery "
             f"(REDIS_URL usa la DB {celery_db}). El cache de Django debe vivir en "

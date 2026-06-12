@@ -368,6 +368,16 @@ class PagoContribucionParafiscal(TenantModel, IntegrationFieldsMixin):
                 condition=~models.Q(estado="anulado"),
                 name="uniq_pago_parafiscal_periodo_no_anulado",
             ),
+            # Backstop de BD del validate() del serializer (bugs lote 4): un
+            # período imposible no entra ni por ORM directo / scripts.
+            models.CheckConstraint(
+                condition=models.Q(periodo_mes__gte=1, periodo_mes__lte=12),
+                name="ck_pago_parafiscal_mes_entre_1_y_12",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(periodo_año__gte=2000, periodo_año__lte=2100),
+                name="ck_pago_parafiscal_anio_entre_2000_y_2100",
+            ),
         ]
         indexes = [
             models.Index(fields=["id_empresa", "estado"]),

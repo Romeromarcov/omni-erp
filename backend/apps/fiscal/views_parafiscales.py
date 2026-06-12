@@ -78,6 +78,10 @@ class PagoContribucionParafiscalViewSet(IdempotentCreateMixin, BaseModelViewSet)
         condicional ``uniq_pago_parafiscal_periodo_no_anulado`` (carrera de
         doble declaración que el validate() del serializer no alcanzó a ver)
         a un 400 de negocio en lugar de un 500.
+
+        Afinado (bugs lote 4): SOLO esa violación se traduce — cualquier otra
+        IntegrityError (CHECK de período, NOT NULL, otra unique…) es un bug
+        distinto y se re-lanza, no se disfraza de "doble pago".
         """
         from django.db import IntegrityError, transaction
 
@@ -85,6 +89,8 @@ class PagoContribucionParafiscalViewSet(IdempotentCreateMixin, BaseModelViewSet)
             with transaction.atomic():
                 serializer.save(**kwargs)
         except IntegrityError as exc:
+            if "uniq_pago_parafiscal_periodo_no_anulado" not in str(exc):
+                raise
             raise ValidationError(
                 {
                     "detail": (
