@@ -83,12 +83,12 @@ Se levantó Postgres + venv y se corrieron los gates de verdad:
 
 | # | Criterio | Estado | Medido |
 |---|---|---|---|
-| 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; trivy/eslint-security aún no bloqueantes |
-| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🟡 | back **93.25% local / 92.79% CI ✅** (ratchet 92); front **74.5%** (2026-06-11, rumbo a 80); diff-cover **95% ✅** |
+| 1 | 0 High/Critical SAST/deps | 🟢 casi | bandit/semgrep/mypy/pip-audit verde; **trivy bloqueante en CRITICAL** (2026-06-12; HIGH reporta, ratchet); eslint-security aún no (CTF-006) |
+| 2 | Cob. back ≥90 / front ≥80 / diff ≥95 | 🟢 | back **93.25% local / 92.79% CI ✅** (ratchet 92); front **80.7% ✅** (2026-06-12, PR #83, ratchet 79/69/69/81); diff-cover **95% ✅** |
 | 3 | Mutation ≥80% críticos | 🟢 | fiscal **84.5%**, nómina **93.5%**, cxc_scoring **90%**, cxc_aging **90.5%** (medición corregida con `scripts/mut_runner.py`) |
 | 4 | Aislamiento multi-tenant | 🟢 | guard parametrizado ~99 ViewSets + comportamiento |
-| 5 | Authz + contrato por endpoint | 🟡 | guard authz ✅; schemathesis no-bloqueante |
-| 6 | E2E flujos críticos | 🟡 | 5 flujos Playwright (PR #76); falta volver el job bloqueante (Fase 5) |
+| 5 | Authz + contrato por endpoint | 🟢 | guard authz ✅; **schemathesis bloqueante** (2026-06-12) |
+| 6 | E2E flujos críticos | 🟢 | 5 flujos Playwright (PR #76); **job bloqueante desde 2026-06-12** |
 | 7 | mypy dinero + tsc | 🟢 | mypy bloqueante verde; `tsc -b` verde |
 | 8 | Revisión seguridad adversarial | 🟢 | SECURITY_REVIEW + `/security-review` |
 
@@ -181,8 +181,8 @@ La evaluación por agentes sobredimensionó tres hallazgos. Verificación línea
 | **1 · Seguridad** | reporte sin High/Critical abiertos, CTFs | 🟢 **CERRADA** (2026-06-03) | **A2-1** `SECURITY_REVIEW_2026-06-02.md` (0 High/Medium de seguridad abiertos); **A3** checklist R-CODE; **A4** inventario; BUG-1/DUP-1/DUP-2 corregidos; **CTF-005** para lo aceptado. |
 | **2 · Cimientos de test** | aislamiento parametrizado, contract-drift | 🟢 **CERRADA** (2026-06-09) | ✅ TEST-1 (aislamiento auto-descubierto), TEST-2 (estructura `tests/` + aislamiento de comportamiento), TEST-3 (property), TEST-4 (races), **contract-drift bloqueante en CI**. **DoD formal cumplida** (aislamiento cubre todos los ViewSets + contract-drift). TEST-5: compra/cobranza/manufactura/venta ✅; cambio-divisa y nómina → **CTF-013** (feature rota/stub). Migración `tests_api/`→capas → **CTF-014**. |
 | **3 · Backfill** | cobertura 90% + mutation ≥80% | 🟢 **CERRADA** (2026-06-09) | cobertura backend **93.25%** (objetivo 90% superado; ratchet 92), **3534 tests verdes**; mutation **≥80% en los 4 críticos** (fiscal 84.5/cxc 90-90.5/nómina 93.5, medición corregida — `scripts/mut_runner.py`); ~30 bugs reales destapados y documentados en los tests. El frontend (~55%) pertenece a la **Fase 4** según el plan. |
-| **4 · E2E + frontend** | flujos E2E verdes | 🟡 en curso (2026-06-11) | FE **74.5%** stmts (PRs #70/#74, thresholds 73/64/64/75; falta escalón 3 → 80); **E2E Playwright de los 5 flujos** en PR #76 (no-bloqueante hasta Fase 5) |
-| **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 en curso | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**. *Falta:* trivy/schemathesis/E2E bloqueantes, branch protection (requiere permisos del owner) |
+| **4 · E2E + frontend** | flujos E2E verdes | 🟢 **CERRADA** (2026-06-12) | FE **80.7%** stmts (PRs #70/#74/#83, thresholds 79/69/69/81); **E2E Playwright de los 5 flujos** verde y bloqueante |
+| **5 · Endurecer gates** | jobs bloqueantes + branch protection | 🟡 casi (2026-06-12) | bloqueantes: ruff, semgrep Omni, **bandit**, **mypy dinero**, **pip-audit**, **npm critical**, **diff-cover 95**, **E2E**, **schemathesis**, **trivy (CRITICAL)**. *Falta SOLO:* branch protection (acción exclusiva del owner) y npm audit high (CTF-007) |
 
 Leyenda: 🟢 hecho · 🟡 parcial · 🔴 pendiente.
 

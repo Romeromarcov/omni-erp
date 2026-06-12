@@ -144,12 +144,11 @@ jobs:
   # requiere backend + frontend vivos; se ejecuta aparte del job unit.
   # Cubre: venta (pedido→confirmar→stock/CxC), abono CxC, caja (pago→
   # movimiento; sustituye compras, que es API-only), ajuste de inventario
-  # +kardex, y login multi-empresa. Escalar a bloqueante es Fase 5.
+  # +kardex, y login multi-empresa. BLOQUEANTE desde Fase 5 (cero-dudas).
   # ──────────────────────────────────────────────────────────────
   e2e:
-    name: "E2E (Playwright flujos críticos — no-bloqueante)"
+    name: "E2E (Playwright flujos críticos — BLOQUEANTE)"
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     services:
       postgres:
@@ -342,11 +341,12 @@ jobs:
 
       - name: Trivy — CVEs de dependencias e imágenes (fs scan)
         # Instalación vía script oficial (evita depender de tags de la action).
-        # Reporta; escalar a bloqueante (CRITICAL) tras cerrar los CVEs major.
-        continue-on-error: true
+        # Fase 5: BLOQUEANTE en CRITICAL (--exit-code 1); HIGH se reporta y se
+        # escalará al cerrar los CVEs major pendientes (ratchet).
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --no-progress . || true
+          trivy fs --scanners vuln --severity HIGH --ignore-unfixed --no-progress . || true
+          trivy fs --scanners vuln --severity CRITICAL --ignore-unfixed --no-progress --exit-code 1 .
 
   # ──────────────────────────────────────────────────────────────
   # Static analysis — plan "cero dudas" Fase 0/1
@@ -415,13 +415,12 @@ jobs:
           mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura
 
   # ──────────────────────────────────────────────────────────────
-  # Contract — OpenAPI (drf-yasg) + schemathesis. No-bloqueante al inicio
-  # (Fase 0): genera el esquema y hace fuzzing de contrato contra un server vivo.
+  # Contract — OpenAPI (drf-yasg) + schemathesis. BLOQUEANTE desde Fase 5:
+  # genera el esquema y hace fuzzing de contrato contra un server vivo.
   # ──────────────────────────────────────────────────────────────
   contract:
     name: "Contract (OpenAPI + schemathesis)"
     runs-on: ubuntu-latest
-    continue-on-error: true  # no-bloqueante al inicio (DoD A0)
     services:
       postgres:
         image: postgres:17-alpine
@@ -467,8 +466,8 @@ jobs:
         run: |
           python manage.py runserver 0.0.0.0:8000 &
           for i in $(seq 1 30); do curl -sf http://localhost:8000/api/health/ >/dev/null && break || sleep 2; done
-      - name: Schemathesis (fuzzing de contrato — no-bloqueante)
+      - name: Schemathesis (fuzzing de contrato — BLOQUEANTE)
         working-directory: backend
         run: |
           schemathesis run /tmp/openapi.json --base-url http://localhost:8000 \
-            --checks not_a_server_error --hypothesis-max-examples=5 || true
+            --checks not_a_server_error --hypothesis-max-examples=5
