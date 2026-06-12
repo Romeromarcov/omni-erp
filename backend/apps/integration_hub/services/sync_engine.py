@@ -322,6 +322,14 @@ class SyncEngine:
         producto = None
         if sku:
             producto = Producto.objects.filter(id_empresa=empresa, sku=sku).first()
+        else:
+            # Sin SKU externo: la clave de idempotencia cae al nombre dentro
+            # del tenant, para que re-sincronizar no duplique el producto.
+            nombre = datos.get("nombre") or ""
+            if nombre:
+                producto = Producto.objects.filter(
+                    id_empresa=empresa, nombre_producto=nombre
+                ).first()
 
         campos = {
             "nombre_producto": datos.get("nombre") or "",
@@ -436,6 +444,14 @@ class SyncEngine:
         """Marca el job como fallido con mensaje de error."""
         job.estado = "fallido"
         job.completado_en = dj_timezone.now()
+        # Persistir los contadores parciales: distingue "falló sin procesar
+        # nada" de "falló a mitad" en la auditoría del job.
+        job.total_registros = resultado.total
+        job.procesados = resultado.procesados
+        job.creados = resultado.creados
+        job.actualizados = resultado.actualizados
+        job.omitidos = resultado.omitidos
+        job.fallidos = resultado.fallidos
         job.resumen_errores = [{"error": mensaje}]
         job.save()
 

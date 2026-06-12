@@ -489,6 +489,39 @@ class TestUpsertEnOmni:
         assert producto.precio_venta_sugerido == Decimal("15.00")
         assert Producto.objects.filter(id_empresa=instancia_fake.id_empresa).count() == 1
 
+    def test_upsert_producto_sin_sku_es_idempotente_por_nombre(
+        self, fake_registry, instancia_fake, moneda_usd
+    ):
+        """Sin SKU externo, la clave de idempotencia cae al nombre dentro del
+        tenant: re-sincronizar no duplica el producto (y sku queda None sin
+        violar el unique_together, que en Postgres admite múltiples NULL)."""
+        from decimal import Decimal
+
+        from apps.inventario.models import Producto
+
+        engine = SyncEngine()
+        datos = {
+            "id_externo": "10",
+            "nombre": "Widget sin SKU",
+            "precio_venta": "5.00",
+            "costo": "2.00",
+        }
+        pk = engine._upsert_producto(datos, instancia_fake)
+        producto = Producto.objects.get(pk=pk)
+        assert producto.sku is None
+
+        datos["precio_venta"] = "6.00"
+        pk2 = engine._upsert_producto(datos, instancia_fake)
+        assert pk2 == pk
+        producto.refresh_from_db()
+        assert producto.precio_venta_sugerido == Decimal("6.00")
+        assert (
+            Producto.objects.filter(
+                id_empresa=instancia_fake.id_empresa, nombre_producto="Widget sin SKU"
+            ).count()
+            == 1
+        )
+
     def test_upsert_producto_sin_moneda_se_omite(self, fake_registry, instancia_fake):
         """Sin ninguna Moneda configurada no se puede satisfacer la FK
         obligatoria id_moneda_precio: el registro se omite (None)."""
