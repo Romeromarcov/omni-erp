@@ -2,7 +2,7 @@
 Unit de los **helpers puros** de ``apps.contabilidad.services`` (sin BD).
 
 El corazón ORM (``generar_asiento``) está bajo ``@transaction.atomic`` y se prueba con
-BD en ``tests_api``/``tests/integration``. Aquí se cubren —rápido, sin BD— las funciones
+BD en ``tests/integration``. Aquí se cubren —rápido, sin BD— las funciones
 de extracción/formato duck-typed, que son las que un mutante podría romper en silencio:
 extracción defensiva de empresa y monto, formato del número de asiento y construcción de
 la descripción a partir de la plantilla del mapeo.

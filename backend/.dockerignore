@@ -42,7 +42,6 @@ logs/
 # media/
 
 # INFRA-NEW-2: excluir tests del contexto de build (no van a la imagen runtime)
-tests_api/
 tests_eval/
 **/tests/
 **/tests.py

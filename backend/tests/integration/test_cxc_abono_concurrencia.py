@@ -8,7 +8,7 @@ más (la suma de abonos jamás supera el monto) y sólo tienen éxito los que ca
 
 Cierra el pendiente del plan en saldos CxC/CxP que dejaba ``TEST-4`` (hasta ahora
 sólo cubría stock y correlativos fiscales). Mismo patrón que
-``tests_api/test_inventario_concurrencia.py``: requiere ``transaction=True`` para
+``tests/integration/test_inventario_concurrencia.py``: requiere ``transaction=True`` para
 que el commit de cada hilo sea visible a los demás y el lock funcione entre hilos.
 """
 

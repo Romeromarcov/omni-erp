@@ -31,7 +31,7 @@ python manage.py migrate
 python manage.py runserver
 
 # Tests completos con cobertura
-python -m pytest tests_api/ --cov=apps --cov-report=term-missing
+python -m pytest tests/ --cov=apps --cov-report=term-missing
 
 # Generar migraciones (verificar antes de push)
 python manage.py makemigrations --check
@@ -60,7 +60,7 @@ Toda tabla de negocio tiene `id_empresa` (UUID). Los ViewSets heredan de `BaseMu
 ## CI
 
 El workflow `.github/workflows/ci.yml` corre en cada PR:
-- `pytest tests_api/` con servicio PostgreSQL 17
+- `pytest tests/` con servicio PostgreSQL 17
 - Coverage mínima configurada en `pytest.ini`
 - `tsc --noEmit` + ESLint en el job frontend
 

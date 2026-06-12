@@ -43,7 +43,7 @@ npm run lint      # ESLint
 ```bash
 # Backend
 cd backend
-python -m pytest tests_api/ -v --tb=short --no-header
+python -m pytest tests/ -v --tb=short --no-header
 # Si tocaste agentes / lógica de reorden o cobranza:
 python -m pytest tests_eval/ -v --tb=short --no-header --no-cov   # umbral precision@1 ≥ 80% (CTF-003)
 

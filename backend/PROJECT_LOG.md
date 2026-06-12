@@ -1832,3 +1832,40 @@ campos fantasma de 0021), test flaky de rate-limit (#71).
 - Tests: `tests_api/test_fiscal_pagos_parafiscales.py` (53) y
   `tests_api/test_finanzas_libro_maestro_caja.py` (24) — ciclos completos con
   montos a mano, rollback R-CODE-11, aislamiento R-CODE-1, idempotencia y MCP.
+---
+
+## Sesión 2026-06-12 — CTF-014: migración de `tests_api/` a la suite por capas
+
+**Rama:** `chore/ctf-014-tests-por-capas`
+**Agente:** Claude (Anthropic)
+**Objetivo declarado:** cerrar CTF-014 — mover los 137 `tests_api/test_*.py` a
+`tests/{unit,integration,tenant,api,e2e}` sin perder un solo test ni cobertura.
+
+### Tareas completadas
+
+1. **Conftest único** (`tests/conftest.py`): absorbe `rls_test_role`, `caja_fisica_a`
+   y `test_user` de `tests_api/conftest.py`; el resto de fixtures (`empresa_a/b`,
+   `user_a/b`, `moneda_usd`) ya existían con la misma semántica sobre factories.
+2. **Factories consolidadas**: `tests_api/factories.py` → `tests/factories/comercial.py`
+   (Producto, UnidadMedida, CategoríaProducto, Almacén, Cliente); `core.MonedaFactory`
+   hereda `django_get_or_create=("codigo_iso",)`; `UsuarioFactory` unificada con
+   `UsuariosFactory`.
+3. **137 archivos movidos con `git mv`** (renames 96–100%, historia preservada):
+   58 → `api/`, 57 → `integration/`, 14 → `unit/`, 6 → `tenant/`, 2 → `e2e/`, con
+   el marcador pytest de su capa (api no usa marcador propio, como la convención).
+4. **Fix necesario:** `test_settings_failclose.py` y `test_p07_fugas_y_comandos.py`
+   calculaban rutas con `__file__` (+1 nivel de profundidad) → `parents[2]`.
+5. **Referencias actualizadas:** `pytest.ini` (testpaths), `ci.yml`, `nightly.yml`
+   (mut_runner), `long-tests.yml`, `.bandit.yaml`, `.semgrep.yml`, `.dockerignore`,
+   `setup.cfg` (raíz y backend), READMEs, `DEFINITION_OF_DONE.md`, `CLAUDE.md`,
+   skills (`omni-definition-of-done`, `omni-testing-pytest`), `PLAN_MAESTRO_UNICO.md`,
+   `planes/05`, `CTF-015`. CTF-014 → **CERRADO** (+ fila en `docs/ctf/README.md`).
+
+### Verificación (gate)
+
+- Recolección: **4501 tests antes y después** (ni uno menos).
+- Suite completa `pytest tests/ -n auto`: **4486 passed, 15 skipped**, cobertura
+  **94.11%** (ratchet 92% ✅).
+- `manage.py check` ✅ · `makemigrations --check` ✅ · `mapa_superficie --check` ✅.
+- ruff (E9,F63,F7,F82,F823,F811) limpio; los 46 F401 de tests son preexistentes
+  (idénticos en develop; CI solo aplica F401 a `apps/ config/`).

@@ -1,17 +1,18 @@
 """
-Fixtures globales de la nueva estructura ``backend/tests/`` (plan cero-dudas §B1).
+Fixtures globales de la suite por capas ``backend/tests/`` (plan cero-dudas §B1).
 
 Provee el escenario canónico de aislamiento multi-tenant — **dos empresas + dos
 usuarios** — construido sobre las factories de ``tests/factories/``, además de los
 autouse que neutralizan dependencias externas (rate-limit y Celery/Redis) para que
 la suite corra hermética.
 
-Mientras dura la migración por capas, ``tests_api/`` conserva su propio
-``conftest.py``; este archivo es la base de todo lo que viva bajo ``tests/``.
+Conftest único de la suite (CTF-014): absorbe las fixtures que vivían en
+``tests_api/conftest.py`` (``rls_test_role``, ``caja_fisica_a``, ``test_user``).
 """
 
 import pytest
 
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 
 from apps.finanzas.models import MetodoPago
@@ -19,7 +20,49 @@ from tests.factories import EmpresaFactory, MonedaFactory, UsuariosFactory
 
 
 # ---------------------------------------------------------------------------
-# Autouse: aislar de servicios externos (espejo de tests_api/conftest.py)
+# Roles de BD para tests de RLS
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def rls_test_role(django_db_setup, django_db_blocker):
+    """Rol no-superusuario para verificar el enforcement de RLS.
+
+    Si el rol de conexión ya está sujeto a RLS (dev local, rol no-super) devuelve
+    ``None`` y los tests corren tal cual. Si el rol salta RLS (p. ej. el
+    superusuario ``postgres`` de CI), crea un rol ``NOSUPERUSER NOBYPASSRLS`` con
+    privilegios sobre el esquema, para que los tests hagan ``SET ROLE`` y RLS se
+    aplique de verdad. Devuelve el nombre del rol o ``None``.
+    """
+    from django.db import connection
+
+    from apps.core import rls
+
+    with django_db_blocker.unblock():
+        if not rls.current_role_bypasses_rls():
+            return None
+        with connection.cursor() as cur:
+            cur.execute(
+                "DO $$ BEGIN "
+                "IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='omni_rls_test_role') THEN "
+                "DROP OWNED BY omni_rls_test_role; DROP ROLE omni_rls_test_role; "
+                "END IF; END $$;"
+            )
+            cur.execute("CREATE ROLE omni_rls_test_role NOSUPERUSER NOBYPASSRLS")
+            cur.execute("GRANT USAGE ON SCHEMA public TO omni_rls_test_role")
+            cur.execute(
+                "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES "
+                "IN SCHEMA public TO omni_rls_test_role"
+            )
+            cur.execute(
+                "GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES "
+                "IN SCHEMA public TO omni_rls_test_role"
+            )
+    return "omni_rls_test_role"
+
+
+# ---------------------------------------------------------------------------
+# Autouse: aislar de servicios externos
 # ---------------------------------------------------------------------------
 
 
@@ -98,6 +141,32 @@ def user_b(db, empresa_b):
 def metodo_efectivo(db):
     """MetodoPago genérico (sin empresa) necesario para construir Pagos."""
     return MetodoPago.objects.create(nombre_metodo="Efectivo Test", tipo_metodo="EFECTIVO")
+
+
+@pytest.fixture
+def caja_fisica_a(db, empresa_a):
+    """CajaFisica para Empresa A — usada en tests de sesión de caja."""
+    from apps.finanzas.models import CajaFisica
+
+    return CajaFisica.objects.create(
+        empresa=empresa_a,
+        nombre="Caja Principal Test",
+        identificador_dispositivo="test-device-001",
+    )
+
+
+@pytest.fixture
+def test_user(db, empresa_a, moneda_usd):
+    """Fixture legacy — mantiene compatibilidad con la suite histórica."""
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="testuser",
+        password="testpass123",
+        email="testuser@example.com",
+        is_active=True,
+    )
+    user.empresas.add(empresa_a)
+    return user
 
 
 # ---------------------------------------------------------------------------
