@@ -269,15 +269,25 @@ class TestUrefYTokenObtain:
 
     def test_token_obtain_rate_limit_429(self, user_con_sucursal):
         """SEC-07: >5 POST/min por IP al token endpoint → 429."""
+        from unittest import mock
+
+        from django_ratelimit import core as ratelimit_core
+
         client = APIClient()
-        codigos = [
-            client.post(
-                "/api/auth/token/",
-                {"username": user_con_sucursal.username, "password": "x"},
-                format="json",
-            ).status_code
-            for _ in range(7)
-        ]
+        # django-ratelimit cuenta en buckets alineados al minuto epoch: si las
+        # 7 peticiones cruzan un borde de minuto, ningún bucket supera 5 y el
+        # test flaquea (visto en CI: 7×401 sin 429). Congelar el reloj DEL
+        # módulo ratelimit (no el global) garantiza una sola ventana.
+        with mock.patch.object(ratelimit_core, "time") as reloj:
+            reloj.time.return_value = 1_900_000_000.0
+            codigos = [
+                client.post(
+                    "/api/auth/token/",
+                    {"username": user_con_sucursal.username, "password": "x"},
+                    format="json",
+                ).status_code
+                for _ in range(7)
+            ]
         assert 429 in codigos
 
 
