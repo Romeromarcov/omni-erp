@@ -4,7 +4,10 @@
 //
 // Agrega los permisos que el shell Android necesita además de INTERNET:
 //   - CAMERA: escáner de códigos (getUserMedia + BarcodeDetector en el WebView).
-//   - NFC: lectura de etiquetas vía Web NFC (scannerHardware.ts).
+//   - NFC: reservado para el plugin nativo de NFC. OJO: Web NFC (NDEFReader,
+//     scannerHardware.ts) solo existe en Chrome Android, NO en el WebView de
+//     Capacitor — en el .apk el escáner NFC cae al lector manual hasta integrar
+//     un plugin nativo detrás del mismo contrato.
 // Ambos marcados como features opcionales para no excluir dispositivos sin
 // cámara/NFC en Play Store.
 //

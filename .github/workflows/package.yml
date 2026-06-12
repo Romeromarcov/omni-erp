@@ -25,9 +25,6 @@ on:
   push:
     tags:
       - "app-v*"
-    # TEMPORAL (verificación pre-merge): se elimina al quedar verde el primer run.
-    branches:
-      - feature/apps-escritorio-android
 
 concurrency:
   group: package-${{ github.ref }}

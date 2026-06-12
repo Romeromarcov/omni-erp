@@ -39,15 +39,28 @@ function registerAppProtocol() {
   protocol.handle(APP_SCHEME, (request) => {
     const { pathname } = new URL(request.url);
     const relative = decodeURIComponent(pathname).replace(/^\/+/, '');
+    // El service worker de la PWA no aporta en escritorio (assets locales) y
+    // el precache de Workbox falla sobre schemes custom ("Failed to fetch").
+    // Solo el shell de Electron lo neutraliza; web y Android lo conservan.
+    if (relative === 'registerSW.js') {
+      return new Response('/* service worker deshabilitado en escritorio */', {
+        headers: { 'content-type': 'text/javascript' },
+      });
+    }
     const resolved = path.normalize(path.join(distDir, relative));
     // Anti path-traversal: nunca servir fuera de dist/.
     const safe =
       resolved.startsWith(distDir + path.sep) || resolved === distDir;
-    const target =
-      safe && relative && fs.existsSync(resolved) && fs.statSync(resolved).isFile()
-        ? resolved
-        : path.join(distDir, 'index.html');
-    return net.fetch(pathToFileURL(target).toString());
+    if (safe && relative && fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
+      return net.fetch(pathToFileURL(resolved).toString());
+    }
+    // Fallback SPA solo para navegaciones (rutas sin extensión). Un asset
+    // inexistente (p. ej. chunk perdido) debe dar 404 diagnosticable, no un
+    // index.html con MIME equivocado que además podría cachear el SW.
+    if (!path.extname(relative)) {
+      return net.fetch(pathToFileURL(path.join(distDir, 'index.html')).toString());
+    }
+    return new Response('Not found', { status: 404 });
   });
 }
 
