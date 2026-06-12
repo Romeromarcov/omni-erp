@@ -40,6 +40,14 @@ class OrdenProduccionSerializer(serializers.ModelSerializer):
         # empresa se inyecta en perform_create desde request.user — R-CODE-1
         read_only_fields = ["empresa"]
 
+    def validate_cantidad(self, value):
+        # CTF-015.2: la API permitía crear/actualizar OF con cantidad 0 (el
+        # costeo luego respondía 400 para no dividir entre cero). Paridad con
+        # el service crear_orden_produccion: la cantidad debe ser positiva.
+        if value <= 0:
+            raise serializers.ValidationError("La cantidad de la orden debe ser positiva.")
+        return value
+
 
 class ConsumoMaterialSerializer(serializers.ModelSerializer):
     class Meta:
