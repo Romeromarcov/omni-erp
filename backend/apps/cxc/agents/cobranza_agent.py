@@ -1,13 +1,15 @@
 """
 Agente IA de Cobranza.
 
-Usa Anthropic SDK con streaming para analizar cartera y gestionar clientes.
-El agente llama tools MCP del servidor CxC para operar sobre datos reales.
+Usa el gateway LLM (apps.core.llm_gateway) con streaming para analizar cartera
+y gestionar clientes. El modelo se resuelve por env (LLM_MODEL_ANALISIS).
 """
 from __future__ import annotations
 
 import logging
 from typing import AsyncIterator
+
+from apps.core import llm_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -39,17 +41,22 @@ class CobranzaAgent:
         self.empresa_id = empresa_id
 
     def _get_client(self):
+        """Cliente inyectable para el gateway (los tests lo parchean).
+
+        En producción devuelve None: el gateway crea el cliente del proveedor
+        configurado. Conserva el contrato histórico: RuntimeError si el SDK
+        no está instalado.
+        """
         try:
-            import anthropic
-            return anthropic.Anthropic()
+            import anthropic  # noqa: F401 — solo verifica que el SDK exista
         except ImportError:
             raise RuntimeError("anthropic SDK no instalado. Ejecutar: pip install anthropic")
+        return None
 
     async def analizar_cartera(self, top_n: int = 10) -> AsyncIterator[str]:
         """Análisis y recomendaciones de cobranza con streaming."""
         try:
-            import anthropic
-            client = self._get_client()
+            gateway = llm_gateway.get_gateway(client=self._get_client())
 
             # Obtener datos directamente (sin MCP externo en esta implementación)
             from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider
@@ -83,14 +90,15 @@ class CobranzaAgent:
                     f"({p['dias_vencida']} días vencido, score={p['score']})\n"
                 )
 
-            with client.messages.stream(
-                model="claude-opus-4-5",
-                max_tokens=4096,
-                system=SYSTEM_PROMPT,
+            with gateway.stream(
                 messages=[{
                     "role": "user",
                     "content": f"Analiza esta cartera y genera plan de cobranza:\n\n{contexto}",
                 }],
+                system=SYSTEM_PROMPT,
+                max_tokens=4096,
+                uso=llm_gateway.USO_ANALISIS,
+                empresa=empresa,
             ) as stream:
                 for text in stream.text_stream:
                     yield text
@@ -152,15 +160,16 @@ class CobranzaAgent:
             if instrucciones:
                 contexto += f"\nInstrucciones especiales: {instrucciones}\n"
 
-            client = self._get_client()
-            with client.messages.stream(
-                model="claude-opus-4-5",
-                max_tokens=2048,
-                system=SYSTEM_PROMPT,
+            gateway = llm_gateway.get_gateway(client=self._get_client())
+            with gateway.stream(
                 messages=[{
                     "role": "user",
                     "content": f"Gestiona este cliente específico:\n\n{contexto}",
                 }],
+                system=SYSTEM_PROMPT,
+                max_tokens=2048,
+                uso=llm_gateway.USO_ANALISIS,
+                empresa=empresa,
             ) as stream:
                 for text in stream.text_stream:
                     yield text

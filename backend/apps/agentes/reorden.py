@@ -25,12 +25,13 @@ Uso:
 from __future__ import annotations
 
 import logging
-import os
 import time
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Optional
+
+from apps.core import llm_gateway
 
 logger = logging.getLogger("omni.agentes.reorden")
 
@@ -161,7 +162,8 @@ class ReordenSugeridorAgent:
     sugerencias de compra sin modificar datos.
     """
 
-    MODELO_DEFAULT = "claude-haiku-4-5-20251001"
+    # Resuelto por el gateway (env LLM_MODEL); aquí solo informativo.
+    MODELO_DEFAULT = llm_gateway.modelo_configurado(llm_gateway.USO_AGENTE)
     SYSTEM_PROMPT = """Eres un analista de inventario para empresas venezolanas.
 Analiza el nivel de stock y consumo de un producto y genera una recomendación de reorden.
 
@@ -179,23 +181,15 @@ Responde SOLO con un JSON válido:
         umbral_critico: int = UMBRAL_CRITICO_DEFAULT,
         umbral_alerta: int = UMBRAL_ALERTA_DEFAULT,
         ventana_dias: int = 30,
+        gateway=None,
     ):
         self.empresa = empresa
         self.umbral_critico = umbral_critico
         self.umbral_alerta = umbral_alerta
         self.ventana_dias = ventana_dias
         self._llm_client = llm_client
-        self._usar_llm = False
-
-        if llm_client is not None:
-            self._usar_llm = True
-        elif os.environ.get("ANTHROPIC_API_KEY"):
-            try:
-                import anthropic  # type: ignore[import-untyped]
-                self._llm_client = anthropic.Anthropic()
-                self._usar_llm = True
-            except ImportError:
-                logger.warning("anthropic SDK no instalado; usando fallback determinista")
+        self._gateway = gateway if gateway is not None else llm_gateway.get_gateway(client=llm_client)
+        self._usar_llm = self._gateway.disponible()
 
     def analizar(
         self,
@@ -318,13 +312,14 @@ Responde SOLO con un JSON válido:
             f"Umbrales: crítico={self.umbral_critico}d, alerta={self.umbral_alerta}d"
         )
         try:
-            resp = self._llm_client.messages.create(
-                model=self.MODELO_DEFAULT,
-                max_tokens=256,
+            respuesta = self._gateway.generate(
+                prompt=user_msg,
                 system=self.SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_msg}],
+                max_tokens=256,
+                uso=llm_gateway.USO_AGENTE,
+                empresa=self.empresa,
             )
-            data = json.loads(resp.content[0].text.strip())
+            data = json.loads(respuesta.text.strip())
             estado_raw = data.get("estado", ESTADO_OK)
             estado = estado_raw if estado_raw in (ESTADO_REORDENAR, ESTADO_REVISAR, ESTADO_OK) else ESTADO_OK
             dias_r = float(stock.cantidad_disponible / consumo_diario) if consumo_diario > 0 else None
@@ -340,7 +335,7 @@ Responde SOLO con un JSON válido:
                 estado=estado,
                 cantidad_sugerida_reorden=Decimal(str(data.get("cantidad_sugerida_reorden", 0))),
                 razonamiento=data.get("razonamiento", ""),
-                modelo_llm=self.MODELO_DEFAULT,
+                modelo_llm=respuesta.model,
             )
         except Exception as exc:
             logger.error("LLM reorden fallo, fallback: %s", exc)
@@ -356,7 +351,7 @@ Responde SOLO con un JSON válido:
                 self.umbral_critico,
                 self.umbral_alerta,
             )
-            s.modelo_llm = f"fallback-error:{type(exc).__name__}"
+            s.modelo_llm = f"fallback-error:{llm_gateway.nombre_error(exc)}"
             return s
 
     def _persistir(self, stock, sugerencia: SugerenciaReorden, consumo_diario: Decimal) -> None:
