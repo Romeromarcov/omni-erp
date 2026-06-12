@@ -55,7 +55,7 @@ VITE_API_URL=… npm run build:native
 npm run electron:start                      # corre el dev server embebido
 VITE_API_URL=… npm run electron:build       # genera instalador NSIS + portable en release/
 
-# Android (Capacitor) — requiere Android Studio / SDK + JDK 17
+# Android (Capacitor) — requiere Android Studio / SDK + JDK 21
 VITE_API_URL=… npm run build:native
 npm run cap:add:android      # solo la primera vez
 npm run cap:sync

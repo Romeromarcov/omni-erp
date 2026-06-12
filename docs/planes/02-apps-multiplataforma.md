@@ -29,7 +29,7 @@ Ver [CTF-009](../ctf/CTF-009.md).
 ## Fase B2 — Android · ~1–2 semanas
 - `npm run cap:add:android`, generar **keystore**, configurar firma, target `.aab` para Play Store.
 - Permisos nativos (cámara/escáner QR/NFC ya contemplados en `MULTIPLATAFORMA.md`).
-- CI con runner con Android SDK + JDK 17; cuenta de Google Play Console.
+- CI con runner con Android SDK + JDK 21 (Capacitor 8); cuenta de Google Play Console.
 - **DoD:** `.aab` firmado generado en CI; instalable en dispositivo real.
 
 ## Fase B3 — Desktop macOS / Linux · ~3–4 días (oportunista)
