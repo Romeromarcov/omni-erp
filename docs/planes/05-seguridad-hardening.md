@@ -113,7 +113,22 @@ crm (todas con columna `id_empresa_id`): `inventario_producto`, `inventario_stoc
 (`tests_api/test_rls_lote2.py`) sobre `crm_cliente` y `crm_contacto_cliente`: aislamiento sin
 filtro de app, fail-closed, bypass, `WITH CHECK`. `RLS_ENABLED=False` sigue por defecto.
 
-**Criterios de rollout / follow-ups (antes de activar en prod y extender a las ~92 tablas):**
+**Lote 3 (CTF-012, rollout completo):** RLS **forzado** en las 107 tablas tenant
+restantes → **122/122 tablas con FK a `core.Empresa` cubiertas** (33 migraciones
+reversibles `*_rls_lote3_*`, una por app). Variante `null_visible` del builder para
+los 11 catálogos compartidos con columna de empresa nullable (`empresa NULL` = fila
+global visible por todos, igual que el filtrado de aplicación). Excluidas con razón
+en `rls.RLS_EXCLUDED_TABLES`: `empresas` (raíz del tenant) y `fiscal_retencion`
+(bi-empresa). Comando idempotente `configurar_rol_rls` (rol `omni_app` no-dueño,
+`NOSUPERUSER NOBYPASSRLS`, GRANTs mínimos + default privileges; contraseña solo por
+env), soporte `MIGRATIONS_DATABASE_URL` en `entrypoint.sh` y runbook de activación
+`docs/runbooks/RUNBOOK_RLS_ROL_APP.md`. Tests: registro 1:1 contra modelos (un
+modelo tenant nuevo sin RLS rompe CI), `pg_policies`/`FORCE` parametrizado por
+tabla y aislamiento real en tablas representativas (`tests_api/test_rls_rollout.py`,
+`tests_api/test_rls_rol_app.py`). `RLS_ENABLED=False` sigue por defecto; la
+activación (cambio de rol en staging → prod) la gobierna CTF-012.
+
+**Criterios de rollout / follow-ups (antes de activar en prod):**
 1. **Rol de BD dedicado no-dueño** (sin `BYPASSRLS`) para el runtime, con migraciones
    corriendo como dueño. Da fail-closed *natural* a nivel de app sin depender del default
    `bypass='on'` de conexión (hoy fail-open para paths que no pasen por el middleware, p. ej.
@@ -125,7 +140,9 @@ filtro de app, fail-closed, bypass, `WITH CHECK`. `RLS_ENABLED=False` sigue por 
    (un `is_superuser` que no lo sea queda acotado por tenant).
 4. **Streaming + pooling:** si se habilita `CONN_MAX_AGE`/pgbouncer, fijar el contexto RLS
    dentro del generador SSE (hoy resuelto no-reseteando en `finally` con `CONN_MAX_AGE=0`).
-5. Extender RLS al resto de tablas multi-tenant, un PR por grupo de apps, reusando los builders.
+5. ~~Extender RLS al resto de tablas multi-tenant~~ ✅ hecho en el lote 3 (122/122).
+   Pendiente menor: política propia para `empresas` y `fiscal_retencion` (excluidas
+   documentadas en `rls.RLS_EXCLUDED_TABLES`).
 
 ### P0-2 · `pip-audit` + `npm audit` en CI (R1) — `✅ YA HECHO en develop`
 Verificado en `.github/workflows/ci.yml` (job **"Security scan (gitleaks + deps audit)"**,
