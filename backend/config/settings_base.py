@@ -1,7 +1,9 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
+from csp.constants import NONE, SELF
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -48,6 +50,9 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     # P1-3 hardening: bloqueo de cuenta por usuario+IP tras N fallos de login
     "axes",
+    # P2-5 hardening: Content-Security-Policy a nivel Django (registra los
+    # system checks de la config; el header lo emite csp.middleware.CSPMiddleware)
+    "csp",
     # Apps ERP
     "apps.core",
     "apps.localizacion",  # GAP-2 / ADR-007: framework de localización (puertos)
@@ -94,6 +99,10 @@ MIDDLEWARE = [
     # WhiteNoise debe ir inmediatamente después de SecurityMiddleware para
     # servir los estáticos (CSS/JS del admin incluidos) en producción.
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    # P2-5: CSP DESPUÉS de WhiteNoise a propósito — los estáticos que WhiteNoise
+    # corta en su process_request no necesitan el header (no son documentos);
+    # toda respuesta dinámica (admin, API, docs) sí lo recibe.
+    "csp.middleware.CSPMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -129,6 +138,42 @@ AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_RESET_ON_SUCCESS = True  # login exitoso limpia el contador de fallos
 # Respuesta JSON 429 genérica al lockout (el default de axes es HTML).
 AXES_LOCKOUT_CALLABLE = "apps.core.auth_views.axes_lockout_response"
+
+# ── P2-5 · django-csp — Content-Security-Policy del backend ──────────────────
+# Defensa en profundidad sobre la CSP de nginx (que cubre el SPA): en Railway el
+# backend sirve el admin SIN nginx delante, así que este header es la única CSP
+# real para el HTML que emite Django. Se ENFUERZA (no report-only) porque la capa
+# nginx equivalente ya es enforce y la superficie HTML del backend es mínima y
+# verificada template a template:
+#   * Admin de Django 5.2: todos los <script> son externos (los bloques inline
+#     son type="application/json" — datos, CSP no los ejecuta ni bloquea) y no
+#     hay atributos style= ni handlers inline. Por eso basta 'self', sin nonce:
+#     un nonce sin consumidores no autoriza nada (los templates del admin 5.2
+#     no emiten nonce) y en style-src anularía el 'unsafe-inline' que las vistas
+#     de docs (solo DEBUG) sí necesitan — ver config/urls.py.
+#     Caso borde conocido y aceptado: un ModelAdmin con actions_on_top y
+#     actions_on_bottom ambos False renderiza un <style> inline (ancho de una
+#     columna del changelist; cosmético). Ningún admin del repo los desactiva.
+#   * drf-yasg (swagger/redoc, solo DEBUG): scripts externos + bloques JSON;
+#     sus relajaciones runtime (estilos inyectados, iconos data:, worker blob:)
+#     van POR VISTA con csp_update en config/urls.py, nunca globales.
+#   * La API JSON no ejecuta nada, pero el header es inocuo y cubre cualquier
+#     render HTML accidental (p. ej. páginas de error).
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": [SELF],
+        "script-src": [SELF],
+        "style-src": [SELF],
+        "img-src": [SELF],
+        "font-src": [SELF],
+        "connect-src": [SELF],
+        "object-src": [NONE],
+        "base-uri": [SELF],
+        "form-action": [SELF],
+        # Alineado con X_FRAME_OPTIONS=DENY (prod) y la CSP de nginx.
+        "frame-ancestors": [NONE],
+    },
+}
 
 # SaaS — control de acceso por pago (Plan C — Fase C2).
 # Off por defecto (fail-open). Se activa primero en staging para validar el
@@ -582,6 +627,46 @@ CELERY_BEAT_SCHEDULE = {
         "task": "integration_hub.sync_cartera_odoo_todos",
         "schedule": _crontab(minute="*/30"),
     },
+}
+
+# ─────────────────────────────────────────────────────────────────
+# CACHES — Redis compartido entre workers (P2-4 plan 05 hardening)
+# ─────────────────────────────────────────────────────────────────
+# Con REDIS_URL definida (Railway: el mismo Redis del broker), el cache default
+# usa el backend Redis nativo de Django en una DB DISTINTA de la de Celery
+# (REDIS_CACHE_DB, default 1 vs. DB 0 del broker) para que rate-limiting
+# (SEC-07), throttling DRF (P1-1) y el circuit breaker del gateway LLM (P2-1)
+# compartan estado entre workers/procesos. Sin REDIS_URL (dev local) cae a
+# LocMem. Bajo pytest SIEMPRE LocMem: el CI exporta REDIS_URL sin levantar un
+# Redis real (Celery va ALWAYS_EAGER) y la suite necesita un cache determinista.
+# Detección de pytest: PYTEST_VERSION la exporta pytest>=8.2 al arrancar, antes
+# de que pytest-django cargue settings; "pytest" in sys.modules cubre
+# invocaciones in-process (pytest.main()). Racional completo: config/caches.py.
+from config.caches import build_default_cache  # noqa: E402
+
+_IS_PYTEST = "PYTEST_VERSION" in os.environ or "pytest" in sys.modules
+
+# KEY_PREFIX por entorno: cada entorno Railway tiene su Redis propio, pero el
+# prefijo evita colisiones si alguna vez se comparte instancia y hace los keys
+# auditables (redis-cli KEYS 'omni:production:*'). Fuera de Railway (p. ej.
+# docker-compose) etiqueta con DJANGO_ENV.
+CACHE_KEY_PREFIX = os.environ.get(
+    "CACHE_KEY_PREFIX",
+    "omni:"
+    + (
+        os.environ.get("RAILWAY_ENVIRONMENT")
+        or os.environ.get("DJANGO_ENV")
+        or "dev"
+    ),
+)
+
+CACHES = {
+    "default": build_default_cache(
+        os.environ.get("REDIS_URL", ""),
+        testing=_IS_PYTEST,
+        cache_db=os.environ.get("REDIS_CACHE_DB", "1"),
+        key_prefix=CACHE_KEY_PREFIX,
+    )
 }
 
 # ── Event Store (Redpanda/Kafka) ───────────────────────────────────────────────

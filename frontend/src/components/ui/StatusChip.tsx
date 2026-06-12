@@ -2,7 +2,9 @@ import { Chip } from '@mui/material';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 
-const ESTADO_COLOR: Record<string, ChipColor> = {
+// La clave viene de datos del backend; Map evita que valores como "__proto__"
+// alcancen la cadena de prototipos de un objeto plano (CTF-006).
+const ESTADO_COLOR_DEF: Record<string, ChipColor> = {
   // genéricos
   activo: 'success', inactivo: 'default', si: 'success', no: 'default',
   // ventas / documentos
@@ -12,6 +14,7 @@ const ESTADO_COLOR: Record<string, ChipColor> = {
   vigente: 'success', cumplido: 'info', roto: 'error', cancelado: 'warning',
   pagado: 'success', parcial: 'warning', vencido: 'error', vencida: 'error',
 };
+const ESTADO_COLOR = new Map(Object.entries(ESTADO_COLOR_DEF));
 
 interface StatusChipProps {
   value: string | boolean | null | undefined;
@@ -24,6 +27,9 @@ export default function StatusChip({ value, colorMap, label }: StatusChipProps) 
   const text =
     typeof value === 'boolean' ? (value ? 'Sí' : 'No') : (value ?? '—').toString();
   const key = text.toLowerCase().trim();
-  const color = colorMap?.[key] ?? ESTADO_COLOR[key] ?? 'default';
+  const colorPropio =
+    // eslint-disable-next-line security/detect-object-injection -- FP: lectura limitada a propiedades propias por el Object.hasOwn de esta misma expresión
+    colorMap && Object.hasOwn(colorMap, key) ? colorMap[key] : undefined;
+  const color = colorPropio ?? ESTADO_COLOR.get(key) ?? 'default';
   return <Chip size="small" label={label ?? text} color={color} variant={color === 'default' ? 'outlined' : 'filled'} />;
 }

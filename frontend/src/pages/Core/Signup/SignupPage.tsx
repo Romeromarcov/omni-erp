@@ -39,10 +39,12 @@ function parseError(err: unknown): string {
   try {
     const obj = JSON.parse((err as Error).message);
     if (typeof obj?.detail === 'string') return obj.detail;
-    // Errores de serializer: { campo: ["msg", ...] }
-    const firstKey = Object.keys(obj)[0];
-    if (firstKey) {
-      const val = obj[firstKey];
+    // Errores de serializer: { campo: ["msg", ...] }. Object.entries evita el
+    // acceso computado obj[firstKey] (CTF-006): clave y valor salen juntos de
+    // las propiedades propias del objeto.
+    const firstEntry = Object.entries(obj)[0];
+    if (firstEntry) {
+      const [firstKey, val] = firstEntry;
       const msg = Array.isArray(val) ? val[0] : val;
       return `${firstKey}: ${msg}`;
     }

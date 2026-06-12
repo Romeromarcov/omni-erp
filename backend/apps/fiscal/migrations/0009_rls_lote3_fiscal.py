@@ -16,6 +16,7 @@ _TABLES = [
     ("fiscal_configuracionretencion", "empresa_id", False),
     ("fiscal_contribucionempresaactiva", "empresa_id", False),
     ("fiscal_contribucionparafiscal", "empresa_id", True),
+    ("fiscal_pago_contribucion_parafiscal", "id_empresa_id", False),
     ("fiscal_empresacontribucionparafiscal", "empresa_id", False),
     ("fiscal_impuesto", "empresa_id", True),
     ("fiscal_impuestoempresaactiva", "empresa_id", False),
@@ -39,7 +40,7 @@ def _disable():
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("fiscal", "0006_alter_configuracionfiscalempresa_id_and_more"),
+        ("fiscal", "0008_pagocontribucionparafiscal_ck_pago_parafiscal_mes_entre_1_y_12_and_more"),
     ]
 
     operations = [

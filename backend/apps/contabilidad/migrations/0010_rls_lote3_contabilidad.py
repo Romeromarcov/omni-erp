@@ -30,7 +30,7 @@ def _disable():
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("contabilidad", "0007_alter_mapeocontable_tipo_asiento"),
+        ("contabilidad", "0009_alter_mapeocontable_tipo_asiento"),
     ]
 
     operations = [

@@ -1075,6 +1075,81 @@ class SesionCajaFisica(models.Model):
         except (Caja.DoesNotExist, ValueError, TypeError, ValidationError):
             raise ValueError(f"La caja {caja_id} no pertenece a esta sesión.")
 
+    def crear_caja_virtual(self, nombre, monedas_ids=None, metodos_pago_ids=None, usuario=None):
+        """
+        Crea una ``Caja`` virtual real asociada a la caja física de la sesión.
+
+        FIX (bugs lote 4): dos call sites invocaban este método sin que
+        existiera (``CajaUsuarioViewSet.crear_caja_virtual`` y
+        ``CajaVirtualAuto.crear_caja_virtual_en_sesion``) → AttributeError
+        latente, mismo patrón del lote 3. La lógica real de una caja virtual
+        es el modelo ``Caja``: mono-moneda (FK ``moneda``), colgada de la
+        ``CajaFisica`` vía ``caja_fisica`` (related_name ``cajas_virtuales``)
+        y con M2M ``metodos_pago``; si se indica ``usuario`` queda asignada
+        vía ``CajaVirtualUsuario`` (como el resto de cajas del usuario).
+
+        Args:
+            nombre:           nombre de la caja virtual (requerido).
+            monedas_ids:      lista con EXACTAMENTE un id de ``Moneda`` activa
+                              visible para la empresa (propia, genérica o
+                              pública) — las cajas virtuales son mono-moneda.
+            metodos_pago_ids: ids de ``MetodoPago`` activos visibles para la
+                              empresa (opcional).
+            usuario:          usuario al que se asigna la caja creada (opcional).
+
+        Returns:
+            La ``Caja`` virtual creada (saldo 0, R-CODE-4).
+
+        Raises:
+            ValueError con mensaje de negocio (sesión no abierta, nombre o
+            moneda faltante, moneda/método no disponible). R-CODE-1: el
+            mensaje de moneda/método es el MISMO para inexistente, malformado
+            o de otro tenant — no se filtra existencia ajena.
+        """
+        from decimal import Decimal
+
+        from django.db import transaction
+        from django.db.models import Q
+
+        if self.estado != "ABIERTA":
+            raise ValueError("No se pueden crear cajas virtuales en una sesión cerrada")
+        nombre = (nombre or "").strip()
+        if not nombre:
+            raise ValueError("Debe especificar un nombre para la caja virtual")
+        monedas_ids = list(monedas_ids or [])
+        if len(monedas_ids) != 1:
+            raise ValueError(
+                "Debe indicar exactamente una moneda: las cajas virtuales son mono-moneda."
+            )
+        visibles_empresa = Q(empresa=self.empresa) | Q(es_generica=True) | Q(es_publica=True)
+        try:
+            moneda = Moneda.objects.filter(visibles_empresa, activo=True).get(pk=monedas_ids[0])
+        except (Moneda.DoesNotExist, ValueError, TypeError, ValidationError):
+            raise ValueError("Moneda no encontrada o no disponible para la empresa.")
+        metodos = []
+        metodos_visibles = Q(empresa=self.empresa) | Q(es_generico=True) | Q(es_publico=True)
+        for metodo_id in metodos_pago_ids or []:
+            try:
+                metodos.append(
+                    MetodoPago.objects.filter(metodos_visibles, activo=True).get(pk=metodo_id)
+                )
+            except (MetodoPago.DoesNotExist, ValueError, TypeError, ValidationError):
+                raise ValueError("Método de pago no encontrado o no disponible para la empresa.")
+        with transaction.atomic():
+            caja = Caja.objects.create(
+                empresa=self.empresa,
+                sucursal=self.sucursal,
+                caja_fisica=self.caja_fisica,
+                nombre=nombre,
+                moneda=moneda,
+                saldo_actual=Decimal("0.00"),
+            )
+            if metodos:
+                caja.metodos_pago.set(metodos)
+            if usuario is not None:
+                CajaVirtualUsuario.objects.get_or_create(usuario=usuario, caja_virtual=caja)
+        return caja
+
     @classmethod
     def obtener_sesion_activa(cls, caja_fisica, usuario=None):
         """Obtiene la sesión activa para una caja física (opcionalmente filtrada por usuario)"""
@@ -1085,8 +1160,18 @@ class SesionCajaFisica(models.Model):
 
     @classmethod
     def abrir_sesion(cls, caja_fisica, usuario, ip_address=None, user_agent=None):
-        """Abre una nueva sesión para una caja física"""
-        from django.db import transaction
+        """
+        Abre una nueva sesión para una caja física.
+
+        Carrera de doble apertura (bugs lote 4): dos POST simultáneos sin
+        sesión previa pasan ambos el cierre de "sesiones anteriores" y los dos
+        INSERTan; la constraint parcial ``unique_sesion_abierta_por_caja``
+        protege la integridad pero el perdedor moría con IntegrityError → 500.
+        El INSERT corre en un savepoint y SOLO esa violación se traduce a
+        ValueError (las vistas responden 400); cualquier otra IntegrityError
+        es un bug distinto y se re-lanza.
+        """
+        from django.db import IntegrityError, transaction
 
         with transaction.atomic():
             # Cerrar cualquier sesión anterior abierta para esta caja
@@ -1104,16 +1189,26 @@ class SesionCajaFisica(models.Model):
                     notas="Sesión cerrada automáticamente por nueva apertura (forzado)",
                 )
 
-            # Crear nueva sesión
-            return cls.objects.create(
-                caja_fisica=caja_fisica,
-                usuario=usuario,
-                empresa=caja_fisica.empresa,
-                sucursal=caja_fisica.sucursal,
-                ip_address=ip_address,
-                user_agent=user_agent,
-                saldo_inicial=caja_fisica.saldo_actual if hasattr(caja_fisica, "saldo_actual") else 0.00,
-            )
+            # Crear nueva sesión (savepoint: el rollback de la carrera no
+            # invalida la transacción del request).
+            try:
+                with transaction.atomic():
+                    return cls.objects.create(
+                        caja_fisica=caja_fisica,
+                        usuario=usuario,
+                        empresa=caja_fisica.empresa,
+                        sucursal=caja_fisica.sucursal,
+                        ip_address=ip_address,
+                        user_agent=user_agent,
+                        saldo_inicial=caja_fisica.saldo_actual if hasattr(caja_fisica, "saldo_actual") else 0.00,
+                    )
+            except IntegrityError as exc:
+                if "unique_sesion_abierta_por_caja" not in str(exc):
+                    raise
+                raise ValueError(
+                    "Ya hay una sesión abierta para esta caja física "
+                    "(apertura simultánea). Intente de nuevo."
+                ) from exc
 
 
 # --- SINCRONIZACIÓN Y VALIDACIÓN MULTI-TENANT ---
@@ -1893,3 +1988,112 @@ class Pago(models.Model):
         elif self.tipo_documento == "IMPUESTO" and self.id_contribucion:
             return self.id_contribucion
         return None
+
+
+# ── Pagos de terceros (Zelle) — Capa B, tropicalización VE (§6.6 Plan Maestro) ─
+
+from apps.core.base_models import IntegrationFieldsMixin, TenantModel  # noqa: E402
+
+
+class PagoTercero(TenantModel, IntegrationFieldsMixin):
+    """
+    Cobro en divisas (típicamente USD vía Zelle) que entra por la cuenta de un
+    PROVEEDOR (tercero), dinámica forzada por las restricciones para recibir
+    USD en Venezuela (Plan Maestro §6.6, portado de GestionCxC
+    ``routers/zelle_terceros.py``).
+
+    Ciclo de vida (las transiciones las gobiernan los services de
+    ``apps.finanzas.services_pagos_terceros`` — transición inválida → 400)::
+
+        pendiente ──abonar──────────────→ abonado            (reduce CxP del proveedor)
+        pendiente ──solicitar_reintegro─→ reintegro_pendiente (crea CxC contra el proveedor)
+        reintegro_pendiente ──marcar_reintegrado─→ reintegrado
+        pendiente ──anular──────────────→ anulado
+
+    El proveedor es opcional al crear (un cobro puede originarse en caja sin
+    saber aún por qué cuenta entró) y se fija con ``asociar_proveedor`` antes
+    de abonar o solicitar reintegro.
+
+    Puente proveedor→CxC (decisión de diseño): ``CuentaPorCobrar.cliente`` es
+    opcional (ADR-009); el reintegro identifica al deudor con
+    ``cliente_externo_id = "proveedor:<uuid>"`` + nombre denormalizado, sin
+    crear un ``crm.Cliente`` espejo del proveedor.
+    """
+
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente"),
+        ("abonado", "Abonado a CxP"),
+        ("reintegro_pendiente", "Reintegro pendiente"),
+        ("reintegrado", "Reintegrado"),
+        ("anulado", "Anulado"),
+    ]
+
+    id_pago_tercero = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="pagos_terceros"
+    )
+    id_proveedor = models.ForeignKey(
+        "proveedores.Proveedor",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pagos_terceros",
+        help_text="Proveedor por cuya cuenta entró el cobro. Opcional al crear "
+                  "(cobro originado en caja); requerido para abonar o reintegrar.",
+    )
+    id_moneda = models.ForeignKey(
+        "finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_terceros"
+    )
+    monto = models.DecimalField(
+        max_digits=18, decimal_places=2, help_text="Monto del cobro recibido en la cuenta del tercero."
+    )
+    # La comisión NO genera asiento de gasto propio: queda anotada en el
+    # documento_json y el asiento del reintegro va por el monto neto.
+    comision = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Comisión que cobra el proveedor por el reintegro (opcional). "
+                  "La CxC del reintegro se emite por monto − comisión.",
+    )
+    referencia_zelle = models.CharField(
+        max_length=100, help_text="Referencia/confirmación de la transferencia Zelle."
+    )
+    fecha = models.DateField(help_text="Fecha del cobro en la cuenta del tercero.")
+    concepto = models.TextField(blank=True, default="")
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="pendiente", db_index=True
+    )
+    # Trazabilidad de los documentos generados por las acciones (SET_NULL: si el
+    # documento destino se elimina, el pago conserva su historia en documento_json).
+    id_abono_cxp = models.ForeignKey(
+        "cuentas_por_pagar.AbonoCxP",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pagos_terceros",
+        help_text="Abono CxP generado por la acción 'abonar'.",
+    )
+    id_cxc_reintegro = models.ForeignKey(
+        "cuentas_por_cobrar.CuentaPorCobrar",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reintegros_pago_tercero",
+        help_text="CxC contra el proveedor generada por 'solicitar_reintegro'.",
+    )
+
+    class Meta:
+        db_table = "finanzas_pago_tercero"
+        verbose_name = "Pago de Tercero"
+        verbose_name_plural = "Pagos de Terceros"
+        ordering = ["-fecha", "-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "estado"]),
+            models.Index(fields=["id_empresa", "id_proveedor"]),
+        ]
+
+    def __str__(self):
+        proveedor = self.id_proveedor.razon_social if self.id_proveedor_id and self.id_proveedor else "sin proveedor"
+        return f"PagoTercero {self.referencia_zelle} — {self.monto} ({proveedor}) [{self.estado}]"

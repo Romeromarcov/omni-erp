@@ -21,12 +21,13 @@ Uso:
 from __future__ import annotations
 
 import logging
-import os
 import time
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import Optional
+
+from apps.core import llm_gateway
 
 logger = logging.getLogger("omni.agentes.cobranza")
 
@@ -153,7 +154,8 @@ class CobranzaEstrategaAgent:
     de contacto sin modificar ningún dato de negocio.
     """
 
-    MODELO_DEFAULT = "claude-haiku-4-5-20251001"
+    # Resuelto por el gateway (env LLM_MODEL); aquí solo informativo.
+    MODELO_DEFAULT = llm_gateway.modelo_configurado(llm_gateway.USO_AGENTE)
     SYSTEM_PROMPT = """Eres un especialista en cobranza empresarial venezolana.
 Analiza la información de una cuenta por cobrar vencida y genera una estrategia de contacto.
 
@@ -165,20 +167,11 @@ Responde SOLO con un JSON válido:
   "razonamiento": "<explicación breve de la estrategia>"
 }}"""
 
-    def __init__(self, empresa, llm_client=None):
+    def __init__(self, empresa, llm_client=None, gateway=None):
         self.empresa = empresa
         self._llm_client = llm_client
-        self._usar_llm = False
-
-        if llm_client is not None:
-            self._usar_llm = True
-        elif os.environ.get("ANTHROPIC_API_KEY"):
-            try:
-                import anthropic  # type: ignore[import-untyped]
-                self._llm_client = anthropic.Anthropic()
-                self._usar_llm = True
-            except ImportError:
-                logger.warning("anthropic SDK no instalado; usando fallback determinista")
+        self._gateway = gateway if gateway is not None else llm_gateway.get_gateway(client=llm_client)
+        self._usar_llm = self._gateway.disponible()
 
     def analizar(
         self,
@@ -274,13 +267,14 @@ Responde SOLO con un JSON válido:
             f"Intentos de contacto previos: {intentos}"
         )
         try:
-            resp = self._llm_client.messages.create(
-                model=self.MODELO_DEFAULT,
-                max_tokens=400,
+            respuesta = self._gateway.generate(
+                prompt=user_msg,
                 system=self.SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_msg}],
+                max_tokens=400,
+                uso=llm_gateway.USO_AGENTE,
+                empresa=self.empresa,
             )
-            data = json.loads(resp.content[0].text.strip())
+            data = json.loads(respuesta.text.strip())
             return SugerenciaCobranza(
                 cxc_id=cxc_id,
                 cliente_nombre=cliente_nombre,
@@ -290,12 +284,12 @@ Responde SOLO con un JSON válido:
                 canal=data.get("canal", CANAL_WHATSAPP),
                 mensaje_whatsapp=data.get("mensaje_whatsapp", ""),
                 razonamiento=data.get("razonamiento", ""),
-                modelo_llm=self.MODELO_DEFAULT,
+                modelo_llm=respuesta.model,
             )
         except Exception as exc:
             logger.error("LLM cobranza fallo, fallback: %s", exc)
             s = _clasificar_fallback(cxc_id, cliente_nombre, monto, dias_vencida, intentos)
-            s.modelo_llm = f"fallback-error:{type(exc).__name__}"
+            s.modelo_llm = f"fallback-error:{llm_gateway.nombre_error(exc)}"
             return s
 
     def _persistir(self, cxc, sugerencia: SugerenciaCobranza) -> None:

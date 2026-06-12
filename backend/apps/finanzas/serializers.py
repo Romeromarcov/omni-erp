@@ -1306,3 +1306,9 @@ class SesionCajaFisicaSerializer(serializers.ModelSerializer):
     class Meta:
         model = SesionCajaFisica
         fields = ["id_sesion", "usuario", "caja_fisica_principal", "estado", "fecha_apertura", "notas"]
+        # FIX (bugs lote 4): el estado de la sesión SOLO transiciona por sus
+        # endpoints (abrir-sesion / cerrar) — con `estado` writable, un PATCH
+        # podía "reabrir" una sesión CERRADA saltándose el cierre de cajas y
+        # la constraint de una sola sesión abierta. DRF ignora los campos
+        # read-only en la entrada: PATCH con estado no lo cambia.
+        read_only_fields = ["estado", "fecha_apertura"]

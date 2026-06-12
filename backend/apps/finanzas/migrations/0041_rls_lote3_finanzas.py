@@ -20,6 +20,7 @@ _TABLES = [
     ("finanzas_moneda", "empresa_id", True),
     ("finanzas_monedaempresaactiva", "empresa_id", False),
     ("finanzas_movimiento_caja_banco", "id_empresa_id", False),
+    ("finanzas_pago_tercero", "id_empresa_id", False),
     ("finanzas_pago", "id_empresa_id", False),
     ("finanzas_plantilla_maestro_cajas", "empresa_id", False),
     ("finanzas_sesion_caja_fisica", "empresa_id", False),
@@ -40,7 +41,7 @@ def _disable():
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("finanzas", "0039_alter_cajavirtualauto_caja_fisica"),
+        ("finanzas", "0040_pagotercero"),
     ]
 
     operations = [

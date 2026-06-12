@@ -1801,3 +1801,34 @@ campos fantasma de 0021), test flaky de rate-limit (#71).
 - Tests: `tests_api/test_manufactura_etapas_costeo.py` (ciclo completo con
   costeo verificado a mano, MRP, aislamiento multi-tenant, MCP); atomicidad
   existente sigue verde. Migración 0007 reversible (probada ida y vuelta).
+
+### Capa B §6.7 + §6.8 — Pagos parafiscales y libro maestro de caja (2026-06-12)
+
+- **§6.7 Pagos parafiscales** (`apps/fiscal`): `PagoContribucionParafiscal`
+  (TenantModel + IntegrationFieldsMixin, período año/mes, monto Decimal,
+  estados `pendiente → pagado | anulado`). No-doble-pago por
+  (empresa, contribución, período) con `UniqueConstraint` condicional
+  (anular libera el período) + mensaje amable en serializer y 400 ante la
+  carrera (IntegrityError traducido). La acción `pagar` reusa el flujo
+  canónico de dinero: crea `finanzas.Pago` (EGRESO/IMPUESTO) +
+  `registrar_efectos_pago` (TransacciónFinanciera + MovimientoCajaBanco de
+  egreso + saldo con `select_for_update`) y genera el asiento
+  `PAGO_PARAFISCAL` en la MISMA transacción (R-CODE-11; sin mapeo con
+  contabilidad activa → 422 y rollback total). API
+  `/api/fiscal/pagos-parafiscales/` (BaseModelViewSet, Idempotency-Key en
+  create y pagar, DELETE → 405) + tool MCP `fiscal_parafiscales_pendientes`
+  (scope `fiscal:read`; `apps.fiscal.mcp` añadido al autodiscovery).
+- **§6.8 Libro maestro de caja** (`apps/finanzas`): endpoint de solo lectura
+  `/api/finanzas/libro-maestro-caja/?empresa&desde&hasta|periodo` consolidando
+  TODAS las cajas (virtuales y físicas): saldo inicial / entradas / salidas /
+  saldo final por caja + totales agrupados por moneda SIN mezclar monedas
+  (físicas multimoneda: una fila por moneda). Saldos derivados del propio log
+  de `MovimientoCajaBanco` (equivalente al corte persistente porque los
+  cierres materializan su descuadre como AJUSTE). Filtros moneda/tipo/
+  incluir_inactivas; tipos de entrada/salida espejo de `realizar_cierre_caja`.
+- Motor contable: nuevo tipo `PAGO_PARAFISCAL` (espejo de PAGO_TERCERO, #97);
+  migraciones `contabilidad/0009` y `fiscal/0007` reversibles (probadas ida y
+  vuelta).
+- Tests: `tests_api/test_fiscal_pagos_parafiscales.py` (53) y
+  `tests_api/test_finanzas_libro_maestro_caja.py` (24) — ciclos completos con
+  montos a mano, rollback R-CODE-11, aislamiento R-CODE-1, idempotencia y MCP.

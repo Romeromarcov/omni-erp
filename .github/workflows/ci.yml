@@ -120,6 +120,14 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: npm audit (high+) — BLOQUEANTE (gate activado al cerrar CTF-007)
+        working-directory: frontend
+        # Sin --omit=dev a propósito: el único HIGH que existió (picomatch,
+        # CTF-007) venía de devDependencies, y omitirlas habría ocultado justo
+        # el hallazgo que el CTF rastreaba. El toolchain de build/lint corre en
+        # CI y en máquinas de desarrollo: también es superficie de supply-chain.
+        run: npm audit --audit-level=high
+
       - name: TypeScript check (build mode — coincide con el build de producción)
         working-directory: frontend
         # tsc -b usa tsconfig.app.json (igual que `npm run build`), evitando que
@@ -166,6 +174,17 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      # P2-4: el backend vivo usa Redis real para CACHES (DB 1) — sin este
+      # service, rate-limit/throttle (cache compartido) darían 500 al conectar.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     env:
       DB_HOST: localhost
@@ -175,6 +194,8 @@ jobs:
       DB_PASSWORD: omni_erp_ci
       DJANGO_ENV: dev
       SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
+      # Broker Celery (DB 0) y CACHES de Django (REDIS_CACHE_DB, default 1) —
+      # mismo layout que Railway. El service redis de arriba la respalda.
       REDIS_URL: "redis://localhost:6379/0"
       E2E_BASE_URL: "http://localhost:4173"
       # Credencial CI-only del admin del seed E2E (no es un secreto de prod;
@@ -334,12 +355,13 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Dependency audit (Node — npm audit) — BLOQUEANTE (critical)
+      - name: Dependency audit (Node — npm audit) — BLOQUEANTE (high+)
         working-directory: frontend
-        # BLOQUEANTE en CRITICAL (Fase 5): npm audit fix cerró 11/12; el único HIGH
-        # restante (picomatch, build/lint-time vía typescript-eslint) está diferido en
-        # CTF-007. Se sube a --audit-level=high cuando ese CTF se cierre.
-        run: npm audit --audit-level=critical
+        # BLOQUEANTE en HIGH (CTF-007 cerrado 2026-06-12): typescript-eslint
+        # 8.61 eliminó la cadena fast-glob→micromatch→picomatch@2 y el árbol
+        # quedó en 0 vulnerabilidades. Incluye devDependencies a propósito
+        # (ver justificación en el job frontend).
+        run: npm audit --audit-level=high
 
       - name: Trivy — CVEs de dependencias e imágenes (fs scan)
         # Instalación vía script oficial (evita depender de tags de la action).
@@ -434,6 +456,17 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      # P2-4: el runserver del fuzzing usa Redis real para CACHES (DB 1);
+      # el throttling DRF toca el cache en cada request del fuzzer.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
