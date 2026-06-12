@@ -4,6 +4,7 @@ import PointOfSaleOutlined from '@mui/icons-material/PointOfSaleOutlined';
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
+import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
@@ -89,6 +90,15 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Manufactura',
       icon: <PrecisionManufacturingOutlined />,
       items: [{ label: 'Órdenes de Producción', path: '/manufactura/ordenes' }],
+    },
+    {
+      id: 'compras',
+      label: 'Compras',
+      icon: <ShoppingCartOutlined />,
+      items: [
+        { label: 'Órdenes de Compra', path: '/compras/ordenes' },
+        { label: 'Cuentas por Pagar', path: '/compras/cuentas-por-pagar' },
+      ],
     },
     {
       id: 'finanzas',
