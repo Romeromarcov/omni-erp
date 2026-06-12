@@ -3,6 +3,7 @@ import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
 import PointOfSaleOutlined from '@mui/icons-material/PointOfSaleOutlined';
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
+import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
@@ -82,6 +83,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Stock Actual', path: '/inventario/stock' },
         { label: 'Ajuste Manual', path: '/inventario/ajustes' },
       ],
+    },
+    {
+      id: 'manufactura',
+      label: 'Manufactura',
+      icon: <PrecisionManufacturingOutlined />,
+      items: [{ label: 'Órdenes de Producción', path: '/manufactura/ordenes' }],
     },
     {
       id: 'finanzas',

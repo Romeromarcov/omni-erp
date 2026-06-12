@@ -27,7 +27,8 @@
     "finanzas": "Finance",
     "ventas": "Sales",
     "configuracion": "Configuration",
-    "logout": "Log out"
+    "logout": "Log out",
+    "manufactura": "Manufacturing"
   },
   "auth": {
     "login": "Sign in",
@@ -81,6 +82,80 @@
       "dePedido": "✓ From Order",
       "convertirAFactura": "Convert to Invoice",
       "errorConvertir": "Error converting sales note to invoice"
+    }
+  },
+  "manufactura": {
+    "title": "Manufacturing",
+    "ordenes": {
+      "title": "Production Orders",
+      "subtitle": "Manufacturing orders with stages, actual costing and MRP",
+      "empty": "No production orders.",
+      "producto": "Product",
+      "cantidad": "Quantity",
+      "fechaInicio": "Start date",
+      "estado": "Status",
+      "ver": "View detail"
+    },
+    "detalle": {
+      "title": "Production Order",
+      "etapas": "Manufacturing stages",
+      "avanzarEtapa": "Advance stage",
+      "completarOrden": "Complete order",
+      "verCosteo": "View costing",
+      "verMrp": "Run MRP",
+      "horas": "Hours worked",
+      "tarifaHora": "Hourly rate",
+      "cantidadDestajo": "Piecework quantity",
+      "observaciones": "Notes",
+      "manoObra": "Labor",
+      "pagoDestajo": "Piecework pay",
+      "completadaEl": "Completed on",
+      "etapaCompletada": "Stage completed successfully.",
+      "ordenCompletada": "Order completed: finished goods recorded.",
+      "almacen": "Warehouse",
+      "cantidadProducida": "Quantity produced (empty = order quantity)",
+      "sinEtapas": "This order has no materialized stages.",
+      "errorAvanzar": "Could not advance the stage.",
+      "errorCompletar": "Could not complete the order.",
+      "pendiente": "Pending",
+      "completada": "Completed"
+    },
+    "costeo": {
+      "title": "Actual order costing",
+      "subtitle": "Consumed materials (snapshot) + labor + overhead",
+      "materiales": "Materials",
+      "manoObra": "Labor",
+      "overhead": "Indirect costs (overhead)",
+      "total": "Total cost",
+      "unitario": "Unit cost",
+      "participacion": "% of total",
+      "detalleEtapas": "Labor by stage",
+      "etapa": "Stage",
+      "horas": "Hours",
+      "tarifa": "Rate/h",
+      "destajo": "Piecework",
+      "costoMO": "Labor cost",
+      "error": "Could not fetch the costing."
+    },
+    "mrp": {
+      "title": "Basic MRP",
+      "subtitle": "BOM explosion vs available stock → shortages to buy",
+      "calcular": "Run MRP",
+      "recalcular": "Recalculate",
+      "almacen": "Warehouse (optional)",
+      "todos": "All warehouses",
+      "producto": "Material",
+      "requerido": "Required",
+      "disponible": "Available",
+      "aComprar": "To buy",
+      "sinFaltantes": "No shortages: stock covers the full order.",
+      "error": "Could not run MRP."
+    },
+    "comun": {
+      "confirmar": "Confirm",
+      "monto": "Amount",
+      "partida": "Item",
+      "sinDatos": "No data available."
     }
   }
 }

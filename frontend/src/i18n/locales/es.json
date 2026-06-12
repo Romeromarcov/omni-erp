@@ -27,7 +27,8 @@
     "finanzas": "Finanzas",
     "ventas": "Ventas",
     "configuracion": "Configuración",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "manufactura": "Manufactura"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -81,6 +82,80 @@
       "dePedido": "✓ De Pedido",
       "convertirAFactura": "Convertir a Factura",
       "errorConvertir": "Error al convertir la nota de venta a factura"
+    }
+  },
+  "manufactura": {
+    "title": "Manufactura",
+    "ordenes": {
+      "title": "Órdenes de Producción",
+      "subtitle": "Órdenes de fabricación con etapas, costeo real y MRP",
+      "empty": "No hay órdenes de producción.",
+      "producto": "Producto",
+      "cantidad": "Cantidad",
+      "fechaInicio": "Fecha inicio",
+      "estado": "Estado",
+      "ver": "Ver detalle"
+    },
+    "detalle": {
+      "title": "Orden de Producción",
+      "etapas": "Etapas de fabricación",
+      "avanzarEtapa": "Avanzar etapa",
+      "completarOrden": "Completar OF",
+      "verCosteo": "Ver costeo",
+      "verMrp": "Calcular MRP",
+      "horas": "Horas trabajadas",
+      "tarifaHora": "Tarifa por hora",
+      "cantidadDestajo": "Cantidad a destajo",
+      "observaciones": "Observaciones",
+      "manoObra": "Mano de obra",
+      "pagoDestajo": "Pago destajo",
+      "completadaEl": "Completada el",
+      "etapaCompletada": "Etapa completada correctamente.",
+      "ordenCompletada": "Orden completada: producción terminada registrada.",
+      "almacen": "Almacén",
+      "cantidadProducida": "Cantidad producida (vacío = cantidad de la OF)",
+      "sinEtapas": "Esta orden no tiene etapas materializadas.",
+      "errorAvanzar": "No se pudo avanzar la etapa.",
+      "errorCompletar": "No se pudo completar la orden.",
+      "pendiente": "Pendiente",
+      "completada": "Completada"
+    },
+    "costeo": {
+      "title": "Costeo real de la OF",
+      "subtitle": "Materiales consumidos (snapshot) + mano de obra + overhead",
+      "materiales": "Materiales",
+      "manoObra": "Mano de obra",
+      "overhead": "Costos indirectos (overhead)",
+      "total": "Costo total",
+      "unitario": "Costo unitario",
+      "participacion": "% del total",
+      "detalleEtapas": "Mano de obra por etapa",
+      "etapa": "Etapa",
+      "horas": "Horas",
+      "tarifa": "Tarifa/h",
+      "destajo": "Destajo",
+      "costoMO": "Costo MO",
+      "error": "No se pudo obtener el costeo."
+    },
+    "mrp": {
+      "title": "MRP básico",
+      "subtitle": "Explosión de BOM vs stock disponible → faltantes a comprar",
+      "calcular": "Calcular MRP",
+      "recalcular": "Recalcular",
+      "almacen": "Almacén (opcional)",
+      "todos": "Todos los almacenes",
+      "producto": "Material",
+      "requerido": "Requerido",
+      "disponible": "Disponible",
+      "aComprar": "A comprar",
+      "sinFaltantes": "No hay faltantes: el stock cubre la orden completa.",
+      "error": "No se pudo calcular el MRP."
+    },
+    "comun": {
+      "confirmar": "Confirmar",
+      "monto": "Monto",
+      "partida": "Partida",
+      "sinDatos": "No hay datos disponibles."
     }
   }
 }
