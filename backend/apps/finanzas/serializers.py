@@ -920,7 +920,9 @@ class CajaMetodoPagoOverrideSerializer(serializers.ModelSerializer):
     id_metodo_pago = serializers.CharField(source="metodo_pago.id_metodo_pago", read_only=True)
     sucursal_nombre = serializers.CharField(source="sucursal.nombre", read_only=True)
     metodo_pago_nombre = serializers.CharField(source="metodo_pago.nombre", read_only=True)
-    caja_fisica = serializers.PrimaryKeyRelatedField(queryset=Caja.objects.all())
+    # FIX (lote 2): el queryset apuntaba a Caja (virtual) aunque el FK del
+    # modelo es CajaFisica → ningún id real era aceptado (400 siempre).
+    caja_fisica = serializers.PrimaryKeyRelatedField(queryset=CajaFisica.objects.all())
     metodo_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all())
     sucursal = serializers.PrimaryKeyRelatedField(queryset=Sucursal.objects.all())
     creado_por = serializers.StringRelatedField(read_only=True)

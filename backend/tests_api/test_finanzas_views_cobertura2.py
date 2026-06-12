@@ -615,13 +615,13 @@ class TestListasAisladas:
         assert client_a.get("/api/finanzas/cajas-virtuales-auto/").json()["count"] == 1
         assert client_b.get("/api/finanzas/cajas-virtuales-auto/").json()["count"] == 0
 
-    def test_overrides_create_roto_y_list_aislada(
+    def test_overrides_create_y_list_aislada(
         self, client_a, client_b, caja_fisica_a, metodo_a, sucursal_a, user_a
     ):
-        # HALLAZGO documentado: CajaMetodoPagoOverrideSerializer declara
-        # caja_fisica = PrimaryKeyRelatedField(queryset=Caja.objects.all())
-        # (caja VIRTUAL) aunque el FK del modelo apunta a CajaFisica → un id
-        # de CajaFisica real es rechazado con 400 "objeto no existe".
+        # FIX (lote 2): el serializer aceptaba ids de Caja virtual (queryset
+        # equivocado) y la señal override_post_save reventaba por el FK de
+        # CajaVirtualAuto mal apuntado. Ahora el POST con un id de CajaFisica
+        # real crea el override (201) y la señal sincroniza sin error.
         resp = client_a.post("/api/finanzas/overrides-metodos-pago/", {
             "caja_fisica": str(caja_fisica_a.id_caja_fisica),
             "metodo_pago": str(metodo_a.id_metodo_pago),
@@ -629,19 +629,8 @@ class TestListasAisladas:
             "deshabilitado": True,
             "motivo": "POS dañado",
         })
-        assert resp.status_code == 400
-        assert "caja_fisica" in resp.json()
-        # HALLAZGO documentado (2): tampoco se puede crear por ORM — la señal
-        # override_post_save filtra CajaVirtualAuto.caja_fisica (FK→Caja
-        # virtual) con una instancia de CajaFisica → ValueError. El modelo de
-        # overrides está roto de punta a punta.
-        with pytest.raises(ValueError):
-            CajaMetodoPagoOverride.objects.create(
-                caja_fisica=caja_fisica_a, metodo_pago=metodo_a, sucursal=sucursal_a,
-                deshabilitado=True, creado_por=user_a,
-            )
-        # Peor aún: la fila SÍ queda insertada (la señal revienta después del
-        # INSERT) → estado inconsistente. La lista queda acotada al tenant.
+        assert resp.status_code == 201, resp.content
         assert CajaMetodoPagoOverride.objects.count() == 1
+        # La lista queda acotada al tenant.
         assert client_a.get("/api/finanzas/overrides-metodos-pago/").json()["count"] == 1
         assert client_b.get("/api/finanzas/overrides-metodos-pago/").json()["count"] == 0
