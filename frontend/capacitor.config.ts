@@ -18,6 +18,13 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  server: {
+    // Explícito (default de Capacitor ≥5): el WebView sirve la app bajo
+    // https://localhost — origen estable que el CORS del backend permite
+    // (settings_prod.py, orígenes de shells nativos) y contexto seguro para
+    // la cookie httpOnly de refresh (Secure).
+    androidScheme: 'https',
+  },
   plugins: {
     StatusBar: {
       style: 'LIGHT',
