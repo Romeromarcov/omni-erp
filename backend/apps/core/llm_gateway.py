@@ -298,18 +298,53 @@ class _CircuitBreaker:
         estado = self._leer(clave)
         return self._reloj() >= float(estado.get("abierto_hasta") or 0.0)
 
+    def _incrementar_fallos(self, clave: str) -> int:
+        """Incrementa el contador de fallos de forma atómica entre workers.
+
+        Con cache compartida usa ``incr`` (atómico en Redis/Memcached) sobre una
+        clave-contador dedicada; el read-modify-write del dict NO es seguro
+        entre procesos. Sin cache, el lock local basta (un solo proceso).
+        """
+        cache = self._cache()
+        if cache is not None:
+            clave_n = self._clave_cache(clave) + ":n"
+            ttl = max(int(self._ventana()) * 4, 300)
+            try:
+                try:
+                    return int(cache.incr(clave_n))
+                except ValueError:
+                    # La clave no existía: add atómico + incr cubre la carrera
+                    # de dos workers inicializando a la vez.
+                    cache.add(clave_n, 0, timeout=ttl)
+                    return int(cache.incr(clave_n))
+            except Exception:  # noqa: BLE001 — cache caída → memoria local
+                logger.debug("Cache no disponible para el contador del circuito LLM")
+        with self._lock:
+            estado = dict(self._local.get(clave, self._ESTADO_CERO))
+            estado["fallos"] = _entero(estado.get("fallos")) + 1
+            self._local[clave] = estado
+            self._claves.add(clave)
+            return int(estado["fallos"])
+
     def registrar_fallo(self, clave: str) -> None:
-        estado = self._leer(clave)
-        estado["fallos"] = _entero(estado.get("fallos")) + 1
-        if estado["fallos"] >= self._umbral():
+        fallos = self._incrementar_fallos(clave)
+        if fallos >= self._umbral():
+            estado = self._leer(clave)
+            estado["fallos"] = fallos
             estado["abierto_hasta"] = self._reloj() + self._ventana()
             logger.warning(
                 "Circuito LLM ABIERTO | proveedor=%s | fallos_consecutivos=%d | reintento_en=%.0fs",
-                clave, estado["fallos"], self._ventana(),
+                clave, fallos, self._ventana(),
             )
-        self._guardar(clave, estado)
+            self._guardar(clave, estado)
 
     def registrar_exito(self, clave: str) -> None:
+        cache = self._cache()
+        if cache is not None:
+            try:
+                cache.delete(self._clave_cache(clave) + ":n")
+            except Exception:  # noqa: BLE001
+                pass
         estado = self._leer(clave)
         if estado.get("fallos") or estado.get("abierto_hasta"):
             self._guardar(clave, dict(self._ESTADO_CERO))
@@ -320,6 +355,7 @@ class _CircuitBreaker:
             for clave in list(self._claves):
                 try:
                     cache.delete(self._clave_cache(clave))
+                    cache.delete(self._clave_cache(clave) + ":n")
                 except Exception:  # noqa: BLE001
                     pass
         with self._lock:
