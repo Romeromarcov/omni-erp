@@ -86,6 +86,8 @@ def _exigir_proveedor(pago: "PagoTercero", accion: str) -> None:
 
 
 @transaction.atomic
+# Supuesto de monedas: la CxP no lleva moneda propia (la hereda de su factura
+# origen); el abono se registra en la moneda del pago tercero (USD típico).
 def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = "") -> "AbonoCxP":
     """
     pendiente → abonado: el cobro que entró por la cuenta del proveedor se

@@ -1957,7 +1957,7 @@ class PagoTercero(TenantModel, IntegrationFieldsMixin):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Comisión que cobra el proveedor por el reintegro (opcional). "
+        help_text="Comisión que cobra el proveedor por el reintegro (opcional). NO genera asiento de gasto propio: queda anotada en documento_json (el asiento del reintegro va por el neto)."
                   "La CxC del reintegro se emite por monto − comisión.",
     )
     referencia_zelle = models.CharField(
