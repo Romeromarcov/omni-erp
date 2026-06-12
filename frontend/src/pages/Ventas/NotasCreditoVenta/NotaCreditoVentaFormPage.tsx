@@ -276,7 +276,9 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {fields.map((fieldItem, index) => {
-                      const linea = detalles?.[index];
+                      const linea = detalles?.at(index);
+                      // eslint-disable-next-line security/detect-object-injection -- FP: `index` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
+                      const erroresLinea = errors.detalles?.[index];
                       const subtotal = D(linea?.cantidad || 0).times(D(linea?.precio_unitario || 0)).toNumber();
                       return (
                         <TableRow key={fieldItem.id}>
@@ -290,8 +292,8 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                                   fullWidth
                                   size="small"
                                   {...field}
-                                  error={!!errors.detalles?.[index]?.id_producto}
-                                  helperText={errors.detalles?.[index]?.id_producto?.message}
+                                  error={!!erroresLinea?.id_producto}
+                                  helperText={erroresLinea?.id_producto?.message}
                                 >
                                   {productos.map((producto) => (
                                     <MenuItem key={producto.id_producto} value={producto.id_producto}>
@@ -307,8 +309,8 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                               type="number"
                               size="small"
                               {...register(`detalles.${index}.cantidad`)}
-                              error={!!errors.detalles?.[index]?.cantidad}
-                              helperText={errors.detalles?.[index]?.cantidad?.message}
+                              error={!!erroresLinea?.cantidad}
+                              helperText={erroresLinea?.cantidad?.message}
                               inputProps={{ min: 0, step: 0.01 }}
                             />
                           </TableCell>
@@ -317,8 +319,8 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                               type="number"
                               size="small"
                               {...register(`detalles.${index}.precio_unitario`)}
-                              error={!!errors.detalles?.[index]?.precio_unitario}
-                              helperText={errors.detalles?.[index]?.precio_unitario?.message}
+                              error={!!erroresLinea?.precio_unitario}
+                              helperText={erroresLinea?.precio_unitario?.message}
                               inputProps={{ min: 0, step: 0.01 }}
                             />
                           </TableCell>

@@ -8,9 +8,10 @@ import type { AcuerdoPago, CuotaPreview } from '../../types/cxc';
 import { PageContainer, PageHeader, StatusChip } from '../../components/ui';
 
 const PERIODICIDAD_OPTIONS = ['unico', 'semanal', 'quincenal', 'mensual'] as const;
-const PERIODICIDAD_LABELS: Record<string, string> = {
+// Map en lugar de Record: lookup sin exponer la cadena de prototipos (CTF-006).
+const PERIODICIDAD_LABELS = new Map<string, string>(Object.entries({
   unico: 'Pago Único', semanal: 'Semanal', quincenal: 'Quincenal', mensual: 'Mensual',
-};
+}));
 
 const ESTADO_COLORS: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   vigente: 'success', cumplido: 'default', roto: 'error', cancelado: 'warning',
@@ -138,7 +139,7 @@ export default function AcuerdosPage() {
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField fullWidth select label="Periodicidad" value={form.periodicidad} onChange={e => setForm(f => ({ ...f, periodicidad: e.target.value as typeof PERIODICIDAD_OPTIONS[number] }))}>
-                    {PERIODICIDAD_OPTIONS.map(p => <MenuItem key={p} value={p}>{PERIODICIDAD_LABELS[p]}</MenuItem>)}
+                    {PERIODICIDAD_OPTIONS.map(p => <MenuItem key={p} value={p}>{PERIODICIDAD_LABELS.get(p)}</MenuItem>)}
                   </TextField>
                 </Grid>
                 {form.periodicidad !== 'unico' && (
@@ -171,7 +172,7 @@ export default function AcuerdosPage() {
             {step === 2 && (
               <Box>
                 <Typography variant="subtitle2" mb={2}>
-                  Acuerdo: {form.cliente_nombre} — ${form.monto_total} {form.moneda_codigo} — {PERIODICIDAD_LABELS[form.periodicidad]}
+                  Acuerdo: {form.cliente_nombre} — ${form.monto_total} {form.moneda_codigo} — {PERIODICIDAD_LABELS.get(form.periodicidad)}
                 </Typography>
                 <Typography variant="subtitle2" mb={1}>Preview de cuotas ({previewCuotas.length} cuotas):</Typography>
                 <TableContainer sx={{ maxHeight: 300 }}>
@@ -218,7 +219,7 @@ export default function AcuerdosPage() {
               <StatusChip value={ac.estado} colorMap={ESTADO_COLORS} />
             </Box>
             <Typography variant="body2" color="text.secondary">
-              ${parseFloat(ac.monto_total).toFixed(2)} {ac.moneda_codigo} — {PERIODICIDAD_LABELS[ac.periodicidad]} — desde {ac.fecha_inicio}
+              ${parseFloat(ac.monto_total).toFixed(2)} {ac.moneda_codigo} — {PERIODICIDAD_LABELS.get(ac.periodicidad)} — desde {ac.fecha_inicio}
             </Typography>
             {/* Timeline de cuotas */}
             {ac.cuotas && ac.cuotas.length > 0 && (

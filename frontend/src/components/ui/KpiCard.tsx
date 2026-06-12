@@ -59,6 +59,7 @@ export default function KpiCard({ label, value, icon, tone = 'brand', caption, e
               alignItems: 'center',
               justifyContent: 'center',
               '& .MuiSvgIcon-root': { fontSize: 18 },
+              // eslint-disable-next-line security/detect-object-injection -- FP: `tone` está restringido al union KpiTone (Record exhaustivo verificado por TS), no llega input arbitrario
               ...TILE_STYLE[tone],
             }}
           >

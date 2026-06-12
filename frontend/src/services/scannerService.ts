@@ -98,5 +98,6 @@ export const RECENT_SCANS: RecentScan[] = [
  */
 export async function resolveScan(mode: ScanMode, _code?: string): Promise<ScanResult> {
   void _code;
+  // eslint-disable-next-line security/detect-object-injection -- FP: `mode` está restringido al union ScanMode (Record exhaustivo verificado por TS)
   return SCAN_DB[mode];
 }

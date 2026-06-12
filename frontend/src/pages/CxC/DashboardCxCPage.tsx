@@ -8,21 +8,23 @@ import type { PrioridadCliente } from '../../types/cxc';
 import { PageContainer, PageHeader, KpiCard, AgingBars, SectionTitle, StatusChip } from '../../components/ui';
 import type { AgingBar } from '../../components/ui';
 
-const BUCKET_LABELS: Record<string, string> = {
+// Map en lugar de Record: la clave del bucket viene de la API y un objeto
+// plano expondría la cadena de prototipos ("__proto__", "constructor") (CTF-006).
+const BUCKET_LABELS = new Map<string, string>(Object.entries({
   al_dia: 'Al Día',
   '1_30': '1-30 días',
   '31_60': '31-60 días',
   '61_90': '61-90 días',
   mas_90: '+90 días',
-};
+}));
 
-const BUCKET_GRADIENT: Record<string, string> = {
+const BUCKET_GRADIENT = new Map<string, string>(Object.entries({
   al_dia: 'linear-gradient(90deg,#43c463,#4caf50)',
   '1_30': 'linear-gradient(90deg,#ffb547,#ff9800)',
   '31_60': 'linear-gradient(90deg,#ff8a4c,#f57c00)',
   '61_90': 'linear-gradient(90deg,#f2603a,#e64a19)',
   mas_90: 'linear-gradient(90deg,#e0463f,#b71c1c)',
-};
+}));
 
 const BUCKET_CHIP_COLOR: Record<string, 'success' | 'warning' | 'error'> = {
   al_dia: 'success',
@@ -49,10 +51,10 @@ export default function DashboardCxCPage() {
     const total = parseFloat(val.total);
     return {
       key,
-      label: BUCKET_LABELS[key] ?? key,
+      label: BUCKET_LABELS.get(key) ?? key,
       amount: `${money(total)} · ${val.count}`,
       pct: (total / totalGeneral) * 100,
-      gradient: BUCKET_GRADIENT[key] ?? 'linear-gradient(90deg,#90a4ae,#607d8b)',
+      gradient: BUCKET_GRADIENT.get(key) ?? 'linear-gradient(90deg,#90a4ae,#607d8b)',
     };
   });
 
@@ -123,7 +125,7 @@ export default function DashboardCxCPage() {
                     <TableCell align="center">
                       <StatusChip
                         value={p.bucket}
-                        label={BUCKET_LABELS[p.bucket] || p.bucket}
+                        label={BUCKET_LABELS.get(p.bucket) ?? p.bucket}
                         colorMap={BUCKET_CHIP_COLOR}
                       />
                     </TableCell>

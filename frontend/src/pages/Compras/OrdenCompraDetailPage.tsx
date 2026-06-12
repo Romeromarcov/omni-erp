@@ -362,7 +362,10 @@ export default function OrdenCompraDetailPage() {
               {itemsArray.fields.length === 0 && (
                 <Alert severity="warning">{t('compras.detalle.sinLineas')}</Alert>
               )}
-              {itemsArray.fields.map((field, idx) => (
+              {itemsArray.fields.map((field, idx) => {
+                // eslint-disable-next-line security/detect-object-injection -- FP: `idx` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
+                const erroresItem = formRecepcion.formState.errors.items?.[idx];
+                return (
                 <Stack key={field.id} direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
                   <Typography variant="body2" sx={{ minWidth: 180 }}>
                     {nombreProducto(field.producto_id)}
@@ -371,20 +374,21 @@ export default function OrdenCompraDetailPage() {
                     size="small"
                     inputMode="decimal"
                     label={t('compras.detalle.cantidadRecibida')}
-                    error={!!formRecepcion.formState.errors.items?.[idx]?.cantidad}
-                    helperText={formRecepcion.formState.errors.items?.[idx]?.cantidad?.message}
+                    error={!!erroresItem?.cantidad}
+                    helperText={erroresItem?.cantidad?.message}
                     {...formRecepcion.register(`items.${idx}.cantidad`)}
                   />
                   <TextField
                     size="small"
                     inputMode="decimal"
                     label={t('compras.detalle.costoUnitario')}
-                    error={!!formRecepcion.formState.errors.items?.[idx]?.costo_unitario}
-                    helperText={formRecepcion.formState.errors.items?.[idx]?.costo_unitario?.message}
+                    error={!!erroresItem?.costo_unitario}
+                    helperText={erroresItem?.costo_unitario?.message}
                     {...formRecepcion.register(`items.${idx}.costo_unitario`)}
                   />
                 </Stack>
-              ))}
+                );
+              })}
             </Stack>
           </DialogContent>
           <DialogActions>
