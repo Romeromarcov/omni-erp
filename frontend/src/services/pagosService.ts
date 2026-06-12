@@ -1,4 +1,5 @@
 import { get, post, put, del } from './api';
+import { IDEMPOTENCY_HEADER, newIdempotencyKey } from '../lib/idempotency';
 import type { NotaCredito, Pago as PagoModal } from '../components/Pedidos/ModalPago';
 
 export interface Pago {
@@ -101,9 +102,20 @@ export const pagosService = {
     return await get<Pago>(`/finanzas/pagos/${id}/`);
   },
 
-  // Crear un nuevo pago
-  async createPago(pago: Omit<Pago, 'id_pago'>): Promise<Pago> {
-    return await post<Pago>('/finanzas/pagos/', pago);
+  /**
+   * Crear un nuevo pago. Siempre envía `Idempotency-Key` (PR #86): el backend
+   * deduplica POSTs repetidos con la misma clave.
+   *
+   * Punto de extensión offline Nivel 1: si el caller NO pasa `idempotencyKey`,
+   * se genera una por llamada (protege contra duplicados dentro del mismo
+   * intento). Para que el retry automático de TanStack Query sea 100% seguro,
+   * genera la clave junto con las variables de la mutación (una por operación
+   * lógica) y pásala aquí — así todos los reintentos reutilizan la misma clave.
+   */
+  async createPago(pago: Omit<Pago, 'id_pago'>, idempotencyKey?: string): Promise<Pago> {
+    return await post<Pago>('/finanzas/pagos/', pago, {
+      headers: { [IDEMPOTENCY_HEADER]: idempotencyKey ?? newIdempotencyKey() },
+    });
   },
 
   /**
@@ -189,7 +201,12 @@ export const pagosService = {
       id_cuenta_bancaria?: string;
       id_datafono?: string;
       banco_destino?: string;
-    }
+    },
+    /**
+     * Clave de idempotencia estable para reintentos (ver createPago).
+     * Si se omite, se genera una nueva por llamada.
+     */
+    idempotencyKey?: string
   ): Promise<Pago> {
     // Determinar el tipo de operación basado en el tipo de documento
     const tipoOperacion = this.getTipoOperacionPorDocumento(tipoDocumento);
@@ -227,7 +244,7 @@ export const pagosService = {
       ...this.getDocumentoField(tipoDocumento, idDocumento),
     };
 
-    return await this.createPago(pago);
+    return await this.createPago(pago, idempotencyKey);
   },
 
   // Determinar tipo de operación basado en el tipo de documento

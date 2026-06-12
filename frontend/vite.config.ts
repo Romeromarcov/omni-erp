@@ -35,16 +35,49 @@ export default defineConfig({
           { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
+      // PWA offline Nivel 1 (ADR-001 / Plan Maestro §5.2-ter Fase 2):
+      // precache del shell + NetworkFirst para la API + fallback de navegación.
       workbox: {
+        // Precache del shell completo (JS/CSS/HTML/iconos/fuentes).
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        cleanupOutdatedCaches: true,
+        // SPA: cualquier navegación sin red sirve el shell precacheado.
+        // Las rutas de API/admin nunca deben caer al shell.
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
         runtimeCaching: [
           {
-            urlPattern: /^\/api\//,
+            // NOTA (auditoría Fase 2): el patrón anterior era el RegExp
+            // /^\/api\//, que Workbox evalúa contra url.href completo
+            // (https://…) y por tanto NUNCA matcheaba — la API no se estaba
+            // cacheando en absoluto. Se usa un callback explícito: solo GET
+            // same-origin bajo /api/, excluyendo /api/auth/ (tokens y
+            // credenciales jamás se cachean).
+            urlPattern: ({ url, request, sameOrigin }) =>
+              sameOrigin &&
+              request.method === 'GET' &&
+              url.pathname.startsWith('/api/') &&
+              !url.pathname.startsWith('/api/auth/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+              // 24 h de expiración: 300 s era demasiado corto (un corte de
+              // 5 min ya vaciaba el caché, rompiendo el DoD de la fase).
+              // NetworkFirst garantiza frescura cuando hay red.
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
               networkTimeoutSeconds: 5,
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            // Imágenes no fingerprinteadas (logos subidos, media).
+            urlPattern: ({ request, sameOrigin }) =>
+              sameOrigin && request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'img-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],

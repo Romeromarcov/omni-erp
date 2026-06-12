@@ -157,5 +157,12 @@
       "partida": "Partida",
       "sinDatos": "No hay datos disponibles."
     }
+  },
+  "offline": {
+    "banner": "Sin conexión — mostrando datos guardados",
+    "pending_one": "1 cambio pendiente se enviará al volver la conexión",
+    "pending_other": "{{count}} cambios pendientes se enviarán al volver la conexión",
+    "restored": "Conexión restablecida — sincronizando…",
+    "stale": "Datos sin actualizar"
   }
 }

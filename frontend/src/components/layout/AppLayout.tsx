@@ -7,6 +7,7 @@ import Topbar from './Topbar';
 import Sidebar from './Sidebar';
 import AppBreadcrumbs from './AppBreadcrumbs';
 import MobileBottomNav from './MobileBottomNav';
+import OfflineBanner from './OfflineBanner';
 import { DRAWER_WIDTH, MOBILE_NAV_HEIGHT, RAIL_WIDTH, TOPBAR_HEIGHT } from './constants';
 
 function PageLoader() {
@@ -82,6 +83,7 @@ export default function AppLayout() {
         {/* Contenido principal */}
         <Box component="main" sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <Toolbar sx={{ minHeight: `${TOPBAR_HEIGHT}px !important` }} />
+          <OfflineBanner />
           <Box
             sx={{
               px: { xs: 2, md: 3 },
