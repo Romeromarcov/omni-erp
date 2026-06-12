@@ -1893,3 +1893,110 @@ class Pago(models.Model):
         elif self.tipo_documento == "IMPUESTO" and self.id_contribucion:
             return self.id_contribucion
         return None
+
+
+# ── Pagos de terceros (Zelle) — Capa B, tropicalización VE (§6.6 Plan Maestro) ─
+
+from apps.core.base_models import IntegrationFieldsMixin, TenantModel  # noqa: E402
+
+
+class PagoTercero(TenantModel, IntegrationFieldsMixin):
+    """
+    Cobro en divisas (típicamente USD vía Zelle) que entra por la cuenta de un
+    PROVEEDOR (tercero), dinámica forzada por las restricciones para recibir
+    USD en Venezuela (Plan Maestro §6.6, portado de GestionCxC
+    ``routers/zelle_terceros.py``).
+
+    Ciclo de vida (las transiciones las gobiernan los services de
+    ``apps.finanzas.services_pagos_terceros`` — transición inválida → 400)::
+
+        pendiente ──abonar──────────────→ abonado            (reduce CxP del proveedor)
+        pendiente ──solicitar_reintegro─→ reintegro_pendiente (crea CxC contra el proveedor)
+        reintegro_pendiente ──marcar_reintegrado─→ reintegrado
+        pendiente ──anular──────────────→ anulado
+
+    El proveedor es opcional al crear (un cobro puede originarse en caja sin
+    saber aún por qué cuenta entró) y se fija con ``asociar_proveedor`` antes
+    de abonar o solicitar reintegro.
+
+    Puente proveedor→CxC (decisión de diseño): ``CuentaPorCobrar.cliente`` es
+    opcional (ADR-009); el reintegro identifica al deudor con
+    ``cliente_externo_id = "proveedor:<uuid>"`` + nombre denormalizado, sin
+    crear un ``crm.Cliente`` espejo del proveedor.
+    """
+
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente"),
+        ("abonado", "Abonado a CxP"),
+        ("reintegro_pendiente", "Reintegro pendiente"),
+        ("reintegrado", "Reintegrado"),
+        ("anulado", "Anulado"),
+    ]
+
+    id_pago_tercero = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="pagos_terceros"
+    )
+    id_proveedor = models.ForeignKey(
+        "proveedores.Proveedor",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pagos_terceros",
+        help_text="Proveedor por cuya cuenta entró el cobro. Opcional al crear "
+                  "(cobro originado en caja); requerido para abonar o reintegrar.",
+    )
+    id_moneda = models.ForeignKey(
+        "finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_terceros"
+    )
+    monto = models.DecimalField(
+        max_digits=18, decimal_places=2, help_text="Monto del cobro recibido en la cuenta del tercero."
+    )
+    comision = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Comisión que cobra el proveedor por el reintegro (opcional). "
+                  "La CxC del reintegro se emite por monto − comisión.",
+    )
+    referencia_zelle = models.CharField(
+        max_length=100, help_text="Referencia/confirmación de la transferencia Zelle."
+    )
+    fecha = models.DateField(help_text="Fecha del cobro en la cuenta del tercero.")
+    concepto = models.TextField(blank=True, default="")
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="pendiente", db_index=True
+    )
+    # Trazabilidad de los documentos generados por las acciones (SET_NULL: si el
+    # documento destino se elimina, el pago conserva su historia en documento_json).
+    id_abono_cxp = models.ForeignKey(
+        "cuentas_por_pagar.AbonoCxP",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pagos_terceros",
+        help_text="Abono CxP generado por la acción 'abonar'.",
+    )
+    id_cxc_reintegro = models.ForeignKey(
+        "cuentas_por_cobrar.CuentaPorCobrar",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reintegros_pago_tercero",
+        help_text="CxC contra el proveedor generada por 'solicitar_reintegro'.",
+    )
+
+    class Meta:
+        db_table = "finanzas_pago_tercero"
+        verbose_name = "Pago de Tercero"
+        verbose_name_plural = "Pagos de Terceros"
+        ordering = ["-fecha", "-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "estado"]),
+            models.Index(fields=["id_empresa", "id_proveedor"]),
+        ]
+
+    def __str__(self):
+        proveedor = self.id_proveedor.razon_social if self.id_proveedor_id and self.id_proveedor else "sin proveedor"
+        return f"PagoTercero {self.referencia_zelle} — {self.monto} ({proveedor}) [{self.estado}]"
