@@ -10,10 +10,16 @@ from apps.finanzas.models import Moneda
 
 
 class MonedaFactory(DjangoModelFactory):
-    """Moneda genérica (global, sin empresa). ``codigo_iso`` único por secuencia."""
+    """Moneda genérica (global, sin empresa). ``codigo_iso`` único por secuencia.
+
+    ``django_get_or_create`` sobre ``codigo_iso`` (heredado de la factory histórica
+    de ``tests_api/``): pedir dos veces el mismo código (p. ej. "USD") reutiliza la
+    fila en vez de violar el unique.
+    """
 
     class Meta:
         model = Moneda
+        django_get_or_create = ("codigo_iso",)
 
     nombre = factory.Sequence(lambda n: f"Moneda {n}")
     # codigo_iso tiene max_length=5 y es unique; la secuencia genera M0001…M9999.

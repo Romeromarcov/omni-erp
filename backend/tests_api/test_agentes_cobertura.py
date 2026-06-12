@@ -174,7 +174,7 @@ class TestOmniAgenteBase:
 @pytest.fixture
 def stock_bajo(empresa_a, user_a):
     """Stock 5 uds (mínimo 10) con 30 uds de salidas en 30 días → consumo 1/día."""
-    from tests_api.factories import AlmacenFactory, ProductoFactory
+    from tests.factories import AlmacenFactory, ProductoFactory
     from apps.inventario.models import MovimientoInventario, StockActual
 
     producto = ProductoFactory(id_empresa=empresa_a, nombre_producto="Aceite 1L")
@@ -217,7 +217,7 @@ class TestReordenAnalizar:
         assert pred.alternativas == [{"cantidad_sugerida": "25.00"}]
 
     def test_solo_alertas_excluye_ok(self, empresa_a, stock_bajo):
-        from tests_api.factories import AlmacenFactory, ProductoFactory
+        from tests.factories import AlmacenFactory, ProductoFactory
         from apps.agentes.reorden import ReordenSugeridorAgent
         from apps.inventario.models import StockActual
 
@@ -631,7 +631,7 @@ class TestChatTools:
         assert res == {"resultado": "El cliente no tiene saldo pendiente."}
 
     def test_saldo_cliente_con_partidas(self, user_a, empresa_a):
-        from tests_api.factories import ClienteFactory
+        from tests.factories import ClienteFactory
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
         cliente = ClienteFactory(id_empresa=empresa_a, razon_social="Deudor C.A.")

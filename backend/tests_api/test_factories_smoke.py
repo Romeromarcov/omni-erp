@@ -1,14 +1,14 @@
 """Valida que las factories del harness (Fase 0) construyen objetos válidos."""
 import pytest
 
-from tests_api.factories import (
+from tests.factories import (
     AlmacenFactory,
     ClienteFactory,
     EmpresaFactory,
     MonedaFactory,
     ProductoFactory,
     UnidadMedidaFactory,
-    UsuarioFactory,
+    UsuariosFactory,
 )
 
 pytestmark = pytest.mark.django_db
@@ -25,7 +25,7 @@ def test_moneda_factory_unica():
 
 def test_usuario_factory_con_empresa():
     e = EmpresaFactory()
-    u = UsuarioFactory(empresas=[e])
+    u = UsuariosFactory(empresas=[e])
     assert u.check_password("testpass123")
     assert e in u.empresas.all()
 

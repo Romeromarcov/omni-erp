@@ -49,14 +49,14 @@ def cliente_a(empresa_a):
 
 @pytest.fixture
 def producto_a(empresa_a, moneda_usd):
-    from tests_api.factories import ProductoFactory
+    from tests.factories import ProductoFactory
 
     return ProductoFactory(id_empresa=empresa_a, nombre_producto="Harina PAN 1kg")
 
 
 @pytest.fixture
 def almacen_a(empresa_a):
-    from tests_api.factories import AlmacenFactory
+    from tests.factories import AlmacenFactory
 
     return AlmacenFactory(id_empresa=empresa_a, nombre_almacen="Principal")
 
@@ -205,7 +205,7 @@ class TestBuscarContacto:
 
 class TestGetStockProducto:
     def test_filtra_por_almacen(self, empresa_a, producto_a, almacen_a):
-        from tests_api.factories import AlmacenFactory
+        from tests.factories import AlmacenFactory
         from apps.core.mcp_server import omni_get_stock_producto
         from apps.inventario.models import StockActual
 

@@ -57,7 +57,7 @@ def _cliente_stream_falso(textos):
 
 @pytest.fixture
 def cliente_deudor(empresa_a):
-    from tests_api.factories import ClienteFactory
+    from tests.factories import ClienteFactory
 
     return ClienteFactory(id_empresa=empresa_a, razon_social="Deudor Llanero C.A.")
 

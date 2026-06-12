@@ -16,7 +16,7 @@ from decimal import Decimal
 import pytest
 from django.db import connections
 
-from tests_api.factories import AlmacenFactory, EmpresaFactory, ProductoFactory
+from tests.factories import AlmacenFactory, EmpresaFactory, ProductoFactory
 
 pytestmark = pytest.mark.integration
 

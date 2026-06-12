@@ -14,7 +14,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.agentes.api import chat as chatmod
-from tests_api.factories import ClienteFactory
+from tests.factories import ClienteFactory
 
 pytestmark = pytest.mark.integration
 
