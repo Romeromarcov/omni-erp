@@ -92,6 +92,11 @@ class SyncEngine:
 
         if job.direccion in ("inbound", "bidireccional"):
             resultado = self._ejecutar_pull(job, conector, desde, resultado)
+            job.refresh_from_db(fields=["estado"])
+            if job.estado == "fallido":
+                # El pull falló de raíz (sin método, conexión caída, etc.):
+                # _ejecutar_pull ya marcó el job; no sobreescribir con 'completado'.
+                return resultado
 
         # outbound no implementado en esta versión (Fase 1)
         if job.direccion == "outbound":
@@ -121,7 +126,9 @@ class SyncEngine:
 
         method_name = self.PULL_METHODS.get(job.tipo_entidad)
         if not method_name:
-            resultado.agregar_error("N/A", f"Entidad '{job.tipo_entidad}' sin método pull.")
+            msg = f"Entidad '{job.tipo_entidad}' sin método pull."
+            resultado.agregar_error("N/A", msg)
+            self._marcar_fallido(job, msg, resultado)
             return resultado
 
         method = getattr(conector, method_name)
@@ -131,10 +138,13 @@ class SyncEngine:
         except (ConnectorConnectionError, ConnectorDataError, ConnectorNotSupportedError) as exc:
             resultado.agregar_error("N/A", str(exc))
             logger.error("Pull error [%s / %s]: %s", job.id_instancia.nombre, job.tipo_entidad, exc)
+            self._marcar_fallido(job, str(exc), resultado)
             return resultado
         except Exception as exc:
-            resultado.agregar_error("N/A", f"Error inesperado: {type(exc).__name__}: {exc}")
+            msg = f"Error inesperado: {type(exc).__name__}: {exc}"
+            resultado.agregar_error("N/A", msg)
             logger.exception("Pull inesperado [%s / %s]", job.id_instancia.nombre, job.tipo_entidad)
+            self._marcar_fallido(job, msg, resultado)
             return resultado
 
         resultado.total = len(registros)
@@ -206,8 +216,6 @@ class SyncEngine:
                 ))
                 logger.warning("Error sincronizando %s:%s → %s", job.tipo_entidad, id_externo, exc)
 
-            resultado.procesados = resultado.creados + resultado.actualizados + resultado.omitidos + resultado.fallidos
-
         # Bulk create logs (eficiencia)
         if logs_batch:
             LogDetalleSincronizacion.objects.bulk_create(logs_batch, batch_size=200)
@@ -252,43 +260,31 @@ class SyncEngine:
 
     def _upsert_contacto(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
         """
-        Upsert de contacto en el CRM de Omni.
-        Busca por identificador_fiscal o email; si existe, actualiza; si no, crea.
+        Upsert de contacto contra el modelo unificado ``core.Contacto``.
+        Busca por identificador fiscal (rif) o email; si existe, actualiza;
+        si no, crea. Siempre acotado a la empresa de la instancia (R-CODE-1).
         """
-        try:
-            # Intentar importar el modelo del CRM
-            from apps.crm.models import Contacto  # type: ignore
-        except ImportError:
-            # El módulo CRM aún no tiene el modelo Contacto unificado (Fase 1 M1)
-            # Retornar el id_externo para que el mapping quede registrado
-            return datos.get("id_externo", "")
+        from apps.core.models import Contacto
 
         empresa = instancia.id_empresa
         id_fiscal = datos.get("identificador_fiscal") or ""
         email = datos.get("email") or ""
 
-        # Buscar existente
+        # Buscar existente (siempre dentro del tenant)
         contacto = None
         if id_fiscal:
-            contacto = Contacto.objects.filter(
-                id_empresa=empresa, identificador_fiscal=id_fiscal
-            ).first()
+            contacto = Contacto.objects.filter(id_empresa=empresa, rif=id_fiscal).first()
         if not contacto and email:
-            contacto = Contacto.objects.filter(
-                id_empresa=empresa, email=email
-            ).first()
+            contacto = Contacto.objects.filter(id_empresa=empresa, email=email).first()
 
         campos = {
             "nombre": datos.get("nombre") or "",
             "email": email,
-            "telefono": datos.get("telefono") or "",
-            "movil": datos.get("movil") or "",
+            "telefono": datos.get("telefono") or datos.get("movil") or "",
             "es_cliente": datos.get("es_cliente", False),
             "es_proveedor": datos.get("es_proveedor", False),
-            "identificador_fiscal": id_fiscal,
-            "direccion": datos.get("direccion") or "",
-            "ciudad": datos.get("ciudad") or "",
-            "notas": datos.get("notas") or "",
+            "rif": id_fiscal,
+            "direccion_fiscal": datos.get("direccion") or "",
         }
 
         with transaction.atomic():
@@ -297,35 +293,50 @@ class SyncEngine:
                     setattr(contacto, field, value)
                 contacto.save()
                 return str(contacto.pk)
-            else:
-                nuevo = Contacto.objects.create(id_empresa=empresa, **campos)
-                return str(nuevo.pk)
+            nuevo = Contacto.objects.create(id_empresa=empresa, **campos)
+            return str(nuevo.pk)
 
     def _upsert_producto(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
         """
-        Upsert de producto en el inventario de Omni.
-        Busca por codigo_interno o nombre; si existe, actualiza; si no, crea.
+        Upsert de producto en el inventario de Omni (modelo real ``Producto``).
+        Busca por sku (codigo_interno externo); si existe, actualiza; si no, crea.
+
+        Si la empresa no tiene una moneda utilizable para ``id_moneda_precio``
+        (FK obligatoria), el registro se omite (return None) y se loguea —
+        nunca se crea un producto inválido.
         """
-        try:
-            from apps.inventario.models import Producto  # type: ignore
-        except ImportError:
-            return datos.get("id_externo", "")
+        from decimal import Decimal, InvalidOperation
+
+        from apps.finanzas.models import Moneda
+        from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
 
         empresa = instancia.id_empresa
-        codigo = datos.get("codigo_interno") or ""
+        sku = datos.get("codigo_interno") or datos.get("sku") or ""
+
+        def _decimal(valor) -> Decimal:
+            try:
+                return Decimal(str(valor))
+            except (InvalidOperation, TypeError, ValueError):
+                return Decimal("0")
 
         producto = None
-        if codigo:
-            producto = Producto.objects.filter(
-                id_empresa=empresa, codigo_interno=codigo
-            ).first()
+        if sku:
+            producto = Producto.objects.filter(id_empresa=empresa, sku=sku).first()
+        else:
+            # Sin SKU externo: la clave de idempotencia cae al nombre dentro
+            # del tenant, para que re-sincronizar no duplique el producto.
+            nombre = datos.get("nombre") or ""
+            if nombre:
+                producto = Producto.objects.filter(
+                    id_empresa=empresa, nombre_producto=nombre
+                ).first()
 
         campos = {
-            "nombre": datos.get("nombre") or "",
-            "codigo_interno": codigo,
-            "descripcion": datos.get("descripcion_venta") or "",
-            "precio_venta": datos.get("precio_venta") or 0,
-            "costo": datos.get("costo") or 0,
+            "nombre_producto": datos.get("nombre") or "",
+            "sku": sku or None,
+            "descripcion": datos.get("descripcion_venta") or datos.get("descripcion") or "",
+            "precio_venta_sugerido": _decimal(datos.get("precio_venta") or 0),
+            "costo_promedio": _decimal(datos.get("costo") or 0),
         }
 
         with transaction.atomic():
@@ -334,9 +345,41 @@ class SyncEngine:
                     setattr(producto, field, value)
                 producto.save()
                 return str(producto.pk)
-            else:
-                nuevo = Producto.objects.create(id_empresa=empresa, **campos)
-                return str(nuevo.pk)
+
+            # FKs obligatorias del modelo real: resolver defaults del tenant.
+            moneda = (
+                Moneda.objects.filter(codigo_iso=datos.get("moneda")).first()
+                or Moneda.objects.filter(codigo_iso="USD").first()
+                or Moneda.objects.first()
+            )
+            if moneda is None:
+                logger.warning(
+                    "Producto externo %s omitido: no hay Moneda configurada para "
+                    "id_moneda_precio (empresa %s).",
+                    datos.get("id_externo", ""),
+                    empresa.pk,
+                )
+                return None
+
+            categoria, _ = CategoriaProducto.objects.get_or_create(
+                id_empresa=empresa,
+                nombre_categoria="Importados (Integration Hub)",
+                defaults={"descripcion": "Productos creados por sincronización externa."},
+            )
+            unidad, _ = UnidadMedida.objects.get_or_create(
+                id_empresa=empresa,
+                abreviatura="UND",
+                defaults={"nombre": "Unidad", "tipo": "CANTIDAD"},
+            )
+
+            nuevo = Producto.objects.create(
+                id_empresa=empresa,
+                id_categoria=categoria,
+                id_unidad_medida_base=unidad,
+                id_moneda_precio=moneda,
+                **campos,
+            )
+            return str(nuevo.pk)
 
     def _calcular_desde(self, job: "JobSincronizacion") -> datetime | None:
         """
@@ -401,6 +444,14 @@ class SyncEngine:
         """Marca el job como fallido con mensaje de error."""
         job.estado = "fallido"
         job.completado_en = dj_timezone.now()
+        # Persistir los contadores parciales: distingue "falló sin procesar
+        # nada" de "falló a mitad" en la auditoría del job.
+        job.total_registros = resultado.total
+        job.procesados = resultado.procesados
+        job.creados = resultado.creados
+        job.actualizados = resultado.actualizados
+        job.omitidos = resultado.omitidos
+        job.fallidos = resultado.fallidos
         job.resumen_errores = [{"error": mensaje}]
         job.save()
 

@@ -241,7 +241,7 @@ class TestAsignacionHorarioActions:
         )
         assert resp.status_code == 200
         asignacion_a.refresh_from_db()
-        assert asignacion_a.fecha_fin == timezone.now().date()
+        assert asignacion_a.fecha_fin == timezone.localdate()
 
     def test_finalizar_ya_finalizada_400(self, client_a, asignacion_a):
         asignacion_a.activo = False
@@ -316,17 +316,15 @@ class TestRegistroAsistenciaActions:
         assert str(fuera.id_registro_asistencia) not in ids
 
     def test_hoy(self, client_a, empleado_a):
-        # BUG documentado (ventana de medianoche): la vista usa
+        # Regresión del BUG de ventana de medianoche: la vista usaba
         # `timezone.now().date()` (fecha UTC) contra el lookup
-        # `fecha_hora_marcado__date`, que convierte a fecha LOCAL
-        # (America/Caracas) en SQL. Entre 00:00 y 04:00 UTC las fechas
-        # difieren y "hoy" devuelve vacío (así falló en CI a las 00:26 UTC).
-        # Congelamos now() a mediodía UTC (ambas fechas coinciden) para que el
-        # test sea determinista a cualquier hora; el fix de producto debe usar
-        # timezone.localdate() en la vista.
+        # `fecha_hora_marcado__date` (fecha LOCAL America/Caracas en SQL) y
+        # entre 00:00 y 04:00 UTC "hoy" devolvía vacío. La vista ya usa
+        # `timezone.localdate()`; congelamos now() a las 02:00 UTC (dentro de
+        # la ventana que antes fallaba) para fijar el comportamiento correcto.
         from unittest import mock as _mock
 
-        fijo = datetime.datetime(2026, 6, 9, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        fijo = datetime.datetime(2026, 6, 9, 2, 0, 0, tzinfo=datetime.timezone.utc)
         with _mock.patch("django.utils.timezone.now", return_value=fijo):
             hoy = RegistroAsistencia.objects.create(
                 id_empleado=empleado_a,
@@ -396,9 +394,9 @@ class TestResumenAsistenciaActions:
             {"empleado_id": str(empleado_a.pk)},
         )
         assert resp.status_code == 200
-        assert resp.json()["fecha"] == str(timezone.now().date())
+        assert resp.json()["fecha"] == str(timezone.localdate())
         resumen = ResumenAsistenciaDiario.objects.get(
-            id_empleado=empleado_a, fecha=timezone.now().date()
+            id_empleado=empleado_a, fecha=timezone.localdate()
         )
         assert resumen.es_ausencia is True
 

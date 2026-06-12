@@ -61,6 +61,13 @@ class Producto(OmniBaseModel, IntegrationFieldsMixin):
     maneja_seriales = models.BooleanField(default=False)
     costo_promedio = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
     precio_venta_sugerido = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
+    punto_reorden = models.DecimalField(
+        max_digits=18,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Stock mínimo a partir del cual se generan alertas de reorden. NULL = sin alerta.",
+    )
     id_moneda_precio = models.ForeignKey("finanzas.Moneda", on_delete=models.CASCADE)
     id_configuracion_impuesto_venta_default = models.ForeignKey(
         "fiscal.ConfiguracionImpuesto",

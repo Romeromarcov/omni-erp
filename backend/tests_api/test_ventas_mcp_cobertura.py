@@ -159,7 +159,7 @@ class TestGetCotizacion:
         det = res["detalles"][0]
         assert det["producto"] == "Producto MCP"
         assert det["cantidad"] == 3.0
-        # BUG-NEW-2 (ya marcado en el código): precio/subtotal salen como Decimal
+        # M-BUG-1: precio/subtotal salen como Decimal (nunca float)
         assert det["precio_unitario"] == Decimal("25.0000")
         assert det["subtotal"] == Decimal("75.0000")
 
@@ -234,27 +234,31 @@ class TestGetNotasVenta:
 
 class TestGetFacturas:
     """
-    BUG: ``ventas_get_facturas`` está rota contra el modelo real —
-    ordena por ``-fecha_factura`` y lee ``f.fecha_factura`` / ``f.total``,
-    pero ``FacturaFiscal`` tiene ``fecha_emision`` y ``monto_total``.
-    Toda evaluación del queryset lanza FieldError (incluso sin resultados).
-    Se documenta sin enmascarar; el gate de scope/tenant (que corre ANTES
-    del queryset) sí se verifica.
+    Regresión del BUG "rota contra el modelo real": ``ventas_get_facturas``
+    ordenaba por ``-fecha_factura`` y leía ``f.fecha_factura`` / ``f.total``,
+    campos inexistentes en ``FacturaFiscal`` (los reales son ``fecha_emision``
+    y ``monto_total``) y toda evaluación lanzaba FieldError. Ahora se valida
+    el comportamiento funcional correcto.
     """
 
-    def test_listar_lanza_fielderror_por_campo_inexistente(self, empresa_a, facturas):
-        from django.core.exceptions import FieldError
-
+    def test_listar_devuelve_facturas_con_campos_reales(self, empresa_a, facturas):
         tok = _token(empresa_a, ["ventas:read"])
-        with pytest.raises(FieldError, match="fecha_factura"):
-            ventas_get_facturas(str(tok.token), str(empresa_a.id_empresa))
+        res = ventas_get_facturas(str(tok.token), str(empresa_a.id_empresa))
+        assert {f["numero_factura"] for f in res} == {"FAC-MCP-001", "FAC-MCP-002"}
+        f1 = next(f for f in res if f["numero_factura"] == "FAC-MCP-001")
+        assert f1["numero_control"] == "MC-001"
+        assert f1["cliente"] == "Cliente MCP"
+        assert f1["estado"] == "EMITIDA"
+        assert f1["fecha"] == str(HOY)
+        # M-BUG-1: monetario como Decimal, nunca float.
+        assert f1["total"] == Decimal("116.0000")
 
-    def test_filtro_por_estado_tambien_lanza_fielderror(self, empresa_a, facturas):
-        from django.core.exceptions import FieldError
-
+    def test_filtro_por_estado(self, empresa_a, facturas):
         tok = _token(empresa_a, ["ventas:read"])
-        with pytest.raises(FieldError):
-            ventas_get_facturas(str(tok.token), str(empresa_a.id_empresa), estado="ANULADA")
+        res = ventas_get_facturas(str(tok.token), str(empresa_a.id_empresa), estado="ANULADA")
+        assert len(res) == 1
+        assert res[0]["numero_factura"] == "FAC-MCP-002"
+        assert res[0]["total"] == Decimal("58.0000")
 
     def test_scope_faltante_lanza_permissionerror(self, empresa_a, facturas):
         tok = _token(empresa_a, ["crm:read"])  # falta ventas:read

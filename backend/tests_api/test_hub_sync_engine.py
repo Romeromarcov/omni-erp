@@ -145,14 +145,19 @@ class TestEjecutarJobPullHappyPath:
         assert instancia_fake.ultimo_sync is not None
 
     def test_pull_crea_mappings_entidad_sincronizada(self, fake_registry, instancia_fake):
+        from apps.core.models import Contacto
+
         FakeConnector.registros = [_contacto(7, checksum="abc")]
         SyncEngine().ejecutar_job(_job(instancia_fake))
 
         mapping = EntidadSincronizada.objects.get(
             id_instancia=instancia_fake, tipo_entidad="contactos", id_externo="7"
         )
-        # Sin apps.crm.models.Contacto, el handler retorna el id_externo
-        assert mapping.id_omni == "7"
+        # El upsert real crea un core.Contacto y el mapping apunta a su pk.
+        contacto = Contacto.objects.get(
+            id_empresa=instancia_fake.id_empresa, email="c7@test.com"
+        )
+        assert mapping.id_omni == str(contacto.pk)
         assert mapping.checksum == "abc"
 
     def test_pull_crea_logs_detalle_operacion_crear(self, fake_registry, instancia_fake):
@@ -168,32 +173,33 @@ class TestEjecutarJobPullHappyPath:
 
 
 class TestDeduplicacionPorChecksum:
-    def test_segunda_corrida_sin_cambios_crashea_por_bug_procesados(
+    def test_segunda_corrida_sin_cambios_completa_con_todo_omitido(
         self, fake_registry, instancia_fake
     ):
-        """BUG REAL (reportado, no enmascarado): SyncResult no define el campo
-        'procesados'; _ejecutar_pull solo lo asigna al final de iteraciones NO
-        omitidas (el branch 'omitir' hace continue antes). Si TODOS los registros
-        están sin cambios — el estado estable de un sync incremental —
-        _marcar_completado lanza AttributeError y el job queda 'en_progreso'.
+        """Regresión del BUG 'procesados': cuando TODOS los registros están sin
+        cambios (estado estable de un sync incremental), el job completa con
+        procesados == omitidos en vez de crashear y quedar 'en_progreso'.
+        ``SyncResult.procesados`` ahora es una property derivada de los
+        contadores y no puede quedar sin inicializar.
         """
         FakeConnector.registros = [_contacto(1, "chk-a"), _contacto(2, "chk-b")]
         SyncEngine().ejecutar_job(_job(instancia_fake))
 
         job2 = _job(instancia_fake)
-        with pytest.raises(AttributeError, match="procesados"):
-            SyncEngine().ejecutar_job(job2)
+        resultado = SyncEngine().ejecutar_job(job2)
 
-        # Los logs 'omitir' sí se escribieron antes del crash…
+        assert resultado.omitidos == 2
+        assert resultado.procesados == 2
         ops = list(
             LogDetalleSincronizacion.objects.filter(id_job=job2).values_list(
                 "operacion", flat=True
             )
         )
         assert ops == ["omitir", "omitir"]
-        # …pero el job queda colgado en 'en_progreso' (consecuencia del bug).
         job2.refresh_from_db()
-        assert job2.estado == "en_progreso"
+        assert job2.estado == "completado"
+        assert job2.procesados == 2
+        assert job2.omitidos == 2
 
     def test_omitido_mas_nuevo_completa_y_cuenta(self, fake_registry, instancia_fake):
         """Si el último registro de la corrida NO es omitido, 'procesados' sí se
@@ -272,46 +278,58 @@ class TestErroresDeConector:
         assert job.estado == "fallido"
         assert "outbound no implementada" in job.resumen_errores[0]["error"]
 
-    def test_entidad_soportada_sin_metodo_pull(self, fake_registry, instancia_fake):
+    def test_entidad_soportada_sin_metodo_pull_marca_fallido(
+        self, fake_registry, instancia_fake
+    ):
         # "empleados" está en SUPPORTED_ENTITIES del fake pero no en PULL_METHODS.
-        # BUG 'procesados' (ver TestDeduplicacionPorChecksum): _ejecutar_pull
-        # retorna sin asignar resultado.procesados → _marcar_completado crashea.
+        # Regresión del BUG 'procesados': el job ya no queda colgado en
+        # 'en_progreso' — se marca fallido con el error registrado.
         job = _job(instancia_fake, tipo="empleados")
 
-        with pytest.raises(AttributeError, match="procesados"):
-            SyncEngine().ejecutar_job(job)
+        SyncEngine().ejecutar_job(job)
 
         job.refresh_from_db()
-        assert job.estado == "en_progreso"  # job colgado — consecuencia del bug
+        assert job.estado == "fallido"
+        assert "sin método pull" in job.resumen_errores[0]["error"]
 
-    def test_error_de_conexion_en_pull(self, fake_registry, instancia_fake):
-        # BUG 'procesados': el error de pull se registra en resultado.errores,
-        # pero _marcar_completado crashea antes de persistir contadores.
+    def test_error_de_conexion_en_pull_marca_fallido(self, fake_registry, instancia_fake):
+        # Regresión del BUG 'procesados': un fallo de conexión marca el job
+        # fallido (y la instancia en error) en vez de dejarlo 'en_progreso'.
         FakeConnector.error = ConnectorConnectionError("Odoo caído")
         job = _job(instancia_fake)
 
-        with pytest.raises(AttributeError, match="procesados"):
-            SyncEngine().ejecutar_job(job)
+        resultado = SyncEngine().ejecutar_job(job)
 
+        assert resultado.fallidos == 1
         job.refresh_from_db()
-        assert job.estado == "en_progreso"
+        assert job.estado == "fallido"
+        assert "Odoo caído" in job.resumen_errores[0]["error"]
+        job.id_instancia.refresh_from_db()
+        assert job.id_instancia.estado == "error"
 
-    def test_error_inesperado_en_pull(self, fake_registry, instancia_fake):
-        # Mismo BUG 'procesados' para excepciones no tipadas del conector.
+    def test_error_inesperado_en_pull_marca_fallido(self, fake_registry, instancia_fake):
+        # Mismo tratamiento para excepciones no tipadas del conector.
         FakeConnector.error = RuntimeError("kaboom")
         job = _job(instancia_fake)
 
-        with pytest.raises(AttributeError, match="procesados"):
-            SyncEngine().ejecutar_job(job)
+        SyncEngine().ejecutar_job(job)
 
-    def test_pull_vacio_crashea_por_bug_procesados(self, fake_registry, instancia_fake):
-        # BUG 'procesados': con pull que retorna lista vacía, el for nunca corre
-        # y resultado.procesados no existe al llegar a _marcar_completado.
+        job.refresh_from_db()
+        assert job.estado == "fallido"
+        assert "kaboom" in job.resumen_errores[0]["error"]
+
+    def test_pull_vacio_completa_con_cero_procesados(self, fake_registry, instancia_fake):
+        # Regresión del BUG 'procesados': pull vacío (nada que sincronizar)
+        # completa el job con contadores en cero, sin AttributeError.
         FakeConnector.registros = []
         job = _job(instancia_fake)
 
-        with pytest.raises(AttributeError, match="procesados"):
-            SyncEngine().ejecutar_job(job)
+        resultado = SyncEngine().ejecutar_job(job)
+
+        assert resultado.procesados == 0
+        job.refresh_from_db()
+        assert job.estado == "completado"
+        assert job.procesados == 0
 
 
 class TestErroresPorRegistro:
@@ -405,13 +423,117 @@ class TestUpsertEnOmni:
         engine = SyncEngine()
         assert engine._upsert_en_omni("pagos", {}, instancia_fake) == ""
 
-    def test_upsert_contacto_sin_modelo_crm_retorna_id_externo(
+    def test_upsert_contacto_crea_y_actualiza_core_contacto(
         self, fake_registry, instancia_fake
     ):
-        # apps.crm.models NO define Contacto (aún) → rama ImportError
+        """Regresión del BUG de upserts: antes importaba apps.crm.models.Contacto
+        (inexistente) y degradaba a placeholder; ahora upsertea core.Contacto."""
+        from apps.core.models import Contacto
+
         engine = SyncEngine()
-        resultado = engine._upsert_contacto({"id_externo": "5"}, instancia_fake)
-        assert resultado == "5"
+        datos = {
+            "id_externo": "5",
+            "nombre": "Proveedor X",
+            "email": "prov@x.com",
+            "identificador_fiscal": "J-12345678",
+            "es_proveedor": True,
+        }
+        pk = engine._upsert_contacto(datos, instancia_fake)
+        contacto = Contacto.objects.get(pk=pk)
+        assert contacto.id_empresa == instancia_fake.id_empresa
+        assert contacto.nombre == "Proveedor X"
+        assert contacto.rif == "J-12345678"
+        assert contacto.es_proveedor is True
+
+        # Segunda corrida con el mismo RIF: actualiza, no duplica.
+        datos["nombre"] = "Proveedor X Renombrado"
+        pk2 = engine._upsert_contacto(datos, instancia_fake)
+        assert pk2 == pk
+        assert Contacto.objects.filter(id_empresa=instancia_fake.id_empresa).count() == 1
+        contacto.refresh_from_db()
+        assert contacto.nombre == "Proveedor X Renombrado"
+
+    def test_upsert_producto_crea_con_fks_reales_y_actualiza(
+        self, fake_registry, instancia_fake, moneda_usd
+    ):
+        """Regresión del BUG de upserts: _upsert_producto usaba campos
+        inexistentes (codigo_interno/precio_venta/costo) — ahora mapea al
+        modelo real con Decimal y resuelve las FKs obligatorias."""
+        from decimal import Decimal
+
+        from apps.inventario.models import Producto
+
+        engine = SyncEngine()
+        datos = {
+            "id_externo": "9",
+            "nombre": "Widget",
+            "codigo_interno": "SKU-9",
+            "precio_venta": "12.50",
+            "costo": "7.25",
+        }
+        pk = engine._upsert_producto(datos, instancia_fake)
+        producto = Producto.objects.get(pk=pk)
+        assert producto.id_empresa == instancia_fake.id_empresa
+        assert producto.nombre_producto == "Widget"
+        assert producto.sku == "SKU-9"
+        assert producto.precio_venta_sugerido == Decimal("12.50")
+        assert producto.costo_promedio == Decimal("7.25")
+        assert producto.id_categoria_id is not None
+        assert producto.id_unidad_medida_base_id is not None
+        assert producto.id_moneda_precio_id is not None
+
+        datos["precio_venta"] = "15.00"
+        pk2 = engine._upsert_producto(datos, instancia_fake)
+        assert pk2 == pk
+        producto.refresh_from_db()
+        assert producto.precio_venta_sugerido == Decimal("15.00")
+        assert Producto.objects.filter(id_empresa=instancia_fake.id_empresa).count() == 1
+
+    def test_upsert_producto_sin_sku_es_idempotente_por_nombre(
+        self, fake_registry, instancia_fake, moneda_usd
+    ):
+        """Sin SKU externo, la clave de idempotencia cae al nombre dentro del
+        tenant: re-sincronizar no duplica el producto (y sku queda None sin
+        violar el unique_together, que en Postgres admite múltiples NULL)."""
+        from decimal import Decimal
+
+        from apps.inventario.models import Producto
+
+        engine = SyncEngine()
+        datos = {
+            "id_externo": "10",
+            "nombre": "Widget sin SKU",
+            "precio_venta": "5.00",
+            "costo": "2.00",
+        }
+        pk = engine._upsert_producto(datos, instancia_fake)
+        producto = Producto.objects.get(pk=pk)
+        assert producto.sku is None
+
+        datos["precio_venta"] = "6.00"
+        pk2 = engine._upsert_producto(datos, instancia_fake)
+        assert pk2 == pk
+        producto.refresh_from_db()
+        assert producto.precio_venta_sugerido == Decimal("6.00")
+        assert (
+            Producto.objects.filter(
+                id_empresa=instancia_fake.id_empresa, nombre_producto="Widget sin SKU"
+            ).count()
+            == 1
+        )
+
+    def test_upsert_producto_sin_moneda_se_omite(self, fake_registry, instancia_fake):
+        """Sin ninguna Moneda configurada no se puede satisfacer la FK
+        obligatoria id_moneda_precio: el registro se omite (None)."""
+        from apps.finanzas.models import Moneda
+
+        Moneda.objects.all().delete()
+        engine = SyncEngine()
+        resultado = engine._upsert_producto(
+            {"id_externo": "9", "nombre": "Widget", "codigo_interno": "SKU-9"},
+            instancia_fake,
+        )
+        assert resultado is None
 
 
 class TestSyncResult:

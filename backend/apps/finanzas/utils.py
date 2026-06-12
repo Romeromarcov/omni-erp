@@ -43,16 +43,13 @@ def obtener_sesion_activa_usuario(usuario):
     Obtiene la sesión activa del usuario actual.
     Retorna None si no hay sesión activa.
     """
-    from .models import SesionCaja
+    from .models import SesionCajaFisica
 
-    try:
-        return (
-            SesionCaja.objects.filter(usuario=usuario, estado="ABIERTA")
-            .select_related("caja_fisica_principal")
-            .first()
-        )
-    except Exception:
-        return None
+    return (
+        SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA")
+        .select_related("caja_fisica")
+        .first()
+    )
 
 
 def validar_acceso_caja_usuario(usuario, caja):
@@ -70,7 +67,7 @@ def validar_acceso_caja_usuario(usuario, caja):
 
     # Verificar si tiene sesión activa en esa caja
     sesion_activa = obtener_sesion_activa_usuario(usuario)
-    if sesion_activa and sesion_activa.caja_fisica_principal == caja:
+    if sesion_activa and sesion_activa.caja_fisica == caja:
         return True
 
     return False
@@ -83,7 +80,7 @@ def obtener_caja_activa_sesion(usuario):
     """
     sesion_activa = obtener_sesion_activa_usuario(usuario)
     if sesion_activa:
-        return sesion_activa.caja_fisica_principal
+        return sesion_activa.caja_fisica
     return None
 
 
