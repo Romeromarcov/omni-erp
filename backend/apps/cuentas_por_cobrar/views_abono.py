@@ -19,6 +19,7 @@ from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 
+from apps.core.idempotency import idempotent
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
@@ -43,6 +44,7 @@ class AbonoCxCViewSet(BaseModelViewSet):
             cuenta_por_cobrar__empresa__in=empresas
         ).select_related("cuenta_por_cobrar", "usuario")
 
+    @idempotent("cxc:abono-create")
     def create(self, request, *args, **kwargs):
         """
         POST /api/cxc/abonos-cxc/

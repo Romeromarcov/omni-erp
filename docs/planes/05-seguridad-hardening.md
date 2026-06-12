@@ -55,7 +55,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | R6 | Política de contraseñas + bloqueo de cuenta (django-axes) | ❌ |
 | R7 | Permisos a nivel objeto auditados (no solo filtro de queryset) | ⚠️ |
 | R8 | Backups automáticos + prueba de restore de PostgreSQL | ⚠️ verificar |
-| R9 | Idempotencia en endpoints de pago/creación (claves idempotentes) | ❌ |
+| R9 | Idempotencia en endpoints de pago/creación (claves idempotentes) | ✅ (`feature/p1-2-idempotencia-pagos`) |
 | R10 | Circuit breaker / timeouts en llamadas LLM | ❌ |
 | R11 | Observabilidad de costos LLM (tokens por tenant) | ❌ |
 | R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ |
@@ -151,7 +151,7 @@ tiene techo de abuso a nivel aplicación.
 **DoD:** throttling activo con tests; documentado.
 **Esfuerzo:** ~1 día. **Owner:** equipo-backend.
 
-### P1-2 · Idempotencia en pagos/creación (R9) — `❌`
+### P1-2 · Idempotencia en pagos/creación (R9) — `✅`
 **Por qué:** ERP financiero; un doble-submit o reintento de red no puede duplicar un pago o
 una factura.
 
@@ -159,6 +159,16 @@ una factura.
 (pagos, confirmar nota) y `apps/cxc`.
 **DoD:** reintento con misma clave devuelve el mismo resultado sin duplicar; tests.
 **Esfuerzo:** ~2 días. **Owner:** equipo-backend.
+
+#### Estado — `🟢 HECHO` (PR `feature/p1-2-idempotencia-pagos`)
+Mecanismo en `apps/core/idempotency.py` (`@idempotent(scope)` + `IdempotentCreateMixin`)
+sobre `ClaveIdempotencia` (unicidad `(empresa, usuario, scope, clave)`, TTL 24h con purga
+perezosa, registro "en vuelo" que serializa el doble-submit concurrente vía índice único;
+payload distinto → 422; sin cabecera → opt-out). Aplicado a: abono CxC (`abonar` y
+`AbonoCxCViewSet.create`), `PagoViewSet.create` (finanzas), `registrar-pago` de acuerdos,
+confirmar pedido y conversión nota de venta → factura. Tests en
+`tests_api/test_idempotencia.py` + race test con hilos en
+`tests/integration/test_idempotencia_concurrencia.py`.
 
 ### P1-3 · Bloqueo de cuenta + política de contraseñas (R6) — `❌`
 **Por qué:** rate-limit por IP no frena fuerza bruta distribuida ni credential stuffing.

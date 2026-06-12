@@ -12,6 +12,7 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+from apps.core.idempotency import idempotent
 from apps.core.viewsets import get_empresas_visible
 from apps.cxc.models import AcuerdoPago, CuotaAcuerdo
 from apps.cxc.api.serializers import (
@@ -64,6 +65,7 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.soft_delete()
 
+    @idempotent("cxc:acuerdo-registrar-pago")
     @action(detail=True, methods=["post"], url_path="registrar-pago")
     def registrar_pago(self, request, pk=None):
         """

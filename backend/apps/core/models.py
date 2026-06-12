@@ -732,16 +732,18 @@ class ClaveIdempotencia(models.Model):
     de red NO debe duplicar un pago, un abono o una factura. El cliente envía la
     cabecera ``Idempotency-Key`` y el servidor:
 
-    - Si la clave ya existe (misma ``empresa`` + ``scope``): devuelve la respuesta
-      guardada (mismo status + body) sin volver a ejecutar la lógica de negocio.
-    - Si no existe: ejecuta la operación dentro de una transacción atómica y
-      persiste el snapshot de la respuesta junto a la clave.
-    - Si la misma clave llega con un payload distinto: es un conflicto (409); la
-      clave se usó para otra cosa y no se puede reutilizar.
+    - Si la clave ya existe (misma ``empresa`` + ``usuario`` + ``scope``):
+      devuelve la respuesta guardada (mismo status + body) sin re-ejecutar la
+      lógica de negocio.
+    - Si no existe: registra la clave "en vuelo" y ejecuta la operación dentro de
+      la misma transacción atómica, persistiendo el snapshot de la respuesta.
+    - Si la misma clave llega con un payload distinto: 422 (la clave se usó para
+      otra cosa y no se puede reutilizar).
+    - Las claves expiran (TTL ~24h) y se purgan de forma perezosa.
 
-    Aislamiento multi-tenant (R-CODE-1): la unicidad es por ``(empresa, scope,
-    clave)``, así dos tenants distintos pueden usar la misma cadena de clave sin
-    colisionar, y un tenant nunca lee la respuesta cacheada de otro.
+    Aislamiento multi-tenant (R-CODE-1): la unicidad es por ``(empresa, usuario,
+    scope, clave)``, así dos tenants (o usuarios) distintos pueden usar la misma
+    cadena de clave sin colisionar, y un tenant nunca lee la respuesta de otro.
 
     No se almacena PII ni secretos: solo un hash SHA-256 del payload (no el payload
     en claro) y el body de la respuesta que el propio cliente ya recibió.
@@ -755,6 +757,16 @@ class ClaveIdempotencia(models.Model):
         related_name="claves_idempotencia",
         verbose_name="Empresa",
         help_text="Tenant dueño de la clave (R-CODE-1).",
+    )
+
+    usuario = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="claves_idempotencia",
+        verbose_name="Usuario",
+        help_text="Usuario que consumió la clave; forma parte de la unicidad.",
     )
 
     scope = models.CharField(
@@ -776,8 +788,13 @@ class ClaveIdempotencia(models.Model):
     )
 
     status_respuesta = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
         verbose_name="Status HTTP guardado",
-        help_text="Código HTTP de la respuesta original que se reproduce en reintentos.",
+        help_text=(
+            "Código HTTP de la respuesta original que se reproduce en reintentos. "
+            "NULL mientras la operación original está 'en vuelo' (sin commitear)."
+        ),
     )
 
     cuerpo_respuesta = models.JSONField(
@@ -792,6 +809,13 @@ class ClaveIdempotencia(models.Model):
         verbose_name="Fecha de creación",
     )
 
+    expira_en = models.DateTimeField(
+        db_index=True,
+        default=timezone.now,
+        verbose_name="Expira en",
+        help_text="Pasada esta fecha la clave deja de ser válida y puede purgarse (TTL ~24h).",
+    )
+
     class Meta:
         db_table = "core_clave_idempotencia"
         verbose_name = "Clave de idempotencia"
@@ -799,10 +823,25 @@ class ClaveIdempotencia(models.Model):
         ordering = ["-fecha_creacion"]
         constraints = [
             models.UniqueConstraint(
-                fields=["empresa", "scope", "clave"],
-                name="uniq_idempotencia_empresa_scope_clave",
+                fields=["empresa", "usuario", "scope", "clave"],
+                name="uniq_idempotencia_emp_usr_scope_clave",
             ),
         ]
+
+    @property
+    def expirada(self) -> bool:
+        """True si la clave ya pasó su TTL y debe tratarse como inexistente."""
+        return self.expira_en <= timezone.now()
+
+    @classmethod
+    def purgar_expiradas(cls, empresa) -> int:
+        """
+        Limpieza perezosa (sin Celery): borra las claves vencidas del tenant.
+        Se invoca de forma oportunista desde el decorador antes de registrar
+        una clave nueva; la tabla no crece sin límite.
+        """
+        borradas, _ = cls.objects.filter(empresa=empresa, expira_en__lte=timezone.now()).delete()
+        return borradas
 
     def __str__(self):
         return f"{self.scope}:{self.clave[:16]}… ({self.empresa_id})"
