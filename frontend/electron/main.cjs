@@ -1,10 +1,55 @@
 // Proceso principal de Electron — shell de escritorio (Windows) de Omni ERP.
 // Carga el dev server de Vite en desarrollo o el bundle estático en producción.
-const { app, BrowserWindow, shell } = require('electron');
+//
+// En producción la app NO se sirve desde file:// sino desde el scheme propio
+// app://omni. Motivo (seguridad + CORS): con file:// el navegador manda
+// `Origin: null` en cada fetch cross-origin al backend, y permitir el origen
+// "null" en CORS del servidor abriría la puerta a cualquier iframe sandboxeado.
+// Con un scheme standard+secure el origen es estable (`app://omni`) y el
+// backend lo permite explícitamente (ver settings_prod.py, CORS de shells).
+const { app, BrowserWindow, net, protocol, shell } = require('electron');
+const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 const DEV_URL = process.env.ELECTRON_START_URL || 'http://localhost:5173';
+const APP_SCHEME = 'app';
+const APP_HOST = 'omni';
 const isDev = !app.isPackaged;
+
+// Debe ejecutarse ANTES de app.ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: APP_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportsFetchAPI: true,
+      corsEnabled: true,
+      // El build PWA registra un service worker; sin esto la registración
+      // fallaría en un scheme custom (en web/Android sí aplica el SW).
+      allowServiceWorkers: true,
+    },
+  },
+]);
+
+/** Sirve dist/ bajo app://omni/ con fallback a index.html (SPA). */
+function registerAppProtocol() {
+  const distDir = path.join(__dirname, '..', 'dist');
+  protocol.handle(APP_SCHEME, (request) => {
+    const { pathname } = new URL(request.url);
+    const relative = decodeURIComponent(pathname).replace(/^\/+/, '');
+    const resolved = path.normalize(path.join(distDir, relative));
+    // Anti path-traversal: nunca servir fuera de dist/.
+    const safe =
+      resolved.startsWith(distDir + path.sep) || resolved === distDir;
+    const target =
+      safe && relative && fs.existsSync(resolved) && fs.statSync(resolved).isFile()
+        ? resolved
+        : path.join(distDir, 'index.html');
+    return net.fetch(pathToFileURL(target).toString());
+  });
+}
 
 /** @type {BrowserWindow | null} */
 let mainWindow = null;
@@ -30,8 +75,7 @@ function createWindow() {
     mainWindow.loadURL(DEV_URL);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // dist/ se empaqueta junto a electron/ dentro de los recursos de la app.
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    mainWindow.loadURL(`${APP_SCHEME}://${APP_HOST}/`);
   }
 
   // Abrir enlaces externos en el navegador del sistema, no en la app.
@@ -49,6 +93,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (!isDev) registerAppProtocol();
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
