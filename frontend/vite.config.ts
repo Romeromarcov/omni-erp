@@ -77,30 +77,30 @@ export default defineConfig({
       // test:coverage). Los umbrales son un "ratchet" fijado al piso actual del
       // código para prevenir regresión; el objetivo de la Fase 4 del plan
       // cero-dudas es 80% y se sube por escalones conforme se agregan tests.
-      // No bajar. Piso actual (Q1/COV-2 escalón 2): stmts 74.5 / branches 65.3
-      // / funcs 65.5 / lines 76.4 — umbral con ~1 punto de margen.
+      // No bajar. Piso actual (Q1/COV-2 escalón 3, OBJETIVO 80% ALCANZADO):
+      // stmts 80.7 / branches 70.9 / funcs 71.0 / lines 82.7 — umbral con ~1 punto de margen.
       thresholds: {
-        statements: 73,
-        branches: 64,
-        functions: 64,
-        lines: 75,
+        statements: 79,
+        branches: 69,
+        functions: 70,
+        lines: 81,
         // TEST-6: pisos de cobertura por carpeta (ratchet, igual filosofía que el
         // global). Fijados al piso ACTUAL de cada carpeta para impedir regresión.
         // El objetivo del Plan Maestro (≥85% en services/ y hooks/) sigue pendiente;
         // se sube conforme se agregan tests con MSW. NO bajar estos números.
-        // Piso actual: services 78.7/63.8/83/80.1 · hooks 82.6/72.9/83.3/85.0
-        // (escalón 2: useDocumentoVentaBase y los hooks de venta ya tienen tests).
+        // Piso actual: services 93.1/86.5/90/94.9 · hooks 88.3/78.7/84.4/91.2
+        // (escalón 3: services/api a fondo + useFacturaFiscalForm con suite propia).
         'src/services/**': {
-          statements: 77,
-          branches: 62,
-          functions: 81,
-          lines: 79,
+          statements: 91,
+          branches: 84,
+          functions: 88,
+          lines: 93,
         },
         'src/hooks/**': {
-          statements: 81,
-          branches: 71,
+          statements: 86,
+          branches: 77,
           functions: 82,
-          lines: 83,
+          lines: 89,
         },
         'src/lib/**': {
           statements: 85,
