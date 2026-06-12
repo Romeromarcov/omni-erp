@@ -1952,12 +1952,14 @@ class PagoTercero(TenantModel, IntegrationFieldsMixin):
     monto = models.DecimalField(
         max_digits=18, decimal_places=2, help_text="Monto del cobro recibido en la cuenta del tercero."
     )
+    # La comisión NO genera asiento de gasto propio: queda anotada en el
+    # documento_json y el asiento del reintegro va por el monto neto.
     comision = models.DecimalField(
         max_digits=18,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Comisión que cobra el proveedor por el reintegro (opcional). NO genera asiento de gasto propio: queda anotada en documento_json (el asiento del reintegro va por el neto)."
+        help_text="Comisión que cobra el proveedor por el reintegro (opcional)"
                   "La CxC del reintegro se emite por monto − comisión.",
     )
     referencia_zelle = models.CharField(
