@@ -106,15 +106,23 @@ export interface TriggerExportResult {
 }
 
 export interface IntegrationHubStatus {
-  conectores_activos: number;
-  conectores_total: number;
-  ultima_24h: {
+  // Forma real del backend (IntegrationHubStatusView): el contrato anterior
+  // (conectores_activos/ultima_24h) nunca existió y rompía la página.
+  conectores: {
+    total: number;
+    activos: number;
+    con_error: number;
+    configurando: number;
+    inactivos: number;
+  };
+  jobs_24h: {
     total: number;
     completados: number;
     con_errores: number;
     fallidos: number;
     en_progreso: number;
   };
+  proveedores_disponibles: string[];
 }
 
 export interface PaginatedResponse<T> {
