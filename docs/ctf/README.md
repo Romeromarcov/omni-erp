@@ -24,6 +24,7 @@ sin que la condición de cierre se cumpla, el item bloquea el siguiente hito.
 | CTF-012  | Rol de BD dedicado no-dueño (activación de RLS)  | 2026-08-01 | equipo-backend/devops  | ABIERTO  |
 | CTF-013  | TEST-5 cambio-divisa y nómina (features bloqueadas) | 2026-08-15 | equipo-backend         | ABIERTO  |
 | CTF-014  | Migrar `tests_api/` a estructura por capas `tests/` | 2026-09-30 | equipo-backend         | ABIERTO  |
+| CTF-015  | `transferir-entre-cajas` roto + validar `cantidad > 0` en OF | 2026-06-19 | agente (bugs lote 3)   | CERRADO  |
 
 ## Proceso
 
