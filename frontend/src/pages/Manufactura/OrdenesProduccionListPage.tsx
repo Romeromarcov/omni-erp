@@ -10,6 +10,7 @@ import { Button, Typography } from '@mui/material';
 import { manufacturaService } from '../../services/manufacturaService';
 import type { OrdenProduccion } from '../../services/manufacturaService';
 import { manufacturaKeys } from '../../lib/queryKeys';
+import { toFixedStr } from '../../lib/decimal';
 import Pagination from '../../components/Pagination';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -39,7 +40,7 @@ export default function OrdenesProduccionListPage() {
         </Typography>
       ),
     },
-    { key: 'cantidad', header: t('manufactura.ordenes.cantidad'), align: 'right', render: (o) => o.cantidad },
+    { key: 'cantidad', header: t('manufactura.ordenes.cantidad'), align: 'right', render: (o) => toFixedStr(o.cantidad) },
     { key: 'fecha_inicio', header: t('manufactura.ordenes.fechaInicio'), render: (o) => o.fecha_inicio },
     {
       key: 'estado',

@@ -14,6 +14,7 @@ import type { MrpFaltante } from '../../services/manufacturaService';
 import { almacenesService } from '../../services/almacenesService';
 import { manufacturaKeys, almacenesKeys } from '../../lib/queryKeys';
 import { mensajeDeError } from '../../utils/api';
+import { toFixedStr } from '../../lib/decimal';
 import { PageContainer, PageHeader, DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
 
@@ -51,15 +52,15 @@ export default function MrpOrdenPage() {
         </Typography>
       ),
     },
-    { key: 'requerido', header: t('manufactura.mrp.requerido'), align: 'right', render: (f) => f.requerido },
-    { key: 'disponible', header: t('manufactura.mrp.disponible'), align: 'right', render: (f) => f.disponible },
+    { key: 'requerido', header: t('manufactura.mrp.requerido'), align: 'right', render: (f) => toFixedStr(f.requerido) },
+    { key: 'disponible', header: t('manufactura.mrp.disponible'), align: 'right', render: (f) => toFixedStr(f.disponible) },
     {
       key: 'a_comprar',
       header: t('manufactura.mrp.aComprar'),
       align: 'right',
       render: (f) => (
         <Typography variant="body2" fontWeight={700} color="error.main">
-          {f.a_comprar}
+          {toFixedStr(f.a_comprar)}
         </Typography>
       ),
     },
