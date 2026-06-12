@@ -61,7 +61,7 @@ export interface EmpleadoPayload {
 const BASE = '/rrhh';
 
 /** Máximo de páginas a recorrer en catálogos (el backend pagina fijo a 20). */
-const MAX_PAGINAS = 25;
+const MAX_PAGINAS = 100;
 
 /**
  * Recorre la lista paginada acumulando todos los elementos (el backend usa

@@ -123,7 +123,7 @@ export interface CrearPeriodoPayload {
 const BASE = '/nomina';
 
 /** Máximo de páginas a recorrer en listas auxiliares (paginado fijo de 20). */
-const MAX_PAGINAS = 25;
+const MAX_PAGINAS = 100;
 
 async function fetchTodas<T>(endpoint: string): Promise<T[]> {
   const sep = endpoint.includes('?') ? '&' : '?';
