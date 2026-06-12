@@ -1,5 +1,6 @@
 import logging
 from apps.core.serializer_mixins import TenantFKScopeMixin
+from apps.core.throttling import EscrituraRateThrottle
 
 from django.db import models
 from rest_framework import serializers, status, viewsets
@@ -1233,6 +1234,10 @@ class CajaFisicaViewSet(BaseModelViewSet):
 class PagoViewSet(BaseModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
+
+    # P1-1: techo estricto para escritura de pagos (scope 'escritura');
+    # los GET siguen bajo los throttles globales anon/user.
+    throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
 
     def perform_create(self, serializer):
         # BUG-C2: los side-effects financieros (TransaccionFinanciera +

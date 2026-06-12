@@ -13,6 +13,8 @@ python-dotenv==1.2.2
 sqlparse==0.5.4
 tzdata==2025.2
 django-cors-headers==4.7.0
+# P1-3 hardening: bloqueo de cuenta por usuario+IP tras N intentos fallidos de login
+django-axes==8.3.1
 drf-yasg==1.21.10
 celery==5.6.3
 redis==7.4.0
