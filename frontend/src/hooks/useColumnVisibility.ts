@@ -59,11 +59,13 @@ export function useColumnVisibility<T>(storageKey: string, columns: ColumnDef<T>
     (key: string) => {
       const col = columns.find((c) => c.key === key);
       if (!col || col.always) return;
+      // eslint-disable-next-line security/detect-object-injection -- FP: `key` está validada contra la definición de columnas (col.key) en las líneas anteriores; no es input del usuario
       persist({ ...visible, [key]: !visible[key] });
     },
     [columns, visible, persist],
   );
 
+  // eslint-disable-next-line security/detect-object-injection -- FP: `key` es una clave de columna definida en código (ColumnDef.key), no input del usuario; lectura booleana sin sink
   const isVisible = useCallback((key: string) => !!visible[key], [visible]);
 
   return { visible, isVisible, toggle };
