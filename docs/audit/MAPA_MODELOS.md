@@ -130,7 +130,10 @@
 | inventario | UnidadMedida | ✅ | ✅ | id_empresa+abreviatura |
 | inventario | VarianteProducto | — | ✅ | — |
 | manufactura | CentroTrabajo | ✅ | ✅ | id_empresa+codigo_centro |
+| manufactura | ConfiguracionManufactura | ✅ | ✅ | — |
 | manufactura | ConsumoMaterial | — | ✅ | — |
+| manufactura | EtapaOrdenProduccion | — | ✅ | orden_produccion+orden |
+| manufactura | EtapaProduccion | ✅ | ✅ | empresa+codigo |
 | manufactura | ListaMateriales | ✅ | ✅ | — |
 | manufactura | ListaMaterialesDetalle | — | ✅ | — |
 | manufactura | OperacionProduccion | ✅ | ✅ | id_empresa+codigo_operacion |
@@ -194,4 +197,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 191_
+_Total modelos: 194_

@@ -8,6 +8,7 @@ y reutiliza `inventario.services.registrar_movimiento` (R-CODE-11 vía inventari
 from __future__ import annotations
 
 import logging
+import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -87,6 +88,22 @@ def calcular_mrp(
     return faltantes
 
 
+def calcular_costo_mano_obra(
+    etapas: list[tuple],  # [(horas, tarifa_hora, pago_destajo), ...]
+) -> Decimal:
+    """Mano de obra real de una OF a partir de sus etapas completadas:
+    Σ (horas × tarifa) + pago a destajo. Función pura, Decimal."""
+    total = Decimal("0")
+    for horas, tarifa, destajo in etapas:
+        total += _d(horas) * _d(tarifa) + _d(destajo)
+    return total
+
+
+def calcular_overhead(base: Decimal, porcentaje: Decimal) -> Decimal:
+    """Overhead configurable: % sobre la base (materiales + mano de obra)."""
+    return (_d(base) * _d(porcentaje) / Decimal("100")).quantize(Decimal("0.0001"))
+
+
 def calcular_costo_produccion(
     consumos: list[tuple],  # [(costo_unitario, cantidad), ...]
     *,
@@ -99,13 +116,14 @@ def calcular_costo_produccion(
     cant = _d(cantidad_producida)
     if cant <= 0:
         raise ManufacturaError("La cantidad producida debe ser positiva.")
-    costo_materiales = sum((_d(cu) * _d(q) for cu, q in consumos), Decimal("0"))
-    costo_total = costo_materiales + _d(mano_obra) + _d(costos_indirectos)
-    costo_unitario = (costo_total / cant).quantize(Decimal("0.0001"))
+    cuatro = Decimal("0.0001")
+    costo_materiales = sum((_d(cu) * _d(q) for cu, q in consumos), Decimal("0")).quantize(cuatro)
+    costo_total = (costo_materiales + _d(mano_obra) + _d(costos_indirectos)).quantize(cuatro)
+    costo_unitario = (costo_total / cant).quantize(cuatro)
     return {
         "costo_materiales": costo_materiales,
-        "mano_obra": _d(mano_obra),
-        "costos_indirectos": _d(costos_indirectos),
+        "mano_obra": _d(mano_obra).quantize(cuatro),
+        "costos_indirectos": _d(costos_indirectos).quantize(cuatro),
         "costo_total": costo_total,
         "costo_unitario": costo_unitario,
     }
@@ -138,7 +156,7 @@ def crear_orden_produccion(*, empresa, producto, cantidad, fecha_inicio=None,
 
     if _d(cantidad) <= 0:
         raise ManufacturaError("La cantidad de la orden debe ser positiva.")
-    return OrdenProduccion.objects.create(
+    orden = OrdenProduccion.objects.create(
         empresa=empresa,
         producto=producto,
         cantidad=_d(cantidad),
@@ -148,6 +166,176 @@ def crear_orden_produccion(*, empresa, producto, cantidad, fecha_inicio=None,
         ruta_produccion=ruta_produccion,
         observaciones=observaciones,
     )
+    # 1.I — materializar las etapas vigentes del catálogo de la empresa.
+    # Si la empresa no configuró etapas, la OF opera sin ellas (flujo simple).
+    crear_etapas_para_orden(orden)
+    return orden
+
+
+# ── Etapas de OF (1.I) ───────────────────────────────────────────────────────
+
+
+@transaction.atomic
+def crear_etapas_estandar(empresa):
+    """Siembra el catálogo de etapas estándar de mueblería para una empresa
+    (corte → ensamble → lijado → pintura → tapizado → control final).
+    Idempotente: no duplica códigos ya existentes."""
+    from .models import ETAPAS_ESTANDAR, EtapaProduccion
+
+    creadas = []
+    for i, (codigo, nombre) in enumerate(ETAPAS_ESTANDAR, start=1):
+        etapa, creada = EtapaProduccion.objects.get_or_create(
+            empresa=empresa, codigo=codigo, defaults={"nombre": nombre, "orden": i}
+        )
+        if creada:
+            creadas.append(etapa)
+    return creadas
+
+
+@transaction.atomic
+def crear_etapas_para_orden(orden):
+    """Copia la secuencia vigente de etapas (catálogo activo de la empresa)
+    a la OF. No hace nada si la OF ya tiene etapas."""
+    from .models import EtapaOrdenProduccion, EtapaProduccion
+
+    if orden.etapas.exists():
+        return list(orden.etapas.all())
+    catalogo = EtapaProduccion.objects.filter(empresa=orden.empresa, activo=True).order_by("orden")
+    return [
+        EtapaOrdenProduccion.objects.create(orden_produccion=orden, etapa=etapa, orden=i)
+        for i, etapa in enumerate(catalogo, start=1)
+    ]
+
+
+@transaction.atomic
+def avanzar_etapa_orden(orden, *, usuario, horas_trabajadas=Decimal("0"),
+                        tarifa_hora=Decimal("0"), cantidad_destajo=Decimal("0"),
+                        observaciones=""):
+    """Completa la siguiente etapa pendiente de la OF (en secuencia) registrando
+    quién/cuándo y la mano de obra de la etapa: horas × tarifa y/o pago a
+    destajo (cantidad × tarifa_destajo de la etapa del catálogo)."""
+    if orden.estado in ("finalizada", "cancelada"):
+        raise ManufacturaError(f"La orden está {orden.estado}; no admite avance de etapas.")
+
+    # select_for_update: dos avances concurrentes no deben completar la misma etapa.
+    etapa_of = (
+        orden.etapas.select_for_update()
+        .filter(estado="pendiente")
+        .order_by("orden")
+        .select_related("etapa")
+        .first()
+    )
+    if etapa_of is None:
+        raise ManufacturaError("La orden no tiene etapas pendientes.")
+
+    horas = _d(horas_trabajadas)
+    tarifa = _d(tarifa_hora)
+    cant_destajo = _d(cantidad_destajo)
+    if horas < 0 or tarifa < 0 or cant_destajo < 0:
+        raise ManufacturaError("Horas, tarifa y cantidad a destajo no pueden ser negativas.")
+
+    etapa_of.estado = "completada"
+    etapa_of.horas_trabajadas = horas
+    etapa_of.tarifa_hora = tarifa
+    etapa_of.cantidad_destajo = cant_destajo
+    etapa_of.pago_destajo = (cant_destajo * _d(etapa_of.etapa.tarifa_destajo)).quantize(Decimal("0.0001"))
+    etapa_of.completada_por = usuario
+    etapa_of.fecha_completada = timezone.now()
+    if observaciones:
+        etapa_of.observaciones = observaciones
+    etapa_of.save()
+
+    if orden.estado == "pendiente":
+        orden.estado = "en_proceso"
+        orden.save(update_fields=["estado"])
+    return etapa_of
+
+
+def costo_mano_obra_orden(orden) -> Decimal:
+    """Mano de obra real acumulada de la OF (etapas completadas)."""
+    return calcular_costo_mano_obra([
+        (e.horas_trabajadas, e.tarifa_hora, e.pago_destajo)
+        for e in orden.etapas.filter(estado="completada")
+    ])
+
+
+def _overhead_empresa(empresa, base: Decimal) -> Decimal:
+    """Overhead según ConfiguracionManufactura de la empresa (0 si no hay)."""
+    from .models import ConfiguracionManufactura
+
+    config = ConfiguracionManufactura.objects.filter(empresa=empresa).first()
+    if config is None:
+        return Decimal("0")
+    return calcular_overhead(base, config.porcentaje_overhead)
+
+
+def costeo_real_orden(orden, *, mano_obra=None, costos_indirectos=None,
+                      cantidad_producida=None) -> dict:
+    """Costeo real de la OF: materiales consumidos (al costo del movimiento de
+    inventario) + mano de obra (etapas: horas × tarifa + destajo, salvo monto
+    explícito) + overhead configurable (salvo monto explícito).
+
+    Devuelve el dict de `calcular_costo_produccion` (Decimal en todo, R-CODE-4).
+    """
+    from .models import ConsumoMaterial
+
+    consumos = ConsumoMaterial.objects.filter(orden_produccion=orden).select_related("producto")
+    # costo_unitario es el snapshot del movimiento; los consumos legados (0)
+    # caen al costo_promedio vigente del producto.
+    pares = [
+        (c.costo_unitario if _d(c.costo_unitario) > 0 else c.producto.costo_promedio, c.cantidad)
+        for c in consumos
+    ]
+    mo = _d(mano_obra) if mano_obra is not None else costo_mano_obra_orden(orden)
+    costo_materiales = sum((_d(cu) * _d(q) for cu, q in pares), Decimal("0"))
+    oh = _d(costos_indirectos) if costos_indirectos is not None else _overhead_empresa(
+        orden.empresa, costo_materiales + mo
+    )
+    cant = _d(cantidad_producida) if cantidad_producida is not None else _d(orden.cantidad)
+    return calcular_costo_produccion(pares, mano_obra=mo, costos_indirectos=oh, cantidad_producida=cant)
+
+
+def calcular_mrp_orden(orden, *, almacen=None, incluir_opcionales=False) -> list[dict]:
+    """MRP básico de la OF: explosión de su BOM vs StockActual de la empresa
+    (disponible neto = disponible − comprometido) → faltantes a comprar."""
+    if orden.lista_materiales is None:
+        raise ManufacturaError("La orden no tiene lista de materiales asociada.")
+    return calcular_mrp_lista(
+        orden.lista_materiales, orden.cantidad, almacen=almacen, incluir_opcionales=incluir_opcionales
+    )
+
+
+def calcular_mrp_lista(lista, cantidad, *, almacen=None, incluir_opcionales=False) -> list[dict]:
+    """MRP básico: materiales necesarios para producir `cantidad` unidades con
+    la BOM `lista`, comparados contra el StockActual de la empresa (opcionalmente
+    de un almacén). Devuelve requerido/disponible/a_comprar por componente."""
+    from apps.inventario.models import Producto, StockActual
+
+    requerimientos = explotar_lista_materiales(lista, cantidad, incluir_opcionales=incluir_opcionales)
+    producto_ids = [r.producto_id for r in requerimientos]
+
+    stock_qs = StockActual.objects.filter(id_empresa=lista.empresa, id_producto_id__in=producto_ids)
+    if almacen is not None:
+        stock_qs = stock_qs.filter(id_almacen=almacen)
+    disponible: dict[str, Decimal] = {}
+    for s in stock_qs:
+        neto = _d(s.cantidad_disponible) - _d(s.cantidad_comprometida)
+        disponible[str(s.id_producto_id)] = disponible.get(str(s.id_producto_id), Decimal("0")) + neto
+
+    nombres = dict(
+        Producto.objects.filter(pk__in=producto_ids).values_list("id_producto", "nombre_producto")
+    )
+    faltantes = calcular_mrp(requerimientos, disponible)
+    return [
+        {
+            "producto_id": f.producto_id,
+            "producto": nombres.get(uuid.UUID(f.producto_id), ""),
+            "requerido": f.requerido,
+            "disponible": f.disponible,
+            "a_comprar": f.a_comprar,
+        }
+        for f in faltantes
+    ]
 
 
 @transaction.atomic
@@ -164,6 +352,8 @@ def consumir_materiales_orden(orden, *, almacen, usuario, fecha_hora=None, inclu
 
     if orden.lista_materiales is None:
         raise ManufacturaError("La orden no tiene lista de materiales asociada.")
+    if orden.estado in ("finalizada", "cancelada"):
+        raise ManufacturaError(f"La orden está {orden.estado}; no admite consumo de materiales.")
 
     fecha = fecha_hora or timezone.now()
     requerimientos = explotar_lista_materiales(
@@ -188,36 +378,48 @@ def consumir_materiales_orden(orden, *, almacen, usuario, fecha_hora=None, inclu
         )
         consumos.append(
             ConsumoMaterial.objects.create(
-                orden_produccion=orden, producto=producto, cantidad=req.cantidad
+                orden_produccion=orden,
+                producto=producto,
+                cantidad=req.cantidad,
+                # snapshot del costo del movimiento — base del costeo real (1.I)
+                costo_unitario=_d(producto.costo_promedio),
             )
         )
         costo_materiales += _d(producto.costo_promedio) * req.cantidad
 
     orden.estado = "en_proceso"
     orden.save(update_fields=["estado"])
-    return {"consumos": consumos, "costo_materiales": costo_materiales}
+    return {"consumos": consumos, "costo_materiales": costo_materiales.quantize(Decimal("0.0001"))}
 
 
 @transaction.atomic
 def registrar_produccion_terminada(orden, *, cantidad, almacen, usuario, fecha_hora=None,
-                                   mano_obra=Decimal("0"), costos_indirectos=Decimal("0")):
+                                   mano_obra=None, costos_indirectos=None):
     """Ingresa el producto terminado al inventario al costo real calculado y crea
-    el registro ProduccionTerminada. Cierra la orden si se completó la cantidad."""
+    el registro ProduccionTerminada. Cierra la orden si se completó la cantidad.
+
+    1.I — Una OF con etapas NO puede cerrarse con etapas pendientes. Si no se
+    pasa `mano_obra`, se toma de las etapas (horas × tarifa + destajo); si no
+    se pasa `costos_indirectos`, se aplica el overhead configurado de la empresa.
+    """
     from apps.inventario.services import registrar_movimiento
 
-    from .models import ConsumoMaterial, ProduccionTerminada
+    from .models import ProduccionTerminada
 
     cant = _d(cantidad)
     if cant <= 0:
         raise ManufacturaError("La cantidad producida debe ser positiva.")
+    if orden.estado in ("finalizada", "cancelada"):
+        raise ManufacturaError(f"La orden está {orden.estado}; no admite más producción.")
+    pendientes = orden.etapas.filter(estado="pendiente").count()
+    if pendientes:
+        raise ManufacturaError(
+            f"La orden tiene {pendientes} etapa(s) pendiente(s); complétalas antes de cerrar."
+        )
     fecha = fecha_hora or timezone.now()
 
-    consumos = ConsumoMaterial.objects.filter(orden_produccion=orden).select_related("producto")
-    costo = calcular_costo_produccion(
-        [(c.producto.costo_promedio, c.cantidad) for c in consumos],
-        mano_obra=mano_obra,
-        costos_indirectos=costos_indirectos,
-        cantidad_producida=cant,
+    costo = costeo_real_orden(
+        orden, mano_obra=mano_obra, costos_indirectos=costos_indirectos, cantidad_producida=cant
     )
 
     registrar_movimiento(

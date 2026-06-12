@@ -1,9 +1,23 @@
-import uuid
+from decimal import Decimal
+
+from apps.core.base_models import SoftDeleteModel
 from apps.core.uuid import uuid7
 
+from django.conf import settings
 from django.db import models
 
 from apps.inventario.models import Producto
+
+#: Etapas estándar de una fábrica de muebles (1.I). Son la semilla por defecto;
+#: cada empresa configura las suyas en ``EtapaProduccion`` (catálogo por tenant).
+ETAPAS_ESTANDAR: list[tuple[str, str]] = [
+    ("CORTE", "Corte"),
+    ("ENSAMBLE", "Ensamble"),
+    ("LIJADO", "Lijado"),
+    ("PINTURA", "Pintura"),
+    ("TAPIZADO", "Tapizado"),
+    ("CONTROL_FINAL", "Control final"),
+]
 
 
 class ListaMateriales(models.Model):
@@ -68,6 +82,10 @@ class ConsumoMaterial(models.Model):
     orden_produccion = models.ForeignKey(OrdenProduccion, on_delete=models.CASCADE, related_name="consumos")
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=12, decimal_places=2)
+    # 1.I — snapshot del costo unitario del movimiento de inventario al momento
+    # del consumo: el costeo real de la OF NO debe variar si costo_promedio
+    # cambia después (Decimal, R-CODE-4).
+    costo_unitario = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
 
     def __str__(self):
         return f"{self.producto} x {self.cantidad} (OP {self.orden_produccion.id})"
@@ -214,3 +232,109 @@ class RegistroOperacion(models.Model):
         return (
             f"OP-{self.id_orden_produccion.id} - {self.id_detalle_ruta.id_operacion.nombre_operacion} - {self.estado}"
         )
+
+
+class EtapaProduccion(SoftDeleteModel):
+    """Catálogo de etapas de fabricación por empresa (1.I).
+
+    Configurable por tenant: la fábrica de muebles usa la secuencia estándar
+    (corte → ensamble → lijado → pintura → tapizado → control final, ver
+    ``ETAPAS_ESTANDAR``) pero cada empresa puede definir las suyas.
+    ``tarifa_destajo`` permite pago a destajo: monto por unidad procesada en
+    la etapa. Soft-delete vía ``activo`` (SoftDeleteModel, R-CODE-6).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="etapas_produccion")
+    codigo = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=100)
+    orden = models.PositiveIntegerField(help_text="Posición en la secuencia de fabricación (1 = primera).")
+    tarifa_destajo = models.DecimalField(
+        max_digits=18, decimal_places=4, default=Decimal("0"),
+        help_text="Pago a destajo por unidad procesada en esta etapa (0 = no aplica).",
+    )
+    descripcion = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "manufactura_etapa_produccion"
+        verbose_name = "Etapa de Producción"
+        verbose_name_plural = "Etapas de Producción"
+        unique_together = ["empresa", "codigo"]
+        ordering = ["orden"]
+
+    def __str__(self):
+        return f"{self.orden}. {self.nombre}"
+
+
+class EtapaOrdenProduccion(models.Model):
+    """Instancia de una etapa dentro de una OF concreta (1.I).
+
+    Se materializa al crear la orden (copia de la secuencia vigente del
+    catálogo) y registra la transición: quién la completó, cuándo, horas
+    trabajadas × tarifa y/o pago a destajo — insumos del costeo real de
+    mano de obra. Una OF no puede cerrarse con etapas pendientes.
+    """
+
+    ESTADOS = [
+        ("pendiente", "Pendiente"),
+        ("completada", "Completada"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    orden_produccion = models.ForeignKey(OrdenProduccion, on_delete=models.CASCADE, related_name="etapas")
+    etapa = models.ForeignKey(EtapaProduccion, on_delete=models.PROTECT, related_name="instancias")
+    orden = models.PositiveIntegerField()
+    estado = models.CharField(max_length=20, choices=ESTADOS, default="pendiente")
+    horas_trabajadas = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0"))
+    tarifa_hora = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    cantidad_destajo = models.DecimalField(
+        max_digits=18, decimal_places=4, default=Decimal("0"),
+        help_text="Unidades procesadas pagadas a destajo (tarifa_destajo de la etapa).",
+    )
+    pago_destajo = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    completada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="etapas_of_completadas",
+    )
+    fecha_completada = models.DateTimeField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = "manufactura_etapa_orden_produccion"
+        verbose_name = "Etapa de Orden de Producción"
+        verbose_name_plural = "Etapas de Órdenes de Producción"
+        unique_together = ["orden_produccion", "orden"]
+        ordering = ["orden"]
+
+    @property
+    def costo_mano_obra(self) -> Decimal:
+        """Mano de obra de la etapa: horas × tarifa + pago a destajo (Decimal)."""
+        return self.horas_trabajadas * self.tarifa_hora + self.pago_destajo
+
+    def __str__(self):
+        return f"OP-{self.orden_produccion_id} · {self.orden}. {self.etapa.nombre} ({self.estado})"
+
+
+class ConfiguracionManufactura(models.Model):
+    """Parámetros de manufactura por empresa (1.I): overhead configurable.
+
+    ``porcentaje_overhead`` se aplica sobre (materiales + mano de obra) al
+    calcular el costo real de la OF cuando no se pasa un monto explícito de
+    costos indirectos.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    empresa = models.OneToOneField("core.Empresa", on_delete=models.CASCADE, related_name="configuracion_manufactura")
+    porcentaje_overhead = models.DecimalField(
+        max_digits=7, decimal_places=4, default=Decimal("0"),
+        help_text="Overhead como % sobre (materiales + mano de obra). Ej: 10 = 10%.",
+    )
+
+    class Meta:
+        db_table = "manufactura_configuracion"
+        verbose_name = "Configuración de Manufactura"
+        verbose_name_plural = "Configuraciones de Manufactura"
+
+    def __str__(self):
+        return f"Config manufactura {self.empresa} (OH {self.porcentaje_overhead}%)"
