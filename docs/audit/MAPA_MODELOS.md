@@ -62,7 +62,7 @@
 | cxc | LoteFraccionado | ✅ | ✅ | — |
 | cxc | PlantillaCobranza | ✅ | ✅ | — |
 | cxc | VentaFraccionada | ✅ | ✅ | — |
-| despacho | Despacho | ✅ | ✅ | — |
+| despacho | Despacho | ✅ | ✅ | id_empresa+numero_despacho |
 | despacho | DetalleDespacho | — | ✅ | — |
 | finanzas | Caja | ✅ | ✅ | — |
 | finanzas | CajaFisica | ✅ | ✅ | — |

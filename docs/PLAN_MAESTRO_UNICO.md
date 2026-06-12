@@ -368,8 +368,9 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - `control_asistencia` — FK reales a Empleado restauradas; marcajes básicos.
 
 **Estructura creada, lógica pendiente (🔲)**
-- `almacenes`, `despacho`, `costos`, `gastos` (con aislamiento), `manufactura` (modelos + multi-tenant; MRP/OF pendiente), `servicio_cliente`, `banca_electronica`, `integracion_b2b`, `migracion_datos`, `gestion_aprobaciones`, `localizacion` (framework de puertos, ver §3.7), `localizacion_ve`, `eventos` (subsistema de eventos, sin `models.py`).
+- `almacenes`, `costos`, `gastos` (con aislamiento), `manufactura` (modelos + multi-tenant; MRP/OF pendiente), `servicio_cliente`, `banca_electronica`, `integracion_b2b`, `migracion_datos`, `gestion_aprobaciones`, `localizacion` (framework de puertos, ver §3.7), `localizacion_ve`, `eventos` (subsistema de eventos, sin `models.py`).
   - *Nota (auditoría 2026-06-03):* se eliminaron de esta lista `logistica_transporte`, `flota` y `control_calidad` — **nunca se crearon** como apps. El nombre real de la localización VE es `localizacion_ve` (antes `vzla_localizacion`).
+  - *Nota (2026-06-12):* `despacho` salió de esta lista — backend 1.G completo (flujo desde venta, transiciones, API multi-tenant, MCP, RLS lote 3; UI pendiente).
 
 ## 4.3 Deuda técnica conocida y abierta
 
@@ -503,7 +504,7 @@ Bloque 1 cerrado (DoD: distribuidora 90d + fábrica 60d) ──→ BLOQUE 2: ven
 - [ ] POS de mostrador (táctil, código de barras USB, recibo térmico 80mm).
 - [ ] Comisiones de vendedores.
 - [ ] Devoluciones y notas de crédito en flujo POS.
-- [ ] Despacho/entrega (`apps/despacho`).
+- [x] Despacho/entrega (`apps/despacho`) — **backend completo 2026-06-12** (despacho desde venta confirmada, parcial por líneas, estados PENDIENTE→EN_RUTA→ENTREGADO|DEVUELTO|CANCELADO, API + MCP + RLS; sin tocar stock — ya salió al entregar la nota). UI pendiente (va con el flujo POS).
 - [ ] Offline nivel 2 (Service Workers) si el punto de venta lo requiere.
 
 ### Sub-fase 1.H — Onboarding fábrica + BOM

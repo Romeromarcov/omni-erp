@@ -179,4 +179,8 @@ PILOT_TABLES = {
     "crm_cliente": "id_empresa_id",
     "crm_contacto_cliente": "id_empresa_id",
     "crm_direccion_cliente": "id_empresa_id",
+    # Lote 3 — despacho (1.G). despacho_detalle_despacho no tiene columna de
+    # empresa (pertenece vía id_despacho→Despacho), igual que los demás
+    # "detalle"; el aislamiento de líneas lo da la app (R-CODE-1 en el ViewSet).
+    "despacho_despacho": "id_empresa_id",
 }

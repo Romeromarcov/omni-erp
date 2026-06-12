@@ -5,7 +5,7 @@ Módulos cubiertos:
   - apps/rrhh/models.py       — Cargo, Empleado, Beneficio
   - apps/nomina/models.py     — PeriodoNomina, ConceptoNomina
   - apps/tesoreria/models.py  — OperacionCambioDivisa
-  - apps/despacho/models.py   — Despacho (sin deps de Pedido/OC)
+  - apps/despacho/models.py   — Despacho (sin deps de Pedido/NotaVenta)
   - apps/costos/models.py     — CostoEstandarProducto (requiere Producto)
 
 Nota: todos los tests son de creación y __str__/unicidad. No requieren
@@ -383,7 +383,7 @@ class TestDespachoModelo:
     def test_despacho_transicion_estados(self, empresa_a, almacen_despacho):
         from apps.despacho.models import Despacho
 
-        for estado in ("PENDIENTE", "EN_PREPARACION", "LISTO_ENVIO", "EN_TRANSITO", "ENTREGADO"):
+        for estado in ("PENDIENTE", "EN_RUTA", "ENTREGADO", "DEVUELTO", "CANCELADO"):
             d = Despacho.objects.create(
                 id_empresa=empresa_a,
                 numero_despacho=f"DSP-{estado}",
@@ -394,8 +394,8 @@ class TestDespachoModelo:
             )
             assert d.estado_despacho == estado
 
-    def test_despacho_sin_pedido_ni_oc(self, empresa_a, almacen_despacho):
-        """Despacho autónomo sin OC ni Pedido vinculado (ambos nullables)."""
+    def test_despacho_sin_venta_ni_pedido(self, empresa_a, almacen_despacho):
+        """Despacho manual sin NotaVenta ni Pedido vinculado (ambos nullables)."""
         from apps.despacho.models import Despacho
 
         d = Despacho.objects.create(
@@ -406,7 +406,7 @@ class TestDespachoModelo:
             direccion_destino="Almacén Transitorio",
         )
         assert d.id_pedido is None
-        assert d.id_orden_compra is None
+        assert d.id_nota_venta is None
 
 
 # ─────────────────────────────────────────────────────────────────────────────

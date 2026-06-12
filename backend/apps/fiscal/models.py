@@ -1,4 +1,3 @@
-import uuid
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -13,6 +12,7 @@ class NumeroCorrelativo(models.Model):
         ("NOTA_CREDITO", "Nota de Crédito"),
         ("NOTA_ENTREGA", "Nota de Entrega"),
         ("ORDEN_COMPRA", "Orden de Compra"),
+        ("DESPACHO", "Despacho"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)

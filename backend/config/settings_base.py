@@ -608,6 +608,7 @@ MCP_AGENT_CAPABILITIES: dict = {
         "apps.inventario.mcp",
         "apps.finanzas.mcp",
         "apps.manufactura.mcp",
+        "apps.despacho.mcp",
     ],
     "scopes": {
         "core:read": "Lectura de empresas y clientes",
@@ -621,6 +622,7 @@ MCP_AGENT_CAPABILITIES: dict = {
         "fiscal:read": "Consulta de correlativos fiscales",
         "fiscal:write": "Emisión de documentos fiscales",
         "manufactura:read": "Consulta de OF, costeo real y MRP",
+        "despacho:read": "Consulta de despachos/entregas pendientes",
         "*": "Acceso completo (solo uso interno)",
     },
 }
