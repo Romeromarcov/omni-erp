@@ -91,7 +91,8 @@ async function doLogin() {
 
 async function selectMuiOption(comboboxIndex: number, optionName: RegExp) {
   const combos = screen.getAllByRole('combobox');
-  fireEvent.mouseDown(combos[comboboxIndex]);
+  // `.at()` evita el acceso computado combos[i] (CTF-006); el índice lo fija el test.
+  fireEvent.mouseDown(combos.at(comboboxIndex)!);
   const listbox = await screen.findByRole('listbox');
   fireEvent.click(within(listbox).getByText(optionName));
 }

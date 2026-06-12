@@ -18,8 +18,10 @@ import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const getFieldString = (obj: unknown, key: string) => {
-  if (!obj || typeof obj !== 'object') return '';
-  const v = (obj as Record<string, unknown>)[key];
+  // Object.hasOwn limita la lectura a propiedades propias (nunca la cadena
+  // de prototipos) y Reflect.get evita el acceso computado obj[key] (CTF-006).
+  if (!obj || typeof obj !== 'object' || !Object.hasOwn(obj, key)) return '';
+  const v: unknown = Reflect.get(obj, key);
   return v === undefined || v === null ? '' : String(v);
 };
 

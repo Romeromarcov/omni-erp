@@ -12,6 +12,8 @@ import {
 } from '../../services/saasService';
 import { fetchEmpresas } from '../../services/empresas';
 
+// Acepta enteros/decimales con punto, hasta 2 decimales. Rechaza negativos.
+// eslint-disable-next-line security/detect-unsafe-regex -- FP del heurístico star-height de safe-regex: `\.` y `\d` son disjuntos, no hay backtracking ambiguo (matching lineal)
 const DECIMAL_RE = /^\d+(\.\d{1,2})?$/;
 
 // fecha_fin por defecto: hoy + 30 días (trial estándar). Evita Date.now en SSR

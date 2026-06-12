@@ -51,6 +51,7 @@ function registerAppProtocol() {
     // Anti path-traversal: nunca servir fuera de dist/.
     const safe =
       resolved.startsWith(distDir + path.sep) || resolved === distDir;
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- FP: `resolved` está canonicalizada (path.normalize) y el chequeo `safe` la confina a dist/ (anti path-traversal, ver líneas anteriores)
     if (safe && relative && fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
       return net.fetch(pathToFileURL(resolved).toString());
     }

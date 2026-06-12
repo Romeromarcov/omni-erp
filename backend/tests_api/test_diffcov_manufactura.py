@@ -247,9 +247,11 @@ class TestAccionesOrdenErrores:
         orden.refresh_from_db()
         assert orden.estado == "cancelada"
 
-    def test_costeo_orden_cantidad_cero_devuelve_400(self, client_a, empresa_a, escenario):
-        """views.py 229-230: el costeo de una OF con cantidad 0 (creada vía
-        API, que hoy lo permite) responde 400 con el ManufacturaError, no 500."""
+    def test_crear_orden_cantidad_cero_devuelve_400(self, client_a, empresa_a, escenario):
+        """CTF-015.2: la API ya NO permite crear una OF con cantidad 0 — el
+        serializer la rechaza con mensaje claro y nada se persiste."""
+        from apps.manufactura.models import OrdenProduccion
+
         resp = client_a.post(
             f"{BASE}/",
             {
@@ -260,9 +262,66 @@ class TestAccionesOrdenErrores:
             },
             format="json",
         )
+        assert resp.status_code == 400, resp.content
+        assert resp.data["cantidad"][0] == "La cantidad de la orden debe ser positiva."
+        assert OrdenProduccion.objects.count() == 0
+
+    def test_crear_orden_cantidad_valida_201(self, client_a, empresa_a, escenario):
+        """CTF-015.2 (contraparte): cantidad > 0 pasa la validación → 201 con
+        la OF persistida y la empresa inyectada del request (R-CODE-1)."""
+        from apps.manufactura.models import OrdenProduccion
+
+        resp = client_a.post(
+            f"{BASE}/",
+            {
+                "producto": str(escenario["silla"].pk),
+                "cantidad": "10.00",
+                "fecha_inicio": "2026-06-12",
+                "lista_materiales": str(escenario["bom"].pk),
+            },
+            format="json",
+        )
         assert resp.status_code == 201, resp.content
-        orden_id = resp.data["id"]
-        resp = client_a.get(f"{BASE}/{orden_id}/costeo/")
+        orden = OrdenProduccion.objects.get()
+        assert orden.cantidad == D("10.00")
+        assert orden.empresa == empresa_a
+
+    def test_crear_orden_cantidad_negativa_devuelve_400(self, client_a, empresa_a, escenario):
+        """CTF-015.2: cantidad negativa → mismo 400 del serializer."""
+        from apps.manufactura.models import OrdenProduccion
+
+        resp = client_a.post(
+            f"{BASE}/",
+            {
+                "producto": str(escenario["silla"].pk),
+                "cantidad": "-3.00",
+                "fecha_inicio": "2026-06-12",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["cantidad"][0] == "La cantidad de la orden debe ser positiva."
+        assert OrdenProduccion.objects.count() == 0
+
+    def test_actualizar_orden_a_cantidad_cero_devuelve_400(self, client_a, empresa_a, escenario):
+        """CTF-015.2: el PATCH tampoco puede dejar la OF en cantidad 0 (la
+        validación es de campo: aplica a create y update)."""
+        orden = _orden(empresa_a, escenario)
+        resp = client_a.patch(f"{BASE}/{orden.pk}/", {"cantidad": "0.00"}, format="json")
+        assert resp.status_code == 400
+        assert resp.data["cantidad"][0] == "La cantidad de la orden debe ser positiva."
+        orden.refresh_from_db()
+        assert orden.cantidad == D("10")
+
+    def test_costeo_orden_cantidad_cero_legada_devuelve_400(self, client_a, empresa_a, escenario):
+        """views.py 229-230: una OF legada con cantidad 0 (anterior a la
+        validación CTF-015.2; se simula con update() directo a BD) responde
+        400 controlado en el costeo — el ManufacturaError, no un 500."""
+        from apps.manufactura.models import OrdenProduccion
+
+        orden = _orden(empresa_a, escenario)
+        OrdenProduccion.objects.filter(pk=orden.pk).update(cantidad=D("0"))
+        resp = client_a.get(f"{BASE}/{orden.pk}/costeo/")
         assert resp.status_code == 400
         assert resp.data["error"] == "La cantidad producida debe ser positiva."
 

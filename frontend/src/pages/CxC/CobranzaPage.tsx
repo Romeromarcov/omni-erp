@@ -9,13 +9,15 @@ import { PageContainer, PageHeader, StatusChip } from '../../components/ui';
 const CANAL_OPTIONS = ['whatsapp', 'email', 'llamada', 'visita', 'carta'];
 const RESULTADO_OPTIONS = ['contactado', 'sin_respuesta', 'promesa_pago', 'negativa', 'acuerdo_logrado'];
 
-const RESULTADO_LABELS: Record<string, string> = {
+// Map en lugar de Record: `g.resultado` viene del backend y un objeto plano
+// expondría la cadena de prototipos ("__proto__", "constructor") (CTF-006).
+const RESULTADO_LABELS = new Map<string, string>(Object.entries({
   contactado: 'Contactado',
   sin_respuesta: 'Sin Respuesta',
   promesa_pago: 'Promesa de Pago',
   negativa: 'Negativa',
   acuerdo_logrado: 'Acuerdo Logrado',
-};
+}));
 
 export default function CobranzaPage() {
   const { data, isLoading: loading, error } = useApiQuery<{ results: GestionCobranza[] }>('/cobranza/gestiones/');
@@ -80,7 +82,7 @@ export default function CobranzaPage() {
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth select label="Resultado" value={form.resultado} onChange={e => setForm(f => ({ ...f, resultado: e.target.value }))}>
-                  {RESULTADO_OPTIONS.map(r => <MenuItem key={r} value={r}>{RESULTADO_LABELS[r]}</MenuItem>)}
+                  {RESULTADO_OPTIONS.map(r => <MenuItem key={r} value={r}>{RESULTADO_LABELS.get(r)}</MenuItem>)}
                 </TextField>
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -120,7 +122,7 @@ export default function CobranzaPage() {
               {g.notas && <Typography variant="body2" mt={0.5}>{g.notas}</Typography>}
             </Box>
             <Box textAlign="right">
-              <StatusChip value={g.resultado} label={RESULTADO_LABELS[g.resultado] || g.resultado} colorMap={{ contactado: 'success', acuerdo_logrado: 'success', promesa_pago: 'info', sin_respuesta: 'warning', negativa: 'error' }} />
+              <StatusChip value={g.resultado} label={RESULTADO_LABELS.get(g.resultado) ?? g.resultado} colorMap={{ contactado: 'success', acuerdo_logrado: 'success', promesa_pago: 'info', sin_respuesta: 'warning', negativa: 'error' }} />
               {g.proxima_accion && (
                 <Typography variant="caption" display="block" color="text.secondary" mt={0.5}>
                   Próxima: {g.proxima_accion}

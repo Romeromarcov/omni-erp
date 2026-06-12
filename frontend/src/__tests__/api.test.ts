@@ -117,6 +117,7 @@ describe('api 401 refresh + retry (FE-HIGH-11)', () => {
         return Promise.resolve(jsonResponse({ access: 'new' }));
       }
       // First protected call (old token) → 401; retry (new token) → 200.
+      // eslint-disable-next-line security/detect-possible-timing-attacks -- FP: comparación dentro de un mock de fetch de tests; no hay secreto real ni canal de timing observable
       if (auth === 'Bearer old') return Promise.resolve(jsonResponse({ detail: 'expired' }, 401));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -158,6 +159,7 @@ describe('api 401 refresh + retry (FE-HIGH-11)', () => {
           setTimeout(() => resolve(jsonResponse({ access: 'new' })), 10),
         );
       }
+      // eslint-disable-next-line security/detect-possible-timing-attacks -- FP: comparación dentro de un mock de fetch de tests; no hay secreto real ni canal de timing observable
       if (auth === 'Bearer old') return Promise.resolve(jsonResponse({ detail: 'expired' }, 401));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
