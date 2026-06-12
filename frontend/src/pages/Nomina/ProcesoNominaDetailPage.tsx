@@ -387,7 +387,7 @@ export default function ProcesoNominaDetailPage() {
                 const empleado = empleadoPorId.get(Number(fila.id_empleado));
                 const salario = empleado?.documento_json?.salario_mensual;
                 const bonoActivo = form.watch(`empleados.${idx}.bono_nocturno`);
-                // eslint-disable-next-line security/detect-object-injection -- idx es el índice entero de fields.map de RHF, no entrada del usuario
+                // eslint-disable-next-line security/detect-object-injection -- FP: idx es el índice entero de fields.map de RHF, no entrada del usuario
                 const erroresFila = form.formState.errors.empleados?.[idx];
                 return (
                   <Paper key={fila.id} variant="outlined" sx={{ p: 2 }}>
