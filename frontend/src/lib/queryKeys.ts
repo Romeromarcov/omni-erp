@@ -113,3 +113,16 @@ export const finanzasKeys = {
   metodosPagoEmpresaActivas: (empresaId?: string | null) =>
     ['finanzas', 'metodos-pago-empresa-activas', empresaId ?? null] as const,
 };
+
+// ── Manufactura (1.I) ─────────────────────────────────────────────────────────
+// Prefijo compartido `['manufactura', 'ordenes']` para que la invalidación por
+// familia refresque lista, detalle, etapas y costeo de una OF a la vez.
+export const manufacturaKeys = {
+  ordenesAll: () => ['manufactura', 'ordenes'] as const,
+  ordenes: (page?: number) => ['manufactura', 'ordenes', 'list', page ?? 1] as const,
+  orden: (id: string) => ['manufactura', 'ordenes', 'detail', id] as const,
+  etapas: (ordenId: string) => ['manufactura', 'ordenes', 'etapas', ordenId] as const,
+  costeo: (ordenId: string) => ['manufactura', 'ordenes', 'costeo', ordenId] as const,
+  mrp: (ordenId: string, almacenId?: string | null) =>
+    ['manufactura', 'ordenes', 'mrp', ordenId, almacenId ?? null] as const,
+};
