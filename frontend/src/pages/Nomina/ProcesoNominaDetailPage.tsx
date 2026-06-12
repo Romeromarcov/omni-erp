@@ -387,6 +387,8 @@ export default function ProcesoNominaDetailPage() {
                 const empleado = empleadoPorId.get(Number(fila.id_empleado));
                 const salario = empleado?.documento_json?.salario_mensual;
                 const bonoActivo = form.watch(`empleados.${idx}.bono_nocturno`);
+                // eslint-disable-next-line security/detect-object-injection -- idx es el índice entero de fields.map de RHF, no entrada del usuario
+                const erroresFila = form.formState.errors.empleados?.[idx];
                 return (
                   <Paper key={fila.id} variant="outlined" sx={{ p: 2 }}>
                     <Stack
@@ -415,9 +417,9 @@ export default function ProcesoNominaDetailPage() {
                         size="small"
                         inputMode="decimal"
                         label={t('nomina.detalle.horasExtraDiurnas')}
-                        error={!!form.formState.errors.empleados?.[idx]?.horas_extra_diurnas}
+                        error={!!erroresFila?.horas_extra_diurnas}
                         helperText={
-                          form.formState.errors.empleados?.[idx]?.horas_extra_diurnas?.message
+                          erroresFila?.horas_extra_diurnas?.message
                         }
                         {...form.register(`empleados.${idx}.horas_extra_diurnas`)}
                       />
@@ -425,9 +427,9 @@ export default function ProcesoNominaDetailPage() {
                         size="small"
                         inputMode="decimal"
                         label={t('nomina.detalle.horasExtraNocturnas')}
-                        error={!!form.formState.errors.empleados?.[idx]?.horas_extra_nocturnas}
+                        error={!!erroresFila?.horas_extra_nocturnas}
                         helperText={
-                          form.formState.errors.empleados?.[idx]?.horas_extra_nocturnas?.message
+                          erroresFila?.horas_extra_nocturnas?.message
                         }
                         {...form.register(`empleados.${idx}.horas_extra_nocturnas`)}
                       />
@@ -452,9 +454,9 @@ export default function ProcesoNominaDetailPage() {
                           size="small"
                           inputMode="decimal"
                           label={t('nomina.detalle.horasNocturnas')}
-                          error={!!form.formState.errors.empleados?.[idx]?.horas_nocturnas}
+                          error={!!erroresFila?.horas_nocturnas}
                           helperText={
-                            form.formState.errors.empleados?.[idx]?.horas_nocturnas?.message
+                            erroresFila?.horas_nocturnas?.message
                           }
                           {...form.register(`empleados.${idx}.horas_nocturnas`)}
                         />
