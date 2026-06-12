@@ -25,7 +25,8 @@ from rest_framework.test import APIClient
 pytestmark = pytest.mark.django_db
 
 
-APPS_DIR = Path(__file__).resolve().parents[1] / "apps"
+# backend/apps está dos niveles arriba (tests/api/ → tests/ → backend/).
+APPS_DIR = Path(__file__).resolve().parents[2] / "apps"
 
 
 @pytest.fixture

@@ -15,7 +15,8 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-BACKEND_DIR = Path(__file__).resolve().parent.parent
+# backend/ está dos niveles arriba (tests/unit/ → tests/ → backend/).
+BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 def _import_settings(env_overrides, tmp_cwd):
