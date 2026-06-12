@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    ComisionVenta,
     Cotizacion,
     DetalleCotizacion,
     DetalleDevolucionVenta,
@@ -10,6 +11,8 @@ from .models import (
     DetalleNotaVenta,
     DetallePedido,
     DevolucionVenta,
+    EsquemaComision,
+    EsquemaComisionCategoria,
     FacturaFiscal,
     NotaCreditoFiscal,
     NotaCreditoVenta,
@@ -23,6 +26,23 @@ admin.site.register(DetallePedido)
 admin.site.register(NotaVenta)
 admin.site.register(DetalleNotaVenta)
 admin.site.register(FacturaFiscal)
+
+
+@admin.register(EsquemaComision)
+class EsquemaComisionAdmin(admin.ModelAdmin):
+    list_display = ["vendedor", "porcentaje_base", "vigente_desde", "vigente_hasta", "activo"]
+    list_filter = ["activo"]
+
+
+@admin.register(EsquemaComisionCategoria)
+class EsquemaComisionCategoriaAdmin(admin.ModelAdmin):
+    list_display = ["esquema", "categoria", "porcentaje"]
+
+
+@admin.register(ComisionVenta)
+class ComisionVentaAdmin(admin.ModelAdmin):
+    list_display = ["nota_venta", "vendedor", "monto", "estado", "fecha_devengo"]
+    list_filter = ["estado"]
 
 # Registraciones agregadas automáticamente
 

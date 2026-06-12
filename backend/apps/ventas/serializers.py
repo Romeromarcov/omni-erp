@@ -6,6 +6,7 @@ from apps.crm.models import Cliente
 from apps.inventario.models import Producto
 
 from .models import (
+    ComisionVenta,
     Cotizacion,
     DetalleCotizacion,
     DetalleDevolucionVenta,
@@ -16,6 +17,8 @@ from .models import (
     DetallePedido,
     DetallePrecio,
     DevolucionVenta,
+    EsquemaComision,
+    EsquemaComisionCategoria,
     FacturaFiscal,
     ListaPrecio,
     NotaCreditoFiscal,
@@ -468,3 +471,83 @@ class DetallePrecioSerializer(serializers.ModelSerializer):
         model = DetallePrecio
         fields = "__all__"
         read_only_fields = ["id_detalle"]
+
+
+# ── Comisiones de vendedores (1.G) ────────────────────────────────────────────
+
+
+def _validar_porcentaje_comision(value):
+    if value < 0 or value > 100:
+        raise serializers.ValidationError("El porcentaje debe estar entre 0 y 100.")
+    return value
+
+
+class EsquemaComisionCategoriaSerializer(serializers.ModelSerializer):
+    categoria_nombre = serializers.CharField(source="categoria.nombre_categoria", read_only=True)
+
+    class Meta:
+        model = EsquemaComisionCategoria
+        fields = "__all__"
+        read_only_fields = ["id_esquema_comision_categoria"]
+
+    def validate_porcentaje(self, value):
+        return _validar_porcentaje_comision(value)
+
+    def validate(self, data):
+        # Coherencia de tenant entre los dos FKs: TenantFKScopeMixin ya acota
+        # cada uno a empresas VISIBLES, pero un usuario con varias empresas
+        # podría cruzar esquema de la empresa A con categoría de la B.
+        esquema = data.get("esquema") or getattr(self.instance, "esquema", None)
+        categoria = data.get("categoria") or getattr(self.instance, "categoria", None)
+        if esquema is not None and categoria is not None and esquema.id_empresa_id != categoria.id_empresa_id:
+            raise serializers.ValidationError(
+                {"categoria": "La categoría debe pertenecer a la misma empresa que el esquema."}
+            )
+        return data
+
+
+class EsquemaComisionSerializer(serializers.ModelSerializer):
+    vendedor_username = serializers.CharField(source="vendedor.username", read_only=True)
+    overrides_categoria = EsquemaComisionCategoriaSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = EsquemaComision
+        fields = "__all__"
+        # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
+        read_only_fields = ["id_esquema_comision", "id_empresa", "fecha_creacion"]
+
+    def validate_porcentaje_base(self, value):
+        return _validar_porcentaje_comision(value)
+
+    def validate(self, data):
+        desde = data.get("vigente_desde", getattr(self.instance, "vigente_desde", None))
+        hasta = data.get("vigente_hasta", getattr(self.instance, "vigente_hasta", None))
+        if desde and hasta and desde > hasta:
+            raise serializers.ValidationError(
+                {"vigente_hasta": "La vigencia 'hasta' no puede ser anterior a 'desde'."}
+            )
+        return data
+
+
+class LiquidarComisionesInputSerializer(serializers.Serializer):
+    """
+    Input de POST /comisiones/liquidar/ — vendedor + período devengado.
+    La coherencia del rango (desde ≤ hasta) la valida el service
+    ``liquidar_comisiones`` (única fuente de verdad; la vista mapea a 400).
+    """
+
+    vendedor = serializers.UUIDField()
+    desde = serializers.DateField()
+    hasta = serializers.DateField()
+
+
+class ComisionVentaSerializer(serializers.ModelSerializer):
+    """Solo lectura: las comisiones nacen del devengo y mutan vía /liquidar/."""
+
+    vendedor_username = serializers.CharField(source="vendedor.username", read_only=True)
+    numero_nota = serializers.CharField(source="nota_venta.numero_nota", read_only=True)
+
+    class Meta:
+        model = ComisionVenta
+        fields = "__all__"
+        read_only_fields = [f.name for f in ComisionVenta._meta.concrete_fields]

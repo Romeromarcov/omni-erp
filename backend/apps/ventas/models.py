@@ -25,6 +25,17 @@ class Pedido(models.Model):
         "NotaVenta", on_delete=models.SET_NULL, null=True, blank=True, related_name="pedido_origen"
     )
 
+    # 1.G — Comisiones: vendedor que tomó el pedido. Opcional (mostrador sin
+    # vendedor asignado); PROTECT para no perder trazabilidad de comisiones.
+    id_vendedor = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pedidos_como_vendedor",
+        help_text="Vendedor que tomó el pedido (base del cálculo de comisiones).",
+    )
+
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
@@ -90,6 +101,18 @@ class NotaVenta(models.Model):
     convertido_a_factura = models.BooleanField(default=False)
     id_factura_resultante = models.ForeignKey(
         "FacturaFiscal", on_delete=models.SET_NULL, null=True, blank=True, related_name="nota_venta_origen"
+    )
+
+    # 1.G — Comisiones: vendedor de la venta. Se copia del pedido origen al
+    # convertir, o se asigna directo en venta sin pedido. PROTECT: con comisión
+    # devengada el vendedor no puede borrarse sin resolverla.
+    id_vendedor = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="notas_venta_como_vendedor",
+        help_text="Vendedor de la venta; al entregar se devenga su comisión.",
     )
 
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
@@ -615,3 +638,157 @@ class DetallePrecio(models.Model):
 
     def __str__(self):
         return f"{self.id_producto.nombre_producto} @ {self.id_lista.codigo}: {self.precio}"
+
+
+# ── Comisiones de vendedores (1.G) ───────────────────────────────────────────
+
+
+class EsquemaComision(models.Model):
+    """
+    Esquema de comisión de un vendedor en una empresa: % base sobre el subtotal
+    de la venta (sin impuestos), con override opcional por categoría de producto
+    (EsquemaComisionCategoria) y vigencia por fechas (patrón DetallePrecio).
+
+    Resolución al devengar: esquema activo del vendedor vigente a la fecha de la
+    nota; si hay varios, gana el de ``vigente_desde`` más reciente.
+    """
+
+    id_esquema_comision = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="esquemas_comision"
+    )
+    vendedor = models.ForeignKey(
+        "core.Usuarios", on_delete=models.PROTECT, related_name="esquemas_comision"
+    )
+    # Porcentaje: convención Decimal(7,4) del proyecto (omni-decimal-money).
+    porcentaje_base = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        help_text="Porcentaje de comisión sobre el subtotal sin impuestos (0–100).",
+    )
+    vigente_desde = models.DateField(null=True, blank=True)
+    vigente_hasta = models.DateField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ventas_esquema_comision"
+        verbose_name = "Esquema de Comisión"
+        verbose_name_plural = "Esquemas de Comisión"
+        indexes = [
+            models.Index(fields=["id_empresa", "vendedor", "activo"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(porcentaje_base__gte=0) & models.Q(porcentaje_base__lte=100),
+                name="esquema_comision_porcentaje_0_100",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Comisión {self.porcentaje_base}% — {self.vendedor}"
+
+
+class EsquemaComisionCategoria(models.Model):
+    """Override del porcentaje de un esquema para una categoría de producto."""
+
+    id_esquema_comision_categoria = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    esquema = models.ForeignKey(
+        EsquemaComision, on_delete=models.CASCADE, related_name="overrides_categoria"
+    )
+    categoria = models.ForeignKey(
+        "inventario.CategoriaProducto",
+        on_delete=models.CASCADE,
+        related_name="overrides_comision",
+    )
+    porcentaje = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        help_text="Porcentaje que reemplaza al base para productos de esta categoría (0–100).",
+    )
+
+    class Meta:
+        db_table = "ventas_esquema_comision_categoria"
+        verbose_name = "Override de Comisión por Categoría"
+        verbose_name_plural = "Overrides de Comisión por Categoría"
+        unique_together = [["esquema", "categoria"]]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(porcentaje__gte=0) & models.Q(porcentaje__lte=100),
+                name="esquema_comision_categoria_porcentaje_0_100",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.esquema_id} · {self.categoria}: {self.porcentaje}%"
+
+
+class ComisionVenta(models.Model):
+    """
+    Comisión devengada de una venta (NotaVenta ENTREGADA con vendedor asignado).
+
+    Se crea en ``entregar_nota_venta`` dentro de la MISMA transacción que el
+    despacho (R-CODE-11: efectos de la venta atómicos). OneToOne con la nota:
+    la BD garantiza que una venta nunca devenga dos comisiones.
+
+    Ciclo: DEVENGADA → LIQUIDADA (acción liquidar) | ANULADA (la nota se anula).
+    Montos en la moneda base de la empresa, igual que los subtotales de la nota.
+    """
+
+    ESTADOS = [
+        ("DEVENGADA", "Devengada"),
+        ("LIQUIDADA", "Liquidada"),
+        ("ANULADA", "Anulada"),
+    ]
+
+    id_comision_venta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="comisiones_venta"
+    )
+    vendedor = models.ForeignKey(
+        "core.Usuarios", on_delete=models.PROTECT, related_name="comisiones_venta"
+    )
+    nota_venta = models.OneToOneField(
+        NotaVenta, on_delete=models.PROTECT, related_name="comision_venta"
+    )
+    esquema = models.ForeignKey(
+        EsquemaComision, on_delete=models.PROTECT, related_name="comisiones"
+    )
+    base_comisionable = models.DecimalField(
+        max_digits=18, decimal_places=4, help_text="Subtotal sin impuestos de la nota."
+    )
+    monto = models.DecimalField(max_digits=18, decimal_places=4)
+    id_moneda = models.ForeignKey(
+        "finanzas.Moneda",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="comisiones_venta",
+        help_text="Moneda base de la empresa al momento del devengo.",
+    )
+    estado = models.CharField(max_length=20, choices=ESTADOS, default="DEVENGADA")
+    fecha_devengo = models.DateField()
+    fecha_liquidacion = models.DateField(null=True, blank=True)
+    liquidada_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="comisiones_liquidadas",
+    )
+    # Desglose por línea para auditoría: [{producto, subtotal, porcentaje, monto}]
+    detalle_json = models.JSONField(null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ventas_comision_venta"
+        verbose_name = "Comisión de Venta"
+        verbose_name_plural = "Comisiones de Venta"
+        ordering = ["-fecha_devengo", "-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "vendedor", "estado"]),
+            models.Index(fields=["id_empresa", "fecha_devengo"]),
+        ]
+
+    def __str__(self):
+        return f"Comisión {self.nota_venta_id} — {self.monto} ({self.estado})"

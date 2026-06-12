@@ -180,6 +180,7 @@
 | tesoreria | MovimientoBancario | ✅ | ✅ | — |
 | tesoreria | MovimientoInternoFondo | — | — | — |
 | tesoreria | OperacionCambioDivisa | ✅ | — | empresa+numero_operacion |
+| ventas | ComisionVenta | ✅ | ✅ | — |
 | ventas | Cotizacion | ✅ | ✅ | id_empresa+numero_cotizacion |
 | ventas | DetalleCotizacion | — | ✅ | — |
 | ventas | DetalleDevolucionVenta | — | ✅ | — |
@@ -190,6 +191,8 @@
 | ventas | DetallePedido | — | ✅ | — |
 | ventas | DetallePrecio | — | ✅ | id_lista+id_producto |
 | ventas | DevolucionVenta | ✅ | ✅ | id_empresa+numero_devolucion |
+| ventas | EsquemaComision | ✅ | ✅ | — |
+| ventas | EsquemaComisionCategoria | — | ✅ | esquema+categoria |
 | ventas | FacturaFiscal | ✅ | ✅ | id_empresa+numero_factura; id_empresa+numero_control |
 | ventas | ListaPrecio | ✅ | ✅ | id_empresa+codigo |
 | ventas | NotaCreditoFiscal | ✅ | ✅ | id_empresa+numero_nota_credito |
@@ -197,4 +200,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 194_
+_Total modelos: 197_
