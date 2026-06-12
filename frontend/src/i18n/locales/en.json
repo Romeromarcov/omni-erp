@@ -249,6 +249,110 @@
       "error": "Error registering the payment."
     }
   },
+  "rrhh": {
+    "title": "HR",
+    "empleados": {
+      "title": "Employees",
+      "subtitle": "Company staff: basic data, position and salary for payroll",
+      "empty": "No employees yet.",
+      "nombre": "Name",
+      "cedula": "ID number",
+      "cargo": "Position",
+      "fechaIngreso": "Hire date",
+      "estado": "Status",
+      "ver": "View detail",
+      "nuevo": "New employee"
+    },
+    "form": {
+      "titleNuevo": "New Employee",
+      "titleEditar": "Edit Employee",
+      "subtitle": "The monthly salary is stored as an exact decimal and feeds the payroll engine",
+      "nombre": "First name",
+      "apellido": "Last name",
+      "cedula": "ID number",
+      "cargo": "Position",
+      "sinCargo": "No position",
+      "fechaIngreso": "Hire date",
+      "salario": "Monthly salary",
+      "salarioAyuda": "Optional; if omitted, payroll falls back to the configured minimum wage",
+      "activo": "Active employee",
+      "crear": "Create employee",
+      "guardar": "Save changes",
+      "creado": "Employee created.",
+      "actualizado": "Employee updated.",
+      "error": "Could not save the employee.",
+      "sinEmpresa": "Select an active company before creating employees."
+    },
+    "detalle": {
+      "title": "Employee",
+      "sinSalario": "No salary set"
+    }
+  },
+  "nomina": {
+    "title": "Payroll",
+    "sinEmpresa": "Select an active company to continue.",
+    "procesos": {
+      "title": "Payroll Runs",
+      "subtitle": "LOTTT payroll runs per period: processing generates pay slips and the journal entry",
+      "empty": "No payroll runs yet.",
+      "numero": "Number",
+      "periodo": "Period",
+      "fecha": "Date",
+      "empleados": "Employees",
+      "totalNeto": "Net total",
+      "estado": "Status",
+      "ver": "View detail",
+      "nuevo": "New run",
+      "crear": "Create run",
+      "creado": "Run {{numero}} created.",
+      "errorCrear": "Could not create the payroll run.",
+      "sinPeriodos": "The company has no payroll periods; create one first."
+    },
+    "periodos": {
+      "nuevo": "New period",
+      "crear": "Create period",
+      "creado": "Period {{nombre}} created.",
+      "errorCrear": "Could not create the period.",
+      "nombre": "Period name",
+      "tipo": "Period type",
+      "fechaInicio": "Start date",
+      "fechaFin": "End date",
+      "fechaPago": "Payment date",
+      "tipos": {
+        "SEMANAL": "Weekly",
+        "QUINCENAL": "Biweekly",
+        "MENSUAL": "Monthly",
+        "ANUAL": "Yearly"
+      }
+    },
+    "detalle": {
+      "title": "Run",
+      "procesar": "Process",
+      "procesarTitulo": "Process payroll for the period",
+      "procesarAyuda": "Enter the variable data per employee; empty fields use the engine defaults (30 days, no overtime). Amounts are computed with decimal precision.",
+      "confirmarProcesar": "Process payroll",
+      "procesadoOk": "Payroll processed. Net total: {{neto}}.",
+      "errorProcesar": "Could not process the payroll.",
+      "faltaMapeo": "The NOMINA accounting mapping is missing, so the journal entry cannot be generated.",
+      "irAMapeos": "Configure mappings",
+      "recibosInmutables": "Issued pay slips are immutable: this run can no longer be re-processed. To recalculate, cancel this run and create a new one.",
+      "horasExtraDiurnas": "Daytime overtime hours",
+      "horasExtraNocturnas": "Night overtime hours",
+      "bonoNocturno": "Night-shift bonus",
+      "horasNocturnas": "Night hours",
+      "sinSalario": "No salary set",
+      "sinEmpleadosActivos": "The company has no active employees to process.",
+      "empleado": "Employee",
+      "sueldoBase": "Base salary",
+      "devengado": "Earnings",
+      "deducciones": "Deductions",
+      "neto": "Net",
+      "recibos": "Pay slips per employee",
+      "sinRecibos": "This run has no pay slips.",
+      "sinRecibosEnProceso": "No pay slips yet: process the payroll to generate them.",
+      "totalNetoRecibos": "Net total"
+    }
+  },
   "offline": {
     "banner": "Offline — showing saved data",
     "pending_one": "1 pending change will be sent when back online",
@@ -403,5 +507,6 @@
       "errorCrear": "Error recording the operation",
       "irAMapeos": "Configure the CAMBIO_DIVISA mapping in Accounting Mappings →"
     }
+
   }
 }

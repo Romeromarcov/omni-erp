@@ -35,6 +35,18 @@ export function toCount<T = unknown>(raw: unknown): number {
  * Soporta los formatos de DRF: `["msg"]`, `{"detail": "..."}` y
  * `{"campo": ["msg", ...]}`.
  */
+/**
+ * Status HTTP que `services/api.buildError` adjunta al Error, o undefined si
+ * el error no proviene de una respuesta HTTP (p. ej. fallo de red o de código).
+ */
+export function statusDeError(err: unknown): number | undefined {
+  if (err instanceof Error) {
+    const status = (err as Error & { status?: unknown }).status;
+    if (typeof status === 'number') return status;
+  }
+  return undefined;
+}
+
 export function mensajeDeError(err: unknown, fallback = 'Error inesperado'): string {
   if (!(err instanceof Error) || !err.message) return fallback;
   try {

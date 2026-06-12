@@ -27,6 +27,7 @@ from .views import (
 )
 from .views_ajustes import AjusteCajaBancoViewSet
 from .views_extra.tasa_oficial_bcv import TasaCambioOficialBCVView
+from .views_pagos_terceros import PagoTerceroViewSet
 
 router = DefaultRouter()
 router.register(r"monedas", MonedaViewSet)
@@ -53,6 +54,7 @@ router.register(r"cajas-virtuales-auto", CajaVirtualAutoViewSet)
 router.register(r"overrides-metodos-pago", CajaMetodoPagoOverrideViewSet)
 router.register(r"sesiones-caja", SesionCajaFisicaViewSet)
 router.register(r"pagos", PagoViewSet)
+router.register(r"pagos-terceros", PagoTerceroViewSet)
 
 # Aliases for frontend compatibility
 router.register(r"cuentas-bancarias", CuentaBancariaEmpresaViewSet, basename="cuentas-bancarias")
