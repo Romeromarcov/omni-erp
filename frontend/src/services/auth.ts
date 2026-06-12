@@ -127,5 +127,7 @@ export function logoutSession(): void {
   // Best-effort: si la Cache API no existe (tests/jsdom) no hace nada.
   if (typeof caches !== 'undefined') {
     void caches.delete('api-cache').catch(() => undefined);
+    // img-cache puede contener logos/adjuntos del tenant: también se purga.
+    void caches.delete('img-cache').catch(() => undefined);
   }
 }

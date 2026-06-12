@@ -17,10 +17,16 @@ export function isNetworkError(error: unknown): boolean {
 export const MUTATION_MAX_RETRIES = 3;
 
 /**
- * Reintento de mutaciones (sin outbox completo): solo errores de red puros y
- * hasta MUTATION_MAX_RETRIES veces. Es seguro porque la petición nunca llegó
- * al servidor; para POST de pagos además viaja `Idempotency-Key`
- * (ver `lib/idempotency.ts` + PR #86), que deduplica en backend.
+ * Reintento de mutaciones — SOLO opt-in por mutación, nunca global.
+ *
+ * Un `TypeError` de red NO garantiza que la petición no llegó al servidor:
+ * la conexión puede cortarse después de enviar el POST y antes de recibir la
+ * respuesta. Reintentar automáticamente una mutación sin idempotencia en ese
+ * caso DUPLICA la operación (pago, abono, pedido). Por eso el default global
+ * de mutaciones es retry: false; este helper se pasa explícitamente en el
+ * `useMutation` de operaciones que adjuntan una `Idempotency-Key` ESTABLE
+ * (generada junto con las variables de la mutación — ver `lib/idempotency.ts`
+ * + PR #86), donde el backend deduplica y el reintento es seguro.
  */
 export function mutationRetry(failureCount: number, error: unknown): boolean {
   return isNetworkError(error) && failureCount < MUTATION_MAX_RETRIES;
@@ -52,7 +58,12 @@ export const queryClient = new QueryClient({
       networkMode: 'online',
     },
     mutations: {
-      retry: mutationRetry,
+      // Sin retry automático global: una mutación sin Idempotency-Key podría
+      // duplicarse si la red se corta tras enviar el POST. El caso offline
+      // sigue cubierto por networkMode 'online' (la mutación queda isPaused
+      // SIN haberse enviado y se reanuda sola al volver la conexión). Las
+      // mutaciones idempotentes optan al retry pasando `mutationRetry`.
+      retry: false,
       retryDelay: retryBackoffDelay,
       networkMode: 'online',
     },

@@ -47,10 +47,13 @@ describe('retryBackoffDelay', () => {
 });
 
 describe('queryClient (defaults offline Nivel 1)', () => {
-  it('mutaciones: networkMode online + retry/backoff configurados', () => {
+  it('mutaciones: networkMode online, SIN retry global (anti-duplicados)', () => {
+    // Un TypeError de red no garantiza que el POST no llegó al servidor:
+    // reintentar una mutación sin Idempotency-Key duplicaría la operación.
+    // El retry es opt-in por mutación (mutationRetry + key estable).
     const defaults = queryClient.getDefaultOptions();
     expect(defaults.mutations?.networkMode).toBe('online');
-    expect(defaults.mutations?.retry).toBe(mutationRetry);
+    expect(defaults.mutations?.retry).toBe(false);
     expect(defaults.mutations?.retryDelay).toBe(retryBackoffDelay);
   });
 
