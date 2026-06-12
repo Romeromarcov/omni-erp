@@ -276,6 +276,39 @@ class TestPedidoCreate:
         )
         assert pedido.numero_pedido == "GEN-CAJGEN-000001"
 
+    def test_documento_json_con_ids_de_otra_empresa_se_ignora(
+        self, cliente, empresa_a, empresa_b
+    ):
+        """R-CODE-1: sucursal/caja de OTRA empresa en documento_json se ignoran
+        (caen al código GEN-CAJGEN) — nunca contaminan el pedido cross-tenant."""
+        from apps.core.models import Sucursal
+        from apps.finanzas.models import Caja
+
+        sucursal_b = Sucursal.objects.create(
+            id_empresa=empresa_b, nombre="Sucursal B", codigo_sucursal="SUCB"
+        )
+        from apps.finanzas.models import Moneda
+
+        moneda_b = Moneda.objects.filter(codigo_iso="USD").first() or Moneda.objects.create(
+            codigo_iso="USD", nombre="Dólar", simbolo="$", es_publica=True
+        )
+        caja_b = Caja.objects.create(
+            empresa=empresa_b, nombre="Caja B", tipo_caja="REGISTRADORA", moneda=moneda_b
+        )
+
+        ser = PedidoSerializer(
+            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"}
+        )
+        assert ser.is_valid(), ser.errors
+        pedido = ser.save(
+            id_empresa=empresa_a,
+            documento_json={
+                "id_sucursal": str(sucursal_b.id_sucursal),
+                "id_caja": str(caja_b.id_caja),
+            },
+        )
+        assert pedido.numero_pedido == "GEN-CAJGEN-000001"
+
     def test_usuario_inexistente_en_documento_json_se_ignora(self, pedido):
         """documento_json.id_usuario que no existe → User.DoesNotExist → sin id_usuario."""
         import uuid as uuid_mod

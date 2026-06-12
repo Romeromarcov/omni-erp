@@ -169,14 +169,18 @@ class PedidoSerializer(serializers.ModelSerializer):
             sucursal_id = doc_json.get("id_sucursal")
             caja_id = doc_json.get("id_caja")
 
+            # R-CODE-1: acotados a la empresa del pedido — un id ajeno se
+            # ignora (cae al código genérico), nunca contamina cross-tenant.
             if sucursal_id:
                 try:
-                    sucursal = Sucursal.objects.get(id_sucursal=sucursal_id)
+                    sucursal = Sucursal.objects.get(
+                        id_sucursal=sucursal_id, id_empresa=id_empresa
+                    )
                 except Sucursal.DoesNotExist:
                     sucursal = None
             if caja_id:
                 try:
-                    caja = Caja.objects.get(id_caja=caja_id)
+                    caja = Caja.objects.get(id_caja=caja_id, empresa=id_empresa)
                 except Caja.DoesNotExist:
                     caja = None
 
