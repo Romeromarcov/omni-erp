@@ -8,7 +8,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.core.idempotency import idempotent
+from apps.core.idempotency import IdempotentCreateMixin, idempotent
 from apps.core.viewsets import EmpresaInjectMixin, get_empresas_visible
 
 logger = logging.getLogger(__name__)
@@ -161,10 +161,16 @@ class DetallePedidoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         return DetallePedido.objects.filter(id_pedido__id_empresa__in=_empresas(self.request))
 
 
-class NotaVentaViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
+class NotaVentaViewSet(
+    IdempotentCreateMixin, TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet
+):  # H-API-1
     queryset = NotaVenta.objects.all()
     serializer_class = NotaVentaSerializer
     permission_classes = [IsAuthenticated]
+    # POS/web: un reintento de creación con la misma Idempotency-Key no
+    # duplica la nota (opt-in del cliente, PR #86).
+    idempotency_scope = "ventas:nota-venta-create"
+
 
     def get_queryset(self):
         # R-CODE-1

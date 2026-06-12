@@ -69,9 +69,14 @@ vi.mock('../services/clientesService', () => ({
 }));
 
 const createNotaMock = vi.fn();
-vi.mock('../services/ventas', () => ({
-  notaVentaService: { create: (...a: unknown[]) => createNotaMock(...a) },
-}));
+vi.mock('../services/api', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../services/api')>();
+  return {
+    ...real,
+    // La nota se crea con post() directo para adjuntar la Idempotency-Key.
+    post: (...a: unknown[]) => createNotaMock(...a),
+  };
+});
 
 const createPagoDocumentoMock = vi.fn();
 vi.mock('../services/pagosService', () => ({
@@ -180,7 +185,14 @@ describe('PosPage', () => {
     fireEvent.click(screen.getByTestId('pos-cobrar'));
     // Total e IVA según el backend (nota de venta creada).
     await waitFor(() => expect(createNotaMock).toHaveBeenCalledTimes(1));
-    const payload = createNotaMock.mock.calls[0][0] as Record<string, unknown>;
+    const [endpointNota, payload, optsNota] = createNotaMock.mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+      { headers: Record<string, string> },
+    ];
+    expect(endpointNota).toBe('/ventas/notas-venta/');
+    // La Idempotency-Key de la nota existe y es estable por intento de venta.
+    expect(optsNota.headers['Idempotency-Key']).toBeTruthy();
     expect(payload.id_caja).toBe('caja-1');
     expect(payload.id_sucursal).toBe('suc-1');
     expect((payload.detalles as Array<{ subtotal: number }>)[0].subtotal).toBe(3.3);

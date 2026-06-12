@@ -30,12 +30,13 @@ import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmp
 import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActiva';
 import { fetchTasaBCV } from '../../../services/tasaBCV';
 import { buscarClientes, crearClienteConEmpresa } from '../../../services/clientesService';
-import { notaVentaService } from '../../../services/ventas';
+import { post } from '../../../services/api';
+import { IDEMPOTENCY_HEADER, newIdempotencyKey } from '../../../lib/idempotency';
 import { pagosService } from '../../../services/pagosService';
 import PosPagoDialog from './PosPagoDialog';
 import PosSesionDialog from './PosSesionDialog';
 import PosRecibo, { type ReciboData } from './PosRecibo';
-import { subtotalCarrito, type PosCartItem, type PosPago } from './posTotals';
+import { subtotalCarrito, type PosCartItem, type PosPago, totalPagado } from './posTotals';
 
 /** Nombre del cliente genérico de mostrador (se crea una vez por empresa). */
 const CLIENTE_MOSTRADOR = 'Consumidor Final';
@@ -52,6 +53,9 @@ export default function PosPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const searchRef = useRef<HTMLInputElement>(null);
+  // Clave de idempotencia de la NOTA: una por intento de venta, estable en
+  // reintentos (un fallo de red tras crear la nota no la duplica — PR #86).
+  const notaKeyRef = useRef<string | null>(null);
 
   const [busqueda, setBusqueda] = useState('');
   const [carrito, setCarrito] = useState<PosCartItem[]>([]);
@@ -178,7 +182,7 @@ export default function PosPage() {
     const encontrados = await buscarClientes(CLIENTE_MOSTRADOR, empresaId);
     const match = encontrados.find(
       (c) => (c as { razon_social?: string }).razon_social?.toLowerCase() === CLIENTE_MOSTRADOR.toLowerCase(),
-    ) ?? encontrados[0];
+    );
     if (match?.id_cliente) return match.id_cliente;
     const nuevo = await crearClienteConEmpresa({
       razon_social: CLIENTE_MOSTRADOR,
@@ -195,6 +199,11 @@ export default function PosPage() {
     if (carrito.length === 0) return;
     if (!sesion) {
       setSesionDialogOpen(true);
+      return;
+    }
+    // Si la nota ya se creó (reintento tras fallo de pagos), no recrearla.
+    if (notaCreada?.id_nota_venta) {
+      setPagoDialogOpen(true);
       return;
     }
     setCreandoNota(true);
@@ -215,9 +224,10 @@ export default function PosPage() {
         observaciones: 'Venta POS mostrador',
         detalles,
       };
-      const creada = (await notaVentaService.create(
-        payload as unknown as Parameters<typeof notaVentaService.create>[0],
-      )) as unknown as NotaVentaCreada;
+      if (!notaKeyRef.current) notaKeyRef.current = newIdempotencyKey();
+      const creada = await post<NotaVentaCreada>('/ventas/notas-venta/', payload, {
+        headers: { [IDEMPOTENCY_HEADER]: notaKeyRef.current },
+      });
       setNotaCreada(creada);
       setPagoDialogOpen(true);
     } catch {
@@ -233,6 +243,13 @@ export default function PosPage() {
   /** Paso 2 del cobro: registrar cada pago con su Idempotency-Key estable. */
   const confirmarPagos = async (pagos: PosPago[], vueltoCalculado: string) => {
     if (!notaCreada?.id_nota_venta) return;
+    // Defensa en profundidad: lo pagado (convertido a la moneda del
+    // documento) debe cubrir el monto_total que calculó el BACKEND.
+    const pagado = totalPagado(pagos, codigoIsoDocumento);
+    if (pagado.lessThan(totalDocumento)) {
+      setErrorVenta('El total pagado no cubre el total de la venta. Revisa los pagos.');
+      return;
+    }
     setProcesandoPagos(true);
     setErrorVenta(null);
     try {
@@ -273,8 +290,9 @@ export default function PosPage() {
   };
 
   const nuevaVenta = () => {
-    setRecibo(null);
+    notaKeyRef.current = null;
     setNotaCreada(null);
+    setRecibo(null);
     setCarrito([]);
     setBusqueda('');
     setErrorVenta(null);
