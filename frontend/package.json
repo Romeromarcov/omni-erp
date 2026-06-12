@@ -81,5 +81,8 @@
     "vitest": "^4.1.6"
   },
   "description": "Omni ERP — gestión empresarial integral multimoneda",
-  "author": "Omni ERP"
+  "author": "Omni ERP",
+  "overrides": {
+    "esbuild": "0.28.1"
+  }
 }
