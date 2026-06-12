@@ -47,6 +47,17 @@ class OperacionCambioDivisaViewSet(BaseModelViewSet):
         # R-CODE-1 — el campo FK a empresa es "empresa" (no "id_empresa")
         return OperacionCambioDivisa.objects.filter(empresa__in=_empresas(self.request))
 
+    def create(self, request, *args, **kwargs):
+        from apps.contabilidad.services import AsientoError
+
+        try:
+            return super().create(request, *args, **kwargs)
+        except AsientoError as exc:
+            # CTF-013 / R-CODE-11: contabilidad activa sin mapeo CAMBIO_DIVISA —
+            # el @transaction.atomic del serializer ya revirtió el doble registro
+            # al propagar la excepción; aquí solo se traduce a 422.
+            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
     def perform_create(self, serializer):
         serializer.save()
 

@@ -89,6 +89,7 @@ class MapeoContable(models.Model):
         ("PAGO_CXC", "Pago de Cuenta por Cobrar"),
         ("PAGO_CXP", "Pago de Cuenta por Pagar"),
         ("NOMINA", "Proceso de Nómina"),
+        ("CAMBIO_DIVISA", "Cambio de Divisa"),
     ]
 
     id_mapeo = models.UUIDField(primary_key=True, default=uuid7, editable=False)

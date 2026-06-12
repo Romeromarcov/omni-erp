@@ -39,6 +39,7 @@ TIPOS_ASIENTO = frozenset(
         "PAGO_CXC",
         "PAGO_CXP",
         "NOMINA",              # CTF-013: asiento del proceso de nómina LOTTT
+        "CAMBIO_DIVISA",       # CTF-013: asiento de la operación de cambio de divisa
     }
 )
 
