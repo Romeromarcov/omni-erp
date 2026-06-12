@@ -1234,6 +1234,12 @@ class PagoViewSet(BaseModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
 
+    # P1-1: techo estricto para escritura de pagos (scope 'escritura');
+    # los GET siguen bajo los throttles globales anon/user.
+    from apps.core.throttling import EscrituraRateThrottle as _EscrituraRateThrottle
+
+    throttle_classes = BaseModelViewSet.throttle_classes + [_EscrituraRateThrottle]
+
     def perform_create(self, serializer):
         # BUG-C2: los side-effects financieros (TransaccionFinanciera +
         # MovimientoCajaBanco + saldos) van en la MISMA transacción que el
