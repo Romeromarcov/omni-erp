@@ -307,6 +307,12 @@ class CajaFisica(models.Model):
 
         return realizar_cierre_caja(self, saldo_real, usuario=usuario, hasta=hasta)
 
+    def metodo_pago_deshabilitado(self, metodo_pago):
+        """FIX: este método no existía y las plantillas maestras lo invocaban →
+        AttributeError. Devuelve True si hay un override que deshabilita el
+        método de pago para esta caja física."""
+        return self.metodo_pago_overrides.filter(metodo_pago=metodo_pago, deshabilitado=True).exists()
+
     TIPO_CAJA_CHOICES = [
         ("REGISTRADORA", "Caja Registradora"),
         ("GERENCIA", "Caja Gerente Sucursal"),
@@ -1307,8 +1313,9 @@ class CajaVirtualAuto(models.Model):
     id_caja_virtual = models.UUIDField(primary_key=True, default=uuid7, editable=False)
 
     # Asociación: puede ser con caja física O con empleado (para vendedores móviles)
+    # FIX: el FK apuntaba a Caja (virtual) en vez de CajaFisica — modelado roto.
     caja_fisica = models.ForeignKey(
-        "Caja", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
+        "CajaFisica", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
     )
     empleado = models.ForeignKey(
         "core.Usuarios", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
@@ -1773,12 +1780,16 @@ class Pago(models.Model):
         super().save(*args, **kwargs)
 
     def _validar_documento(self):
+        # R-CODE-1: cada rama valida que el documento pertenezca a la MISMA
+        # empresa del pago — un id de otro tenant cuenta como inexistente.
         """Valida que el documento referenciado existe según el tipo"""
         if self.tipo_documento == "PEDIDO" and self.id_pedido:
             from apps.ventas.models import Pedido
 
             try:
-                pedido = Pedido.objects.get(id_pedido=self.id_pedido.id_pedido)
+                pedido = Pedido.objects.get(
+                    id_pedido=self.id_pedido.id_pedido, id_empresa_id=self.id_empresa_id
+                )
             except Pedido.DoesNotExist:
                 raise ValueError(f"Pedido {self.id_pedido.id_pedido} no existe")
 
@@ -1786,15 +1797,22 @@ class Pago(models.Model):
             from apps.ventas.models import NotaVenta
 
             try:
-                nota_venta = NotaVenta.objects.get(id_nota_venta=self.id_nota_venta.id_nota_venta)
+                nota_venta = NotaVenta.objects.get(
+                    id_nota_venta=self.id_nota_venta.id_nota_venta,
+                    id_empresa_id=self.id_empresa_id,
+                )
             except NotaVenta.DoesNotExist:
                 raise ValueError(f"Nota de Venta {self.id_nota_venta.id_nota_venta} no existe")
 
         elif self.tipo_documento == "FACTURA" and self.id_factura:
-            from apps.fiscal.models import FacturaFiscal
+            # FIX: FacturaFiscal vive en apps.ventas (el FK es "ventas.FacturaFiscal");
+            # importarla desde apps.fiscal rompía con ImportError toda validación de factura.
+            from apps.ventas.models import FacturaFiscal
 
             try:
-                factura = FacturaFiscal.objects.get(id_factura=self.id_factura.id_factura)
+                factura = FacturaFiscal.objects.get(
+                    id_factura=self.id_factura.id_factura, id_empresa_id=self.id_empresa_id
+                )
             except FacturaFiscal.DoesNotExist:
                 raise ValueError(f"Factura Fiscal {self.id_factura.id_factura} no existe")
 
@@ -1802,7 +1820,9 @@ class Pago(models.Model):
             from apps.cuentas_por_pagar.models import CuentaPorPagar
 
             try:
-                cxp = CuentaPorPagar.objects.get(id_cxp=self.id_cxp.id_cxp)
+                cxp = CuentaPorPagar.objects.get(
+                    id_cxp=self.id_cxp.id_cxp, id_empresa_id=self.id_empresa_id
+                )
             except CuentaPorPagar.DoesNotExist:
                 raise ValueError(f"Cuenta por Pagar {self.id_cxp.id_cxp} no existe")
 
@@ -1810,33 +1830,48 @@ class Pago(models.Model):
             from apps.gastos.models import Gasto
 
             try:
-                gasto = Gasto.objects.get(id_gasto=self.id_gasto.id_gasto)
+                gasto = Gasto.objects.get(
+                    id_gasto=self.id_gasto.id_gasto, id_empresa_id=self.id_empresa_id
+                )
             except Gasto.DoesNotExist:
                 raise ValueError(f"Gasto {self.id_gasto.id_gasto} no existe")
 
         elif self.tipo_documento == "REEMBOLSO_GASTO" and self.id_reembolso_gasto:
             from apps.gastos.models import ReembolsoGasto
 
+            # FIX: la PK del modelo es `id_reembolso` (no `id_reembolso_gasto`).
             try:
-                reembolso = ReembolsoGasto.objects.get(id_reembolso_gasto=self.id_reembolso_gasto.id_reembolso_gasto)
+                reembolso = ReembolsoGasto.objects.get(
+                    id_reembolso=self.id_reembolso_gasto.id_reembolso,
+                    id_empresa_id=self.id_empresa_id,
+                )
             except ReembolsoGasto.DoesNotExist:
-                raise ValueError(f"Reembolso de Gasto {self.id_reembolso_gasto.id_reembolso_gasto} no existe")
+                raise ValueError(f"Reembolso de Gasto {self.id_reembolso_gasto.id_reembolso} no existe")
 
         elif self.tipo_documento == "NOMINA" and self.id_nomina:
             from apps.nomina.models import Nomina
 
             try:
-                nomina = Nomina.objects.get(id_nomina=self.id_nomina.id_nomina)
+                nomina = Nomina.objects.get(
+                    id_nomina=self.id_nomina.id_nomina,
+                    # Nomina no tiene empresa directa: se acota vía su proceso.
+                    id_proceso_nomina__id_empresa_id=self.id_empresa_id,
+                )
             except Nomina.DoesNotExist:
                 raise ValueError(f"Nómina {self.id_nomina.id_nomina} no existe")
 
         elif self.tipo_documento == "IMPUESTO" and self.id_contribucion:
             from apps.fiscal.models import ContribucionParafiscal
 
+            # FIX: ContribucionParafiscal usa la PK implícita `pk`/`id`, no `id_contribucion`.
             try:
-                contribucion = ContribucionParafiscal.objects.get(id_contribucion=self.id_contribucion.id_contribucion)
+                contribucion = ContribucionParafiscal.objects.filter(
+                    models.Q(empresa_id=self.id_empresa_id)
+                    | models.Q(empresa__isnull=True)
+                    | models.Q(es_publico=True)
+                ).get(pk=self.id_contribucion.pk)
             except ContribucionParafiscal.DoesNotExist:
-                raise ValueError(f"Contribución Parafiscal {self.id_contribucion.id_contribucion} no existe")
+                raise ValueError(f"Contribución Parafiscal {self.id_contribucion.pk} no existe")
 
     @property
     def documento_relacionado(self):

@@ -37,8 +37,12 @@ class TasaCambioOficialBCVView(APIView):
 
             try:
                 empresa = Empresa.objects.get(id_empresa=id_empresa)
-                moneda_base = empresa.moneda_base
-            except Exception:
+            except (Empresa.DoesNotExist, ValueError, TypeError):
+                return Response({"detail": "Empresa o moneda base no encontrada."}, status=404)
+            # FIX: el campo del modelo es `id_moneda_base` (no `moneda_base`);
+            # el AttributeError silenciado hacía que esta rama devolviera 404 siempre.
+            moneda_base = empresa.id_moneda_base
+            if moneda_base is None:
                 return Response({"detail": "Empresa o moneda base no encontrada."}, status=404)
             try:
                 moneda_transaccion = Moneda.objects.get(id_moneda=id_moneda_transaccion)
