@@ -1743,3 +1743,61 @@ Cada página usa `useState(1)` para el número de página y renderiza `<Paginati
 - Rama: `main`
 
 ---
+
+## Sesión 2026-06-11 — Cierre del workstream P0 (auditoría integral 2026-06-10) + Q1 Fase 4
+
+**Agente:** Claude (sesión remota, orquestación multi-agente). **Rama base:** develop.
+
+### Cambio de proceso (autorizado por el owner)
+
+- **Nuevo flujo (PR #63):** toda rama nace de `develop`; los PRs a `develop` son
+  autoaprobables con CI verde + gate (un agente revisor distinto del autor);
+  la puerta `develop`→`main` conserva revisión humana del owner (R-PROC-3 redefinida).
+
+### Workstream P0 — los 8 paquetes de código CERRADOS (todos con CI verde y merge a develop)
+
+| Paquete | PR | Contenido |
+|---|---|---|
+| P0-1 | #69 | SEC-A1/A2/A3 + SEC-M2: fuga cross-tenant de métodos de pago cerrada (IDOR, escritura ajena, exposición masiva; proyección segura en buscar_reutilizar) |
+| P0-2 | #64 | BUG-C1: AbonoCxC deja de ser CRUD libre; create delega en registrar_abono; 405 en update/delete |
+| P0-3 | #66 | BUG-C2 + BUG-A1: registrar_efectos_pago (service atómico con lock); transferencia_entre_cajas atómica con validaciones |
+| P0-4 | #68 | BUG-A2 + BUG-M3: pagos de cuotas acumulan con lock y conversión de moneda; generar_cuotas capeado |
+| P0-5 | #65 | BUG-A4: una sola CxC por flujo de venta (vínculo documento_json; reutilización al facturar) |
+| P0-6 | #75 | SEC-M1 + SEC-B1: TenantFKScopeMixin sistémico (FKs writable acotadas a empresas visibles) + guard paramétrico nuevo |
+| P0-7 | #67 | SEC-M3/M4 + SEC-B2/B3: 0 str(exc) al cliente; fiscal id_empresa__in; monedas_info validado |
+| P0-8 | #72 | BUG-M1/M2/M4/M5 + BUG-A5: promedio nómina, aging sin N+1, ventana de cierre, lock conciliación, código muerto eliminado |
+
+Extras destapados y corregidos: cierre de caja física persistido vía movimiento CIERRE (#73,
+campos fantasma de 0021), test flaky de rate-limit (#71).
+**P0-9 (operativo) pendiente del owner:** verificar secret `BACKUP_DB_HOST` + probar restore.
+
+### Q1 — Fase 4 del plan cero-dudas (avance)
+
+- Cobertura frontend: 55.9% → **74.5%** stmts (PRs #70 y #74; thresholds 73/64/64/75).
+- **E2E Playwright de los 5 flujos críticos** (PR #76): venta, abono CxC, caja, inventario,
+  login multi-empresa; corrigió un bug real del login UI (AuthContext desmontaba el árbol).
+  Gaps de UI documentados en `frontend/e2e/README.md` como backlog.
+
+### En curso al cierre de sesión
+
+- PR #76 (E2E) re-validando CI tras merge de develop.
+- Agente trabajando: endpoints rotos de sesiones de caja (`fix/sesiones-caja-endpoints`).
+
+### 1.I — OF con etapas + costeo real + MRP básico (2026-06-11)
+
+- `apps/manufactura`: etapas de OF configurables por empresa (`EtapaProduccion`
+  catálogo + `EtapaOrdenProduccion` por OF; secuencia estándar de mueblería
+  corte → ensamble → lijado → pintura → tapizado → control final).
+- Costeo real por OF: materiales al costo del consumo (snapshot
+  `ConsumoMaterial.costo_unitario`) + mano de obra (horas × tarifa y/o destajo
+  por etapa) + overhead configurable (`ConfiguracionManufactura.porcentaje_overhead`).
+- PT entra al inventario valorado al costo real; una OF no cierra con etapas
+  pendientes.
+- MRP básico: explosión de BOM vs StockActual (disponible neto) → faltantes.
+- API: acciones `consumir-materiales`, `avanzar-etapa`, `etapas`, `completar`,
+  `costeo`, `mrp` en `ordenes-produccion`; ViewSets `etapas-produccion`
+  (soft-delete) y `configuracion`. Tools MCP `manufactura_calcular_mrp` y
+  `manufactura_get_costeo_orden` (scope `manufactura:read`).
+- Tests: `tests_api/test_manufactura_etapas_costeo.py` (ciclo completo con
+  costeo verificado a mano, MRP, aislamiento multi-tenant, MCP); atomicidad
+  existente sigue verde. Migración 0007 reversible (probada ida y vuelta).

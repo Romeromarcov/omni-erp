@@ -5,7 +5,7 @@ Documentación relacionada con las auditorías del proyecto: planificación, log
 ## Estructura
 
 - **`docs/auditorias/`** (raíz) — auditoría **activa / en curso**.
-  - `AUDITORIA_INTEGRAL_2026-06-10.md` — auditoría integral vigente (docs + estado vs plan + seguridad + bugs). Sus hallazgos CRÍTICO/ALTO son el workstream **P0** del [`PLAN_MAESTRO_UNICO.md` §5.2](../PLAN_MAESTRO_UNICO.md); se archiva al cerrar P0.
+  - (ninguna activa — la integral 2026-06-10 se archivó al cerrar su workstream P0 el 2026-06-11; ver `archivo/AUDITORIA_INTEGRAL_2026-06-10.md`)
 - **`docs/auditorias/archivo/`** — auditorías **finalizadas**. Aquí se archivan los planes, diagnósticos y logs de auditorías ya cerradas.
   - `PLAN_TRABAJO_AUDITORIA_2026-06-01.md` — plan de la auditoría 2026-06-01 (cerrado 2026-06-10; su §11 frontend migró al Plan Maestro §5.2 workstream F).
   - `DIAGNOSTICO_INICIAL.md` — diagnóstico inicial del proyecto.

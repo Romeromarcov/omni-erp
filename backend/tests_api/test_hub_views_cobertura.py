@@ -206,10 +206,11 @@ class TestTestConnectionAction:
 
         assert resp.status_code == 502
         assert resp.data["success"] is False
-        assert "sin conector" in resp.data["message"]
+        # SEC-M4 (R-CODE-8): el detalle interno NO se filtra al cliente.
+        assert "sin conector" not in resp.data["message"]
         instancia.refresh_from_db()
         assert instancia.estado == "error"
-        assert instancia.mensaje_estado == "sin conector"
+        assert "sin conector" not in instancia.mensaje_estado
 
 
 class TestTriggerSyncAction:
@@ -367,7 +368,8 @@ class TestPreviewAction:
                 f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/"
             )
         assert resp.status_code == 502
-        assert "config rota" in resp.data["error"]
+        # SEC-M4 (R-CODE-8): el detalle interno NO se filtra al cliente.
+        assert "config rota" not in resp.data["error"]
 
     def test_preview_error_del_conector_502(self, client_a, instancia):
         conector = _mock_conector()
@@ -377,7 +379,8 @@ class TestPreviewAction:
                 f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/"
             )
         assert resp.status_code == 502
-        assert "timeout externo" in resp.data["error"]
+        # SEC-M4 (R-CODE-8): el detalle interno NO se filtra al cliente.
+        assert "timeout externo" not in resp.data["error"]
 
 
 class TestJobViewSet:

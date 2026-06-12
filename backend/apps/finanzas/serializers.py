@@ -29,12 +29,19 @@ class MetodoPagoEmpresaActivaSerializer(serializers.ModelSerializer):
     nombre = serializers.CharField(source="metodo_pago.nombre_metodo", read_only=True)
 
     def create(self, validated_data):
+        # SEC-M2 (auditoría 2026-06-10): `empresa` es read-only — se inyecta
+        # SIEMPRE la empresa primaria del usuario (estilo EmpresaInjectMixin),
+        # ignorando cualquier valor enviado por el cliente (R-CODE-1).
+        from django.db import models as django_models
+
+        from apps.core.viewsets import get_empresa_primaria, get_empresas_visible
+
+        validated_data.pop("empresa", None)
         request = self.context.get("request")
-        if request and not validated_data.get("empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and empresas.exists():
-                validated_data["empresa"] = empresas.first()
+        empresa = get_empresa_primaria(request.user) if request else None
+        if empresa is None:
+            raise serializers.ValidationError({"empresa": "El usuario no tiene empresa asignada."})
+        validated_data["empresa"] = empresa
 
         metodo_pago_value = validated_data.pop("metodo_pago", None)
         if isinstance(metodo_pago_value, dict) and "id_metodo_pago" in metodo_pago_value:
@@ -44,13 +51,27 @@ class MetodoPagoEmpresaActivaSerializer(serializers.ModelSerializer):
         if metodo_pago_uuid:
             from .models import MetodoPago
 
-            validated_data["metodo_pago"] = MetodoPago.objects.get(id_metodo_pago=metodo_pago_uuid)
+            # R-CODE-1: solo se pueden activar métodos visibles para el usuario
+            # (genéricos, públicos, sin empresa o de sus empresas) — no los
+            # privados de otro tenant.
+            visibles = MetodoPago.objects.filter(
+                django_models.Q(es_generico=True)
+                | django_models.Q(es_publico=True)
+                | django_models.Q(empresa__isnull=True)
+                | django_models.Q(empresa__in=get_empresas_visible(request.user))
+            )
+            try:
+                validated_data["metodo_pago"] = visibles.get(id_metodo_pago=metodo_pago_uuid)
+            except MetodoPago.DoesNotExist:
+                raise serializers.ValidationError({"metodo_pago": ["Método de pago no encontrado."]})
 
         return super().create(validated_data)
 
     class Meta:
         model = MetodoPagoEmpresaActiva
         fields = ["id", "empresa", "metodo_pago", "activa", "nombre"]
+        # SEC-M2: el cliente no decide la empresa destino.
+        read_only_fields = ["empresa"]
 
 
 from rest_framework import serializers
@@ -335,6 +356,19 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
             if sim >= 55 or dist <= 3 or nombre_actual in nombre_db or nombre_db in nombre_actual:
                 return True
         return False
+
+
+class MetodoPagoReutilizableSerializer(MetodoPagoSerializer):
+    """
+    Proyección segura para `buscar_reutilizar` (SEC-A3, auditoría 2026-06-10).
+
+    Solo expone campos no sensibles del catálogo: NUNCA `documento_json`,
+    `referencia_externa` ni metadatos de tenant de terceros.
+    """
+
+    class Meta:
+        model = MetodoPago
+        fields = ["id_metodo_pago", "nombre_metodo", "tipo_metodo", "activo", "url", "aplicado"]
 
 
 class TransaccionFinancieraSerializer(serializers.ModelSerializer):
@@ -886,7 +920,9 @@ class CajaMetodoPagoOverrideSerializer(serializers.ModelSerializer):
     id_metodo_pago = serializers.CharField(source="metodo_pago.id_metodo_pago", read_only=True)
     sucursal_nombre = serializers.CharField(source="sucursal.nombre", read_only=True)
     metodo_pago_nombre = serializers.CharField(source="metodo_pago.nombre", read_only=True)
-    caja_fisica = serializers.PrimaryKeyRelatedField(queryset=Caja.objects.all())
+    # FIX (lote 2): el queryset apuntaba a Caja (virtual) aunque el FK del
+    # modelo es CajaFisica → ningún id real era aceptado (400 siempre).
+    caja_fisica = serializers.PrimaryKeyRelatedField(queryset=CajaFisica.objects.all())
     metodo_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all())
     sucursal = serializers.PrimaryKeyRelatedField(queryset=Sucursal.objects.all())
     creado_por = serializers.StringRelatedField(read_only=True)

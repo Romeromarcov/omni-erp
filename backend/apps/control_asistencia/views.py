@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from apps.core.serializer_mixins import TenantFKScopeMixin
 
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
@@ -22,7 +23,7 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
-class HorarioTrabajoViewSet(viewsets.ModelViewSet):
+class HorarioTrabajoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = HorarioTrabajo.objects.all()
     serializer_class = HorarioTrabajoSerializer
     permission_classes = [IsAuthenticated]
@@ -63,7 +64,7 @@ class HorarioTrabajoViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class AsignacionHorarioViewSet(viewsets.ModelViewSet):
+class AsignacionHorarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = AsignacionHorario.objects.all()
     serializer_class = AsignacionHorarioSerializer
     permission_classes = [IsAuthenticated]
@@ -110,7 +111,7 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
 
         fecha_fin = request.data.get("fecha_fin")
         if not fecha_fin:
-            fecha_fin = timezone.now().date()
+            fecha_fin = timezone.localdate()
 
         asignacion.fecha_fin = fecha_fin
         asignacion.activo = False
@@ -120,7 +121,7 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
+class RegistroAsistenciaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = RegistroAsistencia.objects.all()
     serializer_class = RegistroAsistenciaSerializer
     permission_classes = [IsAuthenticated]
@@ -191,7 +192,7 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
     def hoy(self, request):
         """Obtiene registros del día actual"""
         empleado_id = request.query_params.get("empleado_id")
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()
 
         filters = {"fecha_hora_marcado__date": hoy}
         if empleado_id:
@@ -202,7 +203,7 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
+class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = ResumenAsistenciaDiario.objects.all()
     serializer_class = ResumenAsistenciaDiarioSerializer
     permission_classes = [IsAuthenticated]
@@ -223,7 +224,7 @@ class ResumenAsistenciaDiarioViewSet(viewsets.ModelViewSet):
         empleado_id = request.data.get("empleado_id")
 
         if not fecha:
-            fecha = timezone.now().date()
+            fecha = timezone.localdate()
 
         # Si se especifica empleado, procesar solo ese empleado
         if empleado_id:

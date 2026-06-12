@@ -16,6 +16,44 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+# P1-3: mensaje genérico de lockout — NO debe filtrar si el usuario existe.
+LOCKOUT_MESSAGE = (
+    "Demasiados intentos fallidos. La cuenta está temporalmente bloqueada; "
+    "intente de nuevo más tarde."
+)
+
+
+def axes_lockout_response(request, credentials=None):
+    """
+    P1-3: respuesta de lockout para AxesMiddleware (AXES_LOCKOUT_CALLABLE).
+
+    JSON 429 con mensaje genérico — coherente con la API y sin filtrar si el
+    usuario existe (el default de axes devuelve HTML 429).
+    """
+    from django.http import JsonResponse
+
+    return JsonResponse({"error": LOCKOUT_MESSAGE}, status=429)
+
+
+def _esta_bloqueado_por_axes(request, username) -> bool:
+    """
+    P1-3: ¿la combinación usuario+IP está bloqueada por django-axes?
+
+    Se consulta ANTES de authenticate() para poder responder 429 explícito.
+    (Si no se consultara, AxesStandaloneBackend igual cortaría el login —
+    authenticate() devolvería None — pero el cliente vería un 401 ambiguo.)
+    """
+    from django.conf import settings as django_settings
+
+    if not getattr(django_settings, "AXES_ENABLED", False):
+        return False
+    from axes.handlers.proxy import AxesProxyHandler
+
+    django_request = getattr(request, "_request", request)
+    return AxesProxyHandler.is_locked(
+        django_request, credentials={"username": username}
+    )
+
 
 def _uref(username) -> str:
     """
@@ -93,6 +131,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 {"error": "Demasiados intentos de login. Espere un momento antes de intentar de nuevo."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
+        # P1-3: lockout por usuario+IP (django-axes). Mensaje genérico.
+        if _esta_bloqueado_por_axes(request, request.data.get("username")):
+            return Response(
+                {"error": LOCKOUT_MESSAGE},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         response = super().post(request, *args, **kwargs)
         username = request.data.get("username", "unknown")
         if response.status_code == 200:
@@ -127,7 +171,19 @@ def login_view(request):
         logger.warning("Username or password missing in request data")
         return Response({"error": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    user = authenticate(username=username, password=password)
+    # P1-3: lockout por usuario+IP (django-axes). Se responde 429 con mensaje
+    # genérico (no filtra si el usuario existe).
+    if _esta_bloqueado_por_axes(request, username):
+        logger.warning("Login bloqueado por axes para %s", _uref(username))
+        return Response({"error": LOCKOUT_MESSAGE}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+    # P1-3: pasar el request a authenticate() es OBLIGATORIO para que
+    # django-axes registre el intento (IP + username) y aplique el lockout.
+    user = authenticate(
+        request=getattr(request, "_request", request),
+        username=username,
+        password=password,
+    )
 
     if user is not None:
         if user.is_active:

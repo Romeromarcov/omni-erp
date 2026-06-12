@@ -1,5 +1,6 @@
 """ViewSets para Fraccionamiento (feature-flagged)."""
 from django.db import transaction
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -24,7 +25,7 @@ def _fraccionamiento_enabled(empresa) -> bool:
         return False
 
 
-class LoteFraccionadoViewSet(viewsets.ModelViewSet):
+class LoteFraccionadoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = LoteFraccionadoSerializer
 
@@ -54,7 +55,7 @@ class LoteFraccionadoViewSet(viewsets.ModelViewSet):
         instance.soft_delete()
 
 
-class VentaFraccionadaViewSet(viewsets.ModelViewSet):
+class VentaFraccionadaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = VentaFraccionadaSerializer
 

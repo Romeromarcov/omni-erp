@@ -7,10 +7,11 @@ Cubre por la API real (router en apps/nomina/urls.py, prefijo /api/nomina/):
 - Aislamiento multi-tenant (R-CODE-1) directo y vía cadena de FKs
   (Nomina → ProcesoNomina → empresa; DetalleNomina → Nomina → …).
 - Actions: activos, abiertos, cerrar, por_tipo, devengados, deducciones,
-  procesar (stub: solo EN_PROCESO → COMPLETADO), aprobar, resumen,
-  marcar_pagada, y los equivalentes extrasalariales (felices + 400).
+  procesar (CTF-013: cálculo LOTTT + persistencia de recibos), aprobar,
+  resumen, marcar_pagada, y los equivalentes extrasalariales (felices + 400).
 
-Nota: ``procesar`` es un stub que solo cambia estado — se testea tal cual.
+El flujo completo de ``procesar`` (atomicidad, asiento NOMINA, parámetros) se
+cubre en ``tests/integration/test_nomina_proceso.py``.
 Dinero como Decimal con aserciones de valor exacto.
 """
 import datetime
@@ -341,12 +342,25 @@ class TestConceptoNominaActions:
 
 
 class TestProcesoNominaActions:
-    def test_procesar_stub_cambia_a_completado(self, client_a, proceso_a):
-        # `procesar` es un stub: solo cambia estado EN_PROCESO → COMPLETADO
+    def test_procesar_calcula_y_persiste_nominas(self, client_a, proceso_a, empleado_a):
+        # CTF-013: `procesar` ya no es stub — calcula LOTTT y persiste recibos.
+        # Salario 900.00: SSO 4%=36.00, FAOV 1%=9.00, RPE 0.5%=4.50
+        # → deducciones 49.50, neto 850.50 (sin cestaticket configurado).
+        empleado_a.documento_json = {"salario_mensual": "900.00"}
+        empleado_a.save(update_fields=["documento_json"])
         resp = client_a.post(f"{BASE}procesos-nomina/{proceso_a.id_proceso_nomina}/procesar/")
         assert resp.status_code == 200
         proceso_a.refresh_from_db()
         assert proceso_a.estado == "COMPLETADO"
+        nomina = Nomina.objects.get(id_proceso_nomina=proceso_a)
+        assert nomina.sueldo_base == Decimal("900.00")
+        assert nomina.total_deducciones == Decimal("49.50")
+        assert nomina.total_neto == Decimal("850.50")
+
+    def test_procesar_sin_empleados_activos_400(self, client_a, proceso_a):
+        resp = client_a.post(f"{BASE}procesos-nomina/{proceso_a.id_proceso_nomina}/procesar/")
+        assert resp.status_code == 400
+        assert "empleados activos" in resp.json()["error"]
 
     def test_procesar_ya_completado_400(self, client_a, proceso_a):
         proceso_a.estado = "COMPLETADO"
@@ -386,6 +400,9 @@ class TestProcesoNominaActions:
         assert Decimal(str(data["total_devengado"])) == Decimal("880.0000")
         assert Decimal(str(data["total_deducciones"])) == Decimal("80.0000")
         assert Decimal(str(data["total_neto"])) == Decimal("800.0000")
+        # BUG-M1: antes la precedencia (`sum or 0 / n`) devolvía la SUMA (800);
+        # el promedio correcto es (500 + 300) / 2 = 400.
+        assert Decimal(str(data["promedio_sueldo"])) == Decimal("400")
 
     def test_resumen_proceso_vacio(self, client_a, proceso_a):
         resp = client_a.get(f"{BASE}procesos-nomina/{proceso_a.id_proceso_nomina}/resumen/")
@@ -393,6 +410,7 @@ class TestProcesoNominaActions:
         data = resp.json()
         assert data["total_empleados"] == 0
         assert data["total_neto"] == 0
+        assert Decimal(str(data["promedio_sueldo"])) == Decimal("0")
 
 
 class TestNominaActions:

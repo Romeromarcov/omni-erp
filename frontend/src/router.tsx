@@ -4,6 +4,7 @@ import LoginPage from './pages/Core/Login/LoginPage';
 import SignupPage from './pages/Core/Signup/SignupPage';
 import AppLayout from './components/layout/AppLayout';
 import { useAuth } from './contexts/AuthContext';
+import { lazy, Suspense } from 'react';
 import { ventasRoutes } from './routes/ventasRoutes';
 import { finanzasRoutes } from './routes/finanzasRoutes';
 import { coreRoutes } from './routes/coreRoutes';
@@ -12,9 +13,15 @@ import { integracionesRoutes } from './routes/integracionesRoutes';
 import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
+import { manufacturaRoutes } from './routes/manufacturaRoutes';
+import { comprasRoutes } from './routes/comprasRoutes';
+import { contabilidadRoutes } from './routes/contabilidadRoutes';
+import { tesoreriaRoutes } from './routes/tesoreriaRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
 import { isModuleEnabled } from './config/appProfile';
+
+const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
 
 export default function AppRouter() {
   const { token, isLoading } = useAuth();
@@ -40,6 +47,18 @@ export default function AppRouter() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<LoginPage />} />
 
+        {/* POS de mostrador (sub-fase 1.G): pantalla completa, sin AppLayout. */}
+        {token && isModuleEnabled('ventas') && (
+          <Route
+            path="/pos"
+            element={
+              <Suspense fallback={<div>Cargando…</div>}>
+                <PosPage />
+              </Suspense>
+            }
+          />
+        )}
+
         {token && (
           <Route element={<AppLayout />}>
             {coreRoutes()}
@@ -50,6 +69,10 @@ export default function AppRouter() {
             {isModuleEnabled('inventario') ? inventarioRoutes() : null}
             {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
+            {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
+            {isModuleEnabled('compras') ? comprasRoutes() : null}
+            {isModuleEnabled('contabilidad') ? contabilidadRoutes() : null}
+            {isModuleEnabled('tesoreria') ? tesoreriaRoutes() : null}
             {isModuleEnabled('escaner') ? escanerRoutes() : null}
             {saasRoutes()}
           </Route>

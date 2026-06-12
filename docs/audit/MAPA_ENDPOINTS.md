@@ -74,6 +74,12 @@
 | `^cajas-fisicas-usuario\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaUsuarioViewSet | CajaFisicaUsuario | — | ✅ | IsAuthenticated |
 | `^cajas-fisicas/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/abrir-sesion/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/abrir-sesion\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cerrar-sesion/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cerrar-sesion\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cierre/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
+| `^cajas-fisicas/(?P<pk>[^/.]+)/cierre\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/tipo-caja-choices/$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^cajas-fisicas/tipo-caja-choices\.(?P<format>[a-z0-9]+)/?$` | CajaFisicaViewSet | CajaFisica | ✅ | ✅ | IsAuthenticated |
@@ -168,6 +174,10 @@
 | `^configuracion-integracion/(?P<pk>[^/.]+)/$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
 | `^configuracion-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
 | `^configuracion-integracion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionIntegracionViewSet | ConfiguracionIntegracion | ✅ | ✅ | IsAuthenticated |
+| `^configuracion/$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
+| `^configuracion/(?P<pk>[^/.]+)/$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
+| `^configuracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
+| `^configuracion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/(?P<pk>[^/.]+)/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/(?P<pk>[^/.]+)/activar/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
@@ -380,6 +390,16 @@
 | `^empresas/(?P<pk>[^/.]+)/$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/activar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/desactivar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/crear-estandar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion/crear-estandar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas-produccion\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
@@ -504,6 +524,12 @@
 | `^mapeo-campos/(?P<pk>[^/.]+)/$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
 | `^mapeo-campos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
 | `^mapeo-campos\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
+| `^mapeos-contables/$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/(?P<pk>[^/.]+)/$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/tipos-asiento/$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/tipos-asiento\.(?P<format>[a-z0-9]+)/?$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables\.(?P<format>[a-z0-9]+)/?$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago-empresa-activas/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
@@ -574,6 +600,8 @@
 | `^notas-credito-venta\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/convertir-factura/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/convertir-factura\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notificaciones/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
@@ -610,6 +638,18 @@
 | `^ordenes-compra\.(?P<format>[a-z0-9]+)/?$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion/(?P<pk>[^/.]+)/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/avanzar-etapa/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/avanzar-etapa\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/completar/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/completar\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/consumir-materiales/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/consumir-materiales\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/costeo/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/costeo\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/etapas/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/etapas\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/mrp/$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^ordenes-produccion/(?P<pk>[^/.]+)/mrp\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^overrides-metodos-pago/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
@@ -632,6 +672,8 @@
 | `^pedidos/(?P<pk>[^/.]+)/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/confirmar/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/confirmar\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/convertir-nota-venta/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/convertir-nota-venta\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^periodos-nomina/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
@@ -960,4 +1002,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 188_
+_Total ViewSets: 191_

@@ -388,6 +388,8 @@ class TestDispositivoViewSet:
         assert len(resp.json()["results"]) == 1
 
     def test_perform_create_fuerza_creado_por(self, client_a, user_a, user_b, empresa_a, sucursal_a):
+        # SEC-M1: el intento de spoofing con un usuario de otra empresa ahora
+        # se RECHAZA (400) por el scope de tenant de FKs, en vez de ignorarse.
         resp = client_a.post(
             "/api/core/dispositivos/",
             {
@@ -400,9 +402,25 @@ class TestDispositivoViewSet:
             },
             format="json",
         )
+        assert resp.status_code == 400
+
+        # Con un usuario visible (el propio), perform_create sigue forzando
+        # creado_por=request.user sin importar el payload.
+        resp = client_a.post(
+            "/api/core/dispositivos/",
+            {
+                "fingerprint": "fp-vs-nuevo",
+                "user_agent": "Mozilla Chrome Windows",
+                "nombre_dispositivo": "Mi PC",
+                "empresa": str(empresa_a.id_empresa),
+                "sucursal": str(sucursal_a.id_sucursal),
+                "creado_por": str(user_a.id),
+            },
+            format="json",
+        )
         assert resp.status_code == 201
         disp = Dispositivo.objects.get(fingerprint="fp-vs-nuevo")
-        assert disp.creado_por == user_a  # ignorado el payload
+        assert disp.creado_por == user_a
 
 
 # ── PermisosViewSet (gate H-SEC-7) ────────────────────────────────────────────

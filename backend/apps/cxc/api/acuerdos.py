@@ -1,5 +1,6 @@
 """ViewSet para AcuerdoPago."""
 import logging
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from datetime import date, timedelta
 
 from django.db import transaction
@@ -11,6 +12,7 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+from apps.core.idempotency import idempotent
 from apps.core.viewsets import get_empresas_visible
 from apps.cxc.models import AcuerdoPago, CuotaAcuerdo
 from apps.cxc.api.serializers import (
@@ -21,7 +23,7 @@ from apps.cxc.api.serializers import (
 )
 
 
-class AcuerdoPagoViewSet(viewsets.ModelViewSet):
+class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
@@ -63,6 +65,7 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.soft_delete()
 
+    @idempotent("cxc:acuerdo-registrar-pago")
     @action(detail=True, methods=["post"], url_path="registrar-pago")
     def registrar_pago(self, request, pk=None):
         """
@@ -77,19 +80,22 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        try:
-            cuota = CuotaAcuerdo.objects.get(
-                id=data["cuota_id"],
-                acuerdo=acuerdo,
-            )
-        except CuotaAcuerdo.DoesNotExist:
-            return Response({"error": "Cuota no encontrada en este acuerdo"}, status=404)
-
-        if cuota.estado == "pagado":
-            return Response({"error": "Esta cuota ya está pagada"}, status=400)
-
         with transaction.atomic():
             from apps.finanzas.models import Pago, Moneda, MetodoPago
+
+            # BUG-A2: lock + verificación DENTRO de la transacción — dos pagos
+            # concurrentes sobre la misma cuota se serializan y el segundo ve el
+            # estado ya actualizado (no hay doble cobro).
+            try:
+                cuota = CuotaAcuerdo.objects.select_for_update().get(
+                    id=data["cuota_id"],
+                    acuerdo=acuerdo,
+                )
+            except CuotaAcuerdo.DoesNotExist:
+                return Response({"error": "Cuota no encontrada en este acuerdo"}, status=404)
+
+            if cuota.estado == "pagado":
+                return Response({"error": "Esta cuota ya está pagada"}, status=400)
 
             try:
                 moneda = Moneda.objects.get(pk=data["moneda_id"])
@@ -107,13 +113,40 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
+            from decimal import Decimal
+
+            from apps.finanzas.services import (
+                TasaCambioError,
+                convertir_monto,
+                obtener_tasa_cambio,
+            )
+
+            # BUG-A2: el monto aplicado a la cuota se convierte a la moneda del
+            # acuerdo (100 VES NO saldan una cuota de 100 USD). Sin tasa
+            # disponible el pago se rechaza — nunca se asume tasa 1 entre
+            # monedas distintas.
+            monto_aplicado = data["monto"]
+            if moneda.codigo_iso != acuerdo.moneda_codigo:
+                try:
+                    monto_aplicado = convertir_monto(
+                        data["monto"], moneda, acuerdo.moneda_codigo,
+                        empresa=acuerdo.empresa,
+                    )
+                except TasaCambioError:
+                    return Response(
+                        {
+                            "code": "tasa_no_disponible",
+                            "detail": (
+                                "No hay tasa de cambio disponible entre la moneda "
+                                "del pago y la moneda del acuerdo."
+                            ),
+                        },
+                        status=400,
+                    )
+
             # M-BUG-9: tasa real (moneda del pago → moneda base de la empresa) en
             # vez de hardcodear 1. Fallback conservador a 1 si no hay tasa o es la
             # misma moneda, para no bloquear el pago.
-            from decimal import Decimal
-
-            from apps.finanzas.services import TasaCambioError, obtener_tasa_cambio
-
             tasa_pago = Decimal("1")
             empresa_base = getattr(acuerdo.empresa, "id_moneda_base", None)
             if empresa_base is not None and empresa_base.pk != moneda.pk:
@@ -142,12 +175,13 @@ class AcuerdoPagoViewSet(viewsets.ModelViewSet):
                 observaciones=data.get("observaciones", f"Cuota {cuota.numero_cuota} — Acuerdo {acuerdo.pk}"),
             )
 
-            # Actualizar cuota
+            # Actualizar cuota — BUG-A2: el pago parcial se ACUMULA, no se
+            # sobrescribe (dos parciales de 40 y 60 saldan una cuota de 100).
             cuota.pago = pago
-            cuota.monto_pagado = data["monto"]
+            cuota.monto_pagado = (cuota.monto_pagado or Decimal("0")) + monto_aplicado
             cuota.fecha_pago = timezone.now().date()
 
-            if data["monto"] >= cuota.monto:
+            if cuota.monto_pagado >= cuota.monto:
                 cuota.estado = "pagado"
             else:
                 cuota.estado = "parcial"

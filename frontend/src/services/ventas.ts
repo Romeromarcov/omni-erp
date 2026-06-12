@@ -93,6 +93,15 @@ export class CotizacionService extends BaseVentasService<Cotizacion> {
   }
 }
 
+export interface ConfirmacionPedido {
+  pedido_id: string;
+  numero_pedido: string;
+  estado: string;
+  reservas_creadas: number;
+  cxc_generada: boolean;
+  cxc_id: string | null;
+}
+
 export class PedidoService extends BaseVentasService<Pedido> {
   constructor() {
     super('ventas/pedidos');
@@ -100,6 +109,11 @@ export class PedidoService extends BaseVentasService<Pedido> {
 
   async convertirANotaVenta(id: string, data: ConversionData): Promise<NotaVenta> {
     return post<NotaVenta>(`/ventas/pedidos/${id}/convertir-nota-venta/`, data);
+  }
+
+  /** Confirma el pedido (APROBADO): reserva stock en el almacén y genera CxC si aplica. */
+  async confirmar(id: string, almacenId: string): Promise<ConfirmacionPedido> {
+    return post<ConfirmacionPedido>(`/ventas/pedidos/${id}/confirmar/`, { almacen_id: almacenId });
   }
 
   async getByCliente(clienteId: string): Promise<Pedido[]> {

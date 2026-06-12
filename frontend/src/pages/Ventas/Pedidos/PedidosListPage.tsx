@@ -11,6 +11,7 @@ import Pagination from '../../../components/Pagination';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { useSnackbar } from '../../../contexts/feedbackTypes';
+import { notasVentaKeys } from '../../../lib/queryKeys';
 
 const PAGE_SIZE = 20;
 
@@ -31,7 +32,11 @@ export default function PedidosListPage() {
 
   const convertirMutation = useMutation({
     mutationFn: (pedidoId: string) => pedidoService.convertirANotaVenta(pedidoId, {}),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pedidos'] }),
+    onSuccess: (nota) => {
+      snackbar.success(`Nota de venta ${nota.numero_nota} creada.`);
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: notasVentaKeys.all() });
+    },
     onError: () => snackbar.error(t('ventas.pedidos.errorConvertir')),
   });
 

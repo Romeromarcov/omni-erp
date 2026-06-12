@@ -2,7 +2,10 @@ from rest_framework import serializers
 
 from .models import (
     CentroTrabajo,
+    ConfiguracionManufactura,
     ConsumoMaterial,
+    EtapaOrdenProduccion,
+    EtapaProduccion,
     ListaMateriales,
     ListaMaterialesDetalle,
     OperacionProduccion,
@@ -78,3 +81,35 @@ class RegistroOperacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroOperacion
         fields = "__all__"
+
+
+class EtapaProduccionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EtapaProduccion
+        fields = "__all__"
+        # empresa se inyecta en perform_create desde request.user — R-CODE-1
+        read_only_fields = ["empresa"]
+
+
+class EtapaOrdenProduccionSerializer(serializers.ModelSerializer):
+    etapa_codigo = serializers.CharField(source="etapa.codigo", read_only=True)
+    etapa_nombre = serializers.CharField(source="etapa.nombre", read_only=True)
+    costo_mano_obra = serializers.DecimalField(max_digits=18, decimal_places=4, read_only=True)
+
+    class Meta:
+        model = EtapaOrdenProduccion
+        fields = "__all__"
+        # las transiciones pasan por el service (avanzar_etapa_orden) — solo lectura
+        read_only_fields = [
+            "orden_produccion", "etapa", "orden", "estado", "horas_trabajadas",
+            "tarifa_hora", "cantidad_destajo", "pago_destajo", "completada_por",
+            "fecha_completada",
+        ]
+
+
+class ConfiguracionManufacturaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConfiguracionManufactura
+        fields = "__all__"
+        # empresa se inyecta en perform_create desde request.user — R-CODE-1
+        read_only_fields = ["empresa"]

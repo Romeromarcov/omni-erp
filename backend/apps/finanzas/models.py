@@ -277,94 +277,41 @@ class Caja(models.Model):
     def __str__(self):
         return f"{self.nombre} (Virtual - {self.get_tipo_caja_display()}) - {self.moneda.codigo_iso}"
 
+    def realizar_cierre(self, saldo_real, usuario=None, hasta=None):
+        """
+        Realiza el cierre de la caja virtual (FIX endpoint roto: el endpoint
+        ``POST /finanzas/cajas/{id}/cierre/`` llamaba este método, que no
+        existía → siempre 400). Reutiliza el patrón de corte persistente del
+        PR #73 (MovimientoCajaBanco tipo 'CIERRE'); además reconcilia
+        ``saldo_actual`` con el saldo real contado. Ver
+        ``services.realizar_cierre_caja``.
+        """
+        from .services import realizar_cierre_caja
+
+        return realizar_cierre_caja(self, saldo_real, usuario=usuario, hasta=hasta)
+
 
 # Modelo para cajas físicas (puestos de trabajo con hardware específico)
 class CajaFisica(models.Model):
 
     def realizar_cierre(self, saldo_real, usuario=None, hasta=None):
         """
-        Realiza el cierre de caja física:
-        - Calcula ingresos y egresos desde el último cierre (o desde el inicio).
-        - Compara con el saldo real contado.
-        - Registra MovimientoCajaBanco de tipo 'CIERRE'.
-        - Si hay descuadre, crea ajuste para cuadrar el saldo.
-        - Actualiza fecha_ultimo_cierre.
-        - Devuelve resumen del cierre.
+        Realiza el cierre de caja física (FIX hallazgo P0-8 / PR #73):
+        - Calcula ingresos y egresos desde el último corte (movimiento
+          'CIERRE'), compara con el saldo real contado, crea ajuste si hay
+          descuadre y persiste el corte como MovimientoCajaBanco 'CIERRE'.
+        - La lógica común (también usada por Caja virtual) vive en
+          ``services.realizar_cierre_caja``.
         """
-        from decimal import Decimal
+        from .services import realizar_cierre_caja
 
-        from django.db import transaction
-        from django.utils import timezone
+        return realizar_cierre_caja(self, saldo_real, usuario=usuario, hasta=hasta)
 
-        from apps.finanzas.ajustes import crear_ajuste_caja_banco
-
-        from .models import MovimientoCajaBanco
-
-        ahora = timezone.now()
-        limite = hasta or ahora
-        # Buscar movimientos desde el último cierre
-        movimientos = self.movimientos.filter(
-            fecha_movimiento__gte=self.fecha_ultimo_cierre if self.fecha_ultimo_cierre else self.fecha_creacion,
-            fecha_movimiento__lte=limite.date(),
-        )
-        ingresos = sum(
-            (m.monto for m in movimientos.filter(tipo_movimiento__in=["INGRESO", "AJUSTE_POSITIVO"])), Decimal("0.00")
-        )
-        egresos = sum(
-            (m.monto for m in movimientos.filter(tipo_movimiento__in=["EGRESO", "AJUSTE_NEGATIVO"])), Decimal("0.00")
-        )
-        saldo_teorico = self.saldo_actual + ingresos - egresos
-        saldo_real = Decimal(saldo_real)
-        descuadre = saldo_real - saldo_teorico
-
-        with transaction.atomic():
-            # Registrar movimiento de cierre
-            movimiento_cierre = MovimientoCajaBanco.objects.create(
-                id_empresa=self.empresa,
-                fecha_movimiento=limite.date(),
-                hora_movimiento=limite.time(),
-                tipo_movimiento="CIERRE",
-                monto=Decimal("0.00"),
-                id_moneda=None,
-                concepto=f"Cierre de caja física. Saldo real: {saldo_real}, saldo teórico: {saldo_teorico}, descuadre: {descuadre}",
-                referencia=f'Cierre {self.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
-                id_caja_fisica=self,
-                saldo_anterior=self.saldo_actual,
-                saldo_nuevo=saldo_real,
-                id_usuario_registro=usuario if usuario else None,
-            )
-            movimiento_ajuste = None
-            if descuadre != 0:
-                # Crear ajuste para cuadrar el saldo
-                tipo_ajuste = "POSITIVO" if descuadre > 0 else "NEGATIVO"
-                movimiento_ajuste = crear_ajuste_caja_banco(
-                    empresa=self.empresa,
-                    monto=abs(descuadre),
-                    moneda=None,
-                    caja_fisica=self,
-                    usuario=usuario,
-                    motivo=f"Ajuste por descuadre en cierre de caja física {self.nombre}",
-                    tipo_ajuste=tipo_ajuste,
-                    referencia=f'Ajuste cierre {self.nombre} {limite.strftime("%Y-%m-%d %H:%M:%S")}',
-                )
-                self.saldo_actual = saldo_real
-            else:
-                self.saldo_actual = saldo_real
-            self.fecha_ultimo_cierre = limite
-            self.save()
-        return {
-            "ingresos": ingresos,
-            "egresos": egresos,
-            "saldo_teorico": saldo_teorico,
-            "saldo_real": saldo_real,
-            "descuadre": descuadre,
-            "movimiento_cierre_id": movimiento_cierre.id_movimiento,
-            "movimiento_ajuste_id": movimiento_ajuste.id_movimiento if movimiento_ajuste else None,
-            "fecha_cierre": limite,
-            "mensaje": (
-                "Cierre de caja física realizado." if descuadre == 0 else "Cierre de caja física realizado con ajuste."
-            ),
-        }
+    def metodo_pago_deshabilitado(self, metodo_pago):
+        """FIX: este método no existía y las plantillas maestras lo invocaban →
+        AttributeError. Devuelve True si hay un override que deshabilita el
+        método de pago para esta caja física."""
+        return self.metodo_pago_overrides.filter(metodo_pago=metodo_pago, deshabilitado=True).exists()
 
     TIPO_CAJA_CHOICES = [
         ("REGISTRADORA", "Caja Registradora"),
@@ -942,6 +889,10 @@ class MovimientoCajaBanco(models.Model):
         ("TRANSFERENCIA_SALIDA", "Transferencia Salida"),
         ("AJUSTE_POSITIVO", "Ajuste Positivo"),
         ("AJUSTE_NEGATIVO", "Ajuste Negativo"),
+        # Corte de cierre de caja física: monto 0, saldo_nuevo = saldo real
+        # contado. Es el registro persistente del que CajaFisica.realizar_cierre
+        # re-deriva la ventana y el saldo base del siguiente cierre.
+        ("CIERRE", "Cierre"),
     ]
 
     id_movimiento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
@@ -1050,15 +1001,79 @@ class SesionCajaFisica(models.Model):
             return (self.fecha_cierre - self.fecha_apertura).total_seconds() / 60
         return (timezone.now() - self.fecha_apertura).total_seconds() / 60
 
-    def cerrar_sesion(self, notas_cierre=None):
-        """Cierra la sesión de caja"""
+    def cerrar_sesion(self, notas_cierre=None, saldos_reales=None, usuario=None, hasta=None):
+        """
+        Cierra la sesión de caja de forma ATÓMICA.
+
+        FIX (endpoint roto): la vista llamaba este método con
+        ``saldos_reales/usuario/hasta`` pero la firma solo aceptaba
+        ``notas_cierre`` → TypeError 500. Ahora, si se pasa ``saldos_reales``
+        (dict {id_caja: saldo_real_contado}), se realiza el cierre de cada
+        caja de la sesión — la caja física principal y/o sus cajas virtuales
+        asociadas — reutilizando el corte persistente del PR #73
+        (``services.realizar_cierre_caja``), y se marca la sesión CERRADA en
+        la misma transacción.
+
+        Args:
+            notas_cierre:  Notas a guardar en la sesión (opcional).
+            saldos_reales: dict {id_caja (str/UUID): saldo real contado}.
+                           Las claves deben ser la caja física de la sesión o
+                           una de sus cajas virtuales; otra cosa → ValueError.
+            usuario:       Usuario que cierra (para los movimientos de cierre).
+            hasta:         datetime límite de los cierres (opcional).
+
+        Returns:
+            dict {id_caja: resumen del cierre} (vacío si no se pidieron cierres).
+
+        Raises:
+            ValueError con mensaje de negocio (sesión ya cerrada, caja ajena a
+            la sesión, saldo no numérico, límite anterior al último cierre).
+        """
+        from decimal import Decimal, InvalidOperation
+
+        from django.db import transaction
         from django.utils import timezone
 
-        self.estado = "CERRADA"
-        self.fecha_cierre = timezone.now()
-        if notas_cierre:
-            self.notas = notas_cierre
-        self.save()
+        from .services import realizar_cierre_caja
+
+        cierres = {}
+        with transaction.atomic():
+            # Lock de la sesión: serializa cierres concurrentes y fija el
+            # estado leído (no cerrar dos veces / no cerrar sobre cerrada).
+            sesion = type(self).objects.select_for_update().get(pk=self.pk)
+            if sesion.estado == "CERRADA":
+                raise ValueError("La sesión ya está cerrada.")
+
+            for caja_id, saldo in (saldos_reales or {}).items():
+                caja = self._resolver_caja_de_sesion(caja_id)
+                try:
+                    # R-CODE-4: nunca Decimal(float) — pasar por str.
+                    saldo_decimal = Decimal(str(saldo))
+                except (InvalidOperation, ValueError, TypeError):
+                    raise ValueError(f"El saldo_real enviado para la caja {caja_id} no es un número válido.")
+                cierres[str(caja_id)] = realizar_cierre_caja(
+                    caja, saldo_decimal, usuario=usuario, hasta=hasta
+                )
+
+            self.estado = "CERRADA"
+            self.fecha_cierre = timezone.now()
+            if notas_cierre:
+                self.notas = notas_cierre
+            self.save()
+        return cierres
+
+    def _resolver_caja_de_sesion(self, caja_id):
+        """
+        Resuelve una caja perteneciente a la sesión: la caja física principal
+        o una de sus cajas virtuales asociadas. Cualquier otra cosa →
+        ValueError (no se filtra existencia de cajas ajenas).
+        """
+        if str(caja_id) == str(self.caja_fisica_id):
+            return self.caja_fisica
+        try:
+            return self.caja_fisica.cajas_virtuales.get(id_caja=caja_id)
+        except (Caja.DoesNotExist, ValueError, TypeError, ValidationError):
+            raise ValueError(f"La caja {caja_id} no pertenece a esta sesión.")
 
     @classmethod
     def obtener_sesion_activa(cls, caja_fisica, usuario=None):
@@ -1298,8 +1313,9 @@ class CajaVirtualAuto(models.Model):
     id_caja_virtual = models.UUIDField(primary_key=True, default=uuid7, editable=False)
 
     # Asociación: puede ser con caja física O con empleado (para vendedores móviles)
+    # FIX: el FK apuntaba a Caja (virtual) en vez de CajaFisica — modelado roto.
     caja_fisica = models.ForeignKey(
-        "Caja", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
+        "CajaFisica", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
     )
     empleado = models.ForeignKey(
         "core.Usuarios", on_delete=models.CASCADE, null=True, blank=True, related_name="cajas_virtuales_auto"
@@ -1764,12 +1780,16 @@ class Pago(models.Model):
         super().save(*args, **kwargs)
 
     def _validar_documento(self):
+        # R-CODE-1: cada rama valida que el documento pertenezca a la MISMA
+        # empresa del pago — un id de otro tenant cuenta como inexistente.
         """Valida que el documento referenciado existe según el tipo"""
         if self.tipo_documento == "PEDIDO" and self.id_pedido:
             from apps.ventas.models import Pedido
 
             try:
-                pedido = Pedido.objects.get(id_pedido=self.id_pedido.id_pedido)
+                pedido = Pedido.objects.get(
+                    id_pedido=self.id_pedido.id_pedido, id_empresa_id=self.id_empresa_id
+                )
             except Pedido.DoesNotExist:
                 raise ValueError(f"Pedido {self.id_pedido.id_pedido} no existe")
 
@@ -1777,15 +1797,22 @@ class Pago(models.Model):
             from apps.ventas.models import NotaVenta
 
             try:
-                nota_venta = NotaVenta.objects.get(id_nota_venta=self.id_nota_venta.id_nota_venta)
+                nota_venta = NotaVenta.objects.get(
+                    id_nota_venta=self.id_nota_venta.id_nota_venta,
+                    id_empresa_id=self.id_empresa_id,
+                )
             except NotaVenta.DoesNotExist:
                 raise ValueError(f"Nota de Venta {self.id_nota_venta.id_nota_venta} no existe")
 
         elif self.tipo_documento == "FACTURA" and self.id_factura:
-            from apps.fiscal.models import FacturaFiscal
+            # FIX: FacturaFiscal vive en apps.ventas (el FK es "ventas.FacturaFiscal");
+            # importarla desde apps.fiscal rompía con ImportError toda validación de factura.
+            from apps.ventas.models import FacturaFiscal
 
             try:
-                factura = FacturaFiscal.objects.get(id_factura=self.id_factura.id_factura)
+                factura = FacturaFiscal.objects.get(
+                    id_factura=self.id_factura.id_factura, id_empresa_id=self.id_empresa_id
+                )
             except FacturaFiscal.DoesNotExist:
                 raise ValueError(f"Factura Fiscal {self.id_factura.id_factura} no existe")
 
@@ -1793,7 +1820,9 @@ class Pago(models.Model):
             from apps.cuentas_por_pagar.models import CuentaPorPagar
 
             try:
-                cxp = CuentaPorPagar.objects.get(id_cxp=self.id_cxp.id_cxp)
+                cxp = CuentaPorPagar.objects.get(
+                    id_cxp=self.id_cxp.id_cxp, id_empresa_id=self.id_empresa_id
+                )
             except CuentaPorPagar.DoesNotExist:
                 raise ValueError(f"Cuenta por Pagar {self.id_cxp.id_cxp} no existe")
 
@@ -1801,33 +1830,48 @@ class Pago(models.Model):
             from apps.gastos.models import Gasto
 
             try:
-                gasto = Gasto.objects.get(id_gasto=self.id_gasto.id_gasto)
+                gasto = Gasto.objects.get(
+                    id_gasto=self.id_gasto.id_gasto, id_empresa_id=self.id_empresa_id
+                )
             except Gasto.DoesNotExist:
                 raise ValueError(f"Gasto {self.id_gasto.id_gasto} no existe")
 
         elif self.tipo_documento == "REEMBOLSO_GASTO" and self.id_reembolso_gasto:
             from apps.gastos.models import ReembolsoGasto
 
+            # FIX: la PK del modelo es `id_reembolso` (no `id_reembolso_gasto`).
             try:
-                reembolso = ReembolsoGasto.objects.get(id_reembolso_gasto=self.id_reembolso_gasto.id_reembolso_gasto)
+                reembolso = ReembolsoGasto.objects.get(
+                    id_reembolso=self.id_reembolso_gasto.id_reembolso,
+                    id_empresa_id=self.id_empresa_id,
+                )
             except ReembolsoGasto.DoesNotExist:
-                raise ValueError(f"Reembolso de Gasto {self.id_reembolso_gasto.id_reembolso_gasto} no existe")
+                raise ValueError(f"Reembolso de Gasto {self.id_reembolso_gasto.id_reembolso} no existe")
 
         elif self.tipo_documento == "NOMINA" and self.id_nomina:
             from apps.nomina.models import Nomina
 
             try:
-                nomina = Nomina.objects.get(id_nomina=self.id_nomina.id_nomina)
+                nomina = Nomina.objects.get(
+                    id_nomina=self.id_nomina.id_nomina,
+                    # Nomina no tiene empresa directa: se acota vía su proceso.
+                    id_proceso_nomina__id_empresa_id=self.id_empresa_id,
+                )
             except Nomina.DoesNotExist:
                 raise ValueError(f"Nómina {self.id_nomina.id_nomina} no existe")
 
         elif self.tipo_documento == "IMPUESTO" and self.id_contribucion:
             from apps.fiscal.models import ContribucionParafiscal
 
+            # FIX: ContribucionParafiscal usa la PK implícita `pk`/`id`, no `id_contribucion`.
             try:
-                contribucion = ContribucionParafiscal.objects.get(id_contribucion=self.id_contribucion.id_contribucion)
+                contribucion = ContribucionParafiscal.objects.filter(
+                    models.Q(empresa_id=self.id_empresa_id)
+                    | models.Q(empresa__isnull=True)
+                    | models.Q(es_publico=True)
+                ).get(pk=self.id_contribucion.pk)
             except ContribucionParafiscal.DoesNotExist:
-                raise ValueError(f"Contribución Parafiscal {self.id_contribucion.id_contribucion} no existe")
+                raise ValueError(f"Contribución Parafiscal {self.id_contribucion.pk} no existe")
 
     @property
     def documento_relacionado(self):

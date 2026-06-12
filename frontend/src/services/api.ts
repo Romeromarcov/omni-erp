@@ -300,10 +300,15 @@ export async function get<T>(endpoint: string): Promise<T> {
   return fetcher<T>(endpoint);
 }
 
-export async function post<T>(endpoint: string, data: Record<string, unknown>): Promise<T> {
+export async function post<T>(
+  endpoint: string,
+  data: Record<string, unknown>,
+  options?: RequestOptions,
+): Promise<T> {
   return fetcher<T>(endpoint, {
+    ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
     body: JSON.stringify(data),
   });
 }
@@ -326,4 +331,16 @@ export async function put<T>(endpoint: string, data: Record<string, unknown>): P
 
 export async function del<T>(endpoint: string): Promise<T> {
   return fetcher<T>(endpoint, { method: 'DELETE' });
+}
+
+/**
+ * POST multipart/form-data (p. ej. import de CSV). NO fija Content-Type:
+ * el navegador agrega el boundary correcto al serializar el FormData.
+ */
+export async function postForm<T>(endpoint: string, form: FormData): Promise<T> {
+  const res = await request(endpoint, { method: 'POST', body: form });
+  if (!res.ok) {
+    throw await buildError(res, resolveUrl(endpoint));
+  }
+  return res.json() as Promise<T>;
 }

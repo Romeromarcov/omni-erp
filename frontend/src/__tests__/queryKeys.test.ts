@@ -3,6 +3,8 @@ import {
   inventarioKeys,
   notasVentaKeys,
   pagosKeys,
+  pedidosKeys,
+  almacenesKeys,
   productosKeys,
   ventasKeys,
   cxcKeys,
@@ -30,6 +32,22 @@ describe('queryKeys factory', () => {
     expect(detail).toEqual(['notas-venta', 'nv1']);
     // El detalle comparte prefijo con la familia (permite invalidar por prefijo).
     expect(detail.slice(0, all.length)).toEqual(all);
+  });
+
+  it('pedidos y almacenes: el detalle comparte prefijo con la familia', () => {
+    const all = pedidosKeys.all();
+    const detail = pedidosKeys.detail('p1');
+    expect(all).toEqual(['pedidos']);
+    expect(detail).toEqual(['pedidos', 'detail', 'p1']);
+    expect(detail.slice(0, all.length)).toEqual(all);
+    expect(almacenesKeys.all()).toEqual(['almacenes']);
+  });
+
+  it('cxc cuentas: paginada con default y prefijo de familia', () => {
+    expect(cxcKeys.cuentas()).toEqual(['cxc', 'cuentas', 1]);
+    expect(cxcKeys.cuentas(3)).toEqual(['cxc', 'cuentas', 3]);
+    const all = cxcKeys.cuentasAll();
+    expect(cxcKeys.cuentas(3).slice(0, all.length)).toEqual(all);
   });
 
   it('pagos por documento comparten prefijo con la familia', () => {

@@ -138,15 +138,20 @@ class TestCajaCierre:
         assert resp.status_code == 400
         assert resp.json() == {"error": "Debe enviar el saldo_real contado."}
 
-    def test_cierre_falla_controladamente_400(self, client_a, caja_virtual_a):
-        # HALLAZGO: el modelo Caja (virtual) NO define realizar_cierre →
-        # AttributeError capturado por el except genérico → 400 controlado.
+    def test_cierre_exitoso_200(self, client_a, caja_virtual_a):
+        # FIX (hallazgo PR #73): Caja (virtual) ya define realizar_cierre →
+        # cierre con corte persistente; el descuadre (sin movimientos, saldo
+        # contado 100) genera ajuste positivo. Flujo completo en
+        # test_finanzas_sesion_caja_cierre.py.
         resp = client_a.post(
             f"/api/finanzas/cajas/{caja_virtual_a.id_caja}/cierre/",
             {"saldo_real": "100.00"},
         )
-        assert resp.status_code == 400
-        assert resp.json() == {"error": "No se pudo realizar el cierre. Intente de nuevo."}
+        assert resp.status_code == 200
+        data = resp.json()
+        assert Decimal(str(data["descuadre"])) == Decimal("100.00")
+        assert data["movimiento_cierre_id"] is not None
+        assert data["movimiento_ajuste_id"] is not None
 
 
 # ── DatafonoViewSet ──────────────────────────────────────────────────────────
@@ -413,11 +418,11 @@ class TestTransaccionFinancieraCreate:
     def test_empresa_ajena_se_ignora_y_usa_la_propia(
         self, client_a, empresa_a, empresa_b, moneda_usd, metodo_a, user_a
     ):
+        # SEC-M1: el pk de una empresa ajena ya no se ignora en silencio —
+        # el scope de tenant de FKs lo rechaza con 400.
         resp = client_a.post(self.URL, self._payload(empresa_b, moneda_usd, metodo_a, user_a))
-        assert resp.status_code == 201, resp.content
-        tf = TransaccionFinanciera.objects.get()
-        assert tf.id_empresa == empresa_a  # ignoró empresa_b del payload
-        assert tf.monto_transaccion == Decimal("75.00")
+        assert resp.status_code == 400, resp.content
+        assert not TransaccionFinanciera.objects.exists()
 
     def test_empresa_propia_se_respeta(self, client_a, empresa_a, moneda_usd, metodo_a, user_a):
         resp = client_a.post(self.URL, self._payload(empresa_a, moneda_usd, metodo_a, user_a))
@@ -434,8 +439,10 @@ class TestTransaccionFinancieraCreate:
         client = APIClient()
         client.force_authenticate(user=sin_empresa)
         resp = client.post(self.URL, self._payload(empresa_b, moneda_usd, metodo_a, sin_empresa))
-        assert resp.status_code == 403
-        assert resp.json()["detail"] == "El usuario no tiene empresa asignada."
+        # SEC-M1: sin empresas visibles, los FKs tenant-aware del payload se
+        # rechazan en el serializer (400) antes del check 403 del viewset.
+        assert resp.status_code in (400, 403)
+        assert not TransaccionFinanciera.objects.exists()
 
 
 # ── MetodoPagoViewSet: reutilizar y monedas_info ─────────────────────────────
@@ -445,8 +452,15 @@ class TestMetodoPagoAcciones:
 
     @pytest.fixture
     def metodo_b(self, empresa_b):
+        # SEC-A1 (auditoría 2026-06-10): antes este fixture era PRIVADO de la
+        # empresa B y el test fijaba el comportamiento inseguro (cualquier
+        # usuario podía reutilizarlo por UUID). Ahora `reutilizar` solo acepta
+        # fuentes visibles (genéricas/públicas/propias), así que el método
+        # compartido debe ser público; el caso "privado ajeno → 404" se cubre
+        # en tests_api/test_metodos_pago_aislamiento.py.
         return MetodoPago.objects.create(
-            nombre_metodo="Pago Móvil Banesco", tipo_metodo="ELECTRONICO", empresa=empresa_b
+            nombre_metodo="Pago Móvil Banesco", tipo_metodo="ELECTRONICO",
+            empresa=empresa_b, es_publico=True,
         )
 
     def test_reutilizar_sin_empresa_400(self, client_a, metodo_b):
@@ -601,13 +615,13 @@ class TestListasAisladas:
         assert client_a.get("/api/finanzas/cajas-virtuales-auto/").json()["count"] == 1
         assert client_b.get("/api/finanzas/cajas-virtuales-auto/").json()["count"] == 0
 
-    def test_overrides_create_roto_y_list_aislada(
+    def test_overrides_create_y_list_aislada(
         self, client_a, client_b, caja_fisica_a, metodo_a, sucursal_a, user_a
     ):
-        # HALLAZGO documentado: CajaMetodoPagoOverrideSerializer declara
-        # caja_fisica = PrimaryKeyRelatedField(queryset=Caja.objects.all())
-        # (caja VIRTUAL) aunque el FK del modelo apunta a CajaFisica → un id
-        # de CajaFisica real es rechazado con 400 "objeto no existe".
+        # FIX (lote 2): el serializer aceptaba ids de Caja virtual (queryset
+        # equivocado) y la señal override_post_save reventaba por el FK de
+        # CajaVirtualAuto mal apuntado. Ahora el POST con un id de CajaFisica
+        # real crea el override (201) y la señal sincroniza sin error.
         resp = client_a.post("/api/finanzas/overrides-metodos-pago/", {
             "caja_fisica": str(caja_fisica_a.id_caja_fisica),
             "metodo_pago": str(metodo_a.id_metodo_pago),
@@ -615,19 +629,8 @@ class TestListasAisladas:
             "deshabilitado": True,
             "motivo": "POS dañado",
         })
-        assert resp.status_code == 400
-        assert "caja_fisica" in resp.json()
-        # HALLAZGO documentado (2): tampoco se puede crear por ORM — la señal
-        # override_post_save filtra CajaVirtualAuto.caja_fisica (FK→Caja
-        # virtual) con una instancia de CajaFisica → ValueError. El modelo de
-        # overrides está roto de punta a punta.
-        with pytest.raises(ValueError):
-            CajaMetodoPagoOverride.objects.create(
-                caja_fisica=caja_fisica_a, metodo_pago=metodo_a, sucursal=sucursal_a,
-                deshabilitado=True, creado_por=user_a,
-            )
-        # Peor aún: la fila SÍ queda insertada (la señal revienta después del
-        # INSERT) → estado inconsistente. La lista queda acotada al tenant.
+        assert resp.status_code == 201, resp.content
         assert CajaMetodoPagoOverride.objects.count() == 1
+        # La lista queda acotada al tenant.
         assert client_a.get("/api/finanzas/overrides-metodos-pago/").json()["count"] == 1
         assert client_b.get("/api/finanzas/overrides-metodos-pago/").json()["count"] == 0

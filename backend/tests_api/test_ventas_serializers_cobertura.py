@@ -12,11 +12,12 @@ Cubre las ramas no ejercitadas por los tests de flujo:
   ``documento_json``.
 - Validaciones de campo de los serializers de detalle (cantidad, precio).
 
-BUG documentado: la rama de "sesión activa" de ``PedidoSerializer.create`` es
-inalcanzable — hace ``select_related("caja_fisica_principal")`` pero
-``SesionCajaFisica`` no tiene ese campo (quedó en el modelo legacy
-``SesionCaja``); el FieldError se traga en el ``except Exception`` y siempre
-cae al fallback GEN-CAJGEN.
+FIX (lote 2): la rama de "sesión activa" de ``PedidoSerializer.create`` era
+inalcanzable — hacía ``select_related("caja_fisica_principal")``, campo que no
+existe en ``SesionCajaFisica`` (el FK es ``caja_fisica``), y el FieldError se
+tragaba en un ``except Exception``. Ahora la sesión abierta del usuario (en la
+empresa del pedido) resuelve la caja virtual activa de su caja física y arma el
+prefijo del número de pedido; sin sesión (o sin caja virtual) cae al fallback.
 """
 import datetime
 from decimal import Decimal
@@ -170,19 +171,27 @@ class TestPedidoCreate:
         assert detalle.precio_unitario == Decimal("12.5000")
         assert detalle.subtotal == Decimal("37.5000")
 
-    def test_sesion_abierta_no_cambia_prefijo_y_registra_usuario(
-        self, cliente, empresa_a, user_a
+    def test_sesion_abierta_arma_prefijo_con_caja_de_la_sesion(
+        self, cliente, empresa_a, user_a, moneda_usd
     ):
         """
-        BUG (documentado): aunque el usuario tenga una SesionCajaFisica ABIERTA,
-        el ``select_related("caja_fisica_principal")`` referencia un campo que no
-        existe en el modelo → FieldError silenciado → siempre prefijo GEN-CAJGEN.
-        El usuario sí queda registrado en documento_json (vía contexto request).
+        FIX (lote 2): la sesión ABIERTA del usuario resuelve la caja virtual
+        activa de su caja física y el prefijo usa sucursal + nombre de caja.
+        El usuario queda registrado en documento_json (vía contexto request).
         """
-        from apps.finanzas.models import CajaFisica, SesionCajaFisica
+        from apps.core.models import Sucursal
+        from apps.finanzas.models import Caja, CajaFisica, SesionCajaFisica
 
+        sucursal = Sucursal.objects.create(
+            id_empresa=empresa_a, nombre="Sucursal Sesión", codigo_sucursal="SES"
+        )
         caja_fisica = CajaFisica.objects.create(
-            empresa=empresa_a, nombre="Caja Uno", identificador_dispositivo="dev-vs-1"
+            empresa=empresa_a, sucursal=sucursal, nombre="Caja Uno",
+            identificador_dispositivo="dev-vs-1",
+        )
+        Caja.objects.create(
+            empresa=empresa_a, sucursal=sucursal, nombre="Caja Uno V",
+            moneda=moneda_usd, caja_fisica=caja_fisica,
         )
         SesionCajaFisica.objects.create(
             caja_fisica=caja_fisica, usuario=user_a, empresa=empresa_a, estado="ABIERTA"
@@ -193,13 +202,32 @@ class TestPedidoCreate:
         )
         assert ser.is_valid(), ser.errors
         pedido = ser.save(id_empresa=empresa_a)
-        # La sesión NO influye en el prefijo (rama muerta)
-        assert pedido.numero_pedido == "GEN-CAJGEN-000001"
+        # La caja de la sesión SÍ influye en el prefijo (antes era rama muerta)
+        assert pedido.numero_pedido == "SES-CAJA U-000001"
         assert pedido.documento_json["id_usuario"] == str(user_a.id)
 
         # to_representation expone el usuario desde documento_json
         rep = PedidoSerializer(pedido).data
         assert rep["id_usuario"]["username"] == "user_empresa_a"
+
+    def test_sesion_abierta_sin_caja_virtual_cae_al_fallback(
+        self, cliente, empresa_a, user_a
+    ):
+        from apps.finanzas.models import CajaFisica, SesionCajaFisica
+
+        caja_fisica = CajaFisica.objects.create(
+            empresa=empresa_a, nombre="Caja Sola", identificador_dispositivo="dev-vs-2"
+        )
+        SesionCajaFisica.objects.create(
+            caja_fisica=caja_fisica, usuario=user_a, empresa=empresa_a, estado="ABIERTA"
+        )
+        ser = PedidoSerializer(
+            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"},
+            context={"request": SimpleNamespace(user=user_a)},
+        )
+        assert ser.is_valid(), ser.errors
+        pedido = ser.save(id_empresa=empresa_a)
+        assert pedido.numero_pedido == "GEN-CAJGEN-000001"
 
     def test_documento_json_con_sucursal_y_caja_arma_prefijo(
         self, cliente, empresa_a, moneda_usd
@@ -244,6 +272,39 @@ class TestPedidoCreate:
             documento_json={
                 "id_sucursal": str(uuid_mod.uuid4()),
                 "id_caja": str(uuid_mod.uuid4()),
+            },
+        )
+        assert pedido.numero_pedido == "GEN-CAJGEN-000001"
+
+    def test_documento_json_con_ids_de_otra_empresa_se_ignora(
+        self, cliente, empresa_a, empresa_b
+    ):
+        """R-CODE-1: sucursal/caja de OTRA empresa en documento_json se ignoran
+        (caen al código GEN-CAJGEN) — nunca contaminan el pedido cross-tenant."""
+        from apps.core.models import Sucursal
+        from apps.finanzas.models import Caja
+
+        sucursal_b = Sucursal.objects.create(
+            id_empresa=empresa_b, nombre="Sucursal B", codigo_sucursal="SUCB"
+        )
+        from apps.finanzas.models import Moneda
+
+        moneda_b = Moneda.objects.filter(codigo_iso="USD").first() or Moneda.objects.create(
+            codigo_iso="USD", nombre="Dólar", simbolo="$", es_publica=True
+        )
+        caja_b = Caja.objects.create(
+            empresa=empresa_b, nombre="Caja B", tipo_caja="REGISTRADORA", moneda=moneda_b
+        )
+
+        ser = PedidoSerializer(
+            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"}
+        )
+        assert ser.is_valid(), ser.errors
+        pedido = ser.save(
+            id_empresa=empresa_a,
+            documento_json={
+                "id_sucursal": str(sucursal_b.id_sucursal),
+                "id_caja": str(caja_b.id_caja),
             },
         )
         assert pedido.numero_pedido == "GEN-CAJGEN-000001"

@@ -35,16 +35,49 @@ export default defineConfig({
           { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
+      // PWA offline Nivel 1 (ADR-001 / Plan Maestro §5.2-ter Fase 2):
+      // precache del shell + NetworkFirst para la API + fallback de navegación.
       workbox: {
+        // Precache del shell completo (JS/CSS/HTML/iconos/fuentes).
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        cleanupOutdatedCaches: true,
+        // SPA: cualquier navegación sin red sirve el shell precacheado.
+        // Las rutas de API/admin nunca deben caer al shell.
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
         runtimeCaching: [
           {
-            urlPattern: /^\/api\//,
+            // NOTA (auditoría Fase 2): el patrón anterior era el RegExp
+            // /^\/api\//, que Workbox evalúa contra url.href completo
+            // (https://…) y por tanto NUNCA matcheaba — la API no se estaba
+            // cacheando en absoluto. Se usa un callback explícito: solo GET
+            // same-origin bajo /api/, excluyendo /api/auth/ (tokens y
+            // credenciales jamás se cachean).
+            urlPattern: ({ url, request, sameOrigin }) =>
+              sameOrigin &&
+              request.method === 'GET' &&
+              url.pathname.startsWith('/api/') &&
+              !url.pathname.startsWith('/api/auth/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+              // 24 h de expiración: 300 s era demasiado corto (un corte de
+              // 5 min ya vaciaba el caché, rompiendo el DoD de la fase).
+              // NetworkFirst garantiza frescura cuando hay red.
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
               networkTimeoutSeconds: 5,
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            // Imágenes no fingerprinteadas (logos subidos, media).
+            urlPattern: ({ request, sameOrigin }) =>
+              sameOrigin && request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'img-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],
@@ -75,29 +108,32 @@ export default defineConfig({
       exclude: ['node_modules/', 'src/test-setup.ts', 'src/api/**', 'e2e/**'],
       // INFRA-NEW-3: el gate de cobertura ahora SÍ corre en CI (npm run
       // test:coverage). Los umbrales son un "ratchet" fijado al piso actual del
-      // código para prevenir regresión; el objetivo del Plan Maestro es 60% en
-      // las cuatro métricas y se sube conforme se agregan tests. No bajar.
+      // código para prevenir regresión; el objetivo de la Fase 4 del plan
+      // cero-dudas es 80% y se sube por escalones conforme se agregan tests.
+      // No bajar. Piso actual (Q1/COV-2 escalón 3, OBJETIVO 80% ALCANZADO):
+      // stmts 80.7 / branches 70.9 / funcs 71.0 / lines 82.7 — umbral con ~2 puntos de margen.
       thresholds: {
-        statements: 52,
-        branches: 41,
-        functions: 45,
-        lines: 55,
+        statements: 79,
+        branches: 69,
+        functions: 69,
+        lines: 81,
         // TEST-6: pisos de cobertura por carpeta (ratchet, igual filosofía que el
         // global). Fijados al piso ACTUAL de cada carpeta para impedir regresión.
-        // El objetivo del Plan Maestro (≥85% en services/ y hooks/) sigue pendiente:
-        // el gap es grande (hooks ~50%, services ~63%) y no se cierra con 1-2 tests;
+        // El objetivo del Plan Maestro (≥85% en services/ y hooks/) sigue pendiente;
         // se sube conforme se agregan tests con MSW. NO bajar estos números.
+        // Piso actual: services 93.1/86.5/90/94.9 · hooks 88.3/78.7/84.4/91.2
+        // (escalón 3: services/api a fondo + useFacturaFiscalForm con suite propia).
         'src/services/**': {
-          statements: 60,
-          branches: 50,
-          functions: 55,
-          lines: 60,
+          statements: 91,
+          branches: 84,
+          functions: 88,
+          lines: 93,
         },
         'src/hooks/**': {
-          statements: 45,
-          branches: 33,
-          functions: 50,
-          lines: 45,
+          statements: 86,
+          branches: 77,
+          functions: 82,
+          lines: 89,
         },
         'src/lib/**': {
           statements: 85,

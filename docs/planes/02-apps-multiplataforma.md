@@ -3,7 +3,7 @@
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Apps distribuibles y firmadas, con empaquetado automatizado en CI. Orden: Windows → Android → desktop macOS/Linux; **iOS diferido**. |
-| **Estado actual** | Andamiaje completo (Electron 42, Capacitor 8, PWA). **Sin firma, sin job de empaquetado en CI, sin artefactos publicados.** |
+| **Estado actual** | Andamiaje completo (Electron 42, Capacitor 8, PWA). **CI de empaquetado operativo** (`.github/workflows/package.yml`: `.exe` Windows + `.apk`/`.aab` Android; release en tags `app-v*`). CORS de shells nativos habilitado en backend (`app://omni`, `https://localhost`). **Sin firma Authenticode; firma Android opcional vía secrets.** |
 | **Esfuerzo** | ~3–4 semanas (sin iOS). |
 | **Deuda** | [CTF-010](../ctf/CTF-010.md). |
 
@@ -29,7 +29,7 @@ Ver [CTF-009](../ctf/CTF-009.md).
 ## Fase B2 — Android · ~1–2 semanas
 - `npm run cap:add:android`, generar **keystore**, configurar firma, target `.aab` para Play Store.
 - Permisos nativos (cámara/escáner QR/NFC ya contemplados en `MULTIPLATAFORMA.md`).
-- CI con runner con Android SDK + JDK 17; cuenta de Google Play Console.
+- CI con runner con Android SDK + JDK 21 (Capacitor 8); cuenta de Google Play Console.
 - **DoD:** `.aab` firmado generado en CI; instalable en dispositivo real.
 
 ## Fase B3 — Desktop macOS / Linux · ~3–4 días (oportunista)

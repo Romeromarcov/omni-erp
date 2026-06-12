@@ -85,12 +85,14 @@ jobs:
         run: python -m pytest tests tests_api/ -v --tb=short --no-header
 
       - name: Diff coverage — código nuevo ≥95% (cero-dudas, BLOQUEANTE)
-        if: github.event_name == 'pull_request'
         working-directory: backend
-        # BLOQUEANTE: cada PR debe cubrir ≥95% de sus líneas nuevas de apps/.
-        # El gate ya está mergeado a main, así que compara solo las líneas nuevas
-        # del PR contra el main ya cubierto. 95% es el objetivo definitivo del plan
-        # cero-dudas (criterio 2: diff-coverage ≥95%).
+        # BLOQUEANTE: todo lo nuevo vs main debe cubrir ≥95% de sus líneas de
+        # apps/ (plan cero-dudas, criterio 2). Corre en TODOS los eventos, no
+        # solo pull_request: `on.pull_request` filtra por base=main, así que los
+        # PRs a develop solo generan runs de push — con el `if` anterior el gate
+        # se saltaba silenciosamente en cada merge a develop y la deuda se
+        # acumuló hasta reventar en el PR de release (#100, 91% agregado).
+        # En push a main el diff vs origin/main queda vacío y pasa trivialmente.
         run: |
           pip install diff-cover
           git fetch --no-tags origin main
@@ -140,14 +142,15 @@ jobs:
         run: npm run test:coverage -- --run
 
   # ──────────────────────────────────────────────────────────────
-  # E2E — Playwright smoke (TEST-6). NO-BLOQUEANTE: requiere backend +
-  # frontend vivos; se ejecuta aparte del job unit. Cuando el flujo esté
-  # estable se puede escalar a bloqueante.
+  # E2E — Playwright flujos críticos (TEST-6 / Fase 4). NO-BLOQUEANTE:
+  # requiere backend + frontend vivos; se ejecuta aparte del job unit.
+  # Cubre: venta (pedido→confirmar→stock/CxC), abono CxC, caja (pago→
+  # movimiento; sustituye compras, que es API-only), ajuste de inventario
+  # +kardex, y login multi-empresa. BLOQUEANTE desde Fase 5 (cero-dudas).
   # ──────────────────────────────────────────────────────────────
   e2e:
-    name: "E2E (Playwright smoke — no-bloqueante)"
+    name: "E2E (Playwright flujos críticos — BLOQUEANTE)"
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     services:
       postgres:
@@ -174,6 +177,9 @@ jobs:
       SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
       REDIS_URL: "redis://localhost:6379/0"
       E2E_BASE_URL: "http://localhost:4173"
+      # Credencial CI-only del admin del seed E2E (no es un secreto de prod;
+      # mismo criterio que el SECRET_KEY dummy de arriba).
+      E2E_ADMIN_PASSWORD: "ci-only-E2e-Admin-2026!"
 
     steps:
       - name: Checkout
@@ -193,6 +199,16 @@ jobs:
       - name: Migrar
         working-directory: backend
         run: python manage.py migrate --noinput
+
+      - name: Seed E2E (2 empresas + admin multi-empresa)
+        working-directory: backend
+        env:
+          OMNI_SEED_ADMIN_PASSWORD: ${{ env.E2E_ADMIN_PASSWORD }}
+        run: |
+          python manage.py seed_empresa_inicial --nombre-legal "Empresa E2E Uno C.A." --rif "J-11111111-1" \
+            --admin-username admin_e2e --admin-email admin.e2e@example.com
+          python manage.py seed_empresa_inicial --nombre-legal "Empresa E2E Dos C.A." --rif "J-22222222-2" \
+            --admin-username admin_e2e --admin-email admin.e2e@example.com
 
       - name: Levantar backend
         working-directory: backend
@@ -226,7 +242,7 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Playwright smoke
+      - name: Playwright — flujos críticos
         working-directory: frontend
         run: npm run test:e2e
 
@@ -327,11 +343,12 @@ jobs:
 
       - name: Trivy — CVEs de dependencias e imágenes (fs scan)
         # Instalación vía script oficial (evita depender de tags de la action).
-        # Reporta; escalar a bloqueante (CRITICAL) tras cerrar los CVEs major.
-        continue-on-error: true
+        # Fase 5: BLOQUEANTE en CRITICAL (--exit-code 1); HIGH se reporta y se
+        # escalará al cerrar los CVEs major pendientes (ratchet).
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --no-progress . || true
+          trivy fs --scanners vuln --severity HIGH --ignore-unfixed --no-progress . || true
+          trivy fs --scanners vuln --severity CRITICAL --ignore-unfixed --no-progress --exit-code 1 .
 
   # ──────────────────────────────────────────────────────────────
   # Static analysis — plan "cero dudas" Fase 0/1
@@ -400,13 +417,12 @@ jobs:
           mypy apps/contabilidad apps/finanzas apps/nomina apps/manufactura
 
   # ──────────────────────────────────────────────────────────────
-  # Contract — OpenAPI (drf-yasg) + schemathesis. No-bloqueante al inicio
-  # (Fase 0): genera el esquema y hace fuzzing de contrato contra un server vivo.
+  # Contract — OpenAPI (drf-yasg) + schemathesis. BLOQUEANTE desde Fase 5:
+  # genera el esquema y hace fuzzing de contrato contra un server vivo.
   # ──────────────────────────────────────────────────────────────
   contract:
     name: "Contract (OpenAPI + schemathesis)"
     runs-on: ubuntu-latest
-    continue-on-error: true  # no-bloqueante al inicio (DoD A0)
     services:
       postgres:
         image: postgres:17-alpine
@@ -452,8 +468,8 @@ jobs:
         run: |
           python manage.py runserver 0.0.0.0:8000 &
           for i in $(seq 1 30); do curl -sf http://localhost:8000/api/health/ >/dev/null && break || sleep 2; done
-      - name: Schemathesis (fuzzing de contrato — no-bloqueante)
+      - name: Schemathesis (fuzzing de contrato — BLOQUEANTE)
         working-directory: backend
         run: |
           schemathesis run /tmp/openapi.json --base-url http://localhost:8000 \
-            --checks not_a_server_error --hypothesis-max-examples=5 || true
+            --checks not_a_server_error --hypothesis-max-examples=5

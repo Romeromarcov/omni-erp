@@ -10,7 +10,8 @@ entrar al repo. Léelo completo antes de tocar código.
    (R-CODE / R-PROC / R-PROD) antes de escribir nada.
 2. **Reglas que no se violan:** multi-tenant siempre (R-CODE-1), PostgreSQL nunca SQLite
    (R-CODE-2), Decimal para dinero (R-CODE-4), sin secretos en código/logs (R-CODE-8),
-   PRs pequeños y focales (R-PROC-2), code review humano obligatorio (R-PROC-3).
+   PRs pequeños y focales (R-PROC-2), revisión humana obligatoria en la puerta
+   `develop`→`main` (R-PROC-3; los PRs a `develop` son autoaprobables con CI verde).
 3. **Skills del proyecto:** revisa `docs/skills/` (módulos Django, aislamiento multi-tenant,
    dinero Decimal, fiscal Venezuela, disciplina de PR).
 
@@ -37,7 +38,9 @@ Si un paso falla, **se arregla antes de continuar** — nunca "para el próximo 
 ## Convenciones rápidas
 
 - **Commits:** español, imperativo, descriptivos (`agrega…`, `corrige…`, `refactoriza…`).
-- **PRs:** se abren en **draft**; el agente **nunca** marca "ready" (lo hace el revisor humano).
+- **PRs a `develop`:** con **CI verde + gate completo**, son **autoaprobables** — un agente
+  revisor distinto del autor revisa el diff, aprueba y mergea (autorizado por el owner,
+  2026-06-11). **PRs `develop`→`main`:** siempre revisión humana del owner.
 - **Plantilla de PR y auto-checklist:** [`docs/skills/omni-pr-discipline/SKILL.md`](docs/skills/omni-pr-discipline/SKILL.md).
 - **Auditorías:** planificación y logs en [`docs/auditorias/`](docs/auditorias/); finalizadas en `docs/auditorias/archivo/`.
 
@@ -46,6 +49,5 @@ Si un paso falla, **se arregla antes de continuar** — nunca "para el próximo 
 Detalle completo en **[`docs/FLUJO_DE_TRABAJO.md`](docs/FLUJO_DE_TRABAJO.md)**. Lo esencial:
 
 - `main` = **producción** · `develop` = **staging** (ambos despliegan solos en Railway al merge).
-- **Feature nuevo:** `feature/*` desde `develop` → PR a `develop` → valida en staging → PR `develop`→`main` → prod. Un feature **nunca** salta directo a `main`.
-- **Audit / fix / hotfix:** `fix|hotfix/*` desde `main` → PR a `main` → prod; luego **sincroniza `develop`** (no dejarlo divergir).
+- **Todo cambio (feature, fix, hotfix):** rama desde `develop` → PR a `develop` (**autoaprobable con CI verde**) → valida en staging → PR `develop`→`main` (**revisión humana del owner**) → prod. Nada salta directo a `main`.
 - **Diagnóstico en staging/prod:** **solo lectura** (logs, datos) vía Railway CLI — skill [`docs/skills/diagnostico-railway/`](docs/skills/diagnostico-railway/SKILL.md). **Nunca** editar código ni datos en el contenedor (efímero); todo cambio vuelve por Git.

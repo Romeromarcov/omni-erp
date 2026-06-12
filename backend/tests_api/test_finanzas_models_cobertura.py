@@ -16,10 +16,13 @@ EXACTO para servir de runner de mutación):
 - PlantillaMaestroCajasVirtuales: señal post_save (creación de cajas virtuales),
   crear_cajas_para_empleado, CajaVirtualAuto.sincronizar_con_plantilla.
 
-NOTA (hallazgo documentado): ``CajaFisica`` NO tiene campos ``saldo_actual`` ni
-``fecha_ultimo_cierre`` en el modelo, pero ``realizar_cierre`` los lee/escribe.
-Los tests los inyectan como atributos de instancia para ejercitar la aritmética
-del cierre; el valor nunca persiste en BD (bug documentado en el reporte).
+NOTA (hallazgo CORREGIDO): ``CajaFisica`` no tiene campos ``saldo_actual`` ni
+``fecha_ultimo_cierre`` (eliminados en finanzas/0021) y ``realizar_cierre``
+los leía/escribía → AttributeError y corte nunca persistido. El fix re-deriva
+el corte de los datos persistentes: el último ``MovimientoCajaBanco`` de tipo
+``CIERRE`` aporta el saldo base (``saldo_nuevo``) y el inicio exclusivo de la
+ventana (``fecha_movimiento``/``hora_movimiento``). Estos tests crean ese
+movimiento CIERRE previo cuando necesitan un saldo base distinto de cero.
 """
 import datetime
 from decimal import Decimal
@@ -184,17 +187,29 @@ class TestSesionCajaFisica:
 
 # ── CajaFisica.realizar_cierre ────────────────────────────────────────────────
 
-def _preparar_caja_para_cierre(caja_fisica, saldo=Decimal("0.00")):
-    """CajaFisica no define saldo_actual/fecha_ultimo_cierre como campos (bug
-    documentado); se inyectan como atributos para ejercitar la aritmética."""
-    caja_fisica.saldo_actual = saldo
-    caja_fisica.fecha_ultimo_cierre = None
-    return caja_fisica
+def _persistir_cierre_previo(caja_fisica, usuario, saldo=Decimal("0.00")):
+    """FIX hallazgo P0-8: el corte del cierre anterior es el último
+    MovimientoCajaBanco tipo CIERRE (saldo_nuevo = saldo base de la ventana
+    siguiente). Se crea fechado ayer para que los movimientos de hoy entren
+    en la ventana."""
+    ayer = timezone.now() - datetime.timedelta(days=1)
+    return MovimientoCajaBanco.objects.create(
+        id_empresa=caja_fisica.empresa,
+        fecha_movimiento=ayer.date(),
+        hora_movimiento=ayer.time(),
+        tipo_movimiento="CIERRE",
+        monto=Decimal("0.00"),
+        concepto="cierre previo (corte persistido)",
+        id_caja_fisica=caja_fisica,
+        saldo_anterior=Decimal("0.00"),
+        saldo_nuevo=saldo,
+        id_usuario_registro=usuario,
+    )
 
 
 class TestCajaFisicaRealizarCierre:
     def test_cierre_sin_movimientos_sin_descuadre(self, caja_fisica_a, user_a):
-        caja = _preparar_caja_para_cierre(caja_fisica_a, Decimal("0.00"))
+        caja = caja_fisica_a  # sin cierre previo → saldo base 0.00
         resultado = caja.realizar_cierre(saldo_real="0.00", usuario=user_a)
         assert resultado["ingresos"] == Decimal("0.00")
         assert resultado["egresos"] == Decimal("0.00")
@@ -212,7 +227,8 @@ class TestCajaFisicaRealizarCierre:
     def test_cierre_con_movimientos_y_descuadre_negativo(
         self, caja_fisica_a, user_a, empresa_a, moneda_usd
     ):
-        caja = _preparar_caja_para_cierre(caja_fisica_a, Decimal("50.00"))
+        caja = caja_fisica_a
+        _persistir_cierre_previo(caja, user_a, Decimal("50.00"))
         hoy = timezone.now()
         for tipo, monto in [("INGRESO", "100.00"), ("EGRESO", "30.00")]:
             MovimientoCajaBanco.objects.create(
@@ -239,10 +255,20 @@ class TestCajaFisicaRealizarCierre:
         assert ajuste.tipo_movimiento == "AJUSTE_NEGATIVO"
         assert ajuste.monto == Decimal("20.00")
         assert ajuste.id_caja_fisica == caja
-        assert caja.saldo_actual == Decimal("100.00")
+        # El corte persistido refleja el saldo real contado (FIX P0-8)
+        cierre = MovimientoCajaBanco.objects.get(id_movimiento=resultado["movimiento_cierre_id"])
+        assert cierre.saldo_anterior == Decimal("50.00")
+        assert cierre.saldo_nuevo == Decimal("100.00")
+        # El ajuste se fecha en el límite del cierre → pertenece a la ventana
+        # cerrada y el siguiente cierre no lo doble-cuenta.
+        assert (ajuste.fecha_movimiento, ajuste.hora_movimiento) == (
+            cierre.fecha_movimiento,
+            cierre.hora_movimiento,
+        )
 
     def test_cierre_con_descuadre_positivo(self, caja_fisica_a, user_a, empresa_a, moneda_usd):
-        caja = _preparar_caja_para_cierre(caja_fisica_a, Decimal("10.00"))
+        caja = caja_fisica_a
+        _persistir_cierre_previo(caja, user_a, Decimal("10.00"))
         hoy = timezone.now()
         MovimientoCajaBanco.objects.create(
             id_empresa=empresa_a,

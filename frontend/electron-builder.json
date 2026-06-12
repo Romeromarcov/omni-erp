@@ -12,12 +12,16 @@
   },
   "win": {
     "target": ["nsis", "portable"],
-    "artifactName": "OmniERP-${version}-${arch}.${ext}"
+    "icon": "public/pwa-512x512.png"
   },
   "nsis": {
     "oneClick": false,
     "perMachine": false,
-    "allowToChangeInstallationDirectory": true
+    "allowToChangeInstallationDirectory": true,
+    "artifactName": "OmniERP-${version}-setup.${ext}"
+  },
+  "portable": {
+    "artifactName": "OmniERP-${version}-portable.${ext}"
   },
   "mac": {
     "target": ["dmg"],

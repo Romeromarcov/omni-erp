@@ -1,4 +1,6 @@
 import logging
+from apps.core.serializer_mixins import TenantFKScopeMixin
+from apps.core.throttling import EscrituraRateThrottle
 
 from django.db import models
 from rest_framework import serializers, status, viewsets
@@ -8,6 +10,7 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+from apps.core.idempotency import IdempotentCreateMixin
 from apps.core.viewsets import BaseModelViewSet
 from apps.tesoreria.serializers import CajaSerializer
 
@@ -44,7 +47,7 @@ from .serializers import (
 )
 
 
-class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
+class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = SesionCajaFisica.objects.all()
     serializer_class = SesionCajaFisicaSerializer
     permission_classes = [IsAuthenticated]
@@ -90,13 +93,41 @@ class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="cerrar")
     def cerrar_sesion(self, request, pk=None):
         """
-        Cierra la sesión de caja, realiza el cierre de todas las cajas asociadas y retorna el reporte.
+        Cierra la sesión de caja: realiza el cierre de las cajas indicadas en
+        ``saldos_reales`` ({id_caja: saldo real contado} — la caja física de
+        la sesión y/o sus cajas virtuales) y marca la sesión CERRADA, todo en
+        una sola transacción. Retorna la sesión y el reporte de cierres.
+
+        FIX (endpoint roto): llamaba ``sesion.cerrar_sesion(saldos_reales=...)``
+        con una firma del modelo que solo aceptaba ``notas_cierre`` →
+        TypeError 500 en toda invocación.
         """
+        from django.utils.dateparse import parse_datetime
+
         sesion = self.get_object()
-        saldos_reales = request.data.get("saldos_reales", {})
+        saldos_reales = request.data.get("saldos_reales") or {}
+        if not isinstance(saldos_reales, dict):
+            return Response({"error": "saldos_reales debe ser un objeto {id_caja: saldo_real}."}, status=400)
         hasta = request.data.get("hasta")
+        hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
         usuario = request.user if request.user.is_authenticated else None
-        resultados = sesion.cerrar_sesion(saldos_reales=saldos_reales, usuario=usuario, hasta=hasta)
+        try:
+            resultados = sesion.cerrar_sesion(
+                notas_cierre=request.data.get("notas_cierre"),
+                saldos_reales=saldos_reales,
+                usuario=usuario,
+                hasta=hasta_dt,
+            )
+        except ValueError as exc:
+            # Mensajes de negocio controlados (sesión cerrada, caja ajena,
+            # saldo inválido); no se expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Error al cerrar sesión de caja")
+            return Response({"error": "No se pudo cerrar la sesión. Intente de nuevo."}, status=400)
+        sesion.refresh_from_db()
         return Response({"sesion": SesionCajaFisicaSerializer(sesion).data, "cierres": resultados})
 
     @action(detail=True, methods=["post"], url_path="transferir-entre-cajas")
@@ -118,7 +149,14 @@ class SesionCajaFisicaViewSet(viewsets.ModelViewSet):
             caja_destino = sesion.cajas.get(id_caja=caja_destino_id)
         except Exception:
             return Response({"error": "Caja origen o destino no pertenece a la sesión."}, status=400)
-        mov_salida, mov_entrada = transferencia_entre_cajas(caja_origen, caja_destino, monto, usuario=usuario)
+        try:
+            mov_salida, mov_entrada = transferencia_entre_cajas(
+                caja_origen, caja_destino, monto, usuario=usuario
+            )
+        except ValueError as exc:
+            # Mensajes de negocio controlados (monto, saldo, moneda); no se
+            # expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
         return Response(
             {
                 "movimiento_salida_id": mov_salida.id_movimiento,
@@ -147,7 +185,7 @@ from .models import MetodoPagoEmpresaActiva
 from .serializers import MetodoPagoEmpresaActivaSerializer
 
 
-class MetodoPagoEmpresaActivaViewSet(viewsets.ModelViewSet):
+class MetodoPagoEmpresaActivaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = MetodoPagoEmpresaActiva.objects.all()
     serializer_class = MetodoPagoEmpresaActivaSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -256,12 +294,11 @@ from apps.core.models import Empresa
 
 
 class MetodoPagoViewSet(BaseModelViewSet):
-
-    def get_object(self):
-        # Permitir reutilizar métodos de pago de cualquier empresa
-        if hasattr(self, "action") and self.action == "reutilizar":
-            return MetodoPago.objects.get(id_metodo_pago=self.kwargs[self.lookup_field])
-        return super().get_object()
+    # SEC-A1 (auditoría 2026-06-10): se eliminó el override de get_object que
+    # bypaseaba get_queryset() para la acción `reutilizar` — permitía operar
+    # métodos de pago privados de otra empresa por UUID (IDOR, CWE-639).
+    # Ahora `reutilizar` solo acepta fuentes visibles para el usuario
+    # (genéricas, públicas o propias), vía el get_object estándar.
 
     queryset = MetodoPago.objects.all()
     serializer_class = MetodoPagoSerializer
@@ -285,18 +322,35 @@ class MetodoPagoViewSet(BaseModelViewSet):
     @action(detail=False, methods=["get"], url_path="buscar_reutilizar")
     def buscar_reutilizar(self, request):
         """
-        Devuelve métodos de pago reutilizables (de otras empresas, genéricos o públicos) para la empresa actual.
+        Devuelve métodos de pago reutilizables (genéricos o públicos) para la empresa actual.
         Marca con 'aplicado' los que ya están en la empresa actual (por nombre y tipo).
+
+        SEC-A3 (auditoría 2026-06-10): antes el queryset incluía los métodos
+        privados de TODOS los demás tenants serializados con `__all__`
+        (`documento_json`, `referencia_externa`). Ahora solo expone métodos
+        `es_generico`/`es_publico` y proyecta únicamente campos no sensibles
+        (MetodoPagoReutilizableSerializer).
         """
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from apps.core.viewsets import get_empresas_visible
+
+        from .serializers import MetodoPagoReutilizableSerializer
+
         id_empresa_actual = request.query_params.get("id_empresa_actual")
-        empresas_excluir = []
         if id_empresa_actual:
-            empresas_excluir.append(id_empresa_actual)
-        queryset = MetodoPago.objects.filter(
-            models.Q(es_generico=True)
-            | models.Q(es_publico=True)
-            | (~models.Q(empresa__in=empresas_excluir) & ~models.Q(empresa=None))
-        )
+            # R-CODE-1: la "empresa actual" debe ser visible para el usuario;
+            # si no, sería un oráculo sobre los métodos de otro tenant (vía
+            # `aplicado` y la exclusión por empresa).
+            try:
+                empresa_visible = (
+                    get_empresas_visible(request.user).filter(id_empresa=id_empresa_actual).exists()
+                )
+            except (ValueError, DjangoValidationError):
+                empresa_visible = False
+            if not empresa_visible:
+                return Response({"detail": "Empresa no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        queryset = MetodoPago.objects.filter(models.Q(es_generico=True) | models.Q(es_publico=True))
         if id_empresa_actual:
             queryset = queryset.exclude(empresa=id_empresa_actual)
         nombre_metodo = request.query_params.get("nombre_metodo")
@@ -309,9 +363,9 @@ class MetodoPagoViewSet(BaseModelViewSet):
         serializer_context = self.get_serializer_context()
         serializer_context["id_empresa_actual"] = id_empresa_actual
         if page is not None:
-            serializer = self.get_serializer(page, many=True, context=serializer_context)
+            serializer = MetodoPagoReutilizableSerializer(page, many=True, context=serializer_context)
             return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(queryset, many=True, context=serializer_context)
+        serializer = MetodoPagoReutilizableSerializer(queryset, many=True, context=serializer_context)
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="reutilizar")
@@ -324,9 +378,17 @@ class MetodoPagoViewSet(BaseModelViewSet):
         id_empresa = request.data.get("id_empresa")
         if not id_empresa:
             return Response({"detail": "id_empresa es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+        # SEC-A2 (auditoría 2026-06-10): la empresa destino DEBE ser visible
+        # para el usuario (R-CODE-1). Antes se resolvía con
+        # Empresa.objects.get(...) sin scope, permitiendo crear métodos de
+        # pago (copiando documento_json) en cualquier tenant.
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from apps.core.viewsets import get_empresas_visible
+
         try:
-            empresa = Empresa.objects.get(id_empresa=id_empresa)
-        except Empresa.DoesNotExist:
+            empresa = get_empresas_visible(request.user).get(id_empresa=id_empresa)
+        except (Empresa.DoesNotExist, ValueError, DjangoValidationError):
             return Response({"detail": "Empresa no encontrada."}, status=status.HTTP_404_NOT_FOUND)
         # Validación fuzzy robusta: rapidfuzz ratio, distancia Levenshtein, substring y normalización de acentos
         import unicodedata
@@ -373,9 +435,23 @@ class MetodoPagoViewSet(BaseModelViewSet):
         empresa_id = request.query_params.get("empresa")
         empresa = None
         if empresa_id:
-            from apps.core.models import Empresa
+            # SEC-B3 (R-CODE-1): el query param `empresa` se valida contra las
+            # empresas visibles del usuario; un id ajeno o malformado → 404.
+            from django.core.exceptions import ValidationError
 
-            empresa = Empresa.objects.filter(id_empresa=empresa_id).first()
+            from apps.core.viewsets import get_empresas_visible
+
+            try:
+                empresa = get_empresas_visible(request.user).filter(
+                    id_empresa=empresa_id
+                ).first()
+            except (ValueError, ValidationError):
+                empresa = None
+            if empresa is None:
+                return Response(
+                    {"detail": "Empresa no encontrada o sin acceso."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
         if not empresa and hasattr(request.user, "empresas"):
             empresa = request.user.empresas.first() if request.user.empresas.exists() else None
         # Monedas asociadas globalmente
@@ -468,20 +544,40 @@ class CajaViewSet(BaseModelViewSet):
     @action(detail=True, methods=["post"], url_path="cierre")
     def cierre_caja(self, request, pk=None):
         """
-        Endpoint para realizar el cierre de una caja.
-        Recibe el saldo real contado y opcionalmente una fecha/hora límite.
+        Realiza el cierre de la caja virtual. Recibe el saldo real contado y
+        opcionalmente 'hasta' (fecha/hora límite ISO). El corte queda
+        persistido como MovimientoCajaBanco tipo CIERRE (patrón PR #73).
+
+        FIX (endpoint roto): llamaba ``caja.realizar_cierre`` pero ``Caja``
+        (virtual) no definía ese método → siempre 400. Ahora el método existe
+        y reutiliza el helper común ``services.realizar_cierre_caja``.
         """
+        from decimal import Decimal, InvalidOperation
+
         from django.utils.dateparse import parse_datetime
 
+        # R-CODE-1: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la caja pertenece a otra empresa.
         caja = self.get_object()
         saldo_real = request.data.get("saldo_real")
-        hasta = request.data.get("hasta")
-        usuario = request.user if request.user.is_authenticated else None
         if saldo_real is None:
             return Response({"error": "Debe enviar el saldo_real contado."}, status=400)
+        try:
+            # R-CODE-4: nunca Decimal(float); pasar por str preserva el valor.
+            saldo_real = Decimal(str(saldo_real))
+        except (InvalidOperation, ValueError, TypeError):
+            return Response({"error": "El saldo_real enviado no es un número válido."}, status=400)
+        hasta = request.data.get("hasta")
         hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
+        usuario = request.user if request.user.is_authenticated else None
         try:
             resultado = caja.realizar_cierre(saldo_real=saldo_real, usuario=usuario, hasta=hasta_dt)
+        except ValueError as exc:
+            # Mensajes de negocio controlados (límite anterior al último
+            # cierre); no se expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
         except Exception:
             logger.exception("Error al realizar cierre de caja")
             return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
@@ -631,7 +727,7 @@ class MonedaEmpresaActivaViewSet(BaseModelViewSet):
 
 
 # ViewSet para CajaUsuario
-class CajaUsuarioViewSet(viewsets.ModelViewSet):
+class CajaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = CajaUsuario.objects.all()
     serializer_class = CajaUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -677,7 +773,7 @@ class CajaUsuarioViewSet(viewsets.ModelViewSet):
 
 
 # ViewSet para CajaVirtualUsuario
-class CajaVirtualUsuarioViewSet(viewsets.ModelViewSet):
+class CajaVirtualUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = CajaVirtualUsuario.objects.all()
     serializer_class = CajaVirtualUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -690,7 +786,7 @@ class CajaVirtualUsuarioViewSet(viewsets.ModelViewSet):
 
 
 # ViewSet para CajaFisicaUsuario
-class CajaFisicaUsuarioViewSet(viewsets.ModelViewSet):
+class CajaFisicaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = CajaFisicaUsuario.objects.all()
     serializer_class = CajaFisicaUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -982,83 +1078,135 @@ class CajaFisicaViewSet(BaseModelViewSet):
                 queryset = queryset.filter(empresa__in=empresas_usuario.all())
         return queryset
 
-    def perform_create(self, serializer):
-        """Crear el pago y generar la transacción financiera correspondiente"""
-        pago = serializer.save()
+    # BUG-C2: aquí vivía un perform_create que trataba la CajaFisica creada
+    # como si fuera un Pago (creaba TransaccionFinanciera/MovimientoCajaBanco)
+    # → todo POST de caja física reventaba con AttributeError 500. Esa lógica
+    # ahora vive en apps.finanzas.services.registrar_efectos_pago y la invoca
+    # PagoViewSet.perform_create.
 
-        # Crear transacción financiera
-        from .models import TransaccionFinanciera
+    @action(detail=True, methods=["post"], url_path="cierre")
+    def cierre(self, request, pk=None):
+        """
+        Realiza el cierre de la caja física (hallazgo P0-8): el frontend llama
+        POST /finanzas/cajas-fisicas/{id}/cierre, ruta que no existía. Recibe
+        saldo_real (contado) y opcionalmente 'hasta' (fecha/hora límite ISO).
+        El corte queda persistido como MovimientoCajaBanco tipo CIERRE.
+        """
+        from decimal import Decimal, InvalidOperation
 
-        transaccion = TransaccionFinanciera.objects.create(
-            id_empresa=pago.id_empresa,
-            fecha_hora_transaccion=pago.fecha_pago,
-            tipo_transaccion=pago.tipo_operacion,
-            monto_transaccion=pago.monto,
-            id_moneda_transaccion=pago.id_moneda,
-            id_moneda_base=pago.id_moneda,  # Simplificación
-            monto_base_empresa=pago.monto,
-            id_metodo_pago=pago.id_metodo_pago,
-            referencia_pago=pago.referencia,
-            descripcion=f"Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}",
-            tipo_documento_asociado=pago.tipo_documento,
-            nro_documento_asociado=str(pago.id_documento),
-            id_caja=pago.id_caja_virtual,
-            id_cuenta_bancaria=pago.id_cuenta_bancaria,
-            id_usuario_registro=pago.id_usuario_registro,
+        from django.utils.dateparse import parse_datetime
+
+        # R-CODE-1: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la caja física pertenece a otra empresa.
+        caja = self.get_object()
+        saldo_real = request.data.get("saldo_real")
+        if saldo_real is None:
+            return Response({"error": "Debe enviar el saldo_real contado."}, status=400)
+        try:
+            # R-CODE-4: nunca Decimal(float); pasar por str preserva el valor.
+            saldo_real = Decimal(str(saldo_real))
+        except (InvalidOperation, ValueError, TypeError):
+            return Response({"error": "El saldo_real enviado no es un número válido."}, status=400)
+        hasta = request.data.get("hasta")
+        hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
+        usuario = request.user if request.user.is_authenticated else None
+        try:
+            resultado = caja.realizar_cierre(saldo_real=saldo_real, usuario=usuario, hasta=hasta_dt)
+        except ValueError as exc:
+            # Mensajes de negocio controlados (límite anterior al último
+            # cierre); no se expone ningún detalle interno.
+            return Response({"error": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Error al realizar cierre de caja física")
+            return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
+        return Response(resultado)
+
+    @action(detail=True, methods=["post"], url_path="abrir-sesion")
+    def abrir_sesion(self, request, pk=None):
+        """
+        Abre una sesión de trabajo sobre esta caja física (FIX endpoint roto:
+        el frontend llama POST /finanzas/cajas-fisicas/{id}/abrir-sesion/ y la
+        ruta no existía). Si había una sesión abierta, se cierra
+        automáticamente (comportamiento de SesionCajaFisica.abrir_sesion).
+        """
+        from .models import SesionCajaFisica
+
+        # R-CODE-1: get_object() aplica el filtro de tenant del ViewSet → 404
+        # si la caja física pertenece a otra empresa.
+        caja = self.get_object()
+        sesion = SesionCajaFisica.abrir_sesion(
+            caja_fisica=caja,
+            usuario=request.user,
+            ip_address=request.META.get("REMOTE_ADDR"),
+            user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:1000] or None,
+        )
+        return Response(
+            {
+                "mensaje": f"Sesión abierta para la caja {caja.nombre}.",
+                "sesion": {
+                    "id_sesion": str(sesion.id_sesion),
+                    "estado": sesion.estado,
+                    "fecha_apertura": sesion.fecha_apertura,
+                    "usuario": sesion.usuario.username,
+                },
+            }
         )
 
-        # Asociar la transacción financiera al pago
-        pago.id_transaccion_financiera = transaccion
-        pago.save(update_fields=["id_transaccion_financiera"])
+    @action(detail=True, methods=["post"], url_path="cerrar-sesion")
+    def cerrar_sesion(self, request, pk=None):
+        """
+        Cierra la sesión ABIERTA de esta caja física (FIX endpoint roto: el
+        frontend llama POST /finanzas/cajas-fisicas/{id}/cerrar-sesion/ y la
+        ruta no existía). Acepta opcionalmente ``notas_cierre``,
+        ``saldos_reales`` ({id_caja: saldo real contado} — la propia caja
+        física y/o sus cajas virtuales) y ``hasta``; los cierres por caja y el
+        cambio de estado de la sesión son atómicos
+        (SesionCajaFisica.cerrar_sesion).
+        """
+        from django.utils.dateparse import parse_datetime
 
-        # Si es pago con tarjeta, crear TransaccionDatafono
-        if pago.id_datafono:
-            from .models import TransaccionDatafono
+        from .models import SesionCajaFisica
 
-            TransaccionDatafono.objects.create(
-                id_datafono=pago.id_datafono,
-                monto=pago.monto,
-                referencia_bancaria=pago.referencia,
-                id_transaccion_financiera_origen=transaccion,  # Usar la transacción ya creada
-                id_usuario_registro=pago.id_usuario_registro,
+        # R-CODE-1: tenant via get_object() → 404 si la caja es ajena.
+        caja = self.get_object()
+        sesion = SesionCajaFisica.obtener_sesion_activa(caja)
+        if sesion is None:
+            return Response({"error": "No hay una sesión abierta para esta caja física."}, status=400)
+        saldos_reales = request.data.get("saldos_reales") or {}
+        if not isinstance(saldos_reales, dict):
+            return Response({"error": "saldos_reales debe ser un objeto {id_caja: saldo_real}."}, status=400)
+        hasta = request.data.get("hasta")
+        hasta_dt = parse_datetime(hasta) if hasta else None
+        if hasta and hasta_dt is None:
+            return Response({"error": "El parámetro 'hasta' no tiene un formato de fecha/hora válido."}, status=400)
+        try:
+            cierres = sesion.cerrar_sesion(
+                notas_cierre=request.data.get("notas_cierre"),
+                saldos_reales=saldos_reales,
+                usuario=request.user,
+                hasta=hasta_dt,
             )
-
-        # Crear movimiento de caja/banco si corresponde
-        if pago.id_caja_virtual or pago.id_cuenta_bancaria:
-            saldo_anterior = 0
-            if pago.id_caja_virtual:
-                saldo_anterior = pago.id_caja_virtual.saldo_actual
-            elif pago.id_cuenta_bancaria:
-                saldo_anterior = pago.id_cuenta_bancaria.saldo_actual
-
-            # Determinar el tipo de movimiento (INGRESO/EGRESO)
-            tipo_movimiento = "INGRESO" if pago.tipo_operacion == "INGRESO" else "EGRESO"
-
-            from .models import MovimientoCajaBanco
-
-            movimiento = MovimientoCajaBanco.objects.create(
-                id_empresa=pago.id_empresa,
-                fecha_movimiento=pago.fecha_pago.date(),
-                hora_movimiento=pago.fecha_pago.time(),
-                tipo_movimiento=tipo_movimiento,
-                monto=pago.monto,
-                id_moneda=pago.id_moneda,
-                concepto=f"{pago.tipo_operacion} - {pago.get_tipo_documento_display()}",
-                referencia=pago.referencia or f"Pago {pago.id_pago}",
-                id_caja=pago.id_caja_virtual,
-                id_cuenta_bancaria=pago.id_cuenta_bancaria,
-                saldo_anterior=saldo_anterior,
-                saldo_nuevo=saldo_anterior + (pago.monto if tipo_movimiento == "INGRESO" else -pago.monto),
-                id_usuario_registro=pago.id_usuario_registro,
-            )
-
-            # Actualizar saldo
-            if pago.id_caja_virtual:
-                pago.id_caja_virtual.saldo_actual = movimiento.saldo_nuevo
-                pago.id_caja_virtual.save()
-            elif pago.id_cuenta_bancaria:
-                pago.id_cuenta_bancaria.saldo_actual = movimiento.saldo_nuevo
-                pago.id_cuenta_bancaria.save()
+        except ValueError as exc:
+            # Mensajes de negocio controlados; sin detalles internos.
+            return Response({"error": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Error al cerrar sesión de caja física")
+            return Response({"error": "No se pudo cerrar la sesión. Intente de nuevo."}, status=400)
+        sesion.refresh_from_db()
+        return Response(
+            {
+                "mensaje": f"Sesión cerrada para la caja {caja.nombre}.",
+                "sesion": {
+                    "id_sesion": str(sesion.id_sesion),
+                    "estado": sesion.estado,
+                    "fecha_cierre": sesion.fecha_cierre,
+                    "duracion_minutos": sesion.duracion,
+                },
+                "cierres": cierres,
+            }
+        )
 
     @action(detail=False, methods=["get"])
     def tipos_documento(self, request):
@@ -1084,12 +1232,29 @@ class CajaFisicaViewSet(BaseModelViewSet):
         return Response([{"value": value, "display": display} for value, display in CajaFisica.TIPO_CAJA_CHOICES])
 
 
-class PagoViewSet(BaseModelViewSet):
+class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
+    # P1-2: POST /pagos/ idempotente por cabecera Idempotency-Key (opt-in).
+    idempotency_scope = "finanzas:pago"
+
+    # P1-1: techo estricto para escritura de pagos (scope 'escritura');
+    # los GET siguen bajo los throttles globales anon/user.
+    throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
 
     def perform_create(self, serializer):
-        pago = serializer.save()
+        # BUG-C2: los side-effects financieros (TransaccionFinanciera +
+        # MovimientoCajaBanco + saldos) van en la MISMA transacción que el
+        # Pago (R-CODE-11); el service aplica select_for_update sobre la
+        # caja/cuenta afectada.
+        from django.db import transaction
+
+        from .services import registrar_efectos_pago
+
+        with transaction.atomic():
+            pago = serializer.save()
+            registrar_efectos_pago(pago)
+
         if pago.tipo_operacion == "INGRESO":
             try:
                 from apps.notificaciones.services import emitir_notificacion

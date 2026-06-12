@@ -77,8 +77,8 @@ def _analizar_flujo_documentos(empresa) -> list[SugerenciaFlujo]:
         from apps.core.models import ConfiguracionFlujoDocumentos
 
         configs = ConfiguracionFlujoDocumentos.objects.filter(id_empresa=empresa)
-        pasos_habilitados = {c.nombre_paso for c in configs if c.activo}
-        pasos_deshabilitados = {c.nombre_paso for c in configs if not c.activo}
+        pasos_habilitados = {c.paso for c in configs if c.activo}
+        pasos_deshabilitados = {c.paso for c in configs if not c.activo}
 
         # Sugerir habilitar APROBACION_PEDIDO si no está activo
         if "APROBACION_PEDIDO" in pasos_deshabilitados:

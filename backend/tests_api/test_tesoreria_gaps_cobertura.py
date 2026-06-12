@@ -6,10 +6,10 @@ Backfill de cobertura — apps/tesoreria/views.py + serializers.py
 - CajaViewSet (tesorería) list aislado.
 - MovimientoInternoFondoSerializer.create: crea el movimiento + los dos
   MovimientoCajaBanco (TRANSFERENCIA_SALIDA/ENTRADA) con montos exactos.
-- OperacionCambioDivisaSerializer.create: BUG documentado (CTF-013) — el
-  flujo revienta (hoy con ImportError por `DocumentoGasto` inexistente; CTF-013
-  describe además el IntegrityError por `monto_base_empresa`). Se testea el
-  contrato actual con pytest.raises, SIN enmascararlo.
+- OperacionCambioDivisaSerializer.create: arreglado en CTF-013 (antes ImportError
+  por `DocumentoGasto` inexistente + IntegrityError por `monto_base_empresa`).
+  Aquí va el smoke 201; la atomicidad completa está en
+  tests/integration/test_cambio_divisa_atomicidad.py.
 - MovimientoBancarioViewSet: perform_create (tenant ajeno → 403, propio → 201),
   filtro ?cuenta=, importar-csv (faltan campos 400 / empresa inaccesible 403 /
   cuenta inexistente 404 / éxito 200) y conciliar-auto cuenta inexistente 404.
@@ -121,28 +121,26 @@ class TestMovimientoInternoFondo:
         assert client_b.get(URL_MOV_INT).json()["count"] == 0
 
 
-# ── OperacionCambioDivisa — contrato actual ROTO (CTF-013) ───────────────────
+# ── OperacionCambioDivisa — flujo arreglado (CTF-013) ────────────────────────
+# El detalle (camino feliz con montos verificados a mano, rollback 422,
+# aislamiento) vive en tests/integration/test_cambio_divisa_atomicidad.py.
 
 class TestOperacionCambioDivisa:
-    def test_create_revienta_antes_de_registrar_nada(
+    def test_create_registra_doble_transaccion(
         self, client_a, empresa_a, moneda_usd, caja_origen, caja_destino
     ):
         """
-        BUG (documentado en docs/ctf/CTF-013.md, NO se enmascara):
-        OperacionCambioDivisaSerializer.create está roto. CTF-013 describe el
-        IntegrityError por `monto_base_empresa` NOT NULL, pero el código actual
-        revienta incluso ANTES: `from apps.gastos.models import DocumentoGasto`
-        (línea 72 del serializer) — ese modelo NO existe en apps.gastos →
-        ImportError. El flujo de cambio de divisa nunca completa; cuando se
-        arregle la feature, este test debe reemplazarse por el flujo feliz +
-        atomicidad.
+        CTF-013 cerrado: el create ya no revienta (antes: ImportError por
+        `DocumentoGasto` inexistente e IntegrityError por `monto_base_empresa`).
+        Sin comisión: 201 + egreso e ingreso con monto_base_empresa y usuario.
         """
-        from apps.finanzas.models import Moneda
+        from apps.finanzas.models import MetodoPago, Moneda, TransaccionFinanciera
 
         ves = Moneda.objects.create(
             nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
             tipo_moneda="fiat", es_generica=True,
         )
+        metodo = MetodoPago.objects.create(nombre_metodo="Efectivo Gap", tipo_metodo="EFECTIVO")
         payload = {
             "empresa": empresa_a.id_empresa,
             "numero_operacion": "OP-001",
@@ -155,13 +153,22 @@ class TestOperacionCambioDivisa:
             "monto_destino": "3650.0000",
             "caja_origen": caja_origen.id_caja,
             "caja_destino": caja_destino.id_caja,
+            "metodo_pago_origen": str(metodo.id_metodo_pago),
+            "metodo_pago_destino": str(metodo.id_metodo_pago),
         }
-        with pytest.raises(ImportError, match="DocumentoGasto"):
-            client_a.post(URL_CAMBIO, payload, format="json")
-        # Nada queda persistido: revienta en el import, antes del doble registro
+        resp = client_a.post(URL_CAMBIO, payload, format="json")
+        assert resp.status_code == 201, resp.content
+
         from apps.tesoreria.models import OperacionCambioDivisa
 
-        assert OperacionCambioDivisa.objects.count() == 0
+        assert OperacionCambioDivisa.objects.count() == 1
+        egreso = TransaccionFinanciera.objects.get(tipo_transaccion="EGRESO")
+        ingreso = TransaccionFinanciera.objects.get(tipo_transaccion="INGRESO")
+        # Moneda base de empresa_a = USD: egreso 100 USD → 100.00;
+        # ingreso 3650 VES / 36.5 → 100.00 (Decimal, sin float).
+        assert egreso.monto_base_empresa == Decimal("100.00")
+        assert ingreso.monto_base_empresa == Decimal("100.00")
+        assert egreso.id_usuario_registro is not None
 
     def test_list_aislado_por_empresa(self, client_a, client_b, empresa_a, moneda_usd):
         from apps.finanzas.models import Moneda
@@ -204,9 +211,10 @@ class TestMovimientoBancarioCreate:
         assert mov.estado == "PENDIENTE"  # estado es read-only en el serializer
 
     def test_create_empresa_ajena_403(self, client_b, empresa_a, cuenta_a):
+        # SEC-M1: el scope de tenant de FKs rechaza el pk ajeno en el
+        # serializer (400, sin revelar existencia) antes del check 403 viejo.
         resp = client_b.post(URL_MOV_BANC, self._payload(empresa_a, cuenta_a), format="json")
-        assert resp.status_code == 403
-        assert resp.json()["detail"] == "Sin acceso a esta empresa."
+        assert resp.status_code == 400
         assert MovimientoBancario.objects.count() == 0
 
     def test_filtro_por_cuenta(self, client_a, empresa_a, cuenta_a, moneda_usd):

@@ -113,13 +113,24 @@ def calcular_aging(empresa_id) -> dict:
             "total_general": Decimal,
         }
     """
+    from django.db.models import DecimalField
+    from django.db.models.functions import Coalesce
+
     from .models import CuentaPorCobrar
 
     hoy = timezone.now().date()
+    # BUG-M2: el saldo se anota en una sola consulta (Coalesce(Sum)) en vez de
+    # un aggregate por instancia (N+1).
     cxc_qs = CuentaPorCobrar.objects.filter(
         empresa=empresa_id,
         estado__in=["pendiente", "parcial", "vencida"],
-    ).prefetch_related("abonos")
+    ).annotate(
+        total_abonado_agg=Coalesce(
+            Sum("abonos__monto"),
+            Decimal("0"),
+            output_field=DecimalField(max_digits=18, decimal_places=2),
+        )
+    )
 
     buckets: dict[str, dict[str, Any]] = {
         "corriente":   {"count": 0, "total": Decimal("0")},
@@ -130,7 +141,7 @@ def calcular_aging(empresa_id) -> dict:
     }
 
     for cxc in cxc_qs:
-        saldo = _saldo_pendiente(cxc)
+        saldo = cxc.monto - cxc.total_abonado_agg
         if saldo <= 0:
             continue
         dias_vencida = (hoy - cxc.fecha_vencimiento).days

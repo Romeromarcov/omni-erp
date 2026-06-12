@@ -4,11 +4,9 @@ Backfill de cobertura — apps/agentes/personalizacion_agente.py (plan "Cero Dud
 Cero llamadas de red: nunca se instancia un cliente Anthropic real (se controla
 la variable de entorno y/o se inyecta un mock).
 
-BUG DOCUMENTADO (sin enmascarar):
-- ``_analizar_flujo_documentos`` lee ``c.nombre_paso`` pero el modelo
-  ``ConfiguracionFlujoDocumentos`` define el campo como ``paso`` → AttributeError
-  silencioso cuando la empresa SÍ tiene configuración, que degrada al fallback
-  "CONFIGURACION_FLUJO". Ver ``test_bug_nombre_paso_degrada_a_fallback``.
+Nota: el BUG de ``c.nombre_paso`` (el campo real es ``paso``) fue corregido;
+``TestFlujoDocumentos`` ahora fija el análisis real de la configuración en vez
+del fallback "CONFIGURACION_FLUJO".
 """
 import sys
 from decimal import Decimal
@@ -239,24 +237,44 @@ class TestAnalizar:
 
 
 class TestFlujoDocumentos:
-    def test_bug_nombre_paso_degrada_a_fallback(self, empresa_a):
-        """BUG documentado: el análisis usa ``c.nombre_paso`` pero el campo real es
-        ``paso`` → AttributeError capturado por el except genérico, que devuelve la
-        sugerencia fallback CONFIGURACION_FLUJO aunque la empresa SÍ tiene config.
-        Si se corrige el nombre del campo, este test debe actualizarse para
-        verificar las sugerencias reales (APROBACION_PEDIDO / COTIZACION).
-        """
+    def test_config_real_se_analiza_sin_fallback(self, empresa_a):
+        """Regresión del BUG ``c.nombre_paso``: con configuración real el
+        análisis lee ``c.paso`` y genera sugerencias reales (no el fallback
+        CONFIGURACION_FLUJO que ocultaba el AttributeError)."""
         from apps.core.models import ConfiguracionFlujoDocumentos
+
         ConfiguracionFlujoDocumentos.objects.create(
             id_empresa=empresa_a,
             tipo_documento="VENTAS",
             paso="COTIZACION",
             obligatorio=False,
         )
+        # APROBACION_PEDIDO deshabilitado (activo=False) → sugerencia "habilitar"
+        ConfiguracionFlujoDocumentos.objects.create(
+            id_empresa=empresa_a,
+            tipo_documento="VENTAS",
+            paso="APROBACION_PEDIDO",
+            obligatorio=False,
+            activo=False,
+        )
         sugerencias = _analizar_flujo_documentos(empresa_a)
         assert len(sugerencias) == 1
-        assert sugerencias[0].paso == "CONFIGURACION_FLUJO"
-        assert sugerencias[0].prioridad == "alta"
+        assert sugerencias[0].paso == "APROBACION_PEDIDO"
+        assert sugerencias[0].accion == "habilitar"
+        assert sugerencias[0].prioridad == "media"
+
+    def test_config_sin_hallazgos_devuelve_lista_vacia(self, empresa_a):
+        """Con config sana (pocos pasos, nada deshabilitado) no hay sugerencias
+        ni fallback espurio."""
+        from apps.core.models import ConfiguracionFlujoDocumentos
+
+        ConfiguracionFlujoDocumentos.objects.create(
+            id_empresa=empresa_a,
+            tipo_documento="VENTAS",
+            paso="COTIZACION",
+            obligatorio=False,
+        )
+        assert _analizar_flujo_documentos(empresa_a) == []
 
     def test_empresa_invalida_devuelve_fallback(self):
         """Cualquier excepción degrada al fallback de revisión manual."""

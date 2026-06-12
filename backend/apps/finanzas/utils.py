@@ -43,16 +43,13 @@ def obtener_sesion_activa_usuario(usuario):
     Obtiene la sesión activa del usuario actual.
     Retorna None si no hay sesión activa.
     """
-    from .models import SesionCaja
+    from .models import SesionCajaFisica
 
-    try:
-        return (
-            SesionCaja.objects.filter(usuario=usuario, estado="ABIERTA")
-            .select_related("caja_fisica_principal")
-            .first()
-        )
-    except Exception:
-        return None
+    return (
+        SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA")
+        .select_related("caja_fisica")
+        .first()
+    )
 
 
 def validar_acceso_caja_usuario(usuario, caja):
@@ -70,7 +67,7 @@ def validar_acceso_caja_usuario(usuario, caja):
 
     # Verificar si tiene sesión activa en esa caja
     sesion_activa = obtener_sesion_activa_usuario(usuario)
-    if sesion_activa and sesion_activa.caja_fisica_principal == caja:
+    if sesion_activa and sesion_activa.caja_fisica == caja:
         return True
 
     return False
@@ -83,7 +80,7 @@ def obtener_caja_activa_sesion(usuario):
     """
     sesion_activa = obtener_sesion_activa_usuario(usuario)
     if sesion_activa:
-        return sesion_activa.caja_fisica_principal
+        return sesion_activa.caja_fisica
     return None
 
 
@@ -96,7 +93,7 @@ def crear_configuracion_inicial_venezolana(empresa):
     # Obtener monedas y métodos de pago disponibles
     try:
         ves = Moneda.objects.get(codigo_iso="VES", empresa=empresa)
-        usd = Moneda.objects.get(codigo_iso="USD", empresa=empresa)
+        Moneda.objects.get(codigo_iso="USD", empresa=empresa)  # debe existir también
     except Moneda.DoesNotExist:
         return {"error": "Monedas VES y USD no encontradas"}
 
@@ -116,13 +113,14 @@ def crear_configuracion_inicial_venezolana(empresa):
             "aplicar_a_todas_cajas_fisicas": True,
             "aplicar_a_empleados_con_rol": None,
             "activa": True,
+            # FIX: moneda_base es FK NOT NULL sin default; sin esto el insert
+            # reventaba con IntegrityError. La base venezolana es VES.
+            "moneda_base": ves,
         },
     )
 
     if created_fisica:
-        plantilla_fisica.monedas_base.set([ves, usd])
         plantilla_fisica.metodos_pago_base.set([efectivo, tarjeta, credito])
-        plantilla_fisica.save()
 
     # Crear plantilla para vendedores móviles
     plantilla_movil, created_movil = PlantillaMaestroCajasVirtuales.objects.get_or_create(
@@ -133,13 +131,12 @@ def crear_configuracion_inicial_venezolana(empresa):
             "aplicar_a_todas_cajas_fisicas": False,
             "aplicar_a_empleados_con_rol": "vendedor",  # Ajustar según el rol real
             "activa": True,
+            "moneda_base": ves,
         },
     )
 
     if created_movil:
-        plantilla_movil.monedas_base.set([ves, usd])
         plantilla_movil.metodos_pago_base.set([efectivo, tarjeta])
-        plantilla_movil.save()
 
     return {
         "plantilla_fisica": plantilla_fisica,
