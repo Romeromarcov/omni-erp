@@ -7,12 +7,12 @@ suites no ejercitan:
 
 - utils.py (0%): permisos de caja física, helpers de sesión (BUG corregido:
   importaban el modelo `SesionCaja` inexistente; ahora usan SesionCajaFisica) y
-  crear_configuracion_inicial_venezolana (BUG: get_or_create de la plantilla sin
-  `moneda_base` NOT NULL → IntegrityError documentado).
+  crear_configuracion_inicial_venezolana (FIX lote 2: la plantilla ya se crea
+  con `moneda_base` VES; antes IntegrityError).
 - views_extra/tasa_oficial_bcv.py: solo consultas a BD (cero red): fecha
   inválida, monedas por código ISO, tasa global encontrada/no encontrada y el
-  flujo por empresa (BUG: usa `empresa.moneda_base`, atributo inexistente en
-  core.Empresa → siempre 404).
+  flujo por empresa (FIX lote 2: la vista usa `empresa.id_moneda_base`; antes
+  el atributo inexistente `moneda_base` hacía 404 siempre).
 - views.py: ramas restantes de los ViewSets (superusuario, filtros completos de
   movimientos, buscar_reutilizar con filtros, monedas_info/crear_caja_virtual/
   CajaUsuarioViewSet por invocación directa porque sus rutas están rotas o no
@@ -214,16 +214,23 @@ class TestCrearConfiguracionInicialVenezolana:
         resultado = finanzas_utils.crear_configuracion_inicial_venezolana(empresa_ve)
         assert resultado == {"error": "Métodos de pago básicos no encontrados"}
 
-    def test_flujo_completo_roto_por_moneda_base_not_null(self, empresa_ve):
-        # BUG (documentado, sin enmascarar): el get_or_create de
-        # PlantillaMaestroCajasVirtuales no incluye `moneda_base` (FK NOT NULL
-        # sin default) en los defaults → IntegrityError al insertar.
-        from django.db.utils import IntegrityError
-
+    def test_flujo_completo_crea_plantillas_con_moneda_base_ves(self, empresa_ve):
+        # FIX (lote 2): el get_or_create no incluía `moneda_base` (FK NOT NULL
+        # sin default) → IntegrityError; y luego llamaba `monedas_base.set`,
+        # M2M inexistente. Ahora el flujo completo crea ambas plantillas.
         for nombre, tipo in [("EFECTIVO", "EFECTIVO"), ("TARJETA", "TARJETA"), ("CREDITO", "CREDITO")]:
             MetodoPago.objects.create(nombre_metodo=nombre, tipo_metodo=tipo, empresa=empresa_ve)
-        with pytest.raises(IntegrityError):
-            finanzas_utils.crear_configuracion_inicial_venezolana(empresa_ve)
+        resultado = finanzas_utils.crear_configuracion_inicial_venezolana(empresa_ve)
+        assert resultado["mensaje"] == "Configuración inicial creada exitosamente"
+        plantilla_fisica = resultado["plantilla_fisica"]
+        plantilla_movil = resultado["plantilla_movil"]
+        assert plantilla_fisica.moneda_base.codigo_iso == "VES"
+        assert plantilla_movil.moneda_base.codigo_iso == "VES"
+        assert plantilla_fisica.metodos_pago_base.count() == 3
+        assert plantilla_movil.metodos_pago_base.count() == 2
+        # Idempotente: una segunda llamada no duplica plantillas
+        finanzas_utils.crear_configuracion_inicial_venezolana(empresa_ve)
+        assert PlantillaMaestroCajasVirtuales.objects.filter(empresa=empresa_ve).count() == 2
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -275,13 +282,25 @@ class TestTasaOficialBCVView:
         assert resp.status_code == 404
         assert resp.json() == {"detail": "No hay tasa oficial BCV registrada para esa fecha."}
 
-    def test_flujo_por_empresa_siempre_404(self, client_a, empresa_a, moneda_usd, tasa_bcv_hoy):
-        # BUG (documentado, sin enmascarar): la vista usa `empresa.moneda_base`,
-        # atributo que NO existe en core.Empresa (el campo es `id_moneda_base`).
-        # El AttributeError cae en el `except Exception` → 404 SIEMPRE, aunque
-        # la empresa y la moneda existan.
+    def test_flujo_por_empresa_resuelve_moneda_base(self, client_a, empresa_a, moneda_ves, tasa_bcv_hoy):
+        # FIX (lote 2): la vista usaba `empresa.moneda_base` (el campo real es
+        # `id_moneda_base`) y el AttributeError silenciado devolvía 404 siempre.
+        # empresa_a tiene id_moneda_base=USD → origen USD, destino VES → 200.
         resp = client_a.get(self.URL, {
             "id_empresa": str(empresa_a.id_empresa),
+            "id_moneda_transaccion": str(moneda_ves.id_moneda),
+        })
+        assert resp.status_code == 200, resp.content
+        assert Decimal(resp.json()["valor_tasa"]) == Decimal("36.50000000")
+
+    def test_flujo_por_empresa_sin_moneda_base_404(self, client_a, moneda_usd, tasa_bcv_hoy):
+        from apps.core.models import Empresa
+
+        empresa = Empresa.objects.create(
+            nombre_legal="Sin Base C.A.", identificador_fiscal="J-00000002-0"
+        )
+        resp = client_a.get(self.URL, {
+            "id_empresa": str(empresa.id_empresa),
             "id_moneda_transaccion": str(moneda_usd.id_moneda),
         })
         assert resp.status_code == 404
@@ -1020,13 +1039,32 @@ class TestPlantillaYCajasVirtualesAuto:
         plantilla.metodos_pago_base.add(metodo_a)
         return plantilla
 
-    def test_crear_cajas_para_caja_fisica_roto(self, plantilla, caja_fisica_a):
-        # BUG (documentado, sin enmascarar): crear_cajas_para_caja_fisica llama
-        # caja_fisica.metodo_pago_deshabilitado(...), método que NO existe en el
-        # modelo CajaFisica → AttributeError; la creación automática por caja
-        # física nunca funciona.
-        with pytest.raises(AttributeError, match="metodo_pago_deshabilitado"):
-            plantilla.crear_cajas_para_caja_fisica(caja_fisica_a)
+    def test_crear_cajas_para_caja_fisica_crea_cajas_virtuales(self, plantilla, caja_fisica_a, metodo_a):
+        # FIX (lote 2): CajaFisica.metodo_pago_deshabilitado no existía →
+        # AttributeError. Ahora consulta los overrides y la creación funciona.
+        creadas = plantilla.crear_cajas_para_caja_fisica(caja_fisica_a)
+        assert len(creadas) == 1
+        auto = creadas[0]
+        assert auto.caja_fisica == caja_fisica_a
+        assert auto.metodo_pago == metodo_a
+        assert auto.activa is True
+        # Idempotente: una segunda llamada no duplica
+        assert plantilla.crear_cajas_para_caja_fisica(caja_fisica_a) == []
+
+    def test_crear_cajas_respeta_override_deshabilitado(
+        self, plantilla, caja_fisica_a, metodo_a, empresa_a
+    ):
+        from apps.core.models import Sucursal
+        from apps.finanzas.models import CajaMetodoPagoOverride
+
+        sucursal = Sucursal.objects.create(
+            id_empresa=empresa_a, nombre="Suc Override", codigo_sucursal="SOV"
+        )
+        CajaMetodoPagoOverride.objects.create(
+            caja_fisica=caja_fisica_a, metodo_pago=metodo_a,
+            sucursal=sucursal, deshabilitado=True,
+        )
+        assert plantilla.crear_cajas_para_caja_fisica(caja_fisica_a) == []
 
     def test_sincronizar_con_plantilla_empleado(self, plantilla, user_a, moneda_usd, metodo_a):
         auto = CajaVirtualAuto.objects.create(
@@ -1044,20 +1082,23 @@ class TestPlantillaYCajasVirtualesAuto:
         auto.refresh_from_db()
         assert auto.activa is False
 
-    def test_sincronizar_con_caja_fisica_cae_en_el_bug(
-        self, plantilla, caja_virtual_a, moneda_usd, metodo_a
-    ):
-        # BUG (documentado x2): el FK CajaVirtualAuto.caja_fisica apunta a Caja
-        # (virtual), no a CajaFisica — modelado roto ya documentado en
-        # cobertura2 — y además sincronizar_con_plantilla invoca el inexistente
-        # metodo_pago_deshabilitado → AttributeError.
+    def test_sincronizar_con_caja_fisica(self, plantilla, caja_fisica_a, moneda_usd, metodo_a):
+        # FIX (lote 2, x2): el FK CajaVirtualAuto.caja_fisica apuntaba a Caja
+        # (virtual) — ahora apunta a CajaFisica (migración 0039) — y
+        # metodo_pago_deshabilitado ya existe en CajaFisica.
         auto = CajaVirtualAuto.objects.create(
-            caja_fisica=caja_virtual_a, plantilla_maestro=plantilla,
+            caja_fisica=caja_fisica_a, plantilla_maestro=plantilla,
             moneda=moneda_usd, metodo_pago=metodo_a,
         )
         assert "Plantilla Auto" in str(auto)  # __str__ rama "Física"
-        with pytest.raises(AttributeError, match="metodo_pago_deshabilitado"):
-            auto.sincronizar_con_plantilla()
+        auto.sincronizar_con_plantilla()
+        auto.refresh_from_db()
+        assert auto.activa is True
+        plantilla.activa = False
+        plantilla.save()
+        auto.sincronizar_con_plantilla()
+        auto.refresh_from_db()
+        assert auto.activa is False
 
     def test_crear_caja_virtual_en_sesion_delegacion(self, plantilla, user_a, moneda_usd, metodo_a):
         auto = CajaVirtualAuto.objects.create(
@@ -1075,13 +1116,12 @@ class TestPlantillaYCajasVirtualesAuto:
         assert capturado["monedas"] == [str(moneda_usd.id_moneda)]
         assert capturado["metodos"] == [str(metodo_a.id_metodo_pago)]
 
-    def test_override_post_save_sin_cajas_no_revienta(self, plantilla, caja_virtual_a):
+    def test_override_post_save_sin_cajas_no_revienta(self, plantilla, caja_fisica_a):
         from apps.finanzas.models import override_post_save
 
-        # invocación directa (crear el override real está roto — ya documentado);
-        # sin CajaVirtualAuto asociadas el loop es vacío y no falla. El FK
-        # roto exige pasar una Caja virtual como "caja_fisica".
-        override_post_save(None, SimpleNamespace(caja_fisica=caja_virtual_a), created=True)
+        # invocación directa; sin CajaVirtualAuto asociadas el loop es vacío y
+        # no falla. FIX (lote 2): el FK ya apunta a CajaFisica.
+        override_post_save(None, SimpleNamespace(caja_fisica=caja_fisica_a), created=True)
 
     def test_senal_caja_fisica_crea_caja_virtual(self, plantilla, empresa_a, moneda_usd, metodo_a):
         nueva_fisica = CajaFisica.objects.create(
@@ -1130,15 +1170,13 @@ class TestPagoValidarDocumento:
             pago._validar_documento()
         assert pago.documento_relacionado is pago.id_nota_venta
 
-    def test_factura_rama_rota_importerror(self):
-        # BUG (documentado, sin enmascarar): la rama FACTURA importa
-        # FacturaFiscal desde apps.fiscal.models, pero ese modelo vive en
-        # apps.ventas.models (el FK del campo es "ventas.FacturaFiscal") →
-        # ImportError siempre que se valida un pago de factura.
+    def test_factura_inexistente(self):
+        # FIX (lote 2): la rama importaba FacturaFiscal desde apps.fiscal,
+        # pero vive en apps.ventas → ImportError. Ahora valida normal.
         from apps.ventas.models import FacturaFiscal
 
         pago = self._pago(tipo_documento="FACTURA", id_factura=FacturaFiscal())
-        with pytest.raises(ImportError):
+        with pytest.raises(ValueError, match="no existe"):
             pago._validar_documento()
         assert pago.documento_relacionado is pago.id_factura
 
@@ -1158,14 +1196,13 @@ class TestPagoValidarDocumento:
             pago._validar_documento()
         assert pago.documento_relacionado is pago.id_gasto
 
-    def test_reembolso_rama_rota_attributeerror(self):
-        # BUG (documentado, sin enmascarar): la rama usa
-        # `self.id_reembolso_gasto.id_reembolso_gasto`, pero la PK del modelo
-        # es `id_reembolso` → AttributeError en vez del ValueError esperado.
+    def test_reembolso_inexistente(self):
+        # FIX (lote 2): la rama usaba `id_reembolso_gasto` como PK, pero la PK
+        # real es `id_reembolso` → AttributeError. Ahora valida normal.
         from apps.gastos.models import ReembolsoGasto
 
         pago = self._pago(tipo_documento="REEMBOLSO_GASTO", id_reembolso_gasto=ReembolsoGasto())
-        with pytest.raises(AttributeError, match="id_reembolso_gasto"):
+        with pytest.raises(ValueError, match="no existe"):
             pago._validar_documento()
         assert pago.documento_relacionado is pago.id_reembolso_gasto
 
@@ -1177,14 +1214,13 @@ class TestPagoValidarDocumento:
             pago._validar_documento()
         assert pago.documento_relacionado is pago.id_nomina
 
-    def test_impuesto_rama_rota_attributeerror(self):
-        # BUG (documentado, sin enmascarar): la rama usa
-        # `self.id_contribucion.id_contribucion`, atributo que no existe en
-        # ContribucionParafiscal → AttributeError en vez de ValueError.
+    def test_impuesto_inexistente(self):
+        # FIX (lote 2): la rama usaba `id_contribucion.id_contribucion`,
+        # atributo inexistente (la PK es la implícita `pk`) → AttributeError.
         from apps.fiscal.models import ContribucionParafiscal
 
         pago = self._pago(tipo_documento="IMPUESTO", id_contribucion=ContribucionParafiscal())
-        with pytest.raises(AttributeError, match="id_contribucion"):
+        with pytest.raises(ValueError, match="no existe"):
             pago._validar_documento()
         assert pago.documento_relacionado is pago.id_contribucion
 
