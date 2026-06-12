@@ -53,6 +53,7 @@ _Total tareas Celery: 16_
 |---|---|
 | `configurar_conector_odoo` | apps.integration_hub |
 | `configurar_conector_sheets` | apps.integration_hub |
+| `configurar_rol_rls` | apps.core |
 | `consumir_eventos` | apps.eventos |
 | `create_initial_data` | apps.core |
 | `exportar_a_sheets` | apps.integration_hub |
@@ -67,4 +68,4 @@ _Total tareas Celery: 16_
 | `seed_empresa_inicial` | apps.core |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 15_
+_Total commands: 16_

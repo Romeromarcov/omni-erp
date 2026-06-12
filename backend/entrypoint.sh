@@ -57,7 +57,20 @@ if [ "${SKIP_MIGRATIONS}" = "1" ]; then
 fi
 
 echo "Applying database migrations..."
-python manage.py migrate --noinput
+if [ -n "${MIGRATIONS_DATABASE_URL}" ]; then
+    # CTF-012 (RLS): el runtime conecta con el rol de aplicación no-dueño
+    # (omni_app, en DATABASE_URL), pero el DDL de migraciones requiere el rol
+    # DUEÑO de las tablas. Con MIGRATIONS_DATABASE_URL definida (URL del rol
+    # dueño), migrate corre con ella y después se reaplica idempotentemente
+    # el rol de aplicación (atributos + GRANTs para tablas nuevas; no cambia
+    # la contraseña si OMNI_APP_DB_PASSWORD no está definida).
+    # Ver docs/runbooks/RUNBOOK_RLS_ROL_APP.md.
+    DATABASE_URL="${MIGRATIONS_DATABASE_URL}" python manage.py migrate --noinput
+    echo "Refreshing RLS application role grants..."
+    DATABASE_URL="${MIGRATIONS_DATABASE_URL}" python manage.py configurar_rol_rls
+else
+    python manage.py migrate --noinput
+fi
 
 # Seed demo opcional e idempotente, SOLO para entornos de desarrollo. Activar con
 # RUN_SEED=1 en un entorno nuevo para crear la empresa y el superusuario demo. El
