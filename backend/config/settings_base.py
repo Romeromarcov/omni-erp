@@ -648,10 +648,16 @@ _IS_PYTEST = "PYTEST_VERSION" in os.environ or "pytest" in sys.modules
 
 # KEY_PREFIX por entorno: cada entorno Railway tiene su Redis propio, pero el
 # prefijo evita colisiones si alguna vez se comparte instancia y hace los keys
-# auditables (redis-cli KEYS 'omni:production:*').
+# auditables (redis-cli KEYS 'omni:production:*'). Fuera de Railway (p. ej.
+# docker-compose) etiqueta con DJANGO_ENV.
 CACHE_KEY_PREFIX = os.environ.get(
     "CACHE_KEY_PREFIX",
-    f"omni:{os.environ.get('RAILWAY_ENVIRONMENT', 'dev')}",
+    "omni:"
+    + (
+        os.environ.get("RAILWAY_ENVIRONMENT")
+        or os.environ.get("DJANGO_ENV")
+        or "dev"
+    ),
 )
 
 CACHES = {
