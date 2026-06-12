@@ -28,7 +28,8 @@
     "ventas": "Ventas",
     "configuracion": "Configuración",
     "logout": "Cerrar sesión",
-    "manufactura": "Manufactura"
+    "manufactura": "Manufactura",
+    "compras": "Compras"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -156,6 +157,96 @@
       "monto": "Monto",
       "partida": "Partida",
       "sinDatos": "No hay datos disponibles."
+    }
+  },
+  "compras": {
+    "title": "Compras",
+    "ordenes": {
+      "title": "Órdenes de Compra",
+      "subtitle": "Órdenes de compra a proveedores: aprobación, recepción y factura",
+      "empty": "No hay órdenes de compra registradas.",
+      "numero": "Número",
+      "fecha": "Fecha",
+      "estado": "Estado",
+      "ver": "Ver detalle",
+      "nueva": "Nueva orden"
+    },
+    "form": {
+      "title": "Nueva Orden de Compra",
+      "subtitle": "La empresa la asigna el servidor; los montos se calculan con precisión decimal",
+      "proveedor": "Proveedor",
+      "numeroOrden": "Número de orden",
+      "fechaOrden": "Fecha de la orden",
+      "observaciones": "Observaciones",
+      "lineas": "Líneas de la orden",
+      "producto": "Producto",
+      "cantidad": "Cantidad",
+      "precioUnitario": "Precio unitario",
+      "subtotal": "Subtotal",
+      "total": "Total",
+      "agregarLinea": "Agregar línea",
+      "quitarLinea": "Quitar línea",
+      "crear": "Crear orden",
+      "creada": "Orden de compra creada.",
+      "error": "No se pudo crear la orden de compra."
+    },
+    "detalle": {
+      "title": "Orden de Compra",
+      "aprobar": "Aprobar",
+      "aprobada": "Orden aprobada.",
+      "errorAprobar": "No se pudo aprobar la orden.",
+      "recepcionar": "Recepcionar mercancía",
+      "confirmarRecepcion": "Registrar recepción",
+      "recepcionOk": "Recepción registrada por {{monto}}.",
+      "errorRecepcion": "No se pudo registrar la recepción.",
+      "registrarFactura": "Registrar factura",
+      "confirmarFactura": "Registrar factura",
+      "facturaOk": "Factura {{numero}} registrada.",
+      "errorFactura": "No se pudo registrar la factura.",
+      "almacen": "Almacén",
+      "cantidadRecibida": "Cantidad recibida",
+      "costoUnitario": "Costo unitario",
+      "recepcion": "Recepción",
+      "recepciones": "Recepciones de mercancía",
+      "sinRecepciones": "Esta orden no tiene recepciones registradas.",
+      "fechaRecepcion": "Fecha de recepción",
+      "montoTotal": "Monto total",
+      "numeroFactura": "Número de factura",
+      "fechaEmision": "Fecha de emisión",
+      "sinLineas": "Esta orden no tiene líneas."
+    }
+  },
+  "cxp": {
+    "title": "Cuentas por Pagar",
+    "subtitle": "Saldos con proveedores, aging y registro de abonos",
+    "lista": {
+      "documento": "Documento",
+      "emision": "Emisión",
+      "vencimiento": "Vencimiento",
+      "montoTotal": "Monto total",
+      "saldoPendiente": "Saldo pendiente",
+      "estado": "Estado",
+      "filtroEstado": "Filtrar por estado",
+      "todos": "Todos",
+      "empty": "No hay cuentas por pagar registradas."
+    },
+    "aging": {
+      "title": "Antigüedad de saldos",
+      "total": "Total",
+      "corriente": "Corriente (no vencido)",
+      "dias1a30": "1–30 días",
+      "dias31a60": "31–60 días",
+      "dias61a90": "61–90 días",
+      "dias90mas": "Más de 90 días"
+    },
+    "abono": {
+      "title": "Registrar abono",
+      "abonar": "Abonar",
+      "monto": "Monto",
+      "descripcion": "Descripción",
+      "registrar": "Registrar abono",
+      "ok": "Abono registrado correctamente.",
+      "error": "Error al registrar el abono."
     }
   }
 }

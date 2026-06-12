@@ -28,7 +28,8 @@
     "ventas": "Sales",
     "configuracion": "Configuration",
     "logout": "Log out",
-    "manufactura": "Manufacturing"
+    "manufactura": "Manufacturing",
+    "compras": "Purchasing"
   },
   "auth": {
     "login": "Sign in",
@@ -156,6 +157,96 @@
       "monto": "Amount",
       "partida": "Item",
       "sinDatos": "No data available."
+    }
+  },
+  "compras": {
+    "title": "Purchasing",
+    "ordenes": {
+      "title": "Purchase Orders",
+      "subtitle": "Supplier purchase orders: approval, receiving and invoicing",
+      "empty": "No purchase orders yet.",
+      "numero": "Number",
+      "fecha": "Date",
+      "estado": "Status",
+      "ver": "View detail",
+      "nueva": "New order"
+    },
+    "form": {
+      "title": "New Purchase Order",
+      "subtitle": "The company is set by the server; amounts use decimal precision",
+      "proveedor": "Supplier",
+      "numeroOrden": "Order number",
+      "fechaOrden": "Order date",
+      "observaciones": "Notes",
+      "lineas": "Order lines",
+      "producto": "Product",
+      "cantidad": "Quantity",
+      "precioUnitario": "Unit price",
+      "subtotal": "Subtotal",
+      "total": "Total",
+      "agregarLinea": "Add line",
+      "quitarLinea": "Remove line",
+      "crear": "Create order",
+      "creada": "Purchase order created.",
+      "error": "Could not create the purchase order."
+    },
+    "detalle": {
+      "title": "Purchase Order",
+      "aprobar": "Approve",
+      "aprobada": "Order approved.",
+      "errorAprobar": "Could not approve the order.",
+      "recepcionar": "Receive goods",
+      "confirmarRecepcion": "Register receipt",
+      "recepcionOk": "Receipt registered for {{monto}}.",
+      "errorRecepcion": "Could not register the receipt.",
+      "registrarFactura": "Register invoice",
+      "confirmarFactura": "Register invoice",
+      "facturaOk": "Invoice {{numero}} registered.",
+      "errorFactura": "Could not register the invoice.",
+      "almacen": "Warehouse",
+      "cantidadRecibida": "Quantity received",
+      "costoUnitario": "Unit cost",
+      "recepcion": "Receipt",
+      "recepciones": "Goods receipts",
+      "sinRecepciones": "This order has no receipts yet.",
+      "fechaRecepcion": "Receipt date",
+      "montoTotal": "Total amount",
+      "numeroFactura": "Invoice number",
+      "fechaEmision": "Issue date",
+      "sinLineas": "This order has no lines."
+    }
+  },
+  "cxp": {
+    "title": "Accounts Payable",
+    "subtitle": "Supplier balances, aging and payment registration",
+    "lista": {
+      "documento": "Document",
+      "emision": "Issued",
+      "vencimiento": "Due date",
+      "montoTotal": "Total amount",
+      "saldoPendiente": "Outstanding balance",
+      "estado": "Status",
+      "filtroEstado": "Filter by status",
+      "todos": "All",
+      "empty": "No accounts payable yet."
+    },
+    "aging": {
+      "title": "Aging of balances",
+      "total": "Total",
+      "corriente": "Current (not due)",
+      "dias1a30": "1–30 days",
+      "dias31a60": "31–60 days",
+      "dias61a90": "61–90 days",
+      "dias90mas": "Over 90 days"
+    },
+    "abono": {
+      "title": "Register payment",
+      "abonar": "Pay",
+      "monto": "Amount",
+      "descripcion": "Description",
+      "registrar": "Register payment",
+      "ok": "Payment registered successfully.",
+      "error": "Error registering the payment."
     }
   }
 }
