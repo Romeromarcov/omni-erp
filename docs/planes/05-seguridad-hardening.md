@@ -114,7 +114,7 @@ crm (todas con columna `id_empresa_id`): `inventario_producto`, `inventario_stoc
 filtro de app, fail-closed, bypass, `WITH CHECK`. `RLS_ENABLED=False` sigue por defecto.
 
 **Lote 3 (CTF-012, rollout completo):** RLS **forzado** en las 107 tablas tenant
-restantes → **122/122 tablas con FK a `core.Empresa` cubiertas** (33 migraciones
+restantes → **124/124 tablas con FK a `core.Empresa` cubiertas** (33 migraciones
 reversibles `*_rls_lote3_*`, una por app). Variante `null_visible` del builder para
 los 11 catálogos compartidos con columna de empresa nullable (`empresa NULL` = fila
 global visible por todos, igual que el filtrado de aplicación). Excluidas con razón
@@ -140,7 +140,7 @@ activación (cambio de rol en staging → prod) la gobierna CTF-012.
    (un `is_superuser` que no lo sea queda acotado por tenant).
 4. **Streaming + pooling:** si se habilita `CONN_MAX_AGE`/pgbouncer, fijar el contexto RLS
    dentro del generador SSE (hoy resuelto no-reseteando en `finally` con `CONN_MAX_AGE=0`).
-5. ~~Extender RLS al resto de tablas multi-tenant~~ ✅ hecho en el lote 3 (122/122).
+5. ~~Extender RLS al resto de tablas multi-tenant~~ ✅ hecho en el lote 3 (124/124).
    Pendiente menor: política propia para `empresas` y `fiscal_retencion` (excluidas
    documentadas en `rls.RLS_EXCLUDED_TABLES`).
 

@@ -11,7 +11,7 @@ end-to-end, y después en **producción** (lo ejecuta el owner). Reversible en
 cualquier momento (paso 6).
 
 > Las políticas RLS + `FORCE ROW LEVEL SECURITY` ya están desplegadas en las
-> 122 tablas tenant por migraciones (lotes 1–3) y son inertes para el rol dueño
+> 124 tablas tenant por migraciones (lotes 1–3) y son inertes para el rol dueño
 > conviviendo con el default `bypass='on'` por conexión. Este runbook solo
 > cambia *con qué rol conecta el runtime*.
 
