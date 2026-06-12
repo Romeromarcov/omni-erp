@@ -319,17 +319,19 @@ class TestTasaOficialBCVView:
 class TestSesionCajaFisicaRamasRotas:
     URL = "/api/finanzas/sesiones-caja/"
 
-    def test_perform_create_consulta_campo_inexistente(self, client_a, caja_virtual_a):
-        # BUG (documentado, sin enmascarar): perform_create busca
-        # Caja.objects.get(..., es_fisica=True) pero el modelo Caja NO tiene
-        # campo `es_fisica` → FieldError (solo se captura Caja.DoesNotExist).
-        # Abrir sesión por la API está roto de origen.
-        from django.core.exceptions import FieldError
-
-        with pytest.raises(FieldError):
-            client_a.post(self.URL, {
-                "caja_fisica_principal": str(caja_virtual_a.id_caja),
-            }, format="json")
+    def test_perform_create_rechaza_id_de_caja_virtual_400(self, client_a, caja_virtual_a):
+        # FIX (bugs lote 3): perform_create buscaba Caja (virtual) con el campo
+        # inexistente `es_fisica` → FieldError 500 en todo POST. Ahora resuelve
+        # la CajaFisica real (escopeada al tenant, R-CODE-1): un id de caja
+        # VIRTUAL responde 400 controlado y no se crea ninguna sesión.
+        # Creación feliz y aislamiento: TestSesionCajaFisicaCreacion
+        # (test_diffcov_finanzas_tesoreria.py).
+        resp = client_a.post(self.URL, {
+            "caja_fisica_principal": str(caja_virtual_a.id_caja),
+        }, format="json")
+        assert resp.status_code == 400
+        assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
+        assert SesionCajaFisica.objects.count() == 0
 
     def test_cerrar_funciona_y_marca_sesion_cerrada(self, client_a, caja_fisica_a, user_a):
         # FIX (hallazgo PR #73): el modelo acepta saldos_reales/usuario/hasta

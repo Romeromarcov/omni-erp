@@ -58,37 +58,53 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         return SesionCajaFisica.objects.filter(empresa__in=get_empresas_visible(self.request.user))
 
     def perform_create(self, serializer):
-        # Usar el método de clase para abrir sesión con validaciones
+        """
+        Abre una sesión de caja física vía POST /sesiones-caja/.
+
+        FIX (bugs lote 3): este método estaba roto de punta a punta —
+        (a) buscaba ``Caja`` (virtual) con el campo inexistente ``es_fisica``
+        → FieldError 500 en TODO POST; (b) llamaba ``abrir_sesion`` con kwargs
+        que la firma no acepta (``observaciones``,
+        ``cargar_plantillas_predeterminadas``) → TypeError; (c) invocaba
+        ``instance.cargar_plantillas_predeterminadas()``, método que el modelo
+        no define → AttributeError; (d) la búsqueda no estaba acotada al
+        tenant (R-CODE-1). Ahora resuelve la ``CajaFisica`` real escopeada a
+        las empresas visibles del usuario y delega en
+        ``SesionCajaFisica.abrir_sesion`` (misma lógica que el endpoint
+        ``cajas-fisicas/{id}/abrir-sesion/``).
+        """
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from apps.core.viewsets import get_empresas_visible
+
         caja_fisica_id = self.request.data.get("caja_fisica_principal")
         if not caja_fisica_id:
             raise serializers.ValidationError(
                 {"caja_fisica_principal": "Debe especificar la caja física para abrir la sesión"}
             )
 
-        from .models import Caja
-
         try:
-            caja_fisica = Caja.objects.get(id_caja=caja_fisica_id, es_fisica=True, activa=True)
-        except Caja.DoesNotExist:
+            caja_fisica = CajaFisica.objects.filter(
+                empresa__in=get_empresas_visible(self.request.user)
+            ).get(id_caja_fisica=caja_fisica_id, activa=True)
+        except (CajaFisica.DoesNotExist, DjangoValidationError, ValueError, TypeError):
+            # R-CODE-1: mismo mensaje para inexistente, inactiva, malformada o
+            # ajena — no se filtra existencia de cajas de otros tenants.
             raise serializers.ValidationError({"caja_fisica_principal": "Caja física no encontrada o no válida"})
 
-        observaciones = self.request.data.get("observaciones")
-        # Por defecto, usar el nuevo sistema de cajas virtuales automáticas
-        cargar_plantillas = self.request.data.get(
-            "cargar_plantillas_predeterminadas", False
-        )  # Cambiado a False por defecto
-        cargar_automaticas = self.request.data.get("cargar_cajas_automaticas", True)  # Nuevo sistema por defecto
-
         instance = SesionCajaFisica.abrir_sesion(
-            usuario=self.request.user,
             caja_fisica=caja_fisica,
-            observaciones=observaciones,
-            cargar_plantillas_predeterminadas=cargar_plantillas,
+            usuario=self.request.user,
+            ip_address=self.request.META.get("REMOTE_ADDR"),
+            user_agent=(self.request.META.get("HTTP_USER_AGENT") or "")[:1000] or None,
         )
-
-        # Si se solicita cargar cajas automáticas, forzar la carga
-        if cargar_automaticas:
-            instance.cargar_plantillas_predeterminadas()  # Ahora carga las automáticas
+        observaciones = self.request.data.get("observaciones")
+        if observaciones:
+            instance.notas = observaciones
+            instance.save(update_fields=["notas"])
+        # La creación no pasa por serializer.save(); enlazar la instancia para
+        # que la respuesta 201 devuelva la sesión real (id_sesion incluido).
+        serializer.instance = instance
 
     @action(detail=True, methods=["post"], url_path="cerrar")
     def cerrar_sesion(self, request, pk=None):
@@ -133,8 +149,18 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="transferir-entre-cajas")
     def transferir_entre_cajas(self, request, pk=None):
         """
-        Permite transferir saldo de una caja origen a una caja destino tras el cierre de sesión.
+        Transfiere saldo entre dos cajas virtuales de la sesión (las asociadas
+        a la caja física de la sesión), p. ej. registradora → gerencia.
+
+        FIX (CTF-015.1): hacía ``sesion.cajas.get(...)`` pero
+        ``SesionCajaFisica`` no tiene relación ``cajas`` (la real es
+        ``caja_fisica.cajas_virtuales``); el AttributeError caía en un
+        ``except Exception`` y el endpoint respondía 400 SIEMPRE — código
+        muerto que aparentaba validación. Ahora la transferencia ocurre de
+        verdad y solo errores esperables se traducen a 400.
         """
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         from apps.finanzas.utils_transferencias import transferencia_entre_cajas
 
         sesion = self.get_object()
@@ -144,10 +170,13 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         usuario = request.user if request.user.is_authenticated else None
         if not (caja_origen_id and caja_destino_id and monto):
             return Response({"error": "Debe indicar caja_origen, caja_destino y monto."}, status=400)
+        cajas_de_sesion = sesion.caja_fisica.cajas_virtuales
         try:
-            caja_origen = sesion.cajas.get(id_caja=caja_origen_id)
-            caja_destino = sesion.cajas.get(id_caja=caja_destino_id)
-        except Exception:
+            caja_origen = cajas_de_sesion.get(id_caja=caja_origen_id)
+            caja_destino = cajas_de_sesion.get(id_caja=caja_destino_id)
+        except (Caja.DoesNotExist, DjangoValidationError, ValueError, TypeError):
+            # R-CODE-1: mismo mensaje para caja inexistente, malformada o de
+            # otra sesión/tenant — no se filtra existencia de cajas ajenas.
             return Response({"error": "Caja origen o destino no pertenece a la sesión."}, status=400)
         try:
             mov_salida, mov_entrada = transferencia_entre_cajas(
@@ -163,7 +192,8 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
                 "movimiento_entrada_id": mov_entrada.id_movimiento,
                 "caja_origen": str(caja_origen),
                 "caja_destino": str(caja_destino),
-                "monto": monto,
+                # R-CODE-4: monto efectivamente movido (Decimal), no eco crudo.
+                "monto": str(mov_salida.monto),
             }
         )
 

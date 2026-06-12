@@ -80,6 +80,7 @@
 | finanzas | MonedaEmpresaActiva | ✅ | ✅ | — |
 | finanzas | MovimientoCajaBanco | ✅ | ✅ | — |
 | finanzas | Pago | ✅ | ✅ | — |
+| finanzas | PagoTercero | ✅ | ✅ | — |
 | finanzas | PlantillaMaestroCajasVirtuales | ✅ | ✅ | — |
 | finanzas | SesionCajaFisica | ✅ | ✅ | — |
 | finanzas | SesionDatafono | — | ✅ | — |
@@ -197,4 +198,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 194_
+_Total modelos: 195_
