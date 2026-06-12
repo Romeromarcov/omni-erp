@@ -5,8 +5,8 @@ Complementa test_finanzas_views_cobertura{,2}.py, test_finanzas_models_cobertura
 y test_finanzas_serializers_cobertura.py (que NO se tocan) con las ramas que esas
 suites no ejercitan:
 
-- utils.py (0%): permisos de caja física, helpers de sesión (BUG: importan un
-  modelo `SesionCaja` inexistente → ImportError documentado, sin enmascarar) y
+- utils.py (0%): permisos de caja física, helpers de sesión (BUG corregido:
+  importaban el modelo `SesionCaja` inexistente; ahora usan SesionCajaFisica) y
   crear_configuracion_inicial_venezolana (BUG: get_or_create de la plantilla sin
   `moneda_base` NOT NULL → IntegrityError documentado).
 - views_extra/tasa_oficial_bcv.py: solo consultas a BD (cero red): fecha
@@ -142,28 +142,47 @@ class TestAsignarPermisosCajaFisica:
         assert CajaFisicaUsuario.objects.count() == 1
 
 
-class TestHelpersSesionRotos:
-    def test_obtener_sesion_activa_usuario_importa_modelo_inexistente(self, user_a):
-        # BUG (documentado, sin enmascarar): utils.obtener_sesion_activa_usuario
-        # hace `from .models import SesionCaja`, modelo que NO existe en
-        # finanzas.models (el real es SesionCajaFisica) y el import está FUERA
-        # del try/except → ImportError siempre.
-        with pytest.raises(ImportError):
-            finanzas_utils.obtener_sesion_activa_usuario(user_a)
+class TestHelpersSesion:
+    """Regresión del BUG: utils importaba `SesionCaja` (modelo inexistente —
+    el real es SesionCajaFisica) y todos estos helpers reventaban con
+    ImportError. Ahora se fija el comportamiento funcional."""
 
-    def test_obtener_caja_activa_sesion_tambien_revienta(self, user_a):
-        with pytest.raises(ImportError):
-            finanzas_utils.obtener_caja_activa_sesion(user_a)
+    def test_obtener_sesion_activa_usuario_sin_sesion_retorna_none(self, user_a):
+        assert finanzas_utils.obtener_sesion_activa_usuario(user_a) is None
+
+    def test_obtener_sesion_activa_usuario_con_sesion_abierta(
+        self, user_a, empresa_a, caja_fisica_a
+    ):
+        sesion = SesionCajaFisica.objects.create(
+            caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a
+        )
+        encontrada = finanzas_utils.obtener_sesion_activa_usuario(user_a)
+        assert encontrada is not None
+        assert encontrada.pk == sesion.pk
+        assert encontrada.caja_fisica == caja_fisica_a
+
+    def test_obtener_caja_activa_sesion(self, user_a, empresa_a, caja_fisica_a):
+        assert finanzas_utils.obtener_caja_activa_sesion(user_a) is None
+        SesionCajaFisica.objects.create(
+            caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a
+        )
+        assert finanzas_utils.obtener_caja_activa_sesion(user_a) == caja_fisica_a
+
+    def test_sesion_cerrada_no_cuenta_como_activa(
+        self, user_a, empresa_a, caja_fisica_a
+    ):
+        SesionCajaFisica.objects.create(
+            caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a,
+            estado="CERRADA",
+        )
+        assert finanzas_utils.obtener_sesion_activa_usuario(user_a) is None
 
     def test_validar_acceso_con_asignacion_directa_true(self, user_a, caja_virtual_a):
         CajaUsuario.objects.create(usuario=user_a, caja=caja_virtual_a)
         assert finanzas_utils.validar_acceso_caja_usuario(user_a, caja_virtual_a) is True
 
-    def test_validar_acceso_sin_asignacion_cae_en_el_bug(self, user_a, caja_virtual_a):
-        # Sin asignación directa, el helper consulta la sesión activa → mismo
-        # ImportError del modelo SesionCaja inexistente.
-        with pytest.raises(ImportError):
-            finanzas_utils.validar_acceso_caja_usuario(user_a, caja_virtual_a)
+    def test_validar_acceso_sin_asignacion_ni_sesion_false(self, user_a, caja_virtual_a):
+        assert finanzas_utils.validar_acceso_caja_usuario(user_a, caja_virtual_a) is False
 
 
 class TestCrearConfiguracionInicialVenezolana:

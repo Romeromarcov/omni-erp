@@ -88,8 +88,9 @@ def ventas_get_cotizacion(
             {
                 "producto": d.id_producto.nombre_producto,
                 "cantidad": float(d.cantidad),
-                "precio_unitario": d.precio_unitario,  # BUG-NEW-2
-                "subtotal": d.subtotal,  # BUG-NEW-2
+                # M-BUG-1: monetario como Decimal (no float).
+                "precio_unitario": d.precio_unitario,
+                "subtotal": d.subtotal,
             }
             for d in cot.detalles.all()
         ],
@@ -175,7 +176,7 @@ def ventas_get_facturas(
     if estado:
         qs = qs.filter(estado=estado)
 
-    facturas = qs.order_by("-fecha_factura")[:limit]
+    facturas = qs.order_by("-fecha_emision")[:limit]
     logger.info(
         "ventas_get_facturas | actor=%s | tenant=%s | count=%d",
         ctx["actor_id"], ctx["tenant_id"], len(facturas),
@@ -187,8 +188,9 @@ def ventas_get_facturas(
             "numero_control": f.numero_control,
             "cliente": f.id_cliente.razon_social,
             "estado": f.estado,
-            "fecha": str(f.fecha_factura),
-            "total": f.total,  # BUG-NEW-2
+            "fecha": str(f.fecha_emision),
+            # M-BUG-1: monetario como Decimal (no float) para no perder precisión.
+            "total": f.monto_total,
         }
         for f in facturas
     ]

@@ -68,6 +68,17 @@ class SyncResult:
     errores: list = field(default_factory=list)
 
     @property
+    def procesados(self) -> int:
+        """Total de registros procesados (derivado de los contadores).
+
+        Es una property (no un atributo asignable) para que nunca quede sin
+        inicializar: antes solo se asignaba dentro del loop de pull y los jobs
+        sin iteración final (pull vacío, error de pull, todo omitido) crasheaban
+        con AttributeError y quedaban colgados en 'en_progreso'.
+        """
+        return self.creados + self.actualizados + self.omitidos + self.fallidos
+
+    @property
     def exitoso(self) -> bool:
         return self.fallidos == 0
 
