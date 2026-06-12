@@ -10,7 +10,7 @@ SIEMPRE:
 - scoring: la fórmula es monótona no decreciente en cada entrada y no negativa para
   entradas no negativas; ``priorizar`` sólo devuelve vencidas, ordenadas DESC.
 
-Complementa ``tests_api/test_property_fiscal.py`` (IVA/IGTF) extendiendo el
+Complementa ``tests/unit/test_property_fiscal.py`` (IVA/IGTF) extendiendo el
 property-based a la matemática de cobranza, que el plan listaba como pendiente.
 """
 

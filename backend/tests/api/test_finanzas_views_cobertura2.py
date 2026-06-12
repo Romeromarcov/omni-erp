@@ -457,7 +457,7 @@ class TestMetodoPagoAcciones:
         # usuario podía reutilizarlo por UUID). Ahora `reutilizar` solo acepta
         # fuentes visibles (genéricas/públicas/propias), así que el método
         # compartido debe ser público; el caso "privado ajeno → 404" se cubre
-        # en tests_api/test_metodos_pago_aislamiento.py.
+        # en tests/tenant/test_metodos_pago_aislamiento.py.
         return MetodoPago.objects.create(
             nombre_metodo="Pago Móvil Banesco", tipo_metodo="ELECTRONICO",
             empresa=empresa_b, es_publico=True,

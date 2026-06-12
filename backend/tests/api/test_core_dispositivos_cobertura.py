@@ -25,7 +25,7 @@ quedaban sin cubrir:
   * abrir_sesion: 400 sin caja, 200 feliz, 500 con error interno
   * acción desconocida → 400
 
-Fixtures empresa_a / user_a / moneda_usd vienen del conftest de tests_api/.
+Fixtures empresa_a / user_a / moneda_usd vienen del conftest de tests/.
 """
 from unittest.mock import patch
 

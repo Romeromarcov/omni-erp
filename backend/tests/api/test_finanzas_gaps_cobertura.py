@@ -413,7 +413,7 @@ class TestMetodoPagoRamas:
         # inseguro (un método PRIVADO de B aparecía para A). Ahora solo los
         # métodos públicos/genéricos son reutilizables, así que el método de B
         # debe ser público para listarse; el caso "privado ajeno NO se lista"
-        # se cubre en tests_api/test_metodos_pago_aislamiento.py.
+        # se cubre en tests/tenant/test_metodos_pago_aislamiento.py.
         MetodoPago.objects.create(
             nombre_metodo="Pago Móvil B", tipo_metodo="ELECTRONICO",
             empresa=empresa_b, es_publico=True,

@@ -16,7 +16,7 @@ Complementa ``test_auth_completo.py`` (que cubre ``token_obtain_pair``, ``logout
 
 Aserciones sobre valores/efectos exactos (cookie presente, campo persistido) para que
 sirvan también de runner de mutación. Fixtures (``user_a``, ``empresa_a``,
-``moneda_usd``) vienen del conftest de ``tests_api/``.
+``moneda_usd``) vienen del conftest de ``tests/``.
 """
 import pytest
 from rest_framework.test import APIClient
@@ -31,7 +31,7 @@ VERIFY_URL = "/api/auth/token/verify/"
 PROFILE_URL = "/api/auth/profile/"
 PROFILE_UPDATE_URL = "/api/auth/profile/update/"
 
-# Contraseña fijada por el fixture user_a del conftest de tests_api/.
+# Contraseña fijada por el fixture user_a del conftest de tests/.
 PASSWORD = "testpass123"
 
 

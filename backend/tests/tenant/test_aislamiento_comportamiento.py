@@ -1,7 +1,7 @@
 """
 TEST-2 — Aislamiento multi-tenant de COMPORTAMIENTO, parametrizado (R-CODE-1).
 
-Complementa al guard ESTRUCTURAL ``tests_api/test_aislamiento_cobertura.py`` (TEST-1),
+Complementa al guard ESTRUCTURAL ``tests/tenant/test_aislamiento_cobertura.py`` (TEST-1),
 que sólo verifica que cada ViewSet tenant sobreescribe ``get_queryset``. Aquí ejercemos
 el comportamiento real contra la API: un usuario de Empresa A **no puede ver, modificar
 ni borrar** objetos de Empresa B, y el listado de A nunca incluye objetos de B.

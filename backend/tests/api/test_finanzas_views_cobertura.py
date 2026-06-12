@@ -12,7 +12,7 @@ Cubre los ViewSets de dinero por la API real (`APIClient`), ejercitando:
 - AuthN: sin autenticación → 401.
 
 Las fixtures `empresa_a/b`, `user_a/b`, `moneda_usd`, `caja_fisica_a` vienen del
-conftest de `tests_api/`. Todas las aserciones usan valores exactos para que el
+conftest de `tests/`. Todas las aserciones usan valores exactos para que el
 test sirva también de runner de mutación (convención del plan).
 """
 import datetime

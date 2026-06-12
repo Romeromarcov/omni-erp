@@ -11,7 +11,7 @@ Complementa los tests de flujo existentes (``test_e2e_ciclo_venta.py``,
   ``almacen_id`` faltante (400) y almacén de otra empresa (400) — antes sin cubrir.
 
 Fixtures (`empresa_a/b`, `user_a/b`, `moneda_usd`) vienen del conftest de
-``tests_api/``. Aserciones sobre estado/efecto exacto (runner de mutación).
+``tests/``. Aserciones sobre estado/efecto exacto (runner de mutación).
 """
 import datetime
 

@@ -1,7 +1,7 @@
 """
 Plan C — Fase C2: control de acceso por pago (extremo a extremo).
 
-Complementa a tests_api/test_saas_middleware.py (que usa RequestFactory y mocks)
+Complementa a tests/integration/test_saas_middleware.py (que usa RequestFactory y mocks)
 con dos cosas que solo se ven de punta a punta:
 
   1. Resolución de usuario vía Bearer JWT en el middleware. En producción la SPA

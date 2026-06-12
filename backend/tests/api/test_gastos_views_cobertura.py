@@ -1,7 +1,7 @@
 """
 Backfill de cobertura — apps/gastos/views.py (plan "Cero Dudas").
 
-Complementa `tests_api/test_auth_completo.py` (que ya cubre list/retrieve,
+Complementa `tests/api/test_auth_completo.py` (que ya cubre list/retrieve,
 aislamiento multi-tenant y 401 de gastos, categorías y reembolsos) cubriendo
 los @action que estaban sin tests:
 

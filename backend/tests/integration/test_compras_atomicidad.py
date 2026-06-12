@@ -1,14 +1,14 @@
 """
 TEST-5 — Atomicidad del flujo de compras (R-CODE-11 + @transaction.atomic).
 
-Los tests de servicio existentes (`tests_api/test_m6_compras.py`) cubren el camino
+Los tests de servicio existentes (`tests/integration/test_m6_compras.py`) cubren el camino
 feliz y el best-effort (contabilidad inactiva → procede sin asiento). Lo que faltaba
 —y es la invariante crítica— es probar a NIVEL DE FLUJO que, cuando la empresa exige
 contabilidad (`contabilidad_activa=True`) y **falta el mapeo contable**, el asiento
 falla duro y **toda la operación se revierte**: no queda recepción, ni movimiento de
 inventario, ni stock incrementado, ni cuenta por pagar a medias.
 
-Esto complementa `tests_api/test_rcode11_centralizado.py`, que sólo verifica la política
+Esto complementa `tests/integration/test_rcode11_centralizado.py`, que sólo verifica la política
 del helper `generar_asiento_o_fallar` con mocks, sin ejercer la transacción real del flujo.
 """
 
