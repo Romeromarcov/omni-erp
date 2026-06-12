@@ -404,3 +404,17 @@ class PagoAdmin(admin.ModelAdmin):
         ),
         ("Auditoría", {"fields": ("fecha_creacion", "fecha_actualizacion"), "classes": ("collapse",)}),
     )
+
+
+# ── Pagos de terceros (Zelle) — Capa B §6.6 ──────────────────────────────────
+
+from .models import PagoTercero  # noqa: E402
+
+
+@admin.register(PagoTercero)
+class PagoTerceroAdmin(admin.ModelAdmin):
+    list_display = ("referencia_zelle", "id_empresa", "id_proveedor", "monto", "comision", "estado", "fecha")
+    list_filter = ("estado", "fecha")
+    search_fields = ("referencia_zelle", "concepto", "id_proveedor__razon_social")
+    readonly_fields = ("id_pago_tercero", "id_abono_cxp", "id_cxc_reintegro", "fecha_creacion", "fecha_actualizacion")
+    date_hierarchy = "fecha"

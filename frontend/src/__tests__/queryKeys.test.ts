@@ -9,6 +9,8 @@ import {
   ventasKeys,
   cxcKeys,
   finanzasKeys,
+  rrhhKeys,
+  nominaKeys,
 } from '../lib/queryKeys';
 
 describe('queryKeys factory', () => {
@@ -108,5 +110,26 @@ describe('queryKeys factory', () => {
       'COTIZACION',
       'q1',
     ]);
+  });
+
+  it('rrhh y nomina: lista, detalle y recibos comparten el prefijo de su familia', () => {
+    // RRHH: crear/editar un empleado invalida lista, detalle y la variante por empresa.
+    const empAll = rrhhKeys.empleadosAll();
+    expect(rrhhKeys.empleados(2).slice(0, empAll.length)).toEqual(empAll);
+    expect(rrhhKeys.empleados()).toEqual(['rrhh', 'empleados', 'list', 1]);
+    expect(rrhhKeys.empleado('7').slice(0, empAll.length)).toEqual(empAll);
+    expect(rrhhKeys.empleadosDeEmpresa('e1').slice(0, empAll.length)).toEqual(empAll);
+    expect(rrhhKeys.empleadosDeEmpresa()).toEqual(['rrhh', 'empleados', 'empresa', null]);
+    // El catálogo de cargos NO cuelga de la familia de empleados.
+    expect(rrhhKeys.cargos().slice(0, empAll.length)).not.toEqual(empAll);
+
+    // Nómina: procesar invalida lista, detalle y recibos con un solo prefijo.
+    const procAll = nominaKeys.procesosAll();
+    expect(nominaKeys.procesos(3).slice(0, procAll.length)).toEqual(procAll);
+    expect(nominaKeys.procesos()).toEqual(['nomina', 'procesos', 'list', 1]);
+    expect(nominaKeys.proceso('p1').slice(0, procAll.length)).toEqual(procAll);
+    expect(nominaKeys.recibos('p1').slice(0, procAll.length)).toEqual(procAll);
+    // Los períodos NO deben invalidarse al procesar.
+    expect(nominaKeys.periodos().slice(0, procAll.length)).not.toEqual(procAll);
   });
 });

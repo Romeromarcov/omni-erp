@@ -135,6 +135,29 @@ export const cxpKeys = {
   aging: (empresaId?: string | null) => ['cxp', 'aging', empresaId ?? null] as const,
 };
 
+// ── RRHH (workstream F) ───────────────────────────────────────────────────────
+// Prefijo compartido `['rrhh', 'empleados']` para invalidar lista, detalle y
+// la variante por-empresa de una vez tras crear/editar un empleado.
+export const rrhhKeys = {
+  empleadosAll: () => ['rrhh', 'empleados'] as const,
+  empleados: (page?: number) => ['rrhh', 'empleados', 'list', page ?? 1] as const,
+  empleado: (id: string) => ['rrhh', 'empleados', 'detail', id] as const,
+  empleadosDeEmpresa: (empresaId?: string | null) =>
+    ['rrhh', 'empleados', 'empresa', empresaId ?? null] as const,
+  cargos: () => ['rrhh', 'cargos'] as const,
+};
+
+// ── Nómina (workstream F) ─────────────────────────────────────────────────────
+// Prefijo compartido `['nomina', 'procesos']` para que procesar invalide lista,
+// detalle y recibos del proceso a la vez.
+export const nominaKeys = {
+  procesosAll: () => ['nomina', 'procesos'] as const,
+  procesos: (page?: number) => ['nomina', 'procesos', 'list', page ?? 1] as const,
+  proceso: (id: string) => ['nomina', 'procesos', 'detail', id] as const,
+  recibos: (procesoId: string) => ['nomina', 'procesos', 'recibos', procesoId] as const,
+  periodos: () => ['nomina', 'periodos'] as const,
+};
+
 // ── Manufactura (1.I) ─────────────────────────────────────────────────────────
 // Prefijo compartido `['manufactura', 'ordenes']` para que la invalidación por
 // familia refresque lista, detalle, etapas y costeo de una OF a la vez.
@@ -146,4 +169,48 @@ export const manufacturaKeys = {
   costeo: (ordenId: string) => ['manufactura', 'ordenes', 'costeo', ordenId] as const,
   mrp: (ordenId: string, almacenId?: string | null) =>
     ['manufactura', 'ordenes', 'mrp', ordenId, almacenId ?? null] as const,
+};
+
+// ── Contabilidad (workstream F) ───────────────────────────────────────────────
+// Prefijo `['contabilidad', …]` por recurso; `asientosAll`/`mapeosAll` permiten
+// invalidar la familia completa tras crear cuentas, asientos o mapeos.
+export const contabilidadKeys = {
+  planCuentas: () => ['contabilidad', 'plan-cuentas'] as const,
+  asientosAll: () => ['contabilidad', 'asientos'] as const,
+  asientos: (page?: number, filtros?: { estado?: string; fechaDesde?: string; fechaHasta?: string }) =>
+    [
+      'contabilidad',
+      'asientos',
+      'list',
+      page ?? 1,
+      filtros?.estado ?? null,
+      filtros?.fechaDesde ?? null,
+      filtros?.fechaHasta ?? null,
+    ] as const,
+  asiento: (id: string) => ['contabilidad', 'asientos', 'detail', id] as const,
+  detallesAsiento: (asientoId: string) => ['contabilidad', 'asientos', 'detalles', asientoId] as const,
+  mapeosAll: () => ['contabilidad', 'mapeos'] as const,
+  tiposAsiento: () => ['contabilidad', 'tipos-asiento'] as const,
+};
+
+// ── Tesorería (workstream F) ──────────────────────────────────────────────────
+export const tesoreriaKeys = {
+  movimientosAll: () => ['tesoreria', 'movimientos-bancarios'] as const,
+  movimientos: (page?: number, filtros?: { cuenta?: string; estado?: string }) =>
+    [
+      'tesoreria',
+      'movimientos-bancarios',
+      'list',
+      page ?? 1,
+      filtros?.cuenta ?? null,
+      filtros?.estado ?? null,
+    ] as const,
+  conciliacionesAll: () => ['tesoreria', 'conciliaciones'] as const,
+  conciliaciones: (page?: number) => ['tesoreria', 'conciliaciones', 'list', page ?? 1] as const,
+  conciliacion: (id: string) => ['tesoreria', 'conciliaciones', 'detail', id] as const,
+  operacionesCambioAll: () => ['tesoreria', 'operaciones-cambio'] as const,
+  operacionesCambio: (page?: number) => ['tesoreria', 'operaciones-cambio', 'list', page ?? 1] as const,
+  cuentasBancarias: (empresaId?: string | null) =>
+    ['tesoreria', 'cuentas-bancarias', empresaId ?? null] as const,
+  cajas: (empresaId?: string | null) => ['tesoreria', 'cajas', empresaId ?? null] as const,
 };

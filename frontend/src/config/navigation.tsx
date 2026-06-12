@@ -6,7 +6,10 @@ import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWall
 import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
+import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
+import SavingsOutlined from '@mui/icons-material/SavingsOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
+import BadgeOutlined from '@mui/icons-material/BadgeOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
@@ -117,6 +120,26 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       ],
     },
     {
+      id: 'contabilidad',
+      label: 'Contabilidad',
+      icon: <MenuBookOutlined />,
+      items: [
+        { label: 'Plan de Cuentas', path: '/contabilidad/plan-cuentas' },
+        { label: 'Asientos Contables', path: '/contabilidad/asientos' },
+        { label: 'Mapeos Contables', path: '/contabilidad/mapeos' },
+      ],
+    },
+    {
+      id: 'tesoreria',
+      label: 'Tesorería',
+      icon: <SavingsOutlined />,
+      items: [
+        { label: 'Movimientos Bancarios', path: '/tesoreria/movimientos-bancarios' },
+        { label: 'Conciliación Bancaria', path: '/tesoreria/conciliaciones' },
+        { label: 'Cambio de Divisa', path: '/tesoreria/cambio-divisa' },
+      ],
+    },
+    {
       id: 'cobranza',
       label: 'Cobranza (CxC)',
       icon: <RequestQuoteOutlined />,
@@ -126,6 +149,15 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Gestiones', path: '/cobranza/gestiones' },
         { label: 'Acuerdos de Pago', path: '/cobranza/acuerdos' },
         { label: 'Agente IA', path: '/cobranza/agente' },
+      ],
+    },
+    {
+      id: 'rrhh',
+      label: 'RRHH',
+      icon: <BadgeOutlined />,
+      items: [
+        { label: 'Empleados', path: '/rrhh/empleados' },
+        { label: 'Nómina', path: '/nomina/procesos' },
       ],
     },
     {

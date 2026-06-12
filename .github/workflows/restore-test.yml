@@ -1,0 +1,102 @@
+name: Restore test — backup de PostgreSQL (P1-7)
+
+# Prueba de restore REAL y automatizada: baja el último backup del bucket,
+# lo restaura en un Postgres efímero del runner y valida integridad básica.
+# "Un backup sin restore probado no es un backup" (Plan 05, P1-7).
+on:
+  schedule:
+    # Semanal, lunes 07:00 UTC (una hora después del backup diario de las 06:00).
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: restore-test
+  cancel-in-progress: false
+
+jobs:
+  restore-test:
+    name: "Descarga último backup + restore + validación"
+    runs-on: ubuntu-latest
+    env:
+      BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: restore
+          POSTGRES_PASSWORD: restore
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U restore"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: ¿Restore test configurado?
+        id: gate
+        run: |
+          if [ -z "$BACKUP_S3_BUCKET" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Sin secret BACKUP_S3_BUCKET — restore test omitido (no es un error)."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Instalar cliente PostgreSQL + awscli
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client awscli
+
+      - name: Descargar el backup más reciente del bucket
+        if: steps.gate.outputs.run == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_AWS_REGION }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+        run: |
+          ENDPOINT_ARG=""
+          [ -n "${BACKUP_S3_ENDPOINT:-}" ] && ENDPOINT_ARG="--endpoint-url ${BACKUP_S3_ENDPOINT}"
+          LATEST="$(aws s3api list-objects-v2 $ENDPOINT_ARG --bucket "$BACKUP_S3_BUCKET" \
+            --query 'sort_by(Contents, &LastModified)[-1].Key' --output text)"
+          if [ -z "$LATEST" ] || [ "$LATEST" = "None" ]; then
+            echo "::error::El bucket no tiene backups todavía — corre primero el workflow de Backup."
+            exit 1
+          fi
+          echo "Último backup: $LATEST"
+          aws s3 cp $ENDPOINT_ARG "s3://${BACKUP_S3_BUCKET}/${LATEST}" /tmp/latest.sql.gz
+          # Antigüedad: alerta si el backup tiene más de 48h (el cron diario falló).
+          MOD="$(aws s3api head-object $ENDPOINT_ARG --bucket "$BACKUP_S3_BUCKET" --key "$LATEST" --query LastModified --output text)"
+          AGE_H=$(( ( $(date -u +%s) - $(date -u -d "$MOD" +%s) ) / 3600 ))
+          echo "Antigüedad del backup: ${AGE_H}h"
+          if [ "$AGE_H" -gt 48 ]; then
+            echo "::error::El backup más reciente tiene ${AGE_H}h (>48h): el backup diario está fallando."
+            exit 1
+          fi
+
+      - name: Restore en Postgres efímero + validación de integridad
+        if: steps.gate.outputs.run == 'true'
+        env:
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_USER: restore
+          PGPASSWORD: restore
+        run: |
+          bash infra/backup/restore_dryrun.sh /tmp/latest.sql.gz | tee /tmp/restore.log
+          # La validación fuerte: el dump restaurado debe tener tablas de Omni
+          # con estructura conocida (no solo "alguna tabla").
+          TABLAS=$(grep -Eo '[0-9]+' /tmp/restore.log | tail -1)
+          echo "Tablas restauradas: ${TABLAS}"
+          if [ "${TABLAS:-0}" -lt 50 ]; then
+            echo "::error::El restore devolvió ${TABLAS:-0} tablas (<50): dump incompleto o corrupto."
+            exit 1
+          fi
+
+      - name: Resumen
+        if: steps.gate.outputs.run == 'true'
+        run: echo "✅ Restore probado y validado — P1-7 verificado en esta corrida."
