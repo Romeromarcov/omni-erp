@@ -41,6 +41,7 @@ TIPOS_ASIENTO = frozenset(
         "NOMINA",              # CTF-013: asiento del proceso de nómina LOTTT
         "CAMBIO_DIVISA",       # CTF-013: asiento de la operación de cambio de divisa
         "PAGO_TERCERO",        # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro
+        "PAGO_PARAFISCAL",     # Capa B §6.7: pago de contribución parafiscal (IVSS/FAOV/INCES…)
     }
 )
 

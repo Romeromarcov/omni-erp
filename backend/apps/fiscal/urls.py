@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import ConfiguracionFiscalEmpresaViewSet, TasaIVAEmpresaViewSet
+from .views_parafiscales import PagoContribucionParafiscalViewSet
 from .views_libros import (
     CerrarPeriodoFiscalView,
     LibroComprasPDFView,
@@ -14,6 +15,7 @@ from .views_libros import (
 router = DefaultRouter()
 router.register(r"configuracion-fiscal", ConfiguracionFiscalEmpresaViewSet)
 router.register(r"tasas-iva", TasaIVAEmpresaViewSet)
+router.register(r"pagos-parafiscales", PagoContribucionParafiscalViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
