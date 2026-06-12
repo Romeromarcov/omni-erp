@@ -1238,7 +1238,7 @@ class PagoViewSet(BaseModelViewSet):
     # los GET siguen bajo los throttles globales anon/user.
     from apps.core.throttling import EscrituraRateThrottle as _EscrituraRateThrottle
 
-    throttle_classes = BaseModelViewSet.throttle_classes + [_EscrituraRateThrottle]
+    throttle_classes = [*BaseModelViewSet.throttle_classes, _EscrituraRateThrottle]
 
     def perform_create(self, serializer):
         # BUG-C2: los side-effects financieros (TransaccionFinanciera +

@@ -32,7 +32,7 @@ class AbonoCxCViewSet(BaseModelViewSet):
 
     # P1-1: techo estricto para escritura de pagos (scope 'escritura');
     # los GET siguen bajo los throttles globales anon/user.
-    throttle_classes = BaseModelViewSet.throttle_classes + [EscrituraRateThrottle]
+    throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
 
     # BUG-C1: sin PUT/PATCH/DELETE — DRF responde 405 Method Not Allowed.
     http_method_names = ["get", "post", "head", "options"]

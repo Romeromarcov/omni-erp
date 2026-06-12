@@ -10,7 +10,7 @@ class AbonoCxPViewSet(BaseModelViewSet):
     serializer_class = AbonoCxPSerializer
 
     # P1-1: techo estricto para escritura de pagos (scope 'escritura').
-    throttle_classes = BaseModelViewSet.throttle_classes + [EscrituraRateThrottle]
+    throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
 
     def get_queryset(self):
         empresas = get_empresas_visible(self.request.user)
