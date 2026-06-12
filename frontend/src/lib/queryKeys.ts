@@ -135,6 +135,29 @@ export const cxpKeys = {
   aging: (empresaId?: string | null) => ['cxp', 'aging', empresaId ?? null] as const,
 };
 
+// ── RRHH (workstream F) ───────────────────────────────────────────────────────
+// Prefijo compartido `['rrhh', 'empleados']` para invalidar lista, detalle y
+// la variante por-empresa de una vez tras crear/editar un empleado.
+export const rrhhKeys = {
+  empleadosAll: () => ['rrhh', 'empleados'] as const,
+  empleados: (page?: number) => ['rrhh', 'empleados', 'list', page ?? 1] as const,
+  empleado: (id: string) => ['rrhh', 'empleados', 'detail', id] as const,
+  empleadosDeEmpresa: (empresaId?: string | null) =>
+    ['rrhh', 'empleados', 'empresa', empresaId ?? null] as const,
+  cargos: () => ['rrhh', 'cargos'] as const,
+};
+
+// ── Nómina (workstream F) ─────────────────────────────────────────────────────
+// Prefijo compartido `['nomina', 'procesos']` para que procesar invalide lista,
+// detalle y recibos del proceso a la vez.
+export const nominaKeys = {
+  procesosAll: () => ['nomina', 'procesos'] as const,
+  procesos: (page?: number) => ['nomina', 'procesos', 'list', page ?? 1] as const,
+  proceso: (id: string) => ['nomina', 'procesos', 'detail', id] as const,
+  recibos: (procesoId: string) => ['nomina', 'procesos', 'recibos', procesoId] as const,
+  periodos: () => ['nomina', 'periodos'] as const,
+};
+
 // ── Manufactura (1.I) ─────────────────────────────────────────────────────────
 // Prefijo compartido `['manufactura', 'ordenes']` para que la invalidación por
 // familia refresque lista, detalle, etapas y costeo de una OF a la vez.

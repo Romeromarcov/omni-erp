@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { toList, toCount } from '../utils/api';
+import { toList, toCount, statusDeError } from '../utils/api';
+import type { HttpError } from '../services/api';
 
 describe('toList', () => {
   it('returns the array as-is when given a plain array', () => {
@@ -30,5 +31,25 @@ describe('toCount', () => {
 
   it('returns 0 for an empty object', () => {
     expect(toCount({} as never)).toBe(0);
+  });
+});
+
+describe('statusDeError', () => {
+  it('devuelve el status adjuntado por services/api.buildError', () => {
+    const err: HttpError = new Error('{"error":"falta mapeo NOMINA"}');
+    err.status = 422;
+    expect(statusDeError(err)).toBe(422);
+  });
+
+  it('devuelve undefined para errores sin status (red, código)', () => {
+    expect(statusDeError(new Error('network down'))).toBeUndefined();
+    expect(statusDeError('no soy un Error')).toBeUndefined();
+    expect(statusDeError(undefined)).toBeUndefined();
+  });
+
+  it('ignora un status que no sea numérico', () => {
+    const err = new Error('x') as Error & { status?: unknown };
+    err.status = 'malo';
+    expect(statusDeError(err)).toBeUndefined();
   });
 });

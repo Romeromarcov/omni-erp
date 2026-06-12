@@ -249,10 +249,115 @@
       "error": "Error al registrar el abono."
     }
   },
+  "rrhh": {
+    "title": "RRHH",
+    "empleados": {
+      "title": "Empleados",
+      "subtitle": "Personal de la empresa: datos básicos, cargo y salario para nómina",
+      "empty": "No hay empleados registrados.",
+      "nombre": "Nombre",
+      "cedula": "Cédula",
+      "cargo": "Cargo",
+      "fechaIngreso": "Fecha de ingreso",
+      "estado": "Estado",
+      "ver": "Ver detalle",
+      "nuevo": "Nuevo empleado"
+    },
+    "form": {
+      "titleNuevo": "Nuevo Empleado",
+      "titleEditar": "Editar Empleado",
+      "subtitle": "El salario mensual se guarda como decimal exacto y alimenta el cálculo de nómina",
+      "nombre": "Nombre",
+      "apellido": "Apellido",
+      "cedula": "Cédula",
+      "cargo": "Cargo",
+      "sinCargo": "Sin cargo",
+      "fechaIngreso": "Fecha de ingreso",
+      "salario": "Salario mensual",
+      "salarioAyuda": "Opcional; si se omite, nómina usa el salario mínimo configurado",
+      "activo": "Empleado activo",
+      "crear": "Crear empleado",
+      "guardar": "Guardar cambios",
+      "creado": "Empleado creado.",
+      "actualizado": "Empleado actualizado.",
+      "error": "No se pudo guardar el empleado.",
+      "sinEmpresa": "Seleccione una empresa activa antes de crear empleados."
+    },
+    "detalle": {
+      "title": "Empleado",
+      "sinSalario": "Sin salario definido"
+    }
+  },
+  "nomina": {
+    "title": "Nómina",
+    "sinEmpresa": "Seleccione una empresa activa para continuar.",
+    "procesos": {
+      "title": "Procesos de Nómina",
+      "subtitle": "Corridas de nómina LOTTT por período: procesar genera recibos y asiento contable",
+      "empty": "No hay procesos de nómina registrados.",
+      "numero": "Número",
+      "periodo": "Período",
+      "fecha": "Fecha",
+      "empleados": "Empleados",
+      "totalNeto": "Total neto",
+      "estado": "Estado",
+      "ver": "Ver detalle",
+      "nuevo": "Nuevo proceso",
+      "crear": "Crear proceso",
+      "creado": "Proceso {{numero}} creado.",
+      "errorCrear": "No se pudo crear el proceso.",
+      "sinPeriodos": "La empresa no tiene períodos de nómina; cree uno primero."
+    },
+    "periodos": {
+      "nuevo": "Nuevo período",
+      "crear": "Crear período",
+      "creado": "Período {{nombre}} creado.",
+      "errorCrear": "No se pudo crear el período.",
+      "nombre": "Nombre del período",
+      "tipo": "Tipo de período",
+      "fechaInicio": "Fecha de inicio",
+      "fechaFin": "Fecha de fin",
+      "fechaPago": "Fecha de pago",
+      "tipos": {
+        "SEMANAL": "Semanal",
+        "QUINCENAL": "Quincenal",
+        "MENSUAL": "Mensual",
+        "ANUAL": "Anual"
+      }
+    },
+    "detalle": {
+      "title": "Proceso",
+      "procesar": "Procesar",
+      "procesarTitulo": "Procesar nómina del período",
+      "procesarAyuda": "Indique los datos variables por empleado; los campos vacíos usan los valores por defecto del motor (30 días, sin horas extra). Los montos se calculan con precisión decimal.",
+      "confirmarProcesar": "Procesar nómina",
+      "procesadoOk": "Nómina procesada. Total neto: {{neto}}.",
+      "errorProcesar": "No se pudo procesar la nómina.",
+      "faltaMapeo": "Falta el mapeo contable NOMINA para generar el asiento del proceso.",
+      "irAMapeos": "Configurar mapeos",
+      "recibosInmutables": "Los recibos emitidos son inmutables: este proceso ya no puede re-procesarse. Para recalcular, cancele este proceso y cree uno nuevo.",
+      "horasExtraDiurnas": "Horas extra diurnas",
+      "horasExtraNocturnas": "Horas extra nocturnas",
+      "bonoNocturno": "Bono nocturno",
+      "horasNocturnas": "Horas nocturnas",
+      "sinSalario": "Sin salario definido",
+      "sinEmpleadosActivos": "La empresa no tiene empleados activos para procesar.",
+      "empleado": "Empleado",
+      "sueldoBase": "Sueldo base",
+      "devengado": "Devengado",
+      "deducciones": "Deducciones",
+      "neto": "Neto",
+      "recibos": "Recibos por empleado",
+      "sinRecibos": "Este proceso no tiene recibos.",
+      "sinRecibosEnProceso": "Aún no hay recibos: procese la nómina para generarlos.",
+      "totalNetoRecibos": "Total neto"
+    }
+  },
   "offline": {
     "banner": "Sin conexión — mostrando datos guardados",
     "pending_one": "1 cambio pendiente se enviará al volver la conexión",
     "pending_other": "{{count}} cambios pendientes se enviarán al volver la conexión",
     "restored": "Conexión restablecida — sincronizando…",
-    "stale": "Datos sin actualizar"  }
+    "stale": "Datos sin actualizar"
+  }
 }

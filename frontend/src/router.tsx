@@ -15,6 +15,7 @@ import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 import { manufacturaRoutes } from './routes/manufacturaRoutes';
 import { comprasRoutes } from './routes/comprasRoutes';
+import { rrhhRoutes } from './routes/rrhhRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
 import { isModuleEnabled } from './config/appProfile';
@@ -69,6 +70,7 @@ export default function AppRouter() {
             {cxcRoutes()}
             {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
             {isModuleEnabled('compras') ? comprasRoutes() : null}
+            {isModuleEnabled('rrhh') ? rrhhRoutes() : null}
             {isModuleEnabled('escaner') ? escanerRoutes() : null}
             {saasRoutes()}
           </Route>

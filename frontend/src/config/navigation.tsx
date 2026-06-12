@@ -7,6 +7,7 @@ import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufac
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
+import BadgeOutlined from '@mui/icons-material/BadgeOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
@@ -126,6 +127,15 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Gestiones', path: '/cobranza/gestiones' },
         { label: 'Acuerdos de Pago', path: '/cobranza/acuerdos' },
         { label: 'Agente IA', path: '/cobranza/agente' },
+      ],
+    },
+    {
+      id: 'rrhh',
+      label: 'RRHH',
+      icon: <BadgeOutlined />,
+      items: [
+        { label: 'Empleados', path: '/rrhh/empleados' },
+        { label: 'Nómina', path: '/nomina/procesos' },
       ],
     },
     {
