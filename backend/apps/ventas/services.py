@@ -19,7 +19,7 @@ actualiza al total fiscal — nunca se crea una segunda.
 
 import logging
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import models, transaction
 from django.utils import timezone
@@ -675,4 +675,386 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
         "asiento_iva": asiento_iva,
         "asiento_iva_error": asiento_iva_error,
         "cxc": cxc,
+    }
+
+
+# ── registrar_devolucion_pos (1.G) ────────────────────────────────────────────
+
+
+def _cantidades_devueltas_por_producto(nota_venta) -> dict:
+    """
+    Acumulado de cantidades ya devueltas de una venta, por producto.
+
+    Cuenta solo devoluciones vivas (PENDIENTE/APROBADA/PROCESADA); las
+    RECHAZADAS y ANULADAS no consumen el cupo devolvible.
+    """
+    from apps.ventas.models import DetalleDevolucionVenta
+
+    filas = (
+        DetalleDevolucionVenta.objects.filter(
+            id_devolucion__id_nota_venta_origen=nota_venta,
+            id_devolucion__id_empresa=nota_venta.id_empresa,
+            id_devolucion__estado__in=("PENDIENTE", "APROBADA", "PROCESADA"),
+        )
+        .values("id_producto")
+        .annotate(total=models.Sum("cantidad_devuelta"))
+    )
+    return {fila["id_producto"]: fila["total"] for fila in filas}
+
+
+def _factura_de_la_venta(nota_venta):
+    """FacturaFiscal viva de la venta (None si la venta no fue fiscal)."""
+    factura = getattr(nota_venta, "id_factura_resultante", None)
+    if factura is None:
+        return None
+    if factura.id_empresa_id != nota_venta.id_empresa_id:  # R-CODE-1: defensa en profundidad
+        return None
+    return factura
+
+
+@transaction.atomic
+def registrar_devolucion_pos(
+    nota_venta,
+    lineas,
+    almacen,
+    usuario,
+    metodo_pago,
+    motivo: str = "CAMBIO_CLIENTE",
+    observaciones: str | None = None,
+) -> dict:
+    """
+    Registra la devolución (total o parcial por líneas) de una venta POS, todo
+    en UNA transacción (R-CODE-11):
+
+      1. Reingreso del stock al almacén (MovimientoInventario tipo ENTRADA por línea).
+      2. Nota de crédito:
+         - venta FISCAL (la nota tiene FacturaFiscal viva) → NotaCreditoFiscal
+           espejo de la factura: correlativo NOTA_CREDITO, numero_control
+           compartido con la factura e IVA proporcional al de la factura;
+         - venta NO fiscal → NotaCreditoVenta interna (correlativo NOTA_CREDITO_VENTA),
+           enlazada en DevolucionVenta.id_nota_credito_generada.
+      3. Reverso del dinero: Pago EGRESO sobre la caja física de la SESIÓN DE
+         CAJA ABIERTA del usuario + registrar_efectos_pago (TransaccionFinanciera
+         y saldos) — el mismo mecanismo con el que el POS registró el cobro.
+      4. Asiento contable de reverso (espejo del asiento de venta):
+         DEVOLUCION_VENTA por el total devuelto y DEVOLUCION_VENTA_IVA por el
+         IVA (política H-BUG-2: obligatorio si la empresa es contribuyente).
+
+    Validaciones: venta ENTREGADA o FACTURADA, almacén y método de pago de la
+    misma empresa (R-CODE-1), líneas de la venta original, y acumulado por
+    producto: nunca se devuelve más de lo vendido (lock de la venta para
+    serializar devoluciones concurrentes).
+
+    Args:
+        nota_venta:   NotaVenta original (la venta POS a devolver).
+        lineas:       iterable de dicts {"id_detalle": uuid, "cantidad": Decimal-able}
+                      con id_detalle = pk de DetalleNotaVenta de la venta.
+        almacen:      Almacen que recibe el reingreso de stock.
+        usuario:      Usuarios que registra la devolución (cajero).
+        metodo_pago:  MetodoPago con el que se reembolsa.
+        motivo:       choice de DevolucionVenta.motivo_devolucion.
+        observaciones: texto libre opcional.
+
+    Returns:
+        dict con devolucion, nota_credito_fiscal | nota_credito_venta, pago,
+        movimientos, sesion_caja, asiento/asiento_error, asiento_iva/asiento_iva_error.
+    """
+    from apps.finanzas.models import Pago, SesionCajaFisica
+    from apps.finanzas.services import registrar_efectos_pago
+    from apps.fiscal.services import siguiente_numero
+    from apps.ventas.models import (
+        DetalleDevolucionVenta,
+        DetalleNotaCreditoFiscal,
+        DetalleNotaCreditoVenta,
+        DevolucionVenta,
+        NotaCreditoFiscal,
+        NotaCreditoVenta,
+        NotaVenta,
+    )
+
+    # Lock de la venta: dos devoluciones simultáneas de la misma venta deben
+    # serializar el chequeo de "no devolver más de lo vendido".
+    nota_venta = NotaVenta.objects.select_for_update().get(pk=nota_venta.pk)
+    empresa = nota_venta.id_empresa
+
+    if nota_venta.estado not in ("ENTREGADA", "FACTURADA"):
+        raise VentaError(
+            "Solo se devuelven ventas ENTREGADAS o FACTURADAS (la mercancía debe "
+            f"haber salido del almacén). Estado actual: {nota_venta.estado}"
+        )
+    if almacen.id_empresa_id != empresa.pk:  # R-CODE-1
+        raise VentaError("El almacén no pertenece a la empresa de la venta.")
+    if metodo_pago.empresa_id is not None and metodo_pago.empresa_id != empresa.pk:  # R-CODE-1
+        raise VentaError("El método de pago no pertenece a la empresa de la venta.")
+
+    factura = _factura_de_la_venta(nota_venta)
+    if factura is not None and factura.estado == "ANULADA":
+        raise VentaError("La factura de la venta está ANULADA; no se puede emitir nota de crédito.")
+
+    motivos_validos = {m for m, _ in DevolucionVenta._meta.get_field("motivo_devolucion").choices}
+    if motivo not in motivos_validos:
+        raise VentaError(f"Motivo de devolución inválido: {motivo!r}. Válidos: {sorted(motivos_validos)}")
+
+    # ── Sesión de caja abierta del cajero (el reembolso sale de SU caja) ─────
+    sesion = (
+        SesionCajaFisica.objects.select_related("caja_fisica")
+        .filter(empresa=empresa, usuario=usuario, estado="ABIERTA")
+        .order_by("-fecha_apertura")
+        .first()
+    )
+    if sesion is None:
+        raise VentaError("Se requiere una sesión de caja ABIERTA para registrar la devolución.")
+
+    # ── Validar líneas contra la venta original ──────────────────────────────
+    detalles_venta = {
+        str(d.id_detalle_nota_venta): d
+        for d in nota_venta.detalles.select_related("id_producto")
+    }
+    if not detalles_venta:
+        raise VentaError("La venta no tiene líneas de detalle.")
+    if not lineas:
+        raise VentaError("Indica al menos una línea a devolver.")
+
+    solicitadas: list[tuple] = []  # [(detalle, cantidad)]
+    solicitado_por_producto: dict = {}
+    for linea in lineas:
+        id_detalle = str(linea.get("id_detalle") or "")
+        detalle = detalles_venta.get(id_detalle)
+        if detalle is None:
+            raise VentaError(f"La línea {id_detalle or '?'} no pertenece a esta venta.")
+        try:
+            cantidad = Decimal(str(linea.get("cantidad")))
+        except Exception as exc:  # InvalidOperation/TypeError → entrada inválida
+            raise VentaError(f"Cantidad inválida para la línea {id_detalle}.") from exc
+        if cantidad <= 0:
+            raise VentaError("La cantidad a devolver debe ser mayor que cero.")
+        solicitadas.append((detalle, cantidad))
+        pid = detalle.id_producto_id
+        solicitado_por_producto[pid] = solicitado_por_producto.get(pid, Decimal("0")) + cantidad
+
+    # No devolver más de lo vendido: acumulado por producto contra la venta.
+    vendido_por_producto: dict = {}
+    for d in detalles_venta.values():
+        vendido_por_producto[d.id_producto_id] = (
+            vendido_por_producto.get(d.id_producto_id, Decimal("0")) + d.cantidad
+        )
+    devuelto_por_producto = _cantidades_devueltas_por_producto(nota_venta)
+    for pid, cantidad_nueva in solicitado_por_producto.items():
+        vendido = vendido_por_producto.get(pid, Decimal("0"))
+        ya_devuelto = devuelto_por_producto.get(pid, Decimal("0"))
+        if ya_devuelto + cantidad_nueva > vendido:
+            producto = next(
+                d.id_producto for d in detalles_venta.values() if d.id_producto_id == pid
+            )
+            raise VentaError(
+                f"No se puede devolver más de lo vendido para '{producto.nombre_producto}': "
+                f"vendido {vendido}, ya devuelto {ya_devuelto}, solicitado {cantidad_nueva}."
+            )
+
+    # ── Montos (R-CODE-4: Decimal siempre) ───────────────────────────────────
+    CENT = Decimal("0.01")
+    lineas_calculadas = []  # [(detalle, cantidad, subtotal, iva_linea)]
+    base_devuelta = Decimal("0")
+    iva_devuelto = Decimal("0")
+    for detalle, cantidad in solicitadas:
+        subtotal = (cantidad * detalle.precio_unitario).quantize(Decimal("0.0001"))
+        # IVA espejo de la factura: proporcional a la tasa efectiva facturada
+        # (monto_iva/base_imponible), NO a la tasa vigente — la NC debe reflejar
+        # el impuesto realmente cobrado en la factura original.
+        iva_linea = Decimal("0")
+        if factura is not None and factura.base_imponible and factura.base_imponible > 0:
+            iva_linea = (subtotal * factura.monto_iva / factura.base_imponible).quantize(
+                CENT, rounding=ROUND_HALF_UP
+            )
+        lineas_calculadas.append((detalle, cantidad, subtotal, iva_linea))
+        base_devuelta += subtotal
+        iva_devuelto += iva_linea
+    total_devuelto = base_devuelta + iva_devuelto
+
+    moneda = factura.id_moneda if factura is not None else getattr(empresa, "id_moneda_base", None)
+    if moneda is None:
+        raise VentaError("Configure la moneda base de la empresa antes de registrar devoluciones.")
+
+    # ── Documento de devolución ──────────────────────────────────────────────
+    hoy = timezone.now().date()
+    devolucion = DevolucionVenta.objects.create(
+        id_empresa=empresa,
+        id_cliente=nota_venta.id_cliente,
+        id_factura_origen=factura,
+        id_nota_venta_origen=nota_venta,
+        numero_devolucion=siguiente_numero(empresa, "DEVOLUCION"),
+        fecha_devolucion=hoy,
+        motivo_devolucion=motivo,
+        estado="PROCESADA",
+        monto_total=total_devuelto,
+        id_moneda=moneda,
+        observaciones=observaciones,
+    )
+    DetalleDevolucionVenta.objects.bulk_create(
+        [
+            DetalleDevolucionVenta(
+                id_devolucion=devolucion,
+                id_producto=detalle.id_producto,
+                cantidad_devuelta=cantidad,
+                precio_unitario=detalle.precio_unitario,
+                subtotal=subtotal,
+                estado_producto="BUENO",
+                accion_inventario="REINTEGRAR",
+            )
+            for detalle, cantidad, subtotal, _iva in lineas_calculadas
+        ]
+    )
+
+    # ── 1. Reingreso de stock ────────────────────────────────────────────────
+    movimientos = []
+    for detalle, cantidad, _subtotal, _iva in lineas_calculadas:
+        try:
+            mov = registrar_movimiento(
+                empresa=empresa,
+                fecha_hora_movimiento=timezone.now(),
+                tipo_movimiento="ENTRADA",
+                producto=detalle.id_producto,
+                cantidad=cantidad,
+                almacen_destino=almacen,
+                documento_origen_id=devolucion.id_devolucion,
+                nombre_modelo_origen="DevolucionVenta",
+                usuario=usuario,
+                observaciones=(
+                    f"Devolución {devolucion.numero_devolucion} de venta {nota_venta.numero_nota}"
+                ),
+            )
+        except (StockInsuficienteError, MovimientoInvalidoError) as exc:
+            raise VentaError(str(exc)) from exc
+        movimientos.append(mov)
+
+    # ── 2. Nota de crédito (fiscal si la venta fue fiscal) ───────────────────
+    nota_credito_fiscal = None
+    nota_credito_venta = None
+    if factura is not None:
+        nota_credito_fiscal = NotaCreditoFiscal.objects.create(
+            id_empresa=empresa,
+            id_cliente=nota_venta.id_cliente,
+            id_factura_origen=factura,
+            # Correlativo fiscal existente de NC + número de control compartido
+            # con la factura (semántica del modelo NotaCreditoFiscal).
+            numero_nota_credito=siguiente_numero(empresa, "NOTA_CREDITO"),
+            numero_control=factura.numero_control,
+            fecha_emision=hoy,
+            base_imponible=base_devuelta,
+            monto_iva=iva_devuelto,
+            monto_total=total_devuelto,
+            id_moneda=factura.id_moneda,
+            tasa_cambio=factura.tasa_cambio,
+            motivo="DEVOLUCION",
+            estado="EMITIDA",
+            observaciones=(
+                f"Devolución {devolucion.numero_devolucion} de factura {factura.numero_factura}"
+            ),
+        )
+        DetalleNotaCreditoFiscal.objects.bulk_create(
+            [
+                DetalleNotaCreditoFiscal(
+                    id_nota_credito_fiscal=nota_credito_fiscal,
+                    id_producto=detalle.id_producto,
+                    cantidad=cantidad,
+                    precio_unitario=detalle.precio_unitario,
+                    subtotal=subtotal,
+                    monto_impuesto=iva_linea,
+                    total_linea=subtotal + iva_linea,
+                )
+                for detalle, cantidad, subtotal, iva_linea in lineas_calculadas
+            ]
+        )
+    else:
+        nota_credito_venta = NotaCreditoVenta.objects.create(
+            id_empresa=empresa,
+            id_cliente=nota_venta.id_cliente,
+            numero_nota_credito=siguiente_numero(empresa, "NOTA_CREDITO_VENTA"),
+            fecha_emision=hoy,
+            motivo="DEVOLUCION",
+            monto_total=total_devuelto,
+            id_moneda=moneda,
+            estado="APLICADA",
+            observaciones=(
+                f"Devolución {devolucion.numero_devolucion} de venta {nota_venta.numero_nota}"
+            ),
+        )
+        DetalleNotaCreditoVenta.objects.bulk_create(
+            [
+                DetalleNotaCreditoVenta(
+                    id_nota_credito=nota_credito_venta,
+                    id_producto=detalle.id_producto,
+                    cantidad=cantidad,
+                    precio_unitario=detalle.precio_unitario,
+                    subtotal=subtotal,
+                    monto_impuesto=iva_linea,
+                    total_linea=subtotal + iva_linea,
+                )
+                for detalle, cantidad, subtotal, iva_linea in lineas_calculadas
+            ]
+        )
+        devolucion.id_nota_credito_generada = nota_credito_venta
+        devolucion.save(update_fields=["id_nota_credito_generada"])
+
+    # ── 3. Reverso del dinero (Pago EGRESO en la caja de la sesión) ──────────
+    # Mismo mecanismo del cobro POS (Pago + registrar_efectos_pago): la
+    # TransaccionFinanciera EGRESO queda asociada a la caja física de la sesión.
+    nota_credito = nota_credito_fiscal or nota_credito_venta
+    pago = Pago.objects.create(
+        id_empresa=empresa,
+        tipo_operacion="EGRESO",
+        tipo_documento="NOTA_CREDITO_VENTA",
+        id_documento=nota_credito.pk,
+        fecha_pago=timezone.now(),
+        monto=total_devuelto,
+        id_moneda=moneda,
+        tasa=Decimal("1"),
+        id_metodo_pago=metodo_pago,
+        referencia=devolucion.numero_devolucion,
+        observaciones=f"Reembolso devolución {devolucion.numero_devolucion}",
+        id_caja_fisica=sesion.caja_fisica,
+        id_usuario_registro=usuario,
+    )
+    registrar_efectos_pago(pago)
+
+    # ── 4. Asiento contable de reverso (R-CODE-11, misma transacción) ────────
+    from apps.contabilidad.services import generar_asiento_o_fallar
+
+    asiento, asiento_error = generar_asiento_o_fallar(
+        "DEVOLUCION_VENTA", devolucion, empresa, monto=total_devuelto
+    )
+
+    asiento_iva = None
+    asiento_iva_error = None
+    if iva_devuelto > Decimal("0"):
+        # Espejo de la política H-BUG-2 de emitir_factura_fiscal: si la empresa
+        # es contribuyente de IVA el asiento de IVA es OBLIGATORIO; si no,
+        # best-effort.
+        from apps.fiscal.models import ConfiguracionFiscalEmpresa
+
+        config_fiscal = ConfiguracionFiscalEmpresa.objects.filter(id_empresa=empresa).first()
+        iva_obligatorio = bool(config_fiscal and config_fiscal.contribuyente_iva)
+        try:
+            asiento_iva = generar_asiento(
+                "DEVOLUCION_VENTA_IVA", devolucion, empresa, monto=iva_devuelto
+            )
+        except (MapeoContableNoEncontrado, AsientoError) as exc:
+            if iva_obligatorio:
+                raise VentaError(
+                    "Configure el Mapeo Contable de IVA de devoluciones antes de "
+                    f"devolver ventas fiscales como contribuyente: {exc}"
+                ) from exc
+            asiento_iva_error = str(exc)
+
+    return {
+        "devolucion": devolucion,
+        "nota_credito_fiscal": nota_credito_fiscal,
+        "nota_credito_venta": nota_credito_venta,
+        "pago": pago,
+        "movimientos": movimientos,
+        "sesion_caja": sesion,
+        "asiento": asiento,
+        "asiento_error": asiento_error,
+        "asiento_iva": asiento_iva,
+        "asiento_iva_error": asiento_iva_error,
     }

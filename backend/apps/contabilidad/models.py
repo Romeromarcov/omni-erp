@@ -82,6 +82,8 @@ class MapeoContable(models.Model):
 
     TIPOS_ASIENTO = [
         ("FACTURA_VENTA", "Factura de Venta"),
+        ("DEVOLUCION_VENTA", "Devolución de Venta"),
+        ("DEVOLUCION_VENTA_IVA", "IVA de Devolución de Venta"),
         ("FACTURA_COMPRA", "Factura de Compra"),
         ("RECEPCION_MERCANCIA", "Recepción de Mercancía"),
         ("AJUSTE_INVENTARIO", "Ajuste de Inventario"),

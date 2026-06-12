@@ -83,6 +83,55 @@
       "dePedido": "✓ From Order",
       "convertirAFactura": "Convert to Invoice",
       "errorConvertir": "Error converting sales note to invoice"
+    },
+    "pos": {
+      "devolucion": {
+        "boton": "Return",
+        "titulo": "Sale return",
+        "buscarLabel": "Sale number",
+        "buscarPlaceholder": "E.g.: NV-0001 — Enter to search",
+        "buscar": "Search",
+        "noEncontrada": "Sale \"{{numero}}\" was not found.",
+        "fiscal": "Fiscal sale (invoice {{numero}}): a fiscal credit note will be issued.",
+        "noFiscal": "Non-fiscal sale: an internal credit note will be issued.",
+        "columnaProducto": "Product",
+        "columnaDisponible": "Available",
+        "columnaCantidad": "Return",
+        "vendida": "Sold: {{cantidad}}",
+        "devuelta": "Returned: {{cantidad}}",
+        "almacen": "Restock warehouse",
+        "metodo": "Refund method",
+        "motivo": "Reason",
+        "totalReembolso": "Total to refund",
+        "confirmar": "Confirm return",
+        "procesando": "Processing…",
+        "cancelar": "Cancel",
+        "errorRegistro": "The return could not be registered. You can retry: it will not be duplicated.",
+        "sinCantidades": "Enter at least one quantity to return.",
+        "cantidadMaxima": "The quantity for \"{{producto}}\" exceeds what is available ({{max}}).",
+        "faltanDatos": "Select a warehouse and a refund method.",
+        "nadaDevolvible": "This sale has already been fully returned.",
+        "motivos": {
+          "CAMBIO_CLIENTE": "Customer change",
+          "DEFECTO": "Defective product",
+          "GARANTIA": "Warranty",
+          "ERROR_ENTREGA": "Delivery error",
+          "VENCIMIENTO": "Expiration",
+          "OTRO": "Other"
+        },
+        "ivaNota": "+ VAT proportional to the invoice (calculated by the system on confirm)."
+      },
+      "reciboDevolucion": {
+        "titulo": "RETURN No. {{numero}}",
+        "ventaOriginal": "Original sale: {{numero}}",
+        "notaCredito": "Credit note: {{numero}}",
+        "control": "Control No.: {{numero}}",
+        "caja": "Register: {{nombre}}",
+        "reembolsado": "REFUNDED",
+        "imprimir": "Print",
+        "cerrar": "Done",
+        "pie": "Keep this receipt"
+      }
     }
   },
   "manufactura": {

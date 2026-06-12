@@ -32,6 +32,8 @@ TIPOS_ASIENTO = frozenset(
         "FACTURA_VENTA",
         "FACTURA_VENTA_IVA",   # CTF-001: asiento separado para el IVA
         "NOTA_VENTA",          # CTF-001: asiento al confirmar nota de venta
+        "DEVOLUCION_VENTA",      # 1.G: reverso de la venta (espejo del asiento de venta)
+        "DEVOLUCION_VENTA_IVA",  # 1.G: reverso del IVA débito fiscal de la factura
         "FACTURA_COMPRA",
         "RECEPCION_MERCANCIA",
         "AJUSTE_INVENTARIO",
