@@ -27,6 +27,7 @@ from .views import (
 )
 from .views_ajustes import AjusteCajaBancoViewSet
 from .views_extra.tasa_oficial_bcv import TasaCambioOficialBCVView
+from .views_libro_caja import LibroMaestroCajaView
 from .views_pagos_terceros import PagoTerceroViewSet
 
 router = DefaultRouter()
@@ -64,4 +65,6 @@ router.register(r"datafonos", DatafonoViewSet, basename="datafonos")
 urlpatterns = [
     path("", include(router.urls)),
     path("tasa-oficial-bcv/", TasaCambioOficialBCVView.as_view(), name="tasa-oficial-bcv"),
+    # Capa B §6.8: libro maestro de caja (solo lectura, consolidado multimoneda)
+    path("libro-maestro-caja/", LibroMaestroCajaView.as_view(), name="libro-maestro-caja"),
 ]
