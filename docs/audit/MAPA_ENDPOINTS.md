@@ -524,6 +524,12 @@
 | `^mapeo-campos/(?P<pk>[^/.]+)/$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
 | `^mapeo-campos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
 | `^mapeo-campos\.(?P<format>[a-z0-9]+)/?$` | MapeoCampoViewSet | MapeoCampo | — | ✅ | IsAuthenticated |
+| `^mapeos-contables/$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/(?P<pk>[^/.]+)/$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/tipos-asiento/$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables/tipos-asiento\.(?P<format>[a-z0-9]+)/?$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
+| `^mapeos-contables\.(?P<format>[a-z0-9]+)/?$` | MapeoContableViewSet | MapeoContable | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago-empresa-activas/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)/$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago-empresa-activas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoEmpresaActivaViewSet | MetodoPagoEmpresaActiva | ✅ | ✅ | IsAuthenticated |
@@ -996,4 +1002,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 190_
+_Total ViewSets: 191_
