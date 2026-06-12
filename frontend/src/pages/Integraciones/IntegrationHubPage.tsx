@@ -43,14 +43,14 @@ const IntegrationHubPage: React.FC = () => {
       />
 
       {/* Stats */}
-      {status && (
+      {status?.conectores && status?.jobs_24h && (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(auto-fill, minmax(160px, 1fr))' }, gap: 2, mb: 4 }}>
-          <KpiCard label="Conectores activos" value={status.conectores_activos} icon={<HubOutlined />} tone="brand" />
-          <KpiCard label="Total conectores" value={status.conectores_total} icon={<SwapHorizOutlined />} tone="tint" />
-          <KpiCard label="Jobs (24h)" value={status.ultima_24h.total} icon={<SwapHorizOutlined />} tone="ai" />
-          <KpiCard label="Completados" value={status.ultima_24h.completados} icon={<CheckCircleOutlined />} tone="success" />
-          {status.ultima_24h.fallidos > 0 && (
-            <KpiCard label="Fallidos" value={status.ultima_24h.fallidos} icon={<ErrorOutlineOutlined />} tone="error" emphasizeError />
+          <KpiCard label="Conectores activos" value={status.conectores.activos} icon={<HubOutlined />} tone="brand" />
+          <KpiCard label="Total conectores" value={status.conectores.total} icon={<SwapHorizOutlined />} tone="tint" />
+          <KpiCard label="Jobs (24h)" value={status.jobs_24h.total} icon={<SwapHorizOutlined />} tone="ai" />
+          <KpiCard label="Completados" value={status.jobs_24h.completados} icon={<CheckCircleOutlined />} tone="success" />
+          {status.jobs_24h.fallidos > 0 && (
+            <KpiCard label="Fallidos" value={status.jobs_24h.fallidos} icon={<ErrorOutlineOutlined />} tone="error" emphasizeError />
           )}
         </Box>
       )}

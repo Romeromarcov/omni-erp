@@ -82,7 +82,11 @@ describe('integrationHubService — llamadas al API', () => {
   });
 
   it('getIntegrationHubStatus pide el estado general', async () => {
-    mockedGet.mockResolvedValueOnce({ conectores_activos: 0 });
+    mockedGet.mockResolvedValueOnce({
+      conectores: { total: 0, activos: 0, con_error: 0, configurando: 0, inactivos: 0 },
+      jobs_24h: { total: 0, completados: 0, con_errores: 0, fallidos: 0, en_progreso: 0 },
+      proveedores_disponibles: [],
+    });
     await getIntegrationHubStatus();
     expect(mockedGet).toHaveBeenCalledWith('/integration-hub/status/');
   });
