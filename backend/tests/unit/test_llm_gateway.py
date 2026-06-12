@@ -27,8 +27,6 @@ import pytest
 
 from apps.core import llm_gateway
 from apps.core.llm_gateway import (
-
-pytestmark = pytest.mark.unit
     LLMGateway,
     LLMResult,
     LLMUnavailable,
@@ -37,6 +35,8 @@ pytestmark = pytest.mark.unit
     USO_ANALISIS,
     USO_CHAT,
 )
+
+pytestmark = pytest.mark.unit
 
 _ENVS_GATEWAY = (
     "LLM_PROVIDER",
