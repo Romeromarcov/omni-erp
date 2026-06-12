@@ -111,7 +111,7 @@ class AsignacionHorarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         fecha_fin = request.data.get("fecha_fin")
         if not fecha_fin:
-            fecha_fin = timezone.now().date()
+            fecha_fin = timezone.localdate()
 
         asignacion.fecha_fin = fecha_fin
         asignacion.activo = False
@@ -192,7 +192,7 @@ class RegistroAsistenciaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def hoy(self, request):
         """Obtiene registros del día actual"""
         empleado_id = request.query_params.get("empleado_id")
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()
 
         filters = {"fecha_hora_marcado__date": hoy}
         if empleado_id:
@@ -224,7 +224,7 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         empleado_id = request.data.get("empleado_id")
 
         if not fecha:
-            fecha = timezone.now().date()
+            fecha = timezone.localdate()
 
         # Si se especifica empleado, procesar solo ese empleado
         if empleado_id:

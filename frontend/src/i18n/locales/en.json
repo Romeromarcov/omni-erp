@@ -248,5 +248,11 @@
       "ok": "Payment registered successfully.",
       "error": "Error registering the payment."
     }
-  }
+  },
+  "offline": {
+    "banner": "Offline — showing saved data",
+    "pending_one": "1 pending change will be sent when back online",
+    "pending_other": "{{count}} pending changes will be sent when back online",
+    "restored": "Connection restored — syncing…",
+    "stale": "Data may be outdated"  }
 }

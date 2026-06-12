@@ -8,10 +8,9 @@ Cubre:
   (patrón de tests_api/test_mcp_server_scope.py), inventario_get_productos e
   inventario_get_stock_resumen.
 
-BUG DOCUMENTADO (sin enmascarar):
-- ``inventario_get_alertas_stock`` filtra por ``id_producto__punto_reorden`` pero el
-  modelo ``Producto`` NO tiene campo ``punto_reorden`` → FieldError en runtime.
-  Ver ``TestInventarioAlertasStock``.
+Nota: el BUG de ``inventario_get_alertas_stock`` (FieldError por
+``punto_reorden`` inexistente) fue corregido agregando el campo al modelo;
+``TestInventarioAlertasStock`` ahora fija el comportamiento funcional.
 """
 import uuid
 from datetime import timedelta
@@ -349,27 +348,67 @@ class TestInventarioStockResumen:
 
 
 class TestInventarioAlertasStock:
-    def test_bug_punto_reorden_no_existe_en_producto(self, empresa_a):
-        """BUG documentado (sin enmascarar): inventario_get_alertas_stock filtra por
-        ``id_producto__punto_reorden`` pero ``Producto`` no define ese campo, por lo
-        que la herramienta MCP siempre falla con FieldError al ejecutarse.
-        Cuando se agregue el campo ``punto_reorden`` al modelo (o se corrija la
-        consulta), este test debe reemplazarse por aserciones funcionales.
-        """
-        from django.core.exceptions import FieldError
+    """Regresión del BUG: la consulta filtraba por ``id_producto__punto_reorden``
+    cuando ``Producto`` no definía ese campo (FieldError en cada ejecución).
+    El campo ``punto_reorden`` ya existe en el modelo y la herramienta funciona."""
+
+    def test_alerta_cuando_stock_bajo_punto_reorden(
+        self, empresa_a, producto_a, almacen_a
+    ):
+        from apps.inventario.models import StockActual
+
+        producto_a.punto_reorden = Decimal("10.0000")
+        producto_a.save(update_fields=["punto_reorden"])
+        StockActual.objects.create(
+            id_empresa=empresa_a,
+            id_producto=producto_a,
+            id_almacen=almacen_a,
+            cantidad_disponible=Decimal("4.0000"),
+        )
 
         tok = _token(empresa_a, ["inventario:read"])
-        with pytest.raises(FieldError):
-            inv_mcp.inventario_get_alertas_stock(str(tok.token), str(empresa_a.id_empresa))
+        res = inv_mcp.inventario_get_alertas_stock(str(tok.token), str(empresa_a.id_empresa))
+        assert len(res) == 1
+        alerta = res[0]
+        assert alerta["producto_id"] == str(producto_a.id_producto)
+        assert alerta["stock_actual"] == 4.0
+        assert alerta["punto_reorden"] == 10.0
+        assert alerta["deficit"] == 6.0
 
-    def test_tenant_se_valida_antes_del_bug(self, empresa_a, empresa_b):
-        """El aislamiento de tenant también ocurre antes de la consulta defectuosa."""
+    def test_sin_punto_reorden_no_alerta(self, empresa_a, producto_a, almacen_a):
+        from apps.inventario.models import StockActual
+
+        StockActual.objects.create(
+            id_empresa=empresa_a,
+            id_producto=producto_a,
+            id_almacen=almacen_a,
+            cantidad_disponible=Decimal("0.0000"),
+        )
+        tok = _token(empresa_a, ["inventario:read"])
+        res = inv_mcp.inventario_get_alertas_stock(str(tok.token), str(empresa_a.id_empresa))
+        assert res == []
+
+    def test_stock_sobre_punto_reorden_no_alerta(self, empresa_a, producto_a, almacen_a):
+        from apps.inventario.models import StockActual
+
+        producto_a.punto_reorden = Decimal("10.0000")
+        producto_a.save(update_fields=["punto_reorden"])
+        StockActual.objects.create(
+            id_empresa=empresa_a,
+            id_producto=producto_a,
+            id_almacen=almacen_a,
+            cantidad_disponible=Decimal("50.0000"),
+        )
+        tok = _token(empresa_a, ["inventario:read"])
+        res = inv_mcp.inventario_get_alertas_stock(str(tok.token), str(empresa_a.id_empresa))
+        assert res == []
+
+    def test_tenant_se_valida(self, empresa_a, empresa_b):
         tok = _token(empresa_a, ["inventario:read"])
         with pytest.raises(PermissionError, match="empresa_id no coincide"):
             inv_mcp.inventario_get_alertas_stock(str(tok.token), str(empresa_b.id_empresa))
 
-    def test_scope_se_valida_antes_del_bug(self, empresa_a):
-        """El enforcement de scope ocurre antes de la consulta defectuosa."""
+    def test_scope_se_valida(self, empresa_a):
         tok = _token(empresa_a, ["crm:read"])
         with pytest.raises(PermissionError):
             inv_mcp.inventario_get_alertas_stock(str(tok.token), str(empresa_a.id_empresa))

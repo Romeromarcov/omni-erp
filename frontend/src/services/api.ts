@@ -300,10 +300,15 @@ export async function get<T>(endpoint: string): Promise<T> {
   return fetcher<T>(endpoint);
 }
 
-export async function post<T>(endpoint: string, data: Record<string, unknown>): Promise<T> {
+export async function post<T>(
+  endpoint: string,
+  data: Record<string, unknown>,
+  options?: RequestOptions,
+): Promise<T> {
   return fetcher<T>(endpoint, {
+    ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
     body: JSON.stringify(data),
   });
 }

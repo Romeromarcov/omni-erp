@@ -218,7 +218,7 @@ class TicketSoporteViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             estado_ticket__in=["ABIERTO", "ASIGNADO", "EN_PROGRESO", "ESCALADO"]
         ).count()
         tickets_cerrados_hoy = queryset.filter(
-            estado_ticket="CERRADO", fecha_cierre__date=timezone.now().date()
+            estado_ticket="CERRADO", fecha_cierre__date=timezone.localdate()
         ).count()
 
         # Tickets por prioridad

@@ -301,20 +301,19 @@ class TestTicketSoporteActions:
         assert str(ticket_a.id_agente_asignado_temp) == nuevo
 
     def test_dashboard_metricas(self, client_a, empresa_a, categoria_a, ticket_a):
-        # BUG documentado (ventana de medianoche): la vista compara
-        # `timezone.now().date()` (fecha UTC) contra `fecha_cierre__date`,
-        # lookup que convierte a fecha LOCAL (America/Caracas) en SQL. Entre
-        # 00:00 y 04:00 UTC ambas fechas difieren y "cerrados hoy" da 0 aunque
-        # el cierre sea de hace segundos (así falló en CI a las 00:26 UTC).
-        # Congelamos now() a mediodía UTC (ambas fechas coinciden) para que el
-        # test sea determinista a cualquier hora; el fix de producto debe usar
-        # timezone.localdate() en la vista.
+        # Regresión del BUG de ventana de medianoche: la vista comparaba
+        # `timezone.now().date()` (fecha UTC) contra `fecha_cierre__date`
+        # (fecha LOCAL America/Caracas en SQL) y entre 00:00 y 04:00 UTC
+        # "cerrados hoy" daba 0 aunque el cierre fuera de hace segundos.
+        # La vista ya usa `timezone.localdate()`; congelamos now() a las
+        # 02:00 UTC (dentro de la ventana que antes fallaba) para fijar el
+        # comportamiento correcto.
         import datetime as _dt
         from unittest import mock as _mock
 
         from django.utils import timezone
 
-        fijo = _dt.datetime(2026, 6, 9, 12, 0, 0, tzinfo=_dt.timezone.utc)
+        fijo = _dt.datetime(2026, 6, 9, 2, 0, 0, tzinfo=_dt.timezone.utc)
         with _mock.patch("django.utils.timezone.now", return_value=fijo):
             cerrado = TicketSoporte.objects.create(
                 id_empresa=empresa_a,
