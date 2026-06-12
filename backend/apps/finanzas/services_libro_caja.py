@@ -15,7 +15,10 @@ Decisiones de diseño:
   ``saldo_actual`` vivo (que incluye movimientos posteriores al rango).
 - Tipos de entrada/salida por tipo de caja: espejo de ``realizar_cierre_caja``
   (las virtuales incluyen transferencias internas; las físicas no las usan).
-  Los movimientos ``CIERRE`` son cortes con monto 0: no afectan sumas.
+  Los movimientos ``CIERRE`` son cortes con monto 0: no afectan sumas, pero
+  SÍ cuentan en el contador ``movimientos`` de la fila en cuyo queryset caen
+  (en las virtuales, su propia fila; en las físicas se registran SIN moneda,
+  así que solo aparecen — sin alterar montos — bajo la fila ``moneda=None``).
 - Moneda por fila: las cajas virtuales son mono-moneda (``caja.moneda``); las
   físicas pueden mover varias monedas, así que se emite UNA fila por
   (caja física, moneda de movimiento). Movimientos físicos sin moneda
@@ -42,6 +45,10 @@ def _sumas(movimientos, tipos_entrada, tipos_salida, desde, hasta):
     Calcula (saldo_inicial, entradas, salidas, n_movimientos) de un queryset de
     movimientos: lo anterior a ``desde`` forma el saldo inicial; lo que cae en
     [desde, hasta] (por ``fecha_movimiento``) son las entradas/salidas del rango.
+
+    ``n_movimientos`` cuenta TODO movimiento de la ventana, sin filtrar por
+    tipo: los ``CIERRE`` (cortes de monto 0) cuentan como movimientos aunque
+    no suman ni restan — el contador refleja actividad registrada, no flujo.
     """
     previos = movimientos.filter(fecha_movimiento__lt=desde)
     ventana = movimientos.filter(fecha_movimiento__gte=desde, fecha_movimiento__lte=hasta)
