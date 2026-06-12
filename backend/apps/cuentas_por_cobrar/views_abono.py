@@ -20,6 +20,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 
 from apps.core.idempotency import idempotent
+from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import AbonoCxC, CuentaPorCobrar
@@ -29,6 +30,10 @@ from .serializers_abono import AbonoCxCSerializer
 class AbonoCxCViewSet(BaseModelViewSet):
     queryset = AbonoCxC.objects.all()
     serializer_class = AbonoCxCSerializer
+
+    # P1-1: techo estricto para escritura de pagos (scope 'escritura');
+    # los GET siguen bajo los throttles globales anon/user.
+    throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
 
     # BUG-C1: sin PUT/PATCH/DELETE — DRF responde 405 Method Not Allowed.
     http_method_names = ["get", "post", "head", "options"]

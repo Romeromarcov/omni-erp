@@ -1,3 +1,4 @@
+from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import AbonoCxP
@@ -7,6 +8,9 @@ from .serializers_abono import AbonoCxPSerializer
 class AbonoCxPViewSet(BaseModelViewSet):
     queryset = AbonoCxP.objects.all()
     serializer_class = AbonoCxPSerializer
+
+    # P1-1: techo estricto para escritura de pagos (scope 'escritura').
+    throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
 
     def get_queryset(self):
         empresas = get_empresas_visible(self.request.user)

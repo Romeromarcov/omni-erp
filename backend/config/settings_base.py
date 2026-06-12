@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
+    # P1-3 hardening: bloqueo de cuenta por usuario+IP tras N fallos de login
+    "axes",
     # Apps ERP
     "apps.core",
     "apps.localizacion",  # GAP-2 / ADR-007: framework de localización (puertos)
@@ -104,7 +106,29 @@ MIDDLEWARE = [
     # SaaS (Plan C — C2): verificación de suscripción activa. Inerte salvo que
     # SAAS_VERIFICAR_SUSCRIPCION=True. Va al final para resolver el usuario JWT.
     "apps.saas.middleware.SuscripcionActivaMiddleware",
+    # P1-3: django-axes debe ir lo más al final posible (tras autenticación)
+    # para registrar intentos fallidos y responder al lockout.
+    "axes.middleware.AxesMiddleware",
 ]
+
+# ── P1-3 · django-axes — bloqueo de cuenta por usuario+IP ────────────────────
+# Bloquea la COMBINACIÓN usuario+IP tras AXES_FAILURE_LIMIT intentos fallidos.
+# Combinado (no "o"): un atacante distribuido no bloquea al usuario legítimo
+# desde su propia IP, y un atacante desde una IP no queda libre probando otros
+# usuarios sin costo. Los mensajes al cliente son genéricos (no filtran si el
+# usuario existe) — ver apps/core/auth_views.py.
+AXES_ENABLED = os.environ.get("AXES_ENABLED", "True") == "True"
+# 10 fallos (no 5): el rate-limit SEC-07 (5/min por IP) ya frena el burst; axes
+# cubre la fuerza bruta LENTA acumulada contra un usuario. Con 5 ambos umbrales
+# colisionarían (el 5to intento daría lockout en vez del 401 que SEC-07 garantiza).
+AXES_FAILURE_LIMIT = int(os.environ.get("AXES_FAILURE_LIMIT", "10"))
+AXES_COOLOFF_TIME = timedelta(
+    minutes=int(os.environ.get("AXES_COOLOFF_MINUTES", "15"))
+)
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True  # login exitoso limpia el contador de fallos
+# Respuesta JSON 429 genérica al lockout (el default de axes es HTML).
+AXES_LOCKOUT_CALLABLE = "apps.core.auth_views.axes_lockout_response"
 
 # SaaS — control de acceso por pago (Plan C — Fase C2).
 # Off por defecto (fail-open). Se activa primero en staging para validar el
@@ -194,12 +218,25 @@ DATABASES = {
     }
 }
 
+# Nombre de la BD de test sobreescribible por entorno (TEST_DB_NAME). Permite
+# correr suites en paralelo (varios worktrees/agentes contra el mismo Postgres)
+# sin pelearse por el default "test_<DB_NAME>".
+_test_db_name = os.environ.get("TEST_DB_NAME")
+if _test_db_name:
+    DATABASES["default"]["TEST"] = {"NAME": _test_db_name}
+
+# P1-3: política de contraseñas reforzada. Mínimo 12 caracteres (NIST 800-63B
+# recomienda priorizar longitud sobre complejidad artificial) + los validadores
+# estándar de Django (similitud con atributos, contraseñas comunes, numéricas).
+PASSWORD_MIN_LENGTH = int(os.environ.get("PASSWORD_MIN_LENGTH", "12"))
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": PASSWORD_MIN_LENGTH},
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
@@ -296,10 +333,16 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
+    # Las tasas son configurables por entorno (THROTTLE_RATE_*) para poder
+    # ajustarlas en staging/producción sin redeploy de código.
+    # 'escritura' es el scope más estricto para endpoints de escritura/pago
+    # (apps.core.throttling.EscrituraRateThrottle — solo cuenta métodos no
+    # seguros: POST/PUT/PATCH/DELETE).
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/min",
-        "user": "1000/min",
-        "signup": "10/hour",
+        "anon": os.environ.get("THROTTLE_RATE_ANON", "100/min"),
+        "user": os.environ.get("THROTTLE_RATE_USER", "1000/min"),
+        "signup": os.environ.get("THROTTLE_RATE_SIGNUP", "10/hour"),
+        "escritura": os.environ.get("THROTTLE_RATE_ESCRITURA", "60/min"),
     },
 }
 
@@ -394,6 +437,11 @@ LOGGING = {
 os.makedirs(BASE_DIR / "logs", exist_ok=True)
 
 AUTHENTICATION_BACKENDS = [
+    # P1-3: AxesStandaloneBackend va PRIMERO — corta el authenticate() cuando
+    # la combinación usuario+IP está bloqueada (lanza PermissionDenied, que
+    # django.contrib.auth.authenticate traduce a None → credenciales inválidas,
+    # sin filtrar la existencia del usuario).
+    "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
 
