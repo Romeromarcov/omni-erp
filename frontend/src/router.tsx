@@ -4,6 +4,7 @@ import LoginPage from './pages/Core/Login/LoginPage';
 import SignupPage from './pages/Core/Signup/SignupPage';
 import AppLayout from './components/layout/AppLayout';
 import { useAuth } from './contexts/AuthContext';
+import { lazy, Suspense } from 'react';
 import { ventasRoutes } from './routes/ventasRoutes';
 import { finanzasRoutes } from './routes/finanzasRoutes';
 import { coreRoutes } from './routes/coreRoutes';
@@ -17,6 +18,8 @@ import { comprasRoutes } from './routes/comprasRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
 import { isModuleEnabled } from './config/appProfile';
+
+const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
 
 export default function AppRouter() {
   const { token, isLoading } = useAuth();
@@ -41,6 +44,18 @@ export default function AppRouter() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<LoginPage />} />
+
+        {/* POS de mostrador (sub-fase 1.G): pantalla completa, sin AppLayout. */}
+        {token && isModuleEnabled('ventas') && (
+          <Route
+            path="/pos"
+            element={
+              <Suspense fallback={<div>Cargando…</div>}>
+                <PosPage />
+              </Suspense>
+            }
+          />
+        )}
 
         {token && (
           <Route element={<AppLayout />}>
