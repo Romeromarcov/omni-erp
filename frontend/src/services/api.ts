@@ -188,6 +188,9 @@ async function request(endpoint: string, options: RequestOptions = {}): Promise<
   return res;
 }
 
+/** Error HTTP con el status adjunto (el message sigue siendo el body JSON). */
+export type HttpError = Error & { status?: number };
+
 async function buildError(res: Response, url: string): Promise<Error> {
   const errorText = await res.text();
   let errorObj: Record<string, string>;
@@ -203,7 +206,12 @@ async function buildError(res: Response, url: string): Promise<Error> {
       errorObj = { error: errorText };
     }
   }
-  return new Error(JSON.stringify(errorObj));
+  // Workstream F: el status HTTP viaja como propiedad del Error para que la UI
+  // distinga p. ej. 422 (falta mapeo contable NOMINA) de 400 (regla de negocio)
+  // sin parsear mensajes. `message` no cambia: mensajeDeError() sigue funcionando.
+  const error: HttpError = new Error(JSON.stringify(errorObj));
+  error.status = res.status;
+  return error;
 }
 
 // ── JSON fetcher (public API preserved) ───────────────────────────────────────
