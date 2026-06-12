@@ -120,6 +120,14 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: npm audit (high+) — BLOQUEANTE (gate activado al cerrar CTF-007)
+        working-directory: frontend
+        # Sin --omit=dev a propósito: el único HIGH que existió (picomatch,
+        # CTF-007) venía de devDependencies, y omitirlas habría ocultado justo
+        # el hallazgo que el CTF rastreaba. El toolchain de build/lint corre en
+        # CI y en máquinas de desarrollo: también es superficie de supply-chain.
+        run: npm audit --audit-level=high
+
       - name: TypeScript check (build mode — coincide con el build de producción)
         working-directory: frontend
         # tsc -b usa tsconfig.app.json (igual que `npm run build`), evitando que
@@ -334,12 +342,13 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Dependency audit (Node — npm audit) — BLOQUEANTE (critical)
+      - name: Dependency audit (Node — npm audit) — BLOQUEANTE (high+)
         working-directory: frontend
-        # BLOQUEANTE en CRITICAL (Fase 5): npm audit fix cerró 11/12; el único HIGH
-        # restante (picomatch, build/lint-time vía typescript-eslint) está diferido en
-        # CTF-007. Se sube a --audit-level=high cuando ese CTF se cierre.
-        run: npm audit --audit-level=critical
+        # BLOQUEANTE en HIGH (CTF-007 cerrado 2026-06-12): typescript-eslint
+        # 8.61 eliminó la cadena fast-glob→micromatch→picomatch@2 y el árbol
+        # quedó en 0 vulnerabilidades. Incluye devDependencies a propósito
+        # (ver justificación en el job frontend).
+        run: npm audit --audit-level=high
 
       - name: Trivy — CVEs de dependencias e imágenes (fs scan)
         # Instalación vía script oficial (evita depender de tags de la action).

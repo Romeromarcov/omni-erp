@@ -74,12 +74,11 @@ function authHeaders(endpoint: string, extra?: HeadersInit): Record<string, stri
   if (!isAuthEndpoint(endpoint) && accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
-  // Merge caller-provided headers last so they win.
+  // Merge caller-provided headers last so they win. Headers normaliza los
+  // nombres y el spread crea propiedades de datos propias (CreateDataProperty),
+  // inmune a claves especiales como "__proto__" (CTF-006).
   if (extra) {
-    const normalized = new Headers(extra);
-    normalized.forEach((value, key) => {
-      headers[key] = value;
-    });
+    return { ...headers, ...Object.fromEntries(new Headers(extra)) };
   }
   return headers;
 }
