@@ -2,12 +2,11 @@
 # "cero dudas"). El gate de CI falla ante hallazgos MEDIUM/HIGH no justificados.
 #
 # Exclusiones:
-#  - tests/tests_api/tests_eval: código de prueba, no superficie de producción.
+#  - tests/tests_eval: código de prueba, no superficie de producción.
 #  - migrations: DDL escrito por desarrolladores (no SQL con input de usuario);
 #    los falsos positivos de B608 sobre nombres de tabla constantes se excluyen aquí.
 exclude_dirs:
   - "/tests/"
-  - "/tests_api/"
   - "/tests_eval/"
   - "/migrations/"
   - "/.venv/"

@@ -76,7 +76,7 @@ python manage.py runserver
 
 **Tests:**
 ```bash
-python -m pytest tests_api/ -v
+python -m pytest tests/ -v
 ```
 
 > **Nota:** SQLite no está soportado. Si `DB_HOST` está vacío, Django lanza un error con instrucciones.

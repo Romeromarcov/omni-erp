@@ -14,7 +14,7 @@ rules:
       Usa el ORM de Django o, si es imprescindible, parametriza y justifica en un CTF.
     paths:
       include: ["apps/", "config/"]
-      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+      exclude: ["**/tests/**", "**/test_*.py"]
     pattern-either:
       - pattern: $QS.raw(...)
       - pattern: $QS.extra(...)
@@ -27,7 +27,7 @@ rules:
       pasa por el Integration Hub con verificación de certificados.
     paths:
       include: ["apps/", "config/"]
-      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+      exclude: ["**/tests/**", "**/test_*.py"]
     pattern: $FUNC(..., verify=False, ...)
 
   - id: omni-no-dynamic-eval-exec
@@ -37,7 +37,7 @@ rules:
       eval()/exec() sobre datos potencialmente externos = ejecución remota de código.
     paths:
       include: ["apps/", "config/"]
-      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+      exclude: ["**/tests/**", "**/test_*.py"]
     pattern-either:
       - pattern: eval(...)
       - pattern: exec(...)
@@ -50,5 +50,5 @@ rules:
       como lista y shell=False.
     paths:
       include: ["apps/", "config/"]
-      exclude: ["**/tests/**", "**/test_*.py", "tests_api/**"]
+      exclude: ["**/tests/**", "**/test_*.py"]
     pattern: subprocess.$M(..., shell=True, ...)

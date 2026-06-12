@@ -3,8 +3,8 @@ Conftest raíz de ``backend/`` — configuración transversal a toda la suite.
 
 Su única responsabilidad hoy es **estabilizar Hypothesis** bajo carga paralela.
 
-Por qué: los property-based tests (``tests/unit/test_property_*.py``,
-``tests_api/test_property_*.py``) corren en CI con ``pytest -n auto``. El
+Por qué: los property-based tests (``tests/unit/test_property_*.py``) corren
+en CI con ``pytest -n auto``. El
 ``deadline`` por defecto de Hypothesis (200 ms por ejemplo) mide tiempo de pared,
 no de CPU; cuando varios workers de xdist compiten por la CPU, un ejemplo trivial
 (p. ej. una resta de ``Decimal``) puede superar 200 ms de forma esporádica y

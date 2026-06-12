@@ -2,8 +2,9 @@
 
 Estructura por capas de la pirámide de tests (plan
 [`docs/PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md`](../../docs/PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md) §B1).
-La suite histórica vive en `tests_api/` y se migra **por capas** hacia aquí; ambas corren
-en CI mientras dura la transición (ver `testpaths` en `pytest.ini`).
+La suite histórica de `tests_api/` quedó migrada por capas a este árbol (CTF-014,
+2026-06-12); es la **única** suite del backend junto a `pruebas_funcionales/` y los
+tests in-app de `apps/` (ver `testpaths` en `pytest.ini`).
 
 ```
 tests/
@@ -33,5 +34,7 @@ tests/
 ## Fixtures clave (`conftest.py`)
 
 `empresa_a` / `empresa_b`, `user_a` / `user_b`, `moneda_usd`, `metodo_efectivo`,
-`client_a` / `client_b` (DRF autenticados), `api_client` (anónimo). Construidos sobre
-`tests/factories/`. Los autouse neutralizan rate-limit (cache) y Celery/Redis (eager en memoria).
+`client_a` / `client_b` (DRF autenticados), `api_client` (anónimo), `caja_fisica_a`,
+`rls_test_role` (rol de BD sin BYPASSRLS para los tests de RLS), `test_user` (legacy).
+Construidos sobre `tests/factories/`. Los autouse neutralizan rate-limit (cache) y
+Celery/Redis (eager en memoria).

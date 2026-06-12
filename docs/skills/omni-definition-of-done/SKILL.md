@@ -37,7 +37,7 @@ npm run lint
 
 ```bash
 cd backend
-python -m pytest tests_api/ -v --tb=short --no-header
+python -m pytest tests/ -v --tb=short --no-header
 # Si tocaste agentes / reorden / cobranza:
 python -m pytest tests_eval/ -v --tb=short --no-header --no-cov   # precision@1 ≥ 80%
 

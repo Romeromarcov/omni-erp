@@ -82,7 +82,7 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: python -m pytest tests tests_api/ -v --tb=short --no-header
+        run: python -m pytest tests/ -v --tb=short --no-header
 
       - name: Diff coverage — código nuevo ≥95% (cero-dudas, BLOQUEANTE)
         working-directory: backend

@@ -33,7 +33,7 @@ jobs:
             runner: "python scripts/mut_runner.py tests/unit/test_fiscal_calculos.py"
           - nombre: "nomina_lottt"
             paths: "apps/nomina/calculo_lottt.py"
-            runner: "python scripts/mut_runner.py tests_api/test_nomina_lottt.py"
+            runner: "python scripts/mut_runner.py tests/unit/test_nomina_lottt.py"
           - nombre: "cxc_scoring"
             paths: "apps/cuentas_por_cobrar/services_scoring.py"
             runner: "python scripts/mut_runner.py tests/unit/test_cxc_calculos.py"

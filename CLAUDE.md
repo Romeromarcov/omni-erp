@@ -23,7 +23,7 @@ entrar al repo. Léelo completo antes de tocar código.
 Antes de declarar "listo", "terminado" o de abrir/actualizar un PR, corre **en orden**:
 
 1. **Build verde** — `cd backend && python manage.py check && python manage.py makemigrations --check --dry-run`; `cd frontend && npx tsc -b && npm run lint`
-2. **Tests verdes** — `python -m pytest tests_api/` (backend) + `npm test -- --run` (frontend); `tests_eval/` si tocas agentes
+2. **Tests verdes** — `python -m pytest tests/` (backend) + `npm test -- --run` (frontend); `tests_eval/` si tocas agentes
 3. **Revisión de seguridad** — `/security-review` (secretos, multi-tenant, authz, `str(e)`, inyección)
 4. **Revisión de bugs / correctness** — `/code-review` (casos borde, Decimal, atomicidad, N+1)
 5. **Revisión de gaps** — ¿qué quedó a medias? Flujos abiertos, tests faltantes, `TODO` sin dueño
