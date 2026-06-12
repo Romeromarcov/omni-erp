@@ -114,6 +114,27 @@ export const finanzasKeys = {
     ['finanzas', 'metodos-pago-empresa-activas', empresaId ?? null] as const,
 };
 
+// ── Compras (workstream F) ────────────────────────────────────────────────────
+// Prefijo compartido `['compras', 'ordenes']` para invalidar lista, detalle,
+// líneas y recepciones de una OC a la vez tras aprobar/recepcionar/facturar.
+export const comprasKeys = {
+  ordenesAll: () => ['compras', 'ordenes'] as const,
+  ordenes: (page?: number) => ['compras', 'ordenes', 'list', page ?? 1] as const,
+  orden: (id: string) => ['compras', 'ordenes', 'detail', id] as const,
+  detalles: (ordenId: string) => ['compras', 'ordenes', 'detalles', ordenId] as const,
+  recepciones: (ordenId: string) => ['compras', 'ordenes', 'recepciones', ordenId] as const,
+  proveedores: () => ['compras', 'proveedores'] as const,
+};
+
+// ── CxP (Cuentas por Pagar) ───────────────────────────────────────────────────
+export const cxpKeys = {
+  cuentasAll: () => ['cxp', 'cuentas'] as const,
+  cuentas: (page?: number, estado?: string | null) =>
+    ['cxp', 'cuentas', page ?? 1, estado ?? null] as const,
+  agingAll: () => ['cxp', 'aging'] as const,
+  aging: (empresaId?: string | null) => ['cxp', 'aging', empresaId ?? null] as const,
+};
+
 // ── Manufactura (1.I) ─────────────────────────────────────────────────────────
 // Prefijo compartido `['manufactura', 'ordenes']` para que la invalidación por
 // familia refresque lista, detalle, etapas y costeo de una OF a la vez.

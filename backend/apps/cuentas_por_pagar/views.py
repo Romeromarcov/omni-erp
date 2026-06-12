@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.core.idempotency import idempotent
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import CuentaPorPagar
@@ -76,11 +77,16 @@ class CuentaPorPagarViewSet(BaseModelViewSet):
             }
         )
 
+    @idempotent("cxp:abonar")
     @action(detail=True, methods=["post"], url_path="abonar")
     def abonar(self, request, pk=None):
         """
         POST /api/cuentas-por-pagar/cuentas-por-pagar/{pk}/abonar/
         Body: {"monto": "500.00", "descripcion": "Pago a proveedor"}
+
+        Idempotente (P1-2, igual que ``cxc:abonar``): si el cliente envía la
+        cabecera ``Idempotency-Key``, un reintento con la misma clave devuelve
+        el mismo resultado sin registrar un segundo abono.
         """
         from .services import AbonoCxPError, registrar_abono_cxp
 
