@@ -204,6 +204,36 @@ class TestIdempotenciaAbono:
         assert cxc_a.estado == "parcial"
         assert cxc_b.estado == "parcial"
 
+    def test_aislamiento_por_usuario_misma_empresa(self, cxc_a, empresa_a, user_a):
+        """Dos usuarios de la MISMA empresa con la misma clave no se cruzan."""
+        from django.contrib.auth import get_user_model
+
+        from apps.cuentas_por_cobrar.models import AbonoCxC
+
+        User = get_user_model()
+        user_a2 = User.objects.create_user(
+            username="user_empresa_a_2",
+            password="testpass123-larga",
+            email="user_a2@empresaalpha.com",
+            is_active=True,
+        )
+        user_a2.empresas.add(empresa_a)
+
+        client_1 = APIClient()
+        client_1.force_authenticate(user=user_a)
+        client_2 = APIClient()
+        client_2.force_authenticate(user=user_a2)
+
+        r1 = _abonar(client_1, cxc_a.pk, "300.00", key="clave-compartida")
+        r2 = _abonar(client_2, cxc_a.pk, "500.00", key="clave-compartida")
+
+        # Cada usuario ejecuta SU operación: ni colisión (409/422) ni replay
+        # de la respuesta del otro usuario.
+        assert r1.status_code == 201
+        assert r2.status_code == 201
+        assert r1.data["abono_id"] != r2.data["abono_id"]
+        assert AbonoCxC.objects.filter(cuenta_por_cobrar=cxc_a).count() == 2
+
 
 # ── Idempotencia en confirmar pedido ──────────────────────────────────────────
 

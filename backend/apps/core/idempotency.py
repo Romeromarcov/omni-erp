@@ -132,9 +132,6 @@ def idempotent(scope: str):
                 "clave": clave,
             }
 
-            # 0) Limpieza perezosa de claves vencidas del tenant (TTL).
-            ClaveIdempotencia.purgar_expiradas(empresa)
-
             # 1) Camino rápido: la clave ya fue consumida → reproducir (o 422).
             existente = (
                 ClaveIdempotencia.objects.filter(**filtro)
@@ -148,6 +145,9 @@ def idempotent(scope: str):
             #    lógica de negocio, en la misma transacción. Una petición gemela
             #    concurrente se bloquea en el índice único hasta nuestro commit.
             with transaction.atomic():
+                # Limpieza perezosa de claves vencidas del tenant (TTL) dentro
+                # de la transacción: si la petición falla, la purga se revierte.
+                ClaveIdempotencia.purgar_expiradas(empresa)
                 try:
                     with transaction.atomic():  # savepoint para el INSERT
                         registro = ClaveIdempotencia.objects.create(
