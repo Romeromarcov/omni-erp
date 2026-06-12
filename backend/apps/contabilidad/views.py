@@ -1,5 +1,7 @@
 from django.db.models import Sum
 from apps.core.serializer_mixins import TenantFKScopeMixin
+from decimal import Decimal
+
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -137,8 +139,8 @@ class AsientoContableViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
                     "codigo_cuenta": detalle.id_cuenta_contable.codigo_cuenta,
                     "nombre_cuenta": detalle.id_cuenta_contable.nombre_cuenta,
                     "tipo_cuenta": detalle.id_cuenta_contable.tipo_cuenta,
-                    "debe": 0,
-                    "haber": 0,
+                    "debe": Decimal(0),
+                    "haber": Decimal(0),
                 }
 
             cuentas_balance[cuenta_id]["debe"] += detalle.debe
