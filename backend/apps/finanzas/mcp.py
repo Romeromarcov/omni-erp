@@ -2,9 +2,10 @@
 apps/finanzas/mcp.py — Herramientas MCP del módulo de Finanzas (ADR-003).
 
 Herramientas expuestas:
-  finanzas_get_pagos          — lista pagos registrados de una empresa
-  finanzas_get_saldo_caja     — saldo actual de una caja física
-  finanzas_get_metodos_pago   — lista métodos de pago disponibles
+  finanzas_get_pagos                   — lista pagos registrados de una empresa
+  finanzas_get_saldo_caja              — saldo actual de una caja física
+  finanzas_get_metodos_pago            — lista métodos de pago disponibles
+  finanzas_pagos_terceros_pendientes   — pagos de terceros (Zelle) por gestionar
 """
 
 
@@ -155,6 +156,64 @@ def finanzas_get_metodos_pago(
     ]
 
 
+def finanzas_pagos_terceros_pendientes(
+    capability_token: str,
+    empresa_id: str,
+    limit: int = 50,
+) -> list:
+    """
+    Lista los pagos de terceros (Zelle, §6.6 Capa B) que siguen abiertos:
+    estado ``pendiente`` (sin abonar/reintegrar) o ``reintegro_pendiente``
+    (CxC emitida, esperando que el proveedor devuelva el dinero).
+
+    Scope requerido: ``finanzas:read``
+
+    Args:
+        capability_token: Token con scope ``finanzas:read``.
+        empresa_id:       ID de la empresa.
+        limit:            Máximo de resultados (default 50, máx 200).
+
+    Returns:
+        Lista con id, proveedor, monto, comision, moneda, referencia_zelle,
+        fecha, estado y la CxC de reintegro si existe.
+    """
+    from apps.finanzas.models import PagoTercero  # noqa: PLC0415
+
+    ctx = _ctx(capability_token, f"{_SCOPE}:read")
+    if empresa_id != ctx["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+
+    limit = min(limit, 200)
+    pagos = (
+        PagoTercero.objects.filter(
+            id_empresa=empresa_id,
+            estado__in=["pendiente", "reintegro_pendiente"],
+            activo=True,
+        )
+        .select_related("id_proveedor", "id_moneda")
+        .order_by("-fecha", "-fecha_creacion")[:limit]
+    )
+    logger.info(
+        "finanzas_pagos_terceros_pendientes | actor=%s | tenant=%s | count=%d",
+        ctx["actor_id"], ctx["tenant_id"], len(pagos),
+    )
+    return [
+        {
+            "id_pago_tercero": str(p.id_pago_tercero),
+            "proveedor": p.id_proveedor.razon_social if p.id_proveedor else "",
+            "proveedor_id": str(p.id_proveedor_id) if p.id_proveedor_id else "",
+            "monto": p.monto,  # Decimal, no float (R-CODE-4)
+            "comision": p.comision if p.comision is not None else None,
+            "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
+            "referencia_zelle": p.referencia_zelle,
+            "fecha": str(p.fecha),
+            "estado": p.estado,
+            "cxc_reintegro_id": str(p.id_cxc_reintegro_id) if p.id_cxc_reintegro_id else "",
+        }
+        for p in pagos
+    ]
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-discovery
 # ─────────────────────────────────────────────────────────────────────────────
@@ -173,6 +232,11 @@ MCP_TOOLS: List[Dict[str, Any]] = [
     {
         "fn": finanzas_get_metodos_pago,
         "name": "finanzas_get_metodos_pago",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": finanzas_pagos_terceros_pendientes,
+        "name": "finanzas_pagos_terceros_pendientes",
         "scope": f"{_SCOPE}:read",
     },
 ]

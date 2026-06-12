@@ -10,7 +10,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # BUILD-1: solo para anotaciones (evita F821)
     from .models import AbonoCxP
@@ -89,7 +89,9 @@ def calcular_aging_cxp(empresa_id) -> dict:
         activo=True,
     )
 
-    buckets = {
+    # Tipado explícito: sin la anotación, mypy infiere dict[str, object] y marca
+    # las acumulaciones (+=) y el sum() final como errores [operator]/[misc].
+    buckets: dict[str, dict[str, Any]] = {
         "corriente":   {"count": 0, "total": Decimal("0")},
         "dias_1_30":   {"count": 0, "total": Decimal("0")},
         "dias_31_60":  {"count": 0, "total": Decimal("0")},
