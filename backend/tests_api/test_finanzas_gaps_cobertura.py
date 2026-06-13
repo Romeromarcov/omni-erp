@@ -319,17 +319,19 @@ class TestTasaOficialBCVView:
 class TestSesionCajaFisicaRamasRotas:
     URL = "/api/finanzas/sesiones-caja/"
 
-    def test_perform_create_consulta_campo_inexistente(self, client_a, caja_virtual_a):
-        # BUG (documentado, sin enmascarar): perform_create busca
-        # Caja.objects.get(..., es_fisica=True) pero el modelo Caja NO tiene
-        # campo `es_fisica` → FieldError (solo se captura Caja.DoesNotExist).
-        # Abrir sesión por la API está roto de origen.
-        from django.core.exceptions import FieldError
-
-        with pytest.raises(FieldError):
-            client_a.post(self.URL, {
-                "caja_fisica_principal": str(caja_virtual_a.id_caja),
-            }, format="json")
+    def test_perform_create_rechaza_id_de_caja_virtual_400(self, client_a, caja_virtual_a):
+        # FIX (bugs lote 3): perform_create buscaba Caja (virtual) con el campo
+        # inexistente `es_fisica` → FieldError 500 en todo POST. Ahora resuelve
+        # la CajaFisica real (escopeada al tenant, R-CODE-1): un id de caja
+        # VIRTUAL responde 400 controlado y no se crea ninguna sesión.
+        # Creación feliz y aislamiento: TestSesionCajaFisicaCreacion
+        # (test_diffcov_finanzas_tesoreria.py).
+        resp = client_a.post(self.URL, {
+            "caja_fisica_principal": str(caja_virtual_a.id_caja),
+        }, format="json")
+        assert resp.status_code == 400
+        assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
+        assert SesionCajaFisica.objects.count() == 0
 
     def test_cerrar_funciona_y_marca_sesion_cerrada(self, client_a, caja_fisica_a, user_a):
         # FIX (hallazgo PR #73): el modelo acepta saldos_reales/usuario/hasta
@@ -570,7 +572,16 @@ class TestFiltrosCompletosMovimientos:
 
 class TestCajaUsuarioViewSetDirecto:
     """CajaUsuarioViewSet no está registrado en el router (la ruta cajas-usuario
-    apunta a CajaVirtualUsuarioViewSet) → se ejercita por invocación directa."""
+    apunta a CajaVirtualUsuarioViewSet) → se ejercita por invocación directa.
+
+    FIX (bugs lote 4): ``crear_caja_virtual`` trataba la CajaUsuario como si
+    fuera una sesión (``sesion.estado`` / ``sesion.crear_caja_virtual``, que
+    el modelo no define) → AttributeError 500 SIEMPRE. Los tests que
+    fosilizaban ese contrato con SimpleNamespace se reescriben contra el
+    flujo real: la sesión ABIERTA de la caja física de la caja asignada.
+    El flujo feliz/errores/aislamiento de la creación real vive en
+    test_finanzas_bugs_lote4.py; aquí queda el smoke por invocación directa.
+    """
 
     def _viewset(self, user):
         from apps.finanzas.views import CajaUsuarioViewSet
@@ -579,50 +590,45 @@ class TestCajaUsuarioViewSetDirecto:
         vs.request = SimpleNamespace(user=user, data={})
         return vs
 
+    def _post_crear(self, user, caja_usuario_pk, data):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+
+        from apps.finanzas.views import CajaUsuarioViewSet
+
+        view = CajaUsuarioViewSet.as_view({"post": "crear_caja_virtual"})
+        request = APIRequestFactory().post(
+            f"/finanzas/cajas-usuario-legacy/{caja_usuario_pk}/crear-caja-virtual/",
+            data,
+            format="json",
+        )
+        force_authenticate(request, user=user)
+        return view(request, pk=str(caja_usuario_pk))
+
     def test_get_queryset_filtra_por_usuario(self, user_a, user_b, caja_virtual_a):
         CajaUsuario.objects.create(usuario=user_a, caja=caja_virtual_a)
         CajaUsuario.objects.create(usuario=user_b, caja=caja_virtual_a)
         vs = self._viewset(user_a)
         assert list(vs.get_queryset().values_list("usuario", flat=True)) == [user_a.pk]
 
-    def test_crear_caja_virtual_sesion_cerrada_400(self, user_a):
-        vs = self._viewset(user_a)
-        vs.get_object = lambda: SimpleNamespace(estado="CERRADA")
-        resp = vs.crear_caja_virtual(SimpleNamespace(user=user_a, data={}))
+    def test_crear_caja_virtual_sin_sesion_abierta_400(self, user_a, caja_virtual_a, caja_fisica_a):
+        caja_virtual_a.caja_fisica = caja_fisica_a
+        caja_virtual_a.save(update_fields=["caja_fisica"])
+        asignacion = CajaUsuario.objects.create(usuario=user_a, caja=caja_virtual_a)
+        resp = self._post_crear(user_a, asignacion.pk, {"nombre": "CV1"})
         assert resp.status_code == 400
         assert resp.data == {"error": "No se pueden crear cajas virtuales en una sesión cerrada"}
 
-    def test_crear_caja_virtual_sin_nombre_400(self, user_a):
-        vs = self._viewset(user_a)
-        vs.get_object = lambda: SimpleNamespace(estado="ABIERTA")
-        resp = vs.crear_caja_virtual(SimpleNamespace(user=user_a, data={}))
+    def test_crear_caja_virtual_caja_sin_fisica_400(self, user_a, caja_virtual_a):
+        asignacion = CajaUsuario.objects.create(usuario=user_a, caja=caja_virtual_a)
+        resp = self._post_crear(user_a, asignacion.pk, {"nombre": "CV1"})
         assert resp.status_code == 400
-        assert resp.data == {"error": "Debe especificar un nombre para la caja virtual"}
+        assert resp.data == {"error": "La caja asignada no está asociada a una caja física."}
 
-    def test_crear_caja_virtual_exitoso(self, user_a):
-        creado = {"id": "x", "nombre": "CV1"}
-        sesion = SimpleNamespace(
-            estado="ABIERTA",
-            crear_caja_virtual=lambda nombre, monedas_ids, metodos_pago_ids, usuario: creado,
-        )
-        vs = self._viewset(user_a)
-        vs.get_object = lambda: sesion
-        request = SimpleNamespace(user=user_a, data={"nombre": "CV1", "monedas": [], "metodos_pago": []})
-        resp = vs.crear_caja_virtual(request)
-        assert resp.status_code == 200
-        assert resp.data["caja_virtual"] == creado
-
-    def test_crear_caja_virtual_valueerror_400(self, user_a):
-        def _raise(**kwargs):
-            raise ValueError("datos inválidos")
-
-        sesion = SimpleNamespace(estado="ABIERTA", crear_caja_virtual=_raise)
-        vs = self._viewset(user_a)
-        vs.get_object = lambda: sesion
-        request = SimpleNamespace(user=user_a, data={"nombre": "CV2"})
-        resp = vs.crear_caja_virtual(request)
-        assert resp.status_code == 400
-        assert "No se pudo crear la caja virtual" in resp.data["error"]
+    def test_crear_caja_virtual_de_otro_usuario_404(self, user_a, user_b, caja_virtual_a):
+        """R-CODE-1: la asignación de A no es visible (ni usable) para B."""
+        asignacion = CajaUsuario.objects.create(usuario=user_a, caja=caja_virtual_a)
+        resp = self._post_crear(user_b, asignacion.pk, {"nombre": "CV-intrusa"})
+        assert resp.status_code == 404
 
 
 class TestDatafonoFiltroEmpresa:

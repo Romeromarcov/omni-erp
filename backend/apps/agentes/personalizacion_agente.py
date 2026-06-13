@@ -19,10 +19,11 @@ Uso:
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any, Optional
+
+from apps.core import llm_gateway
 
 logger = logging.getLogger("omni.agentes.personalizacion")
 
@@ -221,22 +222,14 @@ class PersonalizacionCapa2Agent:
     NUNCA aplica cambios automáticamente.
     """
 
-    MODELO_DEFAULT = "claude-haiku-4-5-20251001"
+    # Resuelto por el gateway (env LLM_MODEL); aquí solo informativo.
+    MODELO_DEFAULT = llm_gateway.modelo_configurado(llm_gateway.USO_AGENTE)
 
-    def __init__(self, empresa, llm_client=None):
+    def __init__(self, empresa, llm_client=None, gateway=None):
         self.empresa = empresa
         self._llm_client = llm_client
-        self._usar_llm = False
-
-        if llm_client is not None:
-            self._usar_llm = True
-        elif os.environ.get("ANTHROPIC_API_KEY"):
-            try:
-                import anthropic  # type: ignore[import-untyped]
-                self._llm_client = anthropic.Anthropic()
-                self._usar_llm = True
-            except ImportError:
-                logger.warning("anthropic SDK no instalado; usando fallback determinista")
+        self._gateway = gateway if gateway is not None else llm_gateway.get_gateway(client=llm_client)
+        self._usar_llm = self._gateway.disponible()
 
     def analizar(self) -> ResultadoPersonalizacionCapa2:
         """

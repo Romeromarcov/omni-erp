@@ -6,14 +6,17 @@ import { useMemo } from 'react';
 import { buildNavigation } from '../../config/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 
-const ACTION_LABELS: Record<string, string> = {
-  new: 'Nuevo',
-  crear: 'Nuevo',
-  edit: 'Editar',
-};
+// Map en lugar de Record: `seg` viene de la URL (input del usuario) y un
+// objeto plano expondría la cadena de prototipos ("__proto__", "constructor").
+const ACTION_LABELS = new Map<string, string>([
+  ['new', 'Nuevo'],
+  ['crear', 'Nuevo'],
+  ['edit', 'Editar'],
+]);
 
 function humanize(seg: string): string {
-  if (ACTION_LABELS[seg]) return ACTION_LABELS[seg];
+  const accion = ACTION_LABELS.get(seg);
+  if (accion) return accion;
   // IDs (uuid / numéricos) → "Detalle"
   if (/^[0-9a-f-]{8,}$/i.test(seg) || /^\d+$/.test(seg)) return 'Detalle';
   return seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' ');

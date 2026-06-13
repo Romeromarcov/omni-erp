@@ -37,7 +37,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | 6 | RAG | ❌ | Sin pgvector / embeddings / vector store / retrieval |
 | 7 | Frontend comprimido sin source maps | ✅ | Vite sin `build.sourcemap`, bundle minificado, gzip nginx |
 | 8 | Rate limiting | ✅ | Nginx (`login 5/m`, `api 60/m`) + `django-ratelimit` en login + tests |
-| 9 | Cache | ⚠️ | Redis/Celery, WhiteNoise, nginx `expires 1y`, PWA Workbox. **Falta** `CACHES` de Django (cache de ORM) |
+| 9 | Cache | ⚠️ | Redis/Celery, WhiteNoise, nginx `expires 1y`, PWA Workbox. `CACHES` de Django con Redis ✅ (P2-4, `config/caches.py`). **Falta** cachear consultas calientes |
 | 10 | Escalabilidad | ✅ | uvicorn workers, Celery `concurrency=4`, stateless, Docker |
 | 11 | Monitoreo | ✅ | Sentry (`send_default_pii=False`), logging estructurado, healthchecks, `RegistroAuditoria` |
 | 12 | Sin API keys/secretos en código | ✅ | `SECRET_KEY` obligatorio desde env; todo desde env; `.env` en `.gitignore` |
@@ -60,7 +60,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | R11 | Observabilidad de costos LLM (tokens por tenant) | ❌ |
 | R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ |
 | R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ⚠️ verificar |
-| R14 | CSP a nivel Django (`django-csp`, nonce por request) | ❌ (existe en nginx) |
+| R14 | CSP a nivel Django (`django-csp`, nonce por request) | ✅ (P2-5: `django-csp==4.0` enforce; sin nonce porque no hay inline que autorizar) |
 
 ---
 
@@ -113,7 +113,22 @@ crm (todas con columna `id_empresa_id`): `inventario_producto`, `inventario_stoc
 (`tests_api/test_rls_lote2.py`) sobre `crm_cliente` y `crm_contacto_cliente`: aislamiento sin
 filtro de app, fail-closed, bypass, `WITH CHECK`. `RLS_ENABLED=False` sigue por defecto.
 
-**Criterios de rollout / follow-ups (antes de activar en prod y extender a las ~92 tablas):**
+**Lote 3 (CTF-012, rollout completo):** RLS **forzado** en las 107 tablas tenant
+restantes → **124/124 tablas con FK a `core.Empresa` cubiertas** (33 migraciones
+reversibles `*_rls_lote3_*`, una por app). Variante `null_visible` del builder para
+los 11 catálogos compartidos con columna de empresa nullable (`empresa NULL` = fila
+global visible por todos, igual que el filtrado de aplicación). Excluidas con razón
+en `rls.RLS_EXCLUDED_TABLES`: `empresas` (raíz del tenant) y `fiscal_retencion`
+(bi-empresa). Comando idempotente `configurar_rol_rls` (rol `omni_app` no-dueño,
+`NOSUPERUSER NOBYPASSRLS`, GRANTs mínimos + default privileges; contraseña solo por
+env), soporte `MIGRATIONS_DATABASE_URL` en `entrypoint.sh` y runbook de activación
+`docs/runbooks/RUNBOOK_RLS_ROL_APP.md`. Tests: registro 1:1 contra modelos (un
+modelo tenant nuevo sin RLS rompe CI), `pg_policies`/`FORCE` parametrizado por
+tabla y aislamiento real en tablas representativas (`tests_api/test_rls_rollout.py`,
+`tests_api/test_rls_rol_app.py`). `RLS_ENABLED=False` sigue por defecto; la
+activación (cambio de rol en staging → prod) la gobierna CTF-012.
+
+**Criterios de rollout / follow-ups (antes de activar en prod):**
 1. **Rol de BD dedicado no-dueño** (sin `BYPASSRLS`) para el runtime, con migraciones
    corriendo como dueño. Da fail-closed *natural* a nivel de app sin depender del default
    `bypass='on'` de conexión (hoy fail-open para paths que no pasen por el middleware, p. ej.
@@ -125,7 +140,9 @@ filtro de app, fail-closed, bypass, `WITH CHECK`. `RLS_ENABLED=False` sigue por 
    (un `is_superuser` que no lo sea queda acotado por tenant).
 4. **Streaming + pooling:** si se habilita `CONN_MAX_AGE`/pgbouncer, fijar el contexto RLS
    dentro del generador SSE (hoy resuelto no-reseteando en `finally` con `CONN_MAX_AGE=0`).
-5. Extender RLS al resto de tablas multi-tenant, un PR por grupo de apps, reusando los builders.
+5. ~~Extender RLS al resto de tablas multi-tenant~~ ✅ hecho en el lote 3 (124/124).
+   Pendiente menor: política propia para `empresas` y `fiscal_retencion` (excluidas
+   documentadas en `rls.RLS_EXCLUDED_TABLES`).
 
 ### P0-2 · `pip-audit` + `npm audit` en CI (R1) — `✅ YA HECHO en develop`
 Verificado en `.github/workflows/ci.yml` (job **"Security scan (gitleaks + deps audit)"**,
@@ -256,6 +273,23 @@ N+1 con `select_related`/`prefetch_related` en ViewSets de mayor tráfico.
 **DoD:** `CACHES` configurado; invalidación correcta; sin N+1 en endpoints calientes.
 **Esfuerzo:** ~1.5 días. **Owner:** equipo-backend.
 
+#### Estado — `🟡 PARCIAL: CACHES hecho` (PR `feature/p2-4-redis-p2-5-csp`)
+`CACHES["default"]` configurado con el backend **nativo** de Django
+(`django.core.cache.backends.redis.RedisCache`, sin necesidad del paquete
+`django-redis`) vía `config/caches.py`: con `REDIS_URL` usa Redis en una **DB
+distinta** de la del broker Celery (`REDIS_CACHE_DB`, default 1 vs. DB 0;
+colisión → `ImproperlyConfigured` fail-closed, porque `cache.clear()` hace
+`FLUSHDB`), `KEY_PREFIX` por entorno (`CACHE_KEY_PREFIX`, default
+`omni:<RAILWAY_ENVIRONMENT|dev>`); sin `REDIS_URL` cae a LocMem (dev local).
+**Bajo pytest se fuerza LocMem siempre** (CI exporta `REDIS_URL` sin servicio
+Redis en los jobs de pytest; determinismo de throttle/SEC-07/idempotencia).
+Los jobs CI con servidor vivo (e2e, contract) ahora levantan un service
+`redis:7-alpine` y ejercitan el path real. Con esto, rate-limiting SEC-07,
+throttling DRF (P1-1) y el futuro circuit breaker del gateway LLM (P2-1)
+comparten estado entre workers en producción. Tests:
+`tests_api/test_p24_caches_redis.py`. **Pendiente de P2-4:** cachear
+catálogos/consultas frecuentes + barrido N+1 (no entra en este PR focal).
+
 ### P2-5 · CSP a nivel Django (R14, #3) — `❌ (existe en nginx)`
 **Por qué:** defensa en profundidad si alguna vez se sirve HTML fuera de nginx, y para
 `nonce` por request.
@@ -263,6 +297,22 @@ N+1 con `select_related`/`prefetch_related` en ViewSets de mayor tráfico.
 **Tareas:** `django-csp`; política equivalente a la de nginx; alinear ambas capas.
 **DoD:** header CSP emitido por Django en prod; sin romper assets.
 **Esfuerzo:** ~0.5 día. **Owner:** equipo-backend.
+
+#### Estado — `🟢 HECHO` (PR `feature/p2-4-redis-p2-5-csp`)
+`django-csp==4.0` + `CSPMiddleware` (tras WhiteNoise: los estáticos no llevan
+header) con política **enforce** en todos los entornos —no report-only: la capa
+nginx equivalente ya es enforce y en Railway el backend sirve el admin sin
+nginx delante, así que report-only lo dejaría sin protección real—. Base
+estricta sin `'unsafe-inline'` global ni nonce: `default-src/script-src/
+style-src/img-src/font-src/connect-src/base-uri/form-action 'self'`,
+`object-src/frame-ancestors 'none'` (alineada con `X_FRAME_OPTIONS=DENY` y más
+estricta que la de nginx, que cubre el SPA). Verificado template a template que
+el admin de Django 5.2 no tiene inline ejecutable (solo bloques
+`type="application/json"`). Las vistas de docs drf-yasg (solo DEBUG, SEC-05)
+llevan su relajación mínima **por vista** (`csp_update`: `style-src
+'unsafe-inline'` —estilos inyectados por JS—, `img-src data:` —iconos del CSS
+de swagger-ui—, `worker-src blob:` —worker de búsqueda de redoc—). Tests:
+`tests_api/test_p25_csp.py`.
 
 ### P2-6 · Tracing distribuido — OpenTelemetry (R12) — `❌`
 **Por qué:** hay Celery + Kafka + agentes; sin trace correlacionado es difícil diagnosticar.

@@ -80,6 +80,7 @@
 | finanzas | MonedaEmpresaActiva | ✅ | ✅ | — |
 | finanzas | MovimientoCajaBanco | ✅ | ✅ | — |
 | finanzas | Pago | ✅ | ✅ | — |
+| finanzas | PagoTercero | ✅ | ✅ | — |
 | finanzas | PlantillaMaestroCajasVirtuales | ✅ | ✅ | — |
 | finanzas | SesionCajaFisica | ✅ | ✅ | — |
 | finanzas | SesionDatafono | — | ✅ | — |
@@ -95,6 +96,7 @@
 | fiscal | Impuesto | ✅ | — | — |
 | fiscal | ImpuestoEmpresaActiva | ✅ | — | empresa+impuesto |
 | fiscal | NumeroCorrelativo | ✅ | ✅ | id_empresa+tipo |
+| fiscal | PagoContribucionParafiscal | ✅ | ✅ | — |
 | fiscal | PeriodoFiscal | ✅ | ✅ | id_empresa+año+mes |
 | fiscal | Retencion | ✅ | — | — |
 | fiscal | RetencionEmpresaActiva | ✅ | — | empresa+retencion |
@@ -197,4 +199,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 194_
+_Total modelos: 196_

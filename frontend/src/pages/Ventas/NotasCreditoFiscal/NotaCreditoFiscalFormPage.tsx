@@ -329,7 +329,9 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {fields.map((fieldItem, index) => {
-                      const linea = lineas[index];
+                      const linea = lineas.at(index);
+                      // eslint-disable-next-line security/detect-object-injection -- FP: `index` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
+                      const erroresLinea = errors.detalles?.[index];
                       return (
                         <TableRow key={fieldItem.id}>
                           <TableCell>
@@ -342,8 +344,8 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                                   fullWidth
                                   size="small"
                                   {...field}
-                                  error={!!errors.detalles?.[index]?.id_producto}
-                                  helperText={errors.detalles?.[index]?.id_producto?.message}
+                                  error={!!erroresLinea?.id_producto}
+                                  helperText={erroresLinea?.id_producto?.message}
                                 >
                                   {productos.map((producto) => (
                                     <MenuItem key={producto.id_producto} value={producto.id_producto}>
@@ -359,8 +361,8 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                               type="number"
                               size="small"
                               {...register(`detalles.${index}.cantidad`)}
-                              error={!!errors.detalles?.[index]?.cantidad}
-                              helperText={errors.detalles?.[index]?.cantidad?.message}
+                              error={!!erroresLinea?.cantidad}
+                              helperText={erroresLinea?.cantidad?.message}
                               inputProps={{ min: 0, step: 0.01 }}
                             />
                           </TableCell>
@@ -369,8 +371,8 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                               type="number"
                               size="small"
                               {...register(`detalles.${index}.precio_unitario`)}
-                              error={!!errors.detalles?.[index]?.precio_unitario}
-                              helperText={errors.detalles?.[index]?.precio_unitario?.message}
+                              error={!!erroresLinea?.precio_unitario}
+                              helperText={erroresLinea?.precio_unitario?.message}
                               inputProps={{ min: 0, step: 0.01 }}
                             />
                           </TableCell>
@@ -379,8 +381,8 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                               type="number"
                               size="small"
                               {...register(`detalles.${index}.descuento_porcentaje`)}
-                              error={!!errors.detalles?.[index]?.descuento_porcentaje}
-                              helperText={errors.detalles?.[index]?.descuento_porcentaje?.message}
+                              error={!!erroresLinea?.descuento_porcentaje}
+                              helperText={erroresLinea?.descuento_porcentaje?.message}
                               inputProps={{ min: 0, max: 100, step: 0.01 }}
                             />
                           </TableCell>
