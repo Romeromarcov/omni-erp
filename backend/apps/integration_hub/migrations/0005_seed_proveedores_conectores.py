@@ -125,11 +125,6 @@ def seed_proveedores(apps, schema_editor):
         )
 
 
-def noop_reverse(apps, schema_editor):
-    """Reverso noop: no borramos el catálogo (FK PROTECT desde instancias)."""
-    return
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -137,5 +132,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(seed_proveedores, noop_reverse),
+        # Reverso noop (RunPython.noop): no borramos el catálogo, hay FK PROTECT
+        # desde ConectorInstancia.
+        migrations.RunPython(seed_proveedores, migrations.RunPython.noop),
     ]
