@@ -51,3 +51,27 @@
 - Tras `update_pull_request_branch`/merge de develop: regenerar `mapa_superficie` si cambió superficie backend (lección #97) y re-pasar lint de seguridad en frontend nuevo (lección #104/#98).
 - Railway webhooks de PR-envs = ruido, sin acción. Timers de background para esperar CI (los webhooks no entregan éxitos).
 - El repo local develop debe pullearse antes de crear worktrees (lección: agentes nacidos de develop viejo).
+
+## 6. PAUSA por tokens (2026-06-12 ~23:20 UTC) — estado de reanudación
+
+**La ola de deuda quedó COMPLETA** (#103–#111 mergeados): CTFs 006/007/013/014/015 CERRADOS,
+012 al máximo (solo pasos operativos del owner: `docs/runbooks/RUNBOOK_RLS_ROL_APP.md`).
+Develop **+12 sobre main** — a ~3 PRs del umbral de release (~15).
+
+**Trabajo en vuelo PAUSADO** (3 agentes 1.G detenidos; su avance quedó commiteado como WIP
+en ramas remotas, partiendo todos de base vieja a8b872d → al reanudar: merge develop + verificar):
+- `wip/pausa-1g-aa1369958d45398ea` — **comisiones de vendedores** (modelos+API hechos; estaba
+  regenerando openapi.json/schema.d.ts por el cambio de superficie).
+- `wip/pausa-1g-ad6e34069a13b3aa0` — **devoluciones/NC en POS** (backend+frontend avanzados;
+  estaba re-corriendo la suite frontend por flakiness de carga, 5s timeouts).
+- `wip/pausa-1g-ac7e3da1ce291013c` — **apps/despacho** (app construida; limpiando un import
+  en fiscal/models.py de su diff).
+
+**Cómo reanudar**: por cada rama wip → worktree → merge origin/develop → completar lo que el
+WIP note diga → suites por capas (tests/ — ya NO existe tests_api/) → diff-cover ≥95% → PR →
+revisor independiente → CI → squash-merge. Luego: **offline nivel 2 (OBLIGATORIO)** → P2-2
+(Celery) → P2-3 → fase L10n → plataforma de extensión (ADR-010/011).
+
+**Backlog menor acumulado**: homogeneizar markers de capa (hook `pytest_collection_modifyitems`
+por directorio; p24 marker unit vs carpeta integration) · xdist en CI · follow-ups RLS anotados
+en CTF-012 · menores de revisores en #103/#106/#107/#108 ya registrados arriba.
