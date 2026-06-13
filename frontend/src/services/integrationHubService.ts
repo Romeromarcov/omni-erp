@@ -134,8 +134,14 @@ export interface PaginatedResponse<T> {
 
 // ── Proveedores ──────────────────────────────────────────────────────────────
 
-export async function getProveedores(): Promise<PaginatedResponse<ConectorProveedor>> {
-  return get<PaginatedResponse<ConectorProveedor>>('/integration-hub/proveedores/');
+export async function getProveedores(): Promise<ConectorProveedor[]> {
+  // El endpoint tiene pagination_class = None → responde una lista plana, no un
+  // objeto paginado {results}. Toleramos ambas formas por robustez (si algún día
+  // se le activa paginación, no se rompe el selector de proveedores del modal).
+  const data = await get<ConectorProveedor[] | PaginatedResponse<ConectorProveedor>>(
+    '/integration-hub/proveedores/',
+  );
+  return Array.isArray(data) ? data : (data?.results ?? []);
 }
 
 // ── Instancias ───────────────────────────────────────────────────────────────

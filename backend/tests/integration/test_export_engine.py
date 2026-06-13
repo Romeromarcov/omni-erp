@@ -20,13 +20,16 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 
 def _proveedor(codigo, nombre):
-    return ConectorProveedor.objects.create(
+    prov, _ = ConectorProveedor.objects.get_or_create(
         codigo=codigo,
-        nombre=nombre,
-        estado="activo",
-        activo=True,
-        capacidades=["contactos", "productos"],
+        defaults={
+            "nombre": nombre,
+            "estado": "activo",
+            "activo": True,
+            "capacidades": ["contactos", "productos"],
+        },
     )
+    return prov
 
 
 def _instancias(empresa, source_config_extra=None):
