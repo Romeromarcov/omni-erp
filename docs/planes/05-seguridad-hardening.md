@@ -92,7 +92,7 @@ ningún queryset olvide el filtro por empresa. Un solo bug = fuga entre tenants 
    del tenant B **aunque** se elimine el filtro del queryset (verificación a nivel BD).
 
 **DoD:** RLS activa y forzada en todas las tablas multi-tenant; test de fuga cross-tenant
-verde con el filtro de aplicación deshabilitado; sin regresión en `tests_api/`.
+verde con el filtro de aplicación deshabilitado; sin regresión en `tests/`.
 **Esfuerzo:** ~4–6 días. **Owner:** equipo-backend.
 
 #### Estado — `🟡 EN CURSO` (PR `fix/seguridad-hardening`)
@@ -110,7 +110,7 @@ crm (todas con columna `id_empresa_id`): `inventario_producto`, `inventario_stoc
 `crm_cliente`, `crm_contacto_cliente`, `crm_direccion_cliente`. Una migración RLS por app
 (`inventario/0008_rls_lote2_inventario`, `compras/0010_rls_lote2_compras`,
 `crm/0009_rls_lote2_crm`) reusando los builders, con `reverse_sql`. 7 tests nuevos a nivel BD
-(`tests_api/test_rls_lote2.py`) sobre `crm_cliente` y `crm_contacto_cliente`: aislamiento sin
+(`tests/tenant/test_rls_lote2.py`) sobre `crm_cliente` y `crm_contacto_cliente`: aislamiento sin
 filtro de app, fail-closed, bypass, `WITH CHECK`. `RLS_ENABLED=False` sigue por defecto.
 
 **Lote 3 (CTF-012, rollout completo):** RLS **forzado** en las 107 tablas tenant
@@ -184,7 +184,7 @@ perezosa, registro "en vuelo" que serializa el doble-submit concurrente vía ín
 payload distinto → 422; sin cabecera → opt-out). Aplicado a: abono CxC (`abonar` y
 `AbonoCxCViewSet.create`), `PagoViewSet.create` (finanzas), `registrar-pago` de acuerdos,
 confirmar pedido y conversión nota de venta → factura. Tests en
-`tests_api/test_idempotencia.py` + race test con hilos en
+`tests/api/test_idempotencia.py` + race test con hilos en
 `tests/integration/test_idempotencia_concurrencia.py`.
 
 ### P1-3 · Bloqueo de cuenta + política de contraseñas (R6) — `❌`

@@ -1,6 +1,6 @@
 ---
 name: omni-testing-pytest
-description: Use this skill whenever you write, run, or fix backend tests in the Omni project. Triggers include adding tests for a new model/service/viewset/MCP tool, writing factories, isolation tests (R-CODE-1), integration tests for critical flows (R-CODE-9), agent eval tests (tests_eval/), debugging a failing or flaky test, raising coverage to satisfy the ratchet gate, or any work under `tests/`, `tests_api/`, `tests_eval/`, or `pytest.ini`. Apply it to decide what kind of test a change needs and how to structure it. Do NOT use for frontend tests (Vitest), pure non-test code, or infra/CI YAML unrelated to the test gates.
+description: Use this skill whenever you write, run, or fix backend tests in the Omni project. Triggers include adding tests for a new model/service/viewset/MCP tool, writing factories, isolation tests (R-CODE-1), integration tests for critical flows (R-CODE-9), agent eval tests (tests_eval/), debugging a failing or flaky test, raising coverage to satisfy the ratchet gate, or any work under `tests/`, `tests_eval/`, or `pytest.ini`. Apply it to decide what kind of test a change needs and how to structure it. Do NOT use for frontend tests (Vitest), pure non-test code, or infra/CI YAML unrelated to the test gates.
 ---
 
 # Skill: Estrategia de Tests Backend (pytest)
@@ -29,7 +29,7 @@ No la cargués para tests de frontend (Vitest), ni para código sin tests.
 
 - `DJANGO_SETTINGS_MODULE = config.settings`
 - `python_files = test_*.py`
-- `testpaths = tests tests_api pruebas_funcionales`
+- `testpaths = tests pruebas_funcionales apps`
 - `addopts` incluye `--cov=apps --cov-fail-under=67 --cov-report=xml` (el XML alimenta diff-cover en CI).
 
 ### Markers disponibles
@@ -131,7 +131,7 @@ Corre **sin BD ni LLM** (fallback determinístico) y valida precision@1 ≥ 80%.
 
 ```bash
 cd backend
-python -m pytest tests_api/ -v --tb=short --no-header     # suite principal
+python -m pytest tests/ -v --tb=short --no-header         # suite principal
 python -m pytest tests_eval/ -v --no-cov                  # eval de agentes
 python -m pytest -m tenant                                # solo aislamiento
 python -m pytest path/test_x.py::TestY::test_z -x         # uno, frenar al primer fallo
@@ -192,7 +192,7 @@ Un test flaky es un **bug**, no ruido. Causas comunes:
 
 ## Referencias
 
-- Config: `backend/pytest.ini`, suites en `tests/`, `tests_api/`, `tests_eval/`.
+- Config: `backend/pytest.ini`, suites en `tests/` (por capas) y `tests_eval/`.
 - Skill: `omni-multi-tenant-isolation`, `omni-agentes-autonomia`, `omni-mcp-capacidades`, `omni-decimal-money`, `omni-asientos-contables`, `omni-definition-of-done`.
 - Reglas R-CODE-1, R-CODE-2, R-CODE-9, R-PROC-4.
 

@@ -61,7 +61,7 @@ jobs:
         run: |
           mkdir -p ../artifacts
           set +e
-          .venv/bin/python -m pytest tests tests_api/ \
+          .venv/bin/python -m pytest tests/ \
             -v --tb=short \
             --junitxml=../artifacts/junit.xml \
             ${{ inputs.pytest_args }} | tee ../artifacts/pytest.log

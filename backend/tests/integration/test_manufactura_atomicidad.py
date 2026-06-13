@@ -7,7 +7,7 @@ así que si un componente intermedio falla por stock insuficiente, **toda la ope
 debe revertir**: ni consumos parciales, ni descuentos de stock del componente que sí
 alcanzaba, ni cambio de estado de la orden.
 
-`tests_api/test_manufactura_orden_integracion.py` cubre el camino feliz y "sin BOM";
+`tests/integration/test_manufactura_orden_integracion.py` cubre el camino feliz y "sin BOM";
 esta es la invariante de rollback multi-escritura que faltaba.
 """
 
