@@ -23,6 +23,16 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
     queryset = CuentaPorCobrar.objects.all()
     serializer_class = CuentaPorCobrarSerializer
 
+    # Integridad financiera (hallazgo BAJO, auditoría integral 2026-06-10): el
+    # `monto`/`estado` de una CxC NO se editan por CRUD directo. El saldo y el
+    # estado solo los mueve el flujo de abono atómico (`registrar_abono`, vía la
+    # acción `abonar`). Sin esto, un PATCH/PUT directo podía marcar
+    # `estado='pagada'` sin abonos o alterar `monto`, saltándose el lock, el tope
+    # de saldo y el asiento contable. Se bloquean PUT/PATCH/DELETE (405); quedan
+    # los GET (list/retrieve/aging/estado-cuenta), la acción POST `abonar` y el
+    # POST de creación (lo usan los flujos de venta/integración y el seed E2E).
+    http_method_names = ["get", "post", "head", "options"]
+
     def get_queryset(self):
         from django.db.models import DecimalField, Sum
         from django.db.models.functions import Coalesce
