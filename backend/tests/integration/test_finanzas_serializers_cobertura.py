@@ -19,7 +19,6 @@ mínimo en el contexto, cubriendo:
   CajaFisica, SesionCajaFisica, CajaVirtualAsociada, DatafonoAsociado,
   CajaUsuario/CajaVirtualUsuario, PlantillaMaestro, CajaVirtualDisponible.
 """
-import datetime
 import uuid
 from decimal import Decimal
 from types import SimpleNamespace
@@ -467,7 +466,9 @@ class TestTransaccionFinancieraSerializer:
         TasaCambio.objects.create(
             id_empresa=empresa_a, id_moneda_origen=moneda_usd,
             id_moneda_destino=moneda_ves, tipo_tasa="OFICIAL_BCV",
-            valor_tasa=Decimal("36.50000000"), fecha_tasa=datetime.date.today(),
+            # fecha local (Caracas), coherente con la búsqueda del serializer
+            # (timezone.localdate()); evita el desalineo UTC tras las 20:00.
+            valor_tasa=Decimal("36.50000000"), fecha_tasa=timezone.localdate(),
         )
         s = TransaccionFinancieraSerializer(
             data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,

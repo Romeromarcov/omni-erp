@@ -520,9 +520,12 @@ class TransaccionFinancieraSerializer(serializers.ModelSerializer):
             monto_transaccion = validated_data.get("monto_transaccion")
             monto_moneda_pais = None
             if moneda_transaccion and moneda_pais and monto_transaccion:
-                from datetime import date
+                from django.utils import timezone
 
-                hoy = date.today()
+                # localdate() = hoy en TIME_ZONE (Caracas), no en UTC: con
+                # date.today() la tasa del día no se encontraba tras las 20:00
+                # Caracas y monto_moneda_pais quedaba en None.
+                hoy = timezone.localdate()
                 tasa = (
                     TasaCambio.objects.filter(
                         id_moneda_origen=moneda_transaccion, id_moneda_destino=moneda_pais, fecha_tasa=hoy

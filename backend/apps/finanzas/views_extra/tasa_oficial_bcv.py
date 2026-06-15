@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,7 +19,10 @@ class TasaCambioOficialBCVView(APIView):
     """
 
     def get(self, request):
-        fecha = request.GET.get("fecha", date.today())
+        # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: con
+        # date.today() la tasa "de hoy" no se encontraba tras las 20:00 Caracas
+        # (= 00:00 UTC), porque buscaba la del día UTC siguiente.
+        fecha = request.GET.get("fecha", timezone.localdate())
         if isinstance(fecha, str):
             try:
                 fecha = date.fromisoformat(fecha)
