@@ -7,6 +7,8 @@ Requiere reportlab: pip install reportlab
 
 from datetime import date
 
+from django.utils import timezone
+
 
 def generar_pdf_estado_cuenta(empresa, cliente, fecha_corte: date = None) -> bytes:
     """
@@ -39,7 +41,9 @@ def generar_pdf_estado_cuenta(empresa, cliente, fecha_corte: date = None) -> byt
 
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
-    fecha_corte = fecha_corte or date.today()
+    # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC, para que el
+    # corte por defecto coincida con el día local (no se adelante tras las 20:00).
+    fecha_corte = fecha_corte or timezone.localdate()
 
     cxc_qs = CuentaPorCobrar.objects.filter(
         empresa=empresa,
