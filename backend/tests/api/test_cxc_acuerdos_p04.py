@@ -159,7 +159,7 @@ class TestConversionMoneda:
         TasaCambio.objects.create(
             id_empresa=None, id_moneda_origen=moneda_ves, id_moneda_destino=moneda_usd,
             tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02740000"),
-            fecha_tasa=timezone.now().date(),
+            fecha_tasa=timezone.localdate(),
         )
         cuota = acuerdo_a.cuotas.get()
         resp = _pagar(client_a, acuerdo_a, cuota, "100.0000", moneda_ves, metodo_a)
@@ -179,7 +179,7 @@ class TestConversionMoneda:
         TasaCambio.objects.create(
             id_empresa=None, id_moneda_origen=moneda_ves, id_moneda_destino=moneda_usd,
             tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02500000"),
-            fecha_tasa=timezone.now().date(),
+            fecha_tasa=timezone.localdate(),
         )
         cuota = acuerdo_a.cuotas.get()
         _pagar(client_a, acuerdo_a, cuota, "2000.0000", moneda_ves, metodo_a)  # 50 USD

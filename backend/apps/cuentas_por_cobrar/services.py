@@ -143,7 +143,10 @@ def calcular_aging(empresa_id) -> dict:
 
     from .models import CuentaPorCobrar
 
-    hoy = timezone.now().date()
+    # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: now().date()
+    # corría el corte un día tras las 20:00 Caracas y marcaba CxC como vencidas
+    # (o al día) antes de tiempo.
+    hoy = timezone.localdate()
     # BUG-M2: el saldo se anota en una sola consulta (Coalesce(Sum)) en vez de
     # un aggregate por instancia (N+1).
     cxc_qs = CuentaPorCobrar.objects.filter(
