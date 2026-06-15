@@ -194,6 +194,37 @@ def test_fallback_a_lista_referencia_sin_contacto(empresa_a, producto, lista_ref
 
 
 @pytest.mark.django_db
+def test_obtener_precio_vigencia_usa_fecha_local_caracas(empresa_a, producto, lista_referencia):
+    """
+    Hallazgo BAJO (auditoría 2026-06-10): la vigencia se evaluaba con
+    date.today() (UTC). Congelamos now() a 02:00 UTC (= 22:00 Caracas del 14):
+    un DetallePrecio vigente SOLO el día local (Caracas 06-14) debe aplicar; con
+    la fecha UTC (06-15) quedaría fuera de vigencia y caería al sugerido.
+    """
+    import datetime
+    from unittest import mock
+
+    from apps.ventas.models import DetallePrecio
+    from apps.ventas.services import obtener_precio
+
+    now_utc = datetime.datetime(2026, 6, 15, 2, 0, 0, tzinfo=datetime.timezone.utc)
+    caracas_hoy = datetime.date(2026, 6, 14)
+    DetallePrecio.objects.create(
+        id_lista=lista_referencia,
+        id_producto=producto,
+        precio=Decimal("12.00"),
+        vigente_desde=caracas_hoy,
+        vigente_hasta=caracas_hoy,  # vigente solo el día local
+    )
+
+    with mock.patch("django.utils.timezone.now", return_value=now_utc):
+        precio = obtener_precio(producto, empresa_a)
+
+    assert precio == Decimal("12.00")
+    assert precio != Decimal(str(producto.precio_venta_sugerido))
+
+
+@pytest.mark.django_db
 def test_precio_fuera_de_vigencia_retorna_none(empresa_a, producto, lista_referencia):
     """
     Un DetallePrecio con vigente_hasta en el pasado no se aplica;

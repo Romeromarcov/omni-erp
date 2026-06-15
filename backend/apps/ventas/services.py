@@ -61,7 +61,7 @@ def obtener_precio(producto, empresa, contacto=None, fecha: date | None = None) 
     """
     from apps.ventas.models import DetallePrecio
 
-    hoy = fecha or date.today()
+    hoy = fecha or timezone.localdate()
 
     def _precio_en_lista(lista_precio):
         qs = DetallePrecio.objects.filter(
@@ -194,8 +194,8 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
             cliente=cliente,
             empresa=pedido.id_empresa,
             monto=subtotal,
-            fecha_emision=timezone.now().date(),
-            fecha_vencimiento=timezone.now().date() + timedelta(days=dias),
+            fecha_emision=timezone.localdate(),
+            fecha_vencimiento=timezone.localdate() + timedelta(days=dias),
             estado="pendiente",
             referencia_externa=pedido.numero_pedido,
             tipo_operacion="PEDIDO_VENTA",
@@ -278,7 +278,7 @@ def convertir_pedido_a_nota_venta(pedido, usuario=None):
         id_cliente=pedido.id_cliente,
         id_pedido_origen=pedido,
         numero_nota=numero_nota,
-        fecha_nota=timezone.now().date(),
+        fecha_nota=timezone.localdate(),
         estado="BORRADOR",
         observaciones=pedido.observaciones,
     )
@@ -433,8 +433,8 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
             cliente=cliente,
             empresa=nota_venta.id_empresa,
             monto=subtotal,
-            fecha_emision=timezone.now().date(),
-            fecha_vencimiento=timezone.now().date() + timedelta(days=dias),
+            fecha_emision=timezone.localdate(),
+            fecha_vencimiento=timezone.localdate() + timedelta(days=dias),
             estado="pendiente",
             referencia_externa=nota_venta.numero_nota,
             tipo_operacion="NOTA_VENTA",
@@ -556,7 +556,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
         id_nota_venta_origen=nota_venta,
         numero_control=numero_control,
         numero_factura=numero_factura,
-        fecha_emision=timezone.now().date(),
+        fecha_emision=timezone.localdate(),
         base_imponible=subtotal,
         monto_iva=monto_iva,
         monto_igtf=monto_igtf,
