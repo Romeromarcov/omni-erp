@@ -197,6 +197,36 @@ class TestCalcularAgingCxP:
         assert resultado["corriente"]["count"] == 0
         assert resultado["total_general"] == Decimal("0")
 
+    def test_aging_vence_hoy_caracas_es_corriente(
+        self, db, empresa_a, proveedor_a, factura_compra_a
+    ):
+        # Hallazgo BAJO (auditoría 2026-06-10): el aging usaba la fecha UTC.
+        # Congelamos now() a las 02:00 UTC (= 22:00 Caracas del día anterior),
+        # la ventana que fallaba: una CxP que vence HOY en Caracas debe quedar
+        # en "corriente" (0 días), no en "dias_1_30" como daría la fecha UTC.
+        import datetime
+        from unittest import mock
+
+        now_utc = datetime.datetime(2026, 6, 15, 2, 0, 0, tzinfo=datetime.timezone.utc)
+        caracas_hoy = datetime.date(2026, 6, 14)
+        CuentaPorPagar.objects.create(
+            id_empresa=empresa_a,
+            id_proveedor=proveedor_a,
+            id_factura_compra=factura_compra_a,
+            monto_total=Decimal("300.00"),
+            monto_pendiente=Decimal("300.00"),
+            fecha_emision=caracas_hoy,
+            fecha_vencimiento=caracas_hoy,  # vence hoy en Caracas
+            estado="PENDIENTE",
+        )
+
+        with mock.patch("django.utils.timezone.now", return_value=now_utc):
+            resultado = calcular_aging_cxp(empresa_a.id_empresa)
+
+        assert resultado["corriente"]["count"] == 1
+        assert resultado["corriente"]["total"] == Decimal("300.0000")
+        assert resultado["dias_1_30"]["count"] == 0
+
 
 # ─────────────────────────────────────────────
 # Tests de endpoints REST
