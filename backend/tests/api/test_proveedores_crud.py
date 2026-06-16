@@ -125,3 +125,45 @@ class TestValidacionCodigo:
         # Se normaliza a minúsculas antes de guardar (debe coincidir con el registry).
         assert resp.status_code == 201
         assert resp.data["codigo"] == "miconector"
+
+
+class TestValidacionCapacidadesYVersiones:
+    """capacidades y versiones_soportadas deben ser listas (no objeto/escalar)."""
+
+    def test_capacidades_no_lista_rechazada(self, client_owner):
+        resp = client_owner.post(
+            f"{BASE}/",
+            {"codigo": "cap_bad", "nombre": "X", "capacidades": {"no": "lista"}},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "capacidades" in resp.data
+        assert not ConectorProveedor.objects.filter(codigo="cap_bad").exists()
+
+    def test_capacidades_lista_aceptada(self, client_owner):
+        resp = client_owner.post(
+            f"{BASE}/",
+            {"codigo": "cap_ok", "nombre": "X", "capacidades": ["contactos"]},
+            format="json",
+        )
+        assert resp.status_code == 201
+        assert resp.data["capacidades"] == ["contactos"]
+
+    def test_versiones_no_lista_rechazada(self, client_owner):
+        resp = client_owner.post(
+            f"{BASE}/",
+            {"codigo": "ver_bad", "nombre": "X", "versiones_soportadas": "v17"},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "versiones_soportadas" in resp.data
+        assert not ConectorProveedor.objects.filter(codigo="ver_bad").exists()
+
+    def test_versiones_lista_aceptada(self, client_owner):
+        resp = client_owner.post(
+            f"{BASE}/",
+            {"codigo": "ver_ok", "nombre": "X", "versiones_soportadas": ["17", "18"]},
+            format="json",
+        )
+        assert resp.status_code == 201
+        assert resp.data["versiones_soportadas"] == ["17", "18"]
