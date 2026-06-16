@@ -2,9 +2,11 @@
  * Integration Hub Service
  * Funciones para interactuar con la API del módulo de integraciones.
  */
-import { get, post } from './api';
+import { get, post, patch, fetchText } from './api';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
+
+export type ProveedorEstado = 'activo' | 'beta' | 'proximamente';
 
 export interface ConectorProveedor {
   id_proveedor: string;
@@ -13,10 +15,16 @@ export interface ConectorProveedor {
   descripcion: string;
   icono_url: string;
   capacidades: string[];
+  requiere_url?: boolean;
   requiere_db?: boolean;
-  estado: 'activo' | 'beta' | 'proximamente';
+  estado: ProveedorEstado;
   versiones_soportadas: string[];
+  activo?: boolean;
+  orden?: number;
 }
+
+/** Payload de alta/edición de un proveedor (Panel SaaS, solo superusuario Omni). */
+export type ConectorProveedorPayload = Omit<ConectorProveedor, 'id_proveedor'>;
 
 export interface ConectorInstancia {
   id_conector: string;
@@ -142,6 +150,49 @@ export async function getProveedores(): Promise<ConectorProveedor[]> {
     '/integration-hub/proveedores/',
   );
   return Array.isArray(data) ? data : (data?.results ?? []);
+}
+
+// ── Gestión del catálogo (Panel SaaS — solo superusuario Omni) ─────────────────
+// La escritura está restringida en backend a es_superusuario_omni; la UI vive
+// bajo la ruta protegida /admin-saas.
+
+/** Lista proveedores; con `incluirInactivos` trae también los desactivados. */
+export async function getProveedoresAdmin(
+  incluirInactivos = false,
+): Promise<ConectorProveedor[]> {
+  const query = incluirInactivos ? '?incluir_inactivos=true' : '';
+  const data = await get<ConectorProveedor[] | PaginatedResponse<ConectorProveedor>>(
+    `/integration-hub/proveedores/${query}`,
+  );
+  return Array.isArray(data) ? data : (data?.results ?? []);
+}
+
+export async function getProveedor(id: string): Promise<ConectorProveedor> {
+  return get<ConectorProveedor>(`/integration-hub/proveedores/${id}/`);
+}
+
+export async function createProveedor(
+  data: ConectorProveedorPayload,
+): Promise<ConectorProveedor> {
+  return post<ConectorProveedor>(
+    '/integration-hub/proveedores/',
+    data as unknown as Record<string, unknown>,
+  );
+}
+
+export async function updateProveedor(
+  id: string,
+  data: Partial<ConectorProveedorPayload>,
+): Promise<ConectorProveedor> {
+  return patch<ConectorProveedor>(
+    `/integration-hub/proveedores/${id}/`,
+    data as Record<string, unknown>,
+  );
+}
+
+/** Borrado lógico: el backend marca `activo=False` y responde 204 sin cuerpo. */
+export async function deactivateProveedor(id: string): Promise<void> {
+  await fetchText(`/integration-hub/proveedores/${id}/`, { method: 'DELETE' });
 }
 
 // ── Instancias ───────────────────────────────────────────────────────────────

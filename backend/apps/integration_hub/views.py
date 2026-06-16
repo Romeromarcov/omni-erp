@@ -23,7 +23,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import (
+    BaseModelViewSet,
+    SuperuserWriteMixin,
+    get_empresas_visible,
+)
 
 from .connectors.registry import registry
 from .models import (
@@ -55,16 +59,40 @@ def _empresa(request):
     return get_empresas_visible(request.user).first()
 
 
-# ── Catálogo de proveedores (solo lectura) ────────────────────────────────────
+# ── Catálogo de proveedores ───────────────────────────────────────────────────
 
 
-class ConectorProveedorViewSet(ReadOnlyModelViewSet):
-    """Lista los conectores disponibles en el sistema."""
+class ConectorProveedorViewSet(SuperuserWriteMixin, BaseModelViewSet):
+    """Catálogo global de proveedores de integración.
 
-    queryset = ConectorProveedor.objects.filter(activo=True).order_by("orden", "nombre")
+    - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
+      solo proveedores activos (para el selector de "Nuevo conector"); con
+      ``?incluir_inactivos=true`` se ven todos (Panel SaaS).
+    - **Escritura** (POST/PUT/PATCH/DELETE): solo el dueño del software
+      (``es_superusuario_omni``), vía SuperuserWriteMixin. DELETE es borrado
+      lógico (``activo=False``) porque las instancias lo referencian (FK PROTECT).
+    """
+
+    queryset = ConectorProveedor.objects.all().order_by("orden", "nombre")
     serializer_class = ConectorProveedorSerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = None  # Lista pequeña, sin paginación
+    pagination_class = None  # Lista pequeña; contrato de array plano (modal Nuevo conector)
+    search_fields = ["nombre", "codigo"]
+    ordering_fields = ["orden", "nombre", "estado", "codigo"]
+
+    def get_queryset(self):
+        qs = ConectorProveedor.objects.all().order_by("orden", "nombre")
+        incluir = self.request.query_params.get("incluir_inactivos", "false")
+        if incluir.lower() not in ("true", "1", "yes"):
+            qs = qs.filter(activo=True)
+        return qs
+
+    def perform_destroy(self, instance):
+        # Borrado lógico: el catálogo es global y las instancias lo referencian
+        # (FK PROTECT). Solo el superusuario Omni (gate de SuperuserWriteMixin).
+        self._assert_superuser()
+        instance.activo = False
+        instance.save(update_fields=["activo"])
 
 
 # ── Instancias de conectores ─────────────────────────────────────────────────

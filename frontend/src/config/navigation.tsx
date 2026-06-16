@@ -219,6 +219,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Tenants', path: '/admin-saas/tenants' },
         { label: 'Planes', path: '/admin-saas/planes' },
         { label: 'Suscripciones', path: '/admin-saas/suscripciones' },
+        { label: 'Proveedores de integración', path: '/admin-saas/proveedores' },
       ],
     });
   }
