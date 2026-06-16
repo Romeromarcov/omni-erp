@@ -27,6 +27,7 @@ interface FacturaFiscalDetalle {
 }
 
 interface ClienteInfoFactura {
+  id_cliente?: string;
   razon_social?: string;
   nombre?: string;
   rif?: string;
@@ -288,7 +289,7 @@ const FacturaFiscalDetailPage: React.FC = () => {
           empresaId={factura?.id_empresa?.id_empresa}
           tipoDocumento="FACTURA"
           idDocumento={factura?.id_factura}
-          idCliente={factura?.id_cliente ? 'temp-id' : undefined} // TODO: Obtener ID real del cliente
+          idCliente={factura?.id_cliente?.id_cliente || undefined}
           tipoOperacionInicial="INGRESO"
         />
       )}
