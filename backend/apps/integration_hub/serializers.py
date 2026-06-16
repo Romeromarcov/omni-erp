@@ -14,6 +14,12 @@ from .models import (
 
 
 class ConectorProveedorSerializer(serializers.ModelSerializer):
+    """Catálogo de proveedores.
+
+    Lectura: cualquier usuario autenticado. Escritura: solo superusuario Omni
+    (SaaS owner) — el gate vive en el ViewSet (SuperuserWriteMixin), no aquí.
+    """
+
     class Meta:
         model = ConectorProveedor
         fields = [
@@ -30,7 +36,31 @@ class ConectorProveedorSerializer(serializers.ModelSerializer):
             "activo",
             "orden",
         ]
-        read_only_fields = fields
+        read_only_fields = ["id_proveedor"]
+
+    def validate_codigo(self, value: str) -> str:
+        """El código es un slug (identifica al conector en el registry)."""
+        import re
+
+        slug = (value or "").strip().lower()
+        if not re.fullmatch(r"[a-z0-9_]+", slug):
+            raise serializers.ValidationError(
+                "El código solo admite minúsculas, números y guion bajo "
+                "(ej: 'odoo', 'google_sheets'). Debe coincidir con el conector."
+            )
+        return slug
+
+    def validate_capacidades(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Capacidades debe ser una lista.")
+        return value
+
+    def validate_versiones_soportadas(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                "Versiones soportadas debe ser una lista."
+            )
+        return value
 
 
 class ConectorInstanciaSerializer(serializers.ModelSerializer):

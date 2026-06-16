@@ -9,6 +9,8 @@ const PlanFormPage = lazy(() => import('../pages/SaaS/PlanFormPage'));
 const SuscripcionListPage = lazy(() => import('../pages/SaaS/SuscripcionListPage'));
 const SuscripcionCreatePage = lazy(() => import('../pages/SaaS/SuscripcionCreatePage'));
 const TenantListPage = lazy(() => import('../pages/SaaS/TenantListPage'));
+const ProveedorIntegracionListPage = lazy(() => import('../pages/SaaS/ProveedorIntegracionListPage'));
+const ProveedorIntegracionFormPage = lazy(() => import('../pages/SaaS/ProveedorIntegracionFormPage'));
 
 /**
  * Guard del Panel SaaS: solo el dueño del software (es_superusuario_omni) puede
@@ -34,6 +36,9 @@ export function saasRoutes() {
       <Route path="/admin-saas/planes/:id_plan" element={<PlanFormPage />} />
       <Route path="/admin-saas/suscripciones" element={<SuscripcionListPage />} />
       <Route path="/admin-saas/suscripciones/new" element={<SuscripcionCreatePage />} />
+      <Route path="/admin-saas/proveedores" element={<ProveedorIntegracionListPage />} />
+      <Route path="/admin-saas/proveedores/new" element={<ProveedorIntegracionFormPage />} />
+      <Route path="/admin-saas/proveedores/:id_proveedor" element={<ProveedorIntegracionFormPage />} />
     </Route>
   );
 }

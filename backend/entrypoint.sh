@@ -72,6 +72,14 @@ else
     python manage.py migrate --noinput
 fi
 
+# Catálogo base de proveedores de integración (Odoo, Google Sheets, etc.).
+# Idempotente y no destructivo: garantiza que el catálogo exista en CADA deploy
+# (dev/staging/prod) sin depender de la migración de datos de una sola vez (que
+# no se refleja si la BD del entorno se reprovisiona). No bloqueante: si fallara,
+# el arranque continúa (|| true) y se diagnostica aparte.
+echo "Sembrando catálogo de proveedores de integración (idempotente)..."
+python manage.py seed_proveedores_integracion || echo "WARN: seed de proveedores de integración falló (no bloqueante)."
+
 # Seed demo opcional e idempotente, SOLO para entornos de desarrollo. Activar con
 # RUN_SEED=1 en un entorno nuevo para crear la empresa y el superusuario demo. El
 # comando create_initial_data está bloqueado fuera de DEBUG (crea admin/admin123),
