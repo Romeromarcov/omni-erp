@@ -42,7 +42,7 @@ from apps.nomina.models import PeriodoNomina
 from apps.personalizacion.models import PersonalizacionConfig
 from apps.proveedores.models import Proveedor
 from apps.servicio_cliente.models import CategoriaTicket
-from apps.ventas.models import Cotizacion
+from apps.ventas.models import Cotizacion, EsquemaComision
 
 pytestmark = [pytest.mark.django_db, pytest.mark.tenant]
 
@@ -235,6 +235,18 @@ def _build_log_auditoria(empresa, label, env):
     )
 
 
+def _build_esquema_comision(empresa, label, env):
+    from django.contrib.auth import get_user_model
+
+    vendedor = get_user_model().objects.create(username=f"vendedor_esquema_{label}")
+    vendedor.empresas.add(empresa)
+    return EsquemaComision.objects.create(
+        id_empresa=empresa,
+        vendedor=vendedor,
+        porcentaje_base=Decimal("5.0000"),
+    )
+
+
 def _build_periodo_nomina(empresa, label, env):
     hoy = date.today()
     return PeriodoNomina.objects.create(
@@ -276,6 +288,8 @@ CASES: list[IsolationCase] = [
                   {"nombre": "Hackeado"}, "nombre"),
     IsolationCase("ventas.Cotizacion", "/api/ventas/cotizaciones/", "id_cotizacion", _build_cotizacion,
                   {"estado": "ACEPTADA"}, "estado"),
+    IsolationCase("ventas.EsquemaComision", "/api/ventas/esquemas-comision/", "id_esquema_comision",
+                  _build_esquema_comision, {"porcentaje_base": "1.0000"}, "porcentaje_base"),
     IsolationCase("inventario.CategoriaProducto", "/api/inventario/categorias-producto/",
                   "id_categoria_producto", _build_categoria_producto,
                   {"nombre_categoria": "Hackeado"}, "nombre_categoria"),

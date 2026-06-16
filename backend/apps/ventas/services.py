@@ -19,7 +19,7 @@ actualiza al total fiscal — nunca se crea una segunda.
 
 import logging
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import models, transaction
 from django.utils import timezone
@@ -277,6 +277,9 @@ def convertir_pedido_a_nota_venta(pedido, usuario=None):
         id_empresa=pedido.id_empresa,
         id_cliente=pedido.id_cliente,
         id_pedido_origen=pedido,
+        # 1.G: el vendedor del pedido viaja a la nota — es la base del devengo
+        # de comisión al entregar.
+        id_vendedor=pedido.id_vendedor,
         numero_nota=numero_nota,
         fecha_nota=timezone.localdate(),
         estado="BORRADOR",
@@ -442,7 +445,14 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
             documento_json=documento_json,
         )
 
-    return {"movimientos": movimientos, "cxc": cxc}
+    # 1.G — Comisiones: la entrega es el punto donde la venta es firme (sale
+    # mercancía y nace el derecho de cobro), así que aquí se devenga la comisión
+    # del vendedor, DENTRO de la misma transacción (si algo falla, todo revierte).
+    # Cubre ventas con y sin factura fiscal sin riesgo de doble devengo (la
+    # factura siempre deriva de una nota ya ENTREGADA).
+    comision = devengar_comision_venta(nota_venta)
+
+    return {"movimientos": movimientos, "cxc": cxc, "comision": comision}
 
 
 # ── confirmar_nota_venta ──────────────────────────────────────────────────────
@@ -676,3 +686,174 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
         "asiento_iva_error": asiento_iva_error,
         "cxc": cxc,
     }
+
+
+# ── Comisiones de vendedores (1.G) ────────────────────────────────────────────
+
+#: Cuantización de montos de comisión: 4 decimales (convención monetaria del
+#: proyecto) con ROUND_HALF_UP (default comercial de omni-decimal-money).
+_CUATRO_DECIMALES = Decimal("0.0001")
+_CIEN = Decimal("100")
+
+
+def _esquema_comision_vigente(empresa, vendedor, fecha: date):
+    """
+    Esquema de comisión aplicable a un vendedor de la empresa en una fecha:
+    activo y con la fecha dentro de la vigencia (límites NULL = abiertos).
+    Si hay varios vigentes, gana el de ``vigente_desde`` más reciente (regla
+    determinística, mismo espíritu que las listas de precio).
+    """
+    from apps.ventas.models import EsquemaComision
+
+    return (
+        EsquemaComision.objects.filter(id_empresa=empresa, vendedor=vendedor, activo=True)
+        .filter(models.Q(vigente_desde__isnull=True) | models.Q(vigente_desde__lte=fecha))
+        .filter(models.Q(vigente_hasta__isnull=True) | models.Q(vigente_hasta__gte=fecha))
+        .order_by(models.F("vigente_desde").desc(nulls_last=True), "-fecha_creacion")
+        .first()
+    )
+
+
+def devengar_comision_venta(nota_venta):
+    """
+    Registra la comisión devengada de la venta (NotaVenta recién ENTREGADA).
+
+    Reglas:
+      - Sin vendedor asignado o sin esquema vigente → no hay comisión (None);
+        no es un error: la venta procede igual.
+      - Base comisionable = subtotal de la nota (sin IVA/IGTF: las comisiones
+        no se pagan sobre impuestos).
+      - Porcentaje por línea: override de la categoría del producto si el
+        esquema lo define; si no, el porcentaje base del esquema.
+      - Todo en Decimal, cuantizado a 4 decimales ROUND_HALF_UP (R-CODE-4).
+      - El OneToOne nota↔comisión hace el devengo idempotente: si ya existe,
+        se devuelve la existente sin recalcular.
+
+    Debe invocarse DENTRO de la transacción de la entrega (R-CODE-11): si el
+    INSERT de la comisión falla, la entrega completa revierte.
+    """
+    from apps.ventas.models import ComisionVenta
+
+    vendedor = nota_venta.id_vendedor
+    if vendedor is None:
+        return None
+
+    existente = ComisionVenta.objects.filter(nota_venta=nota_venta).first()
+    if existente is not None:
+        return existente
+
+    fecha = nota_venta.fecha_nota or timezone.now().date()
+    esquema = _esquema_comision_vigente(nota_venta.id_empresa, vendedor, fecha)
+    if esquema is None:
+        logger.info(
+            "devengar_comision_venta: nota %s con vendedor %s sin esquema vigente; no se devenga.",
+            nota_venta.id_nota_venta,
+            vendedor.pk,
+        )
+        return None
+
+    overrides = {
+        o.categoria_id: o.porcentaje for o in esquema.overrides_categoria.all()
+    }
+
+    base = Decimal("0")
+    monto = Decimal("0")
+    detalle = []
+    for linea in nota_venta.detalles.select_related("id_producto"):
+        porcentaje = overrides.get(linea.id_producto.id_categoria_id, esquema.porcentaje_base)
+        subtotal = linea.subtotal
+        monto_linea = (subtotal * porcentaje / _CIEN).quantize(
+            _CUATRO_DECIMALES, rounding=ROUND_HALF_UP
+        )
+        base += subtotal
+        monto += monto_linea
+        detalle.append(
+            {
+                "id_producto": str(linea.id_producto_id),
+                "subtotal": str(subtotal),
+                "porcentaje": str(porcentaje),
+                "monto": str(monto_linea),
+            }
+        )
+
+    return ComisionVenta.objects.create(
+        id_empresa=nota_venta.id_empresa,
+        vendedor=vendedor,
+        nota_venta=nota_venta,
+        esquema=esquema,
+        base_comisionable=base,
+        monto=monto,
+        id_moneda=getattr(nota_venta.id_empresa, "id_moneda_base", None),
+        estado="DEVENGADA",
+        fecha_devengo=fecha,
+        detalle_json=detalle,
+    )
+
+
+def anular_comision_de_nota_venta(nota_venta):
+    """
+    Anula la comisión asociada a una NotaVenta que se está anulando, en la
+    MISMA transacción que el cambio de estado de la nota (el caller garantiza
+    el ``transaction.atomic``).
+
+    - Sin comisión o ya ANULADA → no-op (None / la existente).
+    - LIQUIDADA → VentaError: la comisión ya se pagó al vendedor; la venta no
+      puede anularse "en silencio". El flujo correcto es devolución / nota de
+      crédito (resto de 1.G).
+    """
+    from apps.ventas.models import ComisionVenta
+
+    comision = (
+        ComisionVenta.objects.select_for_update().filter(nota_venta=nota_venta).first()
+    )
+    if comision is None or comision.estado == "ANULADA":
+        return comision
+    if comision.estado == "LIQUIDADA":
+        raise VentaError(
+            "La comisión de esta venta ya fue liquidada al vendedor; no se puede "
+            "anular la nota. Registre una devolución o nota de crédito."
+        )
+    comision.estado = "ANULADA"
+    comision.save(update_fields=["estado"])
+    return comision
+
+
+@transaction.atomic
+def liquidar_comisiones(empresas, vendedor, desde: date, hasta: date, usuario):
+    """
+    Marca como LIQUIDADAS todas las comisiones DEVENGADAS de un vendedor en un
+    período (``fecha_devengo`` en [desde, hasta]), acotado a ``empresas``
+    (las visibles del usuario — R-CODE-1).
+
+    Con ``select_for_update``: dos liquidaciones concurrentes del mismo rango
+    no duplican el pago (la segunda ve 0 pendientes).
+
+    Returns:
+        {"liquidadas": int, "monto_total": Decimal}
+    """
+    from apps.ventas.models import ComisionVenta
+
+    if desde > hasta:
+        raise VentaError("El rango de fechas es inválido: 'desde' es posterior a 'hasta'.")
+
+    pendientes = list(
+        ComisionVenta.objects.select_for_update()
+        .filter(
+            id_empresa__in=empresas,
+            vendedor=vendedor,
+            estado="DEVENGADA",
+            fecha_devengo__gte=desde,
+            fecha_devengo__lte=hasta,
+        )
+    )
+    hoy = timezone.now().date()
+    total = Decimal("0")
+    for comision in pendientes:
+        comision.estado = "LIQUIDADA"
+        comision.fecha_liquidacion = hoy
+        comision.liquidada_por = usuario
+        total += comision.monto
+    ComisionVenta.objects.bulk_update(
+        pendientes, ["estado", "fecha_liquidacion", "liquidada_por"]
+    )
+    return {"liquidadas": len(pendientes), "monto_total": total}
