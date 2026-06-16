@@ -291,7 +291,7 @@ const NotaVentaDetailPage: React.FC = () => {
           empresaId={notaVenta?.id_empresa?.id_empresa}
           tipoDocumento="NOTA_VENTA"
           idDocumento={notaVenta?.id_nota_venta}
-          idCliente={notaVenta?.id_cliente ? 'temp-id' : undefined}
+          idCliente={notaVenta?.id_cliente?.id_cliente || undefined}
           tipoOperacionInicial="INGRESO"
         />
       )}
