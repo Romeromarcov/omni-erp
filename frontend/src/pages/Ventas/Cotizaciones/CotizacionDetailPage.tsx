@@ -250,7 +250,7 @@ const CotizacionDetailPage: React.FC = () => {
           empresaId={cotizacion?.id_empresa?.id_empresa}
           tipoDocumento="COTIZACION"
           idDocumento={cotizacion?.id_cotizacion}
-          idCliente={cotizacion?.id_cliente ? 'temp-id' : undefined}
+          idCliente={cotizacion?.id_cliente?.id_cliente || undefined}
           tipoOperacionInicial="INGRESO"
         />
       )}

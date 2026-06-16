@@ -65,4 +65,4 @@ pre-commit==4.6.0
 black==26.3.1
 isort==8.0.1
 flake8==7.3.0
-cryptography==48.0.1  # GHSA-537c-gmf6-5ccf — fix en 48.0.1 (incluye PYSEC-2026-35/36, GHSA-r6ph-v2qm-q3c2)
+cryptography==48.0.1  # GHSA-537c-gmf6-5ccf (fix 48.0.1); prev 46.0.7 (GHSA-r6ph-v2qm-q3c2)

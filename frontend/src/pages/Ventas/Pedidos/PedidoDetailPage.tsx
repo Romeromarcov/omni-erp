@@ -59,7 +59,7 @@ interface Pedido {
   id_sucursal?: { id_sucursal: string; nombre: string };
   id_caja?: { id_caja: string; nombre: string };
   id_usuario?: { id: number; username: string; first_name: string; last_name: string };
-  id_cliente: { nombre: string };
+  id_cliente: { nombre: string; id_cliente?: string };
   observaciones?: string;
   detalles: PedidoDetalle[];
   // pagos será cargado desde la nueva API
@@ -416,7 +416,7 @@ const PedidoDetailPage: React.FC = () => {
           empresaId={pedido?.id_empresa?.id_empresa}
           tipoDocumento="PEDIDO"
           idDocumento={pedido?.id_pedido}
-          idCliente={pedido?.id_cliente ? 'temp-id' : undefined}
+          idCliente={pedido?.id_cliente?.id_cliente || undefined}
           tipoOperacionInicial="INGRESO"
         />
       )}

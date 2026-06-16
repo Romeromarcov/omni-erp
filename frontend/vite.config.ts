@@ -110,13 +110,14 @@ export default defineConfig({
       // test:coverage). Los umbrales son un "ratchet" fijado al piso actual del
       // código para prevenir regresión; el objetivo de la Fase 4 del plan
       // cero-dudas es 80% y se sube por escalones conforme se agregan tests.
-      // No bajar. Piso actual (Q1/COV-2 escalón 3, OBJETIVO 80% ALCANZADO):
-      // stmts 80.7 / branches 70.9 / funcs 71.0 / lines 82.7 — umbral con ~2 puntos de margen.
+      // No bajar. Piso actual (Q1: +saasService, +ventas.schemas — cobertura
+      // medida 2026-06-16): stmts 85.6 / branches 75.1 / funcs 79.2 / lines 87.1
+      // — umbral con ~2 puntos de margen para tolerar fluctuación entre corridas.
       thresholds: {
-        statements: 79,
-        branches: 69,
-        functions: 69,
-        lines: 81,
+        statements: 83,
+        branches: 73,
+        functions: 77,
+        lines: 85,
         // TEST-6: pisos de cobertura por carpeta (ratchet, igual filosofía que el
         // global). Fijados al piso ACTUAL de cada carpeta para impedir regresión.
         // El objetivo del Plan Maestro (≥85% en services/ y hooks/) sigue pendiente;
