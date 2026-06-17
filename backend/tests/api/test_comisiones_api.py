@@ -12,10 +12,11 @@ Cubre:
     con comisión LIQUIDADA la anulación se rechaza y nada cambia.
 """
 
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 
 from apps.ventas.models import ComisionVenta, EsquemaComision, NotaVenta
 
@@ -67,7 +68,7 @@ def _comision(empresa, vendedor, monto="10.0000", fecha=None, estado="DEVENGADA"
         id_cliente=_cliente(empresa),
         id_vendedor=vendedor,
         numero_nota=f"NV-API-{next(_SEQ):04d}",
-        fecha_nota=fecha or date.today(),
+        fecha_nota=fecha or timezone.localdate(),
         estado="ENTREGADA",
     )
     return ComisionVenta.objects.create(
@@ -78,7 +79,7 @@ def _comision(empresa, vendedor, monto="10.0000", fecha=None, estado="DEVENGADA"
         base_comisionable=Decimal(monto) * 20,
         monto=Decimal(monto),
         estado=estado,
-        fecha_devengo=fecha or date.today(),
+        fecha_devengo=fecha or timezone.localdate(),
     )
 
 
@@ -269,7 +270,7 @@ def test_comisiones_listado_aislado_y_solo_lectura(client_a, empresa_a, empresa_
 
 
 def test_comisiones_filtros(client_a, empresa_a):
-    hoy = date.today()
+    hoy = timezone.localdate()
     v1 = _vendedor(empresa_a)
     v2 = _vendedor(empresa_a)
     de_v1 = _comision(empresa_a, v1, fecha=hoy)
@@ -324,7 +325,7 @@ def test_resumen_por_vendedor(client_a, empresa_a, empresa_b):
 
 
 def test_liquidar_marca_y_es_idempotente_con_clave(client_a, empresa_a, user_a):
-    hoy = date.today()
+    hoy = timezone.localdate()
     vendedor = _vendedor(empresa_a)
     esquema = _esquema(empresa_a, vendedor)
     c1 = _comision(empresa_a, vendedor, monto="5.0000", esquema=esquema)
@@ -372,8 +373,8 @@ def test_liquidar_vendedor_ajeno_400(client_a, empresa_b):
         f"{BASE_COMISIONES}liquidar/",
         {
             "vendedor": str(vendedor_b.pk),
-            "desde": str(date.today() - timedelta(days=7)),
-            "hasta": str(date.today()),
+            "desde": str(timezone.localdate() - timedelta(days=7)),
+            "hasta": str(timezone.localdate()),
         },
         format="json",
     )
@@ -384,7 +385,7 @@ def test_liquidar_vendedor_ajeno_400(client_a, empresa_b):
 
 def test_liquidar_validaciones_400(client_a, empresa_a):
     vendedor = _vendedor(empresa_a)
-    hoy = date.today()
+    hoy = timezone.localdate()
     # rango invertido
     resp = client_a.post(
         f"{BASE_COMISIONES}liquidar/",
@@ -448,8 +449,6 @@ def test_patch_nota_otro_campo_no_toca_comision(client_a, empresa_a):
 
 def _nota_borrador_con_stock(empresa, usuario, vendedor):
     """Nota BORRADOR de 3 × 20.00 con stock disponible en un almacén nuevo."""
-    from django.utils import timezone
-
     from apps.almacenes.models import Almacen
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
     from apps.inventario.services import registrar_movimiento
@@ -487,7 +486,7 @@ def _nota_borrador_con_stock(empresa, usuario, vendedor):
         id_cliente=_cliente(empresa),
         id_vendedor=vendedor,
         numero_nota=f"NV-E2E-{n:04d}",
-        fecha_nota=date.today(),
+        fecha_nota=timezone.localdate(),
         estado="BORRADOR",
     )
     DetalleNotaVenta.objects.create(

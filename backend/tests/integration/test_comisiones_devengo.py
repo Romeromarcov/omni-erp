@@ -15,7 +15,7 @@ Reglas verificadas con montos calculados A MANO (R-CODE-4, Decimal exacto):
     y es naturalmente idempotente (segunda corrida → 0).
 """
 
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -146,7 +146,7 @@ def _crear_nota(empresa, cliente, vendedor=None, lineas=None, fecha=None):
         id_cliente=cliente,
         id_vendedor=vendedor,
         numero_nota=f"NV-COM-{next(_SEQ):04d}",
-        fecha_nota=fecha or date.today(),
+        fecha_nota=fecha or timezone.localdate(),
         estado="BORRADOR",
     )
     for producto, cantidad, precio in lineas or []:
@@ -176,7 +176,7 @@ def test_repr_de_modelos_de_comision(empresa_a, cliente, vendedor, esquema_5, ca
         esquema=esquema_5,
         base_comisionable=Decimal("100.0000"),
         monto=Decimal("5.0000"),
-        fecha_devengo=date.today(),
+        fecha_devengo=timezone.localdate(),
     )
     assert "5.0000" in str(esquema_5)
     assert "Ferretería" in str(override)
@@ -274,7 +274,7 @@ def test_sin_esquema_vigente_no_devenga(
         id_empresa=empresa_a,
         vendedor=vendedor,
         porcentaje_base=Decimal("5.0000"),
-        vigente_hasta=date.today() - timedelta(days=1),
+        vigente_hasta=timezone.localdate() - timedelta(days=1),
     )
     nota = _crear_nota(
         empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))]
@@ -321,13 +321,13 @@ def test_gana_el_esquema_con_vigente_desde_mas_reciente(
         id_empresa=empresa_a,
         vendedor=vendedor,
         porcentaje_base=Decimal("5.0000"),
-        vigente_desde=date.today() - timedelta(days=365),
+        vigente_desde=timezone.localdate() - timedelta(days=365),
     )
     nuevo = EsquemaComision.objects.create(
         id_empresa=empresa_a,
         vendedor=vendedor,
         porcentaje_base=Decimal("7.0000"),
-        vigente_desde=date.today() - timedelta(days=10),
+        vigente_desde=timezone.localdate() - timedelta(days=10),
     )
     nota = _crear_nota(
         empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("100.00"))]
@@ -397,7 +397,7 @@ def test_anular_comision_liquidada_falla_controlado(
         empresa_a, cliente, almacen, productos, user_a, vendedor
     )
     comision.estado = "LIQUIDADA"
-    comision.fecha_liquidacion = date.today()
+    comision.fecha_liquidacion = timezone.localdate()
     comision.save(update_fields=["estado", "fecha_liquidacion"])
 
     with pytest.raises(VentaError, match="liquidada"):
@@ -419,7 +419,7 @@ def test_convertir_pedido_copia_vendedor(empresa_a, cliente, productos, vendedor
         id_cliente=cliente,
         id_vendedor=vendedor,
         numero_pedido="PED-COM-0001",
-        fecha_pedido=date.today(),
+        fecha_pedido=timezone.localdate(),
         estado="APROBADO",
     )
     DetallePedido.objects.create(
@@ -441,7 +441,7 @@ def test_convertir_pedido_copia_vendedor(empresa_a, cliente, productos, vendedor
 def test_liquidar_comisiones_solo_periodo_y_devengadas(
     empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5
 ):
-    hoy = date.today()
+    hoy = timezone.localdate()
     en_rango_1 = _crear_nota(
         empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("100.00"))]
     )
@@ -497,7 +497,7 @@ def test_liquidar_rango_invertido_falla(empresa_a, user_a, vendedor):
         liquidar_comisiones(
             empresas=[empresa_a],
             vendedor=vendedor,
-            desde=date.today(),
-            hasta=date.today() - timedelta(days=1),
+            desde=timezone.localdate(),
+            hasta=timezone.localdate() - timedelta(days=1),
             usuario=user_a,
         )

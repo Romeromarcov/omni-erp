@@ -742,7 +742,7 @@ def devengar_comision_venta(nota_venta):
     if existente is not None:
         return existente
 
-    fecha = nota_venta.fecha_nota or timezone.now().date()
+    fecha = nota_venta.fecha_nota or timezone.localdate()
     esquema = _esquema_comision_vigente(nota_venta.id_empresa, vendedor, fecha)
     if esquema is None:
         logger.info(
@@ -846,7 +846,7 @@ def liquidar_comisiones(empresas, vendedor, desde: date, hasta: date, usuario):
             fecha_devengo__lte=hasta,
         )
     )
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     total = Decimal("0")
     for comision in pendientes:
         comision.estado = "LIQUIDADA"
