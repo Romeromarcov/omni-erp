@@ -339,6 +339,8 @@ RLS_TABLES = {
     # ventas
     "ventas_cotizacion": "id_empresa_id",
     "ventas_devolucion_venta": "id_empresa_id",
+    "ventas_esquema_comision": "id_empresa_id",
+    "ventas_comision_venta": "id_empresa_id",
     "ventas_lista_precio": "id_empresa_id",
     "ventas_nota_credito_fiscal": "id_empresa_id",
     "ventas_nota_credito_venta": "id_empresa_id",
