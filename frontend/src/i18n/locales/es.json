@@ -83,6 +83,55 @@
       "dePedido": "✓ De Pedido",
       "convertirAFactura": "Convertir a Factura",
       "errorConvertir": "Error al convertir la nota de venta a factura"
+    },
+    "pos": {
+      "devolucion": {
+        "boton": "Devolución",
+        "titulo": "Devolución de venta",
+        "buscarLabel": "Número de venta",
+        "buscarPlaceholder": "Ej.: NV-0001 — Enter para buscar",
+        "buscar": "Buscar",
+        "noEncontrada": "No se encontró la venta \"{{numero}}\".",
+        "fiscal": "Venta fiscal (factura {{numero}}): se emitirá nota de crédito fiscal.",
+        "noFiscal": "Venta no fiscal: se emitirá nota de crédito interna.",
+        "columnaProducto": "Producto",
+        "columnaDisponible": "Disponible",
+        "columnaCantidad": "Devolver",
+        "vendida": "Vendida: {{cantidad}}",
+        "devuelta": "Devuelta: {{cantidad}}",
+        "almacen": "Almacén de reingreso",
+        "metodo": "Método de reembolso",
+        "motivo": "Motivo",
+        "totalReembolso": "Total a reembolsar",
+        "confirmar": "Confirmar devolución",
+        "procesando": "Procesando…",
+        "cancelar": "Cancelar",
+        "errorRegistro": "No se pudo registrar la devolución. Puedes reintentar: no se duplica.",
+        "sinCantidades": "Indica al menos una cantidad a devolver.",
+        "cantidadMaxima": "La cantidad de \"{{producto}}\" supera lo disponible ({{max}}).",
+        "faltanDatos": "Selecciona almacén y método de reembolso.",
+        "nadaDevolvible": "Esta venta ya fue devuelta por completo.",
+        "motivos": {
+          "CAMBIO_CLIENTE": "Cambio del cliente",
+          "DEFECTO": "Producto defectuoso",
+          "GARANTIA": "Garantía",
+          "ERROR_ENTREGA": "Error de entrega",
+          "VENCIMIENTO": "Vencimiento",
+          "OTRO": "Otro"
+        },
+        "ivaNota": "+ IVA proporcional a la factura (lo calcula el sistema al confirmar)."
+      },
+      "reciboDevolucion": {
+        "titulo": "DEVOLUCIÓN N° {{numero}}",
+        "ventaOriginal": "Venta original: {{numero}}",
+        "notaCredito": "Nota de crédito: {{numero}}",
+        "control": "N° control: {{numero}}",
+        "caja": "Caja: {{nombre}}",
+        "reembolsado": "REEMBOLSADO",
+        "imprimir": "Imprimir",
+        "cerrar": "Listo",
+        "pie": "Conserve este comprobante"
+      }
     }
   },
   "manufactura": {

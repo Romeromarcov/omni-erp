@@ -9,7 +9,9 @@
  *  - cobro mixto multimoneda (PosPagoDialog) sobre la nota de venta creada en
  *    el backend (el IVA lo calcula el backend), con Idempotency-Key por pago;
  *  - exige sesión de caja abierta (PosSesionDialog ofrece abrirla);
- *  - recibo imprimible de 80mm (PosRecibo).
+ *  - recibo imprimible de 80mm (PosRecibo);
+ *  - devoluciones de una venta por número (PosDevolucionDialog: líneas/cantidades
+ *    capadas a lo disponible, reembolso por caja y recibo 80mm de devolución).
  */
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +22,8 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
+import ReplayIcon from '@mui/icons-material/Replay';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Decimal from 'decimal.js';
 import { D, subtotalLinea, toFixedStr } from '../../../lib/decimal';
@@ -36,6 +40,8 @@ import { pagosService } from '../../../services/pagosService';
 import PosPagoDialog from './PosPagoDialog';
 import PosSesionDialog from './PosSesionDialog';
 import PosRecibo, { type ReciboData } from './PosRecibo';
+import PosDevolucionDialog, { type ReciboDevolucionData } from './PosDevolucionDialog';
+import PosReciboDevolucion from './PosReciboDevolucion';
 import { subtotalCarrito, type PosCartItem, type PosPago, totalPagado } from './posTotals';
 
 /** Nombre del cliente genérico de mostrador (se crea una vez por empresa). */
@@ -51,6 +57,7 @@ interface NotaVentaCreada {
 
 export default function PosPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const searchRef = useRef<HTMLInputElement>(null);
   // Clave de idempotencia de la NOTA: una por intento de venta, estable en
@@ -63,6 +70,8 @@ export default function PosPage() {
   const [errorVenta, setErrorVenta] = useState<string | null>(null);
   const [sesionDialogOpen, setSesionDialogOpen] = useState(false);
   const [pagoDialogOpen, setPagoDialogOpen] = useState(false);
+  const [devolucionDialogOpen, setDevolucionDialogOpen] = useState(false);
+  const [reciboDevolucion, setReciboDevolucion] = useState<ReciboDevolucionData | null>(null);
   const [creandoNota, setCreandoNota] = useState(false);
   const [procesandoPagos, setProcesandoPagos] = useState(false);
   const [notaCreada, setNotaCreada] = useState<NotaVentaCreada | null>(null);
@@ -308,6 +317,22 @@ export default function PosPage() {
           </IconButton>
           <PointOfSaleIcon sx={{ mx: 1 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>POS de mostrador</Typography>
+          <Button
+            color="inherit"
+            size="small"
+            startIcon={<ReplayIcon />}
+            sx={{ mr: 2 }}
+            onClick={() => {
+              if (!sesion) {
+                setSesionDialogOpen(true);
+                return;
+              }
+              setDevolucionDialogOpen(true);
+            }}
+            data-testid="pos-abrir-devolucion"
+          >
+            {t('ventas.pos.devolucion.boton')}
+          </Button>
           <Typography variant="body2" data-testid="pos-estado-sesion">
             {cargandoSesion
               ? 'Verificando caja…'
@@ -443,6 +468,26 @@ export default function PosPage() {
       />
 
       <PosRecibo open={!!recibo} recibo={recibo} onNuevaVenta={nuevaVenta} />
+
+      <PosDevolucionDialog
+        open={devolucionDialogOpen}
+        codigoIsoDocumento={codigoIsoDocumento}
+        metodos={metodos}
+        onClose={() => setDevolucionDialogOpen(false)}
+        onRegistrada={(datos) => {
+          setDevolucionDialogOpen(false);
+          setReciboDevolucion(datos);
+        }}
+      />
+      <PosReciboDevolucion
+        open={!!reciboDevolucion}
+        recibo={reciboDevolucion}
+        empresaNombre={sesion?.caja_fisica_principal.sucursal.empresa.nombre ?? ''}
+        onCerrar={() => {
+          setReciboDevolucion(null);
+          searchRef.current?.focus();
+        }}
+      />
     </Box>
   );
 }

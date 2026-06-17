@@ -630,6 +630,10 @@
 | `^notas-venta/(?P<pk>[^/.]+)/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/convertir-factura/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/convertir-factura\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devoluciones/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devoluciones\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devolver/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devolver\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/entregar/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/entregar\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
