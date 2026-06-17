@@ -73,7 +73,14 @@ def generar_pdf_nota_entrega(despacho) -> bytes:
     story.append(t_doc)
     story.append(Spacer(1, 0.5 * cm))
 
-    # ── Pedido vinculado ──────────────────────────────────────────────────────
+    # ── Documentos vinculados ─────────────────────────────────────────────────
+    nota_venta = getattr(despacho, "id_nota_venta", None)
+    if nota_venta:
+        story.append(Paragraph(
+            f"<b>Nota de venta de referencia:</b> {nota_venta}",
+            styles["Normal"],
+        ))
+        story.append(Spacer(1, 0.3 * cm))
     if despacho.id_pedido:
         story.append(Paragraph(
             f"<b>Pedido de referencia:</b> {despacho.id_pedido}",
