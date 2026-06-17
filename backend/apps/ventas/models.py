@@ -405,6 +405,12 @@ class DevolucionVenta(models.Model):
     id_factura_origen = models.ForeignKey(
         "FacturaFiscal", on_delete=models.CASCADE, null=True, blank=True, related_name="devoluciones"
     )
+    # 1.G — devoluciones POS: la venta de mostrador es una NotaVenta (la factura
+    # solo existe si la venta se fiscalizó). Este enlace permite acumular lo
+    # devuelto por línea de la venta original ("no devolver más de lo vendido").
+    id_nota_venta_origen = models.ForeignKey(
+        "NotaVenta", on_delete=models.CASCADE, null=True, blank=True, related_name="devoluciones"
+    )
     # Nota de crédito generada automáticamente por la devolución
     id_nota_credito_generada = models.OneToOneField(
         "NotaCreditoVenta", on_delete=models.SET_NULL, null=True, blank=True, related_name="devolucion_origen"
