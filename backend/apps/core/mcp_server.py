@@ -1149,6 +1149,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.manufactura.mcp",
     "apps.nomina.mcp",
     "apps.fiscal.mcp",
+    "apps.despacho.mcp",
 ]
 
 

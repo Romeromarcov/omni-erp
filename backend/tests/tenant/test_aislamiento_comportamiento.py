@@ -32,6 +32,7 @@ from apps.compras.models import OrdenCompra
 from apps.contabilidad.models import PlanCuentas
 from apps.control_asistencia.models import HorarioTrabajo
 from apps.crm.models import Cliente
+from apps.despacho.models import Despacho
 from apps.finanzas.models import Caja, Pago
 from apps.gastos.models import CategoriaGasto
 from apps.gestion_aprobaciones.models import TipoAprobacion
@@ -102,6 +103,23 @@ def _build_almacen(empresa, label, env):
         id_empresa=empresa,
         nombre_almacen=f"Almacén {label}",
         codigo_almacen=f"ALM-{label}",
+    )
+
+
+def _build_despacho(empresa, label, env):
+    from django.utils import timezone
+
+    almacen = Almacen.objects.create(
+        id_empresa=empresa,
+        nombre_almacen=f"Almacén Despacho {label}",
+        codigo_almacen=f"ALM-DSP-{label}",
+    )
+    return Despacho.objects.create(
+        id_empresa=empresa,
+        numero_despacho=f"DSP-{label}-001",
+        fecha_despacho=timezone.now(),
+        id_almacen_origen=almacen,
+        direccion_destino=f"Destino {label}",
     )
 
 
@@ -260,6 +278,8 @@ CASES: list[IsolationCase] = [
                   {"nombre_categoria": "Hackeado"}, "nombre_categoria"),
     IsolationCase("almacenes.Almacen", "/api/almacenes/almacenes/", "id_almacen", _build_almacen,
                   {"nombre_almacen": "Hackeado"}, "nombre_almacen"),
+    IsolationCase("despacho.Despacho", "/api/despacho/despachos/", "id_despacho", _build_despacho,
+                  {"direccion_destino": "Hackeado"}, "direccion_destino"),
     IsolationCase("manufactura.CentroTrabajo", "/api/manufactura/centros-trabajo/", "id_centro_trabajo",
                   _build_centro_trabajo, {"nombre_centro": "Hackeado"}, "nombre_centro"),
     IsolationCase("gestion_aprobaciones.TipoAprobacion", "/api/gestion-aprobaciones/tipos-aprobacion/",
