@@ -80,7 +80,7 @@ def escenario(empresa_a, moneda_usd, user_a):
         id_empresa=empresa_a,
         id_cliente=cliente,
         numero_pedido="PED-FLJ-001",
-        fecha_pedido=timezone.now().date(),
+        fecha_pedido=timezone.localdate(),
         estado="PENDIENTE",
     )
     DetallePedido.objects.create(

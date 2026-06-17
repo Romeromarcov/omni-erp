@@ -66,7 +66,7 @@ def _escenario_venta(empresa, moneda, sufijo):
         id_empresa=empresa,
         id_cliente=cliente,
         numero_nota=f"NV-{sufijo}-001",
-        fecha_nota=timezone.now().date(),
+        fecha_nota=timezone.localdate(),
         estado="ENTREGADA",
     )
     DetalleNotaVenta.objects.create(
@@ -417,7 +417,7 @@ class TestFiltros:
         resp = client_a.get(URL, {"id_nota_venta": str(venta_a["nota"].id_nota_venta)})
         assert len(_resultados(resp.data)) == 2
 
-        hoy = timezone.now().date().isoformat()
+        hoy = timezone.localdate().isoformat()
         resp = client_a.get(URL, {"fecha_desde": hoy, "fecha_hasta": hoy})
         assert len(_resultados(resp.data)) == 2
         resp = client_a.get(URL, {"fecha_desde": "2099-01-01"})
