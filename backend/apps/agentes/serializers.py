@@ -12,7 +12,25 @@ class PrediccionAgenteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PrediccionAgente
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_prediccion",
+            "esta_vigente",
+            "agente",
+            "input_texto",
+            "input_monto",
+            "input_metadata",
+            "categoria_predicha",
+            "confianza",
+            "razonamiento",
+            "alternativas",
+            "resultado_humano",
+            "categoria_correcta",
+            "modelo_llm",
+            "latencia_ms",
+            "fecha_prediccion",
+            "id_empresa",
+        ]
         read_only_fields = [
             "id_prediccion",
             "fecha_prediccion",

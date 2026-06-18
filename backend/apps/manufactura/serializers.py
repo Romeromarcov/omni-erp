@@ -20,7 +20,16 @@ from .models import (
 class ListaMaterialesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListaMateriales
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "referencia_externa",
+            "documento_json",
+            "nombre",
+            "descripcion",
+            "empresa",
+            "producto_final",
+        ]
         # empresa se inyecta en perform_create desde request.user — R-CODE-1
         read_only_fields = ["empresa"]
 
@@ -28,7 +37,15 @@ class ListaMaterialesSerializer(serializers.ModelSerializer):
 class RutaProduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RutaProduccion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "referencia_externa",
+            "documento_json",
+            "nombre",
+            "descripcion",
+            "empresa",
+        ]
         # empresa se inyecta en perform_create desde request.user — R-CODE-1
         read_only_fields = ["empresa"]
 
@@ -36,7 +53,23 @@ class RutaProduccionSerializer(serializers.ModelSerializer):
 class OrdenProduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrdenProduccion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "cantidad",
+            "fecha_inicio",
+            "fecha_fin",
+            "referencia_externa",
+            "documento_json",
+            "tipo_operacion",
+            "fecha_cierre_estimada",
+            "estado",
+            "observaciones",
+            "producto",
+            "empresa",
+            "lista_materiales",
+            "ruta_produccion",
+        ]
         # empresa se inyecta en perform_create desde request.user — R-CODE-1
         read_only_fields = ["empresa"]
 
@@ -52,49 +85,131 @@ class OrdenProduccionSerializer(serializers.ModelSerializer):
 class ConsumoMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConsumoMaterial
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "referencia_externa",
+            "documento_json",
+            "cantidad",
+            "costo_unitario",
+            "orden_produccion",
+            "producto",
+        ]
 
 
 class ProduccionTerminadaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProduccionTerminada
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "referencia_externa",
+            "documento_json",
+            "cantidad",
+            "fecha",
+            "orden_produccion",
+        ]
 
 
 class ListaMaterialesDetalleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListaMaterialesDetalle
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_lista",
+            "cantidad_requerida",
+            "es_opcional",
+            "observaciones",
+            "id_lista_materiales",
+            "id_producto",
+            "id_unidad_medida",
+        ]
 
 
 class CentroTrabajoSerializer(serializers.ModelSerializer):
     class Meta:
         model = CentroTrabajo
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_centro_trabajo",
+            "codigo_centro",
+            "nombre_centro",
+            "descripcion",
+            "tipo_centro",
+            "capacidad_horas_dia",
+            "costo_hora",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+        ]
 
 
 class OperacionProduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = OperacionProduccion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_operacion",
+            "codigo_operacion",
+            "nombre_operacion",
+            "descripcion",
+            "tiempo_estandar_minutos",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+        ]
 
 
 class RutaProduccionDetalleSerializer(serializers.ModelSerializer):
     class Meta:
         model = RutaProduccionDetalle
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_ruta",
+            "numero_secuencia",
+            "tiempo_preparacion_minutos",
+            "tiempo_operacion_minutos",
+            "observaciones",
+            "id_ruta_produccion",
+            "id_operacion",
+            "id_centro_trabajo",
+        ]
 
 
 class RegistroOperacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroOperacion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_registro",
+            "fecha_inicio",
+            "fecha_fin",
+            "cantidad_procesada",
+            "cantidad_defectuosa",
+            "estado",
+            "observaciones",
+            "fecha_creacion",
+            "id_orden_produccion",
+            "id_detalle_ruta",
+            "id_empleado",
+        ]
 
 
 class EtapaProduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = EtapaProduccion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "activo",
+            "codigo",
+            "nombre",
+            "orden",
+            "tarifa_destajo",
+            "descripcion",
+            "fecha_creacion",
+            "empresa",
+        ]
         # empresa se inyecta en perform_create desde request.user — R-CODE-1
         read_only_fields = ["empresa"]
 
@@ -106,7 +221,24 @@ class EtapaOrdenProduccionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EtapaOrdenProduccion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "etapa_codigo",
+            "etapa_nombre",
+            "costo_mano_obra",
+            "orden",
+            "estado",
+            "horas_trabajadas",
+            "tarifa_hora",
+            "cantidad_destajo",
+            "pago_destajo",
+            "fecha_completada",
+            "observaciones",
+            "orden_produccion",
+            "etapa",
+            "completada_por",
+        ]
         # las transiciones pasan por el service (avanzar_etapa_orden) — solo lectura
         read_only_fields = [
             "orden_produccion", "etapa", "orden", "estado", "horas_trabajadas",
@@ -118,6 +250,11 @@ class EtapaOrdenProduccionSerializer(serializers.ModelSerializer):
 class ConfiguracionManufacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConfiguracionManufactura
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "porcentaje_overhead",
+            "empresa",
+        ]
         # empresa se inyecta en perform_create desde request.user — R-CODE-1
         read_only_fields = ["empresa"]

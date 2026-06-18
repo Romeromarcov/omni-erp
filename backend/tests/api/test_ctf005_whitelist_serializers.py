@@ -1,41 +1,42 @@
 """CTF-005 — whitelist explícita de campos en serializers.
 
-Cierra el Compromiso Técnico Fechado CTF-005 (`docs/ctf/CTF-005.md`): los
-serializers de ``ventas``, ``compras`` y ``core`` dejaron de usar
-``fields = "__all__"`` (asignación masiva — CWE-915) y declaran una lista
-explícita de campos. La **fase 2** extiende el mismo blindaje a los módulos de
-**dinero y nómina** (``finanzas``, ``nomina``), donde la superficie de
-asignación masiva toca pagos, cajas y salarios (PII sensible).
+Cierra el Compromiso Técnico Fechado CTF-005 (`docs/ctf/CTF-005.md`): ningún
+``ModelSerializer`` del proyecto usa ``fields = "__all__"`` (asignación masiva —
+CWE-915); todos declaran una lista explícita de campos. El blindaje se aplicó por
+fases (ventas/compras/core → dinero/nómina → contable/financiero → resto) y
+quedó cerrado al 100 % de las apps.
 
-- ``test_sin_fields_all_*``: **guard estructural permanente** — falla si alguien
-  reintroduce ``fields = "__all__"`` en estos módulos.
+- ``test_sin_fields_all_*``: **guard estructural permanente y total** — descubre
+  TODOS los módulos ``apps.*.serializers`` y falla si CUALQUIERA reintroduce
+  ``fields = "__all__"`` (incluida una app nueva).
 - ``test_campo_fuera_de_whitelist_se_ignora``: comportamiento — un campo que no
   está en la whitelist no se asigna al crear (defensa en profundidad).
 """
 
 import importlib
 import inspect
+import pkgutil
 
 import pytest
 
 from rest_framework.serializers import ModelSerializer
 
-MODULOS_WHITELIST = [
-    "apps.core.serializers",
-    "apps.ventas.serializers",
-    "apps.compras.serializers",
-    # Fase 2 — dinero & nómina (CWE-915 sobre pagos, cajas y salarios/PII).
-    "apps.finanzas.serializers",
-    "apps.nomina.serializers",
-    # Fase 3 — integridad financiera/contable (asientos, CxC/CxP, gastos, costos).
-    "apps.contabilidad.serializers",
-    "apps.tesoreria.serializers",
-    "apps.fiscal.serializers",
-    "apps.cuentas_por_cobrar.serializers",
-    "apps.cuentas_por_pagar.serializers",
-    "apps.gastos.serializers",
-    "apps.costos.serializers",
-]
+
+def _modulos_serializers():
+    """Descubre todos los módulos ``apps.<app>.serializers`` importables."""
+    import apps
+
+    modulos = []
+    for info in pkgutil.iter_modules(apps.__path__):
+        if not info.ispkg:
+            continue
+        nombre = f"apps.{info.name}.serializers"
+        try:
+            importlib.import_module(nombre)
+        except ModuleNotFoundError:
+            continue  # la app no define serializers
+        modulos.append(nombre)
+    return sorted(modulos)
 
 
 def _serializers_con_all(modulo):
@@ -51,9 +52,9 @@ def _serializers_con_all(modulo):
     return ofensores
 
 
-@pytest.mark.parametrize("modulo", MODULOS_WHITELIST)
+@pytest.mark.parametrize("modulo", _modulos_serializers())
 def test_sin_fields_all_en_modulos_criticos(modulo):
-    """Ningún serializer de ventas/compras/core usa ``fields='__all__'`` (CTF-005)."""
+    """Ningún ModelSerializer del proyecto usa ``fields='__all__'`` (CTF-005)."""
     ofensores = _serializers_con_all(modulo)
     assert ofensores == [], (
         f"{modulo} reintroduce fields='__all__' en: {ofensores}. "
