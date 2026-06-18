@@ -10,3 +10,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T13:56:26Z] ✅ CTF-005 fase 3 PR#142 merged
 [2026-06-18T18:23:40Z] ✅ CTF-005 fase 4 (cierre total, 68 serializers, 18 apps) commit 5f852a0
 [2026-06-18T18:46:59Z] ✅ CTF-005 fase 4 (cierre total) + fix CVE undici PR#143 merged — 0 __all__ en todo el proyecto
+[2026-06-18T19:03:30Z] ✅ CTF-008 Nivel 1 réplica local IndexedDB (persistencia caché) commit 661a317
