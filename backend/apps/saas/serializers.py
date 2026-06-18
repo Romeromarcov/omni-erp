@@ -12,7 +12,26 @@ User = get_user_model()
 class PlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_plan",
+            "nombre",
+            "nivel",
+            "descripcion",
+            "precio_mensual",
+            "precio_anual",
+            "max_usuarios",
+            "max_empresas",
+            "max_documentos_mes",
+            "permite_ia",
+            "permite_api",
+            "permite_reportes_avanzados",
+            "permite_multimoneda",
+            "soporte",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
         read_only_fields = ["id_plan", "fecha_creacion", "fecha_actualizacion"]
 
 
@@ -24,7 +43,28 @@ class SuscripcionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Suscripcion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_suscripcion",
+            "esta_vigente",
+            "dias_restantes",
+            "plan_nombre",
+            "plan_nivel",
+            "estado",
+            "periodo",
+            "fecha_inicio",
+            "fecha_fin",
+            "fecha_cancelacion",
+            "fecha_suspension",
+            "renovacion_automatica",
+            "monto_pagado",
+            "referencia_pago",
+            "notas",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "id_empresa",
+            "id_plan",
+        ]
         read_only_fields = [
             "id_suscripcion",
             "fecha_cancelacion",
