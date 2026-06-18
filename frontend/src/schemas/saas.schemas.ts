@@ -48,3 +48,38 @@ export function parseVersiones(texto: string | undefined): string[] {
     .map((v) => v.trim())
     .filter(Boolean);
 }
+
+// ── Plan de suscripción (billing SaaS) ─────────────────────────────────────────
+
+// Acepta enteros/decimales con punto, hasta 2 decimales. Rechaza negativos.
+// Los precios se manejan como STRING decimal (R-CODE-4), nunca float.
+// eslint-disable-next-line security/detect-unsafe-regex -- FP del heurístico star-height de safe-regex: `\.` y `\d` son disjuntos, sin backtracking ambiguo (matching lineal)
+const DECIMAL_RE = /^\d+(\.\d{1,2})?$/;
+
+const limiteNoNegativo = z.coerce
+  .number()
+  .int('El límite debe ser un entero')
+  .min(0, 'Los límites no pueden ser negativos (use 0 para ilimitado).');
+
+export const planSchema = z.object({
+  nombre: z.string().trim().min(1, 'El nombre es obligatorio').max(100),
+  nivel: z.enum(['FREE', 'STARTER', 'PRO', 'ENTERPRISE']),
+  descripcion: z.string().max(500).optional().or(z.literal('')),
+  precio_mensual: z
+    .string()
+    .regex(DECIMAL_RE, 'Precio mensual inválido (use formato 0.00, sin negativos).'),
+  precio_anual: z
+    .string()
+    .regex(DECIMAL_RE, 'Precio anual inválido (use formato 0.00, sin negativos).'),
+  max_usuarios: limiteNoNegativo,
+  max_empresas: limiteNoNegativo,
+  max_documentos_mes: limiteNoNegativo,
+  permite_ia: z.boolean(),
+  permite_api: z.boolean(),
+  permite_reportes_avanzados: z.boolean(),
+  permite_multimoneda: z.boolean(),
+  soporte: z.enum(['email', 'chat', 'telefono', 'dedicado']),
+  activo: z.boolean(),
+});
+
+export type PlanInput = z.infer<typeof planSchema>;
