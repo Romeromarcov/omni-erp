@@ -18,3 +18,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T20:51:17Z] ✅ CTF-008 N2 replay idempotente ventas POS (test+doc) commit 3676654
 [2026-06-18T21:09:45Z] ✅ CTF-008 N2 replay idempotente ventas POS PR#149 merged
 [2026-06-18T21:16:16Z] ✅ CTF-008 N2 sync pull variantes_producto commit b806686
+[2026-06-18T21:36:15Z] ✅ CTF-008 N2 sync pull variantes_producto PR#150 merged
