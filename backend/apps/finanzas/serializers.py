@@ -93,7 +93,26 @@ class MonedaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Moneda
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_moneda",
+            "pais_codigo_iso",
+            "pais_nombre",
+            "tipo_moneda",
+            "codigo_iso",
+            "nombre",
+            "referencia_externa",
+            "documento_json",
+            "tipo_operacion",
+            "fecha_cierre_estimada",
+            "simbolo",
+            "decimales",
+            "activo",
+            "fecha_creacion",
+            "es_generica",
+            "es_publica",
+            "empresa",
+        ]
         read_only_fields = ["pais_codigo_iso", "pais_nombre"]
 
     def to_representation(self, instance):
@@ -171,7 +190,26 @@ class TasaCambioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TasaCambio
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_tasa_cambio",
+            "moneda_origen_nombre",
+            "moneda_destino_nombre",
+            "usuario_registro_username",
+            "tipo_tasa",
+            "valor_tasa",
+            "fecha_tasa",
+            "hora_tasa",
+            "referencia_externa",
+            "documento_json",
+            "tipo_operacion",
+            "fecha_cierre_estimada",
+            "fecha_creacion",
+            "id_empresa",
+            "id_moneda_origen",
+            "id_moneda_destino",
+            "id_usuario_registro",
+        ]
         read_only_fields = ("moneda_origen_nombre", "moneda_destino_nombre", "usuario_registro_username")
 
 
@@ -184,7 +222,22 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MetodoPago
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_metodo_pago",
+            "url",
+            "aplicado",
+            "referencia_externa",
+            "documento_json",
+            "nombre_metodo",
+            "tipo_metodo",
+            "activo",
+            "fecha_creacion",
+            "es_generico",
+            "es_publico",
+            "empresa",
+            "monedas",
+        ]
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -577,7 +630,31 @@ class MovimientoCajaBancoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MovimientoCajaBanco
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_movimiento",
+            "moneda_codigo_iso",
+            "caja_nombre",
+            "sucursal_nombre",
+            "empresa_nombre",
+            "usuario_registro_username",
+            "fecha_movimiento",
+            "hora_movimiento",
+            "tipo_movimiento",
+            "monto",
+            "concepto",
+            "referencia",
+            "saldo_anterior",
+            "saldo_nuevo",
+            "fecha_creacion",
+            "id_empresa",
+            "id_moneda",
+            "id_caja",
+            "id_caja_fisica",
+            "id_cuenta_bancaria",
+            "id_transaccion_financiera",
+            "id_usuario_registro",
+        ]
 
 
 class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
@@ -587,7 +664,21 @@ class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CuentaBancariaEmpresa
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_cuenta_bancaria",
+            "moneda_codigo_iso",
+            "metodos_pago",
+            "monedas",
+            "nombre_banco",
+            "numero_cuenta",
+            "tipo_cuenta",
+            "saldo_actual",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+            "id_moneda",
+        ]
         read_only_fields = ["moneda_codigo_iso"]
         ref_name = "CuentaBancariaEmpresaFinanzas"  # evita colisión OpenAPI con banca_electronica
 
@@ -983,7 +1074,26 @@ class TransaccionDatafonoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TransaccionDatafono
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_transaccion_datafono",
+            "datafono_nombre",
+            "estado_display",
+            "usuario_registro_nombre",
+            "sesion_datafono_info",
+            "monto",
+            "referencia_bancaria",
+            "estado",
+            "lote_bancario",
+            "fecha_hora_transaccion",
+            "fecha_envio_banco",
+            "fecha_conciliacion",
+            "conciliada",
+            "id_datafono",
+            "sesion_datafono",
+            "id_transaccion_financiera_origen",
+            "id_usuario_registro",
+        ]
         read_only_fields = ["datafono_nombre", "estado_display", "usuario_registro_nombre", "sesion_datafono_info"]
 
 
@@ -998,7 +1108,25 @@ class SesionDatafonoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SesionDatafono
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_sesion",
+            "datafono_nombre",
+            "usuario_apertura_nombre",
+            "estado_display",
+            "cantidad_transacciones",
+            "fecha_apertura",
+            "fecha_cierre",
+            "estado",
+            "total_transacciones",
+            "comision_calculada",
+            "neto_esperado",
+            "observaciones",
+            "fecha_creacion",
+            "fecha_modificacion",
+            "datafono",
+            "usuario_apertura",
+        ]
         read_only_fields = ["datafono_nombre", "usuario_apertura_nombre", "estado_display", "cantidad_transacciones"]
 
 
@@ -1028,7 +1156,33 @@ class DepositoDatafonoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DepositoDatafono
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_deposito",
+            "datafono_nombre",
+            "sesion_datafono_info",
+            "estado_display",
+            "usuario_envio_nombre",
+            "usuario_conciliacion_nombre",
+            "movimiento_banco_info",
+            "lote_bancario",
+            "fecha_envio",
+            "fecha_recepcion_banco",
+            "fecha_conciliacion",
+            "estado",
+            "total_bruto",
+            "comision_banco",
+            "total_neto",
+            "referencia_banco",
+            "observaciones",
+            "fecha_creacion",
+            "fecha_modificacion",
+            "datafono",
+            "sesion_datafono",
+            "movimiento_banco",
+            "usuario_envio",
+            "usuario_conciliacion",
+        ]
         read_only_fields = [
             "datafono_nombre",
             "sesion_datafono_info",
@@ -1110,7 +1264,49 @@ class PagoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pago
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_pago",
+            "empresa_nombre",
+            "metodo_pago_nombre",
+            "moneda_codigo",
+            "caja_fisica_nombre",
+            "caja_virtual_nombre",
+            "cuenta_bancaria_nombre",
+            "datafono_nombre",
+            "banco_destino_nombre",
+            "usuario_registro_nombre",
+            "transaccion_financiera_info",
+            "documento_info",
+            "tipo_operacion",
+            "tipo_documento",
+            "id_documento",
+            "fecha_pago",
+            "monto",
+            "tasa",
+            "referencia",
+            "observaciones",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "id_empresa",
+            "id_moneda",
+            "id_metodo_pago",
+            "id_caja_fisica",
+            "id_caja_virtual",
+            "id_cuenta_bancaria",
+            "id_datafono",
+            "banco_destino",
+            "id_transaccion_financiera",
+            "id_pedido",
+            "id_nota_venta",
+            "id_factura",
+            "id_cxp",
+            "id_gasto",
+            "id_reembolso_gasto",
+            "id_nomina",
+            "id_contribucion",
+            "id_usuario_registro",
+        ]
         read_only_fields = [
             "id_pago",
             "fecha_creacion",
@@ -1139,7 +1335,29 @@ class CajaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Caja
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_caja",
+            "empresa_nombre",
+            "sucursal_nombre",
+            "moneda_codigo_iso",
+            "tipo_caja_display",
+            "caja_fisica_nombre",
+            "nombre",
+            "tipo_caja",
+            "descripcion",
+            "activa",
+            "referencia_externa",
+            "documento_json",
+            "fecha_creacion",
+            "saldo_actual",
+            "empresa",
+            "sucursal",
+            "moneda",
+            "caja_fisica",
+            "plantilla_maestro",
+            "metodos_pago",
+        ]
         ref_name = "CajaFinanzas"  # evita colisión OpenAPI con tesoreria.CajaSerializer
         read_only_fields = [
             "empresa_nombre",
@@ -1159,7 +1377,27 @@ class DatafonoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Datafono
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_datafono",
+            "empresa_nombre",
+            "sucursal_nombre",
+            "caja_fisica_nombre",
+            "cuenta_bancaria_nombre",
+            "nombre",
+            "serial",
+            "comision_porcentaje",
+            "saldo_temporal",
+            "fecha_ultimo_cierre",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+            "id_sucursal",
+            "id_caja_fisica",
+            "id_cuenta_bancaria_asociada",
+            "metodos_pago",
+            "monedas",
+        ]
         read_only_fields = ["empresa_nombre", "sucursal_nombre", "caja_fisica_nombre", "cuenta_bancaria_nombre"]
 
 
@@ -1198,7 +1436,34 @@ class CajaFisicaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CajaFisica
-        fields = "__all__"
+        # CTF-005 (fase 2): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_caja_fisica",
+            "empresa_nombre",
+            "sucursal_nombre",
+            "tipo_caja_display",
+            "tipo_dispositivo_display",
+            "cajas_virtuales",
+            "datafonos",
+            "esta_abierta",
+            "estado_sesion_display",
+            "nombre_usuario_actual",
+            "nombre",
+            "tipo_caja",
+            "descripcion",
+            "activa",
+            "referencia_externa",
+            "documento_json",
+            "fecha_creacion",
+            "nombre_dispositivo",
+            "tipo_dispositivo",
+            "identificador_dispositivo",
+            "descripcion_dispositivo",
+            "ultima_conexion_dispositivo",
+            "requiere_sesion_activa",
+            "empresa",
+            "sucursal",
+        ]
         read_only_fields = [
             "empresa_nombre",
             "sucursal_nombre",
