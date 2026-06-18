@@ -12,14 +12,45 @@ from .models import Caja, ConciliacionBancaria, MovimientoBancario, MovimientoIn
 class CajaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Caja
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_caja",
+            "nombre",
+            "tipo_caja",
+            "descripcion",
+            "activa",
+            "referencia_externa",
+            "documento_json",
+            "fecha_creacion",
+            "saldo_actual",
+            "empresa",
+            "sucursal",
+            "moneda",
+            "caja_fisica",
+            "plantilla_maestro",
+            "metodos_pago",
+        ]
         ref_name = "CajaTesoreria"  # evita colisión OpenAPI con finanzas.CajaSerializer
 
 
 class MovimientoInternoFondoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MovimientoInternoFondo
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "referencia_externa",
+            "documento_json",
+            "monto",
+            "fecha",
+            "descripcion",
+            "caja_origen",
+            "caja_destino",
+            "id_moneda",
+            "id_banco_origen",
+            "id_banco_destino",
+            "usuario",
+        ]
 
     def create(self, validated_data):
         from apps.finanzas.models import MovimientoCajaBanco
@@ -74,7 +105,36 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OperacionCambioDivisa
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "referencia_externa",
+            "documento_json",
+            "numero_operacion",
+            "fecha_operacion",
+            "tipo_operacion",
+            "monto_origen",
+            "tasa_cambio",
+            "monto_destino",
+            "comision",
+            "referencia_transaccion_origen",
+            "referencia_transaccion_destino",
+            "tipo_documento_gasto",
+            "numero_documento_gasto",
+            "observaciones",
+            "activo",
+            "fecha_creacion",
+            "empresa",
+            "moneda_origen",
+            "moneda_destino",
+            "caja_origen",
+            "caja_destino",
+            "banco_origen",
+            "banco_destino",
+            "metodo_pago_origen",
+            "metodo_pago_destino",
+            "casa_de_cambio",
+        ]
 
     _DOS_DECIMALES = Decimal("0.01")
 
