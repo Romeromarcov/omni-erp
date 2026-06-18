@@ -1052,6 +1052,7 @@
 | `libro-ventas/` | LibroVentasView | — | — | — | IsAuthenticated |
 | `periodos-fiscales/` | PeriodoFiscalView | — | — | — | IsAuthenticated |
 | `periodos-fiscales/<int:año>/<int:mes>/cerrar/` | CerrarPeriodoFiscalView | — | — | — | IsAuthenticated |
+| `pull/` | SyncPullView | — | — | — | IsAuthenticated |
 | `signup/` | SignupView | — | — | — | AllowAny |
 | `status/` | IntegrationHubStatusView | — | — | — | IsAuthenticated |
 | `tasa-oficial-bcv/` | TasaCambioOficialBCVView | — | — | — | IsAuthenticated |
@@ -1059,4 +1060,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 197_
+_Total ViewSets: 198_

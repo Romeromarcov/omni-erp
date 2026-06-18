@@ -6,16 +6,44 @@ from .models import CatalogoValor, ParametroSistema, TipoDocumento
 class TipoDocumentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = TipoDocumento
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_tipo_documento",
+            "codigo",
+            "nombre",
+            "descripcion",
+            "modulo_origen",
+            "es_transaccional",
+            "prefijo_correlativo",
+            "ultimo_correlativo",
+        ]
 
 
 class ParametroSistemaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParametroSistema
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_parametro",
+            "nombre_parametro",
+            "codigo_parametro",
+            "valor_parametro",
+            "tipo_dato",
+            "descripcion",
+            "activo",
+            "id_empresa",
+        ]
 
 
 class CatalogoValorSerializer(serializers.ModelSerializer):
     class Meta:
         model = CatalogoValor
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_catalogo_valor",
+            "codigo_catalogo",
+            "valor",
+            "descripcion",
+            "orden",
+            "activo",
+        ]

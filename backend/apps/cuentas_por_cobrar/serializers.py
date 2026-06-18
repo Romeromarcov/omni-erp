@@ -12,7 +12,26 @@ class CuentaPorCobrarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CuentaPorCobrar
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id",
+            "cliente_nombre",
+            "cliente_ref",
+            "saldo_pendiente",
+            "cliente_externo_id",
+            "cliente_externo_nombre",
+            "monto",
+            "fecha_emision",
+            "fecha_vencimiento",
+            "referencia_externa",
+            "documento_json",
+            "tipo_operacion",
+            "fecha_cierre_estimada",
+            "estado",
+            "descripcion",
+            "cliente",
+            "empresa",
+        ]
 
     def get_saldo_pendiente(self, obj):
         # BUG-M2: el queryset del list anota `total_abonado_agg` (una sola
