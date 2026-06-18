@@ -53,7 +53,16 @@ class DetallePedidoNestedSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DetallePedido
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_pedido",
+            "id_pedido",
+            "id_producto",
+            "cantidad",
+            "precio_unitario",
+            "subtotal",
+            "observaciones",
+        ]
 
 
 class PedidoSerializer(serializers.ModelSerializer):
@@ -237,7 +246,16 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DetallePedido
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_pedido",
+            "id_pedido",
+            "cantidad",
+            "precio_unitario",
+            "subtotal",
+            "observaciones",
+            "id_producto",
+        ]
 
     def validate_cantidad(self, value):
         if value <= 0:
@@ -279,7 +297,21 @@ class FacturaFiscalSerializer(serializers.ModelSerializer):
 class DetalleFacturaFiscalSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleFacturaFiscal
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_factura",
+            "id_factura",
+            "id_producto",
+            "id_variante",
+            "cantidad",
+            "precio_unitario",
+            "descuento_porcentaje",
+            "descuento_monto",
+            "subtotal",
+            "monto_impuesto",
+            "total_linea",
+            "observaciones",
+        ]
 
 
 class NotaCreditoVentaSerializer(serializers.ModelSerializer):
@@ -303,7 +335,21 @@ class NotaCreditoVentaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NotaCreditoVenta
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_nota_credito",
+            "id_cliente",
+            "id_factura_origen",
+            "id_moneda",
+            "numero_nota_credito",
+            "fecha_emision",
+            "motivo",
+            "monto_total",
+            "estado",
+            "observaciones",
+            "fecha_creacion",
+            "id_empresa",
+        ]
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_nota_credito", "fecha_creacion")
 
@@ -311,7 +357,19 @@ class NotaCreditoVentaSerializer(serializers.ModelSerializer):
 class DetalleNotaCreditoVentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotaCreditoVenta
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_nota_credito",
+            "id_nota_credito",
+            "id_producto",
+            "id_variante",
+            "cantidad",
+            "precio_unitario",
+            "subtotal",
+            "monto_impuesto",
+            "total_linea",
+            "observaciones",
+        ]
 
 
 class DevolucionVentaSerializer(serializers.ModelSerializer):
@@ -335,7 +393,23 @@ class DevolucionVentaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DevolucionVenta
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_devolucion",
+            "id_cliente",
+            "id_factura_origen",
+            "id_nota_venta_origen",
+            "id_nota_credito_generada",
+            "id_moneda",
+            "numero_devolucion",
+            "fecha_devolucion",
+            "motivo_devolucion",
+            "estado",
+            "monto_total",
+            "observaciones",
+            "fecha_creacion",
+            "id_empresa",
+        ]
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_devolucion", "fecha_creacion")
 
@@ -343,7 +417,19 @@ class DevolucionVentaSerializer(serializers.ModelSerializer):
 class DetalleDevolucionVentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleDevolucionVenta
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_devolucion",
+            "id_devolucion",
+            "id_producto",
+            "id_variante",
+            "cantidad_devuelta",
+            "precio_unitario",
+            "subtotal",
+            "estado_producto",
+            "accion_inventario",
+            "observaciones",
+        ]
 
 
 class CotizacionSerializer(serializers.ModelSerializer):
@@ -376,7 +462,19 @@ class CotizacionSerializer(serializers.ModelSerializer):
 class DetalleCotizacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleCotizacion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_cotizacion",
+            "id_cotizacion",
+            "id_producto",
+            "id_variante",
+            "cantidad",
+            "precio_unitario",
+            "descuento_porcentaje",
+            "descuento_monto",
+            "subtotal",
+            "observaciones",
+        ]
 
 
 class NotaVentaSerializer(serializers.ModelSerializer):
@@ -413,7 +511,16 @@ class NotaVentaSerializer(serializers.ModelSerializer):
 class DetalleNotaVentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotaVenta
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_nota_venta",
+            "id_nota_venta",
+            "id_producto",
+            "cantidad",
+            "precio_unitario",
+            "subtotal",
+            "observaciones",
+        ]
 
     def validate_cantidad(self, value):
         if value <= 0:
@@ -455,13 +562,37 @@ class NotaCreditoFiscalSerializer(serializers.ModelSerializer):
 class DetalleNotaCreditoFiscalSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotaCreditoFiscal
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_nota_credito",
+            "id_nota_credito_fiscal",
+            "id_producto",
+            "id_variante",
+            "cantidad",
+            "precio_unitario",
+            "descuento_porcentaje",
+            "descuento_monto",
+            "subtotal",
+            "monto_impuesto",
+            "total_linea",
+            "observaciones",
+        ]
 
 
 class ListaPrecioSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListaPrecio
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_lista",
+            "id_moneda",
+            "nombre",
+            "codigo",
+            "es_referencia",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+        ]
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ["id_lista", "fecha_creacion", "id_empresa"]
 
@@ -469,7 +600,17 @@ class ListaPrecioSerializer(serializers.ModelSerializer):
 class DetallePrecioSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetallePrecio
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle",
+            "id_lista",
+            "id_producto",
+            "precio",
+            "precio_minimo",
+            "vigente_desde",
+            "vigente_hasta",
+            "activo",
+        ]
         read_only_fields = ["id_detalle"]
 
 
@@ -487,7 +628,14 @@ class EsquemaComisionCategoriaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EsquemaComisionCategoria
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_esquema_comision_categoria",
+            "esquema",
+            "categoria",
+            "categoria_nombre",
+            "porcentaje",
+        ]
         read_only_fields = ["id_esquema_comision_categoria"]
 
     def validate_porcentaje(self, value):
@@ -512,7 +660,19 @@ class EsquemaComisionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EsquemaComision
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_esquema_comision",
+            "vendedor",
+            "vendedor_username",
+            "overrides_categoria",
+            "porcentaje_base",
+            "vigente_desde",
+            "vigente_hasta",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+        ]
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ["id_esquema_comision", "id_empresa", "fecha_creacion"]
 
@@ -549,5 +709,23 @@ class ComisionVentaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ComisionVenta
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_comision_venta",
+            "vendedor",
+            "vendedor_username",
+            "nota_venta",
+            "numero_nota",
+            "esquema",
+            "id_moneda",
+            "liquidada_por",
+            "base_comisionable",
+            "monto",
+            "estado",
+            "fecha_devengo",
+            "fecha_liquidacion",
+            "detalle_json",
+            "fecha_creacion",
+            "id_empresa",
+        ]
         read_only_fields = [f.name for f in ComisionVenta._meta.concrete_fields]

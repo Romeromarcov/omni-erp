@@ -14,7 +14,7 @@ sin que la condición de cierre se cumpla, el item bloquea el siguiente hito.
 | CTF-002  | DSL runtime completo (entidades/estados/reglas) | 2026-08-01 | equipo-plataforma  | CERRADO  |
 | CTF-003  | Shadow mode agents — eval suite en CI           | 2026-09-01 | equipo-agentes     | CERRADO  |
 | CTF-004  | Multi-tenancy completo en manufactura           | 2026-07-01 | equipo-manufactura | CERRADO  |
-| CTF-005  | Whitelist explícita de campos (`fields="__all__"`) | 2026-09-01 | equipo-backend     | ABIERTO  |
+| CTF-005  | Whitelist explícita de campos (`fields="__all__"`) | 2026-09-01 | equipo-backend     | CERRADO  |
 | CTF-006  | `eslint-plugin-security` en el frontend          | 2026-08-01 | equipo-frontend    | CERRADO  |
 | CTF-007  | `picomatch ≤2.3.1` (high) vía typescript-eslint  | 2026-09-01 | equipo-frontend    | CERRADO  |
 | CTF-008  | Offline-first real (ADR-001)                     | 2026-10-01 | equipo-frontend        | ABIERTO  |
