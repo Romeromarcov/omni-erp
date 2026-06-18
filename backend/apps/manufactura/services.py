@@ -443,4 +443,12 @@ def registrar_produccion_terminada(orden, *, cantidad, almacen, usuario, fecha_h
     )
     orden.estado = "finalizada" if producido >= _d(orden.cantidad) else "parcial"
     orden.save(update_fields=["estado"])
-    return {"produccion": terminada, "costo": costo}
+
+    # 1.I — al cerrar la OF, persistir el costeo real como CostoProduccion para
+    # habilitar reporte de costos y análisis de variación (idempotente).
+    costos_persistidos = []
+    if orden.estado == "finalizada":
+        from apps.costos.services import persistir_costos_orden
+
+        costos_persistidos = persistir_costos_orden(orden, fecha_hora=fecha)
+    return {"produccion": terminada, "costo": costo, "costos_persistidos": costos_persistidos}
