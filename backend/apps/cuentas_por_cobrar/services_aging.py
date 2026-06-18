@@ -16,6 +16,8 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
+from django.utils import timezone
+
 logger = logging.getLogger(__name__)
 
 BUCKETS = ["al_dia", "1_30", "31_60", "61_90", "mas_90"]
@@ -52,7 +54,10 @@ class PartidaCartera:
     bucket: str = field(init=False)
 
     def __post_init__(self):
-        hoy = date.today()
+        # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: con
+        # date.today()/now().date() el aging se corría un día tras las 20:00
+        # Caracas (= 00:00 UTC), clasificando mal los tramos de vencimiento.
+        hoy = timezone.localdate()
         if self.fecha_vencimiento:
             self.dias_vencida = (hoy - self.fecha_vencimiento).days
         else:

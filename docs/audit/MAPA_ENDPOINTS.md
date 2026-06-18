@@ -150,6 +150,14 @@
 | `^clientes/buscar-por-rif/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
 | `^clientes/buscar-por-rif\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
 | `^clientes\.(?P<format>[a-z0-9]+)/?$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/(?P<pk>[^/.]+)/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/liquidar/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/liquidar\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/resumen/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/resumen\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^conceptos-nomina/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
 | `^conceptos-nomina/(?P<pk>[^/.]+)/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
 | `^conceptos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
@@ -286,7 +294,19 @@
 | `^depositos-datafono\.(?P<format>[a-z0-9]+)/?$` | DepositoDatafonoViewSet | DepositoDatafono | — | ✅ | IsAuthenticated |
 | `^despachos/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
 | `^despachos/(?P<pk>[^/.]+)/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/cancelar/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/devolver/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/devolver\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/entregar/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/entregar\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/iniciar-ruta/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/iniciar-ruta\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/pdf/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/(?P<pk>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
 | `^despachos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/desde-nota-venta/$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
+| `^despachos/desde-nota-venta\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
 | `^despachos\.(?P<format>[a-z0-9]+)/?$` | DespachoViewSet | Despacho | ✅ | ✅ | IsAuthenticated |
 | `^detalles-asiento/$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ | IsAuthenticated |
 | `^detalles-asiento/(?P<pk>[^/.]+)/$` | DetalleAsientoViewSet | DetalleAsiento | — | ✅ | IsAuthenticated |
@@ -390,6 +410,14 @@
 | `^empresas/(?P<pk>[^/.]+)/$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^esquemas-comision-categorias/$` | EsquemaComisionCategoriaViewSet | EsquemaComisionCategoria | — | ✅ | IsAuthenticated |
+| `^esquemas-comision-categorias/(?P<pk>[^/.]+)/$` | EsquemaComisionCategoriaViewSet | EsquemaComisionCategoria | — | ✅ | IsAuthenticated |
+| `^esquemas-comision-categorias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EsquemaComisionCategoriaViewSet | EsquemaComisionCategoria | — | ✅ | IsAuthenticated |
+| `^esquemas-comision-categorias\.(?P<format>[a-z0-9]+)/?$` | EsquemaComisionCategoriaViewSet | EsquemaComisionCategoria | — | ✅ | IsAuthenticated |
+| `^esquemas-comision/$` | EsquemaComisionViewSet | EsquemaComision | ✅ | ✅ | IsAuthenticated |
+| `^esquemas-comision/(?P<pk>[^/.]+)/$` | EsquemaComisionViewSet | EsquemaComision | ✅ | ✅ | IsAuthenticated |
+| `^esquemas-comision/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EsquemaComisionViewSet | EsquemaComision | ✅ | ✅ | IsAuthenticated |
+| `^esquemas-comision\.(?P<format>[a-z0-9]+)/?$` | EsquemaComisionViewSet | EsquemaComision | ✅ | ✅ | IsAuthenticated |
 | `^etapas-produccion/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^etapas-produccion/(?P<pk>[^/.]+)/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^etapas-produccion/(?P<pk>[^/.]+)/activar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
@@ -602,6 +630,12 @@
 | `^notas-venta/(?P<pk>[^/.]+)/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/convertir-factura/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/convertir-factura\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devoluciones/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devoluciones\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devolver/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/devolver\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/entregar/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-venta/(?P<pk>[^/.]+)/entregar\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta\.(?P<format>[a-z0-9]+)/?$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notificaciones/$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
@@ -798,15 +832,15 @@
 | `^productos/(?P<pk>[^/.]+)/kardex\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
 | `^productos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
 | `^productos\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
-| `^proveedores/$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores/$` | ConectorProveedorViewSet | ConectorProveedor | — | ✅ | IsAuthenticated |
 | `^proveedores/$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
-| `^proveedores/(?P<pk>[^/.]+)/$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores/(?P<pk>[^/.]+)/$` | ConectorProveedorViewSet | ConectorProveedor | — | ✅ | IsAuthenticated |
 | `^proveedores/(?P<pk>[^/.]+)/$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
-| `^proveedores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | ✅ | IsAuthenticated |
 | `^proveedores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
 | `^proveedores/buscar-por-rif/$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
 | `^proveedores/buscar-por-rif\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
-| `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | — | IsAuthenticated |
+| `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | ✅ | IsAuthenticated |
 | `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
 | `^recepciones-mercancia/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
 | `^recepciones-mercancia/(?P<pk>[^/.]+)/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
@@ -1025,4 +1059,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 194_
+_Total ViewSets: 197_

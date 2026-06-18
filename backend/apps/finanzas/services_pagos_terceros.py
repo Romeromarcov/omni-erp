@@ -195,7 +195,10 @@ def solicitar_reintegro(
             f"El monto del reintegro ({monto_neto}) excede el máximo soportado por CxC."
         )
 
-    hoy = timezone.now().date()
+    # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: con
+    # now().date() la fecha de emisión/vencimiento de la CxC de reintegro se
+    # adelantaba un día tras las 20:00 Caracas (= 00:00 UTC).
+    hoy = timezone.localdate()
     proveedor = pago.id_proveedor
     assert proveedor is not None  # noqa: S101 — _exigir_proveedor ya lo garantizó
     cxc = CuentaPorCobrar.objects.create(

@@ -254,7 +254,7 @@ class TestRegistrarPago:
         TasaCambio.objects.create(
             id_empresa=None, id_moneda_origen=ves, id_moneda_destino=moneda_usd,
             tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02740000"),
-            fecha_tasa=timezone.now().date(),
+            fecha_tasa=timezone.localdate(),
         )
         cuota = acuerdo_a.cuotas.first()
         resp = self._pagar(client_a, acuerdo_a, cuota.id, "100.0000", ves, metodo_a)

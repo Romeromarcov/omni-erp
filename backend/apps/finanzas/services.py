@@ -38,7 +38,7 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
         moneda_origen:  Instancia Moneda o código ISO (str).
         moneda_destino: Instancia Moneda o código ISO (str).
         empresa:        Instancia Empresa o UUID; puede ser None para buscar solo tasas globales.
-        fecha:          date — fecha de referencia; default hoy (timezone.now().date()).
+        fecha:          date — fecha de referencia; default hoy (timezone.localdate()).
 
     Returns:
         TasaCambio — instancia con la mejor tasa disponible.
@@ -66,13 +66,16 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
             id_moneda_origen=moneda_origen,
             id_moneda_destino=moneda_destino,
             valor_tasa=Decimal("1.00000000"),
-            fecha_tasa=timezone.now().date(),
+            fecha_tasa=timezone.localdate(),
             tipo_tasa="FIJA",
         )
         return tasa
 
     if fecha is None:
-        fecha = timezone.now().date()
+        # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: con
+        # now().date() la búsqueda de tasa tomaba la del día siguiente tras las
+        # 20:00 Caracas (= 00:00 UTC) y podía no encontrar tasa para "hoy".
+        fecha = timezone.localdate()
 
     base_qs = TasaCambio.objects.filter(
         id_moneda_origen=moneda_origen,

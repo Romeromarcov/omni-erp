@@ -72,7 +72,7 @@ const NuevoConectorModal: React.FC<Props> = ({ onClose }) => {
     queryKey: ['/integration-hub/proveedores/'],
     queryFn: getProveedores,
   });
-  const proveedores = provData?.results ?? [];
+  const proveedores = provData ?? [];
 
   // Instancias existentes — para poblar el selector de origen del conector Sheets.
   const { data: instanciasData } = useQuery({

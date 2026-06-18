@@ -410,6 +410,26 @@ class TestSolicitarReintegro:
         cxc = CuentaPorCobrar.objects.get(pk=pago_tercero_a.id_cxc_reintegro_id)
         assert cxc.fecha_vencimiento == vence
 
+    def test_reintegro_fecha_emision_usa_localdate_caracas(
+        self, client_a, pago_tercero_a, mapeo_pago_tercero
+    ):
+        # Hallazgo BAJO (auditoría 2026-06-10): la fecha del documento usaba UTC.
+        # Con now()=02:00 UTC (= 22:00 Caracas del 14), la CxC de reintegro debe
+        # emitirse con la fecha LOCAL (Caracas, 06-14), no la UTC (06-15).
+        import datetime
+        from unittest import mock
+
+        now_utc = datetime.datetime(2026, 6, 15, 2, 0, 0, tzinfo=datetime.timezone.utc)
+        caracas_hoy = datetime.date(2026, 6, 14)
+        url = f"{BASE_URL}{pago_tercero_a.pk}/solicitar-reintegro/"
+        with mock.patch("django.utils.timezone.now", return_value=now_utc):
+            resp = client_a.post(url, {}, format="json")
+        assert resp.status_code == 200, resp.data
+        pago_tercero_a.refresh_from_db()
+        cxc = CuentaPorCobrar.objects.get(pk=pago_tercero_a.id_cxc_reintegro_id)
+        assert cxc.fecha_emision == caracas_hoy
+        assert cxc.fecha_vencimiento == caracas_hoy + timedelta(days=30)
+
 
 # ─────────────────────────────────────────────
 # R-CODE-11: rollback total si falta mapeo (422)

@@ -32,6 +32,7 @@ from apps.compras.models import OrdenCompra
 from apps.contabilidad.models import PlanCuentas
 from apps.control_asistencia.models import HorarioTrabajo
 from apps.crm.models import Cliente
+from apps.despacho.models import Despacho
 from apps.finanzas.models import Caja, Pago
 from apps.gastos.models import CategoriaGasto
 from apps.gestion_aprobaciones.models import TipoAprobacion
@@ -42,7 +43,7 @@ from apps.nomina.models import PeriodoNomina
 from apps.personalizacion.models import PersonalizacionConfig
 from apps.proveedores.models import Proveedor
 from apps.servicio_cliente.models import CategoriaTicket
-from apps.ventas.models import Cotizacion
+from apps.ventas.models import Cotizacion, EsquemaComision
 
 pytestmark = [pytest.mark.django_db, pytest.mark.tenant]
 
@@ -102,6 +103,23 @@ def _build_almacen(empresa, label, env):
         id_empresa=empresa,
         nombre_almacen=f"Almacén {label}",
         codigo_almacen=f"ALM-{label}",
+    )
+
+
+def _build_despacho(empresa, label, env):
+    from django.utils import timezone
+
+    almacen = Almacen.objects.create(
+        id_empresa=empresa,
+        nombre_almacen=f"Almacén Despacho {label}",
+        codigo_almacen=f"ALM-DSP-{label}",
+    )
+    return Despacho.objects.create(
+        id_empresa=empresa,
+        numero_despacho=f"DSP-{label}-001",
+        fecha_despacho=timezone.now(),
+        id_almacen_origen=almacen,
+        direccion_destino=f"Destino {label}",
     )
 
 
@@ -235,6 +253,18 @@ def _build_log_auditoria(empresa, label, env):
     )
 
 
+def _build_esquema_comision(empresa, label, env):
+    from django.contrib.auth import get_user_model
+
+    vendedor = get_user_model().objects.create(username=f"vendedor_esquema_{label}")
+    vendedor.empresas.add(empresa)
+    return EsquemaComision.objects.create(
+        id_empresa=empresa,
+        vendedor=vendedor,
+        porcentaje_base=Decimal("5.0000"),
+    )
+
+
 def _build_periodo_nomina(empresa, label, env):
     hoy = date.today()
     return PeriodoNomina.objects.create(
@@ -260,6 +290,8 @@ CASES: list[IsolationCase] = [
                   {"nombre_categoria": "Hackeado"}, "nombre_categoria"),
     IsolationCase("almacenes.Almacen", "/api/almacenes/almacenes/", "id_almacen", _build_almacen,
                   {"nombre_almacen": "Hackeado"}, "nombre_almacen"),
+    IsolationCase("despacho.Despacho", "/api/despacho/despachos/", "id_despacho", _build_despacho,
+                  {"direccion_destino": "Hackeado"}, "direccion_destino"),
     IsolationCase("manufactura.CentroTrabajo", "/api/manufactura/centros-trabajo/", "id_centro_trabajo",
                   _build_centro_trabajo, {"nombre_centro": "Hackeado"}, "nombre_centro"),
     IsolationCase("gestion_aprobaciones.TipoAprobacion", "/api/gestion-aprobaciones/tipos-aprobacion/",
@@ -276,6 +308,8 @@ CASES: list[IsolationCase] = [
                   {"nombre": "Hackeado"}, "nombre"),
     IsolationCase("ventas.Cotizacion", "/api/ventas/cotizaciones/", "id_cotizacion", _build_cotizacion,
                   {"estado": "ACEPTADA"}, "estado"),
+    IsolationCase("ventas.EsquemaComision", "/api/ventas/esquemas-comision/", "id_esquema_comision",
+                  _build_esquema_comision, {"porcentaje_base": "1.0000"}, "porcentaje_base"),
     IsolationCase("inventario.CategoriaProducto", "/api/inventario/categorias-producto/",
                   "id_categoria_producto", _build_categoria_producto,
                   {"nombre_categoria": "Hackeado"}, "nombre_categoria"),

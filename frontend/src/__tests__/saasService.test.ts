@@ -7,11 +7,19 @@ vi.mock('../services/api', () => ({
   fetchText: vi.fn(),
 }));
 
-import { get, post, fetchText } from '../services/api';
+import { get, post, patch, fetchText } from '../services/api';
 import {
   estimarMrr,
+  fetchPlan,
   fetchPlanes,
+  createPlan,
+  updatePlan,
+  fetchSuscripcion,
   fetchSuscripciones,
+  createSuscripcion,
+  updateSuscripcion,
+  activarSuscripcion,
+  suspenderSuscripcion,
   deactivatePlan,
   cancelarSuscripcion,
   signup,
@@ -153,5 +161,58 @@ describe('saasService — llamadas API', () => {
     const res = await signup(payload);
     expect(post).toHaveBeenCalledWith('/saas/signup/', payload);
     expect(res.estado).toBe('TRIAL');
+  });
+
+  it('fetchPlan / createPlan / updatePlan pegan al endpoint correcto', async () => {
+    vi.mocked(get).mockResolvedValue(plan({ id_plan: 'p1' }));
+    await fetchPlan('p1');
+    expect(get).toHaveBeenCalledWith('/saas/planes/p1/');
+
+    vi.mocked(post).mockResolvedValue(plan({}));
+    await createPlan({ nombre: 'Pro' } as never);
+    expect(post).toHaveBeenCalledWith('/saas/planes/', { nombre: 'Pro' });
+
+    vi.mocked(patch).mockResolvedValue(plan({}));
+    await updatePlan('p1', { nombre: 'X' });
+    expect(patch).toHaveBeenCalledWith('/saas/planes/p1/', { nombre: 'X' });
+  });
+
+  it('fetchSuscripciones sin filtro no añade query; con empresa lo incluye', async () => {
+    vi.mocked(get).mockResolvedValue([]);
+    await fetchSuscripciones();
+    expect(get).toHaveBeenCalledWith('/saas/suscripciones/');
+
+    await fetchSuscripciones({ empresa: 'e9' });
+    expect(get).toHaveBeenCalledWith('/saas/suscripciones/?empresa=e9');
+  });
+
+  it('fetchSuscripcion / createSuscripcion / updateSuscripcion', async () => {
+    vi.mocked(get).mockResolvedValue(sus({ id_suscripcion: 's1' }));
+    await fetchSuscripcion('s1');
+    expect(get).toHaveBeenCalledWith('/saas/suscripciones/s1/');
+
+    vi.mocked(post).mockResolvedValue(sus({}));
+    await createSuscripcion({ id_empresa: 'e1', id_plan: 'p1' } as never);
+    expect(post).toHaveBeenCalledWith('/saas/suscripciones/', { id_empresa: 'e1', id_plan: 'p1' });
+
+    vi.mocked(patch).mockResolvedValue(sus({}));
+    await updateSuscripcion('s1', { notas: 'al día' });
+    expect(patch).toHaveBeenCalledWith('/saas/suscripciones/s1/', { notas: 'al día' });
+  });
+
+  it('activarSuscripcion hace PATCH estado=ACTIVA; suspender pega a su acción', async () => {
+    vi.mocked(patch).mockResolvedValue(sus({}));
+    await activarSuscripcion('s1');
+    expect(patch).toHaveBeenCalledWith('/saas/suscripciones/s1/', { estado: 'ACTIVA' });
+
+    vi.mocked(post).mockResolvedValue(sus({}));
+    await suspenderSuscripcion('s1');
+    expect(post).toHaveBeenCalledWith('/saas/suscripciones/s1/suspender/', {});
+  });
+
+  it('cancelarSuscripcion sin notas usa string vacío por defecto', async () => {
+    vi.mocked(post).mockResolvedValue(sus({}));
+    await cancelarSuscripcion('s1');
+    expect(post).toHaveBeenCalledWith('/saas/suscripciones/s1/cancelar/', { notas: '' });
   });
 });

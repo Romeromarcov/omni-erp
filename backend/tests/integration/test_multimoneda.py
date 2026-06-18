@@ -55,7 +55,7 @@ def tasa_usd_ves_bcv(db, moneda_usd, moneda_ves):
         id_moneda_origen=moneda_usd,
         id_moneda_destino=moneda_ves,
         valor_tasa=Decimal("36.50000000"),
-        fecha_tasa=timezone.now().date(),
+        fecha_tasa=timezone.localdate(),
         tipo_tasa="OFICIAL_BCV",
         id_empresa=None,
     )
@@ -71,7 +71,7 @@ def tasa_usd_ves_empresa(db, empresa_a, moneda_usd, moneda_ves):
         id_moneda_origen=moneda_usd,
         id_moneda_destino=moneda_ves,
         valor_tasa=Decimal("37.00000000"),
-        fecha_tasa=timezone.now().date(),
+        fecha_tasa=timezone.localdate(),
         tipo_tasa="ESPECIAL_USUARIO",
     )
 
@@ -85,7 +85,7 @@ def tasa_antigua(db, moneda_usd, moneda_ves):
         id_moneda_origen=moneda_usd,
         id_moneda_destino=moneda_ves,
         valor_tasa=Decimal("35.00000000"),
-        fecha_tasa=timezone.now().date() - timedelta(days=15),
+        fecha_tasa=timezone.localdate() - timedelta(days=15),
         tipo_tasa="OFICIAL_BCV",
         id_empresa=None,
     )
@@ -100,7 +100,7 @@ def tasa_muy_antigua(db, moneda_usd, moneda_ves):
         id_moneda_origen=moneda_usd,
         id_moneda_destino=moneda_ves,
         valor_tasa=Decimal("30.00000000"),
-        fecha_tasa=timezone.now().date() - timedelta(days=45),
+        fecha_tasa=timezone.localdate() - timedelta(days=45),
         tipo_tasa="OFICIAL_BCV",
         id_empresa=None,
     )
@@ -160,7 +160,7 @@ class TestObtenerTasaCambio:
 
     def test_fecha_especifica(self, db, tasa_antigua, moneda_usd, moneda_ves):
         """Se puede pedir la tasa de una fecha específica pasada."""
-        fecha = timezone.now().date() - timedelta(days=15)
+        fecha = timezone.localdate() - timedelta(days=15)
         tasa = obtener_tasa_cambio(moneda_usd, moneda_ves, fecha=fecha)
         assert tasa.valor_tasa == Decimal("35.00000000")
 
@@ -172,14 +172,14 @@ class TestObtenerTasaCambio:
         bloque de recientes en services.obtener_tasa_cambio)."""
         from apps.finanzas.models import TasaCambio
 
-        hace_5 = timezone.now().date() - timedelta(days=5)
+        hace_5 = timezone.localdate() - timedelta(days=5)
         # Global reciente (más nueva) y empresa reciente (más vieja): debe ganar
         # la de la empresa pese a ser anterior, por la prioridad empresa>global.
         TasaCambio.objects.create(
             id_moneda_origen=moneda_usd,
             id_moneda_destino=moneda_ves,
             valor_tasa=Decimal("36.00000000"),
-            fecha_tasa=timezone.now().date() - timedelta(days=2),
+            fecha_tasa=timezone.localdate() - timedelta(days=2),
             tipo_tasa="OFICIAL_BCV",
             id_empresa=None,
         )
@@ -236,7 +236,7 @@ class TestConvertirMonto:
             id_moneda_origen=moneda_usd,
             id_moneda_destino=moneda_ves,
             valor_tasa=Decimal("36.12345678"),
-            fecha_tasa=timezone.now().date(),
+            fecha_tasa=timezone.localdate(),
             tipo_tasa="OFICIAL_BCV",
             id_empresa=None,
         )

@@ -6,6 +6,7 @@ import { toList } from '../../../utils/api';
 import { Box, Button, Stack, TextField, Typography } from '@mui/material';
 import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
+import { downloadCsv } from '../../../utils/csv';
 
 // Ajusta los campos según el serializer de movimientos de cuenta bancaria
 interface MovimientoCuentaBancaria {
@@ -56,13 +57,35 @@ const CuentaBancariaMovimientosListPage: React.FC = () => {
     { key: 'usuario', header: 'Usuario', render: (row) => row.usuario_registro_username || '-' },
   ];
 
+  // TD-2: exportar el informe de movimientos a CSV. El monto/saldos se exportan
+  // como string crudo (no Number()/float) para no perder precisión (R-CODE-4).
+  const exportCSV = () => {
+    downloadCsv(
+      `movimientos_cuenta_${cuentaNombre}.csv`,
+      ['Fecha', 'Hora', 'Tipo', 'Monto', 'Moneda', 'Concepto', 'Referencia', 'Cuenta Bancaria', 'Saldo Anterior', 'Saldo Nuevo', 'Usuario'],
+      data.map((m) => [
+        m.fecha_movimiento,
+        m.hora_movimiento,
+        m.tipo_movimiento,
+        String(m.monto),
+        m.moneda_codigo_iso || '',
+        m.concepto,
+        m.referencia,
+        m.cuenta_bancaria_nombre || '',
+        String(m.saldo_anterior),
+        String(m.saldo_nuevo),
+        m.usuario_registro_username || '',
+      ]),
+    );
+  };
+
   return (
     <PageContainer>
       <PageHeader
         title="Movimientos de Cuenta Bancaria"
         actions={
           <Stack direction="row" spacing={1}>
-            <Button variant="contained" onClick={() => { /* TODO: exportar informe */ }}>Exportar</Button>
+            <Button variant="contained" onClick={exportCSV} disabled={data.length === 0}>Exportar</Button>
             <Button variant="outlined" onClick={() => navigate(-1)}>Volver</Button>
           </Stack>
         }

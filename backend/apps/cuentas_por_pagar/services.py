@@ -82,7 +82,11 @@ def calcular_aging_cxp(empresa_id) -> dict:
     """
     from .models import CuentaPorPagar
 
-    hoy = timezone.now().date()
+    # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: con
+    # now().date() el aging de CxP se corría un día tras las 20:00 Caracas
+    # (= 00:00 UTC) y clasificaba mal los tramos de vencimiento (espejo del
+    # mismo fix en cuentas_por_cobrar).
+    hoy = timezone.localdate()
     cxp_qs = CuentaPorPagar.objects.filter(
         id_empresa_id=empresa_id,
         estado__in=["PENDIENTE", "PARCIAL", "VENCIDA"],

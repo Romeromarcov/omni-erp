@@ -5,17 +5,18 @@ registrar_abono()  — aplica un pago parcial o total a una CxC.
 calcular_aging()   — clasifica el saldo vencido por tramos de días.
 """
 
+import logging
 from decimal import Decimal
+from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
-from typing import TYPE_CHECKING, Any
-
 if TYPE_CHECKING:  # BUILD-1: solo para anotaciones (evita F821)
     from .models import AbonoCxC
 
+logger = logging.getLogger(__name__)
 
 
 class AbonoError(Exception):
@@ -59,9 +60,7 @@ def registrar_abono(cxc, monto: Decimal, usuario, descripcion: str = "") -> "Abo
 
     saldo = _saldo_pendiente(cxc)
     if monto > saldo:
-        raise AbonoError(
-            f"El abono ({monto}) excede el saldo pendiente ({saldo})."
-        )
+        raise AbonoError(f"El abono ({monto}) excede el saldo pendiente ({saldo}).")
 
     abono = AbonoCxC.objects.create(
         cuenta_por_cobrar=cxc,
@@ -77,6 +76,32 @@ def registrar_abono(cxc, monto: Decimal, usuario, descripcion: str = "") -> "Abo
     else:
         cxc.estado = "parcial"
     cxc.save(update_fields=["estado"])
+
+    # R-CODE-11: el abono directo genera su asiento ``PAGO_CXC`` en la MISMA
+    # transacción, con la política uniforme de ``generar_asiento_o_fallar``
+    # (idéntica a los pagos de cuotas de acuerdo en ``cxc/api/acuerdos.py``).
+    # Antes, los abonos directos NO generaban asiento (asimetría detectada en
+    # la auditoría integral 2026-06-10, hallazgo BAJO). Si la empresa exige
+    # contabilidad y falta el mapeo, o el asiento descuadra, ``AsientoError``
+    # revierte el abono completo (la @transaction.atomic hace rollback al
+    # propagar la excepción). Una empresa informal (sin contabilidad activa y
+    # sin mapeo) procede sin asiento (R-PROD-3). Si la CxC no tiene empresa
+    # asociada no hay contexto de tenant para el asiento y se omite.
+    if cxc.empresa_id:
+        from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
+
+        try:
+            generar_asiento_o_fallar("PAGO_CXC", abono, cxc.empresa, monto)
+        except AsientoError as exc:
+            logger.exception(
+                "registrar_abono: asiento PAGO_CXC obligatorio falló | empresa=%s | cxc=%s",
+                cxc.empresa_id,
+                cxc.pk,
+            )
+            raise AbonoError(
+                "No se pudo generar el asiento contable obligatorio. "
+                "Configure el Mapeo Contable de la empresa."
+            ) from exc
 
     # Emitir evento
     from apps.core.events import CobranzaEvents, publish
@@ -118,7 +143,10 @@ def calcular_aging(empresa_id) -> dict:
 
     from .models import CuentaPorCobrar
 
-    hoy = timezone.now().date()
+    # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: now().date()
+    # corría el corte un día tras las 20:00 Caracas y marcaba CxC como vencidas
+    # (o al día) antes de tiempo.
+    hoy = timezone.localdate()
     # BUG-M2: el saldo se anota en una sola consulta (Coalesce(Sum)) en vez de
     # un aggregate por instancia (N+1).
     cxc_qs = CuentaPorCobrar.objects.filter(
@@ -133,10 +161,10 @@ def calcular_aging(empresa_id) -> dict:
     )
 
     buckets: dict[str, dict[str, Any]] = {
-        "corriente":   {"count": 0, "total": Decimal("0")},
-        "dias_1_30":   {"count": 0, "total": Decimal("0")},
-        "dias_31_60":  {"count": 0, "total": Decimal("0")},
-        "dias_61_90":  {"count": 0, "total": Decimal("0")},
+        "corriente": {"count": 0, "total": Decimal("0")},
+        "dias_1_30": {"count": 0, "total": Decimal("0")},
+        "dias_31_60": {"count": 0, "total": Decimal("0")},
+        "dias_61_90": {"count": 0, "total": Decimal("0")},
         "dias_90_mas": {"count": 0, "total": Decimal("0")},
     }
 

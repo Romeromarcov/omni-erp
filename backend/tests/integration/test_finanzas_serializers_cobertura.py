@@ -19,7 +19,6 @@ mínimo en el contexto, cubriendo:
   CajaFisica, SesionCajaFisica, CajaVirtualAsociada, DatafonoAsociado,
   CajaUsuario/CajaVirtualUsuario, PlantillaMaestro, CajaVirtualDisponible.
 """
-import datetime
 import uuid
 from decimal import Decimal
 from types import SimpleNamespace
@@ -467,7 +466,9 @@ class TestTransaccionFinancieraSerializer:
         TasaCambio.objects.create(
             id_empresa=empresa_a, id_moneda_origen=moneda_usd,
             id_moneda_destino=moneda_ves, tipo_tasa="OFICIAL_BCV",
-            valor_tasa=Decimal("36.50000000"), fecha_tasa=datetime.date.today(),
+            # fecha local (Caracas), coherente con la búsqueda del serializer
+            # (timezone.localdate()); evita el desalineo UTC tras las 20:00.
+            valor_tasa=Decimal("36.50000000"), fecha_tasa=timezone.localdate(),
         )
         s = TransaccionFinancieraSerializer(
             data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
@@ -487,6 +488,40 @@ class TestTransaccionFinancieraSerializer:
         assert mov.monto == Decimal("100.00")
         assert mov.concepto == "venta del día"
         assert mov.id_usuario_registro == user_a
+
+    def test_create_monto_moneda_pais_usa_fecha_local_caracas(
+        self, user_a, empresa_a, moneda_usd, metodo_a
+    ):
+        # Cierre del #124: bajo now()=02:00 UTC (= 22:00 Caracas del 14), el
+        # cálculo de monto_moneda_pais debe tomar la tasa del día LOCAL (Caracas).
+        # La tasa se siembra SOLO para el día local; con la fecha UTC (06-15) no
+        # habría tasa y monto_moneda_pais quedaría en None (regresión del bug).
+        import datetime
+        from unittest import mock
+
+        now_utc = datetime.datetime(2026, 6, 15, 2, 0, 0, tzinfo=datetime.timezone.utc)
+        caracas_hoy = datetime.date(2026, 6, 14)
+        metodo_a.monedas.add(moneda_usd)
+        moneda_ves = Moneda.objects.create(
+            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
+        )
+        empresa_a.id_moneda_pais = moneda_ves
+        empresa_a.save()
+        TasaCambio.objects.create(
+            id_empresa=empresa_a, id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves, tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("36.50000000"), fecha_tasa=caracas_hoy,  # solo día local
+        )
+        s = TransaccionFinancieraSerializer(
+            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
+                          monto_base="99.00", descripcion="venta ventana"),
+            context=ctx(user_a),
+        )
+        with mock.patch("django.utils.timezone.now", return_value=now_utc):
+            assert s.is_valid(), s.errors
+            tf = s.save()
+        tf.refresh_from_db()
+        assert tf.monto_moneda_pais == Decimal("3650.00")
 
     def test_create_sin_tasa_deja_monto_pais_none(self, user_a, empresa_a, moneda_usd, metodo_a):
         metodo_a.monedas.add(moneda_usd)

@@ -27,8 +27,8 @@ SERVICE_ACCOUNT = {
 
 
 def _odoo_instancia(empresa, nombre="Odoo Origen"):
-    prov = ConectorProveedor.objects.create(
-        codigo="odoo", nombre="Odoo", estado="activo"
+    prov, _ = ConectorProveedor.objects.get_or_create(
+        codigo="odoo", defaults={"nombre": "Odoo", "estado": "activo"}
     )
     return ConectorInstancia.objects.create(
         id_empresa=empresa,
@@ -123,8 +123,8 @@ def test_configurar_con_test_marca_estado(tmp_path, empresa_a, monkeypatch):
 
 
 def test_exportar_invoca_engine_y_resuelve_destino(empresa_a, monkeypatch):
-    prov = ConectorProveedor.objects.create(
-        codigo="google_sheets", nombre="Google Sheets", estado="activo"
+    prov, _ = ConectorProveedor.objects.get_or_create(
+        codigo="google_sheets", defaults={"nombre": "Google Sheets", "estado": "activo"}
     )
     destino = ConectorInstancia.objects.create(
         id_empresa=empresa_a,

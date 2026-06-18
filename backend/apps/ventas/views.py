@@ -18,6 +18,7 @@ def _empresas(request):
     """Shortcut: devuelve empresas visibles para el usuario del request."""
     return get_empresas_visible(request.user)
 from .models import (
+    ComisionVenta,
     Cotizacion,
     DetalleCotizacion,
     DetalleDevolucionVenta,
@@ -28,6 +29,8 @@ from .models import (
     DetallePedido,
     DetallePrecio,
     DevolucionVenta,
+    EsquemaComision,
+    EsquemaComisionCategoria,
     FacturaFiscal,
     ListaPrecio,
     NotaCreditoFiscal,
@@ -36,6 +39,7 @@ from .models import (
     Pedido,
 )
 from .serializers import (
+    ComisionVentaSerializer,
     CotizacionSerializer,
     DetalleCotizacionSerializer,
     DetalleDevolucionVentaSerializer,
@@ -46,8 +50,11 @@ from .serializers import (
     DetallePedidoSerializer,
     DetallePrecioSerializer,
     DevolucionVentaSerializer,
+    EsquemaComisionCategoriaSerializer,
+    EsquemaComisionSerializer,
     FacturaFiscalSerializer,
     ListaPrecioSerializer,
+    LiquidarComisionesInputSerializer,
     NotaCreditoFiscalSerializer,
     NotaCreditoVentaSerializer,
     NotaVentaSerializer,
@@ -174,7 +181,261 @@ class NotaVentaViewSet(
 
     def get_queryset(self):
         # R-CODE-1
-        return NotaVenta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_creacion")
+        qs = NotaVenta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_creacion")
+        # POS devoluciones (1.G): búsqueda de la venta original por número exacto.
+        numero = self.request.query_params.get("numero_nota")
+        if numero:
+            qs = qs.filter(numero_nota__iexact=numero.strip())
+        return qs
+
+    @idempotent("ventas:devolver")
+    @action(detail=True, methods=["post"], url_path="devolver")
+    def devolver(self, request, pk=None):
+        """
+        POST /api/ventas/notas-venta/{pk}/devolver/   (1.G — devolución POS)
+
+        Body:
+            {
+              "almacen_id": "uuid",            # almacén que recibe el stock
+              "id_metodo_pago": "uuid",        # método con el que se reembolsa
+              "lineas": [{"id_detalle": "uuid", "cantidad": "2"}, ...],
+              "motivo": "CAMBIO_CLIENTE",      # opcional (choice de DevolucionVenta)
+              "observaciones": "..."           # opcional
+            }
+
+        Atómico (R-CODE-11): reingreso de stock + nota de crédito (fiscal si la
+        venta fue fiscal) + Pago EGRESO en la caja de la sesión abierta del
+        cajero + asiento de reverso. Idempotente con ``Idempotency-Key``: un
+        reintento con la misma clave no duplica la devolución (es dinero).
+        """
+        from apps.almacenes.models import Almacen
+        from apps.finanzas.models import MetodoPago
+        from django.db import models as dj_models
+
+        from .services import VentaError, registrar_devolucion_pos
+
+        nota = self.get_object()
+
+        almacen_id = request.data.get("almacen_id")
+        if not almacen_id:
+            raise ValidationError({"almacen_id": "Este campo es requerido."})
+        try:
+            almacen = Almacen.objects.get(pk=almacen_id, id_empresa=nota.id_empresa)
+        except Almacen.DoesNotExist:
+            raise ValidationError({"almacen_id": "Almacén no encontrado en esta empresa."})
+
+        metodo_id = request.data.get("id_metodo_pago")
+        if not metodo_id:
+            raise ValidationError({"id_metodo_pago": "Este campo es requerido."})
+        # R-CODE-1: método propio de la empresa, genérico global o público.
+        metodo = (
+            MetodoPago.objects.filter(pk=metodo_id, activo=True)
+            .filter(
+                dj_models.Q(empresa=nota.id_empresa)
+                | dj_models.Q(empresa__isnull=True)
+                | dj_models.Q(es_publico=True)
+            )
+            .first()
+        )
+        if metodo is None:
+            raise ValidationError({"id_metodo_pago": "Método de pago no disponible en esta empresa."})
+
+        lineas = request.data.get("lineas")
+        if not isinstance(lineas, list) or not lineas:
+            raise ValidationError({"lineas": "Indica al menos una línea a devolver."})
+
+        kwargs_devolucion = {}
+        if request.data.get("motivo"):
+            kwargs_devolucion["motivo"] = request.data["motivo"]
+
+        try:
+            resultado = registrar_devolucion_pos(
+                nota_venta=nota,
+                lineas=lineas,
+                almacen=almacen,
+                usuario=request.user,
+                metodo_pago=metodo,
+                observaciones=request.data.get("observaciones") or None,
+                **kwargs_devolucion,
+            )
+        except VentaError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        devolucion = resultado["devolucion"]
+        ncf = resultado["nota_credito_fiscal"]
+        ncv = resultado["nota_credito_venta"]
+        # R-CODE-4: el dinero viaja como string, nunca float.
+        return Response(
+            {
+                "devolucion": {
+                    "id_devolucion": str(devolucion.id_devolucion),
+                    "numero_devolucion": devolucion.numero_devolucion,
+                    "fecha_devolucion": str(devolucion.fecha_devolucion),
+                    "estado": devolucion.estado,
+                    "motivo": devolucion.motivo_devolucion,
+                    "monto_total": str(devolucion.monto_total),
+                },
+                "nota_credito_fiscal": (
+                    {
+                        "id_nota_credito_fiscal": str(ncf.id_nota_credito_fiscal),
+                        "numero_nota_credito": ncf.numero_nota_credito,
+                        "numero_control": ncf.numero_control,
+                        "base_imponible": str(ncf.base_imponible),
+                        "monto_iva": str(ncf.monto_iva),
+                        "monto_total": str(ncf.monto_total),
+                    }
+                    if ncf
+                    else None
+                ),
+                "nota_credito_venta": (
+                    {
+                        "id_nota_credito": str(ncv.id_nota_credito),
+                        "numero_nota_credito": ncv.numero_nota_credito,
+                        "monto_total": str(ncv.monto_total),
+                    }
+                    if ncv
+                    else None
+                ),
+                "pago_id": str(resultado["pago"].id_pago),
+                "monto_reembolsado": str(resultado["pago"].monto),
+                "caja_fisica": resultado["sesion_caja"].caja_fisica.nombre,
+                "movimientos_inventario": len(resultado["movimientos"]),
+                "asiento_id": str(resultado["asiento"].pk) if resultado["asiento"] else None,
+                "asiento_iva_id": str(resultado["asiento_iva"].pk) if resultado["asiento_iva"] else None,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["get"], url_path="devoluciones")
+    def devoluciones(self, request, pk=None):
+        """
+        GET /api/ventas/notas-venta/{pk}/devoluciones/   (1.G — devolución POS)
+
+        Devuelve las devoluciones de la venta y el estado devolvible por línea
+        (vendido / ya devuelto / disponible) para que el POS limite cantidades.
+        """
+        from .services import _cantidades_devueltas_por_producto, _factura_de_la_venta
+
+        nota = self.get_object()
+        detalles = list(nota.detalles.select_related("id_producto"))
+        devuelto_por_producto = dict(_cantidades_devueltas_por_producto(nota))
+
+        lineas = []
+        for d in detalles:
+            ya = devuelto_por_producto.get(d.id_producto_id, Decimal("0"))
+            # Reparto voraz del acumulado devuelto entre líneas del mismo producto
+            # (el POS normalmente consolida una línea por producto).
+            devuelta_linea = min(d.cantidad, ya)
+            devuelto_por_producto[d.id_producto_id] = ya - devuelta_linea
+            lineas.append(
+                {
+                    "id_detalle": str(d.id_detalle_nota_venta),
+                    "id_producto": str(d.id_producto_id),
+                    "nombre_producto": d.id_producto.nombre_producto,
+                    "sku": getattr(d.id_producto, "sku", "") or "",
+                    "precio_unitario": str(d.precio_unitario),
+                    "cantidad_vendida": str(d.cantidad),
+                    "cantidad_devuelta": str(devuelta_linea),
+                    "cantidad_disponible": str(d.cantidad - devuelta_linea),
+                }
+            )
+
+        factura = _factura_de_la_venta(nota)
+        devoluciones = [
+            {
+                "id_devolucion": str(dev.id_devolucion),
+                "numero_devolucion": dev.numero_devolucion,
+                "fecha_devolucion": str(dev.fecha_devolucion),
+                "motivo": dev.motivo_devolucion,
+                "estado": dev.estado,
+                "monto_total": str(dev.monto_total),
+            }
+            for dev in nota.devoluciones.order_by("fecha_creacion")
+        ]
+        return Response(
+            {
+                "venta": {
+                    "id_nota_venta": str(nota.id_nota_venta),
+                    "numero_nota": nota.numero_nota,
+                    "estado": nota.estado,
+                    "fecha_nota": str(nota.fecha_nota),
+                    "fiscal": factura is not None,
+                    "numero_factura": factura.numero_factura if factura else None,
+                },
+                "lineas": lineas,
+                "devoluciones": devoluciones,
+            }
+        )
+
+    def perform_update(self, serializer):
+        """
+        1.G — Comisiones: la anulación de la venta (PATCH estado→ANULADA, único
+        camino de anulación de notas hoy) anula su comisión devengada EN LA
+        MISMA transacción. Si la comisión ya fue LIQUIDADA, la anulación se
+        rechaza (400) y nada cambia.
+        """
+        from django.db import transaction
+
+        from .services import VentaError, anular_comision_de_nota_venta
+
+        estado_previo = serializer.instance.estado
+        with transaction.atomic():
+            nota = serializer.save()
+            if estado_previo != "ANULADA" and nota.estado == "ANULADA":
+                try:
+                    anular_comision_de_nota_venta(nota)
+                except VentaError as exc:
+                    raise ValidationError(str(exc)) from exc
+
+    @idempotent("ventas:entregar")
+    @action(detail=True, methods=["post"], url_path="entregar")
+    def entregar(self, request, pk=None):
+        """
+        POST /api/ventas/notas-venta/{pk}/entregar/
+        Body: {"almacen_id": "uuid"}
+
+        Entrega la nota delegando en ``confirmar_nota_venta`` (despacho de
+        stock + CxC del flujo + asiento NOTA_VENTA + devengo de comisión del
+        vendedor — todo en una transacción, R-CODE-11). Gap 1.G: el service
+        existía pero ningún endpoint lo invocaba; la entrega por PATCH de
+        estado no movía stock ni devengaba nada.
+
+        Idempotente vía cabecera ``Idempotency-Key`` (un reintento no
+        despacha stock dos veces).
+        """
+        from apps.almacenes.models import Almacen
+
+        from .services import VentaError, confirmar_nota_venta
+
+        nota = self.get_object()
+        almacen_id = request.data.get("almacen_id")
+        if not almacen_id:
+            raise ValidationError({"almacen_id": "Este campo es requerido."})
+        try:
+            almacen = Almacen.objects.get(pk=almacen_id, id_empresa=nota.id_empresa)
+        except Almacen.DoesNotExist:
+            raise ValidationError({"almacen_id": "Almacén no encontrado en esta empresa."})
+
+        try:
+            resultado = confirmar_nota_venta(nota, almacen, request.user)
+        except VentaError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        comision = resultado.get("comision")
+        return Response(
+            {
+                "nota_venta_id": str(nota.id_nota_venta),
+                "numero_nota": nota.numero_nota,
+                "estado": nota.estado,
+                "movimientos": len(resultado["movimientos"]),
+                "cxc_id": str(resultado["cxc"].pk) if resultado.get("cxc") else None,
+                "asiento_generado": resultado.get("asiento") is not None,
+                "comision_devengada": comision is not None,
+                "comision_id": str(comision.pk) if comision else None,
+                "comision_monto": str(comision.monto) if comision else None,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @idempotent("ventas:convertir-factura")
     @action(detail=True, methods=["post"], url_path="convertir-factura")
@@ -507,3 +768,175 @@ class DetallePrecioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1 via ListaPrecio → id_empresa
         return DetallePrecio.objects.filter(id_lista__id_empresa__in=_empresas(self.request))
+
+
+# ── Comisiones de vendedores (1.G) ────────────────────────────────────────────
+
+
+class EsquemaComisionViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):
+    """
+    CRUD de esquemas de comisión por vendedor.
+
+    GET/POST  /api/ventas/esquemas-comision/
+    El % base aplica al subtotal sin impuestos; overrides por categoría en
+    /api/ventas/esquemas-comision-categorias/.
+    """
+
+    queryset = EsquemaComision.objects.all()
+    serializer_class = EsquemaComisionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # R-CODE-1
+        return (
+            EsquemaComision.objects.filter(id_empresa__in=_empresas(self.request))
+            .select_related("vendedor")
+            .prefetch_related("overrides_categoria__categoria")
+            .order_by("-fecha_creacion")
+        )
+
+
+class EsquemaComisionCategoriaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
+    """Overrides de % por categoría de producto de un esquema de comisión."""
+
+    queryset = EsquemaComisionCategoria.objects.all()
+    serializer_class = EsquemaComisionCategoriaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # R-CODE-1 via EsquemaComision → id_empresa
+        return EsquemaComisionCategoria.objects.filter(
+            esquema__id_empresa__in=_empresas(self.request)
+        ).select_related("categoria", "esquema")
+
+
+class ComisionVentaViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Consulta de comisiones devengadas/liquidadas/anuladas + liquidación.
+
+    GET  /api/ventas/comisiones/?vendedor=&estado=&desde=&hasta=
+    GET  /api/ventas/comisiones/resumen/   (mismos filtros, agregado por vendedor)
+    POST /api/ventas/comisiones/liquidar/  {vendedor, desde, hasta}
+
+    Solo lectura por diseño: las comisiones nacen al entregar la venta
+    (services.devengar_comision_venta) y solo mutan vía /liquidar/ o por la
+    anulación de la venta.
+    """
+
+    queryset = ComisionVenta.objects.all()
+    serializer_class = ComisionVentaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from rest_framework.fields import DateField
+
+        # R-CODE-1
+        qs = (
+            ComisionVenta.objects.filter(id_empresa__in=_empresas(self.request))
+            .select_related("vendedor", "nota_venta")
+            .order_by("-fecha_devengo", "-fecha_creacion")
+        )
+        params = self.request.query_params
+        if params.get("vendedor"):
+            import uuid as uuid_mod
+
+            try:
+                qs = qs.filter(vendedor=uuid_mod.UUID(params["vendedor"]))
+            except ValueError as exc:
+                raise ValidationError({"vendedor": "UUID inválido."}) from exc
+        if params.get("estado"):
+            qs = qs.filter(estado=params["estado"].upper())
+        for nombre, lookup in (("desde", "fecha_devengo__gte"), ("hasta", "fecha_devengo__lte")):
+            valor = params.get(nombre)
+            if valor:
+                try:
+                    qs = qs.filter(**{lookup: DateField().to_internal_value(valor)})
+                except ValidationError as exc:
+                    raise ValidationError({nombre: "Fecha inválida (use YYYY-MM-DD)."}) from exc
+        return qs
+
+    @action(detail=False, methods=["get"], url_path="resumen")
+    def resumen(self, request):
+        """
+        Totales por vendedor y estado para el período filtrado (R-CODE-4: los
+        montos viajan como string, nunca float).
+        """
+        from django.db.models import Count, Sum
+
+        filas = (
+            self.get_queryset()
+            # .order_by() limpia el ordering del queryset: si quedara, Django lo
+            # suma al GROUP BY y parte los grupos por fecha (filas duplicadas).
+            .order_by()
+            .values("vendedor", "vendedor__username", "estado")
+            .annotate(total=Sum("monto"), cantidad=Count("id_comision_venta"))
+        )
+        resumen: dict[str, dict] = {}
+        for fila in filas:
+            clave = str(fila["vendedor"])
+            vendedor = resumen.setdefault(
+                clave,
+                {
+                    "vendedor": clave,
+                    "vendedor_username": fila["vendedor__username"],
+                    "devengada": "0",
+                    "liquidada": "0",
+                    "anulada": "0",
+                    "cantidad": 0,
+                },
+            )
+            vendedor[fila["estado"].lower()] = str(fila["total"] or Decimal("0"))
+            vendedor["cantidad"] += fila["cantidad"]
+        return Response({"resultados": list(resumen.values())})
+
+    @idempotent("ventas:comisiones-liquidar")
+    @action(detail=False, methods=["post"], url_path="liquidar")
+    def liquidar(self, request):
+        """
+        POST /api/ventas/comisiones/liquidar/
+        Body: {"vendedor": uuid, "desde": "YYYY-MM-DD", "hasta": "YYYY-MM-DD"}
+
+        Marca DEVENGADA → LIQUIDADA las comisiones del vendedor en el período.
+        Idempotente vía cabecera ``Idempotency-Key`` (un reintento devuelve la
+        misma respuesta sin re-liquidar) y, de fondo, naturalmente idempotente:
+        una segunda corrida del mismo rango encuentra 0 pendientes.
+        """
+        from django.contrib.auth import get_user_model
+
+        from .services import VentaError, liquidar_comisiones
+
+        entrada = LiquidarComisionesInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+
+        empresas = _empresas(request)
+        # R-CODE-1: el vendedor debe pertenecer a una empresa visible.
+        vendedor = (
+            get_user_model()
+            .objects.filter(pk=entrada.validated_data["vendedor"], empresas__in=empresas)
+            .distinct()
+            .first()
+        )
+        if vendedor is None:
+            raise ValidationError({"vendedor": "Vendedor no encontrado en sus empresas."})
+
+        try:
+            resultado = liquidar_comisiones(
+                empresas=empresas,
+                vendedor=vendedor,
+                desde=entrada.validated_data["desde"],
+                hasta=entrada.validated_data["hasta"],
+                usuario=request.user,
+            )
+        except VentaError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        return Response(
+            {
+                "vendedor": str(vendedor.pk),
+                "desde": str(entrada.validated_data["desde"]),
+                "hasta": str(entrada.validated_data["hasta"]),
+                "liquidadas": resultado["liquidadas"],
+                "monto_total": str(resultado["monto_total"]),
+            },
+            status=status.HTTP_200_OK,
+        )

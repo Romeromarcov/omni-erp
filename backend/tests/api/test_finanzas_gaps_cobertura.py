@@ -252,7 +252,10 @@ class TestTasaOficialBCVView:
         return TasaCambio.objects.create(
             id_empresa=None, id_moneda_origen=moneda_usd, id_moneda_destino=moneda_ves,
             tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("36.50000000"),
-            fecha_tasa=datetime.date.today(),
+            # fecha local (Caracas), coherente con el default del endpoint
+            # (timezone.localdate()); con date.today() (UTC) el seed y la
+            # búsqueda se desalineaban tras las 20:00 Caracas.
+            fecha_tasa=timezone.localdate(),
         )
 
     def test_fecha_invalida_400(self, client_a):
@@ -292,6 +295,31 @@ class TestTasaOficialBCVView:
         })
         assert resp.status_code == 200, resp.content
         assert Decimal(resp.json()["valor_tasa"]) == Decimal("36.50000000")
+
+    def test_default_fecha_usa_localdate_caracas(self, client_a, moneda_usd, moneda_ves):
+        # Hallazgo BAJO (auditoría 2026-06-10): el default era date.today() (UTC).
+        # Congelamos now() a las 02:00 UTC (= 22:00 Caracas del 14): sin ?fecha el
+        # endpoint debe tomar la tasa del día LOCAL (Caracas, 40.00), no la del
+        # día UTC siguiente (41.00).
+        from unittest import mock
+
+        now_utc = datetime.datetime(2026, 6, 15, 2, 0, 0, tzinfo=datetime.timezone.utc)
+        caracas_hoy = datetime.date(2026, 6, 14)
+        utc_hoy = datetime.date(2026, 6, 15)
+        TasaCambio.objects.create(
+            id_empresa=None, id_moneda_origen=moneda_usd, id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("40.00000000"),
+            fecha_tasa=caracas_hoy,
+        )
+        TasaCambio.objects.create(
+            id_empresa=None, id_moneda_origen=moneda_usd, id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("41.00000000"),
+            fecha_tasa=utc_hoy,
+        )
+        with mock.patch("django.utils.timezone.now", return_value=now_utc):
+            resp = client_a.get(self.URL, {"moneda_origen": "USD", "moneda_destino": "VES"})
+        assert resp.status_code == 200, resp.content
+        assert Decimal(resp.json()["valor_tasa"]) == Decimal("40.00000000")
 
     def test_flujo_por_empresa_sin_moneda_base_404(self, client_a, moneda_usd, tasa_bcv_hoy):
         from apps.core.models import Empresa
