@@ -24,3 +24,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T22:25:53Z] ✅ FE-CRIT-1 ProveedorIntegracionFormPage rhf+zod PR#152 merged
 [2026-06-18T22:29:37Z] PlanFormPage rhf+zod commit b2f7660 (FE-CRIT-1)
 [2026-06-18T22:50:53Z] FE-CRIT-1 PlanFormPage rhf+zod PR#153 merged — 16/16 FormPage en react-hook-form
+[2026-06-18T23:17:42Z] Q1 cobertura transaccionFinancieraService PR#154 merged
