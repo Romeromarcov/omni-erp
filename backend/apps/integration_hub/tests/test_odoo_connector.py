@@ -120,6 +120,19 @@ class TestNormalizeOdooHost:
 
         assert normalize_odoo_host(raw) == esperado
 
+    def test_host_solo_espacios_devuelve_vacio(self):
+        """Solo espacios → cadena vacía (rama de host ausente)."""
+        from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
+
+        assert normalize_odoo_host("   ") == ""
+
+    def test_host_con_esquema_sin_dominio_fallback(self):
+        """Rama defensiva: esquema presente pero sin dominio → saneo mínimo."""
+        from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
+
+        # urlsplit no identifica netloc → devuelve la base sin barra final.
+        assert normalize_odoo_host("https:///ruta/") == "https:///ruta"
+
     def test_construye_endpoint_xmlrpc_valido(self):
         """Con una URL de login pegada, el endpoint XML-RPC queda correcto."""
         from apps.integration_hub.connectors.odoo.client import OdooXMLRPCClient
