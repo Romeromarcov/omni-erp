@@ -3,7 +3,9 @@
 Cierra el Compromiso Técnico Fechado CTF-005 (`docs/ctf/CTF-005.md`): los
 serializers de ``ventas``, ``compras`` y ``core`` dejaron de usar
 ``fields = "__all__"`` (asignación masiva — CWE-915) y declaran una lista
-explícita de campos.
+explícita de campos. La **fase 2** extiende el mismo blindaje a los módulos de
+**dinero y nómina** (``finanzas``, ``nomina``), donde la superficie de
+asignación masiva toca pagos, cajas y salarios (PII sensible).
 
 - ``test_sin_fields_all_*``: **guard estructural permanente** — falla si alguien
   reintroduce ``fields = "__all__"`` en estos módulos.
@@ -22,6 +24,9 @@ MODULOS_WHITELIST = [
     "apps.core.serializers",
     "apps.ventas.serializers",
     "apps.compras.serializers",
+    # Fase 2 — dinero & nómina (CWE-915 sobre pagos, cajas y salarios/PII).
+    "apps.finanzas.serializers",
+    "apps.nomina.serializers",
 ]
 
 
