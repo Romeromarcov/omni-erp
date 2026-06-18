@@ -52,6 +52,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
+      // gcTime alto (24 h): el persister a IndexedDB (lib/idbPersister) solo
+      // conserva entradas vivas en memoria; con el default de 5 min se
+      // recolectarían y no quedaría nada que rehidratar tras un reload offline.
+      gcTime: 1000 * 60 * 60 * 24,
       retry: 1,
       retryDelay: retryBackoffDelay,
       refetchOnWindowFocus: false,

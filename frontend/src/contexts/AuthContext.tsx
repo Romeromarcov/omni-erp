@@ -15,6 +15,8 @@ import {
   clearSession,
   type CajaFisicaSel,
 } from '../services/session';
+import { queryClient } from '../lib/queryClient';
+import { clearPersistedQueryCache } from '../lib/idbPersister';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -61,6 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Drop UI selection too — it is per-session and may leak across users.
     localStorage.removeItem('id_empresa');
     localStorage.removeItem('id_sucursal');
+    // Offline réplica local (CTF-008): purgar el caché de negocio en memoria y
+    // su réplica en IndexedDB para que los datos de un tenant/usuario no queden
+    // disponibles para el siguiente en un dispositivo compartido (R-CODE-1).
+    queryClient.clear();
+    void clearPersistedQueryCache();
   }, []);
 
   const refreshUser = useCallback(async () => {
