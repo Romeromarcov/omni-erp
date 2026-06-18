@@ -13,3 +13,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T19:03:30Z] ✅ CTF-008 Nivel 1 réplica local IndexedDB (persistencia caché) commit 661a317
 [2026-06-18T19:23:05Z] ✅ CTF-008 Nivel 1 réplica local IndexedDB PR#144 merged
 [2026-06-18T19:48:48Z] ✅ 1.I costeo real persistido (CostoProduccion) commit c412772
+[2026-06-18T20:14:03Z] ✅ CTF-008 Nivel 2 backend pull de deltas (apps/sync) commit 9a4561f
