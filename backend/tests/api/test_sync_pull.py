@@ -118,6 +118,32 @@ def test_sin_autenticacion_401(catalogo):
     assert resp.status_code in (401, 403)
 
 
+def test_pull_variantes_producto(client_a, empresa_a, catalogo):
+    """Las variantes (sin id_empresa propio) se filtran por el de su producto y
+    exponen su whitelist."""
+    from apps.inventario.models import VarianteProducto
+
+    VarianteProducto.objects.create(
+        id_producto=catalogo["p1"], codigo_variante="ROJO-M", sku="SKU-S1-RM"
+    )
+    body = client_a.get(URL, {"entity": "variantes_producto"}).json()
+    assert body["count"] == 1
+    fila = body["results"][0]
+    assert fila["codigo_variante"] == "ROJO-M"
+    assert set(fila) == {
+        "id_variante", "id_producto", "codigo_variante", "sku",
+        "atributos_json", "activo", "fecha_actualizacion",
+    }
+
+
+def test_variantes_aisladas_por_tenant(client_b, empresa_a, catalogo):
+    """Un usuario de otra empresa no ve variantes de empresa_a (vía producto)."""
+    from apps.inventario.models import VarianteProducto
+
+    VarianteProducto.objects.create(id_producto=catalogo["p1"], codigo_variante="X")
+    assert client_b.get(URL, {"entity": "variantes_producto"}).json()["count"] == 0
+
+
 def test_pull_clientes(client_a, empresa_a):
     from apps.crm.models import Cliente
 

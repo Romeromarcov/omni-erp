@@ -66,4 +66,14 @@ SYNC_ENTITIES: dict[str, SyncEntity] = {
             "telefono", "email", "tipo_cliente", "activo", "fecha_actualizacion",
         ),
     ),
+    "variantes_producto": SyncEntity(
+        model_label="inventario.VarianteProducto",
+        pk_field="id_variante",
+        fields=(
+            "id_variante", "id_producto", "codigo_variante", "sku",
+            "atributos_json", "activo", "fecha_actualizacion",
+        ),
+        # La variante no tiene id_empresa propio; se filtra por el de su producto.
+        empresa_field="id_producto__id_empresa",
+    ),
 }
