@@ -19,6 +19,7 @@ import re
 import xmlrpc.client  # nosec B411
 from datetime import datetime, date
 from typing import Any
+from urllib.parse import urlsplit
 
 # B411: endurecer xmlrpc contra ataques XML (billion laughs, entidades externas)
 # en las respuestas del servidor Odoo externo. monkey_patch() sustituye el parser
@@ -28,6 +29,37 @@ from defusedxml.xmlrpc import monkey_patch as _defuse_xmlrpc
 _defuse_xmlrpc()
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_odoo_host(raw: str) -> str:
+    """
+    Normaliza la URL base de un servidor Odoo a ``esquema://host[:puerto]``.
+
+    Es muy común que el usuario pegue la URL del navegador (la página de login,
+    ej. ``https://miempresa.odoo.com/en/web/login``) en el campo Host. Eso
+    rompía el XML-RPC porque los endpoints se construyen como
+    ``{host}/xmlrpc/2/common`` → ``.../en/web/login/xmlrpc/2/common`` (ruta
+    inválida; el servidor responde HTML y xmlrpc lanza ResponseNotReady).
+
+    Esta función descarta cualquier ruta, query o fragmento y conserva solo
+    el esquema y el dominio (con puerto si lo hay). Si falta el esquema, asume
+    ``https://``.
+
+    Ejemplos:
+        "miempresa.odoo.com/en/web/login"     → "https://miempresa.odoo.com"
+        "https://x.odoo.com/web/login?foo=1"  → "https://x.odoo.com"
+        "http://localhost:8069/web"           → "http://localhost:8069"
+    """
+    base = (raw or "").strip()
+    if not base:
+        return ""
+    if not base.startswith(("http://", "https://")):
+        base = f"https://{base}"
+    parts = urlsplit(base)
+    if not parts.netloc:
+        # urlsplit no pudo identificar el dominio; devolvemos lo saneado mínimo.
+        return base.rstrip("/")
+    return f"{parts.scheme}://{parts.netloc}"
 
 
 class OdooAuthError(Exception):
@@ -62,15 +94,13 @@ class OdooXMLRPCClient:
         api_key: str,
         timeout: int = 30,
     ):
-        self._host = host.strip().rstrip("/")
+        # Normaliza el host a esquema://dominio, tolerando que el usuario pegue
+        # la URL del navegador (p. ej. .../web/login) — ver normalize_odoo_host.
+        self._host = normalize_odoo_host(host)
         self._db = db.strip()
         self._user = user.strip()
         self._api_key = api_key  # No loguear
         self._timeout = timeout
-
-        # Construir base URL
-        if not self._host.startswith(("http://", "https://")):
-            self._host = f"https://{self._host}"
 
         self._common_url = f"{self._host}/xmlrpc/2/common"
         self._object_url = f"{self._host}/xmlrpc/2/object"

@@ -130,6 +130,10 @@ class ConectorInstanciaSerializer(serializers.ModelSerializer):
 class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
     """Serializer de creación/edición que acepta configuracion completa."""
 
+    # Claves secretas que nunca se devuelven al cliente (R-CODE-8). Al editar, si
+    # llegan vacías se conserva el valor cifrado existente (no se sobreescriben).
+    SECRET_KEYS = ("api_key", "password", "service_account")
+
     class Meta:
         model = ConectorInstancia
         fields = [
@@ -165,9 +169,19 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
         )
         codigo = getattr(proveedor, "codigo", "")
 
+        # En edición, un campo secreto que llega vacío se conserva del valor
+        # existente (el cliente nunca recibe la api_key). Por eso, para validar
+        # "campo presente", consideramos tanto lo entrante como lo ya guardado.
+        existente = self.instance.get_config() if self.instance else {}
+
+        def presente(campo: str) -> bool:
+            return bool(configuracion.get(campo)) or bool(existente.get(campo))
+
         if codigo == "google_sheets":
             sa = configuracion.get("service_account")
-            if not isinstance(sa, dict) or not sa.get("client_email"):
+            sa_ok = isinstance(sa, dict) and sa.get("client_email")
+            # En edición se admite conservar la cuenta de servicio ya guardada.
+            if not sa_ok and not existente.get("service_account"):
                 raise serializers.ValidationError(
                     {
                         "configuracion": (
@@ -176,7 +190,7 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
                         )
                     }
                 )
-            if not configuracion.get("source_instancia_id"):
+            if not presente("source_instancia_id"):
                 raise serializers.ValidationError(
                     {
                         "configuracion": (
@@ -187,11 +201,30 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
                 )
         else:
             for campo in ("host", "user", "api_key"):
-                if not configuracion.get(campo):
+                if not presente(campo):
                     raise serializers.ValidationError(
                         {"configuracion": f"Se requiere el campo '{campo}'."}
                     )
         return attrs
+
+    def update(self, instance, validated_data):
+        """Edición: fusiona la configuración nueva sobre la existente sin perder
+        secretos (api_key, etc.) cuando llegan vacíos, y no permite cambiar el
+        proveedor de una instancia ya creada."""
+        validated_data.pop("id_proveedor", None)  # el proveedor es inmutable
+
+        nueva_config = validated_data.pop("configuracion", None)
+        if nueva_config is not None:
+            config = dict(instance.get_config())
+            for clave, valor in nueva_config.items():
+                # No sobreescribir un secreto con vacío: permite editar el resto
+                # de campos sin re-tipear la credencial.
+                if clave in self.SECRET_KEYS and not valor:
+                    continue
+                config[clave] = valor
+            instance.configuracion = config
+
+        return super().update(instance, validated_data)
 
     def validate_nombre(self, value: str) -> str:
         """El nombre debe ser único por empresa."""
