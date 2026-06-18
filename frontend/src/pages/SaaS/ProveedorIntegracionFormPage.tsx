@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert, Box, Button, Card, Checkbox, FormControlLabel, FormGroup,
   MenuItem, Stack, Switch, TextField, Typography,
@@ -8,10 +10,12 @@ import {
 import { PageContainer, PageHeader } from '../../components/ui';
 import {
   getProveedor, createProveedor, updateProveedor,
-  type ConectorProveedorPayload, type ProveedorEstado,
+  type ConectorProveedorPayload,
 } from '../../services/integrationHubService';
-
-const ESTADOS: ProveedorEstado[] = ['activo', 'beta', 'proximamente'];
+import {
+  ESTADOS_PROVEEDOR, parseVersiones, proveedorIntegracionSchema,
+  type ProveedorIntegracionInput,
+} from '../../schemas/saas.schemas';
 
 // Entidades sincronizables conocidas (espejo de EntidadSincronizada.TIPO_CHOICES).
 const CAPACIDADES_DISPONIBLES = [
@@ -19,21 +23,19 @@ const CAPACIDADES_DISPONIBLES = [
   'facturas_venta', 'pagos', 'inventario',
 ];
 
-const EMPTY: ConectorProveedorPayload = {
+const DEFAULTS: ProveedorIntegracionInput = {
   codigo: '',
   nombre: '',
   descripcion: '',
   icono_url: '',
+  estado: 'activo',
+  orden: 100,
   capacidades: [],
-  versiones_soportadas: [],
+  versionesText: '',
   requiere_url: true,
   requiere_db: false,
-  estado: 'activo',
   activo: true,
-  orden: 100,
 };
-
-const CODIGO_RE = /^[a-z0-9_]+$/;
 
 const ProveedorIntegracionFormPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,9 +43,14 @@ const ProveedorIntegracionFormPage: React.FC = () => {
   const { id_proveedor } = useParams<{ id_proveedor: string }>();
   const isEdit = Boolean(id_proveedor);
 
-  const [form, setForm] = useState<ConectorProveedorPayload>(EMPTY);
-  const [versionesText, setVersionesText] = useState('');
-  const [error, setError] = useState('');
+  const {
+    control, handleSubmit, reset, setError: setFormError,
+    formState: { errors, isSubmitting },
+  } = useForm<ProveedorIntegracionInput>({
+    resolver: zodResolver(proveedorIntegracionSchema),
+    mode: 'onBlur',
+    defaultValues: DEFAULTS,
+  });
 
   const { data: existing, isLoading: loading } = useQuery({
     queryKey: ['integration-hub/proveedores-admin', 'detail', id_proveedor],
@@ -53,22 +60,21 @@ const ProveedorIntegracionFormPage: React.FC = () => {
 
   useEffect(() => {
     if (existing) {
-      setForm({
+      reset({
         codigo: existing.codigo,
         nombre: existing.nombre,
-        descripcion: existing.descripcion,
-        icono_url: existing.icono_url,
-        capacidades: existing.capacidades,
-        versiones_soportadas: existing.versiones_soportadas,
+        descripcion: existing.descripcion ?? '',
+        icono_url: existing.icono_url ?? '',
+        estado: existing.estado,
+        orden: existing.orden ?? 100,
+        capacidades: existing.capacidades ?? [],
+        versionesText: (existing.versiones_soportadas ?? []).join(', '),
         requiere_url: existing.requiere_url ?? true,
         requiere_db: existing.requiere_db ?? false,
-        estado: existing.estado,
         activo: existing.activo ?? true,
-        orden: existing.orden ?? 100,
       });
-      setVersionesText((existing.versiones_soportadas ?? []).join(', '));
     }
-  }, [existing]);
+  }, [existing, reset]);
 
   const mutation = useMutation({
     mutationFn: (data: ConectorProveedorPayload) =>
@@ -78,46 +84,23 @@ const ProveedorIntegracionFormPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/integration-hub/proveedores/'] });
       navigate('/admin-saas/proveedores');
     },
-    onError: (e: Error) => setError(e.message || 'No se pudo guardar el proveedor.'),
+    onError: (e: Error) =>
+      setFormError('root', { message: e.message || 'No se pudo guardar el proveedor.' }),
   });
 
-  const set = <K extends keyof ConectorProveedorPayload>(key: K, value: ConectorProveedorPayload[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
-  const toggleCapacidad = (cap: string) =>
-    setForm((f) => ({
-      ...f,
-      capacidades: f.capacidades.includes(cap)
-        ? f.capacidades.filter((c) => c !== cap)
-        : [...f.capacidades, cap],
-    }));
-
-  const validate = (): string | null => {
-    const codigo = form.codigo.trim().toLowerCase();
-    if (!codigo) return 'El código es obligatorio.';
-    if (!CODIGO_RE.test(codigo)) {
-      return "El código solo admite minúsculas, números y guion bajo (ej: 'odoo', 'google_sheets').";
-    }
-    if (!form.nombre.trim()) return 'El nombre es obligatorio.';
-    return null;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const err = validate();
-    if (err) {
-      setError(err);
-      return;
-    }
-    setError('');
-    const versiones = versionesText
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean);
+  const onSubmit = (data: ProveedorIntegracionInput) => {
     mutation.mutate({
-      ...form,
-      codigo: form.codigo.trim().toLowerCase(),
-      versiones_soportadas: versiones,
+      codigo: data.codigo.trim().toLowerCase(),
+      nombre: data.nombre.trim(),
+      descripcion: data.descripcion ?? '',
+      icono_url: data.icono_url ?? '',
+      estado: data.estado,
+      orden: data.orden,
+      capacidades: data.capacidades,
+      versiones_soportadas: parseVersiones(data.versionesText),
+      requiere_url: data.requiere_url,
+      requiere_db: data.requiere_db,
+      activo: data.activo,
     });
   };
 
@@ -134,114 +117,172 @@ const ProveedorIntegracionFormPage: React.FC = () => {
     <PageContainer maxWidth={760}>
       <PageHeader title={isEdit ? 'Editar proveedor' : 'Nuevo proveedor'} />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {errors.root?.message && (
+        <Alert severity="error" sx={{ mb: 2 }}>{errors.root.message}</Alert>
+      )}
 
       <Card sx={{ p: 3 }}>
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <Stack spacing={2}>
-            <TextField
-              label="Código del conector"
-              value={form.codigo}
-              onChange={(e) => set('codigo', e.target.value)}
-              required
-              fullWidth
-              disabled={isEdit}
-              helperText={
-                isEdit
-                  ? 'El código no se edita: identifica al conector en el backend.'
-                  : "Debe coincidir con un conector implementado (ej: 'odoo', 'google_sheets')."
-              }
+            <Controller
+              name="codigo"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Código del conector"
+                  required
+                  fullWidth
+                  disabled={isEdit}
+                  error={!!errors.codigo}
+                  helperText={
+                    errors.codigo?.message ??
+                    (isEdit
+                      ? 'El código no se edita: identifica al conector en el backend.'
+                      : "Debe coincidir con un conector implementado (ej: 'odoo', 'google_sheets').")
+                  }
+                />
+              )}
             />
-            <TextField
-              label="Nombre"
-              value={form.nombre}
-              onChange={(e) => set('nombre', e.target.value)}
-              required
-              fullWidth
+            <Controller
+              name="nombre"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Nombre"
+                  required
+                  fullWidth
+                  error={!!errors.nombre}
+                  helperText={errors.nombre?.message}
+                />
+              )}
             />
-            <TextField
-              label="Descripción"
-              value={form.descripcion}
-              onChange={(e) => set('descripcion', e.target.value)}
-              multiline
-              minRows={2}
-              fullWidth
+            <Controller
+              name="descripcion"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="Descripción" multiline minRows={2} fullWidth />
+              )}
             />
-            <TextField
-              label="URL del ícono (opcional)"
-              value={form.icono_url}
-              onChange={(e) => set('icono_url', e.target.value)}
-              fullWidth
+            <Controller
+              name="icono_url"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="URL del ícono (opcional)" fullWidth />
+              )}
             />
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                select
-                label="Estado"
-                value={form.estado}
-                onChange={(e) => set('estado', e.target.value as ProveedorEstado)}
-                fullWidth
-              >
-                {ESTADOS.map((s) => (
-                  <MenuItem key={s} value={s}>{s}</MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                label="Orden"
-                type="number"
-                value={form.orden}
-                onChange={(e) => set('orden', Number(e.target.value))}
-                inputProps={{ min: 0 }}
-                fullWidth
+              <Controller
+                name="estado"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} select label="Estado" fullWidth>
+                    {ESTADOS_PROVEEDOR.map((s) => (
+                      <MenuItem key={s} value={s}>{s}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="orden"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Orden"
+                    type="number"
+                    inputProps={{ min: 0 }}
+                    fullWidth
+                    error={!!errors.orden}
+                    helperText={errors.orden?.message}
+                  />
+                )}
               />
             </Stack>
 
-            <TextField
-              label="Versiones soportadas (separadas por coma)"
-              value={versionesText}
-              onChange={(e) => setVersionesText(e.target.value)}
-              placeholder="8, 9, 10, 11"
-              fullWidth
+            <Controller
+              name="versionesText"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Versiones soportadas (separadas por coma)"
+                  placeholder="8, 9, 10, 11"
+                  fullWidth
+                />
+              )}
             />
 
             <Box>
               <Typography variant="body2" fontWeight={600} mb={0.5}>
                 Entidades soportadas
               </Typography>
-              <FormGroup row>
-                {CAPACIDADES_DISPONIBLES.map((cap) => (
-                  <FormControlLabel
-                    key={cap}
-                    control={
-                      <Checkbox
-                        checked={form.capacidades.includes(cap)}
-                        onChange={() => toggleCapacidad(cap)}
+              <Controller
+                name="capacidades"
+                control={control}
+                render={({ field }) => (
+                  <FormGroup row>
+                    {CAPACIDADES_DISPONIBLES.map((cap) => (
+                      <FormControlLabel
+                        key={cap}
+                        control={
+                          <Checkbox
+                            checked={field.value.includes(cap)}
+                            onChange={() =>
+                              field.onChange(
+                                field.value.includes(cap)
+                                  ? field.value.filter((c) => c !== cap)
+                                  : [...field.value, cap],
+                              )
+                            }
+                          />
+                        }
+                        label={cap}
                       />
-                    }
-                    label={cap}
-                  />
-                ))}
-              </FormGroup>
+                    ))}
+                  </FormGroup>
+                )}
+              />
             </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
-              <FormControlLabel
-                control={<Switch checked={!!form.requiere_url} onChange={(e) => set('requiere_url', e.target.checked)} />}
-                label="Requiere URL del servidor"
+              <Controller
+                name="requiere_url"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                    label="Requiere URL del servidor"
+                  />
+                )}
               />
-              <FormControlLabel
-                control={<Switch checked={!!form.requiere_db} onChange={(e) => set('requiere_db', e.target.checked)} />}
-                label="Requiere nombre de base de datos"
+              <Controller
+                name="requiere_db"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                    label="Requiere nombre de base de datos"
+                  />
+                )}
               />
-              <FormControlLabel
-                control={<Switch checked={!!form.activo} onChange={(e) => set('activo', e.target.checked)} />}
-                label="Activo"
+              <Controller
+                name="activo"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                    label="Activo"
+                  />
+                )}
               />
             </Box>
 
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button onClick={() => navigate('/admin-saas/proveedores')}>Cancelar</Button>
-              <Button type="submit" variant="contained" disabled={mutation.isPending}>
+              <Button type="submit" variant="contained" disabled={isSubmitting || mutation.isPending}>
                 {mutation.isPending ? 'Guardando…' : 'Guardar'}
               </Button>
             </Stack>
