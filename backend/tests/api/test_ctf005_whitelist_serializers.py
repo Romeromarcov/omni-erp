@@ -27,6 +27,14 @@ MODULOS_WHITELIST = [
     # Fase 2 — dinero & nómina (CWE-915 sobre pagos, cajas y salarios/PII).
     "apps.finanzas.serializers",
     "apps.nomina.serializers",
+    # Fase 3 — integridad financiera/contable (asientos, CxC/CxP, gastos, costos).
+    "apps.contabilidad.serializers",
+    "apps.tesoreria.serializers",
+    "apps.fiscal.serializers",
+    "apps.cuentas_por_cobrar.serializers",
+    "apps.cuentas_por_pagar.serializers",
+    "apps.gastos.serializers",
+    "apps.costos.serializers",
 ]
 
 

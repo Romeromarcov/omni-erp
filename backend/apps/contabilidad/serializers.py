@@ -6,13 +6,34 @@ from .models import AsientoContable, DetalleAsiento, MapeoContable, PlanCuentas
 class PlanCuentasSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlanCuentas
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_cuenta_contable",
+            "codigo_cuenta",
+            "nombre_cuenta",
+            "tipo_cuenta",
+            "naturaleza",
+            "nivel",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+            "id_cuenta_padre",
+        ]
 
 
 class DetalleAsientoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleAsiento
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_detalle_asiento",
+            "debe",
+            "haber",
+            "descripcion_detalle",
+            "fecha_creacion",
+            "id_asiento",
+            "id_cuenta_contable",
+        ]
 
 
 class AsientoContableSerializer(serializers.ModelSerializer):
@@ -20,7 +41,20 @@ class AsientoContableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AsientoContable
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_asiento",
+            "detalles",
+            "fecha_asiento",
+            "numero_asiento",
+            "descripcion",
+            "id_documento_origen",
+            "nombre_modelo_origen",
+            "estado_asiento",
+            "id_usuario_registro_temp",
+            "fecha_creacion",
+            "id_empresa",
+        ]
 
     def validate(self, data):
         """Validación personalizada para asientos contables"""
@@ -41,7 +75,20 @@ class MapeoContableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MapeoContable
-        fields = "__all__"
+        # CTF-005 (fase 3): whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_mapeo",
+            "tipo_asiento_display",
+            "cuenta_debe_nombre",
+            "cuenta_haber_nombre",
+            "tipo_asiento",
+            "descripcion_plantilla",
+            "activo",
+            "fecha_creacion",
+            "id_empresa",
+            "cuenta_debe",
+            "cuenta_haber",
+        ]
 
     def validate(self, data):
         """Las cuentas del mapeo deben pertenecer a la misma empresa del mapeo."""
