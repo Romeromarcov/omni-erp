@@ -22,3 +22,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T21:40:30Z] ✅ CTF-008 N2 cliente del pull (syncService) commit 7d936f2
 [2026-06-18T22:06:00Z] ✅ FE-CRIT-1 ProveedorIntegracionFormPage → react-hook-form+zod commit 5510ec3
 [2026-06-18T22:25:53Z] ✅ FE-CRIT-1 ProveedorIntegracionFormPage rhf+zod PR#152 merged
+[2026-06-18T22:29:37Z] PlanFormPage rhf+zod commit b2f7660 (FE-CRIT-1)
