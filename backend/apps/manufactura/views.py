@@ -217,6 +217,8 @@ class OrdenProduccionViewSet(BaseModelViewSet):
             "estado": orden.estado,
             "produccion_id": str(resultado["produccion"].pk),
             "costo": self._costo_json(resultado["costo"]),
+            # 1.I — nº de registros CostoProduccion materializados al cerrar la OF.
+            "costos_persistidos": len(resultado["costos_persistidos"]),
         })
 
     @action(detail=True, methods=["get"])
