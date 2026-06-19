@@ -31,3 +31,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-19T02:18:04Z] ✅ ADR-012 modelo transaccional POS offline PR#157 merged (desbloqueado vía update-branch)
 [2026-06-19T02:20:22Z] ✅ contrato/builder sobre venta offline (ADR-012) commit d6033ce
 [2026-06-19T02:40:34Z] ✅ contrato/builder sobre venta offline (ADR-012) PR#160 merged
+[2026-06-19T02:43:00Z] ✅ hook useOutboxFlush reenvío al reconectar (ADR-012) commit 2444f5f
