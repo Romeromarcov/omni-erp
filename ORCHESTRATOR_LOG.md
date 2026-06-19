@@ -33,3 +33,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-19T02:40:34Z] ✅ contrato/builder sobre venta offline (ADR-012) PR#160 merged
 [2026-06-19T02:43:00Z] ✅ hook useOutboxFlush reenvío al reconectar (ADR-012) commit 2444f5f
 [2026-06-19T03:01:56Z] ✅ hook useOutboxFlush (ADR-012) PR#161 merged
+[2026-06-19T03:04:00Z] ✅ cobertura pagosService (Q1) commit 1ea26fc
