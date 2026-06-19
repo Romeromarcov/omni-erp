@@ -93,7 +93,19 @@ class SucursalSerializer(BaseModelSerializer):
 class DepartamentoSerializer(BaseModelSerializer):
     class Meta:
         model = Departamento
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_departamento",
+            "nombre_departamento",
+            "descripcion",
+            "departamento_general",
+            "id_empresa",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "referencia_externa",
+            "documento_json",
+        ]
 
 
 class UsuariosSerializer(BaseModelSerializer):
@@ -160,13 +172,36 @@ class UsuariosSerializer(BaseModelSerializer):
 class RolesSerializer(BaseModelSerializer):
     class Meta:
         model = Roles
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_rol",
+            "nombre_rol",
+            "descripcion",
+            "id_empresa",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "referencia_externa",
+            "documento_json",
+        ]
 
 
 class PermisosSerializer(BaseModelSerializer):
     class Meta:
         model = Permisos
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_permiso",
+            "codigo_permiso",
+            "nombre_permiso",
+            "descripcion",
+            "modulo",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "referencia_externa",
+            "documento_json",
+        ]
 
 
 class RolPermisosSerializer(BaseModelSerializer):
@@ -176,7 +211,15 @@ class RolPermisosSerializer(BaseModelSerializer):
 
     class Meta:
         model = RolPermisos
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_rol_permiso",
+            "id_rol",
+            "id_permiso",
+            "id_rol_nombre",
+            "id_permiso_nombre",
+            "fecha_asignacion",
+        ]
 
 
 class UsuarioRolesSerializer(serializers.ModelSerializer):
@@ -186,7 +229,15 @@ class UsuarioRolesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UsuarioRoles
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_usuario_rol",
+            "id_usuario",
+            "id_rol",
+            "id_usuario_username",
+            "id_rol_nombre",
+            "fecha_asignacion",
+        ]
 
 
 class RegistroAuditoriaSerializer(serializers.ModelSerializer):
@@ -195,7 +246,24 @@ class RegistroAuditoriaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RegistroAuditoria
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_log_auditoria",
+            "tipo_evento",
+            "modulo_afectado",
+            "nombre_modelo_afectado",
+            "id_registro_afectado",
+            "descripcion_accion",
+            "cambios_json",
+            "fecha_hora_accion",
+            "direccion_ip",
+            "navegador_info",
+            "resultado_evento",
+            "mensaje_error",
+            "id_empresa",
+            "id_usuario",
+            "id_usuario_username",
+        ]
         read_only_fields = ("fecha_accion",)  # La fecha de acción se genera automáticamente
 
 
@@ -291,6 +359,20 @@ from .models import Notificacion  # noqa: E402
 class NotificacionSerializer(BaseModelSerializer):
     class Meta:
         model = Notificacion
-        fields = "__all__"
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_notificacion",
+            "tipo",
+            "titulo",
+            "mensaje",
+            "leida",
+            "fecha_lectura",
+            "url_accion",
+            "metadata",
+            "fecha_creacion",
+            "fecha_expiracion",
+            "id_empresa",
+            "id_usuario",
+        ]
         read_only_fields = ["id_notificacion", "fecha_creacion"]
         ref_name = "NotificacionCore"  # evita colisión OpenAPI con notificaciones.NotificacionSerializer

@@ -91,6 +91,8 @@ INSTALLED_APPS = [
     "apps.saas",
     # Event Store
     "apps.eventos",
+    # Sincronización offline cliente ↔ servidor (CTF-008)
+    "apps.sync",
 ]
 
 MIDDLEWARE = [

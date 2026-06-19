@@ -44,6 +44,7 @@ from apps.integration_hub.connectors.odoo.client import (
     OdooAuthError,
     OdooCallError,
     OdooXMLRPCClient,
+    normalize_odoo_host,
 )
 
 if TYPE_CHECKING:
@@ -617,7 +618,7 @@ class OdooConnector(BaseConnector):
         M-SEC-2: resuelve y valida la URL base de Odoo. Exige https:// en
         producción (DEBUG=False) para no enviar credenciales XML-RPC en claro.
         """
-        url = (config.get("url") or config.get("host") or "").rstrip("/")
+        url = normalize_odoo_host(config.get("url") or config.get("host") or "")
         from django.conf import settings
 
         if not url.startswith("https://") and not getattr(settings, "DEBUG", False):
