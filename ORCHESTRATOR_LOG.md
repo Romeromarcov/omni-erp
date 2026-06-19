@@ -27,3 +27,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T23:17:42Z] Q1 cobertura transaccionFinancieraService PR#154 merged
 [2026-06-18T23:39:15Z] ✅ Q1 cobertura cuentaBancariaService PR#155 merged
 [2026-06-19T00:04:44Z] ✅ CTF-008 N2 outbox ventas POS (salesOutbox) PR#156 merged
+[2026-06-19T01:13:42Z] ✅ ADR-012 modelo transaccional venta POS offline commit 09f8d1a
