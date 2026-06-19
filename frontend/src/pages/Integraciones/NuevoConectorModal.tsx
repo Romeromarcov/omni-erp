@@ -255,19 +255,24 @@ const NuevoConectorModal: React.FC<Props> = ({ onClose }) => {
                   label="URL del servidor"
                   required
                   placeholder="https://mi-empresa.odoo.com"
+                  helperText="Solo el dominio base, sin /web/login ni otras rutas."
                   value={form.host}
                   onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
                   fullWidth
                 />
-                {proveedor.requiere_db && (
-                  <TextField
-                    label="Base de datos"
-                    placeholder="nombre_db"
-                    value={form.db}
-                    onChange={e => setForm(f => ({ ...f, db: e.target.value }))}
-                    fullWidth
-                  />
-                )}
+                <TextField
+                  label={proveedor.requiere_db ? 'Base de datos' : 'Base de datos (opcional)'}
+                  required={proveedor.requiere_db}
+                  placeholder="nombre_db"
+                  helperText={
+                    proveedor.requiere_db
+                      ? undefined
+                      : 'Opcional en Odoo SaaS (autodetecta). Requerido en Odoo.sh / on-premise.'
+                  }
+                  value={form.db}
+                  onChange={e => setForm(f => ({ ...f, db: e.target.value }))}
+                  fullWidth
+                />
                 <TextField
                   label="Usuario / Email"
                   required

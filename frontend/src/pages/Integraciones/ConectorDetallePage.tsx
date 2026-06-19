@@ -28,6 +28,7 @@ import {
   type JobSincronizacion,
 } from '../../services/integrationHubService';
 import { PageContainer, PageHeader, StatusChip, SectionTitle } from '../../components/ui';
+import EditarConectorModal from './EditarConectorModal';
 
 const PROVEEDOR_SHEETS = 'google_sheets';
 
@@ -86,6 +87,7 @@ const ConectorDetallePage: React.FC = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [syncEntidad, setSyncEntidad] = useState('');
+  const [editarAbierto, setEditarAbierto] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; version?: string } | null>(null);
 
   const { data: conector, isLoading } = useQuery({
@@ -147,6 +149,9 @@ const ConectorDetallePage: React.FC = () => {
         actions={
           <>
             <StatusChip value={conector.estado} colorMap={{ activo: 'success', configurando: 'warning', error: 'error', inactivo: 'default' }} />
+            <Button variant="outlined" onClick={() => setEditarAbierto(true)}>
+              Editar
+            </Button>
             <Button
               variant="outlined"
               onClick={() => { testMutation.reset(); setTestResult(null); testMutation.mutate(); }}
@@ -157,6 +162,10 @@ const ConectorDetallePage: React.FC = () => {
           </>
         }
       />
+
+      {editarAbierto && (
+        <EditarConectorModal conector={conector} onClose={() => setEditarAbierto(false)} />
+      )}
 
       {/* Test result */}
       {testResult && (
