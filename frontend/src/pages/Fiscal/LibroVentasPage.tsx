@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { D, sumDecimals } from '../../lib/decimal';
 import {
   Alert,
   Box,
@@ -61,9 +62,9 @@ const LibroVentasPage: React.FC = () => {
     }
   }
 
-  const totalBase = entries.reduce((s, e) => s + parseFloat(e.base_imponible || '0'), 0);
-  const totalIva = entries.reduce((s, e) => s + parseFloat(e.iva || '0'), 0);
-  const totalTotal = entries.reduce((s, e) => s + parseFloat(e.total || '0'), 0);
+  const totalBase = sumDecimals(entries.map((e) => D(e.base_imponible))).toNumber();
+  const totalIva = sumDecimals(entries.map((e) => D(e.iva))).toNumber();
+  const totalTotal = sumDecimals(entries.map((e) => D(e.total))).toNumber();
 
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
