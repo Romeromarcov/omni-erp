@@ -18,3 +18,11 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T20:51:17Z] ✅ CTF-008 N2 replay idempotente ventas POS (test+doc) commit 3676654
 [2026-06-18T21:09:45Z] ✅ CTF-008 N2 replay idempotente ventas POS PR#149 merged
 [2026-06-18T21:16:16Z] ✅ CTF-008 N2 sync pull variantes_producto commit b806686
+[2026-06-18T21:36:15Z] ✅ CTF-008 N2 sync pull variantes_producto PR#150 merged
+[2026-06-18T21:40:30Z] ✅ CTF-008 N2 cliente del pull (syncService) commit 7d936f2
+[2026-06-18T22:06:00Z] ✅ FE-CRIT-1 ProveedorIntegracionFormPage → react-hook-form+zod commit 5510ec3
+[2026-06-18T22:25:53Z] ✅ FE-CRIT-1 ProveedorIntegracionFormPage rhf+zod PR#152 merged
+[2026-06-18T22:29:37Z] PlanFormPage rhf+zod commit b2f7660 (FE-CRIT-1)
+[2026-06-18T22:50:53Z] FE-CRIT-1 PlanFormPage rhf+zod PR#153 merged — 16/16 FormPage en react-hook-form
+[2026-06-18T23:17:42Z] Q1 cobertura transaccionFinancieraService PR#154 merged
+[2026-06-18T23:39:15Z] ✅ Q1 cobertura cuentaBancariaService PR#155 merged
