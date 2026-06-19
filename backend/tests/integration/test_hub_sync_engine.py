@@ -548,3 +548,387 @@ class TestSyncResult:
     def test_exitoso_sin_fallidos(self):
         resultado = SyncResult(tipo_entidad="contactos", creados=3)
         assert resultado.exitoso is True
+
+
+class TestUpsertPedidoVenta:
+    """Fase 2 — persistencia de pedidos de venta en ventas.Pedido."""
+
+    def _pedido(self, **over):
+        datos = {
+            "id_externo": "55",
+            "numero": "SO0001",
+            "cliente_id_externo": "42",
+            "cliente_nombre": "Cliente Test",
+            "fecha_pedido": "2024-03-15",
+            "estado": "confirmado",
+            "lineas": [],
+        }
+        datos.update(over)
+        return datos
+
+    def test_crea_pedido_y_autocrea_cliente(self, instancia_fake):
+        from apps.crm.models import Cliente
+        from apps.ventas.models import Pedido
+
+        pk = SyncEngine()._upsert_pedido_venta(self._pedido(), instancia_fake)
+
+        assert pk
+        ped = Pedido.objects.get(pk=pk)
+        assert ped.numero_pedido == "SO0001"
+        assert ped.estado == "APROBADO"  # 'confirmado' → APROBADO
+        cli = Cliente.objects.get(
+            id_empresa=instancia_fake.id_empresa, referencia_externa="42"
+        )
+        assert cli.razon_social == "Cliente Test"
+        assert ped.id_cliente_id == cli.pk
+
+    def test_idempotente_por_numero(self, instancia_fake):
+        from apps.crm.models import Cliente
+        from apps.ventas.models import Pedido
+
+        eng = SyncEngine()
+        eng._upsert_pedido_venta(self._pedido(), instancia_fake)
+        eng._upsert_pedido_venta(self._pedido(estado="cancelado"), instancia_fake)
+
+        assert (
+            Pedido.objects.filter(
+                id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001"
+            ).count()
+            == 1
+        )
+        assert (
+            Cliente.objects.filter(
+                id_empresa=instancia_fake.id_empresa, referencia_externa="42"
+            ).count()
+            == 1
+        )
+        ped = Pedido.objects.get(
+            id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001"
+        )
+        assert ped.estado == "ANULADO"  # se actualizó
+
+    def test_sin_numero_omite(self, instancia_fake):
+        assert SyncEngine()._upsert_pedido_venta(
+            self._pedido(numero=""), instancia_fake
+        ) is None
+
+    def test_sin_cliente_omite(self, instancia_fake):
+        assert SyncEngine()._upsert_pedido_venta(
+            self._pedido(cliente_id_externo="", cliente_nombre=""), instancia_fake
+        ) is None
+
+    def test_linea_con_producto_no_sincronizado_se_omite(self, instancia_fake):
+        from apps.ventas.models import Pedido
+
+        datos = self._pedido(
+            lineas=[{
+                "product_id": [10, "X"],
+                "product_uom_qty": 2,
+                "price_unit": "5",
+                "price_subtotal": "10",
+            }]
+        )
+        pk = SyncEngine()._upsert_pedido_venta(datos, instancia_fake)
+        ped = Pedido.objects.get(pk=pk)
+        assert ped.detalles.count() == 0  # producto no sincronizado → línea omitida
+
+    def test_linea_con_producto_sincronizado_se_crea(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.finanzas.models import Moneda
+        from apps.ventas.models import Pedido
+
+        Moneda.objects.get_or_create(
+            codigo_iso="USD",
+            defaults={
+                "nombre": "Dólar",
+                "simbolo": "$",
+                "empresa": instancia_fake.id_empresa,
+            },
+        )
+        eng = SyncEngine()
+        # Sembrar producto: crea inventario.Producto + mapping productos:10
+        eng.ingerir_en_omni(
+            instancia_fake,
+            "productos",
+            [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
+        )
+        datos = self._pedido(
+            lineas=[{
+                "product_id": [10, "Prod 10"],
+                "product_uom_qty": 2,
+                "price_unit": "5",
+                "price_subtotal": "10",
+            }]
+        )
+        pk = eng._upsert_pedido_venta(datos, instancia_fake)
+        ped = Pedido.objects.get(pk=pk)
+        assert ped.detalles.count() == 1
+        det = ped.detalles.first()
+        assert det.cantidad == Decimal("2")
+        assert det.subtotal == Decimal("10")
+
+
+class TestUpsertPedidoVentaRamas:
+    """Cobertura de ramas de resolución de cliente/producto (Fase 2)."""
+
+    def _pedido(self, **over):
+        datos = {
+            "id_externo": "55", "numero": "SO0009",
+            "cliente_id_externo": "42", "cliente_nombre": "Cliente Test",
+            "fecha_pedido": "2024-03-15", "estado": "confirmado", "lineas": [],
+        }
+        datos.update(over)
+        return datos
+
+    def test_safe_decimal_money_invalido_es_cero(self):
+        from decimal import Decimal
+
+        assert SyncEngine._safe_decimal_money("no-num") == Decimal("0")
+        assert SyncEngine._safe_decimal_money(None) == Decimal("0")
+        assert SyncEngine._safe_decimal_money("12.5") == Decimal("12.5")
+
+    def test_autocrea_cliente_desde_contacto_sincronizado(self, instancia_fake):
+        """Si el contacto ya fue sincronizado, enlaza y reutiliza su RIF."""
+        from apps.crm.models import Cliente
+        from apps.ventas.models import Pedido
+
+        eng = SyncEngine()
+        # Sembrar contacto sincronizado (mapping contactos:42 → core.Contacto con RIF)
+        eng.ingerir_en_omni(
+            instancia_fake,
+            "contactos",
+            [{
+                "id_externo": "42",
+                "nombre": "Cliente Test",
+                "identificador_fiscal": "J-12345678-9",
+                "email": "c@x.com",
+                "_checksum": "c",
+            }],
+        )
+        pk = eng._upsert_pedido_venta(self._pedido(), instancia_fake)
+        ped = Pedido.objects.get(pk=pk)
+        cli = Cliente.objects.get(pk=ped.id_cliente_id)
+        assert cli.contacto is not None           # enlazado al contacto
+        assert cli.rif == "J-12345678-9"          # RIF reutilizado del contacto
+
+    def test_reutiliza_cliente_existente_por_contacto(self, instancia_fake):
+        """Si ya existe un Cliente enlazado al contacto, se reutiliza (no duplica)."""
+        from apps.core.models import Contacto
+        from apps.crm.models import Cliente
+        from apps.integration_hub.models import EntidadSincronizada
+
+        empresa = instancia_fake.id_empresa
+        eng = SyncEngine()
+        eng.ingerir_en_omni(
+            instancia_fake,
+            "contactos",
+            [{"id_externo": "42", "nombre": "Cliente Test",
+              "identificador_fiscal": "J-1", "_checksum": "c"}],
+        )
+        mapping = EntidadSincronizada.objects.get(
+            id_instancia=instancia_fake, tipo_entidad="contactos", id_externo="42"
+        )
+        contacto = Contacto.objects.get(pk=mapping.id_omni)
+        # Cliente pre-existente enlazado al contacto, SIN referencia_externa.
+        pre = Cliente.objects.create(
+            id_empresa=empresa, razon_social="Pre", rif="J-1", contacto=contacto
+        )
+
+        cli = eng._resolver_o_crear_cliente(self._pedido(), instancia_fake)
+        assert cli.pk == pre.pk  # reutilizado por enlace de contacto
+
+    def test_resolver_producto_escalar_y_vacio(self, instancia_fake):
+        eng = SyncEngine()
+        # product_id escalar (no lista) y sin mapeo → None
+        assert eng._resolver_producto_mapeado(10, instancia_fake) is None
+        # product_id vacío/ausente → None
+        assert eng._resolver_producto_mapeado(None, instancia_fake) is None
+        assert eng._resolver_producto_mapeado([], instancia_fake) is None
+
+
+class TestUpsertPedidoCompra:
+    """Fase 2 — persistencia de órdenes de compra en compras.OrdenCompra."""
+
+    def _orden(self, **over):
+        datos = {
+            "id_externo": "77", "numero": "PO0001",
+            "proveedor_id_externo": "88", "proveedor_nombre": "Prov Test",
+            "fecha_pedido": "2024-04-01", "estado": "purchase", "lineas": [],
+        }
+        datos.update(over)
+        return datos
+
+    def test_crea_orden_y_autocrea_proveedor(self, instancia_fake):
+        from apps.compras.models import OrdenCompra
+        from apps.proveedores.models import Proveedor
+
+        pk = SyncEngine()._upsert_pedido_compra(self._orden(), instancia_fake)
+        assert pk
+        oc = OrdenCompra.objects.get(pk=pk)
+        assert oc.numero_orden == "PO0001"
+        assert oc.estado == "APROBADA"  # 'purchase' → APROBADA
+        prov = Proveedor.objects.get(
+            id_empresa=instancia_fake.id_empresa, referencia_externa="88"
+        )
+        assert prov.razon_social == "Prov Test"
+        assert oc.id_proveedor_id == prov.pk
+
+    def test_idempotente_por_numero(self, instancia_fake):
+        from apps.compras.models import OrdenCompra
+        from apps.proveedores.models import Proveedor
+
+        eng = SyncEngine()
+        eng._upsert_pedido_compra(self._orden(), instancia_fake)
+        eng._upsert_pedido_compra(self._orden(estado="cancel"), instancia_fake)
+        assert OrdenCompra.objects.filter(
+            id_empresa=instancia_fake.id_empresa, numero_orden="PO0001"
+        ).count() == 1
+        assert Proveedor.objects.filter(
+            id_empresa=instancia_fake.id_empresa, referencia_externa="88"
+        ).count() == 1
+        oc = OrdenCompra.objects.get(
+            id_empresa=instancia_fake.id_empresa, numero_orden="PO0001"
+        )
+        assert oc.estado == "ANULADA"
+
+    def test_sin_numero_omite(self, instancia_fake):
+        assert SyncEngine()._upsert_pedido_compra(
+            self._orden(numero=""), instancia_fake
+        ) is None
+
+    def test_sin_proveedor_omite(self, instancia_fake):
+        assert SyncEngine()._upsert_pedido_compra(
+            self._orden(proveedor_id_externo="", proveedor_nombre=""), instancia_fake
+        ) is None
+
+    def test_linea_producto_no_sincronizado_se_omite(self, instancia_fake):
+        from apps.compras.models import OrdenCompra
+
+        datos = self._orden(
+            lineas=[{"product_id": [10, "X"], "product_qty": 3,
+                     "price_unit": "4", "price_subtotal": "12"}]
+        )
+        pk = SyncEngine()._upsert_pedido_compra(datos, instancia_fake)
+        assert OrdenCompra.objects.get(pk=pk).detalles.count() == 0
+
+    def test_linea_producto_sincronizado_se_crea(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.compras.models import OrdenCompra
+        from apps.finanzas.models import Moneda
+
+        Moneda.objects.get_or_create(
+            codigo_iso="USD",
+            defaults={"nombre": "Dólar", "simbolo": "$",
+                      "empresa": instancia_fake.id_empresa},
+        )
+        eng = SyncEngine()
+        eng.ingerir_en_omni(
+            instancia_fake, "productos",
+            [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
+        )
+        datos = self._orden(
+            lineas=[{"product_id": [10, "Prod 10"], "product_qty": 3,
+                     "price_unit": "4", "price_subtotal": "12"}]
+        )
+        oc = OrdenCompra.objects.get(pk=eng._upsert_pedido_compra(datos, instancia_fake))
+        assert oc.detalles.count() == 1
+        det = oc.detalles.first()
+        assert det.cantidad == Decimal("3")
+        assert det.subtotal == Decimal("12")
+
+    def test_autocrea_proveedor_desde_contacto_sincronizado(self, instancia_fake):
+        from apps.compras.models import OrdenCompra
+        from apps.proveedores.models import Proveedor
+
+        eng = SyncEngine()
+        eng.ingerir_en_omni(
+            instancia_fake, "contactos",
+            [{"id_externo": "88", "nombre": "Prov Test",
+              "identificador_fiscal": "J-77777777-7", "_checksum": "c"}],
+        )
+        oc = OrdenCompra.objects.get(pk=eng._upsert_pedido_compra(self._orden(), instancia_fake))
+        prov = Proveedor.objects.get(pk=oc.id_proveedor_id)
+        assert prov.contacto is not None
+        assert prov.rif == "J-77777777-7"
+
+    def test_reutiliza_proveedor_existente_por_contacto(self, instancia_fake):
+        from apps.core.models import Contacto
+        from apps.integration_hub.models import EntidadSincronizada
+        from apps.proveedores.models import Proveedor
+
+        empresa = instancia_fake.id_empresa
+        eng = SyncEngine()
+        eng.ingerir_en_omni(
+            instancia_fake, "contactos",
+            [{"id_externo": "88", "nombre": "Prov Test",
+              "identificador_fiscal": "J-7", "_checksum": "c"}],
+        )
+        mapping = EntidadSincronizada.objects.get(
+            id_instancia=instancia_fake, tipo_entidad="contactos", id_externo="88"
+        )
+        contacto = Contacto.objects.get(pk=mapping.id_omni)
+        pre = Proveedor.objects.create(
+            id_empresa=empresa, razon_social="Pre", rif="J-7", contacto=contacto
+        )
+        prov = eng._resolver_o_crear_proveedor(self._orden(), instancia_fake)
+        assert prov.pk == pre.pk
+
+
+class TestUpsertInventario:
+    """Fase 2 — persistencia de stock en inventario.StockActual."""
+
+    def _seed_producto(self, eng, instancia):
+        from apps.finanzas.models import Moneda
+
+        Moneda.objects.get_or_create(
+            codigo_iso="USD",
+            defaults={"nombre": "Dólar", "simbolo": "$", "empresa": instancia.id_empresa},
+        )
+        eng.ingerir_en_omni(
+            instancia, "productos",
+            [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
+        )
+
+    def _quant(self, **over):
+        d = {
+            "id_externo": "q1", "producto_id_externo": "10",
+            "cantidad": 10, "cantidad_reservada": 2, "cantidad_disponible": 8,
+        }
+        d.update(over)
+        return d
+
+    def test_omite_si_producto_no_sincronizado(self, instancia_fake):
+        assert SyncEngine()._upsert_inventario(self._quant(), instancia_fake) is None
+
+    def test_crea_stock_si_producto_sincronizado(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.inventario.models import StockActual
+
+        eng = SyncEngine()
+        self._seed_producto(eng, instancia_fake)
+        pk = eng._upsert_inventario(self._quant(), instancia_fake)
+        assert pk
+        stock = StockActual.objects.get(pk=pk)
+        assert stock.cantidad_disponible == Decimal("8")
+        assert stock.cantidad_comprometida == Decimal("2")
+        assert stock.id_almacen.codigo_almacen == "IH-IMPORT"
+
+    def test_idempotente_actualiza_cantidades(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.inventario.models import StockActual
+
+        eng = SyncEngine()
+        self._seed_producto(eng, instancia_fake)
+        eng._upsert_inventario(self._quant(), instancia_fake)
+        eng._upsert_inventario(
+            self._quant(cantidad_disponible=5, cantidad_reservada=1), instancia_fake
+        )
+        empresa = instancia_fake.id_empresa
+        assert StockActual.objects.filter(id_empresa=empresa).count() == 1
+        stock = StockActual.objects.get(id_empresa=empresa)
+        assert stock.cantidad_disponible == Decimal("5")
+        assert stock.cantidad_comprometida == Decimal("1")
