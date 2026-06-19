@@ -29,3 +29,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-19T00:04:44Z] ✅ CTF-008 N2 outbox ventas POS (salesOutbox) PR#156 merged
 [2026-06-19T01:13:42Z] ✅ ADR-012 modelo transaccional venta POS offline commit 09f8d1a
 [2026-06-19T02:18:04Z] ✅ ADR-012 modelo transaccional POS offline PR#157 merged (desbloqueado vía update-branch)
+[2026-06-19T02:20:22Z] ✅ contrato/builder sobre venta offline (ADR-012) commit d6033ce
