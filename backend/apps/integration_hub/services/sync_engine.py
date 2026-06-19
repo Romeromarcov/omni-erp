@@ -317,6 +317,7 @@ class SyncEngine:
         handlers = {
             "contactos": self._upsert_contacto,
             "productos": self._upsert_producto,
+            "pedidos_venta": self._upsert_pedido_venta,
             # Las demás entidades se implementan por fase
         }
 
@@ -455,6 +456,179 @@ class SyncEngine:
                 **campos,
             )
             return str(nuevo.pk)
+
+    # ── Pedidos de venta (Fase 2) ──────────────────────────────────────────────
+
+    @staticmethod
+    def _safe_decimal_money(valor):
+        """Convierte a Decimal en la frontera externa (R-CODE-4). 0 si inválido."""
+        from decimal import Decimal, InvalidOperation
+
+        try:
+            return Decimal(str(valor))
+        except (InvalidOperation, TypeError, ValueError):
+            return Decimal("0")
+
+    def _resolver_o_crear_cliente(self, datos: dict, instancia: "ConectorInstancia"):
+        """
+        Resuelve el ``crm.Cliente`` del pedido; si no existe, lo auto-crea
+        (decisión del owner: auto-crear maestros faltantes). Idempotente por
+        ``referencia_externa`` (= id externo de Odoo). Si hay un ``core.Contacto``
+        ya sincronizado con el mismo id externo, lo enlaza y reutiliza su RIF.
+
+        Retorna el Cliente o ``None`` si no hay datos mínimos (nombre).
+        Multi-tenant: todo acotado a ``instancia.id_empresa`` (R-CODE-1).
+        """
+        from apps.crm.models import Cliente
+        from apps.integration_hub.models import EntidadSincronizada
+
+        empresa = instancia.id_empresa
+        ext = str(datos.get("cliente_id_externo") or "")
+        nombre = (datos.get("cliente_nombre") or "").strip()
+
+        # 1. Idempotencia por referencia externa.
+        if ext:
+            existente = Cliente.objects.filter(
+                id_empresa=empresa, referencia_externa=ext
+            ).first()
+            if existente:
+                return existente
+
+        # 2. Enlazar al Contacto ya sincronizado (mismo id externo), si existe.
+        contacto = None
+        rif = ""
+        if ext:
+            mapping = EntidadSincronizada.objects.filter(
+                id_instancia=instancia, tipo_entidad="contactos", id_externo=ext
+            ).first()
+            if mapping and mapping.id_omni:
+                from apps.core.models import Contacto
+
+                contacto = Contacto.objects.filter(
+                    pk=mapping.id_omni, id_empresa=empresa
+                ).first()
+                if contacto:
+                    rif = getattr(contacto, "rif", "") or ""
+                    ya = Cliente.objects.filter(
+                        id_empresa=empresa, contacto=contacto
+                    ).first()
+                    if ya:
+                        return ya
+
+        if not nombre:
+            return None
+
+        # 3. Auto-crear el maestro. El create por ORM no dispara el validador de
+        #    RIF; usamos el RIF del contacto si lo hay (puede quedar vacío).
+        return Cliente.objects.create(
+            id_empresa=empresa,
+            razon_social=nombre,
+            rif=rif,
+            referencia_externa=ext or None,
+            contacto=contacto,
+        )
+
+    def _resolver_producto_mapeado(self, product_id_field, instancia: "ConectorInstancia"):
+        """
+        Resuelve un ``inventario.Producto`` desde el ``product_id`` de una línea
+        Odoo (``[id, nombre]``) usando el mapa de ``EntidadSincronizada`` de
+        productos. Retorna None si el producto no fue sincronizado aún.
+        """
+        from apps.integration_hub.models import EntidadSincronizada
+        from apps.inventario.models import Producto
+
+        empresa = instancia.id_empresa
+        if isinstance(product_id_field, list) and product_id_field:
+            pid = str(product_id_field[0])
+        elif product_id_field:
+            pid = str(product_id_field)
+        else:
+            return None
+
+        mapping = EntidadSincronizada.objects.filter(
+            id_instancia=instancia, tipo_entidad="productos", id_externo=pid
+        ).first()
+        if mapping and mapping.id_omni:
+            return Producto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
+        return None
+
+    def _upsert_pedido_venta(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+        """
+        Upsert de pedido de venta en ``ventas.Pedido`` (+ líneas en
+        ``DetallePedido``). Idempotente por ``(id_empresa, numero_pedido)``.
+
+        - Resuelve/auto-crea el cliente (``_resolver_o_crear_cliente``); si no hay
+          cliente resoluble, omite el pedido (return None).
+        - Reemplaza las líneas en cada sync; las líneas cuyo producto aún no está
+          sincronizado en Omni se omiten (no rompen el pedido).
+        Multi-tenant: acotado a la empresa de la instancia (R-CODE-1).
+        """
+        from apps.ventas.models import DetallePedido, Pedido
+
+        empresa = instancia.id_empresa
+        numero = (datos.get("numero") or "").strip()
+        if not numero:
+            logger.warning(
+                "Pedido de venta externo %s omitido: sin número.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        cliente = self._resolver_o_crear_cliente(datos, instancia)
+        if cliente is None:
+            logger.warning(
+                "Pedido de venta %s omitido: cliente no resoluble.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        estado_map = {
+            "borrador": "PENDIENTE",
+            "enviado": "ENVIADO",
+            "confirmado": "APROBADO",
+            "cerrado": "APROBADO",
+            "cancelado": "ANULADO",
+        }
+        fecha = (datos.get("fecha_pedido") or "")[:10] or dj_timezone.now().date().isoformat()
+
+        campos = {
+            "id_cliente": cliente,
+            "fecha_pedido": fecha,
+            "estado": estado_map.get(datos.get("estado") or "", "PENDIENTE"),
+            "referencia_externa": str(datos.get("id_externo") or "") or None,
+            "tipo_operacion": "venta",
+        }
+
+        with transaction.atomic():
+            pedido = Pedido.objects.filter(
+                id_empresa=empresa, numero_pedido=numero
+            ).first()
+            if pedido:
+                for field, value in campos.items():
+                    setattr(pedido, field, value)
+                pedido.save()
+            else:
+                pedido = Pedido.objects.create(
+                    id_empresa=empresa, numero_pedido=numero, **campos
+                )
+
+            # Reemplazar líneas (la fuente externa es la verdad).
+            pedido.detalles.all().delete()
+            for linea in datos.get("lineas") or []:
+                producto = self._resolver_producto_mapeado(
+                    linea.get("product_id"), instancia
+                )
+                if producto is None:
+                    continue
+                DetallePedido.objects.create(
+                    id_pedido=pedido,
+                    id_producto=producto,
+                    cantidad=self._safe_decimal_money(linea.get("product_uom_qty")),
+                    precio_unitario=self._safe_decimal_money(linea.get("price_unit")),
+                    subtotal=self._safe_decimal_money(linea.get("price_subtotal")),
+                )
+
+        return str(pedido.pk)
 
     def _calcular_desde(self, job: "JobSincronizacion") -> datetime | None:
         """
