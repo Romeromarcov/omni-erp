@@ -153,10 +153,21 @@ class ExportEngine:
         )
         try:
             registros = getattr(origen, metodo)(desde=desde, limite=limite)
+            # Omni como hub: además de exportar, persistimos la data en los
+            # modelos canónicos de Omni (Odoo → Omni → Sheets), salvo que la
+            # config lo desactive con persistir_en_omni=False.
+            persistencia = self._persistir_en_omni(
+                instancia_destino, origen_inst, tipo, registros
+            )
             resultado = destino.push_entidades(tipo, registros)
         except Exception as exc:
             self._fallar(job, f"{type(exc).__name__}: {exc}")
             return job
+
+        if persistencia is not None:
+            # Trazabilidad: dejamos el resumen de lo persistido en Omni en los
+            # parámetros del job (visible en el historial).
+            job.parametros = {**(job.parametros or {}), "omni_persistencia": persistencia}
 
         if limite and len(registros) >= limite:
             # Posible truncamiento: marcarlo como error visible para que el
@@ -170,6 +181,31 @@ class ExportEngine:
 
         self._completar(job, resultado)
         return job
+
+    def _persistir_en_omni(self, instancia_destino, origen_inst, tipo, registros):
+        """
+        Persiste los registros canónicos en los modelos de Omni vía el
+        ``SyncEngine`` (Omni como hub/traductor). Devuelve el resumen de
+        contadores, o ``None`` si está desactivado por config.
+
+        Best-effort: si la persistencia falla, NO rompe la exportación al
+        destino (el flujo a Sheets debe seguir funcionando). El error se
+        registra en el resumen para trazabilidad.
+        """
+        if not instancia_destino.get_config().get("persistir_en_omni", True):
+            return None
+
+        from apps.integration_hub.services.sync_engine import SyncEngine
+
+        try:
+            return SyncEngine().ingerir_en_omni(origen_inst, tipo, registros)
+        except Exception as exc:  # nunca tumbar la exportación por esto
+            logger.exception(
+                "Persistencia en Omni falló [%s/%s] — la exportación continúa",
+                instancia_destino.nombre,
+                tipo,
+            )
+            return {"error": f"{type(exc).__name__}: {exc}"}
 
     def _calcular_desde(self, job):
         from apps.integration_hub.models import JobSincronizacion as Job

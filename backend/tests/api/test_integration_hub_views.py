@@ -109,6 +109,119 @@ def test_test_connection_excepcion_devuelve_502(empresa_a, user_a, monkeypatch):
     assert inst.estado == "error"
 
 
+# ── edición (PATCH) de la instancia ────────────────────────────────────────────
+
+
+def test_patch_conserva_api_key_si_no_se_reenvia(empresa_a, user_a):
+    """Editar host/user sin reenviar api_key NO debe borrar la credencial."""
+    inst = _instancia(empresa_a)
+    resp = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst.pk}/",
+        {"configuracion": {"host": "https://nuevo.odoo.com", "user": "u"}},
+        format="json",
+    )
+    assert resp.status_code == 200, resp.data
+    inst.refresh_from_db()
+    cfg = inst.get_config()
+    assert cfg["host"] == "https://nuevo.odoo.com"
+    assert cfg["api_key"] == "k"  # se conservó la existente
+
+
+def test_crear_google_sheets_sin_service_account_400(empresa_a, user_a):
+    """Validación serializer: google_sheets requiere service_account."""
+    prov = _proveedor(codigo="google_sheets", nombre="Google Sheets")
+    resp = _client(user_a).post(
+        "/api/integration-hub/instancias/",
+        {
+            "id_proveedor": str(prov.pk),
+            "nombre": "Export sin SA",
+            "configuracion": {"source_instancia_id": "x"},
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "service_account" in str(resp.data)
+
+
+def test_crear_google_sheets_sin_source_instancia_400(empresa_a, user_a):
+    """Validación serializer: google_sheets requiere source_instancia_id."""
+    prov = _proveedor(codigo="google_sheets", nombre="Google Sheets")
+    resp = _client(user_a).post(
+        "/api/integration-hub/instancias/",
+        {
+            "id_proveedor": str(prov.pk),
+            "nombre": "Export sin origen",
+            "configuracion": {
+                "service_account": {"client_email": "svc@x.iam.gserviceaccount.com"}
+            },
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "source_instancia_id" in str(resp.data)
+
+
+def test_patch_api_key_vacia_explicita_conserva(empresa_a, user_a):
+    """Enviar api_key='' explícita NO borra la credencial (rama secreto vacío)."""
+    inst = _instancia(empresa_a)
+    resp = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst.pk}/",
+        {"configuracion": {"host": "h", "user": "u", "api_key": ""}},
+        format="json",
+    )
+    assert resp.status_code == 200, resp.data
+    inst.refresh_from_db()
+    assert inst.get_config()["api_key"] == "k"
+
+
+def test_patch_actualiza_api_key_si_se_envia(empresa_a, user_a):
+    inst = _instancia(empresa_a)
+    resp = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst.pk}/",
+        {"configuracion": {"host": "h", "user": "u", "api_key": "nueva"}},
+        format="json",
+    )
+    assert resp.status_code == 200, resp.data
+    inst.refresh_from_db()
+    assert inst.get_config()["api_key"] == "nueva"
+
+
+def test_patch_no_cambia_proveedor(empresa_a, user_a):
+    """El proveedor es inmutable en edición."""
+    inst = _instancia(empresa_a)
+    otro = _proveedor(codigo="google_sheets", nombre="Google Sheets")
+    resp = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst.pk}/",
+        {"id_proveedor": str(otro.pk), "nombre": "Renombrado"},
+        format="json",
+    )
+    assert resp.status_code == 200, resp.data
+    inst.refresh_from_db()
+    assert inst.nombre == "Renombrado"
+    assert inst.id_proveedor_id != otro.pk  # no cambió de proveedor
+
+
+def test_patch_db_vacia_no_borra_db_si_no_se_envia(empresa_a, user_a):
+    """Editar sin enviar 'db' conserva la base de datos previa (no es secreto,
+    pero al no venir en el payload tampoco debe perderse)."""
+    inst = ConectorInstancia.objects.create(
+        id_empresa=empresa_a,
+        id_proveedor=_proveedor(),
+        nombre="Odoo con db",
+        estado="activo",
+        configuracion={"host": "h", "user": "u", "api_key": "k", "db": "midb"},
+        entidades_activas=["contactos"],
+    )
+    resp = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst.pk}/",
+        {"configuracion": {"host": "h2", "user": "u", "db": "otradb"}},
+        format="json",
+    )
+    assert resp.status_code == 200, resp.data
+    inst.refresh_from_db()
+    assert inst.get_config()["db"] == "otradb"
+
+
 # ── acción trigger_sync ───────────────────────────────────────────────────────
 
 

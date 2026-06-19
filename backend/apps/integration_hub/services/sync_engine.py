@@ -111,6 +111,81 @@ class SyncEngine:
         self._marcar_completado(job, resultado)
         return resultado
 
+    def ingerir_en_omni(
+        self,
+        instancia: "ConectorInstancia",
+        tipo_entidad: str,
+        registros: list[dict],
+    ) -> dict:
+        """
+        Persiste una lista de registros canónicos en los modelos de Omni,
+        reutilizando la deduplicación por checksum (``EntidadSincronizada``) y
+        ``_upsert_en_omni`` — sin necesidad de un ``JobSincronizacion``.
+
+        Pensado para que el ``ExportEngine`` (flujo origen → destino) también
+        deje la data almacenada en Omni con su estructura canónica: el dato
+        fluye Odoo → **Omni** → Sheets, no Odoo → Sheets directo. Así la empresa
+        va acumulando su histórico en Omni de cara a una futura migración.
+
+        El mapeo se atribuye a la ``instancia`` de ORIGEN (de donde provienen los
+        datos), de modo que un sync inbound posterior reutilice el mismo enlace
+        externo↔Omni. Multi-tenant: ``_upsert_en_omni`` acota a ``instancia.id_empresa``.
+
+        Es *best-effort por registro*: un error en uno no aborta el resto.
+
+        Returns:
+            dict con contadores: ``creados``, ``actualizados``, ``omitidos``,
+            ``fallidos`` y ``errores`` (lista acotada a 50).
+        """
+        from apps.integration_hub.models import EntidadSincronizada
+
+        res = {
+            "creados": 0,
+            "actualizados": 0,
+            "omitidos": 0,
+            "fallidos": 0,
+            "errores": [],
+        }
+
+        for raw in registros:
+            id_externo = str(raw.get("id_externo", ""))
+            checksum = raw.get("_checksum", "")
+            try:
+                mapping, creado = EntidadSincronizada.objects.get_or_create(
+                    id_instancia=instancia,
+                    tipo_entidad=tipo_entidad,
+                    id_externo=id_externo,
+                    defaults={"checksum": checksum},
+                )
+
+                # Sin cambios desde la última vez: omitir (idéntico a _ejecutar_pull).
+                if not creado and mapping.checksum == checksum:
+                    res["omitidos"] += 1
+                    continue
+
+                id_omni = self._upsert_en_omni(tipo_entidad, raw, instancia)
+                if id_omni:
+                    with transaction.atomic():
+                        mapping.id_omni = id_omni
+                        mapping.checksum = checksum
+                        mapping.save(
+                            update_fields=["id_omni", "checksum", "ultimo_sync"]
+                        )
+                    res["creados" if creado else "actualizados"] += 1
+                else:
+                    res["omitidos"] += 1
+            except Exception as exc:  # best-effort: no abortar el lote
+                res["fallidos"] += 1
+                if len(res["errores"]) < 50:
+                    res["errores"].append(
+                        {"id_externo": id_externo, "error": str(exc)[:300]}
+                    )
+                logger.warning(
+                    "ingerir_en_omni %s:%s → %s", tipo_entidad, id_externo, exc
+                )
+
+        return res
+
     def _ejecutar_pull(
         self,
         job: "JobSincronizacion",
