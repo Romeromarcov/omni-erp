@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { D, sumDecimals } from '../../lib/decimal';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Box, Button, Chip, FormControlLabel, Checkbox, MenuItem, Stack, TextField, Typography } from '@mui/material';
@@ -48,7 +49,7 @@ const StockActualPage: React.FC = () => {
   });
 
   const totalProductos = productos.length;
-  const totalUnidades = stockList.reduce((sum, s) => sum + parseFloat(s.cantidad_disponible), 0);
+  const totalUnidades = sumDecimals(stockList.map((s) => D(s.cantidad_disponible))).toNumber();
 
   const columns: Column<StockActual>[] = [
     { key: 'producto', header: 'Producto', render: (s) => s.producto_nombre ?? s.id_producto },
