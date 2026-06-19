@@ -39,3 +39,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-19T11:09:29Z] ✅ cobertura devolucionesPos (Q1) PR#163 merged
 [2026-06-19T12:53:10Z] ✅ decimal.js total documento en 4 formularios venta (FE-HIGH-7) PR#167 merged
 [2026-06-19T13:10:59Z] ✅ decimal.js totales solo-lectura ventas+libros fiscales (FE-HIGH-7) PR#168 merged
+[2026-06-19T13:30:34Z] ✅ decimal.js sumas cantidades inventario (FE-HIGH-7) PR#169 merged — barrido FE-HIGH-7 completo
