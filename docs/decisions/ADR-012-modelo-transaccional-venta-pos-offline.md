@@ -1,6 +1,6 @@
 # ADR-012: Modelo Transaccional de Venta POS Offline
 
-**Estado:** Propuesto
+**Estado:** Aceptado — backend implementado (`POST /api/sync/push/ventas/`, PR atómico de dinero)
 **Fecha:** 2026-06-19
 **Autor(es):** Marco Romero, Claude Opus 4.8
 **Categoría:** Arquitectura — Offline-first (deriva de ADR-001, habilita CTF-008 Nivel 2)
