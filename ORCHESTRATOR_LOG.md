@@ -37,3 +37,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-19T03:41:03Z] ✅ cobertura pagosService (Q1) PR#162 merged
 [2026-06-19T03:42:21Z] ✅ cobertura devolucionesPos (Q1) commit 9be8d01
 [2026-06-19T11:09:29Z] ✅ cobertura devolucionesPos (Q1) PR#163 merged
+[2026-06-19T12:31:07Z] ✅ decimal.js pago/vuelto ModalPago (BUG-M6/FE-HIGH-7) PR#165 merged (auto-merge)
