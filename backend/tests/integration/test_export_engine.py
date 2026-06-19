@@ -202,6 +202,139 @@ def test_exportar_marca_posible_truncamiento_si_alcanza_limite(monkeypatch, empr
     assert "limite_export" in jobs[0].resumen_errores[0]["error"]
 
 
+def test_exportar_persiste_contactos_en_omni(monkeypatch, empresa_a):
+    """Omni como hub: exportar Odoo→Sheets también deja los contactos en Omni."""
+    from apps.core.models import Contacto
+
+    origen, destino = _instancias(empresa_a)
+    _fake_connectors(
+        monkeypatch,
+        pull_result=[
+            {
+                "id_externo": "1",
+                "nombre": "Cliente A",
+                "identificador_fiscal": "J-12345678-9",
+                "email": "a@cliente.com",
+                "es_cliente": True,
+                "_checksum": "chk1",
+            }
+        ],
+        push_result=SyncResult(tipo_entidad="contactos", total=1, creados=1),
+    )
+
+    jobs = ExportEngine().exportar(destino, tipos=["contactos"])
+
+    # La data quedó almacenada en Omni con su estructura canónica.
+    assert Contacto.objects.filter(id_empresa=empresa_a, rif="J-12345678-9").exists()
+    # Y el resumen de persistencia queda en el job para trazabilidad.
+    persist = jobs[0].parametros.get("omni_persistencia")
+    assert persist is not None
+    assert persist["creados"] == 1
+
+
+def test_exportar_persistir_en_omni_desactivable(monkeypatch, empresa_a):
+    """Con persistir_en_omni=False, exporta a Sheets pero NO guarda en Omni."""
+    from apps.core.models import Contacto
+
+    origen, destino = _instancias(
+        empresa_a, source_config_extra={"persistir_en_omni": False}
+    )
+    _fake_connectors(
+        monkeypatch,
+        pull_result=[
+            {
+                "id_externo": "1",
+                "nombre": "Cliente A",
+                "identificador_fiscal": "J-99999999-9",
+                "_checksum": "chk1",
+            }
+        ],
+        push_result=SyncResult(tipo_entidad="contactos", total=1, creados=1),
+    )
+
+    jobs = ExportEngine().exportar(destino, tipos=["contactos"])
+
+    assert not Contacto.objects.filter(id_empresa=empresa_a, rif="J-99999999-9").exists()
+    assert "omni_persistencia" not in (jobs[0].parametros or {})
+    assert jobs[0].estado == "completado"
+
+
+def test_persistencia_fallida_no_rompe_la_exportacion(monkeypatch, empresa_a):
+    """Si la persistencia en Omni revienta, la exportación a Sheets continúa."""
+    origen, destino = _instancias(empresa_a)
+    _, fake_destino = _fake_connectors(
+        monkeypatch,
+        pull_result=[{"id_externo": "1", "nombre": "A", "_checksum": "c"}],
+        push_result=SyncResult(tipo_entidad="contactos", total=1, creados=1),
+    )
+    monkeypatch.setattr(
+        "apps.integration_hub.services.sync_engine.SyncEngine.ingerir_en_omni",
+        MagicMock(side_effect=RuntimeError("boom")),
+    )
+
+    jobs = ExportEngine().exportar(destino, tipos=["contactos"])
+
+    # La exportación se completó pese al fallo de persistencia (best-effort).
+    fake_destino.push_entidades.assert_called_once()
+    assert jobs[0].estado == "completado"
+    assert "error" in jobs[0].parametros["omni_persistencia"]
+
+
+def test_ingerir_en_omni_crea_y_luego_omite_por_checksum(empresa_a):
+    """ingerir_en_omni: crea la 1ª vez y omite si el checksum no cambió."""
+    from apps.integration_hub.services.sync_engine import SyncEngine
+
+    origen, _ = _instancias(empresa_a)
+    eng = SyncEngine()
+    regs = [
+        {
+            "id_externo": "1",
+            "nombre": "Cliente A",
+            "identificador_fiscal": "J-1",
+            "_checksum": "c1",
+        }
+    ]
+
+    r1 = eng.ingerir_en_omni(origen, "contactos", regs)
+    assert r1["creados"] == 1
+
+    r2 = eng.ingerir_en_omni(origen, "contactos", regs)
+    assert r2["omitidos"] == 1
+    assert r2["creados"] == 0
+
+
+def test_ingerir_en_omni_omite_si_upsert_devuelve_none(monkeypatch, empresa_a):
+    """Si _upsert_en_omni devuelve None (registro inválido), se omite."""
+    from apps.integration_hub.services.sync_engine import SyncEngine
+
+    origen, _ = _instancias(empresa_a)
+    monkeypatch.setattr(SyncEngine, "_upsert_en_omni", lambda self, t, d, i: None)
+
+    r = SyncEngine().ingerir_en_omni(
+        origen, "contactos", [{"id_externo": "1", "_checksum": "c"}]
+    )
+    assert r["omitidos"] == 1
+    assert r["creados"] == 0
+
+
+def test_ingerir_en_omni_captura_error_por_registro(monkeypatch, empresa_a):
+    """Un error en un registro no aborta el lote: se cuenta y se registra."""
+    from apps.integration_hub.services.sync_engine import SyncEngine
+
+    origen, _ = _instancias(empresa_a)
+    monkeypatch.setattr(
+        SyncEngine,
+        "_upsert_en_omni",
+        MagicMock(side_effect=RuntimeError("x")),
+    )
+
+    r = SyncEngine().ingerir_en_omni(
+        origen, "contactos", [{"id_externo": "9", "_checksum": "c"}]
+    )
+    assert r["fallidos"] == 1
+    assert r["errores"][0]["id_externo"] == "9"
+
+
 def test_exportar_marca_job_fallido_si_pull_revienta(monkeypatch, empresa_a):
     origen, destino = _instancias(empresa_a)
     fake_origen, fake_destino = _fake_connectors(
