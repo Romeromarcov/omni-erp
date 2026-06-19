@@ -26,3 +26,4 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-18T22:50:53Z] FE-CRIT-1 PlanFormPage rhf+zod PR#153 merged — 16/16 FormPage en react-hook-form
 [2026-06-18T23:17:42Z] Q1 cobertura transaccionFinancieraService PR#154 merged
 [2026-06-18T23:39:15Z] ✅ Q1 cobertura cuentaBancariaService PR#155 merged
+[2026-06-19T00:04:44Z] ✅ CTF-008 N2 outbox ventas POS (salesOutbox) PR#156 merged
