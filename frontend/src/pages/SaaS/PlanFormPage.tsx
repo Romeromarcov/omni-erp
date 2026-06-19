@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert, Box, Button, Card, FormControlLabel, MenuItem, Stack, Switch, TextField,
 } from '@mui/material';
@@ -10,8 +12,9 @@ import {
   PLAN_NIVELES, PLAN_SOPORTES,
   type PlanPayload,
 } from '../../services/saasService';
+import { planSchema, type PlanInput } from '../../schemas/saas.schemas';
 
-const EMPTY: PlanPayload = {
+const DEFAULTS: PlanInput = {
   nombre: '',
   nivel: 'STARTER',
   descripcion: '',
@@ -28,18 +31,20 @@ const EMPTY: PlanPayload = {
   activo: true,
 };
 
-// Acepta enteros/decimales con punto, hasta 2 decimales. Rechaza negativos.
-// eslint-disable-next-line security/detect-unsafe-regex -- FP del heurístico star-height de safe-regex: `\.` y `\d` son disjuntos, no hay backtracking ambiguo (matching lineal)
-const DECIMAL_RE = /^\d+(\.\d{1,2})?$/;
-
 const PlanFormPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { id_plan } = useParams<{ id_plan: string }>();
   const isEdit = Boolean(id_plan);
 
-  const [form, setForm] = useState<PlanPayload>(EMPTY);
-  const [error, setError] = useState('');
+  const {
+    control, handleSubmit, reset, setError: setFormError,
+    formState: { errors, isSubmitting },
+  } = useForm<PlanInput>({
+    resolver: zodResolver(planSchema),
+    mode: 'onBlur',
+    defaultValues: DEFAULTS,
+  });
 
   const { data: existing, isLoading: loadingPlan } = useQuery({
     queryKey: ['saas/planes', 'detail', id_plan],
@@ -49,10 +54,10 @@ const PlanFormPage: React.FC = () => {
 
   useEffect(() => {
     if (existing) {
-      setForm({
+      reset({
         nombre: existing.nombre,
         nivel: existing.nivel,
-        descripcion: existing.descripcion,
+        descripcion: existing.descripcion ?? '',
         precio_mensual: existing.precio_mensual,
         precio_anual: existing.precio_anual,
         max_usuarios: existing.max_usuarios,
@@ -66,7 +71,7 @@ const PlanFormPage: React.FC = () => {
         activo: existing.activo,
       });
     }
-  }, [existing]);
+  }, [existing, reset]);
 
   const mutation = useMutation({
     mutationFn: (data: PlanPayload) =>
@@ -75,31 +80,12 @@ const PlanFormPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['saas/planes'] });
       navigate('/admin-saas/planes');
     },
-    onError: (e: Error) => setError(e.message || 'No se pudo guardar el plan.'),
+    onError: (e: Error) =>
+      setFormError('root', { message: e.message || 'No se pudo guardar el plan.' }),
   });
 
-  const set = <K extends keyof PlanPayload>(key: K, value: PlanPayload[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
-  const validate = (): string | null => {
-    if (!form.nombre.trim()) return 'El nombre es obligatorio.';
-    if (!DECIMAL_RE.test(form.precio_mensual)) return 'Precio mensual inválido (use formato 0.00, sin negativos).';
-    if (!DECIMAL_RE.test(form.precio_anual)) return 'Precio anual inválido (use formato 0.00, sin negativos).';
-    if (form.max_usuarios < 0 || form.max_empresas < 0 || form.max_documentos_mes < 0) {
-      return 'Los límites no pueden ser negativos (use 0 para ilimitado).';
-    }
-    return null;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const err = validate();
-    if (err) {
-      setError(err);
-      return;
-    }
-    setError('');
-    mutation.mutate(form);
+  const onSubmit = (data: PlanInput) => {
+    mutation.mutate({ ...data, descripcion: data.descripcion ?? '' });
   };
 
   if (isEdit && loadingPlan) {
@@ -115,120 +101,164 @@ const PlanFormPage: React.FC = () => {
     <PageContainer maxWidth={760}>
       <PageHeader title={isEdit ? 'Editar plan' : 'Nuevo plan'} />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {errors.root?.message && (
+        <Alert severity="error" sx={{ mb: 2 }}>{errors.root.message}</Alert>
+      )}
 
       <Card sx={{ p: 3 }}>
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <Stack spacing={2}>
-            <TextField
-              label="Nombre"
-              value={form.nombre}
-              onChange={(e) => set('nombre', e.target.value)}
-              required
-              fullWidth
+            <Controller
+              name="nombre"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Nombre"
+                  required
+                  fullWidth
+                  error={!!errors.nombre}
+                  helperText={errors.nombre?.message}
+                />
+              )}
             />
-            <TextField
-              select
-              label="Nivel"
-              value={form.nivel}
-              onChange={(e) => set('nivel', e.target.value as PlanPayload['nivel'])}
-              fullWidth
-            >
-              {PLAN_NIVELES.map((n) => (
-                <MenuItem key={n} value={n}>{n}</MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="Descripción"
-              value={form.descripcion}
-              onChange={(e) => set('descripcion', e.target.value)}
-              multiline
-              minRows={2}
-              fullWidth
+            <Controller
+              name="nivel"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} select label="Nivel" fullWidth>
+                  {PLAN_NIVELES.map((n) => (
+                    <MenuItem key={n} value={n}>{n}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+            <Controller
+              name="descripcion"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="Descripción" multiline minRows={2} fullWidth />
+              )}
             />
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Precio mensual"
-                value={form.precio_mensual}
-                onChange={(e) => set('precio_mensual', e.target.value)}
-                inputProps={{ inputMode: 'decimal' }}
-                fullWidth
+              <Controller
+                name="precio_mensual"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Precio mensual"
+                    inputProps={{ inputMode: 'decimal' }}
+                    fullWidth
+                    error={!!errors.precio_mensual}
+                    helperText={errors.precio_mensual?.message}
+                  />
+                )}
               />
-              <TextField
-                label="Precio anual"
-                value={form.precio_anual}
-                onChange={(e) => set('precio_anual', e.target.value)}
-                inputProps={{ inputMode: 'decimal' }}
-                fullWidth
+              <Controller
+                name="precio_anual"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Precio anual"
+                    inputProps={{ inputMode: 'decimal' }}
+                    fullWidth
+                    error={!!errors.precio_anual}
+                    helperText={errors.precio_anual?.message}
+                  />
+                )}
               />
             </Stack>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Máx. usuarios (0 = ilimitado)"
-                type="number"
-                value={form.max_usuarios}
-                onChange={(e) => set('max_usuarios', Number(e.target.value))}
-                inputProps={{ min: 0 }}
-                fullWidth
+              <Controller
+                name="max_usuarios"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Máx. usuarios (0 = ilimitado)"
+                    type="number"
+                    inputProps={{ min: 0 }}
+                    fullWidth
+                    error={!!errors.max_usuarios}
+                    helperText={errors.max_usuarios?.message}
+                  />
+                )}
               />
-              <TextField
-                label="Máx. empresas (0 = ilimitado)"
-                type="number"
-                value={form.max_empresas}
-                onChange={(e) => set('max_empresas', Number(e.target.value))}
-                inputProps={{ min: 0 }}
-                fullWidth
+              <Controller
+                name="max_empresas"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Máx. empresas (0 = ilimitado)"
+                    type="number"
+                    inputProps={{ min: 0 }}
+                    fullWidth
+                    error={!!errors.max_empresas}
+                    helperText={errors.max_empresas?.message}
+                  />
+                )}
               />
-              <TextField
-                label="Máx. docs/mes (0 = ilimitado)"
-                type="number"
-                value={form.max_documentos_mes}
-                onChange={(e) => set('max_documentos_mes', Number(e.target.value))}
-                inputProps={{ min: 0 }}
-                fullWidth
+              <Controller
+                name="max_documentos_mes"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Máx. docs/mes (0 = ilimitado)"
+                    type="number"
+                    inputProps={{ min: 0 }}
+                    fullWidth
+                    error={!!errors.max_documentos_mes}
+                    helperText={errors.max_documentos_mes?.message}
+                  />
+                )}
               />
             </Stack>
 
-            <TextField
-              select
-              label="Soporte"
-              value={form.soporte}
-              onChange={(e) => set('soporte', e.target.value as PlanPayload['soporte'])}
-              fullWidth
-            >
-              {PLAN_SOPORTES.map((s) => (
-                <MenuItem key={s} value={s}>{s}</MenuItem>
-              ))}
-            </TextField>
+            <Controller
+              name="soporte"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} select label="Soporte" fullWidth>
+                  {PLAN_SOPORTES.map((s) => (
+                    <MenuItem key={s} value={s}>{s}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
 
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
-              <FormControlLabel
-                control={<Switch checked={form.permite_ia} onChange={(e) => set('permite_ia', e.target.checked)} />}
-                label="Permite IA / agentes"
-              />
-              <FormControlLabel
-                control={<Switch checked={form.permite_api} onChange={(e) => set('permite_api', e.target.checked)} />}
-                label="Permite API REST"
-              />
-              <FormControlLabel
-                control={<Switch checked={form.permite_reportes_avanzados} onChange={(e) => set('permite_reportes_avanzados', e.target.checked)} />}
-                label="Reportes avanzados"
-              />
-              <FormControlLabel
-                control={<Switch checked={form.permite_multimoneda} onChange={(e) => set('permite_multimoneda', e.target.checked)} />}
-                label="Multimoneda"
-              />
-              <FormControlLabel
-                control={<Switch checked={form.activo} onChange={(e) => set('activo', e.target.checked)} />}
-                label="Activo"
-              />
+              {([
+                ['permite_ia', 'Permite IA / agentes'],
+                ['permite_api', 'Permite API REST'],
+                ['permite_reportes_avanzados', 'Reportes avanzados'],
+                ['permite_multimoneda', 'Multimoneda'],
+                ['activo', 'Activo'],
+              ] as const).map(([name, label]) => (
+                <Controller
+                  key={name}
+                  name={name}
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                      }
+                      label={label}
+                    />
+                  )}
+                />
+              ))}
             </Box>
 
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button onClick={() => navigate('/admin-saas/planes')}>Cancelar</Button>
-              <Button type="submit" variant="contained" disabled={mutation.isPending}>
+              <Button type="submit" variant="contained" disabled={isSubmitting || mutation.isPending}>
                 {mutation.isPending ? 'Guardando…' : 'Guardar'}
               </Button>
             </Stack>
