@@ -548,3 +548,122 @@ class TestSyncResult:
     def test_exitoso_sin_fallidos(self):
         resultado = SyncResult(tipo_entidad="contactos", creados=3)
         assert resultado.exitoso is True
+
+
+class TestUpsertPedidoVenta:
+    """Fase 2 — persistencia de pedidos de venta en ventas.Pedido."""
+
+    def _pedido(self, **over):
+        datos = {
+            "id_externo": "55",
+            "numero": "SO0001",
+            "cliente_id_externo": "42",
+            "cliente_nombre": "Cliente Test",
+            "fecha_pedido": "2024-03-15",
+            "estado": "confirmado",
+            "lineas": [],
+        }
+        datos.update(over)
+        return datos
+
+    def test_crea_pedido_y_autocrea_cliente(self, instancia_fake):
+        from apps.crm.models import Cliente
+        from apps.ventas.models import Pedido
+
+        pk = SyncEngine()._upsert_pedido_venta(self._pedido(), instancia_fake)
+
+        assert pk
+        ped = Pedido.objects.get(pk=pk)
+        assert ped.numero_pedido == "SO0001"
+        assert ped.estado == "APROBADO"  # 'confirmado' → APROBADO
+        cli = Cliente.objects.get(
+            id_empresa=instancia_fake.id_empresa, referencia_externa="42"
+        )
+        assert cli.razon_social == "Cliente Test"
+        assert ped.id_cliente_id == cli.pk
+
+    def test_idempotente_por_numero(self, instancia_fake):
+        from apps.crm.models import Cliente
+        from apps.ventas.models import Pedido
+
+        eng = SyncEngine()
+        eng._upsert_pedido_venta(self._pedido(), instancia_fake)
+        eng._upsert_pedido_venta(self._pedido(estado="cancelado"), instancia_fake)
+
+        assert (
+            Pedido.objects.filter(
+                id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001"
+            ).count()
+            == 1
+        )
+        assert (
+            Cliente.objects.filter(
+                id_empresa=instancia_fake.id_empresa, referencia_externa="42"
+            ).count()
+            == 1
+        )
+        ped = Pedido.objects.get(
+            id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001"
+        )
+        assert ped.estado == "ANULADO"  # se actualizó
+
+    def test_sin_numero_omite(self, instancia_fake):
+        assert SyncEngine()._upsert_pedido_venta(
+            self._pedido(numero=""), instancia_fake
+        ) is None
+
+    def test_sin_cliente_omite(self, instancia_fake):
+        assert SyncEngine()._upsert_pedido_venta(
+            self._pedido(cliente_id_externo="", cliente_nombre=""), instancia_fake
+        ) is None
+
+    def test_linea_con_producto_no_sincronizado_se_omite(self, instancia_fake):
+        from apps.ventas.models import Pedido
+
+        datos = self._pedido(
+            lineas=[{
+                "product_id": [10, "X"],
+                "product_uom_qty": 2,
+                "price_unit": "5",
+                "price_subtotal": "10",
+            }]
+        )
+        pk = SyncEngine()._upsert_pedido_venta(datos, instancia_fake)
+        ped = Pedido.objects.get(pk=pk)
+        assert ped.detalles.count() == 0  # producto no sincronizado → línea omitida
+
+    def test_linea_con_producto_sincronizado_se_crea(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.finanzas.models import Moneda
+        from apps.ventas.models import Pedido
+
+        Moneda.objects.get_or_create(
+            codigo_iso="USD",
+            defaults={
+                "nombre": "Dólar",
+                "simbolo": "$",
+                "empresa": instancia_fake.id_empresa,
+            },
+        )
+        eng = SyncEngine()
+        # Sembrar producto: crea inventario.Producto + mapping productos:10
+        eng.ingerir_en_omni(
+            instancia_fake,
+            "productos",
+            [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
+        )
+        datos = self._pedido(
+            lineas=[{
+                "product_id": [10, "Prod 10"],
+                "product_uom_qty": 2,
+                "price_unit": "5",
+                "price_subtotal": "10",
+            }]
+        )
+        pk = eng._upsert_pedido_venta(datos, instancia_fake)
+        ped = Pedido.objects.get(pk=pk)
+        assert ped.detalles.count() == 1
+        det = ped.detalles.first()
+        assert det.cantidad == Decimal("2")
+        assert det.subtotal == Decimal("10")
