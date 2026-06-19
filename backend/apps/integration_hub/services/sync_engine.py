@@ -319,6 +319,7 @@ class SyncEngine:
             "productos": self._upsert_producto,
             "pedidos_venta": self._upsert_pedido_venta,
             "pedidos_compra": self._upsert_pedido_compra,
+            "inventario": self._upsert_inventario,
             # Las demás entidades se implementan por fase
         }
 
@@ -759,6 +760,55 @@ class SyncEngine:
                 )
 
         return str(orden.pk)
+
+    # ── Inventario / stock (Fase 2) ────────────────────────────────────────────
+
+    def _upsert_inventario(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+        """
+        Upsert de stock por producto en ``inventario.StockActual``.
+
+        Resuelve el producto por el mapa ``EntidadSincronizada``; si no está
+        sincronizado, omite (no se puede crear el producto desde un quant). El
+        stock importado se consolida en un almacén por defecto del tenant
+        (creado si no existe). Idempotente por ``(producto, variante, almacén)``.
+        Multi-tenant (R-CODE-1); cantidades en Decimal (R-CODE-4).
+        """
+        from apps.almacenes.models import Almacen
+        from apps.inventario.models import StockActual
+
+        empresa = instancia.id_empresa
+
+        producto = self._resolver_producto_mapeado(
+            datos.get("producto_id_externo"), instancia
+        )
+        if producto is None:
+            logger.debug(
+                "Stock externo %s omitido: producto no sincronizado.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        almacen, _ = Almacen.objects.get_or_create(
+            id_empresa=empresa,
+            codigo_almacen="IH-IMPORT",
+            defaults={"nombre_almacen": "Importado (Integration Hub)"},
+        )
+
+        disponible = self._safe_decimal_money(datos.get("cantidad_disponible"))
+        comprometida = self._safe_decimal_money(datos.get("cantidad_reservada"))
+
+        with transaction.atomic():
+            stock, _creado = StockActual.objects.update_or_create(
+                id_empresa=empresa,
+                id_producto=producto,
+                id_variante=None,
+                id_almacen=almacen,
+                defaults={
+                    "cantidad_disponible": disponible,
+                    "cantidad_comprometida": comprometida,
+                },
+            )
+        return str(stock.pk)
 
     def _calcular_desde(self, job: "JobSincronizacion") -> datetime | None:
         """
