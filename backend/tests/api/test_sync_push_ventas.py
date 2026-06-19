@@ -268,6 +268,116 @@ def test_cantidad_invalida_rechaza(client_a, empresa_a, user_a, moneda_usd, meto
     assert _count_notas(empresa_a) == 0
 
 
+def test_cuerpo_no_objeto_rechaza(client_a, empresa_a, user_a):
+    r = client_a.post(URL, [], format="json", **_hdr("venta-lista"))
+    assert r.status_code == 422, r.data
+    assert "objeto JSON" in r.data["error"]
+
+
+def test_pagos_no_es_lista_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-pagos-nolista")
+    sobre["pagos"] = "no-soy-lista"
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-pagos-nolista"))
+    assert r.status_code == 422, r.data
+    assert "pagos" in r.data["error"].lower()
+
+
+def test_falta_id_cliente_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-sin-cliente")
+    sobre.pop("id_cliente")
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-sin-cliente"))
+    assert r.status_code == 422, r.data
+    assert "id_cliente" in r.data["error"]
+
+
+def test_sin_client_uuid_ni_numero_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd)
+    sobre.pop("client_uuid")  # sin client_uuid ni numero_nota → no se puede numerar
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-sin-uuid"))
+    assert r.status_code == 422, r.data
+    assert "numero_nota" in r.data["error"]
+
+
+def test_detalle_no_objeto_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-det-nodict")
+    sobre["detalles"] = ["no-soy-objeto"]
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-det-nodict"))
+    assert r.status_code == 422, r.data
+
+
+def test_precio_negativo_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, precio="-5.00", client_uuid="venta-precio-neg")
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-precio-neg"))
+    assert r.status_code == 422, r.data
+    assert "precio" in r.data["error"].lower()
+
+
+def test_pago_no_objeto_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-pago-nodict")
+    sobre["pagos"] = ["no-soy-objeto"]
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-pago-nodict"))
+    assert r.status_code == 422, r.data
+
+
+def test_pago_sin_metodo_rechaza(client_a, empresa_a, user_a, moneda_usd):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = {
+        "client_uuid": "venta-sin-metodo",
+        "id_cliente": str(cliente.id_cliente),
+        "id_almacen": str(almacen.id_almacen),
+        "detalles": [{"id_producto": str(producto.id_producto), "cantidad": "1", "precio_unitario": "5.00"}],
+        "pagos": [{"id_moneda": str(moneda_usd.id_moneda), "monto": "5.00"}],
+    }
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-sin-metodo"))
+    assert r.status_code == 422, r.data
+    assert "id_metodo_pago" in r.data["error"]
+
+
+def test_pago_monto_invalido_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-monto-abc")
+    sobre["pagos"][0]["monto"] = "abc"
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-monto-abc"))
+    assert r.status_code == 422, r.data
+
+
+def test_pago_monto_cero_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-monto-cero")
+    sobre["pagos"][0]["monto"] = "0"
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-monto-cero"))
+    assert r.status_code == 422, r.data
+    assert "monto" in r.data["error"].lower()
+
+
+def test_cuenta_bancaria_ajena_rechaza(client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo):
+    import uuid
+
+    producto, almacen = _producto_con_stock(empresa_a, user_a)
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-cuenta-ajena")
+    sobre["pagos"][0]["id_cuenta_bancaria"] = str(uuid.uuid4())  # inexistente para esta empresa
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-cuenta-ajena"))
+    assert r.status_code == 422, r.data
+    assert "id_cuenta_bancaria" in r.data["error"]
+    assert _count_notas(empresa_a) == 0
+
+
 def test_sin_totales_cliente_se_acepta(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
     """`totales_cliente` es opcional (verificación defensiva); sin él la venta procede."""
     producto, almacen = _producto_con_stock(empresa_a, user_a)
