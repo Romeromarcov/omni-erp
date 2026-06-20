@@ -24,9 +24,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.viewsets import get_empresas_visible
+from apps.core.idempotency import idempotent
+from apps.core.viewsets import get_empresa_primaria, get_empresas_visible
 
 from .registry import SYNC_ENTITIES
+from .services import VentaPosError, crear_venta_pos_offline
 
 LIMITE_DEFECTO = 500
 LIMITE_MAXIMO = 1000
@@ -108,3 +110,43 @@ class SyncPullView(APIView):
             "has_more": hay_mas,
             "results": resultados,
         })
+
+
+class SyncPushVentasView(APIView):
+    """Push atómico e idempotente de una venta POS offline — ADR-012.
+
+    ``POST /api/sync/push/ventas/`` (cabecera ``Idempotency-Key: <client_uuid>``)
+
+    Recibe el sobre ``VentaOffline`` completo y crea nota + detalles + entrega +
+    pagos en una sola transacción reutilizando los services de dinero existentes
+    (ver ``apps.sync.services.crear_venta_pos_offline``). Reenviar el mismo sobre
+    (misma clave) devuelve la misma respuesta sin duplicar la venta.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @idempotent("sync:push-venta")
+    def post(self, request):
+        clave = request.META.get("HTTP_IDEMPOTENCY_KEY") or request.headers.get("Idempotency-Key")
+        if not clave:
+            return Response(
+                {"error": "Esta operación requiere la cabecera 'Idempotency-Key' "
+                          "(client_uuid de la venta) para no duplicar dinero."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        empresa = get_empresa_primaria(request.user)
+        if empresa is None:
+            return Response(
+                {"error": "El usuario no tiene empresa asignada."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            resultado = crear_venta_pos_offline(empresa, request.user, request.data)
+        except VentaPosError as exc:
+            # 4xx de validación → la clave de idempotencia NO se consume; el cajero
+            # corrige y reenvía (ADR-012 §5: no es transitorio, no se reintenta en bucle).
+            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        return Response(resultado, status=status.HTTP_201_CREATED)
