@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { D, sumDecimals } from '../../../lib/decimal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pagosService } from '../../../services/pagosService';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -157,9 +158,9 @@ const NotaVentaDetailPage: React.FC = () => {
 
   const calcularTotalNotaVenta = () => {
     if (!notaVenta?.detalles) return 0;
-    return notaVenta.detalles.reduce((total, detalle) => {
-      return total + (Number(detalle.precio_unitario) * Number(detalle.cantidad));
-    }, 0);
+    return sumDecimals(
+      notaVenta.detalles.map((detalle) => D(detalle.precio_unitario).times(D(detalle.cantidad)))
+    ).toNumber();
   };
 
   return (

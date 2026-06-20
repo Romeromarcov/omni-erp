@@ -318,6 +318,8 @@ class SyncEngine:
             "contactos": self._upsert_contacto,
             "productos": self._upsert_producto,
             "pedidos_venta": self._upsert_pedido_venta,
+            "pedidos_compra": self._upsert_pedido_compra,
+            "inventario": self._upsert_inventario,
             # Las demás entidades se implementan por fase
         }
 
@@ -629,6 +631,184 @@ class SyncEngine:
                 )
 
         return str(pedido.pk)
+
+    # ── Pedidos de compra (Fase 2) ─────────────────────────────────────────────
+
+    def _resolver_o_crear_proveedor(self, datos: dict, instancia: "ConectorInstancia"):
+        """
+        Resuelve/auto-crea el ``proveedores.Proveedor`` de la orden de compra.
+        Análogo a ``_resolver_o_crear_cliente``: idempotente por
+        ``referencia_externa``; enlaza al ``core.Contacto`` ya sincronizado y
+        reutiliza su RIF. Retorna el Proveedor o None si no hay nombre.
+        """
+        from apps.integration_hub.models import EntidadSincronizada
+        from apps.proveedores.models import Proveedor
+
+        empresa = instancia.id_empresa
+        ext = str(datos.get("proveedor_id_externo") or "")
+        nombre = (datos.get("proveedor_nombre") or "").strip()
+
+        if ext:
+            existente = Proveedor.objects.filter(
+                id_empresa=empresa, referencia_externa=ext
+            ).first()
+            if existente:
+                return existente
+
+        contacto = None
+        rif = ""
+        if ext:
+            mapping = EntidadSincronizada.objects.filter(
+                id_instancia=instancia, tipo_entidad="contactos", id_externo=ext
+            ).first()
+            if mapping and mapping.id_omni:
+                from apps.core.models import Contacto
+
+                contacto = Contacto.objects.filter(
+                    pk=mapping.id_omni, id_empresa=empresa
+                ).first()
+                if contacto:
+                    rif = getattr(contacto, "rif", "") or ""
+                    ya = Proveedor.objects.filter(
+                        id_empresa=empresa, contacto=contacto
+                    ).first()
+                    if ya:
+                        return ya
+
+        if not nombre:
+            return None
+
+        return Proveedor.objects.create(
+            id_empresa=empresa,
+            razon_social=nombre,
+            rif=rif,
+            referencia_externa=ext or None,
+            contacto=contacto,
+        )
+
+    def _upsert_pedido_compra(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+        """
+        Upsert de orden de compra en ``compras.OrdenCompra`` (+ líneas en
+        ``DetalleOrdenCompra``). Idempotente por ``(id_empresa, numero_orden)``.
+        Resuelve/auto-crea el proveedor; líneas con producto no sincronizado se
+        omiten. Multi-tenant (R-CODE-1); Decimal en la frontera (R-CODE-4).
+        """
+        from apps.compras.models import DetalleOrdenCompra, OrdenCompra
+
+        empresa = instancia.id_empresa
+        numero = (datos.get("numero") or "").strip()
+        if not numero:
+            logger.warning(
+                "Orden de compra externa %s omitida: sin número.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        proveedor = self._resolver_o_crear_proveedor(datos, instancia)
+        if proveedor is None:
+            logger.warning(
+                "Orden de compra %s omitida: proveedor no resoluble.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        # Estados Odoo (purchase.order) → OrdenCompra de Omni.
+        estado_map = {
+            "draft": "BORRADOR",
+            "sent": "ENVIADA",
+            "to approve": "ENVIADA",
+            "purchase": "APROBADA",
+            "done": "CERRADA",
+            "cancel": "ANULADA",
+        }
+        fecha = (datos.get("fecha_pedido") or "")[:10] or dj_timezone.now().date().isoformat()
+
+        campos = {
+            "id_proveedor": proveedor,
+            "fecha_orden": fecha,
+            "estado": estado_map.get(datos.get("estado") or "", "BORRADOR"),
+            "referencia_externa": str(datos.get("id_externo") or "") or None,
+            "tipo_operacion": "compra",
+        }
+
+        with transaction.atomic():
+            orden = OrdenCompra.objects.filter(
+                id_empresa=empresa, numero_orden=numero
+            ).first()
+            if orden:
+                for field, value in campos.items():
+                    setattr(orden, field, value)
+                orden.save()
+            else:
+                orden = OrdenCompra.objects.create(
+                    id_empresa=empresa, numero_orden=numero, **campos
+                )
+
+            orden.detalles.all().delete()
+            for linea in datos.get("lineas") or []:
+                producto = self._resolver_producto_mapeado(
+                    linea.get("product_id"), instancia
+                )
+                if producto is None:
+                    continue
+                DetalleOrdenCompra.objects.create(
+                    id_orden_compra=orden,
+                    id_producto=producto,
+                    cantidad=self._safe_decimal_money(linea.get("product_qty")),
+                    precio_unitario=self._safe_decimal_money(linea.get("price_unit")),
+                    subtotal=self._safe_decimal_money(linea.get("price_subtotal")),
+                )
+
+        return str(orden.pk)
+
+    # ── Inventario / stock (Fase 2) ────────────────────────────────────────────
+
+    def _upsert_inventario(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+        """
+        Upsert de stock por producto en ``inventario.StockActual``.
+
+        Resuelve el producto por el mapa ``EntidadSincronizada``; si no está
+        sincronizado, omite (no se puede crear el producto desde un quant). El
+        stock importado se consolida en un almacén por defecto del tenant
+        (creado si no existe). Idempotente por ``(producto, variante, almacén)``.
+        Multi-tenant (R-CODE-1); cantidades en Decimal (R-CODE-4).
+        """
+        from apps.almacenes.models import Almacen
+        from apps.inventario.models import StockActual
+
+        empresa = instancia.id_empresa
+
+        producto = self._resolver_producto_mapeado(
+            datos.get("producto_id_externo"), instancia
+        )
+        if producto is None:
+            logger.debug(
+                "Stock externo %s omitido: producto no sincronizado.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        almacen, _ = Almacen.objects.get_or_create(
+            id_empresa=empresa,
+            codigo_almacen="IH-IMPORT",
+            defaults={"nombre_almacen": "Importado (Integration Hub)"},
+        )
+
+        disponible = self._safe_decimal_money(datos.get("cantidad_disponible"))
+        comprometida = self._safe_decimal_money(datos.get("cantidad_reservada"))
+
+        with transaction.atomic():
+            stock, _creado = StockActual.objects.update_or_create(
+                id_empresa=empresa,
+                id_producto=producto,
+                id_variante=None,
+                id_almacen=almacen,
+                defaults={
+                    "cantidad_disponible": disponible,
+                    "cantidad_comprometida": comprometida,
+                },
+            )
+        return str(stock.pk)
 
     def _calcular_desde(self, job: "JobSincronizacion") -> datetime | None:
         """

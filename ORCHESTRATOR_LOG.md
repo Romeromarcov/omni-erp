@@ -36,3 +36,8 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-19T03:04:00Z] ✅ cobertura pagosService (Q1) commit 1ea26fc
 [2026-06-19T03:41:03Z] ✅ cobertura pagosService (Q1) PR#162 merged
 [2026-06-19T03:42:21Z] ✅ cobertura devolucionesPos (Q1) commit 9be8d01
+[2026-06-19T11:09:29Z] ✅ cobertura devolucionesPos (Q1) PR#163 merged
+[2026-06-19T12:53:10Z] ✅ decimal.js total documento en 4 formularios venta (FE-HIGH-7) PR#167 merged
+[2026-06-19T13:10:59Z] ✅ decimal.js totales solo-lectura ventas+libros fiscales (FE-HIGH-7) PR#168 merged
+[2026-06-19T13:30:34Z] ✅ decimal.js sumas cantidades inventario (FE-HIGH-7) PR#169 merged — barrido FE-HIGH-7 completo
+[2026-06-19T15:58:08Z] ✅ endpoint atómico venta POS offline (ADR-012) PR#171 merged
