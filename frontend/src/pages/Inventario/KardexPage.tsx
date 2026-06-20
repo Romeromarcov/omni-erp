@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { D, sumDecimals } from '../../lib/decimal';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Box, Button, Chip, Stack, TextField, Typography } from '@mui/material';
@@ -56,13 +57,13 @@ const KardexPage: React.FC = () => {
   });
 
   // Running totals for entrada/salida columns
-  const totalEntradas = movimientos
-    .filter((m) => ENTRADAS.has(m.tipo_movimiento))
-    .reduce((sum, m) => sum + Math.abs(parseFloat(m.cantidad)), 0);
+  const totalEntradas = sumDecimals(
+    movimientos.filter((m) => ENTRADAS.has(m.tipo_movimiento)).map((m) => D(m.cantidad).abs()),
+  ).toNumber();
 
-  const totalSalidas = movimientos
-    .filter((m) => SALIDAS.has(m.tipo_movimiento))
-    .reduce((sum, m) => sum + Math.abs(parseFloat(m.cantidad)), 0);
+  const totalSalidas = sumDecimals(
+    movimientos.filter((m) => SALIDAS.has(m.tipo_movimiento)).map((m) => D(m.cantidad).abs()),
+  ).toNumber();
 
   const columns: Column<MovimientoInventario>[] = [
     { key: 'fecha', header: 'Fecha', render: (m) => new Date(m.fecha_hora_movimiento).toLocaleString() },

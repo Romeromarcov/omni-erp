@@ -874,3 +874,61 @@ class TestUpsertPedidoCompra:
         )
         prov = eng._resolver_o_crear_proveedor(self._orden(), instancia_fake)
         assert prov.pk == pre.pk
+
+
+class TestUpsertInventario:
+    """Fase 2 — persistencia de stock en inventario.StockActual."""
+
+    def _seed_producto(self, eng, instancia):
+        from apps.finanzas.models import Moneda
+
+        Moneda.objects.get_or_create(
+            codigo_iso="USD",
+            defaults={"nombre": "Dólar", "simbolo": "$", "empresa": instancia.id_empresa},
+        )
+        eng.ingerir_en_omni(
+            instancia, "productos",
+            [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
+        )
+
+    def _quant(self, **over):
+        d = {
+            "id_externo": "q1", "producto_id_externo": "10",
+            "cantidad": 10, "cantidad_reservada": 2, "cantidad_disponible": 8,
+        }
+        d.update(over)
+        return d
+
+    def test_omite_si_producto_no_sincronizado(self, instancia_fake):
+        assert SyncEngine()._upsert_inventario(self._quant(), instancia_fake) is None
+
+    def test_crea_stock_si_producto_sincronizado(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.inventario.models import StockActual
+
+        eng = SyncEngine()
+        self._seed_producto(eng, instancia_fake)
+        pk = eng._upsert_inventario(self._quant(), instancia_fake)
+        assert pk
+        stock = StockActual.objects.get(pk=pk)
+        assert stock.cantidad_disponible == Decimal("8")
+        assert stock.cantidad_comprometida == Decimal("2")
+        assert stock.id_almacen.codigo_almacen == "IH-IMPORT"
+
+    def test_idempotente_actualiza_cantidades(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.inventario.models import StockActual
+
+        eng = SyncEngine()
+        self._seed_producto(eng, instancia_fake)
+        eng._upsert_inventario(self._quant(), instancia_fake)
+        eng._upsert_inventario(
+            self._quant(cantidad_disponible=5, cantidad_reservada=1), instancia_fake
+        )
+        empresa = instancia_fake.id_empresa
+        assert StockActual.objects.filter(id_empresa=empresa).count() == 1
+        stock = StockActual.objects.get(id_empresa=empresa)
+        assert stock.cantidad_disponible == Decimal("5")
+        assert stock.cantidad_comprometida == Decimal("1")
