@@ -721,3 +721,33 @@ class TestConnectorUtilidades:
     ])
     def test_term_days_map(self, nombre, dias):
         assert OdooConnector._term_days_map(nombre) == dias
+
+
+class TestNormalizeOdooHost:
+    """normalize_odoo_host — saneo de la URL base de Odoo.
+
+    Vive bajo tests/ (lo que ejecuta el CI) para que estas ramas cuenten en la
+    cobertura del gate diff-cover; complementa los tests in-app.
+    """
+
+    @pytest.mark.parametrize("raw,esperado", [
+        # Bug real: el usuario pega la URL de login del navegador.
+        (
+            "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com/en/web/login",
+            "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com",
+        ),
+        ("miempresa.odoo.com", "https://miempresa.odoo.com"),  # sin esquema → https
+        ("miempresa.odoo.com/en/web/login", "https://miempresa.odoo.com"),
+        ("https://x.odoo.com/web/login?db=foo#bar", "https://x.odoo.com"),
+        ("http://localhost:8069/web", "http://localhost:8069"),  # conserva puerto/http
+        ("https://x.odoo.com/", "https://x.odoo.com"),
+        ("https://x.odoo.com", "https://x.odoo.com"),  # idempotente
+        ("  https://x.odoo.com/web  ", "https://x.odoo.com"),  # espacios
+        ("", ""),  # vacío → rama return ""
+        ("   ", ""),  # solo espacios → vacío
+        ("https:///ruta/", "https:///ruta"),  # sin netloc → fallback rstrip
+    ])
+    def test_normaliza(self, raw, esperado):
+        from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
+
+        assert normalize_odoo_host(raw) == esperado

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Card, CardContent, Divider } from '@mui/material';
 import type { Moneda } from './types';
+import { D, toFixedStr } from '../../lib/decimal';
 
 interface ResumenPagoProps {
   monto: number;
@@ -47,7 +48,7 @@ const ResumenPago: React.FC<ResumenPagoProps> = ({
               {monedaBase?.codigo_iso} {monto.toFixed(2)}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-              {monedaPais?.codigo_iso} {(monto * tasaBCV).toFixed(2)}
+              {monedaPais?.codigo_iso} {toFixedStr(D(monto).times(D(tasaBCV)))}
             </Typography>
           </Box>
 
@@ -60,7 +61,7 @@ const ResumenPago: React.FC<ResumenPagoProps> = ({
               {monedaBase?.codigo_iso} {totalPagadoConNotasBase.toFixed(2)}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-              {monedaPais?.codigo_iso} {(totalPagadoConNotasBase * tasaBCV).toFixed(2)}
+              {monedaPais?.codigo_iso} {toFixedStr(D(totalPagadoConNotasBase).times(D(tasaBCV)))}
             </Typography>
           </Box>
         </Box>
@@ -76,7 +77,7 @@ const ResumenPago: React.FC<ResumenPagoProps> = ({
             {monedaBase?.codigo_iso} {saldoRestante.toFixed(2)}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {monedaPais?.codigo_iso} {(saldoRestante * tasaBCV).toFixed(2)}
+            {monedaPais?.codigo_iso} {toFixedStr(D(saldoRestante).times(D(tasaBCV)))}
           </Typography>
           {saldoRestante < 0 && esDiferenciaAceptable(saldoRestante) && (
             <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 0.5 }}>

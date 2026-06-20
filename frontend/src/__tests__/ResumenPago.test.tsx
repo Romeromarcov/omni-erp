@@ -68,6 +68,14 @@ describe('ResumenPago', () => {
     expect(screen.queryByText(/diferencia negativa aceptable/i)).not.toBeInTheDocument();
   });
 
+  it('convierte a moneda país con precisión decimal (BUG-M6 / FE-HIGH-7)', () => {
+    // Con float, 0.1 * 1.15 = 0.11499999… → toFixed(2) = "0.11" (incorrecto).
+    // Con decimal.js, 0.1 * 1.15 = 0.115 → redondeo half-up = "0.12".
+    renderResumen({ monto: 0.1, totalPagadoConNotasBase: 0, saldoRestante: 0.1, tasaBCV: 1.15 });
+    expect(screen.getAllByText('VES 0.12')).toHaveLength(2); // documento y diferencia
+    expect(screen.queryByText('VES 0.11')).not.toBeInTheDocument();
+  });
+
   it('refleja el conteo de notas de crédito en el rótulo de pagos', () => {
     renderResumen({ notasCreditoCount: 2 });
     expect(screen.getByText(/total pagos \+ 2 nc/i)).toBeInTheDocument();

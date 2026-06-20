@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Controller } from 'react-hook-form';
+import { D, sumDecimals } from '../../../lib/decimal';
 import { useNavigate, useParams } from 'react-router-dom';
 import ModalBusquedaProducto from '../../../components/Pedidos/ModalBusquedaProducto';
 import ModalBusquedaCliente from '../../../components/Pedidos/ModalBusquedaCliente';
@@ -209,7 +210,7 @@ const CotizacionFormPage: React.FC = () => {
       />
       <ModalPago
         open={showPagoModal}
-        monto={Number(detalles.reduce((acc: number, d: { precio_unitario?: string; cantidad?: string }) => acc + Number(d.precio_unitario || 0) * Number(d.cantidad || 0), 0))}
+        monto={sumDecimals(detalles.map((d: { precio_unitario?: string; cantidad?: string }) => D(d.precio_unitario).times(D(d.cantidad)))).toNumber()}
         onClose={() => setShowPagoModal(false)}
         onConfirm={handleConfirmPago}
         empresaId={idEmpresa || localStorage.getItem('id_empresa') || ''}

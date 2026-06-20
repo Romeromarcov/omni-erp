@@ -87,6 +87,73 @@ class TestOdooXMLRPCClient:
         assert client.ping() is False
 
 
+class TestNormalizeOdooHost:
+    """Tests de normalize_odoo_host — saneo de la URL base de Odoo."""
+
+    @pytest.mark.parametrize(
+        "raw,esperado",
+        [
+            # Caso del bug real: el usuario pega la URL de login del navegador.
+            (
+                "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com/en/web/login",
+                "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com",
+            ),
+            # Sin esquema → asume https.
+            ("miempresa.odoo.com", "https://miempresa.odoo.com"),
+            ("miempresa.odoo.com/en/web/login", "https://miempresa.odoo.com"),
+            # Con query y fragmento.
+            ("https://x.odoo.com/web/login?db=foo#bar", "https://x.odoo.com"),
+            # Conserva puerto y esquema http (on-premise/local).
+            ("http://localhost:8069/web", "http://localhost:8069"),
+            # Quita la barra final.
+            ("https://x.odoo.com/", "https://x.odoo.com"),
+            # Ya estaba limpio: idempotente.
+            ("https://x.odoo.com", "https://x.odoo.com"),
+            # Espacios alrededor.
+            ("  https://x.odoo.com/web  ", "https://x.odoo.com"),
+            # Vacío.
+            ("", ""),
+        ],
+    )
+    def test_normaliza(self, raw, esperado):
+        from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
+
+        assert normalize_odoo_host(raw) == esperado
+
+    def test_host_solo_espacios_devuelve_vacio(self):
+        """Solo espacios → cadena vacía (rama de host ausente)."""
+        from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
+
+        assert normalize_odoo_host("   ") == ""
+
+    def test_host_con_esquema_sin_dominio_fallback(self):
+        """Rama defensiva: esquema presente pero sin dominio → saneo mínimo."""
+        from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
+
+        # urlsplit no identifica netloc → devuelve la base sin barra final.
+        assert normalize_odoo_host("https:///ruta/") == "https:///ruta"
+
+    def test_construye_endpoint_xmlrpc_valido(self):
+        """Con una URL de login pegada, el endpoint XML-RPC queda correcto."""
+        from apps.integration_hub.connectors.odoo.client import OdooXMLRPCClient
+
+        with patch("xmlrpc.client.ServerProxy") as mock_proxy:
+            mock_common = MagicMock()
+            mock_common.authenticate.return_value = 1
+            mock_common.version.return_value = {"server_version": "17.0"}
+            mock_proxy.side_effect = [mock_common, MagicMock()]
+
+            client = OdooXMLRPCClient(
+                host="https://x.odoo.com/en/web/login",
+                db="db",
+                user="u@x.com",
+                api_key="k",
+            )
+
+            assert client._common_url == "https://x.odoo.com/xmlrpc/2/common"
+            assert client._object_url == "https://x.odoo.com/xmlrpc/2/object"
+
+
 class TestOdooConnectorNormalizacion:
     """Tests de las funciones de normalización del OdooConnector."""
 

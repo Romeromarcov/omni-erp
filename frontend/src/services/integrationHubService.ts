@@ -32,6 +32,7 @@ export interface ConectorInstancia {
   id_proveedor: string;
   proveedor_nombre: string;
   proveedor_codigo: string;
+  proveedor_capacidades: string[];
   nombre: string;
   estado: 'configurando' | 'activo' | 'error' | 'inactivo';
   intervalo_sync_minutos: number;
@@ -75,6 +76,19 @@ export interface ConectorInstanciaCreate {
   entidades_activas?: string[];
   intervalo_sync_minutos?: number;
   configuracion: ConectorConfiguracionApi | ConectorConfiguracionSheets;
+}
+
+/**
+ * Payload de edición de un conector. Todos los campos son opcionales (PATCH).
+ * En `configuracion`, los secretos (api_key/service_account) que lleguen vacíos
+ * NO se sobreescriben: el backend conserva el valor cifrado existente.
+ */
+export interface ConectorInstanciaUpdate {
+  nombre?: string;
+  entidades_activas?: string[];
+  intervalo_sync_minutos?: number;
+  activo?: boolean;
+  configuracion?: Partial<ConectorConfiguracionApi> | Partial<ConectorConfiguracionSheets>;
 }
 
 export interface JobSincronizacion {
@@ -207,6 +221,16 @@ export async function getConector(id: string): Promise<ConectorInstancia> {
 
 export async function crearConector(data: ConectorInstanciaCreate): Promise<ConectorInstancia> {
   return post<ConectorInstancia>('/integration-hub/instancias/', data as unknown as Record<string, unknown>);
+}
+
+export async function actualizarConector(
+  id: string,
+  data: ConectorInstanciaUpdate,
+): Promise<ConectorInstancia> {
+  return patch<ConectorInstancia>(
+    `/integration-hub/instancias/${id}/`,
+    data as unknown as Record<string, unknown>,
+  );
 }
 
 export async function testConector(id: string): Promise<TestConnectionResult> {

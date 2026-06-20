@@ -8,6 +8,7 @@ import type { SelectChangeEvent } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import type { Pago, NotaCredito, ModalPagoProps } from './types';
+import { D, sumDecimals } from '../../lib/decimal';
 import { useModalPagoData } from './useModalPagoData';
 import CamposDinamicos from './CamposDinamicos';
 import SeccionNotasCredito from './SeccionNotasCredito';
@@ -99,35 +100,45 @@ const ModalPago: React.FC<ModalPagoProps> = ({
     setForm(f => ({ ...f, id_cuenta_bancaria: '', id_datafono: '', id_caja_virtual: '' }));
   }, [form.id_metodo_pago, form.metodo, form.id_moneda, form.moneda, cuentasBancarias, datafonos, cajas, metodos]);
 
+  // BUG-M6 / FE-HIGH-7: toda la aritmética monetaria del cobro se hace con
+  // decimal.js (R-CODE-4) para evitar errores de punto flotante; solo se
+  // convierte a `number` en el borde de la interfaz (Pago.monto_base, props).
   const conversiones = useMemo(
     () => (montoVal: number, tasa: number, monedaId: string) => {
       if (!monedaBase || !monedaPais) return { base: 0, pais: 0 };
-      if (monedaId === monedaBase.codigo_iso) return { base: montoVal, pais: montoVal * tasa };
-      if (monedaId === monedaPais.codigo_iso) return { base: montoVal / tasa, pais: montoVal };
-      const base = montoVal / tasa;
-      return { base, pais: base * tasaBCV };
+      const m = D(montoVal);
+      const t = D(tasa);
+      if (monedaId === monedaBase.codigo_iso) return { base: m.toNumber(), pais: m.times(t).toNumber() };
+      if (monedaId === monedaPais.codigo_iso) {
+        return { base: t.isZero() ? 0 : m.dividedBy(t).toNumber(), pais: m.toNumber() };
+      }
+      const base = t.isZero() ? D(0) : m.dividedBy(t);
+      return { base: base.toNumber(), pais: base.times(D(tasaBCV)).toNumber() };
     },
     [monedaBase, monedaPais, tasaBCV]
   );
 
   const totalPagadoBase = useMemo(
-    () => pagos.reduce((acc, p) => acc + (p.monto_base ?? 0), 0),
+    () => sumDecimals(pagos.map(p => p.monto_base ?? 0)).toNumber(),
     [pagos]
   );
   const totalNotasCreditoBase = useMemo(
-    () => notasCreditoSeleccionadas.reduce((total, nota) => {
-      const tasa = nota.id_moneda === monedaBase?.id_moneda ? 1
-        : nota.id_moneda === monedaPais?.id_moneda ? 1 / tasaBCV
-        : tasaBCV;
-      return total + nota.monto_disponible * tasa;
-    }, 0),
+    () => sumDecimals(notasCreditoSeleccionadas.map(nota => {
+      const tasaNota = nota.id_moneda === monedaBase?.id_moneda ? D(1)
+        : nota.id_moneda === monedaPais?.id_moneda ? (D(tasaBCV).isZero() ? D(0) : D(1).dividedBy(D(tasaBCV)))
+        : D(tasaBCV);
+      return D(nota.monto_disponible).times(tasaNota);
+    })).toNumber(),
     [notasCreditoSeleccionadas, monedaBase, monedaPais, tasaBCV]
   );
 
-  const totalPagadoConNotasBase = totalPagadoBase + totalNotasCreditoBase;
-  const saldoRestanteConNotasBase = monto - totalPagadoConNotasBase;
+  const totalPagadoConNotasBase = D(totalPagadoBase).plus(D(totalNotasCreditoBase)).toNumber();
+  const saldoRestanteConNotasBase = D(monto).minus(D(totalPagadoConNotasBase)).toNumber();
 
-  const calcularVueltoDisponible = () => Math.max(0, totalPagadoConNotasBase - monto);
+  const calcularVueltoDisponible = () => {
+    const v = D(totalPagadoConNotasBase).minus(D(monto));
+    return v.isNegative() ? 0 : v.toNumber();
+  };
   const esDiferenciaAceptable = (diferencia: number) =>
     diferencia > 0 ? diferencia <= toleranciaPositiva : permitirNegativas;
 
@@ -185,7 +196,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
     setVuelto({
       id_metodo_pago: 'efectivo',
       id_moneda: monedaVuelto,
-      monto: vueltoDisponible / tasaVuelto,
+      monto: D(tasaVuelto).isZero() ? 0 : D(vueltoDisponible).dividedBy(D(tasaVuelto)).toNumber(),
       tasa: tasaVuelto,
       referencia: 'Vuelto automático',
       observaciones: 'Vuelto generado automáticamente por pago excedente',

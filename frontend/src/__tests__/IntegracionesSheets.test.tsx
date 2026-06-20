@@ -50,6 +50,7 @@ const INSTANCIA_ODOO: ConectorInstancia = {
   id_proveedor: 'prov-odoo',
   proveedor_nombre: 'Odoo',
   proveedor_codigo: 'odoo',
+  proveedor_capacidades: ['contactos', 'productos'],
   nombre: 'Odoo Producción',
   estado: 'activo',
   intervalo_sync_minutos: 60,
