@@ -92,9 +92,57 @@ Cerradas por el loop autónomo (todas con tests y revisión independiente):
 
 ## 4.1 Pendiente (siguiente)
 
-- **`pagos` — reconciliación parcial/múltiple** y **pagos a proveedor → CxP**.
-- **Conector genérico** — más entidades (pedidos/facturas/inventario), origen CSV
-  y soporte `push` (outbound).
+Los siguientes ítems quedaron **deferidos a propósito**: requieren **enriquecer el
+conector** y/o una **decisión de producto**, y no se implementan "a ciegas" (no se
+pueden verificar con mocks sin asumir la forma real de los datos de Odoo).
+
+### `pagos` — reconciliación parcial / multi-factura  🔴 requiere conector + decisión
+
+Hoy `_upsert_pago` solo importa cobros de cliente reconciliados con **exactamente
+una** factura sincronizada (ver §4). Falta:
+
+- **Enriquecer el conector**: `_normalizar_pago` trae hoy solo
+  `facturas_externas` = lista de ids de `reconciled_invoice_ids` (account.move),
+  **sin el monto conciliado por documento**. Para repartir un pago entre varias
+  facturas (o un pago parcial) hace falta traer los importes de conciliación por
+  factura (Odoo: `account.partial.reconcile` / el desglose de las
+  `account.move.line` casadas), no solo los ids.
+- **Decisión de producto**: `finanzas.Pago` tiene **un solo** `id_documento`. Un
+  pago que salda N facturas no encaja en un único `Pago`. Opciones a decidir por
+  el owner: (a) crear **N `Pago`** (uno por factura, con el monto conciliado de
+  cada una); (b) introducir un modelo de **asignación pago↔documento**
+  (allocation) 1→N. Hasta esa decisión, importar multi-factura arriesga datos
+  financieros incorrectos, por lo que se **omite con log** (no se adivina el
+  reparto).
+
+### `pagos` a proveedor (outbound) → abono de CxP  🔴 bloqueado por `facturas_compra`
+
+Análogo a los cobros de cliente, pero para `payment_type=outbound` /
+`partner_type=supplier`, que saldan facturas de compra. Bloqueado porque:
+
+- **`facturas_compra` aún no se persiste**: el catálogo `EntidadSincronizada`
+  tiene el tipo `facturas_compra`, pero **no hay** `pull` de `in_invoice` con
+  líneas ni `_upsert_factura_compra` → no existe el mapa `id_externo ↔
+  compras.FacturaCompra` para resolver la factura reconciliada. **Prerrequisito**:
+  implementar la persistencia inbound de `facturas_compra` (espejo de
+  `facturas_venta`, PR #187) antes de poder enlazar el pago a la CxP.
+- Una vez exista ese mapa, el pago outbound se modelaría como **abono de CxP**
+  (`registrar_abono_cxp`, ya atómico) — pero igual aplica la decisión de
+  multi-factura de arriba.
+
+### `pagos` — reembolso POS en divisa sin tasa  🟡 edge de bajo riesgo
+
+`registrar_devolucion_pos` llama `registrar_efectos_pago` para el reembolso; si la
+moneda del reembolso difiere de la base y no hay tasa, hoy propagaría como 500
+(el mapeo `TasaCambioError → 400` se hizo en `PagoViewSet`, PR #200, no en esta
+ruta). Riesgo bajísimo (la moneda del reembolso = la del cobro original, que ya
+habría exigido tasa). Follow-up: traducir `TasaCambioError → VentaError` en
+`registrar_devolucion_pos` (la vista ya mapea `VentaError → 400`).
+
+### Conector genérico — ampliaciones
+
+- Más entidades (pedidos/facturas/inventario) ampliando el `mapa` de campos.
+- Origen **CSV** y soporte **`push`** (outbound).
 
 ## 5. Notas técnicas / aprendizajes
 
