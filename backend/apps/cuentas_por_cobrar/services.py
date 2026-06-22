@@ -91,7 +91,7 @@ def registrar_abono(cxc, monto: Decimal, usuario, descripcion: str = "") -> "Abo
         from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
 
         try:
-            generar_asiento_o_fallar("PAGO_CXC", abono, cxc.empresa, monto)
+            generar_asiento_o_fallar("PAGO_CXC", abono, cxc.empresa, monto, usuario=usuario)
         except AsientoError as exc:
             logger.exception(
                 "registrar_abono: asiento PAGO_CXC obligatorio falló | empresa=%s | cxc=%s",

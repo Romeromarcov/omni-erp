@@ -102,6 +102,8 @@ class TestAbonoDirectoAsiento:
         # ``id_documento_origen`` es un UUIDField; ``AbonoCxC`` usa PK entera, así
         # que Django coacciona el pk int a ``UUID(int=pk)`` al guardarlo.
         assert asiento.id_documento_origen.int == abono.pk
+        # El asiento registra el usuario que realizó el abono (provenance).
+        assert asiento.id_usuario_registro == user_a
         detalles = DetalleAsiento.objects.filter(id_asiento=asiento)
         assert detalles.count() == 2
         total_debe = sum(d.debe for d in detalles)
