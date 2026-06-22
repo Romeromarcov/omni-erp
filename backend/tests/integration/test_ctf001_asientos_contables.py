@@ -213,6 +213,9 @@ class TestConfirmarNotaVenta:
         # El nombre del modelo origen debe ser NotaVenta
         assert asiento.nombre_modelo_origen == "NotaVenta"
 
+        # El asiento registra al usuario que confirmó la venta (provenance).
+        assert asiento.id_usuario_registro == user_a
+
     def test_confirmar_nota_sin_mapeo_no_falla(
         self, db, user_a, almacen_ctf, nota_borrador
     ):
@@ -263,12 +266,15 @@ class TestEmitirFacturaFiscal:
             numero_control="00-00000001",
             numero_factura="0001",
             moneda=moneda_usd,
+            usuario=user_a,
         )
 
         asiento = resultado["asiento"]
         assert asiento is not None
         assert isinstance(asiento, AsientoContable)
         assert asiento.nombre_modelo_origen == "FacturaFiscal"
+        # El asiento registra al usuario que emitió la factura (provenance).
+        assert asiento.id_usuario_registro == user_a
 
     def test_emitir_factura_crea_asiento_iva_si_monto_iva_positivo(
         self, db, user_a, nota_entregada, moneda_usd, mapeo_factura_venta, mapeo_factura_iva, empresa_a
