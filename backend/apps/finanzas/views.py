@@ -1316,11 +1316,17 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
         # caja/cuenta afectada.
         from django.db import transaction
 
-        from .services import registrar_efectos_pago
+        from .services import TasaCambioError, registrar_efectos_pago
 
         with transaction.atomic():
             pago = serializer.save()
-            registrar_efectos_pago(pago)
+            try:
+                registrar_efectos_pago(pago)
+            except TasaCambioError as exc:
+                # Pago en divisa sin tasa configurada hacia la moneda base: se
+                # rechaza con 400 claro (antes propagaba como 500). Nunca se
+                # asume 1:1 entre monedas distintas.
+                raise serializers.ValidationError({"id_moneda": str(exc)}) from exc
 
         if pago.tipo_operacion == "INGRESO":
             try:
