@@ -69,6 +69,17 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
         raise CompraError("Debe especificar al menos un ítem para recepcionar.")
 
     empresa = orden_compra.id_empresa
+    fecha_recepcion = timezone.now().date()
+
+    # Enforcement de cierre de período fiscal: la recepción postea un asiento
+    # (RECEPCION_MERCANCIA); no se permite contra un período ya cerrado.
+    from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
+
+    try:
+        validar_periodo_abierto(empresa, fecha_recepcion)
+    except PeriodoCerradoError as exc:
+        raise CompraError(str(exc)) from exc
+
     monto_total = sum(
         Decimal(str(it["cantidad"])) * Decimal(str(it["costo_unitario"])) for it in items
     )
@@ -76,7 +87,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
     recepcion = RecepcionMercancia.objects.create(
         id_empresa=empresa,
         id_orden_compra=orden_compra,
-        fecha_recepcion=timezone.now().date(),
+        fecha_recepcion=fecha_recepcion,
         monto_total=monto_total,
     )
 
@@ -153,6 +164,15 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None)
 
     empresa = recepcion.id_empresa
     fecha = fecha_emision or timezone.now().date()
+
+    # Enforcement de cierre de período fiscal: la factura de compra postea un
+    # asiento (FACTURA_COMPRA); no se emite contra un período ya cerrado.
+    from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
+
+    try:
+        validar_periodo_abierto(empresa, fecha)
+    except PeriodoCerradoError as exc:
+        raise CompraError(str(exc)) from exc
 
     factura = FacturaCompra.objects.create(
         id_empresa=empresa,
