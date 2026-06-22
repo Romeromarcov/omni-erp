@@ -20,6 +20,18 @@ class CuentaPorPagarViewSet(BaseModelViewSet):
     queryset = CuentaPorPagar.objects.all()
     serializer_class = CuentaPorPagarSerializer
 
+    # Integridad financiera (deuda nueva, auditoría 2026-06-21; espejo del fix
+    # aplicado a CxC en la auditoría 2026-06-10): el `monto_pendiente`/`estado`
+    # de una CxP NO se editan por CRUD directo. El saldo y el estado solo los
+    # mueve el flujo de abono atómico (`registrar_abono_cxp`, vía la acción
+    # `abonar`). Sin esto, un PATCH/PUT directo podía marcar `estado='PAGADA'`
+    # sin abonos o alterar `monto_pendiente`, saltándose el lock, el tope de
+    # saldo y el asiento contable; un DELETE podía borrar la cuenta. Se bloquean
+    # PUT/PATCH/DELETE (405); quedan los GET (list/retrieve/aging), la acción
+    # POST `abonar` y el POST de creación (lo usan los flujos de compra/recepción
+    # e integración).
+    http_method_names = ["get", "post", "head", "options"]
+
     def get_queryset(self):
         qs = CuentaPorPagar.objects.filter(
             id_empresa__in=_empresas(self.request)
