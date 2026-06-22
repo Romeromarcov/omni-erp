@@ -15,8 +15,10 @@
 
 - [`planes/`](planes/) — Planes de ejecución vivos (piloto distribuidora, offline-first, multiplataforma, panel SaaS, cobranza/Odoo, hardening de seguridad).
 - [`PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md`](PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md) — Plan de calidad "cero dudas"; estado vivo en [`audit/ESTADO_PLAN_CERO_DUDAS.md`](audit/ESTADO_PLAN_CERO_DUDAS.md).
-- [`auditorias/`](auditorias/) — Auditoría activa en la raíz (hoy: [`AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/AUDITORIA_INTEGRAL_2026-06-10.md)); cerradas en `archivo/`.
-- [`audit/`](audit/) — Artefactos del plan cero-dudas: mapas A1 auto-generados, security review, checklist R-CODE.
+- [`AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md) — **Auditoría integral más reciente** (estado real verificado vs declarado, tabla de verdad, próximos features).
+- [`auditorias/`](auditorias/) — Sin auditoría activa en la raíz; las cerradas viven en [`auditorias/archivo/`](auditorias/archivo/).
+- [`audit/`](audit/) — Artefactos del plan cero-dudas: mapas A1 auto-generados (`mapa_superficie`) + estado vivo.
+- [`archive/2026-06-21/`](archive/2026-06-21/) — Snapshots fechados archivados por la auditoría 2026-06-21.
 
 ## Backend
 
@@ -43,6 +45,9 @@
 - [ADR-007](decisions/ADR-007-arquitectura-localizacion-dos-capas.md) — Localización de dos capas (legal + mercado).
 - [ADR-008](decisions/ADR-008-monorepo-shells-multiplataforma.md) — Monorepo + shells mobile/desktop.
 - [ADR-009](decisions/ADR-009-cxc-vs-cuentas-por-cobrar.md) — `cuentas_por_cobrar` (ledger) vs `cxc` (cobranza IA).
+- [ADR-010](decisions/ADR-010-extensibilidad-y-marketplace.md) — Extensibilidad y marketplace.
+- [ADR-011](decisions/ADR-011-servicios-hermanos-fabricas.md) — Servicios hermanos / fábricas.
+- [ADR-012](decisions/ADR-012-modelo-transaccional-venta-pos-offline.md) — Modelo transaccional de venta POS offline.
 
 ## Skills (guías de implementación reutilizables)
 

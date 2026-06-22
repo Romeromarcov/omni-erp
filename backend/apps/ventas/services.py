@@ -531,7 +531,12 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     Returns:
         {"factura": FacturaFiscal, "asiento": AsientoContable}
     """
-    from apps.fiscal.services import calcular_impuestos, siguiente_numero
+    from apps.fiscal.services import (
+        PeriodoCerradoError,
+        calcular_impuestos,
+        siguiente_numero,
+        validar_periodo_abierto,
+    )
     from apps.ventas.models import FacturaFiscal
 
     if nota_venta.estado != "ENTREGADA":
@@ -540,6 +545,13 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
         )
 
     empresa = nota_venta.id_empresa
+
+    # Enforcement de cierre de período fiscal: no se emite en un período cerrado.
+    fecha_emision = timezone.localdate()
+    try:
+        validar_periodo_abierto(empresa, fecha_emision)
+    except PeriodoCerradoError as exc:
+        raise VentaError(str(exc)) from exc
 
     # Auto-generate correlative numbers if not provided
     if numero_factura is None:
@@ -566,7 +578,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
         id_nota_venta_origen=nota_venta,
         numero_control=numero_control,
         numero_factura=numero_factura,
-        fecha_emision=timezone.localdate(),
+        fecha_emision=fecha_emision,
         base_imponible=subtotal,
         monto_iva=monto_iva,
         monto_igtf=monto_igtf,
@@ -786,6 +798,16 @@ def registrar_devolucion_pos(
     # serializar el chequeo de "no devolver más de lo vendido".
     nota_venta = NotaVenta.objects.select_for_update().get(pk=nota_venta.pk)
     empresa = nota_venta.id_empresa
+
+    # Enforcement de cierre de período fiscal: la devolución emite una nota de
+    # crédito (fiscal o interna) con fecha de hoy; si ese período está cerrado
+    # no se puede emitir ni modificar el documento (riesgo SENIAT).
+    from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
+
+    try:
+        validar_periodo_abierto(empresa, timezone.now().date())
+    except PeriodoCerradoError as exc:
+        raise VentaError(str(exc)) from exc
 
     if nota_venta.estado not in ("ENTREGADA", "FACTURADA"):
         raise VentaError(
