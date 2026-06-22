@@ -143,7 +143,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
     # continúa sin asiento. Cualquier AsientoError real también propaga.
     asiento = None
     try:
-        asiento, _ = generar_asiento_o_fallar("RECEPCION_MERCANCIA", recepcion, empresa)
+        asiento, _ = generar_asiento_o_fallar("RECEPCION_MERCANCIA", recepcion, empresa, usuario=usuario)
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de recepción: {exc}") from exc
 
@@ -154,7 +154,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
 
 
 @transaction.atomic
-def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None) -> dict:
+def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None, usuario=None) -> dict:
     """
     Registra la factura del proveedor asociada a una recepción y genera el asiento (R-CODE-11).
 
@@ -202,7 +202,7 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None)
     # H-BUG-1: R-CODE-11 centralizado (ver registrar_recepcion).
     asiento = None
     try:
-        asiento, _ = generar_asiento_o_fallar("FACTURA_COMPRA", factura, empresa)
+        asiento, _ = generar_asiento_o_fallar("FACTURA_COMPRA", factura, empresa, usuario=usuario)
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de factura compra: {exc}") from exc
 

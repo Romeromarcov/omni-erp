@@ -47,8 +47,18 @@ class AsientoContable(models.Model):
     estado_asiento = models.CharField(
         max_length=20, choices=[("BORRADOR", "Borrador"), ("APROBADO", "Aprobado"), ("ANULADO", "Anulado")]
     )
-    # id_usuario_registro = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE)  # Temporalmente comentado
-    id_usuario_registro_temp = models.UUIDField(null=True, blank=True)  # Campo temporal
+    # FK real al usuario que originó el asiento (deuda auditoría 2026-06-21: antes
+    # solo existía el UUIDField `id_usuario_registro_temp`, que ningún flujo
+    # poblaba → no había trazabilidad de quién generó cada asiento). SET_NULL: el
+    # asiento es registro contable y debe sobrevivir al borrado del usuario.
+    id_usuario_registro = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asientos_registrados",
+    )
+    id_usuario_registro_temp = models.UUIDField(null=True, blank=True)  # Deprecado por id_usuario_registro
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

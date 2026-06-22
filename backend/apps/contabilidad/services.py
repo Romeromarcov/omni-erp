@@ -62,7 +62,7 @@ class MapeoContableNoEncontrado(AsientoError):
 # ── R-CODE-11 centralizado ────────────────────────────────────────────────────
 
 
-def generar_asiento_o_fallar(tipo: str, documento, empresa=None, monto: Decimal | None = None):
+def generar_asiento_o_fallar(tipo: str, documento, empresa=None, monto: Decimal | None = None, usuario=None):
     """Aplica la política R-CODE-11 de forma uniforme en todos los callsites.
 
     - ``AsientoError`` (descuadre, error real del asiento) **siempre** se propaga,
@@ -79,7 +79,7 @@ def generar_asiento_o_fallar(tipo: str, documento, empresa=None, monto: Decimal 
     """
     empresa = empresa if empresa is not None else _extraer_empresa(documento)
     try:
-        asiento = generar_asiento(tipo, documento, empresa, monto=monto)
+        asiento = generar_asiento(tipo, documento, empresa, monto=monto, usuario=usuario)
         return asiento, None
     except MapeoContableNoEncontrado as exc:
         if getattr(empresa, "contabilidad_activa", False):
@@ -132,7 +132,7 @@ def _descripcion(plantilla: str, tipo: str, documento) -> str:
 
 
 @transaction.atomic
-def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal | None = None) -> AsientoContable:
+def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal | None = None, usuario=None) -> AsientoContable:
     """
     Crea un AsientoContable con dos líneas (debe/haber) para el documento dado.
 
@@ -141,6 +141,8 @@ def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal | None = 
         documento: Instancia del modelo origen (FacturaFiscal, RecepcionMercancia, etc.).
         empresa:   Instancia de Empresa. Si None, se infiere del documento.
         monto:     Monto explícito. Si None, se infiere del documento (útil para IVA, etc.).
+        usuario:   Usuarios que origina el asiento (trazabilidad). Opcional; si None,
+                   el asiento queda sin usuario (flujos automáticos/sin request).
 
     Returns:
         AsientoContable creado (estado BORRADOR o APROBADO según empresa.contabilidad_auto_aprobar).
@@ -183,6 +185,7 @@ def generar_asiento(tipo: str, documento, empresa=None, monto: Decimal | None = 
         id_documento_origen=documento.pk,
         nombre_modelo_origen=documento.__class__.__name__,
         estado_asiento="BORRADOR",
+        id_usuario_registro=usuario,
     )
 
     DetalleAsiento.objects.create(

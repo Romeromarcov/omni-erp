@@ -51,6 +51,7 @@ class AsientoContableSerializer(serializers.ModelSerializer):
             "id_documento_origen",
             "nombre_modelo_origen",
             "estado_asiento",
+            "id_usuario_registro",
             "id_usuario_registro_temp",
             "fecha_creacion",
             "id_empresa",
