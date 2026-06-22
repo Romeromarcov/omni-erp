@@ -337,7 +337,7 @@ def registrar_movimiento(
         # activa y falta el mapeo, generar_asiento_o_fallar lanza AsientoError y la
         # transacción revierte; si no, loguea un warning y continúa sin asiento.
         from apps.contabilidad.services import generar_asiento_o_fallar
-        generar_asiento_o_fallar("AJUSTE_INVENTARIO", movimiento, empresa)
+        generar_asiento_o_fallar("AJUSTE_INVENTARIO", movimiento, empresa, usuario=usuario)
 
     return movimiento
 
