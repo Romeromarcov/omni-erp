@@ -240,7 +240,7 @@ def _datos_de_empleado(datos_empleados: dict | None, empleado) -> dict:
 
 
 @transaction.atomic
-def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None):
+def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None, usuario=None):
     """Procesa un ProcesoNomina completo (CTF-013, TEST-5 nómina). Atómico.
 
     Para cada empleado activo de la empresa: calcula la nómina LOTTT (motor puro
@@ -346,7 +346,9 @@ def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None):
 
     # R-CODE-11: asiento contable en la MISMA transacción. Si la empresa exige
     # contabilidad y falta el mapeo NOMINA, AsientoError revienta y revierte todo.
-    asiento, advertencia = generar_asiento_o_fallar("NOMINA", proceso, empresa, monto=total_neto)
+    asiento, advertencia = generar_asiento_o_fallar(
+        "NOMINA", proceso, empresa, monto=total_neto, usuario=usuario
+    )
 
     logger.info(
         "nomina.procesar | proceso=%s | empresa=%s | empleados=%d | neto=%s | asiento=%s",
