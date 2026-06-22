@@ -348,6 +348,50 @@ class TestDatafonoRealizarCierre:
         assert gasto.id_metodo_pago == metodo_comision
         assert gasto.tipo_documento_asociado == "GASTO"
 
+    def test_cierre_comision_convierte_a_moneda_base(
+        self, empresa_a, sucursal_a, user_a, moneda_usd
+    ):
+        # Deuda FX (models.py:595): la comisión está en la moneda de la cuenta
+        # (VES) pero el monto base de la TransaccionFinanciera debe ir en la moneda
+        # base de la empresa (USD), convertido con la tasa — no asumir 1:1.
+        from django.utils import timezone
+
+        from apps.finanzas.models import Moneda, TasaCambio
+
+        ves = Moneda.objects.create(
+            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
+            tipo_moneda="fiat", es_generica=True,
+        )
+        cuenta_ves = CuentaBancariaEmpresa.objects.create(
+            id_empresa=empresa_a, nombre_banco="Banco VES", numero_cuenta="0102-x",
+            tipo_cuenta="CORRIENTE", id_moneda=ves, saldo_actual=Decimal("0.00"),
+        )
+        datafono = Datafono.objects.create(
+            id_empresa=empresa_a, id_sucursal=sucursal_a, nombre="POS VES",
+            serial="POS-VES", id_cuenta_bancaria_asociada=cuenta_ves,
+            comision_porcentaje=Decimal("2.00"),
+        )
+        metodo_comision = MetodoPago.objects.create(
+            nombre_metodo="Comisión bancaria", tipo_metodo="OTRO", empresa=empresa_a
+        )
+        TasaCambio.objects.create(
+            id_empresa=None, id_moneda_origen=ves, id_moneda_destino=moneda_usd,
+            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02"),
+            fecha_tasa=timezone.now().date(),
+        )
+        TransaccionDatafono.objects.create(
+            id_datafono=datafono, monto=Decimal("100.00"), id_usuario_registro=user_a
+        )
+
+        datafono.realizar_cierre(usuario=user_a)
+
+        gasto = TransaccionFinanciera.objects.get(tipo_transaccion="EGRESO")
+        # comisión 2% de 100 = 2.00 VES; base USD = 2.00 × 0.02 = 0.0400
+        assert gasto.monto_transaccion == Decimal("2.00")
+        assert gasto.id_moneda_transaccion == ves
+        assert gasto.id_moneda_base == moneda_usd
+        assert gasto.monto_base_empresa == Decimal("0.0400")
+
     def test_cierre_sin_metodo_comision_no_crea_gasto(self, datafono_a, user_a):
         TransaccionDatafono.objects.create(
             id_datafono=datafono_a, monto=Decimal("200.00"), id_usuario_registro=user_a

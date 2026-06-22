@@ -586,14 +586,34 @@ class Datafono(models.Model):
                     metodo_comision = MetodoPago.objects.filter(nombre_metodo__icontains="banco", activo=True).first()
 
                 if metodo_comision:
+                    # Conversión a la moneda base de la empresa (mismo criterio que
+                    # registrar_efectos_pago / BUG-A2): la comisión está en la moneda
+                    # de la cuenta bancaria; el monto base va en la moneda base de la
+                    # empresa. Sin tasa entre monedas distintas se rechaza (no 1:1).
+                    from apps.finanzas.services import convertir_monto
+
+                    _moneda_cuenta = self.id_cuenta_bancaria_asociada.id_moneda
+                    _moneda_base = self.id_empresa.id_moneda_base
+                    if _moneda_base is None or _moneda_cuenta.pk == _moneda_base.pk:
+                        _moneda_base = _moneda_base or _moneda_cuenta
+                        _comision_base = comision
+                    else:
+                        _comision_base = convertir_monto(
+                            comision,
+                            _moneda_cuenta,
+                            _moneda_base,
+                            empresa=self.id_empresa,
+                            fecha=limite.date(),
+                        )
+
                     TransaccionFinanciera.objects.create(
                         id_empresa=self.id_empresa,
                         fecha_hora_transaccion=limite,
                         tipo_transaccion="EGRESO",
                         monto_transaccion=comision,
                         id_moneda_transaccion=self.id_cuenta_bancaria_asociada.id_moneda,
-                        id_moneda_base=self.id_cuenta_bancaria_asociada.id_moneda,  # Asumir misma moneda por simplicidad
-                        monto_base_empresa=comision,
+                        id_moneda_base=_moneda_base,
+                        monto_base_empresa=_comision_base,
                         id_metodo_pago=metodo_comision,
                         descripcion=f"Comisión bancaria datafono {self.nombre} - Cierre {self.serial}",
                         tipo_documento_asociado="GASTO",
