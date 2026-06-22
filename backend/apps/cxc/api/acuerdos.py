@@ -204,7 +204,9 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
 
             try:
-                generar_asiento_o_fallar("PAGO_CXC", cuota, acuerdo.empresa, data["monto"])
+                generar_asiento_o_fallar(
+                    "PAGO_CXC", cuota, acuerdo.empresa, data["monto"], usuario=request.user
+                )
             except AsientoError:
                 logger.exception(
                     "registrar_pago: asiento contable obligatorio falló | empresa=%s | cuota=%s",
