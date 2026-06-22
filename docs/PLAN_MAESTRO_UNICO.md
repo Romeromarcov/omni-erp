@@ -392,18 +392,34 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 > (4 abiertos: **CTF-008** offline, **CTF-010** firma de apps, **CTF-011** push Odoo, **CTF-012** RLS;
 > 11 cerrados). Inventario de baja/media en `docs/tech-debt/INVENTORY.md`.
 
-**Hallazgos nuevos de esta auditoría (no estaban registrados):**
-- **✅ Cierre de período fiscal — RESUELTO (2026-06-21).** `validar_periodo_abierto(empresa, fecha)` en
-  `apps/fiscal/services.py` bloquea la emisión de factura fiscal y devolución/NC en un período cerrado
-  (multi-tenant por `id_empresa`); 7 tests en `tests/api/test_periodo_fiscal_enforcement.py` verdes.
-  Antes el flag `PeriodoFiscal.esta_cerrado()` era cosmético.
-- **🟠 `AbonoCxPViewSet` es CRUD libre** — misma clase de bug que el P0 corregido en CxC, **sin corregir
-  en CxP**: permite PUT/PATCH/DELETE y su `create` no delega en `registrar_abono_cxp` atómico.
-- **🟡 CxP de compras nunca re-vinculada a `FacturaCompra`** (`id_factura_compra` queda NULL tras la factura).
-- **🟡 `AsientoContable` sin FK de usuario real** (`id_usuario_registro_temp` UUID en vez de FK) → auditoría incompleta.
-- **🟡 `registrar_efectos_pago` sin conversión FX** (fuerza moneda base = moneda del pago; "simplificación").
+**Hallazgos nuevos de esta auditoría — todos CERRADOS (loop autónomo 2026-06-22):**
+- **✅ Cierre de período fiscal — RESUELTO.** `validar_periodo_abierto(empresa, fecha)` en
+  `apps/fiscal/services.py` bloquea la emisión en un período cerrado (multi-tenant por `id_empresa`).
+  Cubre **ventas** (factura fiscal, NC, devolución POS) y **compras** (`registrar_recepcion` y
+  `registrar_factura_compra`, que postean asientos — PR #182). Antes `PeriodoFiscal.esta_cerrado()` era cosmético.
+- **✅ `AbonoCxPViewSet`/`CuentaPorPagarViewSet` CRUD libre — RESUELTO (PR #183).** `http_method_names`
+  limita a GET/POST → PUT/PATCH/DELETE devuelven 405; el saldo solo se mueve por la acción atómica
+  `abonar` (`registrar_abono_cxp`). Espejo del fix P0 de CxC.
+- **✅ CxP de compras re-vinculada a `FacturaCompra` — RESUELTO (PR #184).** Nuevo FK `CuentaPorPagar.id_recepcion`
+  (ancla); `registrar_factura_compra` enlaza `id_factura_compra` al registrar la factura (idempotente, multi-tenant).
+- **✅ `AsientoContable` con FK de usuario real — RESUELTO infra+compras (PR #185).** FK
+  `id_usuario_registro → core.Usuarios` (reemplaza el UUID temporal); `generar_asiento[_o_fallar]` acepta
+  `usuario` y el flujo de compras lo registra. *Pendiente incremental:* enhebrar `usuario` en los ~7 callers
+  restantes (ventas/cxc/finanzas/fiscal/inventario/nómina/tesorería), 1 app por PR — sin regresión (hoy quedan `NULL`).
+- **✅ `registrar_efectos_pago` con conversión FX — RESUELTO (PR #186).** Convierte el `monto_base_empresa`
+  a la moneda base de la empresa vía `convertir_monto` (tasa BCV); sin tasa entre monedas distintas se rechaza
+  (nunca 1:1). *Pendiente incremental:* mapear `TasaCambioError → 400` en `PagoViewSet`/POS y la misma
+  simplificación en `apps/finanzas/models.py:595`.
 - **🟢 `apps/cxc/mcp/__init__.py` vacío** — las tools MCP de cobranza viven en `core/mcp_server.py` (la
   descripción "MCP server propio de cxc" es imprecisa). `uuid7` sin test dedicado (cubierto transitivamente).
+
+**Integration Hub — Fase 2 (inbound) y Fase 3 completadas (loop autónomo 2026-06-22):**
+- **✅ Fase 2 inbound COMPLETA:** persistencia en Omni de las 7 entidades — contactos, productos,
+  pedidos_venta, pedidos_compra, **facturas_venta** (`FacturaFiscal` + líneas, PR #187) y **pagos**
+  (`finanzas.Pago`, cobros de cliente reconciliados a factura, *history-only* sin side-effects, PR #188),
+  inventario. Detalle y límites en [`docs/integracion-hub/ESTADO.md`](integracion-hub/ESTADO.md).
+- **✅ Fase 3:** registry **dinámico** (`ConectorProveedor.clase_conector` cargada vía `import_string`,
+  sin re-desplegar; PR #189) + **conector genérico REST** config-driven (`GenericRestConnector`, PR #190).
 
 **Deuda estructural ya conocida (vigente):**
 - **Nómina:** el *cálculo* LOTTT está hecho; falta cestaticket multimoneda y casos LOTTT de borde + UI.

@@ -1,7 +1,8 @@
 # Integration Hub — Estado y avances
 
-> Última actualización: 2026-06-19. Documenta el estado del Integration Hub tras
-> el trabajo de conexión Odoo + visión "Omni como hub" (Fases 1–2).
+> Última actualización: 2026-06-22. Documenta el estado del Integration Hub tras
+> el trabajo de conexión Odoo + visión "Omni como hub" (Fases 1–2 inbound y
+> Fase 3 completadas).
 
 ## 1. Visión
 
@@ -65,17 +66,35 @@ venta, órdenes de compra e inventario** (contactos/productos venían de Fase 1)
   `/admin-saas/proveedores` (lista + formulario), gateado por
   `es_superusuario_omni`. Solo aparece en el menú si la cuenta tiene ese flag.
 
-## 4. Pendiente
+## 4. Estado de Fase 2 (inbound) y Fase 3 — COMPLETADAS (2026-06-22)
 
-- **`facturas_venta`**: persistir `ventas.FacturaFiscal` + líneas. Requiere
-  **enriquecer el conector** Odoo para traer `account.move.line` (el conector hoy
-  no trae líneas de factura).
-- **`pagos`**: persistir `finanzas.Pago`. Requiere enriquecer el conector con la
-  **reconciliación** `account.payment` ↔ documentos.
-- **Fase 3**: registry **dinámico** de conectores (cargar la clase desde
-  `ConectorProveedor` sin desplegar) + **conector genérico** (REST/CSV) para
-  sumar sistemas sin escribir código por cada uno. Independiente de
-  `sync_engine.py`.
+Cerradas por el loop autónomo (todas con tests y revisión independiente):
+
+- **✅ `facturas_venta`** (PR #187): el conector trae `account.move.line`
+  (`client.get_lineas_factura`) y `_upsert_factura_venta` persiste
+  `ventas.FacturaFiscal` + `DetalleFacturaFiscal`. Documento fiscal **importado**
+  (estado `EMITIDA`/`PAGADA`): refleja una factura ya emitida en el externo para
+  acumular histórico; no re-emite ni dispara numeración (`numero_control` = número
+  externo). Idempotente por `(empresa, numero_factura)`.
+- **✅ `pagos`** (PR #188): `client.get_pagos` trae `reconciled_invoice_ids` y
+  `_upsert_pago` persiste `finanzas.Pago` **history-only** (sin side-effects: no
+  crea `TransaccionFinanciera` ni mueve saldos). **Límite actual:** solo cobros de
+  cliente (`inbound`/`customer`) reconciliados con **exactamente una** factura ya
+  sincronizada; multi-factura/parcial y pagos a proveedor (→ CxP) quedan como
+  trabajo posterior (requieren montos de conciliación por documento).
+- **✅ Fase 3 — registry dinámico** (PR #189): `ConectorProveedor.clase_conector`
+  (ruta dotted) se carga vía `import_string` sin re-desplegar; el catálogo no es
+  editable por tenants (campo no serializado, escritura superusuario).
+- **✅ Fase 3 — conector genérico REST** (PR #190): `GenericRestConnector`
+  config-driven (`base_url`/`headers`/`entidades` con mapa de campos), se conecta
+  vía el registry dinámico. **Límite actual:** `pull` de `contactos` y `productos`
+  (las demás entidades se añaden ampliando el mapa). CSV y `push` quedan pendientes.
+
+## 4.1 Pendiente (siguiente)
+
+- **`pagos` — reconciliación parcial/múltiple** y **pagos a proveedor → CxP**.
+- **Conector genérico** — más entidades (pedidos/facturas/inventario), origen CSV
+  y soporte `push` (outbound).
 
 ## 5. Notas técnicas / aprendizajes
 
