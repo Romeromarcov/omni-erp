@@ -238,7 +238,7 @@ class TestCrearPagoTercero:
 
 class TestAbonar:
     def test_ciclo_abonar_completo(
-        self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero
+        self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero, user_a
     ):
         url = f"{BASE_URL}{pago_tercero_a.pk}/abonar/"
         resp = client_a.post(url, {"cxp": str(cxp_proveedor_a.pk)}, format="json")
@@ -260,6 +260,8 @@ class TestAbonar:
 
         # Asiento PAGO_TERCERO balanceado: debe == haber == 750.50
         asiento = _asiento_de(pago_tercero_a).get()
+        # El asiento registra al usuario que abonó (provenance, request.user).
+        assert asiento.id_usuario_registro == user_a
         detalles = DetalleAsiento.objects.filter(id_asiento=asiento)
         assert detalles.count() == 2
         total_debe = sum(d.debe for d in detalles)
