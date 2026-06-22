@@ -214,6 +214,7 @@ def pagar_contribucion_parafiscal(
         pago_parafiscal,
         pago_parafiscal.id_empresa,
         monto=pago_parafiscal.monto,
+        usuario=usuario,
     )
     return pago
 
