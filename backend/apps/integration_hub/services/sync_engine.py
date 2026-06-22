@@ -320,6 +320,7 @@ class SyncEngine:
             "pedidos_venta": self._upsert_pedido_venta,
             "pedidos_compra": self._upsert_pedido_compra,
             "facturas_venta": self._upsert_factura_venta,
+            "pagos": self._upsert_pago,
             "inventario": self._upsert_inventario,
             # Las demás entidades se implementan por fase
         }
@@ -874,6 +875,105 @@ class SyncEngine:
                 )
 
         return str(factura.pk)
+
+    # ── Pagos (Fase 2) ─────────────────────────────────────────────────────────
+
+    def _upsert_pago(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+        """
+        Upsert de pago en ``finanzas.Pago`` (histórico **importado**, SIN
+        side-effects: no crea ``TransaccionFinanciera`` ni mueve saldos de
+        caja/banco — esos los gestiona Omni en sus operaciones nativas; aquí solo
+        se acumula el histórico del sistema externo).
+
+        Alcance actual: cobros entrantes de cliente (``payment_type`` inbound,
+        ``partner_type`` customer) reconciliados con **exactamente una** factura
+        ya sincronizada (``facturas_venta``). Se omiten (con log) los pagos sin
+        factura resoluble o con reconciliación múltiple/parcial — estos requieren
+        los montos de conciliación por documento, que el conector aún no trae
+        (limitación documentada; pagos a proveedor / CxP son trabajo posterior).
+
+        Idempotente por ``(id_empresa, tipo_documento, id_documento)`` (un cobro
+        total por factura). Multi-tenant (R-CODE-1); montos Decimal (R-CODE-4).
+        """
+        from datetime import datetime, time as _time
+
+        from django.utils.dateparse import parse_date
+
+        from apps.finanzas.models import MetodoPago, Moneda, Pago
+        from apps.integration_hub.models import EntidadSincronizada
+        from apps.ventas.models import FacturaFiscal
+
+        empresa = instancia.id_empresa
+        ext = str(datos.get("id_externo") or "")
+        if not ext:
+            return None
+
+        if (datos.get("tipo") or "") != "inbound" or (datos.get("tipo_socio") or "") != "customer":
+            logger.warning(
+                "Pago externo %s omitido: solo se importan cobros de cliente "
+                "(inbound/customer); recibido tipo=%s socio=%s.",
+                ext, datos.get("tipo") or "", datos.get("tipo_socio") or "",
+            )
+            return None
+
+        # Resolver las facturas reconciliadas que ya estén sincronizadas en Omni.
+        facturas = []
+        for inv_ext in datos.get("facturas_externas") or []:
+            mapping = EntidadSincronizada.objects.filter(
+                id_instancia=instancia, tipo_entidad="facturas_venta", id_externo=str(inv_ext)
+            ).first()
+            if mapping and mapping.id_omni:
+                fac = FacturaFiscal.objects.filter(
+                    pk=mapping.id_omni, id_empresa=empresa
+                ).first()
+                if fac:
+                    facturas.append(fac)
+
+        if len(facturas) != 1:
+            logger.warning(
+                "Pago externo %s omitido: se requiere exactamente 1 factura "
+                "sincronizada reconciliada (resueltas %s).",
+                ext, len(facturas),
+            )
+            return None
+        factura = facturas[0]
+
+        moneda = (
+            Moneda.objects.filter(codigo_iso=datos.get("moneda")).first()
+            or Moneda.objects.filter(codigo_iso="USD").first()
+            or Moneda.objects.first()
+        )
+        if moneda is None:
+            logger.warning("Pago externo %s omitido: sin Moneda configurada.", ext)
+            return None
+
+        metodo, _ = MetodoPago.objects.get_or_create(
+            empresa=empresa,
+            nombre_metodo="Importado (Integration Hub)",
+            defaults={"tipo_metodo": "OTRO", "es_generico": False},
+        )
+
+        fecha_d = parse_date((datos.get("fecha") or "")[:10] or "") or dj_timezone.now().date()
+        fecha_dt = dj_timezone.make_aware(datetime.combine(fecha_d, _time()))
+
+        with transaction.atomic():
+            pago, _creado = Pago.objects.update_or_create(
+                id_empresa=empresa,
+                tipo_documento="FACTURA",
+                id_documento=factura.pk,
+                defaults={
+                    "tipo_operacion": "INGRESO",
+                    "fecha_pago": fecha_dt,
+                    "monto": self._safe_decimal_money(datos.get("monto")),
+                    "id_moneda": moneda,
+                    "id_metodo_pago": metodo,
+                    # FK de conveniencia (consistente con el flujo nativo): habilita
+                    # ``documento_relacionado`` además del par tipo/id_documento.
+                    "id_factura": factura,
+                    "referencia": (f"odoo:{ext} " + (datos.get("referencia") or "")).strip()[:100],
+                },
+            )
+        return str(pago.pk)
 
     # ── Inventario / stock (Fase 2) ────────────────────────────────────────────
 
