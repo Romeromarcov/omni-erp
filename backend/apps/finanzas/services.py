@@ -175,14 +175,34 @@ def registrar_efectos_pago(pago):
         TransaccionFinanciera,
     )
 
+    # Conversión a la moneda base de la empresa (deuda auditoría 2026-06-21: antes
+    # se asumía id_moneda_base = moneda del pago y monto_base = monto, así que un
+    # pago en divisa registraba un monto_base_empresa incorrecto). Si la empresa
+    # no tiene moneda base configurada o el pago ya está en ella, no hay conversión.
+    # Entre monedas distintas se usa la tasa (BCV) vía convertir_monto; sin tasa
+    # disponible el pago se rechaza — nunca se asume 1:1 (mismo criterio que el
+    # BUG-A2 de los acuerdos de CxC).
+    moneda_base = pago.id_empresa.id_moneda_base
+    if moneda_base is None or pago.id_moneda_id == moneda_base.pk:
+        moneda_base = moneda_base or pago.id_moneda
+        monto_base = pago.monto
+    else:
+        monto_base = convertir_monto(
+            pago.monto,
+            pago.id_moneda,
+            moneda_base,
+            empresa=pago.id_empresa,
+            fecha=pago.fecha_pago.date(),
+        )
+
     transaccion = TransaccionFinanciera.objects.create(
         id_empresa=pago.id_empresa,
         fecha_hora_transaccion=pago.fecha_pago,
         tipo_transaccion=pago.tipo_operacion,
         monto_transaccion=pago.monto,
         id_moneda_transaccion=pago.id_moneda,
-        id_moneda_base=pago.id_moneda,  # Simplificación: misma moneda del pago
-        monto_base_empresa=pago.monto,
+        id_moneda_base=moneda_base,
+        monto_base_empresa=monto_base,
         id_metodo_pago=pago.id_metodo_pago,
         referencia_pago=pago.referencia,
         descripcion=f"Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}",
