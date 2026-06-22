@@ -153,7 +153,9 @@ class ProcesoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             )
 
         try:
-            proceso, asiento, advertencia = procesar_proceso_nomina(proceso, datos_empleados)
+            proceso, asiento, advertencia = procesar_proceso_nomina(
+                proceso, datos_empleados, usuario=request.user
+            )
         except NominaProcesoError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except AsientoError as exc:
