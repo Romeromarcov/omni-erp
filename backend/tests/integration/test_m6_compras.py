@@ -279,6 +279,8 @@ class TestRegistrarRecepcion:
         assert asiento is not None
         # AsientoContable guarda el modelo origen (no el tipo_asiento)
         assert asiento.nombre_modelo_origen == "RecepcionMercancia"
+        # Deuda auditoría 2026-06-21: el asiento registra el usuario que lo originó.
+        assert asiento.id_usuario_registro == usuario
 
     def test_sin_mapeo_no_falla(self, orden_aprobada, almacen, producto, usuario):
         # Sin mapeo configurado → best-effort: recepcion procede sin asiento
@@ -314,6 +316,18 @@ class TestRegistrarFacturaCompra:
         asiento = resultado["asiento"]
         assert asiento is not None
         assert asiento.nombre_modelo_origen == "FacturaCompra"
+        # Sin usuario explícito el asiento queda sin usuario (no rompe).
+        assert asiento.id_usuario_registro is None
+
+    def test_asiento_factura_registra_usuario(self, recepcion, empresa_a, usuario):
+        # Deuda auditoría 2026-06-21: al pasar usuario, el asiento lo registra.
+        debe = _crear_cuenta(empresa_a, "5103", "Gasto Compras Usr", "GASTO", "DEUDORA")
+        haber = _crear_cuenta(empresa_a, "2104", "Factura Pagar Usr", "PASIVO", "ACREEDORA")
+        _crear_mapeo(empresa_a, "FACTURA_COMPRA", debe, haber)
+
+        resultado = registrar_factura_compra(recepcion, "FAC-PROV-USR", usuario=usuario)
+        assert resultado["asiento"] is not None
+        assert resultado["asiento"].id_usuario_registro == usuario
 
     def test_sin_mapeo_no_falla(self, recepcion):
         # Sin mapeo → best-effort

@@ -180,6 +180,7 @@ class FacturaCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
                 recepcion,
                 numero_factura=numero_factura,
                 fecha_emision=request.data.get("fecha_emision"),
+                usuario=request.user,
             )
         except CompraError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
