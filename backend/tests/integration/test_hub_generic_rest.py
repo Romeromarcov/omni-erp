@@ -181,3 +181,78 @@ class TestGenericRestConnector:
         assert info["provider"] == "generic_rest"
         assert info["base_url_configurado"] is True
         assert info["entidades"] == ["contactos", "productos"]
+
+
+def _fake_get_raises(exc):
+    def _get(url, **kwargs):
+        raise exc
+    return _get
+
+
+class _FakeRespBadJson:
+    status_code = 200
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        raise ValueError("no es json")
+
+
+class TestGenericRestConnectorErrores:
+    def test_error_conexion_no_status(self, empresa_a, monkeypatch):
+        # httpx.HTTPError que NO es HTTPStatusError → ConnectorConnectionError.
+        monkeypatch.setattr(httpx, "get", _fake_get_raises(httpx.ConnectError("boom")))
+        conn = GenericRestConnector(_instancia(empresa_a, _CONFIG))
+        with pytest.raises(ConnectorConnectionError, match="Error de conexión"):
+            conn.pull_contactos()
+
+    def test_respuesta_no_json(self, empresa_a, monkeypatch):
+        from apps.integration_hub.connectors.base import ConnectorDataError
+
+        monkeypatch.setattr(httpx, "get", lambda url, **kw: _FakeRespBadJson())
+        conn = GenericRestConnector(_instancia(empresa_a, _CONFIG))
+        with pytest.raises(ConnectorDataError, match="no-JSON"):
+            conn.pull_contactos()
+
+    def test_raiz_inexistente_da_lista_vacia(self, empresa_a, monkeypatch):
+        # raiz 'data' ausente en la respuesta → lista vacía (no rompe).
+        monkeypatch.setattr(httpx, "get", _fake_get({"otra_clave": []}))
+        conn = GenericRestConnector(_instancia(empresa_a, _CONFIG))
+        assert conn.pull_contactos() == []
+
+    def test_payload_no_es_lista(self, empresa_a, monkeypatch):
+        from apps.integration_hub.connectors.base import ConnectorDataError
+
+        # productos no tiene 'raiz'; si el payload es un dict (no lista) → error.
+        monkeypatch.setattr(httpx, "get", _fake_get({"no": "lista"}))
+        conn = GenericRestConnector(_instancia(empresa_a, _CONFIG))
+        with pytest.raises(ConnectorDataError, match="no es una lista"):
+            conn.pull_productos()
+
+    def test_falta_endpoint_en_config(self, empresa_a):
+        from apps.integration_hub.connectors.base import ConnectorDataError
+
+        cfg = {"base_url": "https://x.test", "entidades": {"contactos": {"mapa": {}}}}
+        conn = GenericRestConnector(_instancia(empresa_a, cfg))
+        with pytest.raises(ConnectorDataError, match="Falta 'endpoint'"):
+            conn.pull_contactos()
+
+    def test_test_connection_sin_base_url(self, empresa_a):
+        conn = GenericRestConnector(_instancia(empresa_a, {"entidades": {}}))
+        res = conn.test_connection()
+        assert res.success is False
+        assert "base_url" in res.message
+
+    def test_test_connection_root_ping_ok(self, empresa_a, monkeypatch):
+        # _CONFIG no define test_endpoint → ping a la raíz.
+        monkeypatch.setattr(httpx, "get", _fake_get({"ok": 1}))
+        conn = GenericRestConnector(_instancia(empresa_a, _CONFIG))
+        assert conn.test_connection().success is True
+
+    def test_test_connection_root_ping_error_httpx(self, empresa_a, monkeypatch):
+        monkeypatch.setattr(httpx, "get", _fake_get_raises(httpx.ConnectError("down")))
+        conn = GenericRestConnector(_instancia(empresa_a, _CONFIG))
+        res = conn.test_connection()
+        assert res.success is False
+        assert "Fallo de conexión" in res.message
