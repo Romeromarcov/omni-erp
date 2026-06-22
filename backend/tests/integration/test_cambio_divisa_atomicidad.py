@@ -163,6 +163,8 @@ class TestCambioDivisaAtomico:
 
         # Asiento balanceado por monto_origen
         asiento = AsientoContable.objects.get(nombre_modelo_origen="OperacionCambioDivisa")
+        # El asiento registra al usuario que operó el cambio (request.user).
+        assert asiento.id_usuario_registro.username == "user_empresa_a"
         detalles = DetalleAsiento.objects.filter(id_asiento=asiento)
         assert sum(d.debe for d in detalles) == sum(d.haber for d in detalles) == Decimal("100.0000")
 
