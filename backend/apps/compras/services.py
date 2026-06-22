@@ -129,6 +129,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
         id_empresa=empresa,
         id_proveedor=orden_compra.id_proveedor,
         id_factura_compra_id=None,  # se enlazará cuando llegue la factura
+        id_recepcion=recepcion,  # ancla para re-vincular la factura después
         monto_total=monto_total,
         monto_pendiente=monto_total,
         fecha_emision=timezone.now().date(),
@@ -158,7 +159,8 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None)
     Registra la factura del proveedor asociada a una recepción y genera el asiento (R-CODE-11).
 
     Returns:
-        {"factura": FacturaCompra, "asiento": AsientoContable}
+        {"factura": FacturaCompra, "asiento": AsientoContable | None,
+         "cxp": CuentaPorPagar | None}  # la CxP de la recepción, ya re-vinculada
     """
     from apps.compras.models import FacturaCompra
 
@@ -183,6 +185,20 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None)
         monto_total=recepcion.monto_total,
     )
 
+    # Re-vincula la CxP nacida en la recepción a la factura recién registrada.
+    # Se localiza por su ancla id_recepcion (multi-tenant: filtrada por empresa)
+    # y solo si aún no estaba vinculada, para no pisar un enlace previo.
+    from apps.cuentas_por_pagar.models import CuentaPorPagar
+
+    cxp = CuentaPorPagar.objects.filter(
+        id_empresa=empresa,
+        id_recepcion=recepcion,
+        id_factura_compra__isnull=True,
+    ).first()
+    if cxp is not None:
+        cxp.id_factura_compra = factura
+        cxp.save(update_fields=["id_factura_compra"])
+
     # H-BUG-1: R-CODE-11 centralizado (ver registrar_recepcion).
     asiento = None
     try:
@@ -190,4 +206,4 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None)
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de factura compra: {exc}") from exc
 
-    return {"factura": factura, "asiento": asiento}
+    return {"factura": factura, "asiento": asiento, "cxp": cxp}

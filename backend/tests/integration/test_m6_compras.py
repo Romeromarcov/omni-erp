@@ -332,6 +332,37 @@ class TestRegistrarFacturaCompra:
         assert factura.id_recepcion == recepcion
         assert factura.id_orden_compra == recepcion.id_orden_compra
 
+    def test_cxp_de_recepcion_se_revincula_a_la_factura(self, recepcion):
+        # Deuda auditoría 2026-06-21: la CxP nace en la recepción con
+        # id_factura_compra=None y debe quedar enlazada al registrar la factura.
+        from apps.cuentas_por_pagar.models import CuentaPorPagar
+
+        cxp = CuentaPorPagar.objects.get(id_recepcion=recepcion)
+        assert cxp.id_factura_compra is None  # antes de la factura
+
+        resultado = registrar_factura_compra(recepcion, "FAC-PROV-0006")
+        factura = resultado["factura"]
+
+        cxp.refresh_from_db()
+        assert cxp.id_factura_compra == factura
+        assert resultado["cxp"] == cxp
+
+    def test_revinculacion_no_pisa_cxp_ya_enlazada(self, recepcion, empresa_a, proveedor):
+        # Idempotencia/seguridad: si la CxP de la recepción ya tiene factura,
+        # una segunda factura sobre la misma recepción no la re-vincula.
+        from apps.compras.models import FacturaCompra
+        from apps.cuentas_por_pagar.models import CuentaPorPagar
+
+        primera = registrar_factura_compra(recepcion, "FAC-PROV-0007")["factura"]
+        cxp = CuentaPorPagar.objects.get(id_recepcion=recepcion)
+        assert cxp.id_factura_compra == primera
+
+        # Una segunda factura (caso anómalo) no debe robar el enlace existente.
+        registrar_factura_compra(recepcion, "FAC-PROV-0008")
+        cxp.refresh_from_db()
+        assert cxp.id_factura_compra == primera
+        assert FacturaCompra.objects.filter(id_recepcion=recepcion).count() == 2
+
 
 # ── TestFlujoCompletoCompras ───────────────────────────────────────────────────
 

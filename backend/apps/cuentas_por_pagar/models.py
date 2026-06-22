@@ -40,6 +40,18 @@ class CuentaPorPagar(models.Model):
         blank=True,
         related_name="cuentas_por_pagar",
     )
+    # La CxP nace en la recepción (antes de que llegue la factura del proveedor);
+    # este FK permite re-vincularla a la FacturaCompra cuando se registra. Sin él
+    # no había forma fiable de localizar la CxP de una recepción (un proveedor
+    # puede tener varias CxP abiertas). on_delete=SET_NULL: la CxP es un registro
+    # financiero que debe sobrevivir si se borra la recepción.
+    id_recepcion = models.ForeignKey(
+        "compras.RecepcionMercancia",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cuentas_por_pagar",
+    )
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
