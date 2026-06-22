@@ -416,12 +416,13 @@ class TestCalcularDesde:
 class TestUpsertEnOmni:
     def test_entidad_sin_handler_retorna_id_externo(self, fake_registry, instancia_fake):
         engine = SyncEngine()
-        resultado = engine._upsert_en_omni("pagos", {"id_externo": "77"}, instancia_fake)
+        # 'empleados' no tiene handler de upsert (pagos/facturas_venta ya sí).
+        resultado = engine._upsert_en_omni("empleados", {"id_externo": "77"}, instancia_fake)
         assert resultado == "77"
 
     def test_entidad_sin_handler_y_sin_id_retorna_vacio(self, fake_registry, instancia_fake):
         engine = SyncEngine()
-        assert engine._upsert_en_omni("pagos", {}, instancia_fake) == ""
+        assert engine._upsert_en_omni("empleados", {}, instancia_fake) == ""
 
     def test_upsert_contacto_crea_y_actualiza_core_contacto(
         self, fake_registry, instancia_fake
@@ -1067,3 +1068,119 @@ class TestUpsertFacturaVenta:
         assert det.subtotal == Decimal("100")
         assert det.monto_impuesto == Decimal("16")
         assert det.total_linea == Decimal("116")
+
+
+class TestUpsertPago:
+    """Fase 2 — persistencia de pagos (cobros de cliente) en finanzas.Pago."""
+
+    def _seed_moneda(self, instancia):
+        from apps.finanzas.models import Moneda
+
+        Moneda.objects.get_or_create(
+            codigo_iso="USD",
+            defaults={"nombre": "Dólar", "simbolo": "$", "empresa": instancia.id_empresa},
+        )
+
+    def _factura(self, id_externo="900", numero="INV/2024/0001"):
+        return {
+            "id_externo": id_externo,
+            "numero": numero,
+            "cliente_id_externo": "42",
+            "cliente_nombre": "Cliente Factura",
+            "fecha_factura": "2024-05-10",
+            "subtotal": "100.00",
+            "impuestos": "16.00",
+            "total": "116.00",
+            "moneda": "USD",
+            "estado_pago": "pendiente",
+            "lineas": [],
+            "_checksum": "f" + id_externo,
+        }
+
+    def _seed_factura_sincronizada(self, eng, instancia, id_externo="900", numero="INV/2024/0001"):
+        """Crea la FacturaFiscal y su mapping EntidadSincronizada (facturas_venta)."""
+        self._seed_moneda(instancia)
+        eng.ingerir_en_omni(instancia, "facturas_venta", [self._factura(id_externo, numero)])
+
+    def _pago(self, **over):
+        datos = {
+            "id_externo": "P1",
+            "numero": "PAY/0001",
+            "tipo": "inbound",
+            "tipo_socio": "customer",
+            "socio_id_externo": "42",
+            "socio_nombre": "Cliente Factura",
+            "monto": "116.00",
+            "fecha": "2024-05-20",
+            "estado": "posted",
+            "moneda": "USD",
+            "facturas_externas": ["900"],
+            "referencia": "memo cobro",
+        }
+        datos.update(over)
+        return datos
+
+    def test_crea_pago_reconciliado_a_factura(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.finanzas.models import Pago
+        from apps.ventas.models import FacturaFiscal
+
+        eng = SyncEngine()
+        self._seed_factura_sincronizada(eng, instancia_fake)
+        factura = FacturaFiscal.objects.get(
+            id_empresa=instancia_fake.id_empresa, referencia_externa="900"
+        )
+
+        pk = eng._upsert_pago(self._pago(), instancia_fake)
+
+        assert pk
+        pago = Pago.objects.get(pk=pk)
+        assert pago.tipo_operacion == "INGRESO"
+        assert pago.tipo_documento == "FACTURA"
+        assert pago.id_documento == factura.pk
+        assert pago.id_factura_id == factura.pk  # FK de conveniencia
+        assert pago.monto == Decimal("116.00")
+        assert pago.id_empresa == instancia_fake.id_empresa
+        assert "odoo:P1" in pago.referencia
+        # Histórico importado: NO se crea TransaccionFinanciera ni se mueven saldos.
+        assert pago.id_transaccion_financiera is None
+
+    def test_idempotente_por_factura(self, instancia_fake):
+        from apps.finanzas.models import Pago
+
+        eng = SyncEngine()
+        self._seed_factura_sincronizada(eng, instancia_fake)
+        eng._upsert_pago(self._pago(), instancia_fake)
+        eng._upsert_pago(self._pago(monto="200.00"), instancia_fake)
+
+        qs = Pago.objects.filter(id_empresa=instancia_fake.id_empresa, tipo_documento="FACTURA")
+        assert qs.count() == 1
+        from decimal import Decimal
+
+        assert qs.first().monto == Decimal("200.00")  # se actualizó
+
+    def test_omite_si_no_es_cobro_de_cliente(self, instancia_fake):
+        eng = SyncEngine()
+        self._seed_factura_sincronizada(eng, instancia_fake)
+        assert eng._upsert_pago(
+            self._pago(tipo="outbound", tipo_socio="supplier"), instancia_fake
+        ) is None
+
+    def test_omite_si_factura_no_sincronizada(self, instancia_fake):
+        eng = SyncEngine()
+        self._seed_moneda(instancia_fake)  # sin sembrar la factura
+        assert eng._upsert_pago(
+            self._pago(facturas_externas=["999"]), instancia_fake
+        ) is None
+
+    def test_omite_si_reconciliacion_multiple(self, instancia_fake):
+        eng = SyncEngine()
+        self._seed_factura_sincronizada(eng, instancia_fake, "900", "INV/2024/0001")
+        self._seed_factura_sincronizada(eng, instancia_fake, "901", "INV/2024/0002")
+        assert eng._upsert_pago(
+            self._pago(facturas_externas=["900", "901"]), instancia_fake
+        ) is None
+
+    def test_omite_sin_id_externo(self, instancia_fake):
+        assert SyncEngine()._upsert_pago(self._pago(id_externo=""), instancia_fake) is None

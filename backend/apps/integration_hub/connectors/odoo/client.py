@@ -421,6 +421,8 @@ class OdooXMLRPCClient:
                 "amount", "date", "state",
                 "journal_id", "currency_id",
                 "memo", "ref",
+                # Reconciliación: facturas (account.move) saldadas por este pago.
+                "reconciled_invoice_ids",
                 "write_date", "create_date",
             ],
             "limit": limite,
