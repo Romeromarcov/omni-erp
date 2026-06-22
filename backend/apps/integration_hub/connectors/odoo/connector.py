@@ -415,7 +415,17 @@ class OdooConnector(BaseConnector):
         except OdooCallError as exc:
             raise ConnectorDataError(f"Error leyendo facturas de Odoo: {exc}") from exc
 
-        return [self._normalizar_factura(f) for f in facturas]
+        normalizados = []
+        for f in facturas:
+            norm = self._normalizar_factura(f)
+            # Traer líneas (account.move.line); si falla, factura sin líneas.
+            try:
+                norm["lineas"] = client.get_lineas_factura(f["id"])
+            except Exception:
+                norm["lineas"] = []
+            normalizados.append(norm)
+
+        return normalizados
 
     def _normalizar_factura(self, raw: dict) -> dict:
         partner = raw.get("partner_id") or []

@@ -319,6 +319,7 @@ class SyncEngine:
             "productos": self._upsert_producto,
             "pedidos_venta": self._upsert_pedido_venta,
             "pedidos_compra": self._upsert_pedido_compra,
+            "facturas_venta": self._upsert_factura_venta,
             "inventario": self._upsert_inventario,
             # Las demás entidades se implementan por fase
         }
@@ -760,6 +761,119 @@ class SyncEngine:
                 )
 
         return str(orden.pk)
+
+    # ── Facturas de venta (Fase 2) ─────────────────────────────────────────────
+
+    def _upsert_factura_venta(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+        """
+        Upsert de factura de venta en ``ventas.FacturaFiscal`` (+ líneas en
+        ``DetalleFacturaFiscal``). Idempotente por ``(id_empresa, numero_factura)``
+        y por ``referencia_externa``.
+
+        Documento fiscal **importado**: refleja una factura ya emitida en el
+        sistema externo (Odoo ``account.move`` posted) para acumular el histórico
+        en Omni. No re-emite ni dispara numeración fiscal; ``numero_control`` se
+        toma del número externo. Estado ``EMITIDA`` (``PAGADA`` si Odoo la marca
+        pagada). Multi-tenant: acotado a la empresa de la instancia (R-CODE-1).
+
+        - Resuelve/auto-crea el cliente (``_resolver_o_crear_cliente``); sin
+          cliente resoluble, omite la factura (return None).
+        - Requiere una ``Moneda`` para la FK obligatoria ``id_moneda`` (externa →
+          USD → primera); si no hay ninguna, omite la factura.
+        - Reemplaza las líneas en cada sync; las líneas cuyo producto aún no está
+          sincronizado se omiten (no rompen el documento).
+        """
+        from decimal import Decimal
+
+        from apps.finanzas.models import Moneda
+        from apps.ventas.models import DetalleFacturaFiscal, FacturaFiscal
+
+        empresa = instancia.id_empresa
+        numero = (datos.get("numero") or "").strip()
+        if not numero:
+            logger.warning(
+                "Factura de venta externa %s omitida: sin número.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        cliente = self._resolver_o_crear_cliente(datos, instancia)
+        if cliente is None:
+            logger.warning(
+                "Factura de venta %s omitida: cliente no resoluble.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        moneda = (
+            Moneda.objects.filter(codigo_iso=datos.get("moneda")).first()
+            or Moneda.objects.filter(codigo_iso="USD").first()
+            or Moneda.objects.first()
+        )
+        if moneda is None:
+            logger.warning(
+                "Factura de venta %s omitida: no hay Moneda configurada para "
+                "id_moneda (empresa %s).",
+                datos.get("id_externo", ""),
+                empresa.pk,
+            )
+            return None
+
+        fecha = (datos.get("fecha_factura") or "")[:10] or dj_timezone.now().date().isoformat()
+        vencimiento = (datos.get("fecha_vencimiento") or "")[:10] or None
+        estado = "PAGADA" if (datos.get("estado_pago") or "") == "pagado" else "EMITIDA"
+
+        campos = {
+            "id_cliente": cliente,
+            "numero_control": numero,
+            "fecha_emision": fecha,
+            "fecha_vencimiento": vencimiento,
+            "base_imponible": self._safe_decimal_money(datos.get("subtotal")),
+            "monto_iva": self._safe_decimal_money(datos.get("impuestos")),
+            "monto_igtf": Decimal("0"),
+            "monto_total": self._safe_decimal_money(datos.get("total")),
+            "id_moneda": moneda,
+            "estado": estado,
+            "referencia_externa": str(datos.get("id_externo") or "") or None,
+            "observaciones": (datos.get("origen_pedido") or "") or None,
+        }
+
+        with transaction.atomic():
+            factura = FacturaFiscal.objects.filter(
+                id_empresa=empresa, numero_factura=numero
+            ).first()
+            if factura:
+                for field, value in campos.items():
+                    setattr(factura, field, value)
+                factura.save()
+            else:
+                factura = FacturaFiscal.objects.create(
+                    id_empresa=empresa, numero_factura=numero, **campos
+                )
+
+            # Reemplazar líneas (la fuente externa es la verdad).
+            factura.detalles.all().delete()
+            for linea in datos.get("lineas") or []:
+                producto = self._resolver_producto_mapeado(
+                    linea.get("product_id"), instancia
+                )
+                if producto is None:
+                    continue
+                subtotal = self._safe_decimal_money(linea.get("price_subtotal"))
+                total_linea = self._safe_decimal_money(linea.get("price_total"))
+                # El impuesto de la línea = total con impuesto − subtotal.
+                monto_impuesto = total_linea - subtotal if total_linea > subtotal else Decimal("0")
+                DetalleFacturaFiscal.objects.create(
+                    id_factura=factura,
+                    id_producto=producto,
+                    cantidad=self._safe_decimal_money(linea.get("quantity")),
+                    precio_unitario=self._safe_decimal_money(linea.get("price_unit")),
+                    subtotal=subtotal,
+                    monto_impuesto=monto_impuesto,
+                    total_linea=total_linea or subtotal,
+                )
+
+        return str(factura.pk)
 
     # ── Inventario / stock (Fase 2) ────────────────────────────────────────────
 

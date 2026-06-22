@@ -381,6 +381,21 @@ class OdooXMLRPCClient:
             "order": "invoice_date desc",
         })
 
+    def get_lineas_factura(self, move_id: int) -> list[dict]:
+        """
+        Líneas de producto de una factura (account.move.line).
+
+        Filtra a líneas reales de producto: excluye secciones/notas
+        (``display_type``) y líneas sin producto (impuesto, término de pago).
+        """
+        return self.call("account.move.line", "search_read",
+                         [[["move_id", "=", move_id],
+                           ["display_type", "=", False],
+                           ["product_id", "!=", False]]],
+                         {"fields": ["id", "product_id", "quantity",
+                                     "price_unit", "discount",
+                                     "price_subtotal", "price_total", "tax_ids"]})
+
     # ── Pagos ─────────────────────────────────────────────────────────────────
 
     def get_pagos(

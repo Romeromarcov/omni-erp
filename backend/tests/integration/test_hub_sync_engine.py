@@ -932,3 +932,138 @@ class TestUpsertInventario:
         stock = StockActual.objects.get(id_empresa=empresa)
         assert stock.cantidad_disponible == Decimal("5")
         assert stock.cantidad_comprometida == Decimal("1")
+
+
+class TestUpsertFacturaVenta:
+    """Fase 2 — persistencia de facturas de venta en ventas.FacturaFiscal."""
+
+    def _seed_moneda(self, instancia):
+        from apps.finanzas.models import Moneda
+
+        Moneda.objects.get_or_create(
+            codigo_iso="USD",
+            defaults={"nombre": "Dólar", "simbolo": "$", "empresa": instancia.id_empresa},
+        )
+
+    def _factura(self, **over):
+        datos = {
+            "id_externo": "900",
+            "numero": "INV/2024/0001",
+            "cliente_id_externo": "42",
+            "cliente_nombre": "Cliente Factura",
+            "fecha_factura": "2024-05-10",
+            "fecha_vencimiento": "2024-06-10",
+            "subtotal": "100.00",
+            "impuestos": "16.00",
+            "total": "116.00",
+            "moneda": "USD",
+            "estado_pago": "pendiente",
+            "origen_pedido": "SO0001",
+            "lineas": [],
+        }
+        datos.update(over)
+        return datos
+
+    def test_crea_factura_y_autocrea_cliente(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.crm.models import Cliente
+        from apps.ventas.models import FacturaFiscal
+
+        self._seed_moneda(instancia_fake)
+        pk = SyncEngine()._upsert_factura_venta(self._factura(), instancia_fake)
+
+        assert pk
+        fac = FacturaFiscal.objects.get(pk=pk)
+        assert fac.numero_factura == "INV/2024/0001"
+        assert fac.numero_control == "INV/2024/0001"
+        assert fac.estado == "EMITIDA"
+        assert fac.base_imponible == Decimal("100.00")
+        assert fac.monto_iva == Decimal("16.00")
+        assert fac.monto_total == Decimal("116.00")
+        assert fac.referencia_externa == "900"
+        cli = Cliente.objects.get(
+            id_empresa=instancia_fake.id_empresa, referencia_externa="42"
+        )
+        assert fac.id_cliente_id == cli.pk
+
+    def test_estado_pagado_marca_pagada(self, instancia_fake):
+        from apps.ventas.models import FacturaFiscal
+
+        self._seed_moneda(instancia_fake)
+        pk = SyncEngine()._upsert_factura_venta(
+            self._factura(estado_pago="pagado"), instancia_fake
+        )
+        assert FacturaFiscal.objects.get(pk=pk).estado == "PAGADA"
+
+    def test_idempotente_por_numero(self, instancia_fake):
+        from apps.ventas.models import FacturaFiscal
+
+        self._seed_moneda(instancia_fake)
+        eng = SyncEngine()
+        eng._upsert_factura_venta(self._factura(), instancia_fake)
+        eng._upsert_factura_venta(
+            self._factura(total="200.00", estado_pago="pagado"), instancia_fake
+        )
+
+        qs = FacturaFiscal.objects.filter(
+            id_empresa=instancia_fake.id_empresa, numero_factura="INV/2024/0001"
+        )
+        assert qs.count() == 1
+        assert qs.first().estado == "PAGADA"  # se actualizó
+
+    def test_sin_numero_omite(self, instancia_fake):
+        self._seed_moneda(instancia_fake)
+        assert SyncEngine()._upsert_factura_venta(
+            self._factura(numero=""), instancia_fake
+        ) is None
+
+    def test_sin_cliente_omite(self, instancia_fake):
+        self._seed_moneda(instancia_fake)
+        assert SyncEngine()._upsert_factura_venta(
+            self._factura(cliente_id_externo="", cliente_nombre=""), instancia_fake
+        ) is None
+
+    def test_sin_moneda_omite(self, instancia_fake):
+        # Sin ninguna Moneda en el catálogo, la factura se omite (FK obligatoria).
+        from apps.finanzas.models import Moneda
+
+        Moneda.objects.all().delete()
+        assert SyncEngine()._upsert_factura_venta(
+            self._factura(), instancia_fake
+        ) is None
+
+    def test_linea_producto_no_sincronizado_se_omite(self, instancia_fake):
+        from apps.ventas.models import FacturaFiscal
+
+        self._seed_moneda(instancia_fake)
+        datos = self._factura(lineas=[{
+            "product_id": [10, "X"], "quantity": 2,
+            "price_unit": "50", "price_subtotal": "100", "price_total": "116",
+        }])
+        pk = SyncEngine()._upsert_factura_venta(datos, instancia_fake)
+        assert FacturaFiscal.objects.get(pk=pk).detalles.count() == 0
+
+    def test_linea_producto_sincronizado_se_crea(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.ventas.models import FacturaFiscal
+
+        eng = SyncEngine()
+        self._seed_moneda(instancia_fake)
+        eng.ingerir_en_omni(
+            instancia_fake, "productos",
+            [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
+        )
+        datos = self._factura(lineas=[{
+            "product_id": [10, "Prod 10"], "quantity": 2,
+            "price_unit": "50", "price_subtotal": "100", "price_total": "116",
+        }])
+        pk = eng._upsert_factura_venta(datos, instancia_fake)
+        fac = FacturaFiscal.objects.get(pk=pk)
+        assert fac.detalles.count() == 1
+        det = fac.detalles.first()
+        assert det.cantidad == Decimal("2")
+        assert det.subtotal == Decimal("100")
+        assert det.monto_impuesto == Decimal("16")
+        assert det.total_linea == Decimal("116")
