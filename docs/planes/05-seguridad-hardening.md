@@ -15,9 +15,10 @@
 ---
 
 > ⚠️ **Nota cruzada:** este plan es *hardening proactivo*; los hallazgos puntuales de seguridad
-> viven en las auditorías ([`SECURITY_REVIEW_2026-06-02.md`](../audit/SECURITY_REVIEW_2026-06-02.md)
-> cerrada; [`AUDITORIA_INTEGRAL_2026-06-10.md`](../auditorias/AUDITORIA_INTEGRAL_2026-06-10.md)
-> **activa**, con fixes P0 en el Plan Maestro §5.2). "Hallazgos cerrados" ≠ "hardening completo", y viceversa.
+> viven en las auditorías (`SECURITY_REVIEW_2026-06-02.md` y `AUDITORIA_INTEGRAL_2026-06-10.md`,
+> ambas **cerradas** — sus fixes P0 ya se mergearon; ver [`docs/auditorias/archivo/`](../auditorias/archivo/)
+> y la auditoría integral [`AUDITORIA_2026-06-21.md`](../AUDITORIA_2026-06-21.md)).
+> "Hallazgos cerrados" ≠ "hardening completo", y viceversa.
 
 ## 0. Resumen — estado actual por hallazgo
 

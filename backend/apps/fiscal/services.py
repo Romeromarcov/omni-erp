@@ -33,6 +33,43 @@ class ImpuestoError(Exception):
     pass
 
 
+class PeriodoCerradoError(Exception):
+    """Se intentó emitir/modificar un documento fiscal en un período ya cerrado."""
+
+    pass
+
+
+# ── Enforcement de cierre de período fiscal (deuda #1, auditoría 2026-06-21) ───
+
+
+def validar_periodo_abierto(empresa, fecha) -> None:
+    """
+    Verifica que el PeriodoFiscal correspondiente a ``fecha`` NO esté cerrado
+    para ``empresa`` (multi-tenant: el período se filtra por empresa).
+
+    Una vez que un período mensual se marca como cerrado (cierre contable/fiscal,
+    declaración SENIAT presentada) no se pueden emitir ni modificar documentos
+    fiscales con fecha dentro de ese período. Este guard hace cumplir esa regla,
+    que antes era cosmética (``PeriodoFiscal.esta_cerrado`` existía pero ningún
+    flujo de emisión lo consultaba).
+
+    Args:
+        empresa: instancia core.Empresa (o su pk) dueña del período.
+        fecha:   date del documento (se usan su año y mes).
+
+    Raises:
+        PeriodoCerradoError: si el período (empresa, fecha.year, fecha.month)
+            está cerrado. Los callers la traducen a 400 con mensaje claro.
+    """
+    from .models import PeriodoFiscal
+
+    if PeriodoFiscal.esta_cerrado(empresa, fecha.year, fecha.month):
+        raise PeriodoCerradoError(
+            f"El período fiscal {fecha.year:04d}-{fecha.month:02d} está cerrado; "
+            "no se pueden emitir ni modificar documentos fiscales en ese período."
+        )
+
+
 # ── Helpers internos ──────────────────────────────────────────────────────────
 
 
