@@ -69,6 +69,17 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
         raise CompraError("Debe especificar al menos un ítem para recepcionar.")
 
     empresa = orden_compra.id_empresa
+    fecha_recepcion = timezone.now().date()
+
+    # Enforcement de cierre de período fiscal: la recepción postea un asiento
+    # (RECEPCION_MERCANCIA); no se permite contra un período ya cerrado.
+    from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
+
+    try:
+        validar_periodo_abierto(empresa, fecha_recepcion)
+    except PeriodoCerradoError as exc:
+        raise CompraError(str(exc)) from exc
+
     monto_total = sum(
         Decimal(str(it["cantidad"])) * Decimal(str(it["costo_unitario"])) for it in items
     )
@@ -76,7 +87,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
     recepcion = RecepcionMercancia.objects.create(
         id_empresa=empresa,
         id_orden_compra=orden_compra,
-        fecha_recepcion=timezone.now().date(),
+        fecha_recepcion=fecha_recepcion,
         monto_total=monto_total,
     )
 
@@ -118,6 +129,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
         id_empresa=empresa,
         id_proveedor=orden_compra.id_proveedor,
         id_factura_compra_id=None,  # se enlazará cuando llegue la factura
+        id_recepcion=recepcion,  # ancla para re-vincular la factura después
         monto_total=monto_total,
         monto_pendiente=monto_total,
         fecha_emision=timezone.now().date(),
@@ -131,7 +143,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
     # continúa sin asiento. Cualquier AsientoError real también propaga.
     asiento = None
     try:
-        asiento, _ = generar_asiento_o_fallar("RECEPCION_MERCANCIA", recepcion, empresa)
+        asiento, _ = generar_asiento_o_fallar("RECEPCION_MERCANCIA", recepcion, empresa, usuario=usuario)
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de recepción: {exc}") from exc
 
@@ -142,17 +154,27 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
 
 
 @transaction.atomic
-def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None) -> dict:
+def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None, usuario=None) -> dict:
     """
     Registra la factura del proveedor asociada a una recepción y genera el asiento (R-CODE-11).
 
     Returns:
-        {"factura": FacturaCompra, "asiento": AsientoContable}
+        {"factura": FacturaCompra, "asiento": AsientoContable | None,
+         "cxp": CuentaPorPagar | None}  # la CxP de la recepción, ya re-vinculada
     """
     from apps.compras.models import FacturaCompra
 
     empresa = recepcion.id_empresa
     fecha = fecha_emision or timezone.now().date()
+
+    # Enforcement de cierre de período fiscal: la factura de compra postea un
+    # asiento (FACTURA_COMPRA); no se emite contra un período ya cerrado.
+    from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
+
+    try:
+        validar_periodo_abierto(empresa, fecha)
+    except PeriodoCerradoError as exc:
+        raise CompraError(str(exc)) from exc
 
     factura = FacturaCompra.objects.create(
         id_empresa=empresa,
@@ -163,11 +185,25 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None)
         monto_total=recepcion.monto_total,
     )
 
+    # Re-vincula la CxP nacida en la recepción a la factura recién registrada.
+    # Se localiza por su ancla id_recepcion (multi-tenant: filtrada por empresa)
+    # y solo si aún no estaba vinculada, para no pisar un enlace previo.
+    from apps.cuentas_por_pagar.models import CuentaPorPagar
+
+    cxp = CuentaPorPagar.objects.filter(
+        id_empresa=empresa,
+        id_recepcion=recepcion,
+        id_factura_compra__isnull=True,
+    ).first()
+    if cxp is not None:
+        cxp.id_factura_compra = factura
+        cxp.save(update_fields=["id_factura_compra"])
+
     # H-BUG-1: R-CODE-11 centralizado (ver registrar_recepcion).
     asiento = None
     try:
-        asiento, _ = generar_asiento_o_fallar("FACTURA_COMPRA", factura, empresa)
+        asiento, _ = generar_asiento_o_fallar("FACTURA_COMPRA", factura, empresa, usuario=usuario)
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de factura compra: {exc}") from exc
 
-    return {"factura": factura, "asiento": asiento}
+    return {"factura": factura, "asiento": asiento, "cxp": cxp}

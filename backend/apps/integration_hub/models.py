@@ -63,6 +63,18 @@ class ConectorProveedor(models.Model):
     )
     requiere_url = models.BooleanField(default=True)
     requiere_db = models.BooleanField(default=False)
+    clase_conector = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text=(
+            "Ruta dotted a la clase BaseConnector que implementa este proveedor "
+            "(p. ej. 'apps.integration_hub.connectors.odoo.connector.OdooConnector'). "
+            "Si se define, el registry la carga dinámicamente sin re-desplegar "
+            "(Fase 3); permite reutilizar un conector genérico para varios "
+            "proveedores. Si está vacío, se usa el registro estático de apps.py."
+        ),
+    )
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="activo")
     activo = models.BooleanField(default=True)
     orden = models.PositiveSmallIntegerField(default=100)

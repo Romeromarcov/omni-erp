@@ -141,7 +141,7 @@ def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = ""
     # R-CODE-11: asiento en la MISMA transacción; si falla con contabilidad
     # activa, el abono y el cambio de estado se revierten completos.
     generar_asiento_o_fallar(
-        TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=pago.monto
+        TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=pago.monto, usuario=usuario
     )
     return abono
 
@@ -232,7 +232,7 @@ def solicitar_reintegro(
 
     # R-CODE-11: asiento por el neto del reintegro, en la MISMA transacción.
     generar_asiento_o_fallar(
-        TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=monto_neto
+        TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=monto_neto, usuario=usuario
     )
     return cxc
 

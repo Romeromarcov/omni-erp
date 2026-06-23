@@ -323,7 +323,7 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
             # (la vista lo traduce a 422) y TODO lo anterior se revierte; empresa
             # informal → warning y la operación procede sin asiento.
             generar_asiento_o_fallar(
-                "CAMBIO_DIVISA", operacion, empresa, monto=operacion.monto_origen
+                "CAMBIO_DIVISA", operacion, empresa, monto=operacion.monto_origen, usuario=usuario
             )
 
         return operacion

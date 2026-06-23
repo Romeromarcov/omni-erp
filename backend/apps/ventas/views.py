@@ -452,7 +452,7 @@ class NotaVentaViewSet(
 
         nota = self.get_object()
         try:
-            resultado = emitir_factura_fiscal(nota)
+            resultado = emitir_factura_fiscal(nota, usuario=request.user)
         except VentaError as exc:
             raise ValidationError(str(exc)) from exc
 

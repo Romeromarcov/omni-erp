@@ -148,6 +148,25 @@ class TestPagoSideEffects:
         assert pago.id_transaccion_financiera is not None
         assert MovimientoCajaBanco.objects.count() == 0
 
+    def test_post_pago_en_divisa_sin_tasa_retorna_400_sin_persistir(
+        self, client_a, empresa_a, metodo_pago
+    ):
+        # empresa_a base = USD. Pago en VES sin TasaCambio VES→USD → 400 limpio
+        # (antes: 500 por TasaCambioError sin mapear). Nada se persiste.
+        ves = Moneda.objects.create(
+            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
+            tipo_moneda="fiat", es_generica=True,
+        )
+        resp = client_a.post(
+            "/api/finanzas/pagos/",
+            _payload_pago(empresa_a, ves, metodo_pago),
+            format="json",
+        )
+        assert resp.status_code == 400, resp.content
+        assert "tasa" in str(resp.data).lower()
+        assert Pago.objects.count() == 0
+        assert TransaccionFinanciera.objects.count() == 0
+
     def test_rollback_total_si_falla_a_mitad(
         self, user_a, empresa_a, moneda_usd, metodo_pago, caja_virtual_a, monkeypatch
     ):

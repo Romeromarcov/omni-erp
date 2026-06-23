@@ -199,11 +199,13 @@ class TestProcesarFeliz:
         assert detalles["AP_INCES"] == Decimal("32.50")
         assert detalles["AP_RPE"] == Decimal("32.50")
 
-    def test_asiento_nomina_balanceado(self, respuesta, proceso_a):
+    def test_asiento_nomina_balanceado(self, respuesta, proceso_a, user_a):
         assert respuesta.status_code == 200
         asiento = AsientoContable.objects.get(
             id_documento_origen=proceso_a.pk, nombre_modelo_origen="ProcesoNomina"
         )
+        # El asiento registra al usuario que procesó la nómina (request.user).
+        assert asiento.id_usuario_registro == user_a
         detalles = list(DetalleAsiento.objects.filter(id_asiento=asiento))
         assert len(detalles) == 2
         total_debe = sum(d.debe for d in detalles)

@@ -217,3 +217,128 @@ class TestDevolucionPeriodoFiscal:
                 usuario=user_a,
                 metodo_pago=metodo_efectivo,
             )
+
+
+# ── Compras (recepción / factura de compra) vs. cierre de período ──────────────
+#
+# El ciclo de compras también postea asientos contables en un período fiscal:
+#   - registrar_recepcion()      → AsientoContable(RECEPCION_MERCANCIA)
+#   - registrar_factura_compra() → AsientoContable(FACTURA_COMPRA)
+# Ambos flujos deben respetar el cierre igual que la emisión de ventas.
+
+
+def _proveedor_pf(empresa):
+    from apps.proveedores.models import Proveedor
+
+    return Proveedor.objects.create(
+        id_empresa=empresa,
+        razon_social="Proveedor Período Fiscal S.A.",
+        rif="J-66666666-6",
+    )
+
+
+def _almacen_pf(empresa):
+    from apps.almacenes.models import Almacen
+
+    return Almacen.objects.create(
+        id_empresa=empresa,
+        nombre_almacen="Almacén Período Fiscal",
+        codigo_almacen="AC-PF",
+    )
+
+
+def _orden_aprobada_pf(empresa, proveedor, numero="OC-PF-001"):
+    from apps.compras.models import OrdenCompra
+
+    return OrdenCompra.objects.create(
+        id_empresa=empresa,
+        id_proveedor=proveedor,
+        numero_orden=numero,
+        fecha_orden=timezone.now().date(),
+        estado="APROBADA",
+    )
+
+
+def _recepcion_directa_pf(empresa, orden, monto="100.00"):
+    # Crea la RecepcionMercancia por ORM (sin pasar por el servicio guardado),
+    # para poder probar el guard de registrar_factura_compra de forma aislada.
+    from apps.compras.models import RecepcionMercancia
+
+    return RecepcionMercancia.objects.create(
+        id_empresa=empresa,
+        id_orden_compra=orden,
+        fecha_recepcion=timezone.now().date(),
+        monto_total=Decimal(monto),
+    )
+
+
+class TestRecepcionPeriodoFiscal:
+    def _items(self, producto):
+        return [{"producto": producto, "cantidad": "4", "costo_unitario": "25.00"}]
+
+    def test_periodo_cerrado_rechaza_recepcion(self, empresa_a, user_a, producto_pf):
+        from apps.compras.models import RecepcionMercancia
+        from apps.compras.services import CompraError, registrar_recepcion
+
+        _periodo(empresa_a, cerrado=True)
+        proveedor = _proveedor_pf(empresa_a)
+        almacen = _almacen_pf(empresa_a)
+        orden = _orden_aprobada_pf(empresa_a, proveedor)
+
+        with pytest.raises(CompraError, match="cerrado"):
+            registrar_recepcion(orden, almacen, user_a, self._items(producto_pf))
+
+        # Nada se persiste (la transacción atómica revierte).
+        assert not RecepcionMercancia.objects.filter(id_orden_compra=orden).exists()
+
+    def test_periodo_abierto_permite_recepcion(self, empresa_a, user_a, producto_pf):
+        from apps.compras.services import registrar_recepcion
+
+        _periodo(empresa_a, cerrado=False)
+        proveedor = _proveedor_pf(empresa_a)
+        almacen = _almacen_pf(empresa_a)
+        orden = _orden_aprobada_pf(empresa_a, proveedor, numero="OC-PF-002")
+
+        resultado = registrar_recepcion(orden, almacen, user_a, self._items(producto_pf))
+        assert resultado["recepcion"].monto_total == Decimal("100.00")
+
+    def test_cierre_es_por_empresa_multitenant(
+        self, empresa_a, empresa_b, user_a, producto_pf
+    ):
+        # R-CODE-1: período cerrado de OTRA empresa no bloquea la recepción de A.
+        from apps.compras.services import registrar_recepcion
+
+        _periodo(empresa_b, cerrado=True)
+        proveedor = _proveedor_pf(empresa_a)
+        almacen = _almacen_pf(empresa_a)
+        orden = _orden_aprobada_pf(empresa_a, proveedor, numero="OC-PF-003")
+
+        resultado = registrar_recepcion(orden, almacen, user_a, self._items(producto_pf))
+        assert resultado["recepcion"] is not None
+
+
+class TestFacturaCompraPeriodoFiscal:
+    def test_periodo_cerrado_rechaza_factura(self, empresa_a):
+        from apps.compras.models import FacturaCompra
+        from apps.compras.services import CompraError, registrar_factura_compra
+
+        proveedor = _proveedor_pf(empresa_a)
+        orden = _orden_aprobada_pf(empresa_a, proveedor, numero="OC-PF-004")
+        recepcion = _recepcion_directa_pf(empresa_a, orden)
+        _periodo(empresa_a, cerrado=True)
+
+        with pytest.raises(CompraError, match="cerrado"):
+            registrar_factura_compra(recepcion, numero_factura="FC-PF-001")
+
+        assert not FacturaCompra.objects.filter(id_recepcion=recepcion).exists()
+
+    def test_periodo_abierto_permite_factura(self, empresa_a):
+        from apps.compras.services import registrar_factura_compra
+
+        proveedor = _proveedor_pf(empresa_a)
+        orden = _orden_aprobada_pf(empresa_a, proveedor, numero="OC-PF-005")
+        recepcion = _recepcion_directa_pf(empresa_a, orden)
+        _periodo(empresa_a, cerrado=False)
+
+        resultado = registrar_factura_compra(recepcion, numero_factura="FC-PF-002")
+        assert resultado["factura"].numero_factura == "FC-PF-002"

@@ -491,6 +491,7 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
             nota_venta,
             nota_venta.id_empresa,
             monto=subtotal,
+            usuario=usuario,
         )
     except (MapeoContableNoEncontrado, AsientoError) as exc:
         # H-BUG-1: si la empresa exige contabilidad, la falta de asiento es un
@@ -511,7 +512,7 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
 
 
 @transaction.atomic
-def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura: str = None, moneda=None) -> dict:
+def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura: str = None, moneda=None, usuario=None) -> dict:
     """
     Crea la FacturaFiscal desde la NotaVenta y genera el asiento contable (R-CODE-11).
 
@@ -588,7 +589,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     )
 
     try:
-        asiento = generar_asiento("FACTURA_VENTA", factura, factura.id_empresa)
+        asiento = generar_asiento("FACTURA_VENTA", factura, factura.id_empresa, usuario=usuario)
     except AsientoError as exc:
         raise VentaError(f"Error generando asiento contable: {exc}") from exc
 
@@ -610,6 +611,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
                 factura,
                 factura.id_empresa,
                 monto=monto_iva,
+                usuario=usuario,
             )
         except (MapeoContableNoEncontrado, AsientoError) as exc:
             if iva_obligatorio:
@@ -1053,7 +1055,7 @@ def registrar_devolucion_pos(
     from apps.contabilidad.services import generar_asiento_o_fallar
 
     asiento, asiento_error = generar_asiento_o_fallar(
-        "DEVOLUCION_VENTA", devolucion, empresa, monto=total_devuelto
+        "DEVOLUCION_VENTA", devolucion, empresa, monto=total_devuelto, usuario=usuario
     )
 
     asiento_iva = None
@@ -1068,7 +1070,7 @@ def registrar_devolucion_pos(
         iva_obligatorio = bool(config_fiscal and config_fiscal.contribuyente_iva)
         try:
             asiento_iva = generar_asiento(
-                "DEVOLUCION_VENTA_IVA", devolucion, empresa, monto=iva_devuelto
+                "DEVOLUCION_VENTA_IVA", devolucion, empresa, monto=iva_devuelto, usuario=usuario
             )
         except (MapeoContableNoEncontrado, AsientoError) as exc:
             if iva_obligatorio:

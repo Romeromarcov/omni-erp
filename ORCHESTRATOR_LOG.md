@@ -41,3 +41,26 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-19T13:10:59Z] ✅ decimal.js totales solo-lectura ventas+libros fiscales (FE-HIGH-7) PR#168 merged
 [2026-06-19T13:30:34Z] ✅ decimal.js sumas cantidades inventario (FE-HIGH-7) PR#169 merged — barrido FE-HIGH-7 completo
 [2026-06-19T15:58:08Z] ✅ endpoint atómico venta POS offline (ADR-012) PR#171 merged
+
+## Loop autónomo 2026-06-22 — Auditoría 2026-06-21 (Track B) + Integration Hub (Track A) + cierre docs (Track C)
+
+[2026-06-22T04:12:26Z] ✅ Track B-1 período fiscal en COMPRAS (recepción+factura, guard validar_periodo_abierto, 6 tests) PR#182 merged
+[2026-06-22T03:45:04Z] ✅ Track B-2 CxP bloquea CRUD libre (http_method_names, espejo CxC P0, 6 tests) PR#183 merged
+[2026-06-22T04:12:26Z] ✅ Track B-3a re-vincula CxP→FacturaCompra (FK id_recepcion + migración 0007, 2 tests) PR#184 merged
+[2026-06-22T04:41:44Z] ✅ Track B-3b FK real id_usuario_registro en AsientoContable + flujo compras (migración 0012, 3 tests) PR#185 merged
+[2026-06-22T05:09:23Z] ✅ Track B-3c FX multimoneda en registrar_efectos_pago (convierte monto_base a moneda empresa, 3 tests) PR#186 merged — TRACK B (auditoría 2026-06-21) COMPLETO
+[2026-06-22T05:39:17Z] ✅ Track A-1 IH persiste facturas_venta → FacturaFiscal + líneas desde Odoo (8 tests) PR#187 merged
+[2026-06-22T06:17:50Z] ✅ Track A-2 IH persiste pagos (cobros cliente reconciliados→finanzas.Pago, history-only, 6 tests) PR#188 merged — IH Fase 2 inbound COMPLETO
+[2026-06-22T06:52:06Z] ✅ Track A-3a IH registry dinámico de conectores (ConectorProveedor.clase_conector + import_string, migración 0006, 6 tests) PR#189 merged
+[2026-06-22T07:30:00Z] ✅ Track A-3b IH conector genérico REST (GenericRestConnector config-driven, R-CODE-8, 18 tests) PR#190 merged — TRACK A (Integration Hub) COMPLETO
+[2026-06-22T08:35:07Z] ✅ Cola-2nd FX comisión datafono → moneda base empresa (convertir_monto, 1 test multimoneda) PR#192 merged
+[2026-06-22T08:58:34Z] ✅ Cola-2nd asiento usuario en inventario AJUSTE_INVENTARIO PR#193 merged
+[2026-06-22T09:21:20Z] ✅ Cola-2nd asiento usuario en cxc PAGO_CXC (abono directo + acuerdo) PR#194 merged
+[2026-06-22T09:45:32Z] ✅ Cola-2nd asiento usuario en finanzas PAGO_TERCERO (abono+reintegro) PR#195 merged
+[2026-06-22T10:07:57Z] ✅ Cola-2nd asiento usuario en fiscal PAGO_PARAFISCAL PR#196 merged
+[2026-06-22T10:31:16Z] ✅ Cola-2nd asiento usuario en nomina NOMINA PR#197 merged
+[2026-06-22T10:53:12Z] ✅ Cola-2nd asiento usuario en tesoreria CAMBIO_DIVISA PR#198 merged
+[2026-06-22T11:18:46Z] ✅ Cola-2nd asiento usuario en VENTAS (nota/factura/devolución, 5 sites) PR#199 merged — barrido asiento-usuario COMPLETO (7 flujos)
+[2026-06-22T11:42:50Z] ✅ Cola-2nd TasaCambioError→400 en PagoViewSet (pago divisa sin tasa) PR#200 merged — items 1-3 cola secundaria COMPLETOS
+[2026-06-22T11:44:26Z] 📋 Cola-2nd item 4 IH followups DOCUMENTADO Y DEFERIDO en ESTADO.md §4.1 (reconciliación parcial/multi-factura y pagos proveedor→CxP requieren enriquecer conector Odoo + decisión de producto; facturas_compra aún no persistido). PR docs-only.
+[2026-06-22T11:44:26Z] 🎉 SESIÓN COMPLETA — Track A (Integration Hub Fase 2 inbound 7 entidades + Fase 3 registry dinámico + conector genérico REST), Track B (auditoría 2026-06-21: 5 hallazgos cerrados), Track C (docs reconciliados), cola secundaria (FX comisión + asiento-usuario 7 flujos + TasaCambioError→400). Deferido con diseño documentado: IH conciliación parcial/multi-factura, pagos proveedor→CxP, reembolso POS divisa-sin-tasa. PRs #182-201.

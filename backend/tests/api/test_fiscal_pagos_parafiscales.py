@@ -417,7 +417,7 @@ class TestNoDoblePago:
 
 class TestPagar:
     def test_ciclo_pagar_con_caja(
-        self, client_a, pago_parafiscal_a, caja_usd_a, metodo_pago_a, mapeo_pago_parafiscal
+        self, client_a, pago_parafiscal_a, caja_usd_a, metodo_pago_a, mapeo_pago_parafiscal, user_a
     ):
         url = f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/"
         resp = client_a.post(
@@ -457,6 +457,8 @@ class TestPagar:
 
         # Asiento PAGO_PARAFISCAL balanceado: debe == haber == 1234.56
         asiento = _asiento_de(pago_parafiscal_a).get()
+        # El asiento registra al usuario que pagó (provenance, request.user).
+        assert asiento.id_usuario_registro == user_a
         detalles = DetalleAsiento.objects.filter(id_asiento=asiento)
         assert detalles.count() == 2
         assert sum(d.debe for d in detalles) == Decimal("1234.56")

@@ -415,7 +415,17 @@ class OdooConnector(BaseConnector):
         except OdooCallError as exc:
             raise ConnectorDataError(f"Error leyendo facturas de Odoo: {exc}") from exc
 
-        return [self._normalizar_factura(f) for f in facturas]
+        normalizados = []
+        for f in facturas:
+            norm = self._normalizar_factura(f)
+            # Traer líneas (account.move.line); si falla, factura sin líneas.
+            try:
+                norm["lineas"] = client.get_lineas_factura(f["id"])
+            except Exception:
+                norm["lineas"] = []
+            normalizados.append(norm)
+
+        return normalizados
 
     def _normalizar_factura(self, raw: dict) -> dict:
         partner = raw.get("partner_id") or []
@@ -488,6 +498,8 @@ class OdooConnector(BaseConnector):
             "diario": (journal[1] if isinstance(journal, list) and len(journal) > 1 else ""),
             "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1
                        else "USD"),
+            # Facturas (account.move) reconciliadas por este pago → reconciliación.
+            "facturas_externas": [str(i) for i in (raw.get("reconciled_invoice_ids") or [])],
             "referencia": raw.get("memo") or raw.get("ref") or "",
             "fecha_modificacion_externo": (raw.get("write_date") or "")[:19],
             "_checksum": self._checksum(raw),

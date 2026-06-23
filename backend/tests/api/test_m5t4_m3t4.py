@@ -193,6 +193,9 @@ class TestM5T4AjusteAsiento:
             costo_unitario=Decimal("10.00"),
         )
         assert AsientoContable.objects.count() == antes + 1
+        # El asiento registra el usuario que originó el movimiento (provenance).
+        asiento = AsientoContable.objects.get(nombre_modelo_origen="MovimientoInventario")
+        assert asiento.id_usuario_registro == user_a
 
     def test_monto_total_property(self, db, empresa_a, producto_a, almacen_a, user_a):
         """MovimientoInventario.monto_total = |cantidad| × costo_unitario."""

@@ -59,16 +59,61 @@ class ConnectorRegistry:
     def get_connector(self, instancia: "ConectorInstancia") -> BaseConnector:
         """
         Crea y retorna una instancia del conector para la instancia dada.
-        Lanza ConnectorError si el proveedor no está registrado.
+        Resolución de la clase, en orden:
+        1. Registro estático (``register`` en apps.py) por código de proveedor.
+        2. Carga **dinámica** (Fase 3): si el ``ConectorProveedor`` define
+           ``clase_conector`` (ruta dotted), se importa, valida y cachea sin
+           re-desplegar — permite reutilizar un conector genérico para varios
+           proveedores.
+
+        Lanza ConnectorError si no hay clase resoluble.
         """
-        code = instancia.id_proveedor.codigo
-        cls = self._registry.get(code)
+        proveedor = instancia.id_proveedor
+        code = proveedor.codigo
+        cls = self._registry.get(code) or self._cargar_dinamico(proveedor)
         if cls is None:
             raise ConnectorError(
                 f"No hay conector registrado para el proveedor '{code}'. "
                 f"Proveedores disponibles: {list(self._registry.keys())}"
             )
         return cls(instancia)
+
+    def _cargar_dinamico(self, proveedor) -> Type[BaseConnector] | None:
+        """
+        Carga la clase del conector desde ``proveedor.clase_conector`` (Fase 3).
+
+        Valida que sea un ``BaseConnector`` y la cachea bajo el **código del
+        proveedor** (no bajo ``PROVIDER_CODE`` de la clase), para que un mismo
+        conector genérico pueda servir a varios proveedores. Retorna None si el
+        proveedor no define ``clase_conector``.
+
+        Lanza ConnectorError si la ruta no importa o no es un BaseConnector.
+        """
+        from django.utils.module_loading import import_string
+
+        ruta = (getattr(proveedor, "clase_conector", "") or "").strip()
+        if not ruta:
+            return None
+
+        try:
+            cls = import_string(ruta)
+        except ImportError as exc:
+            raise ConnectorError(
+                f"No se pudo importar la clase '{ruta}' del proveedor "
+                f"'{proveedor.codigo}': {exc}"
+            ) from exc
+
+        if not (isinstance(cls, type) and issubclass(cls, BaseConnector)):
+            raise ConnectorError(
+                f"La clase '{ruta}' del proveedor '{proveedor.codigo}' no es un "
+                f"BaseConnector."
+            )
+
+        self._registry[proveedor.codigo] = cls
+        logger.info(
+            "Conector cargado dinámicamente: %s → %s", proveedor.codigo, ruta
+        )
+        return cls
 
     def list_registered(self) -> list[str]:
         """Retorna lista de códigos de proveedores registrados."""
