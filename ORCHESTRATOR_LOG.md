@@ -98,3 +98,7 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   uno, bloquea fuera de orden) + reporte Valoración + capa de servicio (operaciones/reportes) + rutas.
   Gate local: tsc -b limpio (mis archivos), eslint limpio, 719 tests vitest verdes, cobertura global
   85.4/74.3/78.8/87.0 sobre umbrales (incl. ratchets services/lib). PR# pendiente.
+[2026-06-23] ✅ PR-6 frontend stepper PR#209 merged (CI verde: tsc/eslint/api-drift/vitest/E2E).
+[2026-06-23] ✅ PR-7 UI config de pasos por almacén/operación (PasosOperacionPage + pasosOperacionService
+  CRUD) — completa T02 vía UI (configurar pasos antes de usar el stepper). Gate local: tsc/eslint limpios,
+  723 tests vitest, cobertura sobre umbrales (incl. ratchets). PR# pendiente.

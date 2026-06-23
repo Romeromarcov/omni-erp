@@ -1,4 +1,4 @@
-import { get, post } from './api';
+import { get, post, del } from './api';
 import { toList, type PaginatedResponse } from '../utils/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -246,6 +246,40 @@ function operacionService(base: 'recepciones' | 'entregas') {
 
 export const recepcionesService = operacionService('recepciones');
 export const entregasService = operacionService('entregas');
+
+// ── Pasos de operación (configuración por almacén) ───────────────────────────
+
+export interface PasoOperacion {
+  id_paso_operacion: string;
+  id_empresa: string;
+  id_almacen: string;
+  tipo_operacion: TipoOperacion;
+  nombre_paso: string;
+  secuencia: number;
+  activo: boolean;
+}
+
+export interface CrearPasoPayload {
+  id_empresa: string;
+  id_almacen: string;
+  tipo_operacion: TipoOperacion;
+  nombre_paso: string;
+  secuencia: number;
+}
+
+export const pasosOperacionService = {
+  list: async (almacen: string, tipo: TipoOperacion): Promise<PasoOperacion[]> => {
+    const r = await get<PaginatedResponse<PasoOperacion> | PasoOperacion[]>(
+      `/inventario/pasos-operacion/?almacen=${almacen}&tipo_operacion=${tipo}`,
+    );
+    return toList(r);
+  },
+  create: async (payload: CrearPasoPayload): Promise<PasoOperacion> =>
+    post<PasoOperacion>('/inventario/pasos-operacion/', payload as unknown as Record<string, unknown>),
+  remove: async (id: string): Promise<void> => {
+    await del<void>(`/inventario/pasos-operacion/${id}/`);
+  },
+};
 
 // ── Reporte de valoración ────────────────────────────────────────────────────
 
