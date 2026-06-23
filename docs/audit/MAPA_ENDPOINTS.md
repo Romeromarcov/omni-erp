@@ -892,6 +892,12 @@
 | `^registros-operacion/(?P<pk>[^/.]+)/$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
 | `^registros-operacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
 | `^registros-operacion\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
+| `^reportes/existencias/$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
+| `^reportes/existencias\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
+| `^reportes/movimientos/$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
+| `^reportes/movimientos\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
+| `^reportes/valoracion/$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
+| `^reportes/valoracion\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
 | `^requisiciones-compra/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
 | `^requisiciones-compra/(?P<pk>[^/.]+)/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
 | `^requisiciones-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
@@ -1077,4 +1083,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 202_
+_Total ViewSets: 203_
