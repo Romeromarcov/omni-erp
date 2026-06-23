@@ -253,3 +253,139 @@ def test_aislamiento_tenant_operaciones(client_b, empresa_a, almacen, producto):
     data = resp.json()
     items = data["results"] if isinstance(data, dict) and "results" in data else data
     assert items == []
+
+
+# ── Cobertura de validaciones y ramas de error ────────────────────────────────
+
+
+def test_crear_operacion_validaciones(empresa_a, almacen, almacen_dest, producto, user_a):
+    from apps.inventario import operaciones as ops
+
+    base = dict(empresa=empresa_a, almacen=almacen, usuario=user_a)
+    ln = [{"producto": producto, "cantidad": "1"}]
+
+    with pytest.raises(ops.OperacionError):  # tipo inválido
+        ops.crear_operacion(tipo_operacion="X", origen_tipo="PURCHASE", lineas=ln, **base)
+    with pytest.raises(ops.OperacionError):  # origen inválido
+        ops.crear_operacion(tipo_operacion="RECEPCION", origen_tipo="X", lineas=ln, **base)
+    with pytest.raises(ops.OperacionError):  # sin líneas
+        ops.crear_operacion(tipo_operacion="RECEPCION", origen_tipo="PURCHASE", lineas=[], **base)
+    with pytest.raises(ops.OperacionError):  # devolución sin motivo
+        ops.crear_operacion(tipo_operacion="ENTREGA", origen_tipo="RETURN", lineas=ln, **base)
+    with pytest.raises(ops.OperacionError):  # transfer sin contraparte
+        ops.crear_operacion(tipo_operacion="ENTREGA", origen_tipo="TRANSFER", lineas=ln, **base)
+    with pytest.raises(ops.OperacionError):  # transfer mismo almacén
+        ops.crear_operacion(
+            tipo_operacion="ENTREGA", origen_tipo="TRANSFER", lineas=ln,
+            almacen_contraparte=almacen, **base,
+        )
+    with pytest.raises(ops.OperacionError):  # venta sin origen_id
+        ops.crear_operacion(tipo_operacion="ENTREGA", origen_tipo="SALE", lineas=ln, **base)
+    with pytest.raises(ops.OperacionError):  # sin pasos configurados
+        ops.crear_operacion(tipo_operacion="RECEPCION", origen_tipo="PURCHASE", lineas=ln, **base)
+
+    # Con pasos: cantidad <= 0.
+    _pasos(empresa_a, almacen, "RECEPCION", ["P1"])
+    with pytest.raises(ops.OperacionError):
+        ops.crear_operacion(
+            tipo_operacion="RECEPCION", origen_tipo="PURCHASE",
+            lineas=[{"producto": producto, "cantidad": "0"}], **base,
+        )
+
+
+def test_confirmar_paso_ramas_error(empresa_a, almacen, producto, user_a):
+    from apps.inventario import operaciones as ops
+
+    _pasos(empresa_a, almacen, "RECEPCION", ["P1", "P2"])
+    op = ops.crear_operacion(
+        empresa=empresa_a, almacen=almacen, tipo_operacion="RECEPCION", origen_tipo="PURCHASE",
+        lineas=[{"producto": producto, "cantidad": "2", "costo_unitario": "3"}], usuario=user_a,
+    )
+    p1, p2 = list(op.pasos.order_by("secuencia"))
+
+    ops.confirmar_paso(operacion=op, paso=p1, usuario=user_a)
+    with pytest.raises(ops.OperacionError):  # ya confirmado
+        ops.confirmar_paso(operacion=op, paso=p1, usuario=user_a)
+
+    op2 = ops.crear_operacion(
+        empresa=empresa_a, almacen=almacen, tipo_operacion="RECEPCION", origen_tipo="PURCHASE",
+        lineas=[{"producto": producto, "cantidad": "1", "costo_unitario": "1"}], usuario=user_a,
+    )
+    ajeno = op2.pasos.first()
+    with pytest.raises(ops.OperacionError):  # paso no pertenece
+        ops.confirmar_paso(operacion=op, paso=ajeno, usuario=user_a)
+
+    ops.confirmar_paso(operacion=op, paso=p2, usuario=user_a)
+    op.refresh_from_db()
+    assert op.estado == "COMPLETADA"
+    with pytest.raises(ops.OperacionError):  # no EN_PROCESO
+        ops.confirmar_paso(operacion=op, paso=p2, usuario=user_a)
+
+
+def test_str_de_modelos(empresa_a, almacen, producto, user_a):
+    from apps.inventario.models import (
+        OperacionInventario, OperacionInventarioLinea, OperacionInventarioPaso,
+        PasoOperacion, ValoracionInventario,
+    )
+
+    registrar_movimiento(
+        empresa=empresa_a, fecha_hora_movimiento=timezone.now(), tipo_movimiento="ENTRADA",
+        producto=producto, cantidad=Decimal("2"), almacen_destino=almacen,
+        costo_unitario=Decimal("4"), usuario=user_a,
+    )
+    assert str(ValoracionInventario.objects.first())
+    paso = PasoOperacion.objects.create(
+        id_empresa=empresa_a, id_almacen=almacen, tipo_operacion="RECEPCION", nombre_paso="P", secuencia=1,
+    )
+    assert str(paso)
+    op = OperacionInventario.objects.create(
+        id_empresa=empresa_a, numero="REC-X", tipo_operacion="RECEPCION",
+        origen_tipo="PURCHASE", id_almacen=almacen, fecha=timezone.now(),
+    )
+    assert str(op)
+    assert str(OperacionInventarioPaso.objects.create(id_operacion=op, secuencia=1, nombre_paso="P"))
+    assert str(OperacionInventarioLinea.objects.create(id_operacion=op, id_producto=producto, cantidad=Decimal("1")))
+
+
+def test_api_create_ramas_error(client_a, empresa_a, almacen, producto):
+    bogus = "00000000-0000-0000-0000-000000000000"
+    r = client_a.post(REC, {"almacen": bogus, "origen_tipo": "PURCHASE",
+                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json")
+    assert r.status_code == 400
+    r = client_a.post(ENT, {"almacen": str(almacen.id_almacen), "origen_tipo": "TRANSFER", "almacen_contraparte": bogus,
+                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json")
+    assert r.status_code == 400
+    r = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
+                            "lineas": [{"producto": bogus, "cantidad": "1"}]}, format="json")
+    assert r.status_code == 400
+    r = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
+                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1", "variante": bogus}]}, format="json")
+    assert r.status_code == 400
+    # OperacionError (sin pasos) → 400.
+    r = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
+                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json")
+    assert r.status_code == 400
+
+
+def test_api_confirm_ramas_error(client_a, empresa_a, almacen, producto):
+    bogus = "00000000-0000-0000-0000-000000000000"
+    _pasos(empresa_a, almacen, "RECEPCION", ["P1"])
+    op = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
+                             "lineas": [{"producto": str(producto.id_producto), "cantidad": "1", "costo_unitario": "2"}]},
+                       format="json").json()
+    r = client_a.post(f"{REC}{op['id_operacion']}/step/{bogus}/confirm/")
+    assert r.status_code == 400
+    paso = op["pasos"][0]
+    assert client_a.post(f"{REC}{op['id_operacion']}/step/{paso['id_operacion_paso']}/confirm/").status_code == 200
+    r = client_a.post(f"{REC}{op['id_operacion']}/step/{paso['id_operacion_paso']}/confirm/")
+    assert r.status_code == 400
+
+
+def test_api_completar_venta_nota_inexistente(client_a, empresa_a, almacen, producto):
+    bogus = "00000000-0000-0000-0000-000000000000"
+    _pasos(empresa_a, almacen, "ENTREGA", ["P1"])
+    op = client_a.post(ENT, {"almacen": str(almacen.id_almacen), "origen_tipo": "SALE", "origen_id": bogus,
+                             "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json").json()
+    paso = op["pasos"][0]
+    r = client_a.post(f"{ENT}{op['id_operacion']}/step/{paso['id_operacion_paso']}/confirm/")
+    assert r.status_code == 400
