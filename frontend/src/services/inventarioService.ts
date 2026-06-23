@@ -176,3 +176,99 @@ export const movimientoService = {
     return post<MovimientoInventario>('/inventario/movimientos-inventario/', payload as unknown as Record<string, unknown>);
   },
 };
+
+// ── Operaciones con stepper (recepciones / entregas) ─────────────────────────
+
+export interface OperacionPaso {
+  id_operacion_paso: string;
+  secuencia: number;
+  nombre_paso: string;
+  confirmado: boolean;
+  fecha_confirmacion: string | null;
+}
+
+export interface OperacionLinea {
+  id_linea: string;
+  id_producto: string;
+  producto_nombre?: string;
+  cantidad: string;
+  costo_unitario: string | null;
+}
+
+export type TipoOperacion = 'RECEPCION' | 'ENTREGA';
+export type EstadoOperacion = 'EN_PROCESO' | 'COMPLETADA' | 'CANCELADA';
+
+export interface OperacionInventario {
+  id_operacion: string;
+  numero: string;
+  tipo_operacion: TipoOperacion;
+  origen_tipo: string;
+  origen_id: string | null;
+  id_almacen: string;
+  id_almacen_contraparte: string | null;
+  estado: EstadoOperacion;
+  motivo: string;
+  fecha: string;
+  pasos: OperacionPaso[];
+  lineas: OperacionLinea[];
+}
+
+export interface CrearOperacionLinea {
+  producto: string;
+  variante?: string | null;
+  cantidad: string;
+  costo_unitario?: string | null;
+}
+
+export interface CrearOperacionPayload {
+  almacen: string;
+  origen_tipo: string;
+  origen_id?: string | null;
+  almacen_contraparte?: string | null;
+  motivo?: string;
+  lineas: CrearOperacionLinea[];
+}
+
+function operacionService(base: 'recepciones' | 'entregas') {
+  return {
+    list: async (): Promise<OperacionInventario[]> => {
+      const r = await get<PaginatedResponse<OperacionInventario> | OperacionInventario[]>(
+        `/inventario/${base}/`,
+      );
+      return toList(r);
+    },
+    create: async (payload: CrearOperacionPayload): Promise<OperacionInventario> =>
+      post<OperacionInventario>(`/inventario/${base}/`, payload as unknown as Record<string, unknown>),
+    confirmStep: async (opId: string, stepId: string): Promise<OperacionInventario> =>
+      post<OperacionInventario>(`/inventario/${base}/${opId}/step/${stepId}/confirm/`, {}),
+  };
+}
+
+export const recepcionesService = operacionService('recepciones');
+export const entregasService = operacionService('entregas');
+
+// ── Reporte de valoración ────────────────────────────────────────────────────
+
+export interface ValoracionFila {
+  producto_id: string;
+  producto: string;
+  almacen_id: string;
+  almacen: string;
+  metodo: string;
+  cantidad: string;
+  valor_total: string;
+  costo_promedio: string;
+}
+
+export const reportesInventarioService = {
+  valoracion: async (params?: { producto?: string; almacen?: string }): Promise<ValoracionFila[]> => {
+    const qs = new URLSearchParams();
+    if (params?.producto) qs.set('producto', params.producto);
+    if (params?.almacen) qs.set('almacen', params.almacen);
+    const q = qs.toString();
+    const r = await get<{ valoracion: ValoracionFila[] }>(
+      `/inventario/reportes/valoracion/${q ? `?${q}` : ''}`,
+    );
+    return r.valoracion ?? [];
+  },
+};

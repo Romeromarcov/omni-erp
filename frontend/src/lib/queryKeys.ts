@@ -14,6 +14,9 @@ export const inventarioKeys = {
   kardex: (productoId?: string, fechaDesde?: string, fechaHasta?: string) =>
     ['kardex', productoId, fechaDesde, fechaHasta] as const,
   kardexAll: () => ['kardex'] as const,
+  recepciones: () => ['inv-recepciones'] as const,
+  entregas: () => ['inv-entregas'] as const,
+  valoracion: () => ['inv-valoracion'] as const,
 };
 
 export const notasVentaKeys = {

@@ -93,3 +93,8 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
 [2026-06-23] ✅ PR-5 reportes de inventario: /api/inventario/reportes/{existencias,movimientos,valoracion}.
   Valoración método-agnóstica (Σ entrada − Σ salida) → correcta para FIFO y Promedio. Gate local:
   5 tests (T08/T09/T10 FIFO+Promedio/T11). PR# pendiente.
+[2026-06-23] ✅ PR-5 reportes de inventario PR#208 merged (CI verde).
+[2026-06-23] ✅ PR-6 frontend stepper: páginas Recepciones/Entregas (stepper visual, confirma uno a
+  uno, bloquea fuera de orden) + reporte Valoración + capa de servicio (operaciones/reportes) + rutas.
+  Gate local: tsc -b limpio (mis archivos), eslint limpio, 719 tests vitest verdes, cobertura global
+  85.4/74.3/78.8/87.0 sobre umbrales (incl. ratchets services/lib). PR# pendiente.
