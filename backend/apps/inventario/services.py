@@ -356,6 +356,23 @@ def registrar_movimiento(
         from apps.contabilidad.services import generar_asiento_o_fallar
         generar_asiento_o_fallar("AJUSTE_INVENTARIO", movimiento, empresa, monto=monto_asiento, usuario=usuario)
 
+    # ── Costo de ventas (COGS) al despachar una venta (R-CODE-11) ────────────
+    # Inventario perpetuo: la salida física de un DESPACHO_VENTA descarga el
+    # inventario contra Costo de Ventas (DR Costo de Ventas / CR Inventario),
+    # valuado al costo real del movimiento (valor_total de la valoración FIFO/
+    # Promedio). El asiento de ingresos (DR CxC / CR Ingresos) lo genera el flujo
+    # de ventas por separado. Best-effort: si no hay mapeo COSTO_VENTA y la
+    # empresa no exige contabilidad, se omite; si la exige, revierte la entrega.
+    if (
+        tipo in TIPOS_DESPACHO_VENTA
+        and valoracion_salida is not None
+        and valoracion_salida.valor_total > 0
+    ):
+        from apps.contabilidad.services import generar_asiento_o_fallar
+        generar_asiento_o_fallar(
+            "COSTO_VENTA", movimiento, empresa, monto=valoracion_salida.valor_total, usuario=usuario
+        )
+
     return movimiento
 
 

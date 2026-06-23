@@ -75,3 +75,8 @@ PR-5 reportes · PR-6 frontend · PR-7 E2E T01–T12.
 [2026-06-22] ✅ PR-1 motor valoración FIFO/Promedio (ValoracionInventario + valuation.py;
 asiento por valor_total exacto). Gate local: 38 tests inventario/contab verdes,
 sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendiente.
+
+[2026-06-22] ✅ PR-1 motor valoración FIFO/Promedio PR#204 merged (CI verde; fixes: Matriz A1 + RLS valoracion).
+[2026-06-23] ✅ PR-2 asiento COGS al despachar venta (COSTO_VENTA: DR Costo de Ventas / CR Inventario,
+  valuado a valor_total) en el chokepoint registrar_movimiento. Gate local: 3 tests COGS + 94 tests
+  de flujos de entrega/asiento sin regresión. PR# pendiente.
