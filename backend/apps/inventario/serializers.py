@@ -4,6 +4,7 @@ from .models import (
     CategoriaProducto,
     ConversionUnidadMedida,
     MovimientoInventario,
+    PasoOperacion,
     Producto,
     StockActual,
     StockConsignacionCliente,
@@ -226,4 +227,21 @@ class StockConsignacionProveedorSerializer(serializers.ModelSerializer):
             "id_producto",
             "id_variante",
             "id_moneda",
+        ]
+
+
+class PasoOperacionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PasoOperacion
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_paso_operacion",
+            "id_empresa",
+            "id_almacen",
+            "tipo_operacion",
+            "nombre_paso",
+            "secuencia",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
         ]

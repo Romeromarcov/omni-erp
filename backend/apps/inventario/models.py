@@ -423,3 +423,46 @@ class ValoracionInventario(TimeStampedModel):
 
     def __str__(self):
         return f"{self.sentido} {self.cantidad} @ {self.costo_unitario} ({self.metodo})"
+
+
+# ── Pasos de operación configurables por almacén (recepción / entrega) ────────
+
+
+class PasoOperacion(OmniBaseModel):
+    """
+    Paso configurable de un flujo de operación de inventario, por almacén y tipo
+    de operación. El tenant define la secuencia de pasos que una recepción o una
+    entrega debe confirmar una a una antes de mover el stock.
+
+    Ejemplos:
+      RECEPCION: Confirmación → Calidad → Ubicación
+      ENTREGA:   Picking → Empaque → Despacho → Entrega
+    """
+
+    TIPOS_OPERACION = [("RECEPCION", "Recepción"), ("ENTREGA", "Entrega")]
+
+    id_paso_operacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="pasos_operacion"
+    )
+    id_almacen = models.ForeignKey(
+        "almacenes.Almacen", on_delete=models.CASCADE, related_name="pasos_operacion"
+    )
+    tipo_operacion = models.CharField(max_length=12, choices=TIPOS_OPERACION)
+    nombre_paso = models.CharField(max_length=100)
+    secuencia = models.PositiveIntegerField(
+        help_text="Orden del paso (1 = primero). Debe ser único por almacén y tipo de operación."
+    )
+
+    class Meta:
+        db_table = "inventario_paso_operacion"
+        verbose_name = "Paso de Operación"
+        verbose_name_plural = "Pasos de Operación"
+        ordering = ["id_almacen", "tipo_operacion", "secuencia"]
+        unique_together = [
+            ["id_almacen", "tipo_operacion", "secuencia"],
+            ["id_almacen", "tipo_operacion", "nombre_paso"],
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_operacion_display()} · {self.secuencia}. {self.nombre_paso}"

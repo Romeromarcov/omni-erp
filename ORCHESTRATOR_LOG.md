@@ -80,3 +80,6 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
 [2026-06-23] ✅ PR-2 asiento COGS al despachar venta (COSTO_VENTA: DR Costo de Ventas / CR Inventario,
   valuado a valor_total) en el chokepoint registrar_movimiento. Gate local: 3 tests COGS + 94 tests
   de flujos de entrega/asiento sin regresión. PR# pendiente.
+[2026-06-23] ✅ PR-3 PasoOperacion: pasos configurables de operación (recepción/entrega) por almacén
+  — modelo + CRUD API (/api/inventario/pasos-operacion/) + RLS + matriz A1. Gate local: 5 tests
+  (CRUD, orden por secuencia, aislamiento tenant, unicidad). PR# pendiente.

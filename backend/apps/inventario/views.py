@@ -12,6 +12,7 @@ from .models import (
     CategoriaProducto,
     ConversionUnidadMedida,
     MovimientoInventario,
+    PasoOperacion,
     Producto,
     StockActual,
     StockConsignacionCliente,
@@ -23,6 +24,7 @@ from .serializers import (
     CategoriaProductoSerializer,
     ConversionUnidadMedidaSerializer,
     MovimientoInventarioSerializer,
+    PasoOperacionSerializer,
     ProductoSerializer,
     StockActualSerializer,
     StockConsignacionClienteSerializer,
@@ -258,3 +260,21 @@ class StockConsignacionProveedorViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         return StockConsignacionProveedor.objects.filter(id_empresa__in=_empresas(self.request))
+
+
+class PasoOperacionViewSet(BaseModelViewSet):
+    """CRUD de pasos configurables de operación (recepción/entrega) por almacén."""
+
+    queryset = PasoOperacion.objects.all()
+    serializer_class = PasoOperacionSerializer
+
+    def get_queryset(self):
+        # R-CODE-1
+        qs = PasoOperacion.objects.filter(id_empresa__in=_empresas(self.request))
+        almacen_id = self.request.query_params.get("almacen")
+        tipo = self.request.query_params.get("tipo_operacion")
+        if almacen_id:
+            qs = qs.filter(id_almacen=almacen_id)
+        if tipo:
+            qs = qs.filter(tipo_operacion=tipo)
+        return qs.order_by("id_almacen", "tipo_operacion", "secuencia")
