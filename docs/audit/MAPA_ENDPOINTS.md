@@ -724,6 +724,10 @@
 | `^parametros-sistema/(?P<pk>[^/.]+)/$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
 | `^parametros-sistema/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
 | `^parametros-sistema\.(?P<format>[a-z0-9]+)/?$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
+| `^pasos-operacion/$` | PasoOperacionViewSet | PasoOperacion | ✅ | ✅ | IsAuthenticated |
+| `^pasos-operacion/(?P<pk>[^/.]+)/$` | PasoOperacionViewSet | PasoOperacion | ✅ | ✅ | IsAuthenticated |
+| `^pasos-operacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PasoOperacionViewSet | PasoOperacion | ✅ | ✅ | IsAuthenticated |
+| `^pasos-operacion\.(?P<format>[a-z0-9]+)/?$` | PasoOperacionViewSet | PasoOperacion | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/confirmar/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
@@ -1061,4 +1065,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 199_
+_Total ViewSets: 200_

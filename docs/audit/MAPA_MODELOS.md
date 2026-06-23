@@ -124,6 +124,7 @@
 | inventario | ConversionUnidadMedida | ✅ | ✅ | id_producto+id_unidad_origen+id_unidad_destino |
 | inventario | DetalleRequisicion | — | ✅ | id_requisicion+id_producto |
 | inventario | MovimientoInventario | ✅ | ✅ | — |
+| inventario | PasoOperacion | ✅ | ✅ | id_almacen+tipo_operacion+secuencia; id_almacen+tipo_operacion+nombre_paso |
 | inventario | Producto | ✅ | ✅ | id_empresa+sku |
 | inventario | RequisicionInterna | ✅ | ✅ | id_empresa+numero_requisicion |
 | inventario | StockActual | ✅ | ✅ | id_producto+id_variante+id_almacen |
@@ -203,4 +204,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 200_
+_Total modelos: 201_

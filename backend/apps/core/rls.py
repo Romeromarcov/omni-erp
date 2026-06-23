@@ -195,6 +195,7 @@ RLS_TABLES = {
     "inventario_stock_actual": "id_empresa_id",
     "inventario_movimiento_inventario": "id_empresa_id",
     "inventario_valoracion_inventario": "id_empresa_id",
+    "inventario_paso_operacion": "id_empresa_id",
     "compras_orden_compra": "id_empresa_id",
     "compras_recepcion_mercancia": "id_empresa_id",
     "crm_cliente": "id_empresa_id",

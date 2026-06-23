@@ -1,0 +1,33 @@
+"""RLS para ``inventario_paso_operacion`` (pasos configurables de operación).
+
+Aplica la política ``omni_rls_tenant`` + ``FORCE ROW LEVEL SECURITY`` (ver
+``apps/core/rls.py``). Configuración por tenant → ``null_visible=False``.
+"""
+
+from django.db import migrations
+
+from apps.core.rls import build_disable_rls_sql, build_enable_rls_sql
+
+# (tabla, columna_empresa, null_visible)
+_TABLES = [
+    ("inventario_paso_operacion", "id_empresa_id", False),
+]
+
+
+def _enable():
+    return "\n".join(build_enable_rls_sql(t, c, null_visible=n) for t, c, n in _TABLES)
+
+
+def _disable():
+    return "\n".join(build_disable_rls_sql(t) for t, _c, _n in _TABLES)
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ("inventario", "0013_pasooperacion"),
+    ]
+
+    operations = [
+        migrations.RunSQL(sql=_enable(), reverse_sql=_disable()),
+    ]
