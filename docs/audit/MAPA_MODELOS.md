@@ -130,6 +130,7 @@
 | inventario | StockConsignacionCliente | ✅ | ✅ | — |
 | inventario | StockConsignacionProveedor | ✅ | ✅ | — |
 | inventario | UnidadMedida | ✅ | ✅ | id_empresa+abreviatura |
+| inventario | ValoracionInventario | ✅ | ✅ | — |
 | inventario | VarianteProducto | — | ✅ | — |
 | manufactura | CentroTrabajo | ✅ | ✅ | id_empresa+codigo_centro |
 | manufactura | ConfiguracionManufactura | ✅ | ✅ | — |
@@ -202,4 +203,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 199_
+_Total modelos: 200_

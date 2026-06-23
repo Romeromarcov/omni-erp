@@ -64,3 +64,14 @@ Registro append-only de los ítems cerrados por el loop autónomo.
 [2026-06-22T11:42:50Z] ✅ Cola-2nd TasaCambioError→400 en PagoViewSet (pago divisa sin tasa) PR#200 merged — items 1-3 cola secundaria COMPLETOS
 [2026-06-22T11:44:26Z] 📋 Cola-2nd item 4 IH followups DOCUMENTADO Y DEFERIDO en ESTADO.md §4.1 (reconciliación parcial/multi-factura y pagos proveedor→CxP requieren enriquecer conector Odoo + decisión de producto; facturas_compra aún no persistido). PR docs-only.
 [2026-06-22T11:44:26Z] 🎉 SESIÓN COMPLETA — Track A (Integration Hub Fase 2 inbound 7 entidades + Fase 3 registry dinámico + conector genérico REST), Track B (auditoría 2026-06-21: 5 hallazgos cerrados), Track C (docs reconciliados), cola secundaria (FX comisión + asiento-usuario 7 flujos + TasaCambioError→400). Deferido con diseño documentado: IH conciliación parcial/multi-factura, pagos proveedor→CxP, reembolso POS divisa-sin-tasa. PRs #182-201.
+
+## Módulo Inventario — extensión apps español (goal 2026-06-22)
+
+Decisión owner 2026-06-22: **extender** `inventario`/`almacenes`/`contabilidad`
+(no crear app `inventory` paralela en inglés). Roadmap PRs focales → develop:
+PR-1 valuación · PR-2 pasos config · PR-3 recepciones · PR-4 entregas ·
+PR-5 reportes · PR-6 frontend · PR-7 E2E T01–T12.
+
+[2026-06-22] ✅ PR-1 motor valoración FIFO/Promedio (ValoracionInventario + valuation.py;
+asiento por valor_total exacto). Gate local: 38 tests inventario/contab verdes,
+sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendiente.

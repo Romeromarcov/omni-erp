@@ -331,13 +331,30 @@ def registrar_movimiento(
     # TIPOS_INFORMATIVO (RESERVA_VENTA): solo registra el evento, sin alterar StockActual.
     # La reserva ya fue reflejada en cantidad_comprometida por reservar_stock().
 
+    # ── Valoración de inventario (FIFO / Promedio) ────────────────────────────
+    # Crea los registros ValoracionInventario. Para las salidas sin costo
+    # explícito, fija costo_unitario_movimiento con el costo calculado (kardex).
+    # `valoracion_salida.valor_total` es la fuente de verdad del monto del asiento.
+    valoracion_salida = None
+    if tipo not in TIPOS_INFORMATIVO:
+        from .valuation import valorar_movimiento
+
+        valoracion_salida = valorar_movimiento(movimiento)
+        if valoracion_salida is not None and movimiento.costo_unitario_movimiento is None:
+            movimiento.costo_unitario_movimiento = valoracion_salida.costo_unitario
+            movimiento.save(update_fields=["costo_unitario_movimiento"])
+
     # ── M5-T4: Asiento contable para ajustes de inventario (R-CODE-11) ──────
-    if tipo in TIPOS_AJUSTE and movimiento.monto_total > 0:
+    # El monto del asiento = valoración real del movimiento. Para ajustes de
+    # salida se toma valor_total (exacto); para ajustes de entrada con costo
+    # explícito, monto_total (cantidad × costo). Sin costo → monto 0 → sin asiento.
+    monto_asiento = valoracion_salida.valor_total if valoracion_salida is not None else movimiento.monto_total
+    if tipo in TIPOS_AJUSTE and monto_asiento > 0:
         # BUG-NEW-1: R-CODE-11 centralizado. Si la empresa tiene contabilidad
         # activa y falta el mapeo, generar_asiento_o_fallar lanza AsientoError y la
         # transacción revierte; si no, loguea un warning y continúa sin asiento.
         from apps.contabilidad.services import generar_asiento_o_fallar
-        generar_asiento_o_fallar("AJUSTE_INVENTARIO", movimiento, empresa, usuario=usuario)
+        generar_asiento_o_fallar("AJUSTE_INVENTARIO", movimiento, empresa, monto=monto_asiento, usuario=usuario)
 
     return movimiento
 

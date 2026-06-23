@@ -60,6 +60,12 @@ class Producto(OmniBaseModel, IntegrationFieldsMixin):
     maneja_lotes = models.BooleanField(default=False)
     maneja_seriales = models.BooleanField(default=False)
     costo_promedio = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
+    metodo_valoracion = models.CharField(
+        max_length=10,
+        choices=[("PROMEDIO", "Costo Promedio"), ("FIFO", "FIFO (Primero en Entrar, Primero en Salir)")],
+        default="PROMEDIO",
+        help_text="Método de valoración de inventario usado al costear las salidas de este producto.",
+    )
     precio_venta_sugerido = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
     punto_reorden = models.DecimalField(
         max_digits=18,
@@ -352,3 +358,68 @@ class DetalleRequisicion(models.Model):
 
     def __str__(self):
         return f"{self.id_requisicion} | {self.id_producto.nombre_producto} x{self.cantidad_solicitada}"
+
+
+# ── Valoración de inventario (FIFO / Promedio) ────────────────────────────────
+
+
+class ValoracionInventario(TimeStampedModel):
+    """
+    Registro de valoración por movimiento de inventario (FIFO / Promedio).
+
+    Una fila por cada movimiento que afecta una pila de stock (empresa, producto,
+    variante, almacén):
+
+      - ``sentido == ENTRADA``: el movimiento crea una capa de costo. ``cantidad``
+        y ``cantidad_restante`` arrancan iguales; ``cantidad_restante`` se va
+        consumiendo conforme salen unidades (necesario para FIFO).
+      - ``sentido == SALIDA``: el movimiento consume capas. ``costo_unitario`` es
+        el costo de salida calculado (FIFO sobre las capas más antiguas, o
+        promedio ponderado de las capas vivas). ``cantidad_restante`` es 0.
+
+    ``valor_total`` = ``cantidad`` × ``costo_unitario`` y es la base del asiento
+    contable (DR/CR inventario) de recepciones, despachos y ajustes.
+    """
+
+    SENTIDOS = [("ENTRADA", "Entrada"), ("SALIDA", "Salida")]
+    METODOS = [("PROMEDIO", "Costo Promedio"), ("FIFO", "FIFO")]
+
+    id_valoracion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="valoraciones_inventario"
+    )
+    id_movimiento = models.ForeignKey(
+        "MovimientoInventario", on_delete=models.CASCADE, related_name="valoraciones"
+    )
+    id_producto = models.ForeignKey("Producto", on_delete=models.CASCADE, related_name="valoraciones")
+    id_variante = models.ForeignKey(
+        "VarianteProducto", on_delete=models.CASCADE, related_name="valoraciones", null=True, blank=True
+    )
+    id_almacen = models.ForeignKey(
+        "almacenes.Almacen", on_delete=models.CASCADE, related_name="valoraciones"
+    )
+    sentido = models.CharField(max_length=10, choices=SENTIDOS)
+    metodo = models.CharField(max_length=10, choices=METODOS)
+    cantidad = models.DecimalField(max_digits=18, decimal_places=4)
+    costo_unitario = models.DecimalField(max_digits=18, decimal_places=4)
+    valor_total = models.DecimalField(max_digits=18, decimal_places=4)
+    cantidad_restante = models.DecimalField(
+        max_digits=18,
+        decimal_places=4,
+        default=0,
+        help_text="Unidades de esta capa aún no consumidas (solo aplica a ENTRADA en FIFO).",
+    )
+
+    class Meta:
+        db_table = "inventario_valoracion_inventario"
+        verbose_name = "Valoración de Inventario"
+        verbose_name_plural = "Valoraciones de Inventario"
+        indexes = [
+            models.Index(
+                fields=["id_empresa", "id_producto", "id_variante", "id_almacen", "sentido"],
+                name="inv_valoracion_pila_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.sentido} {self.cantidad} @ {self.costo_unitario} ({self.metodo})"
