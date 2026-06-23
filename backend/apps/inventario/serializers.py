@@ -304,7 +304,23 @@ class OperacionInventarioSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
         ]
-        read_only_fields = ["numero", "estado", "id_empresa", "pasos", "lineas"]
+        # Serializer SOLO de lectura: la creación va por CrearOperacionSerializer,
+        # que acota cada FK a la empresa visible del usuario. Marcar todo read-only
+        # evita exponer FKs writable sin scope (SEC-M1 / TenantFKScopeMixin).
+        read_only_fields = [
+            "numero",
+            "estado",
+            "id_empresa",
+            "pasos",
+            "lineas",
+            "tipo_operacion",
+            "origen_tipo",
+            "origen_id",
+            "id_almacen",
+            "id_almacen_contraparte",
+            "motivo",
+            "fecha",
+        ]
 
 
 class _LineaInputSerializer(serializers.Serializer):
