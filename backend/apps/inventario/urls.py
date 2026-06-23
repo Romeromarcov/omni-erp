@@ -9,6 +9,7 @@ from .views import (
     PasoOperacionViewSet,
     ProductoViewSet,
     RecepcionViewSet,
+    ReportesInventarioViewSet,
     StockActualViewSet,
     StockConsignacionClienteViewSet,
     StockConsignacionProveedorViewSet,
@@ -29,6 +30,7 @@ router.register(r"stock-consignacion-proveedor", StockConsignacionProveedorViewS
 router.register(r"pasos-operacion", PasoOperacionViewSet)
 router.register(r"recepciones", RecepcionViewSet, basename="recepcion")
 router.register(r"entregas", EntregaViewSet, basename="entrega")
+router.register(r"reportes", ReportesInventarioViewSet, basename="reportes-inventario")
 
 urlpatterns = [
     path("", include(router.urls)),

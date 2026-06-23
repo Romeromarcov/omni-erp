@@ -89,3 +89,7 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   adversarial SEC/correctness → corregidos 2 BLOCKERS (doble despacho/doble asiento de venta) +
   3 should-fix (monto recepción desde valoración; lock TOCTOU en confirmar_paso; numero anti-carrera).
   Gate local: 5 tests (T03/T04/T05/T12 + tenant) + 24 inventario sin regresión. PR# pendiente.
+[2026-06-23] ✅ PR-4 stepper de operaciones PR#207 merged (CI verde; fixes: FK read-only SEC-M1 + diff-cov).
+[2026-06-23] ✅ PR-5 reportes de inventario: /api/inventario/reportes/{existencias,movimientos,valoracion}.
+  Valoración método-agnóstica (Σ entrada − Σ salida) → correcta para FIFO y Promedio. Gate local:
+  5 tests (T08/T09/T10 FIFO+Promedio/T11). PR# pendiente.
