@@ -7,11 +7,13 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.almacenes.models import Almacen
 
 from .models import (
     CategoriaProducto,
     ConversionUnidadMedida,
     MovimientoInventario,
+    OperacionInventario,
     PasoOperacion,
     Producto,
     StockActual,
@@ -23,7 +25,9 @@ from .models import (
 from .serializers import (
     CategoriaProductoSerializer,
     ConversionUnidadMedidaSerializer,
+    CrearOperacionSerializer,
     MovimientoInventarioSerializer,
+    OperacionInventarioSerializer,
     PasoOperacionSerializer,
     ProductoSerializer,
     StockActualSerializer,
@@ -278,3 +282,102 @@ class PasoOperacionViewSet(BaseModelViewSet):
         if tipo:
             qs = qs.filter(tipo_operacion=tipo)
         return qs.order_by("id_almacen", "tipo_operacion", "secuencia")
+
+
+class _OperacionInventarioBaseViewSet(BaseModelViewSet):
+    """Base de recepciones/entregas con stepper. Las subclases fijan `tipo_operacion`."""
+
+    serializer_class = OperacionInventarioSerializer
+    tipo_operacion = None  # "RECEPCION" | "ENTREGA"
+
+    def get_queryset(self):
+        # R-CODE-1
+        return (
+            OperacionInventario.objects.filter(
+                id_empresa__in=_empresas(self.request), tipo_operacion=self.tipo_operacion
+            )
+            .prefetch_related("pasos", "lineas")
+            .order_by("-fecha")
+        )
+
+    def create(self, request, *args, **kwargs):
+        from .models import Producto, VarianteProducto
+        from .operaciones import OperacionError, crear_operacion
+
+        entrada = CrearOperacionSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        data = entrada.validated_data
+
+        empresas = _empresas(request)
+        almacen = Almacen.objects.filter(id_almacen=data["almacen"], id_empresa__in=empresas).first()
+        if almacen is None:
+            raise ValidationError({"almacen": "Almacén inexistente o de otra empresa."})
+        empresa = almacen.id_empresa
+
+        contraparte = None
+        if data.get("almacen_contraparte"):
+            contraparte = Almacen.objects.filter(
+                id_almacen=data["almacen_contraparte"], id_empresa=empresa
+            ).first()
+            if contraparte is None:
+                raise ValidationError({"almacen_contraparte": "Almacén inexistente o de otra empresa."})
+
+        lineas = []
+        for ln in data["lineas"]:
+            producto = Producto.objects.filter(id_producto=ln["producto"], id_empresa=empresa).first()
+            if producto is None:
+                raise ValidationError({"lineas": f"Producto {ln['producto']} inexistente o de otra empresa."})
+            variante = None
+            if ln.get("variante"):
+                variante = VarianteProducto.objects.filter(
+                    id_variante=ln["variante"], id_producto=producto
+                ).first()
+                if variante is None:
+                    raise ValidationError({"lineas": "Variante inexistente para el producto."})
+            lineas.append({
+                "producto": producto, "variante": variante,
+                "cantidad": ln["cantidad"], "costo_unitario": ln.get("costo_unitario"),
+            })
+
+        try:
+            operacion = crear_operacion(
+                empresa=empresa, almacen=almacen, tipo_operacion=self.tipo_operacion,
+                origen_tipo=data["origen_tipo"], lineas=lineas, usuario=request.user,
+                origen_id=data.get("origen_id"), almacen_contraparte=contraparte,
+                motivo=data.get("motivo", ""),
+            )
+        except OperacionError as exc:
+            raise ValidationError({"detail": str(exc)})
+
+        salida = OperacionInventarioSerializer(operacion)
+        return Response(salida.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"], url_path=r"step/(?P<step_id>[^/.]+)/confirm")
+    def confirmar_step(self, request, pk=None, step_id=None):
+        from .models import OperacionInventarioPaso
+        from .operaciones import OperacionError, PasoFueraDeOrdenError, confirmar_paso
+
+        operacion = self.get_object()
+        paso = OperacionInventarioPaso.objects.filter(
+            id_operacion_paso=step_id, id_operacion=operacion
+        ).first()
+        if paso is None:
+            raise ValidationError({"step_id": "El paso no existe en esta operación."})
+
+        try:
+            confirmar_paso(operacion=operacion, paso=paso, usuario=request.user)
+        except PasoFueraDeOrdenError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except OperacionError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        operacion.refresh_from_db()
+        return Response(OperacionInventarioSerializer(operacion).data)
+
+
+class RecepcionViewSet(_OperacionInventarioBaseViewSet):
+    tipo_operacion = "RECEPCION"
+
+
+class EntregaViewSet(_OperacionInventarioBaseViewSet):
+    tipo_operacion = "ENTREGA"
