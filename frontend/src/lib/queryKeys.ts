@@ -17,6 +17,8 @@ export const inventarioKeys = {
   recepciones: () => ['inv-recepciones'] as const,
   entregas: () => ['inv-entregas'] as const,
   valoracion: () => ['inv-valoracion'] as const,
+  pasosOperacion: (almacen: string, tipo: string) =>
+    ['inv-pasos-operacion', almacen, tipo] as const,
 };
 
 export const notasVentaKeys = {
