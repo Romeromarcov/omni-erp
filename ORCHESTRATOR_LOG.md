@@ -83,3 +83,9 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
 [2026-06-23] ✅ PR-3 PasoOperacion: pasos configurables de operación (recepción/entrega) por almacén
   — modelo + CRUD API (/api/inventario/pasos-operacion/) + RLS + matriz A1. Gate local: 5 tests
   (CRUD, orden por secuencia, aislamiento tenant, unicidad). PR# pendiente.
+[2026-06-23] ✅ PR-4 stepper de operaciones (OperacionInventario + pasos snapshot + líneas):
+  recepción/entrega confirmando pasos uno a uno; el último paso mueve stock (valoración+COGS)
+  y posa asientos (RECEPCION_MERCANCIA; venta vía chokepoint confirmar_nota_venta). Revisión
+  adversarial SEC/correctness → corregidos 2 BLOCKERS (doble despacho/doble asiento de venta) +
+  3 should-fix (monto recepción desde valoración; lock TOCTOU en confirmar_paso; numero anti-carrera).
+  Gate local: 5 tests (T03/T04/T05/T12 + tenant) + 24 inventario sin regresión. PR# pendiente.

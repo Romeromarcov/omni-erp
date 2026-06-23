@@ -410,6 +410,12 @@
 | `^empresas/(?P<pk>[^/.]+)/$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^empresas\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
+| `^entregas/$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^entregas/(?P<pk>[^/.]+)/$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^entregas/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm/$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^entregas/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm\.(?P<format>[a-z0-9]+)/?$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^entregas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^entregas\.(?P<format>[a-z0-9]+)/?$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^esquemas-comision-categorias/$` | EsquemaComisionCategoriaViewSet | EsquemaComisionCategoria | — | ✅ | IsAuthenticated |
 | `^esquemas-comision-categorias/(?P<pk>[^/.]+)/$` | EsquemaComisionCategoriaViewSet | EsquemaComisionCategoria | — | ✅ | IsAuthenticated |
 | `^esquemas-comision-categorias/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EsquemaComisionCategoriaViewSet | EsquemaComisionCategoria | — | ✅ | IsAuthenticated |
@@ -852,6 +858,12 @@
 | `^recepciones-mercancia/recepcionar/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
 | `^recepciones-mercancia/recepcionar\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
 | `^recepciones-mercancia\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
+| `^recepciones/$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recepciones/(?P<pk>[^/.]+)/$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recepciones/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm/$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recepciones/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recepciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recepciones\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^reembolsos-gasto/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
 | `^reembolsos-gasto/(?P<pk>[^/.]+)/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
 | `^reembolsos-gasto/(?P<pk>[^/.]+)/anular/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
@@ -1065,4 +1077,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 200_
+_Total ViewSets: 202_

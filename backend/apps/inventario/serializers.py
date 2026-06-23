@@ -4,6 +4,9 @@ from .models import (
     CategoriaProducto,
     ConversionUnidadMedida,
     MovimientoInventario,
+    OperacionInventario,
+    OperacionInventarioLinea,
+    OperacionInventarioPaso,
     PasoOperacion,
     Producto,
     StockActual,
@@ -245,3 +248,80 @@ class PasoOperacionSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
         ]
+
+
+class OperacionInventarioPasoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OperacionInventarioPaso
+        fields = [
+            "id_operacion_paso",
+            "secuencia",
+            "nombre_paso",
+            "confirmado",
+            "id_usuario_confirmacion",
+            "fecha_confirmacion",
+        ]
+        read_only_fields = fields
+
+
+class OperacionInventarioLineaSerializer(serializers.ModelSerializer):
+    producto_nombre = serializers.CharField(source="id_producto.nombre_producto", read_only=True)
+
+    class Meta:
+        model = OperacionInventarioLinea
+        fields = [
+            "id_linea",
+            "id_producto",
+            "producto_nombre",
+            "id_variante",
+            "cantidad",
+            "costo_unitario",
+        ]
+
+
+class OperacionInventarioSerializer(serializers.ModelSerializer):
+    """Lectura: operación con sus pasos y líneas anidados."""
+
+    pasos = OperacionInventarioPasoSerializer(many=True, read_only=True)
+    lineas = OperacionInventarioLineaSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = OperacionInventario
+        fields = [
+            "id_operacion",
+            "numero",
+            "tipo_operacion",
+            "origen_tipo",
+            "origen_id",
+            "id_almacen",
+            "id_almacen_contraparte",
+            "estado",
+            "motivo",
+            "fecha",
+            "id_empresa",
+            "pasos",
+            "lineas",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = ["numero", "estado", "id_empresa", "pasos", "lineas"]
+
+
+class _LineaInputSerializer(serializers.Serializer):
+    producto = serializers.UUIDField()
+    variante = serializers.UUIDField(required=False, allow_null=True)
+    cantidad = serializers.DecimalField(max_digits=18, decimal_places=4)
+    costo_unitario = serializers.DecimalField(
+        max_digits=18, decimal_places=4, required=False, allow_null=True
+    )
+
+
+class CrearOperacionSerializer(serializers.Serializer):
+    """Escritura: crea una operación con su lista de líneas."""
+
+    almacen = serializers.UUIDField()
+    origen_tipo = serializers.ChoiceField(choices=[c[0] for c in OperacionInventario.ORIGENES])
+    origen_id = serializers.UUIDField(required=False, allow_null=True)
+    almacen_contraparte = serializers.UUIDField(required=False, allow_null=True)
+    motivo = serializers.CharField(required=False, allow_blank=True, default="")
+    lineas = _LineaInputSerializer(many=True)

@@ -4,9 +4,11 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     CategoriaProductoViewSet,
     ConversionUnidadMedidaViewSet,
+    EntregaViewSet,
     MovimientoInventarioViewSet,
     PasoOperacionViewSet,
     ProductoViewSet,
+    RecepcionViewSet,
     StockActualViewSet,
     StockConsignacionClienteViewSet,
     StockConsignacionProveedorViewSet,
@@ -25,6 +27,8 @@ router.register(r"conversiones-unidad-medida", ConversionUnidadMedidaViewSet)
 router.register(r"stock-consignacion-cliente", StockConsignacionClienteViewSet)
 router.register(r"stock-consignacion-proveedor", StockConsignacionProveedorViewSet)
 router.register(r"pasos-operacion", PasoOperacionViewSet)
+router.register(r"recepciones", RecepcionViewSet, basename="recepcion")
+router.register(r"entregas", EntregaViewSet, basename="entrega")
 
 urlpatterns = [
     path("", include(router.urls)),
