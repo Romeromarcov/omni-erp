@@ -36,6 +36,7 @@ TIPOS_ASIENTO = frozenset(
         "DEVOLUCION_VENTA_IVA",  # 1.G: reverso del IVA débito fiscal de la factura
         "FACTURA_COMPRA",
         "RECEPCION_MERCANCIA",
+        "COSTO_VENTA",         # COGS: DR Costo de Ventas / CR Inventario al despachar venta
         "AJUSTE_INVENTARIO",
         "SALIDA_INTERNA",
         "PAGO_CXC",
