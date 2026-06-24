@@ -207,3 +207,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   con toList, service 100% cobertura), rutas+nav 'Migración de Datos', migracionDatosKeys. Tests: 45 (30 service
   puros + 15 página). Gate verde: services branches 94.55, global funcs 80.02, 1427 tests; tsc 0, lint limpio.
   (Flagged tech-debt: OperacionesCambio.test.tsx flaky timeout 5s → task_dd4597a5.) PR# pendiente.
+
+[2026-06-24] ✅ migracion_datos frontend PR#229 merged (12 apps).
+[2026-06-24] ✅ agentes frontend completo (Agentes IA / predicciones). Backend ya 100% (predicciones + acciones).
+  Agregado: AgentesPage (lista predicciones con filtros agente/resultado + StatusChip, Responder/Evaluar por fila,
+  panel de análisis cobranza/reorden/personalización + clasificar-gasto, métricas del clasificador), agentesService
+  (todas las acciones con toList), rutas+nav 'Agentes IA', agentesKeys. Refactor SugerenciasWidget para usar el service
+  (sin cambio de comportamiento). Tests: 35 (24 service puros + 11 página). Gate verde: services branches 94.67,
+  global funcs 79.98; tsc 0, lint limpio. PR# pendiente. NOTA: auditoria ya tenía UI (pages/Core/Auditoria) — no era gap.

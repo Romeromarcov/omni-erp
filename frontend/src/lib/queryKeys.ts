@@ -428,6 +428,19 @@ export const migracionDatosKeys = {
     ['migracion-datos', 'errores', 'list', procesoId ?? null] as const,
 };
 
+// ── Agentes IA (predicciones, sugerencias, métricas del clasificador) ─────────
+// Prefijo compartido `['agentes', <recurso>]` para que invalidar una familia
+// refresque lista y variantes (sugerencias, métricas) a la vez tras responder/evaluar.
+export const agentesKeys = {
+  all: () => ['agentes'] as const,
+  predicciones: (agente?: string | null, resultado?: string | null) =>
+    ['agentes', 'predicciones', 'list', agente ?? null, resultado ?? null] as const,
+  prediccionesAll: () => ['agentes', 'predicciones'] as const,
+  sugerenciasActivas: (limite?: number | null) =>
+    ['agentes', 'sugerencias-activas', limite ?? null] as const,
+  metricasClasificador: () => ['agentes', 'metricas-clasificador'] as const,
+};
+
 // ── Notificaciones (centro de notificaciones del usuario) ─────────────────────
 // Prefijo compartido `['notificaciones', ...]` para invalidar lista e indicador
 // (campana) a la vez tras marcar como leída. El parámetro distingue la vista de
