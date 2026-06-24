@@ -141,3 +141,10 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   detalleDespachoService read-only), despachoRoutes+nav 'Despacho', despachoKeys. Tests: 49 (37 service +
   18 página, puros sin userEvent) + E2E despacho.flow. Gate nativo verde: services branches 91.99,
   global funcs 79.70, despachoService 100%; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] ✅ despacho frontend PR#218 merged (CI verde 1er intento).
+[2026-06-24] ✅ costos frontend completo (costeo producción). Backend ya 100% (CRUD 3 entidades sin acciones).
+  Agregado: CostosPage (tabs/sub-secciones para CostoProduccion/CostoEstandar/AnalisisVariacion con CRUD,
+  StatusChip de variación FAVORABLE/DESFAVORABLE/NEUTRO), costosService (3 sub-servicios), costosRoutes+nav
+  'Costos', costosKeys. Tests servicio puros + página + E2E costos.flow. Gate nativo verde: services branches
+  92.32, global funcs 79.07, 1046 tests; tsc 0, lint limpio. PR# pendiente.

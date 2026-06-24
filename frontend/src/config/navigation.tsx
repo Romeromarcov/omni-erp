@@ -5,6 +5,7 @@ import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
+import CalculateOutlined from '@mui/icons-material/CalculateOutlined';
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
 import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
@@ -108,6 +109,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Manufactura',
       icon: <PrecisionManufacturingOutlined />,
       items: [{ label: 'Órdenes de Producción', path: '/manufactura/ordenes' }],
+    },
+    {
+      id: 'costos',
+      label: 'Costos',
+      icon: <CalculateOutlined />,
+      items: [{ label: 'Costeo de Producción', path: '/costos' }],
     },
     {
       id: 'compras',
