@@ -26,24 +26,23 @@ export async function monedaUsd(api: ApiE2E): Promise<string> {
   return usd.id_moneda;
 }
 
-export interface CatalogoInventario {
+export interface ProductoSembrado {
   productoId: string;
   productoNombre: string;
-  almacenId: string;
-  almacenNombre: string;
-  monedaUsdId: string;
 }
 
 /**
- * Crea unidad + categoría + producto + almacén y una carga inicial de stock
- * (movimiento AJUSTE de entrada) en la empresa indicada.
+ * Crea unidad + categoría + producto en la empresa indicada y devuelve su id y
+ * nombre. `seed_empresa_inicial` NO siembra productos, así que los specs que
+ * necesitan al menos uno deben crearlo vía API (igual que el resto de datos
+ * transaccionales).
  */
-export async function crearCatalogoInventario(
+export async function crearProducto(
   api: ApiE2E,
   empresaId: string,
-  opciones: { stockInicial: string; sufijo?: string },
-): Promise<CatalogoInventario> {
-  const suf = opciones.sufijo ?? sufijoUnico();
+  sufijo?: string,
+): Promise<ProductoSembrado> {
+  const suf = sufijo ?? sufijoUnico();
   const usdId = await monedaUsd(api);
 
   const unidad = await api.post<{ id_unidad_medida: string }>('/inventario/unidades-medida/', {
@@ -66,6 +65,30 @@ export async function crearCatalogoInventario(
     precio_venta_sugerido: '100.00',
     costo_promedio: '60.00',
   });
+  return { productoId: producto.id_producto, productoNombre };
+}
+
+export interface CatalogoInventario {
+  productoId: string;
+  productoNombre: string;
+  almacenId: string;
+  almacenNombre: string;
+  monedaUsdId: string;
+}
+
+/**
+ * Crea unidad + categoría + producto + almacén y una carga inicial de stock
+ * (movimiento AJUSTE de entrada) en la empresa indicada.
+ */
+export async function crearCatalogoInventario(
+  api: ApiE2E,
+  empresaId: string,
+  opciones: { stockInicial: string; sufijo?: string },
+): Promise<CatalogoInventario> {
+  const suf = opciones.sufijo ?? sufijoUnico();
+  const usdId = await monedaUsd(api);
+
+  const { productoId, productoNombre } = await crearProducto(api, empresaId, suf);
   const almacenNombre = `Almacén E2E ${suf}`;
   const almacen = await api.post<{ id_almacen: string }>('/almacenes/almacenes/', {
     id_empresa: empresaId,
@@ -74,7 +97,7 @@ export async function crearCatalogoInventario(
   });
   await api.post('/inventario/movimientos-inventario/', {
     id_empresa: empresaId,
-    id_producto: producto.id_producto,
+    id_producto: productoId,
     tipo_movimiento: 'AJUSTE',
     cantidad: opciones.stockInicial,
     fecha_hora_movimiento: new Date().toISOString(),
@@ -84,7 +107,7 @@ export async function crearCatalogoInventario(
   });
 
   return {
-    productoId: producto.id_producto,
+    productoId,
     productoNombre,
     almacenId: almacen.id_almacen,
     almacenNombre,

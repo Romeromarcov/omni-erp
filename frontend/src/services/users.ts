@@ -3,6 +3,7 @@ export async function changeUserPassword(old_password: string, new_password: str
   return post<{ message: string }>(`/core/usuarios/change_password/`, { old_password, new_password });
 }
 import { get, post, put } from './api';
+import { toList } from '../utils/api';
 
 export interface EmpresaRef {
   id_empresa: string;
@@ -32,7 +33,10 @@ export interface Usuario {
 
 export async function fetchUsuarios(id_empresa?: string): Promise<Usuario[]> {
   const query = id_empresa ? `?id_empresa=${id_empresa}` : '';
-  return get<Usuario[]>(`/core/usuarios/${query}`);
+  // El endpoint /core/usuarios/ es paginado (devuelve {results: [...]}). Sin
+  // normalizar, los consumidores que hacen `.map` rompen ("X.map is not a
+  // function"). `toList` acepta tanto el arreglo plano como la forma paginada.
+  return toList<Usuario>(await get<unknown>(`/core/usuarios/${query}`));
 }
 
 export interface UsuarioUpdatePayload {

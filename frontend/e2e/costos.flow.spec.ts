@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { iniciarSesion } from './helpers/sesion';
-import { sufijoUnico } from './helpers/datos';
+import { sufijoUnico, crearProducto } from './helpers/datos';
 
 /**
  * Flujo Costos — Costeo de producción (frontend e2e).
@@ -13,10 +13,14 @@ import { sufijoUnico } from './helpers/datos';
  */
 test.describe('Costos: costeo de producción', () => {
   test('crea un costo estándar desde la UI y lo ve en la lista', async ({ page }) => {
-    await iniciarSesion(page);
+    const sesion = await iniciarSesion(page);
 
     const suf = sufijoUnico();
     const costoUnitario = `${100 + Number(suf.slice(-3))}.00`;
+
+    // `seed_empresa_inicial` no siembra productos: el combo "Producto" quedaría
+    // vacío. Creamos uno vía API en la empresa primaria (la que ve la UI).
+    await crearProducto(sesion.api, sesion.empresaId, suf);
 
     await test.step('navegar a la página de Costos', async () => {
       await page.goto('/costos');

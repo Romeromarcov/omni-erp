@@ -115,7 +115,7 @@ const CostosProduccionSeccion: React.FC<SubseccionProps> = ({ empresaId, ordenes
 
   const abrirCrear = () => {
     setEditando(null);
-    setForm(PRODUCCION_VACIO);
+    setForm({ ...PRODUCCION_VACIO, id_moneda: monedas[0]?.id_moneda ?? '' });
     setErrorMsg('');
     setDialogOpen(true);
   };
@@ -162,6 +162,10 @@ const CostosProduccionSeccion: React.FC<SubseccionProps> = ({ empresaId, ordenes
     }
     if (!form.costo_total.trim()) {
       setErrorMsg('Indique el costo total.');
+      return;
+    }
+    if (!form.id_moneda) {
+      setErrorMsg('Seleccione la moneda.');
       return;
     }
     guardar.mutate({
@@ -384,7 +388,7 @@ const CostosEstandarSeccion: React.FC<SubseccionProps> = ({ empresaId, productos
 
   const abrirCrear = () => {
     setEditando(null);
-    setForm(ESTANDAR_VACIO);
+    setForm({ ...ESTANDAR_VACIO, id_moneda: monedas[0]?.id_moneda ?? '' });
     setErrorMsg('');
     setDialogOpen(true);
   };
@@ -435,6 +439,10 @@ const CostosEstandarSeccion: React.FC<SubseccionProps> = ({ empresaId, productos
     }
     if (!form.fecha_vigencia_desde) {
       setErrorMsg('Indique la fecha de vigencia desde.');
+      return;
+    }
+    if (!form.id_moneda) {
+      setErrorMsg('Seleccione la moneda.');
       return;
     }
     guardar.mutate({
