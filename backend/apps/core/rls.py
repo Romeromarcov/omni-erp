@@ -244,6 +244,7 @@ RLS_TABLES = {
     "cuentas_por_cobrar_cuentaporcobrar": "empresa_id",
     # cuentas_por_pagar
     "cuentas_por_pagar_cuentaporpagar": "id_empresa_id",
+    "cuentas_por_pagar_diferencia_cambiaria": "id_empresa_id",
     # cxc
     "cxc_lotefraccionado": "empresa_id",
     "cxc_plantillacobranza": "empresa_id",
