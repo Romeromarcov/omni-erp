@@ -44,6 +44,47 @@ describe('proveedoresService CRUD', () => {
     expect(get).toHaveBeenCalledWith('/proveedores/proveedores/');
   });
 
+  it('getAll con objeto vacío pega al endpoint base (rama params sin claves)', async () => {
+    vi.mocked(get).mockResolvedValueOnce([]);
+    await proveedoresService.getAll({});
+    expect(get).toHaveBeenCalledWith('/proveedores/proveedores/');
+  });
+
+  it('getAll solo con empresa arma el querystring sin search', async () => {
+    vi.mocked(get).mockResolvedValueOnce([]);
+    await proveedoresService.getAll({ empresa: 'e1' });
+    expect(get).toHaveBeenCalledWith('/proveedores/proveedores/?empresa=e1');
+  });
+
+  it('getAll solo con search arma el querystring sin empresa', async () => {
+    vi.mocked(get).mockResolvedValueOnce([]);
+    await proveedoresService.getAll({ search: 'acme' });
+    expect(get).toHaveBeenCalledWith('/proveedores/proveedores/?search=acme');
+  });
+
+  it('getAll normaliza respuesta paginada (toList con results)', async () => {
+    vi.mocked(get).mockResolvedValueOnce({ count: 1, results: [{ id_proveedor: 'p1' }] });
+    const r = await proveedoresService.getAll();
+    expect(r).toEqual([{ id_proveedor: 'p1' }]);
+  });
+
+  it('getAll normaliza array directo (toList con array)', async () => {
+    vi.mocked(get).mockResolvedValueOnce([{ id_proveedor: 'p1' }, { id_proveedor: 'p2' }]);
+    const r = await proveedoresService.getAll();
+    expect(r.map((p) => p.id_proveedor)).toEqual(['p1', 'p2']);
+  });
+
+  it('getAll ante respuesta inesperada devuelve [] (toList fallback)', async () => {
+    vi.mocked(get).mockResolvedValueOnce(null as unknown as never);
+    const r = await proveedoresService.getAll();
+    expect(r).toEqual([]);
+  });
+
+  it('create propaga el error del backend (rama de rechazo)', async () => {
+    vi.mocked(post).mockRejectedValueOnce(new Error('boom'));
+    await expect(proveedoresService.create(proveedorPayload)).rejects.toThrow('boom');
+  });
+
   it('getById pega al detalle', async () => {
     vi.mocked(get).mockResolvedValueOnce({ id_proveedor: 'p1' });
     await proveedoresService.getById('p1');
@@ -72,6 +113,13 @@ describe('proveedoresService CRUD', () => {
     vi.mocked(get).mockResolvedValueOnce({ results: [{ id_proveedor: 'p1' }] });
     const r = await proveedoresService.buscarPorRif('J-123');
     expect(get).toHaveBeenCalledWith('/proveedores/proveedores/buscar-por-rif/?rif=J-123');
+    expect(r).toEqual([{ id_proveedor: 'p1' }]);
+  });
+
+  it('buscarPorRif normaliza array directo y codifica caracteres especiales', async () => {
+    vi.mocked(get).mockResolvedValueOnce([{ id_proveedor: 'p1' }]);
+    const r = await proveedoresService.buscarPorRif('J-12 34');
+    expect(get).toHaveBeenCalledWith('/proveedores/proveedores/buscar-por-rif/?rif=J-12%2034');
     expect(r).toEqual([{ id_proveedor: 'p1' }]);
   });
 });
@@ -107,6 +155,22 @@ describe('contactosProveedorService', () => {
     });
     const r = await contactosProveedorService.getAll();
     expect(r.map((c) => c.id_contacto)).toEqual(['k1']);
+  });
+
+  it('getAll filtra por proveedor sobre respuesta paginada (results + filtro)', async () => {
+    vi.mocked(get).mockResolvedValueOnce({
+      results: [
+        { id_contacto: 'k1', id_proveedor: 'p1' },
+        { id_contacto: 'k2', id_proveedor: 'otro' },
+      ],
+    });
+    const r = await contactosProveedorService.getAll({ proveedor: 'p1' });
+    expect(r.map((c) => c.id_contacto)).toEqual(['k1']);
+  });
+
+  it('create propaga el error del backend', async () => {
+    vi.mocked(post).mockRejectedValueOnce(new Error('dup'));
+    await expect(contactosProveedorService.create(contactoPayload)).rejects.toThrow('dup');
   });
 
   it('create / update / remove pegan a sus endpoints', async () => {
@@ -153,6 +217,22 @@ describe('cuentasBancariasProveedorService', () => {
     vi.mocked(get).mockResolvedValueOnce([{ id_cuenta_bancaria: 'b1', id_proveedor: 'p1' }]);
     const r = await cuentasBancariasProveedorService.getAll();
     expect(r.map((c) => c.id_cuenta_bancaria)).toEqual(['b1']);
+  });
+
+  it('getAll filtra por proveedor sobre respuesta paginada (results + filtro)', async () => {
+    vi.mocked(get).mockResolvedValueOnce({
+      results: [
+        { id_cuenta_bancaria: 'b1', id_proveedor: 'p1' },
+        { id_cuenta_bancaria: 'b2', id_proveedor: 'otro' },
+      ],
+    });
+    const r = await cuentasBancariasProveedorService.getAll({ proveedor: 'p1' });
+    expect(r.map((c) => c.id_cuenta_bancaria)).toEqual(['b1']);
+  });
+
+  it('create propaga el error del backend', async () => {
+    vi.mocked(post).mockRejectedValueOnce(new Error('dup'));
+    await expect(cuentasBancariasProveedorService.create(cuentaPayload)).rejects.toThrow('dup');
   });
 
   it('create / update / remove pegan a sus endpoints', async () => {
