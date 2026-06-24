@@ -164,3 +164,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   visibilidad), FeedbackPage (calificación 1-5); servicioClienteService (5 sub-servicios con todas las acciones
   incl. dashboard), rutas+nav 'Servicio al Cliente', servicioClienteKeys. Tests: 107 (67 service puros + 40 página)
   + E2E. Gate nativo verde: services branches 93.95, global funcs 79.64, 1234 tests; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] ✅ servicio_cliente frontend PR#221 merged (CI verde 1er intento).
+[2026-06-24] ✅ gestion_aprobaciones frontend completo (motor de aprobaciones). Backend ya 100% (CRUD 4 entidades,
+  sin @actions). Agregado: ConfiguracionAprobacionesPage (tabs CRUD Tipo+Flujo), SolicitudesAprobacionPage
+  (filtro estado+StatusChip, drawer con timeline de RegistroAprobacion + Registrar decisión = POST registro +
+  PATCH estado), aprobacionesService (4 sub-servicios + cambiarEstado), rutas+nav 'Aprobaciones', aprobacionesKeys.
+  Tests: 63 (33 service puros + 30 página) + E2E. Gate nativo verde: services branches 94.05, global funcs 79.46;
+  tsc 0, lint limpio (flaky OperacionesCambio ajeno requiere reintento CI). PR# pendiente.

@@ -23,6 +23,7 @@ import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
 import AppsOutlined from '@mui/icons-material/AppsOutlined';
 import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlined';
 import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined';
+import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
 import { isModuleEnabled } from './appProfile';
 
 export interface NavItem {
@@ -246,6 +247,15 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Roles', path: '/roles' },
         { label: 'Permisos', path: '/permisos' },
         { label: 'Auditoría', path: '/auditoria' },
+      ],
+    },
+    {
+      id: 'gestion-aprobaciones',
+      label: 'Aprobaciones',
+      icon: <FactCheckOutlined />,
+      items: [
+        { label: 'Solicitudes', path: '/aprobaciones/solicitudes' },
+        { label: 'Configuración', path: '/aprobaciones/configuracion' },
       ],
     },
     {
