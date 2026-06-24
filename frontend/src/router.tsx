@@ -14,6 +14,7 @@ import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 import { crmRoutes } from './routes/crmRoutes';
+import { proveedoresRoutes } from './routes/proveedoresRoutes';
 import { manufacturaRoutes } from './routes/manufacturaRoutes';
 import { comprasRoutes } from './routes/comprasRoutes';
 import { rrhhRoutes } from './routes/rrhhRoutes';
@@ -72,6 +73,7 @@ export default function AppRouter() {
             {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
             {crmRoutes()}
+            {proveedoresRoutes()}
             {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
             {isModuleEnabled('compras') ? comprasRoutes() : null}
             {isModuleEnabled('rrhh') ? rrhhRoutes() : null}

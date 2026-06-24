@@ -102,3 +102,22 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
 [2026-06-23] ✅ PR-7 UI config de pasos por almacén/operación (PasosOperacionPage + pasosOperacionService
   CRUD) — completa T02 vía UI (configurar pasos antes de usar el stepper). Gate local: tsc/eslint limpios,
   723 tests vitest, cobertura sobre umbrales (incl. ratchets). PR# pendiente.
+
+## Loop autónomo 2026-06-24 — Frontend app-por-app (Contactos y terceros)
+
+[2026-06-24] ✅ CRM frontend completo (maestro de Clientes) PR#215 merged — el backend ya
+  estaba 100% (Cliente/Contacto/Dirección + CRUD + buscar-por-rif/historial-ventas/credito-disponible)
+  pero NO existía pantalla. Agregado: ClientesPage (lista+búsqueda+dialog alta/edición+eliminar+drawer
+  de detalle con crédito/historial y CRUD inline de contactos y direcciones), clientesService ampliado
+  (preservando firmas usadas por ventas/POS) + contactos/direccionesService, crmRoutes+nav 'Clientes (CRM)',
+  crmKeys. Tests: 25 page + 16 service vitest + E2E crm.flow. Gate: functions 78.65% (umbral 77),
+  tsc 0, lint limpio. Incidente: sesión concurrente borró archivos del repo principal → recuperados al
+  worktree aislado; CI verde es el gate autoritativo (ver memoria reference_worktree_docker_ci_workflow).
+
+[2026-06-24] ✅ proveedores frontend completo (maestro de Proveedores) — espejo de CRM. Backend ya 100%
+  (Proveedor/ContactoProveedor/CuentaBancariaProveedor + CRUD + buscar-por-rif) sin pantalla. Agregado:
+  ProveedoresPage (lista+búsqueda+dialog+eliminar+drawer con CRUD inline de contactos y cuentas bancarias),
+  proveedoresService + contactos/cuentasBancariasService, proveedoresRoutes+nav 'Proveedores', proveedoresKeys.
+  comprasService NO tocado. Tests: 17 page + 19 service + E2E proveedores.flow. Gate nativo verde:
+  functions 79.43% (umbral 77), stmts 85.75, branches 74.39, lines 87.3, services funcs 95.02; tsc 0, lint limpio.
+  PR# pendiente.

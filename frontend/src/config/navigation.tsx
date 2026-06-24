@@ -6,6 +6,7 @@ import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
+import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
 import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
 import SavingsOutlined from '@mui/icons-material/SavingsOutlined';
@@ -109,6 +110,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Órdenes de Compra', path: '/compras/ordenes' },
         { label: 'Cuentas por Pagar', path: '/compras/cuentas-por-pagar' },
       ],
+    },
+    {
+      id: 'proveedores',
+      label: 'Proveedores',
+      icon: <LocalShippingOutlined />,
+      items: [{ label: 'Proveedores', path: '/proveedores/proveedores' }],
     },
     {
       id: 'finanzas',
