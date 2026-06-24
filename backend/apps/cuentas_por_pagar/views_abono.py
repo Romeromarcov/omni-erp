@@ -9,7 +9,17 @@ class AbonoCxPViewSet(BaseModelViewSet):
     queryset = AbonoCxP.objects.all()
     serializer_class = AbonoCxPSerializer
 
-    # P1-1: techo estricto para escritura de pagos (scope 'escritura').
+    # Integridad financiera (deuda auditoría 2026-06-21 "AbonoCxP CRUD libre";
+    # espejo del blindaje aplicado a CuentaPorPagar): un AbonoCxP NO se crea ni
+    # edita por CRUD directo. Crear un abono debe pasar por el flujo atómico
+    # ``registrar_abono_cxp`` (acción POST ``cuentas-por-pagar/{pk}/abonar/``),
+    # que toma el lock de la CxP, valida el saldo, actualiza estado/pendiente y
+    # postea el asiento PAGO_CXP. Un POST/PUT/PATCH/DELETE directo aquí saltaba
+    # todo eso (saldo sin actualizar, sin asiento). Se deja solo lectura.
+    http_method_names = ["get", "head", "options"]
+
+    # P1-1: se conserva el throttle de escritura (no aplica en solo-lectura, pero
+    # el contrato de seguridad S1 lo exige declarado en todos los viewsets de pago).
     throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
 
     def get_queryset(self):
