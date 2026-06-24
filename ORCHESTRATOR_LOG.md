@@ -121,3 +121,14 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   comprasService NO tocado. Tests: 17 page + 19 service + E2E proveedores.flow. Gate nativo verde:
   functions 79.43% (umbral 77), stmts 85.75, branches 74.39, lines 87.3, services funcs 95.02; tsc 0, lint limpio.
   PR# pendiente.
+
+[2026-06-24] ✅ proveedores frontend PR#216 merged (CI verde tras 3 intentos; el dragger real de cobertura
+  era clientesService branches 37.93%, no proveedores — cubierto a 79%, services branches 88%).
+[2026-06-24] ✅ gastos frontend completo (workflow de aprobación) — backend ya 100%. Agregado: GastosPage
+  (lista+filtro estado+StatusChip, dialog alta/edición con detalles inline de imputación, Aprobar/Rechazar
+  gated por estado, drawer detalle), CategoriasGastoPage, ReembolsosPage (Procesar pago/Anular gated),
+  gastosService (4 sub-servicios: categorías/gastos/detalles/reembolsos con todas las acciones),
+  gastosRoutes+nav 'Gastos', gastosKeys. Tests: 75 (43 service + 32 página) + E2E gastos.flow. ADEMÁS
+  endurecimiento de cobertura services branches 84.93→91.55 (tests puros de contabilidadService [era 0% ramas],
+  monedas, metodosPagoEmpresaActiva, clientesService). Gate nativo verde: global funcs 79.51, services 91.55
+  branches; 948 tests; tsc 0, lint limpio. PR# pendiente.
