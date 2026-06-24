@@ -117,6 +117,24 @@ export const proveedoresKeys = {
     ['proveedores', 'maestro', 'cuentas-bancarias', proveedorId] as const,
 };
 
+// ── Gastos (workflow de aprobación + asiento contable) ────────────────────────
+// Prefijo compartido `['gastos', <recurso>]` para que invalidar la familia
+// refresque lista, detalle y pendientes a la vez tras aprobar/rechazar.
+export const gastosKeys = {
+  gastosAll: () => ['gastos', 'gastos'] as const,
+  gastos: (empresaId?: string | null, estado?: string | null, search?: string | null) =>
+    ['gastos', 'gastos', 'list', empresaId ?? null, estado ?? null, search ?? null] as const,
+  gasto: (id: string) => ['gastos', 'gastos', 'detail', id] as const,
+  detalles: (gastoId: string) => ['gastos', 'gastos', 'detalles', gastoId] as const,
+  categoriasAll: () => ['gastos', 'categorias'] as const,
+  categorias: (empresaId?: string | null, search?: string | null) =>
+    ['gastos', 'categorias', 'list', empresaId ?? null, search ?? null] as const,
+  categoriasActivas: () => ['gastos', 'categorias', 'activas'] as const,
+  reembolsosAll: () => ['gastos', 'reembolsos'] as const,
+  reembolsos: (empresaId?: string | null, estado?: string | null) =>
+    ['gastos', 'reembolsos', 'list', empresaId ?? null, estado ?? null] as const,
+};
+
 // ── Finanzas ──────────────────────────────────────────────────────────────────
 export const finanzasKeys = {
   monedas: {
