@@ -270,3 +270,74 @@ class TestCxPEndpoints:
     def test_aging_sin_empresa_retorna_400(self, db, client_a):
         resp = client_a.get("/api/cuentas-por-pagar/cuentas-por-pagar/aging/")
         assert resp.status_code == 400
+
+
+# ─────────────────────────────────────────────
+# Asiento PAGO_CXP (R-CODE-11)
+# ─────────────────────────────────────────────
+
+
+def _cuenta(empresa, codigo, nombre, tipo, naturaleza):
+    from apps.contabilidad.models import PlanCuentas
+
+    return PlanCuentas.objects.create(
+        id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta=nombre,
+        tipo_cuenta=tipo, naturaleza=naturaleza, nivel=1,
+    )
+
+
+def _mapeo_pago_cxp(empresa):
+    from apps.contabilidad.models import MapeoContable
+
+    debe = _cuenta(empresa, "2101", "CxP Proveedores", "PASIVO", "ACREEDORA")
+    haber = _cuenta(empresa, "1101", "Banco", "ACTIVO", "DEUDORA")
+    return MapeoContable.objects.create(
+        id_empresa=empresa, tipo_asiento="PAGO_CXP", cuenta_debe=debe,
+        cuenta_haber=haber, descripcion_plantilla="Pago CxP - {numero}", activo=True,
+    )
+
+
+class TestAsientoPagoCxP:
+    def test_abono_genera_asiento_pago_cxp(self, db, cxp_pendiente, user_a, empresa_a):
+        from apps.contabilidad.models import AsientoContable
+
+        _mapeo_pago_cxp(empresa_a)
+        registrar_abono_cxp(cxp_pendiente, Decimal("400.00"), user_a)
+        asiento = AsientoContable.objects.get(nombre_modelo_origen="AbonoCxP")
+        assert asiento.id_usuario_registro == user_a
+        detalles = list(asiento.detalleasiento_set.all())
+        assert sum(d.debe for d in detalles) == sum(d.haber for d in detalles) == Decimal("400.00")
+
+    def test_abono_sin_mapeo_no_falla(self, db, cxp_pendiente, user_a):
+        """Empresa informal sin mapeo (R-PROD-3): el abono procede sin asiento."""
+        from apps.contabilidad.models import AsientoContable
+
+        registrar_abono_cxp(cxp_pendiente, Decimal("400.00"), user_a)
+        cxp_pendiente.refresh_from_db()
+        assert cxp_pendiente.monto_pendiente == Decimal("600.00")
+        assert not AsientoContable.objects.filter(nombre_modelo_origen="AbonoCxP").exists()
+
+
+class TestAbonoCxPReadOnly:
+    """La deuda 'AbonoCxP CRUD libre': el endpoint es de solo lectura."""
+
+    @pytest.fixture
+    def client_a(self, user_a):
+        from rest_framework.test import APIClient
+
+        c = APIClient()
+        c.force_authenticate(user=user_a)
+        return c
+
+    def test_post_directo_bloqueado_405(self, db, cxp_pendiente, client_a):
+        resp = client_a.post(
+            "/api/cuentas-por-pagar/abonos-cxp/",
+            {"cuenta_por_pagar": str(cxp_pendiente.pk), "monto": "100.00"},
+            format="json",
+        )
+        assert resp.status_code == 405
+
+    def test_list_solo_lectura_ok(self, db, cxp_pendiente, user_a, client_a):
+        registrar_abono_cxp(cxp_pendiente, Decimal("100.00"), user_a)
+        resp = client_a.get("/api/cuentas-por-pagar/abonos-cxp/")
+        assert resp.status_code == 200

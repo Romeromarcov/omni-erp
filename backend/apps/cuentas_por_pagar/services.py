@@ -5,6 +5,7 @@ registrar_abono_cxp()  — aplica un pago parcial o total a una CxP.
 calcular_aging_cxp()   — clasifica el saldo vencido por tramos de días.
 """
 
+import logging
 from decimal import Decimal
 
 from django.db import transaction
@@ -15,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:  # BUILD-1: solo para anotaciones (evita F821)
     from .models import AbonoCxP
 
+logger = logging.getLogger(__name__)
 
 
 class AbonoCxPError(Exception):
@@ -62,6 +64,29 @@ def registrar_abono_cxp(cxp, monto: Decimal, usuario, descripcion: str = "") -> 
     else:
         cxp.estado = "PARCIAL"
     cxp.save(update_fields=["monto_pendiente", "estado"])
+
+    # R-CODE-11: el abono a una CxP genera su asiento ``PAGO_CXP`` (DR CxP /
+    # CR Banco o Caja) en la MISMA transacción, con la política uniforme de
+    # ``generar_asiento_o_fallar`` (espejo exacto de ``cuentas_por_cobrar``).
+    # Antes los abonos a CxP NO generaban asiento (asimetría con CxC). Si la
+    # empresa exige contabilidad y falta el mapeo, o el asiento descuadra,
+    # ``AsientoError`` revierte el abono completo (la @transaction.atomic hace
+    # rollback al propagar). Una empresa informal (sin contabilidad activa y sin
+    # mapeo) procede sin asiento (R-PROD-3).
+    from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
+
+    try:
+        generar_asiento_o_fallar("PAGO_CXP", abono, cxp.id_empresa, monto, usuario=usuario)
+    except AsientoError as exc:
+        logger.exception(
+            "registrar_abono_cxp: asiento PAGO_CXP obligatorio falló | empresa=%s | cxp=%s",
+            cxp.id_empresa_id,
+            cxp.pk,
+        )
+        raise AbonoCxPError(
+            "No se pudo generar el asiento contable obligatorio. "
+            "Configure el Mapeo Contable de la empresa."
+        ) from exc
 
     return abono
 
