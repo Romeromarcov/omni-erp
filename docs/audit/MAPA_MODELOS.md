@@ -102,6 +102,7 @@
 | fiscal | RetencionEmpresaActiva | ✅ | — | empresa+retencion |
 | fiscal | TasaIVAEmpresa | ✅ | ✅ | id_empresa+tipo |
 | gastos | CategoriaGasto | ✅ | ✅ | — |
+| gastos | DetalleGasto | — | ✅ | — |
 | gastos | Gasto | ✅ | ✅ | — |
 | gastos | ReembolsoGasto | ✅ | ✅ | — |
 | gestion_aprobaciones | FlujoAprobacion | — | ✅ | — |
@@ -207,4 +208,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 204_
+_Total modelos: 205_
