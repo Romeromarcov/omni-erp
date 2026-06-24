@@ -20,6 +20,7 @@ import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import HubOutlined from '@mui/icons-material/HubOutlined';
+import CloudUploadOutlined from '@mui/icons-material/CloudUploadOutlined';
 import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
 import AppsOutlined from '@mui/icons-material/AppsOutlined';
 import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlined';
@@ -288,6 +289,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Integraciones',
       icon: <HubOutlined />,
       items: [{ label: 'Hub de Integraciones', path: '/integraciones' }],
+    },
+    {
+      id: 'migracion-datos',
+      label: 'Migración de Datos',
+      icon: <CloudUploadOutlined />,
+      items: [{ label: 'Migración de Datos', path: '/migracion-datos' }],
     },
     {
       id: 'notificaciones',

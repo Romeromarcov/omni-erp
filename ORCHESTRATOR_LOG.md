@@ -199,3 +199,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   moneda, saldo, activa con StatusChip), bancaElectronicaService (CRUD con toList), rutas+nav 'Banca Electrónica',
   bancaElectronicaKeys. Tests: 19 (9 service puros + 10 página). Gate verde: services branches 94.41, global
   funcs 79.83, 1385 tests; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] ✅ banca_electronica frontend PR#228 merged (11 apps).
+[2026-06-24] ✅ migracion_datos frontend completo (plantillas/procesos/errores de migración). Backend ya 100%.
+  Agregado: MigracionDatosPage (Tabs: Plantillas CRUD con manejo de 403 superuser-write, Procesos lista+alta
+  con StatusChip estado, Errores solo-lectura filtrable por proceso), migracionDatosService (3 sub-servicios
+  con toList, service 100% cobertura), rutas+nav 'Migración de Datos', migracionDatosKeys. Tests: 45 (30 service
+  puros + 15 página). Gate verde: services branches 94.55, global funcs 80.02, 1427 tests; tsc 0, lint limpio.
+  (Flagged tech-debt: OperacionesCambio.test.tsx flaky timeout 5s → task_dd4597a5.) PR# pendiente.

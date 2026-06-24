@@ -413,6 +413,21 @@ export const bancaElectronicaKeys = {
   cuenta: (id: string) => ['banca-electronica', 'cuentas', 'detail', id] as const,
 };
 
+// ── Migración de Datos (plantillas globales + procesos + errores) ─────────────
+// Prefijo compartido `['migracion-datos', <recurso>]`; los `*All` invalidan la
+// familia completa de un recurso tras crear/editar/eliminar.
+export const migracionDatosKeys = {
+  plantillasAll: () => ['migracion-datos', 'plantillas'] as const,
+  plantillas: (activo?: boolean | null) =>
+    ['migracion-datos', 'plantillas', 'list', activo ?? null] as const,
+  procesosAll: () => ['migracion-datos', 'procesos'] as const,
+  procesos: (empresaId?: string | null, estado?: string | null) =>
+    ['migracion-datos', 'procesos', 'list', empresaId ?? null, estado ?? null] as const,
+  erroresAll: () => ['migracion-datos', 'errores'] as const,
+  errores: (procesoId?: string | null) =>
+    ['migracion-datos', 'errores', 'list', procesoId ?? null] as const,
+};
+
 // ── Notificaciones (centro de notificaciones del usuario) ─────────────────────
 // Prefijo compartido `['notificaciones', ...]` para invalidar lista e indicador
 // (campana) a la vez tras marcar como leída. El parámetro distingue la vista de
