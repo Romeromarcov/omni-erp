@@ -403,6 +403,16 @@ export const aprobacionesKeys = {
     ['aprobaciones', 'solicitudes', 'registros', solicitudId] as const,
 };
 
+// ── Banca Electrónica (cuentas bancarias de la empresa) ───────────────────────
+// Prefijo compartido `['banca-electronica', 'cuentas']` para que invalidar la
+// familia refresque la lista y el detalle a la vez tras crear/editar/eliminar.
+export const bancaElectronicaKeys = {
+  cuentasAll: () => ['banca-electronica', 'cuentas'] as const,
+  cuentas: (empresaId?: string | null) =>
+    ['banca-electronica', 'cuentas', 'list', empresaId ?? null] as const,
+  cuenta: (id: string) => ['banca-electronica', 'cuentas', 'detail', id] as const,
+};
+
 // ── Notificaciones (centro de notificaciones del usuario) ─────────────────────
 // Prefijo compartido `['notificaciones', ...]` para invalidar lista e indicador
 // (campana) a la vez tras marcar como leída. El parámetro distingue la vista de

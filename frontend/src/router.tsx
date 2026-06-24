@@ -30,6 +30,7 @@ import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
 import { aprobacionesRoutes } from './routes/aprobacionesRoutes';
 import { notificacionesRoutes } from './routes/notificacionesRoutes';
+import { bancaElectronicaRoutes } from './routes/bancaElectronicaRoutes';
 import { isModuleEnabled } from './config/appProfile';
 
 const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
@@ -97,6 +98,7 @@ export default function AppRouter() {
             {saasRoutes()}
             {aprobacionesRoutes()}
             {notificacionesRoutes()}
+            {bancaElectronicaRoutes()}
           </Route>
         )}
 
