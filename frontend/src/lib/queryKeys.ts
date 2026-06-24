@@ -237,6 +237,21 @@ export const manufacturaKeys = {
     ['manufactura', 'ordenes', 'mrp', ordenId, almacenId ?? null] as const,
 };
 
+// ── Costos (costeo de producción — complementa Manufactura) ───────────────────
+// Prefijo compartido `['costos', <recurso>]` para que invalidar la familia
+// refresque lista y detalle de cada entidad a la vez.
+export const costosKeys = {
+  produccionAll: () => ['costos', 'produccion'] as const,
+  produccion: (empresaId?: string | null, ordenId?: string | null) =>
+    ['costos', 'produccion', 'list', empresaId ?? null, ordenId ?? null] as const,
+  estandarAll: () => ['costos', 'estandar'] as const,
+  estandar: (empresaId?: string | null, productoId?: string | null) =>
+    ['costos', 'estandar', 'list', empresaId ?? null, productoId ?? null] as const,
+  variacionAll: () => ['costos', 'variacion'] as const,
+  variacion: (empresaId?: string | null, productoId?: string | null) =>
+    ['costos', 'variacion', 'list', empresaId ?? null, productoId ?? null] as const,
+};
+
 // ── Contabilidad (workstream F) ───────────────────────────────────────────────
 // Prefijo `['contabilidad', …]` por recurso; `asientosAll`/`mapeosAll` permiten
 // invalidar la familia completa tras crear cuentas, asientos o mapeos.
