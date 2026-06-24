@@ -192,3 +192,10 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   Integra con NotificationBell existente (sin duplicar). vite.config: preview.proxy /api para E2E local. Tests: 12
   (7 service + 5 página). Gate verde: services branches 94.37, global funcs 79.66, 1367 tests; tsc 0, lint limpio.
   E2E no verificable localmente (rehidratación de sesión no dispara en preview build, afecta también crm.flow) → CI lo valida. PR# pendiente.
+
+[2026-06-24] ✅ notificaciones frontend PR#227 merged (10 apps; E2E verde en CI).
+[2026-06-24] ✅ banca_electronica frontend completo (CRUD cuentas bancarias de empresa). Backend ya 100%.
+  Agregado: CuentasBancariasEmpresaPage (DataTable + dialog alta/edición + eliminar; tipo corriente/ahorro,
+  moneda, saldo, activa con StatusChip), bancaElectronicaService (CRUD con toList), rutas+nav 'Banca Electrónica',
+  bancaElectronicaKeys. Tests: 19 (9 service puros + 10 página). Gate verde: services branches 94.41, global
+  funcs 79.83, 1385 tests; tsc 0, lint limpio. PR# pendiente.

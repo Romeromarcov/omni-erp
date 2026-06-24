@@ -12,6 +12,7 @@ import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
 import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
 import SavingsOutlined from '@mui/icons-material/SavingsOutlined';
+import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import BadgeOutlined from '@mui/icons-material/BadgeOutlined';
 import FingerprintOutlined from '@mui/icons-material/FingerprintOutlined';
@@ -192,6 +193,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Conciliación Bancaria', path: '/tesoreria/conciliaciones' },
         { label: 'Cambio de Divisa', path: '/tesoreria/cambio-divisa' },
       ],
+    },
+    {
+      id: 'banca-electronica',
+      label: 'Banca Electrónica',
+      icon: <AccountBalanceOutlined />,
+      items: [{ label: 'Cuentas Bancarias', path: '/banca-electronica' }],
     },
     {
       id: 'cobranza',
