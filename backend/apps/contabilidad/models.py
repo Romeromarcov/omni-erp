@@ -103,6 +103,8 @@ class MapeoContable(models.Model):
         ("SALIDA_INTERNA", "Salida Interna / Requisición"),
         ("PAGO_CXC", "Pago de Cuenta por Cobrar"),
         ("PAGO_CXP", "Pago de Cuenta por Pagar"),
+        ("GANANCIA_CAMBIARIA", "Ganancia Cambiaria"),
+        ("PERDIDA_CAMBIARIA", "Pérdida Cambiaria"),
         ("NOMINA", "Proceso de Nómina"),
         ("CAMBIO_DIVISA", "Cambio de Divisa"),
         ("PAGO_TERCERO", "Pago de Terceros"),

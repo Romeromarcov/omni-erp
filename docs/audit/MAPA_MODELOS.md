@@ -56,6 +56,7 @@
 | cuentas_por_cobrar | CuentaPorCobrar | ✅ | — | — |
 | cuentas_por_pagar | AbonoCxP | — | ✅ | — |
 | cuentas_por_pagar | CuentaPorPagar | ✅ | ✅ | — |
+| cuentas_por_pagar | DiferenciaCambiaria | ✅ | ✅ | — |
 | cxc | AcuerdoPago | ✅ | ✅ | — |
 | cxc | CuotaAcuerdo | — | ✅ | — |
 | cxc | GestionCobranza | ✅ | ✅ | — |
@@ -208,4 +209,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 205_
+_Total modelos: 206_
