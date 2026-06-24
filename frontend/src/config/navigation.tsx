@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
 import PointOfSaleOutlined from '@mui/icons-material/PointOfSaleOutlined';
+import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
@@ -71,6 +72,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Devoluciones', path: '/ventas/devoluciones-venta' },
         { label: 'Facturas Fiscales', path: '/ventas/facturas-fiscales' },
       ],
+    },
+    {
+      id: 'crm',
+      label: 'Clientes (CRM)',
+      icon: <PeopleAltOutlined />,
+      items: [{ label: 'Clientes', path: '/crm/clientes' }],
     },
     {
       id: 'escaner',
