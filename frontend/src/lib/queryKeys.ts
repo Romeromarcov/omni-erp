@@ -402,3 +402,12 @@ export const aprobacionesKeys = {
   registros: (solicitudId: string) =>
     ['aprobaciones', 'solicitudes', 'registros', solicitudId] as const,
 };
+
+// ── Notificaciones (centro de notificaciones del usuario) ─────────────────────
+// Prefijo compartido `['notificaciones', ...]` para invalidar lista e indicador
+// (campana) a la vez tras marcar como leída. El parámetro distingue la vista de
+// "solo no leídas" de la vista completa.
+export const notificacionesKeys = {
+  all: () => ['notificaciones'] as const,
+  mis: (soloNoLeidas: boolean) => ['notificaciones', 'mis', soloNoLeidas] as const,
+};
