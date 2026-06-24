@@ -14,6 +14,7 @@ import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 import { crmRoutes } from './routes/crmRoutes';
+import { servicioClienteRoutes } from './routes/servicioClienteRoutes';
 import { proveedoresRoutes } from './routes/proveedoresRoutes';
 import { gastosRoutes } from './routes/gastosRoutes';
 import { despachoRoutes } from './routes/despachoRoutes';
@@ -77,6 +78,7 @@ export default function AppRouter() {
             {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
             {crmRoutes()}
+            {servicioClienteRoutes()}
             {proveedoresRoutes()}
             {gastosRoutes()}
             {despachoRoutes()}

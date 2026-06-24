@@ -22,6 +22,7 @@ import HubOutlined from '@mui/icons-material/HubOutlined';
 import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
 import AppsOutlined from '@mui/icons-material/AppsOutlined';
 import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlined';
+import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined';
 import { isModuleEnabled } from './appProfile';
 
 export interface NavItem {
@@ -82,6 +83,17 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Clientes (CRM)',
       icon: <PeopleAltOutlined />,
       items: [{ label: 'Clientes', path: '/crm/clientes' }],
+    },
+    {
+      id: 'servicio-cliente',
+      label: 'Servicio al Cliente',
+      icon: <SupportAgentOutlined />,
+      items: [
+        { label: 'Tickets', path: '/servicio-cliente/tickets' },
+        { label: 'Categorías', path: '/servicio-cliente/categorias' },
+        { label: 'Base de Conocimiento', path: '/servicio-cliente/base-conocimiento' },
+        { label: 'Feedback', path: '/servicio-cliente/feedback' },
+      ],
     },
     {
       id: 'escaner',
