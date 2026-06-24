@@ -172,3 +172,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   PATCH estado), aprobacionesService (4 sub-servicios + cambiarEstado), rutas+nav 'Aprobaciones', aprobacionesKeys.
   Tests: 63 (33 service puros + 30 página) + E2E. Gate nativo verde: services branches 94.05, global funcs 79.46;
   tsc 0, lint limpio (flaky OperacionesCambio ajeno requiere reintento CI). PR# pendiente.
+
+[2026-06-24] ✅ gestion_aprobaciones frontend PR#222 merged.
+[2026-06-24] ✅ gestion_documental frontend completo (gestión documental con archivos). Backend ya 100%.
+  Agregado: DocumentosPage (panel de carpetas CRUD+navegación, lista documentos+búsqueda, Subir (multipart
+  vía postForm), Descargar (URL pre-firmada del backend + ancla download), Eliminar archivo, drawer con CRUD
+  inline de Vínculos y Permisos), gestionDocumentalService (4 sub-servicios + subir/descargar/eliminarArchivo),
+  rutas+nav 'Documentos', gestionDocumentalKeys. Tests: 58 (35 service puros + 23 página) + E2E. Gate nativo
+  verde: services branches 94.35, global funcs 79.6, 1355 tests; tsc 0, lint limpio. PR# pendiente.
