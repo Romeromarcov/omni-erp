@@ -103,6 +103,20 @@ export const crmKeys = {
     ['crm', 'clientes', 'historial-ventas', clienteId] as const,
 };
 
+// ── Proveedores (maestro de Proveedores) ──────────────────────────────────────
+// Prefijo compartido `['proveedores', 'maestro']` para que invalidar la familia
+// refresque la lista y los detalles (contactos, cuentas bancarias) a la vez.
+export const proveedoresKeys = {
+  proveedoresAll: () => ['proveedores', 'maestro'] as const,
+  proveedores: (empresaId?: string | null, search?: string | null) =>
+    ['proveedores', 'maestro', 'list', empresaId ?? null, search ?? null] as const,
+  proveedor: (id: string) => ['proveedores', 'maestro', 'detail', id] as const,
+  contactos: (proveedorId: string) =>
+    ['proveedores', 'maestro', 'contactos', proveedorId] as const,
+  cuentasBancarias: (proveedorId: string) =>
+    ['proveedores', 'maestro', 'cuentas-bancarias', proveedorId] as const,
+};
+
 // ── Finanzas ──────────────────────────────────────────────────────────────────
 export const finanzasKeys = {
   monedas: {
