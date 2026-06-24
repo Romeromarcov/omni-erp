@@ -95,6 +95,8 @@ class MapeoContable(models.Model):
         ("DEVOLUCION_VENTA", "Devolución de Venta"),
         ("DEVOLUCION_VENTA_IVA", "IVA de Devolución de Venta"),
         ("FACTURA_COMPRA", "Factura de Compra"),
+        ("GASTO", "Gasto (base)"),
+        ("GASTO_IVA", "IVA Crédito Fiscal de Gasto"),
         ("RECEPCION_MERCANCIA", "Recepción de Mercancía"),
         ("COSTO_VENTA", "Costo de Ventas (COGS)"),
         ("AJUSTE_INVENTARIO", "Ajuste de Inventario"),

@@ -27,6 +27,13 @@ pytestmark = pytest.mark.django_db
 BASE = "/api/gastos/"
 
 
+def _items(payload):
+    """Normaliza respuestas de list (paginadas {results:[...]} o lista plana)."""
+    if isinstance(payload, dict) and "results" in payload:
+        return payload["results"]
+    return payload
+
+
 @pytest.fixture
 def client_a(user_a):
     c = APIClient()
@@ -206,6 +213,65 @@ class TestGastoActions:
         ids = [r["id_gasto"] for r in resp.json()]
         assert ids == [str(gasto_pendiente_a.id_gasto)]
         assert str(aprobado.id_gasto) not in ids
+
+
+class TestDetalleGasto:
+    @pytest.fixture
+    def cuenta_a(self, empresa_a):
+        from apps.contabilidad.models import PlanCuentas
+
+        return PlanCuentas.objects.create(
+            id_empresa=empresa_a,
+            codigo_cuenta="5301",
+            nombre_cuenta="Gasto Detalle",
+            tipo_cuenta="GASTO",
+            naturaleza="DEUDORA",
+            nivel=1,
+        )
+
+    def test_crear_y_listar_detalle(self, client_a, gasto_pendiente_a, cuenta_a):
+        resp = client_a.post(
+            f"{BASE}detalles-gasto/",
+            {
+                "id_gasto": str(gasto_pendiente_a.id_gasto),
+                "id_cuenta_contable": str(cuenta_a.id_cuenta_contable),
+                "descripcion": "Combustible",
+                "monto": "20.00",
+                "monto_iva": "0",
+            },
+            format="json",
+        )
+        assert resp.status_code == 201, resp.content
+        listado = client_a.get(f"{BASE}detalles-gasto/")
+        assert listado.status_code == 200
+        rows = _items(listado.json())
+        ids = [r["id_gasto"] for r in rows]
+        assert str(gasto_pendiente_a.id_gasto) in ids
+
+    def test_detalle_cross_tenant_no_visible(self, client_b, client_a, gasto_pendiente_a, cuenta_a):
+        client_a.post(
+            f"{BASE}detalles-gasto/",
+            {
+                "id_gasto": str(gasto_pendiente_a.id_gasto),
+                "id_cuenta_contable": str(cuenta_a.id_cuenta_contable),
+                "monto": "20.00",
+            },
+            format="json",
+        )
+        # Tenant B no ve detalles de gastos de tenant A (R-CODE-1).
+        resp = client_b.get(f"{BASE}detalles-gasto/")
+        assert resp.status_code == 200
+        assert _items(resp.json()) == []
+
+
+class TestGastoSerializerCampos:
+    def test_gasto_expone_detalles_y_estado_display(self, client_a, gasto_pendiente_a):
+        resp = client_a.get(f"{BASE}gastos/{gasto_pendiente_a.id_gasto}/")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["estado_gasto_display"] == "Pendiente Aprobación"
+        assert data["detalles"] == []
+        assert data["sin_respaldo"] is False
 
 
 class TestReembolsoGastoActions:

@@ -1,12 +1,17 @@
-from django.db.models import Count, Sum
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
-from .models import CategoriaGasto, Gasto, ReembolsoGasto
-from .serializers import CategoriaGastoSerializer, GastoSerializer, ReembolsoGastoSerializer
+from .models import CategoriaGasto, DetalleGasto, Gasto, ReembolsoGasto
+from .serializers import (
+    CategoriaGastoSerializer,
+    DetalleGastoSerializer,
+    GastoSerializer,
+    ReembolsoGastoSerializer,
+)
+from .services import GastoError, aprobar_gasto, rechazar_gasto
 
 
 def _empresas(request):
@@ -47,34 +52,30 @@ class GastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):
-        """Aprueba un gasto"""
+        """Aprueba un gasto y genera su(s) asiento(s) contable(s) (R-CODE-11).
+
+        La validación de respaldo documental, el enforcement de período fiscal y
+        la generación de asientos viven en ``services.aprobar_gasto`` (atómico).
+        """
         gasto = self.get_object()
-
-        if gasto.estado_gasto != "PENDIENTE_APROBACION":
-            return Response(
-                {"error": "Solo se pueden aprobar gastos pendientes de aprobación"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        gasto.estado_gasto = "APROBADO"
-        gasto.save()
-
+        try:
+            aprobar_gasto(gasto, usuario=request.user)
+        except GastoError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        gasto.refresh_from_db()
         serializer = self.get_serializer(gasto)
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"])
     def rechazar(self, request, pk=None):
-        """Rechaza un gasto"""
+        """Rechaza un gasto pendiente."""
         gasto = self.get_object()
-
-        if gasto.estado_gasto != "PENDIENTE_APROBACION":
-            return Response(
-                {"error": "Solo se pueden rechazar gastos pendientes de aprobación"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        gasto.estado_gasto = "RECHAZADO"
-        gasto.save()
-
+        motivo = request.data.get("motivo", "")
+        try:
+            rechazar_gasto(gasto, usuario=request.user, motivo=motivo)
+        except GastoError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        gasto.refresh_from_db()
         serializer = self.get_serializer(gasto)
         return Response(serializer.data)
 
@@ -175,3 +176,16 @@ class ReembolsoGastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelView
         reembolsos_pendientes = self.get_queryset().filter(estado_reembolso="PENDIENTE")
         serializer = self.get_serializer(reembolsos_pendientes, many=True)
         return Response(serializer.data)
+
+
+class DetalleGastoViewSet(BaseModelViewSet):
+    """Líneas de imputación contable de un gasto (ExpenseLine)."""
+
+    queryset = DetalleGasto.objects.all()
+    serializer_class = DetalleGastoSerializer
+    filterset_fields = ["id_gasto", "id_cuenta_contable"]
+    ordering_fields = ["monto"]
+
+    def get_queryset(self):
+        # R-CODE-1: el detalle se acota por la empresa del gasto padre.
+        return DetalleGasto.objects.filter(id_gasto__id_empresa__in=_empresas(self.request))

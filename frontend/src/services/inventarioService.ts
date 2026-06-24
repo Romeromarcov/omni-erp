@@ -1,19 +1,61 @@
-import { get, post, del } from './api';
+import { get, post, patch, del } from './api';
 import { toList, type PaginatedResponse } from '../utils/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
+export type MetodoValoracion = 'PROMEDIO' | 'FIFO';
+
 export interface Producto {
   id_producto: string;
+  id_empresa: string;
   nombre_producto: string;
   sku: string | null;
   descripcion: string | null;
   tipo_producto: string;
+  maneja_lotes: boolean;
+  maneja_seriales: boolean;
   costo_promedio: string;
+  metodo_valoracion: MetodoValoracion;
   precio_venta_sugerido: string;
+  punto_reorden: string | null;
+  id_categoria: string;
+  id_unidad_medida_base: string;
+  id_moneda_precio: string;
   nombre_categoria: string | null;
   nombre_unidad_medida: string | null;
   activo: boolean;
+}
+
+/**
+ * Payload de escritura de Producto: whitelist explícita de campos editables
+ * (CTF-005, defensa en profundidad CWE-915). Los montos viajan como string para
+ * no perder precisión del DecimalField del backend (R-CODE-4).
+ */
+export interface ProductoPayload {
+  id_empresa: string;
+  nombre_producto: string;
+  sku: string | null;
+  id_categoria: string;
+  id_unidad_medida_base: string;
+  tipo_producto: string;
+  maneja_lotes: boolean;
+  maneja_seriales: boolean;
+  costo_promedio: string;
+  precio_venta_sugerido: string;
+  punto_reorden: string | null;
+  metodo_valoracion: MetodoValoracion;
+  id_moneda_precio: string;
+}
+
+export interface CategoriaProducto {
+  id_categoria_producto: string;
+  nombre_categoria: string;
+}
+
+export interface UnidadMedida {
+  id_unidad_medida: string;
+  nombre: string;
+  abreviatura: string;
 }
 
 export interface StockActual {
@@ -132,6 +174,16 @@ export const productoInventarioService = {
     return get<Producto>(`/inventario/productos/${id}/`);
   },
 
+  create: async (payload: ProductoPayload): Promise<Producto> =>
+    post<Producto>('/inventario/productos/', payload as unknown as Record<string, unknown>),
+
+  update: async (id: string, payload: ProductoPayload): Promise<Producto> =>
+    patch<Producto>(`/inventario/productos/${id}/`, payload as unknown as Record<string, unknown>),
+
+  remove: async (id: string): Promise<void> => {
+    await del<void>(`/inventario/productos/${id}/`);
+  },
+
   getKardex: async (
     productoId: string,
     params?: { almacen?: string; fecha_desde?: string; fecha_hasta?: string }
@@ -166,6 +218,26 @@ export const productoInventarioService = {
       }));
     }
     return toList<MovimientoInventario>(response);
+  },
+};
+
+// ── Catálogos (categorías / unidades) ────────────────────────────────────────
+
+export const categoriasProductoService = {
+  getAll: async (): Promise<CategoriaProducto[]> => {
+    const r = await get<PaginatedResponse<CategoriaProducto> | CategoriaProducto[]>(
+      '/inventario/categorias-producto/',
+    );
+    return toList<CategoriaProducto>(r);
+  },
+};
+
+export const unidadesMedidaService = {
+  getAll: async (): Promise<UnidadMedida[]> => {
+    const r = await get<PaginatedResponse<UnidadMedida> | UnidadMedida[]>(
+      '/inventario/unidades-medida/',
+    );
+    return toList<UnidadMedida>(r);
   },
 };
 

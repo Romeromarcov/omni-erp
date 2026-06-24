@@ -336,6 +336,10 @@
 | `^detalles-factura-fiscal/(?P<pk>[^/.]+)/$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ | IsAuthenticated |
 | `^detalles-factura-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ | IsAuthenticated |
 | `^detalles-factura-fiscal\.(?P<format>[a-z0-9]+)/?$` | DetalleFacturaFiscalViewSet | DetalleFacturaFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-gasto/$` | DetalleGastoViewSet | DetalleGasto | — | ✅ | IsAuthenticated |
+| `^detalles-gasto/(?P<pk>[^/.]+)/$` | DetalleGastoViewSet | DetalleGasto | — | ✅ | IsAuthenticated |
+| `^detalles-gasto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleGastoViewSet | DetalleGasto | — | ✅ | IsAuthenticated |
+| `^detalles-gasto\.(?P<format>[a-z0-9]+)/?$` | DetalleGastoViewSet | DetalleGasto | — | ✅ | IsAuthenticated |
 | `^detalles-nomina/$` | DetalleNominaViewSet | DetalleNomina | — | ✅ | IsAuthenticated |
 | `^detalles-nomina/(?P<pk>[^/.]+)/$` | DetalleNominaViewSet | DetalleNomina | — | ✅ | IsAuthenticated |
 | `^detalles-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNominaViewSet | DetalleNomina | — | ✅ | IsAuthenticated |
@@ -1083,4 +1087,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 203_
+_Total ViewSets: 204_

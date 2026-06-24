@@ -119,6 +119,8 @@ const InventarioDashboardPage: React.FC = () => {
           {/* Quick actions */}
           <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap mb={4}>
             <Button variant="contained" onClick={() => navigate('/inventario/stock')}>Ver stock completo</Button>
+            <Button variant="outlined" onClick={() => navigate('/inventario/productos')}>Productos</Button>
+            <Button variant="outlined" onClick={() => navigate('/inventario/almacenes')}>Almacenes</Button>
             <Button variant="outlined" onClick={() => navigate('/inventario/ajustes')}>Registrar ajuste</Button>
           </Stack>
 
