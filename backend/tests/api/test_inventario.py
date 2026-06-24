@@ -493,3 +493,61 @@ class TestStockActualAPI:
         results = response.json()["results"]
         assert len(results) == 1
         assert results[0]["id_almacen"] == str(almacen_a.pk)
+
+
+# ── Tests de la API de Producto (CRUD + metodo_valoracion) ────────────────────
+
+
+class TestProductoAPI:
+    """Cubre el CRUD de productos que consume ProductosPage del frontend, en
+    particular que `metodo_valoracion` (FIFO/PROMEDIO) viaje en la whitelist del
+    serializer tanto al crear como al leer."""
+
+    @pytest.fixture(autouse=True)
+    def _client(self, user_a):
+        self.client = APIClient()
+        self.client.force_authenticate(user=user_a)
+
+    def test_crear_producto_con_metodo_valoracion_fifo(
+        self, empresa_a, categoria, unidad, moneda_usd
+    ):
+        url = "/api/inventario/productos/"
+        payload = {
+            "id_empresa": str(empresa_a.pk),
+            "nombre_producto": "Filtro de aceite",
+            "sku": "FIL-001",
+            "id_categoria": str(categoria.pk),
+            "id_unidad_medida_base": str(unidad.pk),
+            "tipo_producto": "PRODUCTO_FISICO",
+            "maneja_lotes": False,
+            "maneja_seriales": False,
+            "costo_promedio": "5.5000",
+            "precio_venta_sugerido": "9.9900",
+            "punto_reorden": "10.0000",
+            "metodo_valoracion": "FIFO",
+            "id_moneda_precio": str(moneda_usd.pk),
+        }
+        response = self.client.post(url, payload, format="json")
+        assert response.status_code == 201, response.content
+        data = response.json()
+        assert data["metodo_valoracion"] == "FIFO"
+
+        creado = Producto.objects.get(pk=data["id_producto"])
+        assert creado.metodo_valoracion == "FIFO"
+        assert creado.costo_promedio == Decimal("5.5000")
+
+    def test_listar_productos_incluye_metodo_valoracion(self, producto):
+        response = self.client.get("/api/inventario/productos/")
+        assert response.status_code == 200
+        fila = next(
+            p for p in response.json()["results"] if p["id_producto"] == str(producto.pk)
+        )
+        # default del modelo
+        assert fila["metodo_valoracion"] == "PROMEDIO"
+
+    def test_actualizar_metodo_valoracion(self, producto):
+        url = f"/api/inventario/productos/{producto.pk}/"
+        response = self.client.patch(url, {"metodo_valoracion": "FIFO"}, format="json")
+        assert response.status_code == 200, response.content
+        producto.refresh_from_db()
+        assert producto.metodo_valoracion == "FIFO"

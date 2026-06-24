@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -30,7 +31,9 @@ import { inventarioKeys } from '../../lib/queryKeys';
 
 const PasosOperacionPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [almacen, setAlmacen] = useState('');
+  const [searchParams] = useSearchParams();
+  // Permite enlazar desde Almacenes con ?almacen=<id> para abrir su configuración.
+  const [almacen, setAlmacen] = useState(() => searchParams.get('almacen') ?? '');
   const [tipo, setTipo] = useState<TipoOperacion>('RECEPCION');
   const [nombrePaso, setNombrePaso] = useState('');
   const [errorMsg, setErrorMsg] = useState('');

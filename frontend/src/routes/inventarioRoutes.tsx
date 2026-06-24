@@ -10,6 +10,8 @@ const RecepcionesPage = lazy(() => import('../pages/Inventario/RecepcionesPage')
 const EntregasPage = lazy(() => import('../pages/Inventario/EntregasPage'));
 const ValoracionPage = lazy(() => import('../pages/Inventario/ValoracionPage'));
 const PasosOperacionPage = lazy(() => import('../pages/Inventario/PasosOperacionPage'));
+const ProductosPage = lazy(() => import('../pages/Inventario/ProductosPage'));
+const AlmacenesPage = lazy(() => import('../pages/Inventario/AlmacenesPage'));
 
 export function inventarioRoutes() {
   return (
@@ -22,6 +24,8 @@ export function inventarioRoutes() {
       <Route path="/inventario/entregas" element={<EntregasPage />} />
       <Route path="/inventario/valoracion" element={<ValoracionPage />} />
       <Route path="/inventario/pasos-operacion" element={<PasosOperacionPage />} />
+      <Route path="/inventario/productos" element={<ProductosPage />} />
+      <Route path="/inventario/almacenes" element={<AlmacenesPage />} />
     </>
   );
 }
