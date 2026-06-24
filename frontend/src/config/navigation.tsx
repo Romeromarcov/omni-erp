@@ -24,6 +24,7 @@ import AppsOutlined from '@mui/icons-material/AppsOutlined';
 import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlined';
 import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined';
 import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
+import FolderOutlined from '@mui/icons-material/FolderOutlined';
 import { isModuleEnabled } from './appProfile';
 
 export interface NavItem {
@@ -257,6 +258,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Solicitudes', path: '/aprobaciones/solicitudes' },
         { label: 'Configuración', path: '/aprobaciones/configuracion' },
       ],
+    },
+    {
+      id: 'gestion-documental',
+      label: 'Documentos',
+      icon: <FolderOutlined />,
+      items: [{ label: 'Documentos', path: '/gestion-documental/documentos' }],
     },
     {
       id: 'configuracion',

@@ -15,6 +15,7 @@ import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 import { crmRoutes } from './routes/crmRoutes';
 import { servicioClienteRoutes } from './routes/servicioClienteRoutes';
+import { gestionDocumentalRoutes } from './routes/gestionDocumentalRoutes';
 import { proveedoresRoutes } from './routes/proveedoresRoutes';
 import { gastosRoutes } from './routes/gastosRoutes';
 import { despachoRoutes } from './routes/despachoRoutes';
@@ -80,6 +81,7 @@ export default function AppRouter() {
             {cxcRoutes()}
             {crmRoutes()}
             {servicioClienteRoutes()}
+            {gestionDocumentalRoutes()}
             {proveedoresRoutes()}
             {gastosRoutes()}
             {despachoRoutes()}

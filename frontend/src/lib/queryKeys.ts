@@ -103,6 +103,18 @@ export const crmKeys = {
     ['crm', 'clientes', 'historial-ventas', clienteId] as const,
 };
 
+// ── Gestión documental (carpetas, documentos, vínculos, permisos) ─────────────
+// Prefijo compartido `['gestion-documental']` para invalidar la familia completa.
+export const gestionDocumentalKeys = {
+  all: () => ['gestion-documental'] as const,
+  carpetas: (empresaId?: string | null, padre?: string | null, search?: string | null) =>
+    ['gestion-documental', 'carpetas', empresaId ?? null, padre ?? null, search ?? null] as const,
+  documentos: (empresaId?: string | null, carpeta?: string | null, search?: string | null) =>
+    ['gestion-documental', 'documentos', empresaId ?? null, carpeta ?? null, search ?? null] as const,
+  vinculos: (documentoId: string) => ['gestion-documental', 'vinculos', documentoId] as const,
+  permisos: (documentoId: string) => ['gestion-documental', 'permisos', documentoId] as const,
+};
+
 // ── Proveedores (maestro de Proveedores) ──────────────────────────────────────
 // Prefijo compartido `['proveedores', 'maestro']` para que invalidar la familia
 // refresque la lista y los detalles (contactos, cuentas bancarias) a la vez.
