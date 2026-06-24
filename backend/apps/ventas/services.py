@@ -139,6 +139,15 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
     if not detalles:
         raise VentaError("El pedido no tiene líneas de detalle.")
 
+    # T10: un producto solo-compra (es_vendible=False) no puede venderse.
+    no_vendibles = [
+        d.id_producto.nombre_producto for d in detalles if not d.id_producto.es_vendible
+    ]
+    if no_vendibles:
+        raise VentaError(
+            "Productos solo-compra que no se pueden vender: " + ", ".join(no_vendibles) + "."
+        )
+
     reservas = []
     for detalle in detalles:
         try:

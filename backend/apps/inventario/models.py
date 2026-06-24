@@ -59,6 +59,14 @@ class Producto(OmniBaseModel, IntegrationFieldsMixin):
     )
     maneja_lotes = models.BooleanField(default=False)
     maneja_seriales = models.BooleanField(default=False)
+    # T10: producto solo-compra. Si es_vendible=False, el producto no puede
+    # venderse (se bloquea al confirmar el pedido). es_comprable lo simétrico.
+    es_vendible = models.BooleanField(
+        default=True, help_text="Si es False, el producto es solo-compra y no puede venderse."
+    )
+    es_comprable = models.BooleanField(
+        default=True, help_text="Si es False, el producto no puede comprarse (solo-venta)."
+    )
     costo_promedio = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
     metodo_valoracion = models.CharField(
         max_length=10,

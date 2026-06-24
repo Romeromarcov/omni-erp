@@ -79,6 +79,8 @@ class ProductoSerializer(serializers.ModelSerializer):
             "tipo_producto",
             "maneja_lotes",
             "maneja_seriales",
+            "es_vendible",
+            "es_comprable",
             "costo_promedio",
             "metodo_valoracion",
             "precio_venta_sugerido",
