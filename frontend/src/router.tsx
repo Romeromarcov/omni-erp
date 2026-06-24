@@ -16,6 +16,7 @@ import { cxcRoutes } from './routes/cxcRoutes';
 import { crmRoutes } from './routes/crmRoutes';
 import { proveedoresRoutes } from './routes/proveedoresRoutes';
 import { gastosRoutes } from './routes/gastosRoutes';
+import { despachoRoutes } from './routes/despachoRoutes';
 import { manufacturaRoutes } from './routes/manufacturaRoutes';
 import { comprasRoutes } from './routes/comprasRoutes';
 import { rrhhRoutes } from './routes/rrhhRoutes';
@@ -76,6 +77,7 @@ export default function AppRouter() {
             {crmRoutes()}
             {proveedoresRoutes()}
             {gastosRoutes()}
+            {despachoRoutes()}
             {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
             {isModuleEnabled('compras') ? comprasRoutes() : null}
             {isModuleEnabled('rrhh') ? rrhhRoutes() : null}
