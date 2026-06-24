@@ -132,3 +132,12 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   endurecimiento de cobertura services branches 84.93→91.55 (tests puros de contabilidadService [era 0% ramas],
   monedas, metodosPagoEmpresaActiva, clientesService). Gate nativo verde: global funcs 79.51, services 91.55
   branches; 948 tests; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] ✅ gastos frontend PR#217 merged (CI verde 1er intento; cobertura endurecida services branches 91.55).
+[2026-06-24] ✅ despacho frontend completo (máquina de estados logística). Backend ya 100%. Agregado:
+  DespachosPage (lista+filtro estado+StatusChip, crear-desde-nota-venta con selector almacén origen,
+  botones de transición Iniciar ruta/Entregar/Devolver/Cancelar gated por puedeTransicionar replicando
+  TRANSICIONES del backend, drawer con líneas read-only + enlace PDF), despachoService (acciones +
+  detalleDespachoService read-only), despachoRoutes+nav 'Despacho', despachoKeys. Tests: 49 (37 service +
+  18 página, puros sin userEvent) + E2E despacho.flow. Gate nativo verde: services branches 91.99,
+  global funcs 79.70, despachoService 100%; tsc 0, lint limpio. PR# pendiente.

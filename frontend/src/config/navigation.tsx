@@ -98,6 +98,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       ],
     },
     {
+      id: 'despacho',
+      label: 'Despacho',
+      icon: <LocalShippingOutlined />,
+      items: [{ label: 'Despachos', path: '/despacho' }],
+    },
+    {
       id: 'manufactura',
       label: 'Manufactura',
       icon: <PrecisionManufacturingOutlined />,

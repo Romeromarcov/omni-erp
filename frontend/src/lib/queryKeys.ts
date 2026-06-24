@@ -135,6 +135,17 @@ export const gastosKeys = {
     ['gastos', 'reembolsos', 'list', empresaId ?? null, estado ?? null] as const,
 };
 
+// ── Despacho (logística de salida con máquina de estados) ─────────────────────
+// Prefijo compartido `['despacho', 'despachos']` para que invalidar la familia
+// refresque lista, detalle y líneas a la vez tras cada transición de estado.
+export const despachoKeys = {
+  despachosAll: () => ['despacho', 'despachos'] as const,
+  despachos: (empresaId?: string | null, estado?: string | null) =>
+    ['despacho', 'despachos', 'list', empresaId ?? null, estado ?? null] as const,
+  despacho: (id: string) => ['despacho', 'despachos', 'detail', id] as const,
+  detalles: (despachoId: string) => ['despacho', 'despachos', 'detalles', despachoId] as const,
+};
+
 // ── Finanzas ──────────────────────────────────────────────────────────────────
 export const finanzasKeys = {
   monedas: {
