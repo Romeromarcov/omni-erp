@@ -374,3 +374,19 @@ export const servicioClienteKeys = {
   feedback: (empresaId?: string | null, tipo?: string | null) =>
     ['servicio-cliente', 'feedback', 'list', empresaId ?? null, tipo ?? null] as const,
 };
+
+// ── Gestión de Aprobaciones (motor configurable: tipos, flujos, solicitudes) ──
+// Prefijo compartido `['aprobaciones', <recurso>]`; los `*All` invalidan la
+// familia completa de un recurso tras crear/editar/decidir.
+export const aprobacionesKeys = {
+  tiposAll: () => ['aprobaciones', 'tipos'] as const,
+  tipos: (empresaId?: string | null, modulo?: string | null) =>
+    ['aprobaciones', 'tipos', 'list', empresaId ?? null, modulo ?? null] as const,
+  flujosAll: () => ['aprobaciones', 'flujos'] as const,
+  flujos: (tipoId?: string | null) => ['aprobaciones', 'flujos', 'list', tipoId ?? null] as const,
+  solicitudesAll: () => ['aprobaciones', 'solicitudes'] as const,
+  solicitudes: (tipoId?: string | null, estado?: string | null) =>
+    ['aprobaciones', 'solicitudes', 'list', tipoId ?? null, estado ?? null] as const,
+  registros: (solicitudId: string) =>
+    ['aprobaciones', 'solicitudes', 'registros', solicitudId] as const,
+};
