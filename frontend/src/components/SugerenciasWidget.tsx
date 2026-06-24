@@ -6,7 +6,7 @@
  * El usuario puede Aceptar o Rechazar cada sugerencia.
  */
 import React, { useState } from 'react';
-import { fetcher } from '../services/api';
+import { prediccionesService, type SugerenciaActiva } from '../services/agentesService';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -23,23 +23,8 @@ import {
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
-interface Sugerencia {
-  id: string;
-  agente: string;
-  titulo: string;
-  descripcion: string;
-  categoria: string;
-  confianza: number;
-  monto: string | null;
-  metadata: Record<string, unknown>;
-  url_accion: string;
-  fecha: string;
-}
-
-interface SugerenciasResponse {
-  sugerencias: Sugerencia[];
-  total: number;
-}
+// La forma de cada tarjeta vive en agentesService (SugerenciaActiva).
+type Sugerencia = SugerenciaActiva;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,12 +62,7 @@ const SugerenciasWidget: React.FC = () => {
     refetch,
   } = useQuery<Sugerencia[], Error>({
     queryKey: ['agentes', 'sugerencias-activas'],
-    queryFn: async () => {
-      const data = await fetcher<SugerenciasResponse>(
-        '/agentes/predicciones/sugerencias-activas/?limite=5'
-      );
-      return data.sugerencias ?? [];
-    },
+    queryFn: () => prediccionesService.sugerenciasActivas(5),
     refetchInterval: POLL_INTERVAL_MS,
     refetchIntervalInBackground: false,
   });
@@ -92,10 +72,7 @@ const SugerenciasWidget: React.FC = () => {
   const responder = async (id: string, accion: 'aceptar' | 'rechazar') => {
     setRespondiendo(id);
     try {
-      await fetcher(`/agentes/predicciones/${id}/responder/`, {
-        method: 'POST',
-        body: JSON.stringify({ accion }),
-      });
+      await prediccionesService.responder(id, { accion });
       setActionError('');
       refetch();
     } catch {

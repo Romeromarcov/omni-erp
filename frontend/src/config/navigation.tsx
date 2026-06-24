@@ -28,6 +28,7 @@ import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined';
 import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
 import FolderOutlined from '@mui/icons-material/FolderOutlined';
 import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import { isModuleEnabled } from './appProfile';
 
 export interface NavItem {
@@ -301,6 +302,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Notificaciones',
       icon: <NotificationsOutlined />,
       path: '/notificaciones',
+    },
+    {
+      id: 'agentes',
+      label: 'Agentes IA',
+      icon: <AutoAwesomeOutlined />,
+      path: '/agentes',
     },
   ];
 
