@@ -14,6 +14,7 @@ import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
 import SavingsOutlined from '@mui/icons-material/SavingsOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import BadgeOutlined from '@mui/icons-material/BadgeOutlined';
+import FingerprintOutlined from '@mui/icons-material/FingerprintOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
@@ -197,6 +198,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Empleados', path: '/rrhh/empleados' },
         { label: 'Nómina', path: '/nomina/procesos' },
       ],
+    },
+    {
+      id: 'control-asistencia',
+      label: 'Control de Asistencia',
+      icon: <FingerprintOutlined />,
+      items: [{ label: 'Asistencia', path: '/control-asistencia' }],
     },
     {
       id: 'fiscal',

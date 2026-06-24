@@ -21,6 +21,7 @@ import { manufacturaRoutes } from './routes/manufacturaRoutes';
 import { costosRoutes } from './routes/costosRoutes';
 import { comprasRoutes } from './routes/comprasRoutes';
 import { rrhhRoutes } from './routes/rrhhRoutes';
+import { controlAsistenciaRoutes } from './routes/controlAsistenciaRoutes';
 import { contabilidadRoutes } from './routes/contabilidadRoutes';
 import { tesoreriaRoutes } from './routes/tesoreriaRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
@@ -83,6 +84,7 @@ export default function AppRouter() {
             {costosRoutes()}
             {isModuleEnabled('compras') ? comprasRoutes() : null}
             {isModuleEnabled('rrhh') ? rrhhRoutes() : null}
+            {controlAsistenciaRoutes()}
             {isModuleEnabled('contabilidad') ? contabilidadRoutes() : null}
             {isModuleEnabled('tesoreria') ? tesoreriaRoutes() : null}
             {isModuleEnabled('escaner') ? escanerRoutes() : null}
