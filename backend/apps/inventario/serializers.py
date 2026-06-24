@@ -80,6 +80,7 @@ class ProductoSerializer(serializers.ModelSerializer):
             "maneja_lotes",
             "maneja_seriales",
             "costo_promedio",
+            "metodo_valoracion",
             "precio_venta_sugerido",
             "punto_reorden",
             "id_empresa",

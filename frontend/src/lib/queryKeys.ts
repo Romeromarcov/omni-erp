@@ -11,6 +11,8 @@ export const inventarioKeys = {
   stockActualAll: () => ['stock-actual-all'] as const,
   productosInventario: () => ['productos-inventario'] as const,
   producto: (productoId: string) => ['producto', productoId] as const,
+  categoriasProducto: () => ['inv-categorias-producto'] as const,
+  unidadesMedida: () => ['inv-unidades-medida'] as const,
   kardex: (productoId?: string, fechaDesde?: string, fechaHasta?: string) =>
     ['kardex', productoId, fechaDesde, fechaHasta] as const,
   kardexAll: () => ['kardex'] as const,
