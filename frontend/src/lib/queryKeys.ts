@@ -330,3 +330,47 @@ export const tesoreriaKeys = {
     ['tesoreria', 'cuentas-bancarias', empresaId ?? null] as const,
   cajas: (empresaId?: string | null) => ['tesoreria', 'cajas', empresaId ?? null] as const,
 };
+
+// ── Servicio al Cliente (mesa de ayuda: tickets, interacciones, KB, feedback) ─
+// Prefijo compartido `['servicio-cliente', <recurso>]` para que invalidar la
+// familia de un recurso refresque su lista y variantes a la vez tras cada acción.
+export const servicioClienteKeys = {
+  ticketsAll: () => ['servicio-cliente', 'tickets'] as const,
+  tickets: (
+    empresaId?: string | null,
+    estado?: string | null,
+    prioridad?: string | null,
+    search?: string | null,
+  ) =>
+    [
+      'servicio-cliente',
+      'tickets',
+      'list',
+      empresaId ?? null,
+      estado ?? null,
+      prioridad ?? null,
+      search ?? null,
+    ] as const,
+  ticket: (id: string) => ['servicio-cliente', 'tickets', 'detail', id] as const,
+  interacciones: (ticketId: string) =>
+    ['servicio-cliente', 'tickets', 'interacciones', ticketId] as const,
+  dashboard: (agenteId?: string | null) =>
+    ['servicio-cliente', 'tickets', 'dashboard', agenteId ?? null] as const,
+  categoriasAll: () => ['servicio-cliente', 'categorias'] as const,
+  categorias: (empresaId?: string | null, search?: string | null) =>
+    ['servicio-cliente', 'categorias', 'list', empresaId ?? null, search ?? null] as const,
+  categoriasActivas: () => ['servicio-cliente', 'categorias', 'activas'] as const,
+  articulosAll: () => ['servicio-cliente', 'articulos'] as const,
+  articulos: (empresaId?: string | null, visibilidad?: string | null, search?: string | null) =>
+    [
+      'servicio-cliente',
+      'articulos',
+      'list',
+      empresaId ?? null,
+      visibilidad ?? null,
+      search ?? null,
+    ] as const,
+  feedbackAll: () => ['servicio-cliente', 'feedback'] as const,
+  feedback: (empresaId?: string | null, tipo?: string | null) =>
+    ['servicio-cliente', 'feedback', 'list', empresaId ?? null, tipo ?? null] as const,
+};
