@@ -13,6 +13,8 @@ import {
   contactosClienteService,
   direccionesClienteService,
   buscarClientes,
+  buscarClientesSimilares,
+  crearCliente,
   fetchClientes,
   crearClienteConEmpresa,
   type ClientePayload,
@@ -207,5 +209,51 @@ describe('funciones de compatibilidad (Ventas/POS)', () => {
       id_empresa: 'e1',
     });
     expect(post).toHaveBeenCalledWith('/crm/clientes/', expect.objectContaining({ id_empresa: 'e1' }));
+  });
+
+  it('crearCliente postea al endpoint de clientes', async () => {
+    vi.mocked(post).mockResolvedValueOnce({ id_cliente: 'c-new' });
+    await crearCliente({
+      razon_social: 'ACME',
+      rif: 'J-1',
+      telefono: '0414',
+    } as unknown as Parameters<typeof crearCliente>[0]);
+    expect(post).toHaveBeenCalledWith('/crm/clientes/', expect.objectContaining({ razon_social: 'ACME' }));
+  });
+
+  it('buscarClientes sin empresa omite el parámetro empresa', async () => {
+    vi.mocked(get).mockResolvedValueOnce([{ id_cliente: 'c1' }]);
+    await buscarClientes('acme');
+    expect(get).toHaveBeenCalledWith('/crm/clientes/?search=acme');
+  });
+
+  it('buscarClientesSimilares devuelve [] sin empresaId (no consulta)', async () => {
+    const res = await buscarClientesSimilares('ACME', 'J-1');
+    expect(res).toEqual([]);
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('buscarClientesSimilares retorna coincidencias por nombre+rif+tipo_rif', async () => {
+    vi.mocked(get).mockResolvedValueOnce([
+      { id_cliente: 'c1', razon_social: 'ACME C.A.', rif: 'J-12345678' },
+    ]);
+    const res = await buscarClientesSimilares('ACME C.A.', 'J-12345678', 'e1');
+    expect(res).toHaveLength(1);
+  });
+
+  it('buscarClientesSimilares excluye cuando el tipo de RIF difiere', async () => {
+    vi.mocked(get).mockResolvedValueOnce([
+      { id_cliente: 'c1', razon_social: 'ACME C.A.', rif: 'V-12345678' },
+    ]);
+    const res = await buscarClientesSimilares('ACME C.A.', 'J-12345678', 'e1');
+    expect(res).toEqual([]);
+  });
+
+  it('buscarClientesSimilares excluye cuando el nombre no es similar', async () => {
+    vi.mocked(get).mockResolvedValueOnce([
+      { id_cliente: 'c1', razon_social: 'ZZZZZZ DISTINTO', rif: 'J-12345678' },
+    ]);
+    const res = await buscarClientesSimilares('ACME C.A.', 'J-12345678', 'e1');
+    expect(res).toEqual([]);
   });
 });
