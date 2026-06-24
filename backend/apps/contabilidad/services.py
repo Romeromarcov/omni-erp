@@ -43,6 +43,8 @@ TIPOS_ASIENTO = frozenset(
         "SALIDA_INTERNA",
         "PAGO_CXC",
         "PAGO_CXP",
+        "GANANCIA_CAMBIARIA",  # Diferencia en cambio favorable al pagar una CxP en divisa
+        "PERDIDA_CAMBIARIA",   # Diferencia en cambio desfavorable al pagar una CxP en divisa
         "NOMINA",              # CTF-013: asiento del proceso de nómina LOTTT
         "CAMBIO_DIVISA",       # CTF-013: asiento de la operación de cambio de divisa
         "PAGO_TERCERO",        # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro

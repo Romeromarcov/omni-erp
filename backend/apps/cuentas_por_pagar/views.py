@@ -16,6 +16,19 @@ def _empresas(request):
     return get_empresas_visible(request.user)
 
 
+def _parse_tasa(raw, campo):
+    """Parsea una tasa opcional (Decimal positivo) del request, o None si ausente."""
+    if raw in (None, ""):
+        return None
+    try:
+        tasa = Decimal(str(raw))
+    except Exception:
+        raise ValidationError({campo: "Tasa inválida."})
+    if tasa <= 0:
+        raise ValidationError({campo: "La tasa debe ser mayor a cero."})
+    return tasa
+
+
 class CuentaPorPagarViewSet(BaseModelViewSet):
     queryset = CuentaPorPagar.objects.all()
     serializer_class = CuentaPorPagarSerializer
@@ -114,17 +127,25 @@ class CuentaPorPagarViewSet(BaseModelViewSet):
 
         descripcion = request.data.get("descripcion", "")
 
+        # Multi-tasa opcional: si el pago en divisa se hace a una tasa distinta de
+        # la del reconocimiento de la CxP, se registra la diferencia cambiaria.
+        tasa_original = _parse_tasa(request.data.get("tasa_original"), "tasa_original")
+        tasa_pago = _parse_tasa(request.data.get("tasa_pago"), "tasa_pago")
+
         try:
             abono = registrar_abono_cxp(
                 cxp=cxp,
                 monto=monto,
                 usuario=request.user,
                 descripcion=descripcion,
+                tasa_original=tasa_original,
+                tasa_pago=tasa_pago,
             )
         except AbonoCxPError as exc:
             raise ValidationError(str(exc)) from exc
 
         cxp.refresh_from_db()
+        diferencia = abono.diferencias_cambiarias.first()
         return Response(
             {
                 "abono_id": str(abono.pk),
@@ -132,6 +153,14 @@ class CuentaPorPagarViewSet(BaseModelViewSet):
                 "monto_abonado": str(abono.monto),
                 "monto_pendiente": str(cxp.monto_pendiente),
                 "estado_cxp": cxp.estado,
+                "diferencia_cambiaria": (
+                    {
+                        "tipo": diferencia.tipo,
+                        "monto": str(diferencia.monto_diferencia),
+                    }
+                    if diferencia
+                    else None
+                ),
             },
             status=status.HTTP_201_CREATED,
         )
