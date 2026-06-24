@@ -25,6 +25,7 @@ import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlin
 import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined';
 import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
 import FolderOutlined from '@mui/icons-material/FolderOutlined';
+import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
 import { isModuleEnabled } from './appProfile';
 
 export interface NavItem {
@@ -280,6 +281,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Integraciones',
       icon: <HubOutlined />,
       items: [{ label: 'Hub de Integraciones', path: '/integraciones' }],
+    },
+    {
+      id: 'notificaciones',
+      label: 'Notificaciones',
+      icon: <NotificationsOutlined />,
+      path: '/notificaciones',
     },
   ];
 

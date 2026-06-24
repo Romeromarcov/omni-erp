@@ -29,6 +29,7 @@ import { tesoreriaRoutes } from './routes/tesoreriaRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
 import { aprobacionesRoutes } from './routes/aprobacionesRoutes';
+import { notificacionesRoutes } from './routes/notificacionesRoutes';
 import { isModuleEnabled } from './config/appProfile';
 
 const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
@@ -95,6 +96,7 @@ export default function AppRouter() {
             {isModuleEnabled('escaner') ? escanerRoutes() : null}
             {saasRoutes()}
             {aprobacionesRoutes()}
+            {notificacionesRoutes()}
           </Route>
         )}
 

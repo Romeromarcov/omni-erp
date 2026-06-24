@@ -180,3 +180,15 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   inline de Vínculos y Permisos), gestionDocumentalService (4 sub-servicios + subir/descargar/eliminarArchivo),
   rutas+nav 'Documentos', gestionDocumentalKeys. Tests: 58 (35 service puros + 23 página) + E2E. Gate nativo
   verde: services branches 94.35, global funcs 79.6, 1355 tests; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] ✅ gestion_documental frontend PR#225 merged (9 apps frontend completas).
+[2026-06-24] ✅ fix E2E PR#226 merged — develop a E2E verde. Causa raíz: (1) bug real fetchUsuarios devolvía
+  {results} paginado → SolicitudesAprobacionPage crasheaba (usuarios.map), fix central toList en users.ts;
+  (2) CostosPage no auto-seleccionaba/validaba id_moneda (→400); (3) spec costos asumía producto sembrado
+  (seed no siembra productos) → ahora siembra vía API. Lección: correr E2E specs localmente + toList en todo fetch de lista.
+[2026-06-24] ✅ notificaciones frontend (centro de notificaciones). API estrecha (mis-notificaciones + marcar-leida).
+  Agregado: NotificacionesPage (inbox: lista, toggle no leídas, marcar leída/todas, StatusChip, estado vacío),
+  notificacionesService (misNotificaciones/marcarLeida con toList), rutas+nav 'Notificaciones', notificacionesKeys.
+  Integra con NotificationBell existente (sin duplicar). vite.config: preview.proxy /api para E2E local. Tests: 12
+  (7 service + 5 página). Gate verde: services branches 94.37, global funcs 79.66, 1367 tests; tsc 0, lint limpio.
+  E2E no verificable localmente (rehidratación de sesión no dispara en preview build, afecta también crm.flow) → CI lo valida. PR# pendiente.
