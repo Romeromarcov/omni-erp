@@ -213,6 +213,41 @@ export const rrhhKeys = {
   cargos: () => ['rrhh', 'cargos'] as const,
 };
 
+// ── Control de Asistencia (horarios, asignaciones, marcaje, resúmenes) ────────
+// Prefijo compartido `['control-asistencia', <recurso>]` para que invalidar la
+// familia de un recurso refresque su lista y variantes (activos/hoy) a la vez.
+export const controlAsistenciaKeys = {
+  horariosAll: () => ['control-asistencia', 'horarios'] as const,
+  horarios: (empresaId?: string | null, search?: string | null) =>
+    ['control-asistencia', 'horarios', 'list', empresaId ?? null, search ?? null] as const,
+  horariosActivos: () => ['control-asistencia', 'horarios', 'activos'] as const,
+  asignacionesAll: () => ['control-asistencia', 'asignaciones'] as const,
+  asignaciones: (empleadoId?: number | string | null) =>
+    ['control-asistencia', 'asignaciones', 'list', empleadoId ?? null] as const,
+  registrosAll: () => ['control-asistencia', 'registros'] as const,
+  registros: (empleadoId?: number | string | null, fechaInicio?: string | null, fechaFin?: string | null) =>
+    [
+      'control-asistencia',
+      'registros',
+      'list',
+      empleadoId ?? null,
+      fechaInicio ?? null,
+      fechaFin ?? null,
+    ] as const,
+  registrosHoy: (empleadoId?: number | string | null) =>
+    ['control-asistencia', 'registros', 'hoy', empleadoId ?? null] as const,
+  resumenesAll: () => ['control-asistencia', 'resumenes'] as const,
+  resumenes: (empleadoId?: number | string | null, fecha?: string | null, estado?: string | null) =>
+    [
+      'control-asistencia',
+      'resumenes',
+      'list',
+      empleadoId ?? null,
+      fecha ?? null,
+      estado ?? null,
+    ] as const,
+};
+
 // ── Nómina (workstream F) ─────────────────────────────────────────────────────
 // Prefijo compartido `['nomina', 'procesos']` para que procesar invalide lista,
 // detalle y recibos del proceso a la vez.

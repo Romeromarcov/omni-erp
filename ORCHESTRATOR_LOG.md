@@ -148,3 +148,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   StatusChip de variación FAVORABLE/DESFAVORABLE/NEUTRO), costosService (3 sub-servicios), costosRoutes+nav
   'Costos', costosKeys. Tests servicio puros + página + E2E costos.flow. Gate nativo verde: services branches
   92.32, global funcs 79.07, 1046 tests; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] ✅ costos frontend PR#219 merged (CI verde 1er intento).
+[2026-06-24] ✅ control_asistencia frontend completo (horarios, asignaciones, marcaje, resúmenes). Backend ya 100%.
+  Agregado: ControlAsistenciaPage (4 tabs: Horarios CRUD+desactivar, Asignaciones CRUD+finalizar+filtro empleado,
+  Registros lista/por-empleado-fecha/hoy + Marcar asistencia, Resúmenes generar+aprobar gated por estado_revision
+  con StatusChip), controlAsistenciaService (4 sub-servicios con todas las acciones), rutas+nav 'Control de Asistencia',
+  controlAsistenciaKeys. Tests: 81 (56 service puros + 25 página) + E2E. Gate nativo verde: services branches 93.36,
+  global funcs 79.52, 1127 tests; tsc 0, lint limpio. PR# pendiente.
