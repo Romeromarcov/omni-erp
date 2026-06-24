@@ -28,7 +28,6 @@ class GastoError(Exception):
     pass
 
 
-@transaction.atomic
 def aprobar_gasto(gasto, usuario=None) -> dict:
     """
     Aprueba un gasto pendiente y genera su(s) asiento(s) contable(s).
@@ -53,10 +52,11 @@ def aprobar_gasto(gasto, usuario=None) -> dict:
     """
     from apps.gastos.models import Gasto
 
-    # Lock para evitar doble aprobación concurrente.
-    gasto = Gasto.objects.select_for_update().select_related(
-        "id_categoria_gasto", "id_empresa"
-    ).get(pk=gasto.pk)
+    # Pre-chequeo SIN lock para el gate de aprobación: ``crear_solicitud``
+    # confirma su propia transacción y debe sobrevivir al ``raise`` (si estuviera
+    # dentro de la atomic de contabilización, el raise la revertiría). La
+    # contabilización con lock vive en ``_contabilizar_gasto``.
+    gasto = Gasto.objects.select_related("id_categoria_gasto", "id_empresa").get(pk=gasto.pk)
 
     if gasto.estado_gasto != "PENDIENTE_APROBACION":
         raise GastoError(
@@ -69,6 +69,42 @@ def aprobar_gasto(gasto, usuario=None) -> dict:
             "La categoría exige factura de respaldo: adjunte la factura antes de aprobar."
         )
 
+    empresa = gasto.id_empresa
+
+    # Reglas de aprobación configurables (T03): si el monto supera el umbral del
+    # tenant (gestion_aprobaciones tipo GASTO), la aprobación se bloquea hasta que
+    # la SolicitudAprobacion quede APROBADA.
+    from apps.gestion_aprobaciones.services import (
+        crear_solicitud,
+        esta_aprobada,
+        requiere_aprobacion,
+    )
+
+    if requiere_aprobacion(empresa, "GASTO", gasto.monto) and not esta_aprobada(gasto):
+        crear_solicitud(gasto, empresa, usuario, "GASTO", gasto.monto)
+        raise GastoError(
+            "El gasto supera el umbral y requiere aprobación. Se registró la "
+            "solicitud; un aprobador debe resolverla antes de aprobar el gasto."
+        )
+
+    return _contabilizar_gasto(gasto, usuario)
+
+
+@transaction.atomic
+def _contabilizar_gasto(gasto, usuario=None) -> dict:
+    """Contabiliza un gasto ya autorizado, bajo lock pesimista. Separado de
+    ``aprobar_gasto`` para que el gate de aprobación (que crea la solicitud y
+    lanza) no comparta la transacción que aquí se confirma."""
+    from apps.gastos.models import Gasto
+
+    # Lock para evitar doble aprobación concurrente; re-valida bajo lock.
+    gasto = Gasto.objects.select_for_update().select_related(
+        "id_categoria_gasto", "id_empresa"
+    ).get(pk=gasto.pk)
+    if gasto.estado_gasto != "PENDIENTE_APROBACION":
+        raise GastoError(
+            f"Solo se aprueban gastos PENDIENTE_APROBACION. Estado: {gasto.estado_gasto}"
+        )
     empresa = gasto.id_empresa
 
     # Enforcement de cierre de período fiscal: la aprobación postea un asiento.

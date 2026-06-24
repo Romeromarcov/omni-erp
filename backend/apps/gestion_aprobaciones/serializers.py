@@ -1,4 +1,3 @@
-from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
 
@@ -52,7 +51,11 @@ class SolicitudAprobacionSerializer(BaseModelSerializer):
             "id_tipo_aprobacion",
             "id_usuario_solicitante",
             "etapa_actual_flujo",
+            "monto",
         ]
+        # estado/etapa/monto los gobierna el servicio (crear_solicitud /
+        # registrar_decision), nunca un PATCH directo.
+        read_only_fields = ["estado_solicitud", "etapa_actual_flujo", "monto"]
 
 
 class RegistroAprobacionSerializer(BaseModelSerializer):

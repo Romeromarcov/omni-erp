@@ -1,4 +1,3 @@
-import uuid
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -45,6 +44,9 @@ class SolicitudAprobacion(models.Model):
     comentarios_solicitante = models.TextField(null=True, blank=True)
     fecha_ultima_actualizacion = models.DateTimeField(auto_now=True)
     etapa_actual_flujo = models.ForeignKey(FlujoAprobacion, null=True, blank=True, on_delete=models.SET_NULL)
+    # Monto del documento que originó la solicitud; permite re-evaluar qué etapas
+    # aplican al avanzar entre etapas multi-nivel sin recargar el documento.
+    monto = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
 
 
 class RegistroAprobacion(models.Model):

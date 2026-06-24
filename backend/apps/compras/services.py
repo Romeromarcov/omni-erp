@@ -27,17 +27,46 @@ class CompraError(Exception):
 # ── aprobar_orden_compra ──────────────────────────────────────────────────────
 
 
-@transaction.atomic
 def aprobar_orden_compra(orden_compra, usuario) -> None:
     """
     Cambia el estado de la OC de BORRADOR/ENVIADA a APROBADA.
+
+    Reglas de aprobación configurables (T03): si el monto de la OC supera el
+    umbral del tenant (``gestion_aprobaciones`` tipo ``ORDEN_COMPRA``), la
+    aprobación directa se bloquea hasta que la SolicitudAprobacion quede APROBADA.
+    Se crea/recupera la solicitud para que un aprobador la resuelva.
+
+    El gate de aprobación NO se envuelve en una transacción junto al ``raise``:
+    ``crear_solicitud`` confirma su propia ``@transaction.atomic`` y luego se
+    propaga ``CompraError``, de modo que la solicitud persiste (si estuviera en
+    la misma atomic, el raise la revertiría).
     """
     if orden_compra.estado not in ("BORRADOR", "ENVIADA"):
         raise CompraError(
             f"Solo se aprueban órdenes en BORRADOR o ENVIADA. Estado actual: {orden_compra.estado}"
         )
-    orden_compra.estado = "APROBADA"
-    orden_compra.save(update_fields=["estado"])
+
+    from django.db.models import Sum
+
+    from apps.gestion_aprobaciones.services import (
+        crear_solicitud,
+        esta_aprobada,
+        requiere_aprobacion,
+    )
+
+    empresa = orden_compra.id_empresa
+    # OrdenCompra no almacena total: se suma el subtotal de sus líneas.
+    monto = orden_compra.detalles.aggregate(t=Sum("subtotal"))["t"] or Decimal("0")
+    if requiere_aprobacion(empresa, "ORDEN_COMPRA", monto) and not esta_aprobada(orden_compra):
+        crear_solicitud(orden_compra, empresa, usuario, "ORDEN_COMPRA", monto)
+        raise CompraError(
+            "La orden supera el umbral y requiere aprobación. Se registró la "
+            "solicitud; un aprobador debe resolverla antes de aprobar la orden."
+        )
+
+    with transaction.atomic():
+        orden_compra.estado = "APROBADA"
+        orden_compra.save(update_fields=["estado"])
 
 
 # ── registrar_recepcion ───────────────────────────────────────────────────────

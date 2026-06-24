@@ -948,6 +948,8 @@
 | `^sesiones-datafono\.(?P<format>[a-z0-9]+)/?$` | SesionDatafonoViewSet | SesionDatafono | — | ✅ | IsAuthenticated |
 | `^solicitudes-aprobacion/$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
 | `^solicitudes-aprobacion/(?P<pk>[^/.]+)/$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
+| `^solicitudes-aprobacion/(?P<pk>[^/.]+)/decidir/$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
+| `^solicitudes-aprobacion/(?P<pk>[^/.]+)/decidir\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
 | `^solicitudes-aprobacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
 | `^solicitudes-aprobacion\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
 | `^solicitudes-cotizacion/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
