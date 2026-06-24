@@ -317,6 +317,20 @@ class TestAsientoPagoCxP:
         assert cxp_pendiente.monto_pendiente == Decimal("600.00")
         assert not AsientoContable.objects.filter(nombre_modelo_origen="AbonoCxP").exists()
 
+    def test_generar_asiento_false_omite_asiento(self, db, cxp_pendiente, user_a, empresa_a):
+        """Flujos con asiento propio (pago de tercero) pasan generar_asiento=False:
+        el abono se aplica pero NO se postea PAGO_CXP, ni con mapeo y contabilidad
+        activa — evita el doble cargo a la CxP."""
+        from apps.contabilidad.models import AsientoContable
+
+        _mapeo_pago_cxp(empresa_a)
+        empresa_a.contabilidad_activa = True
+        empresa_a.save(update_fields=["contabilidad_activa"])
+        registrar_abono_cxp(cxp_pendiente, Decimal("400.00"), user_a, generar_asiento=False)
+        cxp_pendiente.refresh_from_db()
+        assert cxp_pendiente.monto_pendiente == Decimal("600.00")
+        assert not AsientoContable.objects.filter(nombre_modelo_origen="AbonoCxP").exists()
+
 
 class TestAbonoCxPReadOnly:
     """La deuda 'AbonoCxP CRUD libre': el endpoint es de solo lectura."""

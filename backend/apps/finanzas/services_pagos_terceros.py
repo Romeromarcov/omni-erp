@@ -130,6 +130,10 @@ def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = ""
             usuario=usuario,
             descripcion=descripcion
             or f"Pago de tercero Zelle {pago.referencia_zelle}",
+            # El pago de tercero lleva su PROPIO asiento PAGO_TERCERO (más abajo);
+            # no debe generar también PAGO_CXP o se duplicaría el cargo a la CxP
+            # y un AbonoCxPError por falta de mapeo PAGO_CXP taparía el 422 real.
+            generar_asiento=False,
         )
     except AbonoCxPError as exc:
         raise PagoTerceroError(str(exc)) from exc

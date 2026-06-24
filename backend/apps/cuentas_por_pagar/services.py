@@ -24,9 +24,18 @@ class AbonoCxPError(Exception):
 
 
 @transaction.atomic
-def registrar_abono_cxp(cxp, monto: Decimal, usuario, descripcion: str = "") -> "AbonoCxP":
+def registrar_abono_cxp(
+    cxp, monto: Decimal, usuario, descripcion: str = "", generar_asiento: bool = True
+) -> "AbonoCxP":
     """
     Aplica un abono a una CxP y actualiza su estado.
+
+    Args:
+        generar_asiento: si True (default, flujo ``/abonar/``), postea el asiento
+            ``PAGO_CXP``. Los flujos que llevan su PROPIO asiento del lado del
+            pago (p. ej. pago de terceros Zelle → ``PAGO_TERCERO``) pasan False
+            para no DUPLICAR el cargo a la CxP ni adelantar un AbonoCxPError que
+            taparía el 422 del asiento real del flujo llamador.
 
     Raises:
         AbonoCxPError si el monto es inválido o la CxP está pagada.
@@ -72,7 +81,11 @@ def registrar_abono_cxp(cxp, monto: Decimal, usuario, descripcion: str = "") -> 
     # empresa exige contabilidad y falta el mapeo, o el asiento descuadra,
     # ``AsientoError`` revierte el abono completo (la @transaction.atomic hace
     # rollback al propagar). Una empresa informal (sin contabilidad activa y sin
-    # mapeo) procede sin asiento (R-PROD-3).
+    # mapeo) procede sin asiento (R-PROD-3). Si el llamador lleva su propio
+    # asiento (generar_asiento=False), se omite para no duplicar el cargo a CxP.
+    if not generar_asiento:
+        return abono
+
     from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
 
     try:
