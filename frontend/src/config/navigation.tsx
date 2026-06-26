@@ -19,6 +19,7 @@ import FingerprintOutlined from '@mui/icons-material/FingerprintOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import TuneOutlined from '@mui/icons-material/TuneOutlined';
 import HubOutlined from '@mui/icons-material/HubOutlined';
 import SyncAltOutlined from '@mui/icons-material/SyncAltOutlined';
 import CloudUploadOutlined from '@mui/icons-material/CloudUploadOutlined';
@@ -285,6 +286,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Parámetros del Sistema', path: '/configuracion/parametros-sistema' },
         { label: 'Catálogos de Valor', path: '/configuracion/catalogos-valor' },
       ],
+    },
+    {
+      id: 'personalizacion',
+      label: 'Personalización',
+      icon: <TuneOutlined />,
+      items: [{ label: 'Personalización', path: '/personalizacion' }],
     },
     {
       id: 'integraciones',

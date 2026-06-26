@@ -428,6 +428,17 @@ export const migracionDatosKeys = {
     ['migracion-datos', 'errores', 'list', procesoId ?? null] as const,
 };
 
+// ── Personalización (versiones del DSL de personalización por empresa) ────────
+// Prefijo compartido `['personalizacion', <recurso>]`; los `*All` invalidan la
+// familia completa (activa + historial + lista) tras crear/activar/eliminar.
+export const personalizacionKeys = {
+  all: () => ['personalizacion'] as const,
+  activa: (empresaId?: string | null) =>
+    ['personalizacion', 'activa', empresaId ?? null] as const,
+  historial: (empresaId?: string | null) =>
+    ['personalizacion', 'historial', empresaId ?? null] as const,
+};
+
 // ── Integración B2B (configuraciones + mapeo de campos + logs) ────────────────
 // Prefijo compartido `['integracion-b2b', <recurso>]`; los `*All` invalidan la
 // familia completa de un recurso tras crear/editar/eliminar.
