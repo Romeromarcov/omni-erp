@@ -34,6 +34,7 @@ import { bancaElectronicaRoutes } from './routes/bancaElectronicaRoutes';
 import { migracionDatosRoutes } from './routes/migracionDatosRoutes';
 import { integracionB2bRoutes } from './routes/integracionB2bRoutes';
 import { agentesRoutes } from './routes/agentesRoutes';
+import { personalizacionRoutes } from './routes/personalizacionRoutes';
 import { isModuleEnabled } from './config/appProfile';
 
 const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
@@ -105,6 +106,7 @@ export default function AppRouter() {
             {migracionDatosRoutes()}
             {integracionB2bRoutes()}
             {agentesRoutes()}
+            {personalizacionRoutes()}
           </Route>
         )}
 

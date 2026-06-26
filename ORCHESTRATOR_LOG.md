@@ -223,3 +223,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   solo-lectura con StatusChip de estado), integracionB2bService (3 sub-servicios con toList; credenciales_json
   no se loguea, R-CODE-8), rutas+nav 'Integración B2B', integracionB2bKeys. Tests: 44 (28 service puros + 16
   página). Gate verde: services branches 94.24, global funcs 80.03, 1501 tests; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] ✅ integracion_b2b frontend PR#231 merged (14 apps).
+[2026-06-24] ✅ personalizacion frontend completo (DSL de personalización, versiones/activar/historial) — ÚLTIMO gap.
+  Backend ya 100% (configuraciones + activa/activar/historial). Agregado: PersonalizacionPage (panel de config
+  activa, historial de versiones con Activar=rollback gated, crear nueva versión con editor config_yaml + config_dict
+  JSON validado, detalle yaml/json), personalizacionService (getAll/historial/activa[404→null]/CRUD/activar con toList),
+  rutas+nav 'Personalización', personalizacionKeys. Tests: 38 (24 service puros + 14 página). Gate verde: services
+  branches 94.35, global funcs 80.11, 1537 tests; tsc 0, lint limpio. PR# pendiente.
