@@ -231,3 +231,14 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   JSON validado, detalle yaml/json), personalizacionService (getAll/historial/activa[404→null]/CRUD/activar con toList),
   rutas+nav 'Personalización', personalizacionKeys. Tests: 38 (24 service puros + 14 página). Gate verde: services
   branches 94.35, global funcs 80.11, 1537 tests; tsc 0, lint limpio. PR# pendiente.
+
+[2026-06-24] 🎉 DONE — Barrido de gaps de FRONTEND completo. Toda app del backend con router HTTP tiene ahora
+  frontend funcional (página + servicio + tests vitest + E2E Playwright). 15 módulos construidos esta sesión
+  (#215-#232) + fix de E2E (#226). auditoria ya tenía UI (pages/Core/Auditoria). Únicos prefijos sin UI: infra
+  (/docs, /redoc, /health) — correcto.
+  Módulos: crm, proveedores, gastos, despacho, costos, control_asistencia, servicio_cliente, gestion_aprobaciones,
+  gestion_documental, notificaciones, banca_electronica, migracion_datos, agentes, integracion_b2b, personalizacion.
+  Disciplina aplicada: PRs focales a develop, automerge con CI verde, cobertura services branches ≥86 / global funcs ≥77
+  verificada nativo en worktree con el comando exacto de CI, toList en todo fetch de lista (evita crash con datos
+  paginados reales). Deuda menor pendiente: estabilizar OperacionesCambio.test.tsx (flaky timeout 5s, no bloquea CI).
+  Siguiente fase sugerida: profundizar paridad por módulo vs Odoo + flujos cruzados entre módulos + más E2E de negocio.
