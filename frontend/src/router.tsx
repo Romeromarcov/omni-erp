@@ -32,6 +32,7 @@ import { aprobacionesRoutes } from './routes/aprobacionesRoutes';
 import { notificacionesRoutes } from './routes/notificacionesRoutes';
 import { bancaElectronicaRoutes } from './routes/bancaElectronicaRoutes';
 import { migracionDatosRoutes } from './routes/migracionDatosRoutes';
+import { integracionB2bRoutes } from './routes/integracionB2bRoutes';
 import { agentesRoutes } from './routes/agentesRoutes';
 import { isModuleEnabled } from './config/appProfile';
 
@@ -102,6 +103,7 @@ export default function AppRouter() {
             {notificacionesRoutes()}
             {bancaElectronicaRoutes()}
             {migracionDatosRoutes()}
+            {integracionB2bRoutes()}
             {agentesRoutes()}
           </Route>
         )}

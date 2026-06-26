@@ -215,3 +215,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   (todas las acciones con toList), rutas+nav 'Agentes IA', agentesKeys. Refactor SugerenciasWidget para usar el service
   (sin cambio de comportamiento). Tests: 35 (24 service puros + 11 página). Gate verde: services branches 94.67,
   global funcs 79.98; tsc 0, lint limpio. PR# pendiente. NOTA: auditoria ya tenía UI (pages/Core/Auditoria) — no era gap.
+
+[2026-06-24] ✅ agentes frontend PR#230 merged (13 apps).
+[2026-06-24] ✅ integracion_b2b frontend completo (configuración, mapeo de campos, logs). Backend ya 100%.
+  (El frontend ya existía sin commitear en el worktree desde el inicio de sesión; verificado contra contrato y
+  gateado). Agregado: IntegracionB2bPage (Tabs: Configuraciones CRUD, Mapeo de campos CRUD filtrable, Logs
+  solo-lectura con StatusChip de estado), integracionB2bService (3 sub-servicios con toList; credenciales_json
+  no se loguea, R-CODE-8), rutas+nav 'Integración B2B', integracionB2bKeys. Tests: 44 (28 service puros + 16
+  página). Gate verde: services branches 94.24, global funcs 80.03, 1501 tests; tsc 0, lint limpio. PR# pendiente.
