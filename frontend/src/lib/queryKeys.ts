@@ -428,6 +428,23 @@ export const migracionDatosKeys = {
     ['migracion-datos', 'errores', 'list', procesoId ?? null] as const,
 };
 
+// ── Integración B2B (configuraciones + mapeo de campos + logs) ────────────────
+// Prefijo compartido `['integracion-b2b', <recurso>]`; los `*All` invalidan la
+// familia completa de un recurso tras crear/editar/eliminar.
+export const integracionB2bKeys = {
+  configuracionesAll: () => ['integracion-b2b', 'configuraciones'] as const,
+  configuraciones: (empresaId?: string | null) =>
+    ['integracion-b2b', 'configuraciones', 'list', empresaId ?? null] as const,
+  configuracion: (id: string) =>
+    ['integracion-b2b', 'configuraciones', 'detail', id] as const,
+  mapeosAll: () => ['integracion-b2b', 'mapeos'] as const,
+  mapeos: (configuracionId?: string | null) =>
+    ['integracion-b2b', 'mapeos', 'list', configuracionId ?? null] as const,
+  logsAll: () => ['integracion-b2b', 'logs'] as const,
+  logs: (configuracionId?: string | null) =>
+    ['integracion-b2b', 'logs', 'list', configuracionId ?? null] as const,
+};
+
 // ── Agentes IA (predicciones, sugerencias, métricas del clasificador) ─────────
 // Prefijo compartido `['agentes', <recurso>]` para que invalidar una familia
 // refresque lista y variantes (sugerencias, métricas) a la vez tras responder/evaluar.
