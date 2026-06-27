@@ -226,6 +226,28 @@ export const comprasKeys = {
   proveedores: () => ['compras', 'proveedores'] as const,
 };
 
+// ── Aprovisionamiento (source-to-PO: requisiciones, RFQ, ofertas) ─────────────
+// Prefijo compartido `['aprovisionamiento', <recurso>]` para que invalidar la
+// familia de un recurso refresque su lista y los detalles (líneas) a la vez.
+export const aprovisionamientoKeys = {
+  all: () => ['aprovisionamiento'] as const,
+  requisicionesAll: () => ['aprovisionamiento', 'requisiciones'] as const,
+  requisiciones: (estado?: string | null) =>
+    ['aprovisionamiento', 'requisiciones', 'list', estado ?? null] as const,
+  detallesRequisicion: (requisicionId: string) =>
+    ['aprovisionamiento', 'requisiciones', 'detalles', requisicionId] as const,
+  solicitudesAll: () => ['aprovisionamiento', 'solicitudes'] as const,
+  solicitudes: (estado?: string | null) =>
+    ['aprovisionamiento', 'solicitudes', 'list', estado ?? null] as const,
+  detallesSolicitud: (solicitudId: string) =>
+    ['aprovisionamiento', 'solicitudes', 'detalles', solicitudId] as const,
+  ofertasAll: () => ['aprovisionamiento', 'ofertas'] as const,
+  ofertas: (solicitud?: string | null, estado?: string | null) =>
+    ['aprovisionamiento', 'ofertas', 'list', solicitud ?? null, estado ?? null] as const,
+  detallesOferta: (ofertaId: string) =>
+    ['aprovisionamiento', 'ofertas', 'detalles', ofertaId] as const,
+};
+
 // ── CxP (Cuentas por Pagar) ───────────────────────────────────────────────────
 export const cxpKeys = {
   cuentasAll: () => ['cxp', 'cuentas'] as const,
