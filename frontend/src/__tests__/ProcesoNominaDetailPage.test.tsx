@@ -11,6 +11,9 @@ vi.mock('../services/nominaService', () => ({
     getRecibosProceso: vi.fn(),
     getPeriodos: vi.fn(),
     procesarProceso: vi.fn(),
+    aprobarProceso: vi.fn(),
+    aprobarRecibo: vi.fn(),
+    marcarReciboPagada: vi.fn(),
   },
 }));
 
@@ -331,5 +334,60 @@ describe('ProcesoNominaDetailPage', () => {
     expect(
       await screen.findByText(/aún no hay recibos: procese la nómina para generarlos/i),
     ).toBeInTheDocument();
+  });
+
+  it('aprueba el proceso COMPLETADO desde el botón de cabecera', async () => {
+    vi.mocked(nominaService.getProceso).mockResolvedValue({ ...proceso, estado: 'COMPLETADO' });
+    vi.mocked(nominaService.getRecibosProceso).mockResolvedValue(recibos);
+    vi.mocked(nominaService.aprobarProceso).mockResolvedValue({ ...proceso, estado: 'APROBADO' });
+    const user = userEvent.setup();
+    renderPage();
+
+    const boton = await screen.findByRole('button', { name: /aprobar proceso/i });
+    await user.click(boton);
+
+    await waitFor(() => expect(nominaService.aprobarProceso).toHaveBeenCalledWith('proc-1'));
+    expect(await screen.findByText(/proceso de nómina aprobado/i)).toBeInTheDocument();
+  });
+
+  it('no muestra el botón de aprobar proceso si no está COMPLETADO', async () => {
+    renderPage();
+    await screen.findByText(/NOM-2026-06/);
+    expect(screen.queryByRole('button', { name: /aprobar proceso/i })).not.toBeInTheDocument();
+  });
+
+  it('aprueba un recibo CALCULADA desde la fila', async () => {
+    vi.mocked(nominaService.getProceso).mockResolvedValue({ ...proceso, estado: 'APROBADO' });
+    vi.mocked(nominaService.getRecibosProceso).mockResolvedValue([recibos[0]]);
+    vi.mocked(nominaService.aprobarRecibo).mockResolvedValue({ ...recibos[0], estado: 'APROBADA' });
+    const user = userEvent.setup();
+    renderPage();
+
+    const fila = await screen.findByText('Ana Pérez');
+    const filaRow = fila.closest('tr')!;
+    await user.click(within(filaRow).getByRole('button', { name: /^aprobar$/i }));
+
+    await waitFor(() => expect(nominaService.aprobarRecibo).toHaveBeenCalledWith('nom-1'));
+    expect(await screen.findByText(/recibo aprobado/i)).toBeInTheDocument();
+  });
+
+  it('marca un recibo APROBADA como pagado desde la fila', async () => {
+    vi.mocked(nominaService.getProceso).mockResolvedValue({ ...proceso, estado: 'APROBADO' });
+    vi.mocked(nominaService.getRecibosProceso).mockResolvedValue([
+      { ...recibos[0], estado: 'APROBADA' },
+    ]);
+    vi.mocked(nominaService.marcarReciboPagada).mockResolvedValue({
+      ...recibos[0],
+      estado: 'PAGADA',
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    const fila = await screen.findByText('Ana Pérez');
+    const filaRow = fila.closest('tr')!;
+    await user.click(within(filaRow).getByRole('button', { name: /marcar pagada/i }));
+
+    await waitFor(() => expect(nominaService.marcarReciboPagada).toHaveBeenCalledWith('nom-1'));
+    expect(await screen.findByText(/recibo marcado como pagado/i)).toBeInTheDocument();
   });
 });

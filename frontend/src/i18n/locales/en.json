@@ -399,7 +399,16 @@
       "recibos": "Pay slips per employee",
       "sinRecibos": "This run has no pay slips.",
       "sinRecibosEnProceso": "No pay slips yet: process the payroll to generate them.",
-      "totalNetoRecibos": "Net total"
+      "totalNetoRecibos": "Net total",
+      "aprobar": "Approve run",
+      "aprobadoOk": "Payroll run approved.",
+      "errorAprobar": "Could not approve the payroll run.",
+      "acciones": "Actions",
+      "aprobarRecibo": "Approve",
+      "marcarPagada": "Mark paid",
+      "reciboAprobadoOk": "Pay slip approved.",
+      "reciboPagadoOk": "Pay slip marked as paid.",
+      "errorReciboAccion": "Could not update the pay slip."
     }
   },
   "offline": {

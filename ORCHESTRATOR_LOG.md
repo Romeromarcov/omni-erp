@@ -252,3 +252,10 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   produccion-completa.flow (crear OF→consumir [stock MP↓]→avanzar etapas→completar [PT↑]→costo persistido, balance).
   manufacturaService +crearOrden/consumirMateriales/getListasMateriales, schemas, i18n es. Gate verde: 1540 tests,
   services branches 97.87, tsc 0, lint limpio. Strings verificados vs es.json. PR# pendiente.
+
+[2026-06-27] ✅ Producción Completa PR#235 merged (cerró gaps de UI manufactura + E2E). CI verde.
+[2026-06-27] ✅ Nómina Completa (hire-to-pay) — rrhh→nomina→contabilidad. Cerró gaps de UI: aprobar proceso,
+  aprobar recibo, marcar recibo pagada (acciones gated en ProcesoNominaDetailPage). nominaService +aprobarProceso/
+  aprobarRecibo/marcarReciboPagada (+tests actualizados, i18n es+en). E2E nomina-completa.flow (período→proceso→
+  procesar [genera recibos]→aprobar→recibos→marcar pagada; devengados/deducciones/neto>0, asiento balanceado vía API).
+  Gate: tsc 0, lint limpio, 1546 tests verdes (solo flaky OperacionesCambio ajeno timeout 5s). Strings vs es.json. PR# pendiente.

@@ -418,7 +418,16 @@
       "recibos": "Recibos por empleado",
       "sinRecibos": "Este proceso no tiene recibos.",
       "sinRecibosEnProceso": "Aún no hay recibos: procese la nómina para generarlos.",
-      "totalNetoRecibos": "Total neto"
+      "totalNetoRecibos": "Total neto",
+      "aprobar": "Aprobar proceso",
+      "aprobadoOk": "Proceso de nómina aprobado.",
+      "errorAprobar": "No se pudo aprobar el proceso de nómina.",
+      "acciones": "Acciones",
+      "aprobarRecibo": "Aprobar",
+      "marcarPagada": "Marcar pagada",
+      "reciboAprobadoOk": "Recibo aprobado.",
+      "reciboPagadoOk": "Recibo marcado como pagado.",
+      "errorReciboAccion": "No se pudo actualizar el recibo."
     }
   },
   "offline": {

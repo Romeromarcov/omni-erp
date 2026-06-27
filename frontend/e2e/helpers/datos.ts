@@ -363,6 +363,69 @@ export async function carteraDashboard(api: ApiE2E): Promise<CarteraDashboardApi
   return api.get<CarteraDashboardApi>('/cobranza/cartera/dashboard/');
 }
 
+export interface PrereqNomina {
+  /** PK entera del empleado sembrado (las claves del body de procesar usan String(id)). */
+  empleadoId: number;
+  empleadoNombre: string;
+  empleadoApellido: string;
+  /** Salario mensual del empleado, como string decimal (R-CODE-4). */
+  salarioMensual: string;
+  /** Período de nómina ABIERTO. */
+  periodoId: string;
+  periodoNombre: string;
+}
+
+/**
+ * Siembra los prerequisitos del flujo Hire-to-Pay vía API:
+ *   - un empleado activo con salario mensual (documento_json.salario_mensual,
+ *     el puente que lee el motor de nómina) y fecha de ingreso;
+ *   - un período de nómina MENSUAL en estado ABIERTO (default del modelo).
+ *
+ * `seed_empresa_inicial` no siembra empleados ni períodos: los crea el spec.
+ * Los conceptos de nómina los crea el motor LOTTT al procesar (no requieren
+ * seed manual: `procesar_proceso_nomina` calcula con `ParametroSistema`).
+ */
+export async function crearPrereqNomina(
+  api: ApiE2E,
+  empresaId: string,
+  opciones: { salarioMensual: string; sufijo?: string },
+): Promise<PrereqNomina> {
+  const suf = opciones.sufijo ?? sufijoUnico();
+  const empleadoNombre = `Nomina${suf}`.slice(0, 20);
+  const empleadoApellido = `Test${suf}`.slice(0, 20);
+
+  const empleado = await api.post<{ id: number }>('/rrhh/empleados/', {
+    empresa: empresaId,
+    nombre: empleadoNombre,
+    apellido: empleadoApellido,
+    cedula: `V-${String(Date.now()).slice(-8)}`,
+    fecha_ingreso: new Date().toISOString().slice(0, 10),
+    activo: true,
+    documento_json: { salario_mensual: opciones.salarioMensual },
+  });
+
+  const hoy = new Date();
+  const fin = new Date(hoy.getTime() + 29 * 24 * 3600 * 1000);
+  const periodoNombre = `Período E2E ${suf}`;
+  const periodo = await api.post<{ id_periodo_nomina: string }>('/nomina/periodos-nomina/', {
+    id_empresa: empresaId,
+    nombre_periodo: periodoNombre,
+    tipo_periodo: 'MENSUAL',
+    fecha_inicio: hoy.toISOString().slice(0, 10),
+    fecha_fin: fin.toISOString().slice(0, 10),
+    fecha_pago: fin.toISOString().slice(0, 10),
+  });
+
+  return {
+    empleadoId: empleado.id,
+    empleadoNombre,
+    empleadoApellido,
+    salarioMensual: opciones.salarioMensual,
+    periodoId: periodo.id_periodo_nomina,
+    periodoNombre,
+  };
+}
+
 interface CajaVirtualApi {
   id_caja: string;
   nombre: string;
