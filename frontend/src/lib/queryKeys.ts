@@ -75,6 +75,15 @@ export const ventasKeys = {
   },
 };
 
+// ── Listas de Precio (ventas) ─────────────────────────────────────────────────
+// Prefijo compartido `['listas-precio', ...]` para que invalidar la familia
+// refresque la lista de listas y los detalles (precios) de cada una a la vez.
+export const listasPrecioKeys = {
+  all: () => ['listas-precio'] as const,
+  list: (search?: string | null) => ['listas-precio', 'list', search ?? null] as const,
+  detalles: (listaId: string) => ['listas-precio', 'detalles', listaId] as const,
+};
+
 // ── CxC (Cuentas por Cobrar) ──────────────────────────────────────────────────
 export const cxcKeys = {
   carteraDashboard: () => ['cxc', 'cartera', 'dashboard'] as const,

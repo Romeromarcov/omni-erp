@@ -22,6 +22,7 @@ const DevolucionVentaFormPage = lazy(() => import('../pages/Ventas/DevolucionesV
 const FacturasFiscalesListPage = lazy(() => import('../pages/Ventas/FacturasFiscales/FacturasFiscalesListPage'));
 const FacturaFiscalDetailPage = lazy(() => import('../pages/Ventas/FacturasFiscales/FacturaFiscalDetailPage'));
 const FacturaFiscalFormPage = lazy(() => import('../pages/Ventas/FacturasFiscales/FacturaFiscalFormPage'));
+const ListasPrecioPage = lazy(() => import('../pages/Ventas/ListasPrecioPage'));
 
 export function ventasRoutes() {
   return (
@@ -60,6 +61,8 @@ export function ventasRoutes() {
       <Route path="/ventas/facturas-fiscales/new" element={<FacturaFiscalFormPage />} />
       <Route path="/ventas/facturas-fiscales/:id_factura" element={<FacturaFiscalDetailPage />} />
       <Route path="/ventas/facturas-fiscales/:id_factura/edit" element={<FacturaFiscalFormPage />} />
+
+      <Route path="/ventas/listas-precio" element={<ListasPrecioPage />} />
     </>
   );
 }

@@ -84,6 +84,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Notas de Crédito Fiscal', path: '/ventas/notas-credito-fiscal' },
         { label: 'Devoluciones', path: '/ventas/devoluciones-venta' },
         { label: 'Facturas Fiscales', path: '/ventas/facturas-fiscales' },
+        { label: 'Listas de Precio', path: '/ventas/listas-precio' },
       ],
     },
     {
