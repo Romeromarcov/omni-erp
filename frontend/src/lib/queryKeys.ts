@@ -269,6 +269,23 @@ export const rrhhKeys = {
   cargos: () => ['rrhh', 'cargos'] as const,
 };
 
+// ── RRHH: Beneficios y Licencias (catálogo + asignaciones + tipos + licencias) ─
+// Prefijo compartido `['beneficios-licencias', <recurso>]` para que invalidar la
+// familia de un recurso refresque su lista y variantes (por empleado/estado).
+export const beneficiosLicenciasKeys = {
+  all: () => ['beneficios-licencias'] as const,
+  beneficiosAll: () => ['beneficios-licencias', 'beneficios'] as const,
+  beneficios: () => ['beneficios-licencias', 'beneficios', 'list'] as const,
+  asignacionesAll: () => ['beneficios-licencias', 'asignaciones'] as const,
+  asignaciones: (empleadoId?: number | string | null) =>
+    ['beneficios-licencias', 'asignaciones', 'list', empleadoId ?? null] as const,
+  tiposAll: () => ['beneficios-licencias', 'tipos-licencia'] as const,
+  tipos: () => ['beneficios-licencias', 'tipos-licencia', 'list'] as const,
+  licenciasAll: () => ['beneficios-licencias', 'licencias'] as const,
+  licencias: (empleadoId?: number | string | null, estado?: string | null) =>
+    ['beneficios-licencias', 'licencias', 'list', empleadoId ?? null, estado ?? null] as const,
+};
+
 // ── Control de Asistencia (horarios, asignaciones, marcaje, resúmenes) ────────
 // Prefijo compartido `['control-asistencia', <recurso>]` para que invalidar la
 // familia de un recurso refresque su lista y variantes (activos/hoy) a la vez.
