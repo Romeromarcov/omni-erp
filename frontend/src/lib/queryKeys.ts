@@ -576,6 +576,25 @@ export const agentesKeys = {
   metricasClasificador: () => ['agentes', 'metricas-clasificador'] as const,
 };
 
+// ── Gaps menores (entidades con backend operativo, pantalla nueva) ────────────
+// Ubicaciones de almacén · Movimientos internos de fondo · Pagos de terceros ·
+// Pagos parafiscales. Prefijo `['gaps-menores', <recurso>]` para invalidar por
+// familia tras cada alta/edición/transición.
+export const gapsMenoresKeys = {
+  all: () => ['gaps-menores'] as const,
+  ubicacionesAll: () => ['gaps-menores', 'ubicaciones'] as const,
+  ubicaciones: (almacen?: string | null) =>
+    ['gaps-menores', 'ubicaciones', 'list', almacen ?? null] as const,
+  movimientosInternosAll: () => ['gaps-menores', 'movimientos-internos'] as const,
+  movimientosInternos: () => ['gaps-menores', 'movimientos-internos', 'list'] as const,
+  pagosTercerosAll: () => ['gaps-menores', 'pagos-terceros'] as const,
+  pagosTerceros: (estado?: string | null) =>
+    ['gaps-menores', 'pagos-terceros', 'list', estado ?? null] as const,
+  pagosParafiscalesAll: () => ['gaps-menores', 'pagos-parafiscales'] as const,
+  pagosParafiscales: (estado?: string | null) =>
+    ['gaps-menores', 'pagos-parafiscales', 'list', estado ?? null] as const,
+};
+
 // ── Notificaciones (centro de notificaciones del usuario) ─────────────────────
 // Prefijo compartido `['notificaciones', ...]` para invalidar lista e indicador
 // (campana) a la vez tras marcar como leída. El parámetro distingue la vista de

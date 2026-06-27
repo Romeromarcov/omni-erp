@@ -332,3 +332,10 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
   vacaciones/prestaciones/liquidación con workflow procesar→aprobar gated + drawer de recibos con aprobar/marcar_pagada).
   nominaExtrasService (3 entidades + acciones, toList). Tests 31, +E2E. Gate: 1805 tests EXIT 0, services branches
   94.15, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Nómina Conceptos+Extrasalarial PR#246 merged.
+[2026-06-27] ✅ Cierre de gaps menores (sweep final, 4 entidades sin UI): almacenes UbicacionesAlmacen (CRUD),
+  tesoreria MovimientosInternosFondo (transferencias entre cajas), finanzas PagosTerceros/Zelle (alta+workflow
+  abonar/reintegro/anular), fiscal PagosParafiscales/IVSS-INCES-FAOV (alta+workflow pagar/anular). gapsMenoresService
+  (4 entidades + acciones, toList). Tests: 51 (28 service + 23 página workflow). Gate: 1854 tests EXIT 0, services
+  branches 94.32, global funcs 78.00, tsc 0, lint. PR# pendiente.

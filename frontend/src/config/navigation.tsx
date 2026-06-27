@@ -118,6 +118,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       items: [
         { label: 'Dashboard', path: '/inventario' },
         { label: 'Stock Actual', path: '/inventario/stock' },
+        { label: 'Ubicaciones', path: '/inventario/ubicaciones' },
         { label: 'Ajuste Manual', path: '/inventario/ajustes' },
         { label: 'Datos Maestros', path: '/inventario/maestros' },
       ],
@@ -181,6 +182,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Cajas Físicas', path: '/finanzas/cajas-fisicas' },
         { label: 'Cuentas Bancarias', path: `/empresas/${emp}/cuentas-bancarias` },
         { label: 'Transacciones', path: `/empresas/${emp}/transacciones-financieras` },
+        { label: 'Pagos de Terceros', path: '/finanzas/pagos-terceros' },
         { label: 'Plantillas Maestro', path: '/finanzas/plantillas-maestro' },
         { label: 'Overrides por Sucursal', path: '/finanzas/overrides-metodos-pago' },
       ],
@@ -203,6 +205,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Movimientos Bancarios', path: '/tesoreria/movimientos-bancarios' },
         { label: 'Conciliación Bancaria', path: '/tesoreria/conciliaciones' },
         { label: 'Cambio de Divisa', path: '/tesoreria/cambio-divisa' },
+        { label: 'Movimientos Internos', path: '/tesoreria/movimientos-internos' },
       ],
     },
     {
@@ -249,6 +252,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Configuración', path: '/configuracion/fiscal' },
         { label: 'Libro de Ventas', path: '/fiscal/libro-ventas' },
         { label: 'Libro de Compras', path: '/fiscal/libro-compras' },
+        { label: 'Pagos Parafiscales', path: '/fiscal/pagos-parafiscales' },
       ],
     },
     {
