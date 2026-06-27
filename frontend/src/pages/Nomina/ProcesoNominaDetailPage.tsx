@@ -34,6 +34,7 @@ import {
   Typography,
 } from '@mui/material';
 import PlayArrowOutlined from '@mui/icons-material/PlayArrowOutlined';
+import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import { nominaService } from '../../services/nominaService';
 import type { DatosVariablesEmpleado, ReciboNomina } from '../../services/nominaService';
 import { rrhhService } from '../../services/rrhhService';
@@ -161,6 +162,43 @@ export default function ProcesoNominaDetailPage() {
     },
   });
 
+  const aprobarProcesoMutation = useMutation({
+    mutationFn: () => nominaService.aprobarProceso(id),
+    onSuccess: () => {
+      snackbar.success(t('nomina.detalle.aprobadoOk'));
+      void queryClient.invalidateQueries({ queryKey: nominaKeys.procesosAll() });
+    },
+    onError: (err: unknown) => {
+      snackbar.error(mensajeDeError(err, t('nomina.detalle.errorAprobar')));
+    },
+  });
+
+  const aprobarReciboMutation = useMutation({
+    mutationFn: (reciboId: string) => nominaService.aprobarRecibo(reciboId),
+    onSuccess: () => {
+      snackbar.success(t('nomina.detalle.reciboAprobadoOk'));
+      void queryClient.invalidateQueries({ queryKey: nominaKeys.procesosAll() });
+    },
+    onError: (err: unknown) => {
+      snackbar.error(mensajeDeError(err, t('nomina.detalle.errorReciboAccion')));
+    },
+  });
+
+  const marcarPagadaMutation = useMutation({
+    mutationFn: (reciboId: string) => nominaService.marcarReciboPagada(reciboId),
+    onSuccess: () => {
+      snackbar.success(t('nomina.detalle.reciboPagadoOk'));
+      void queryClient.invalidateQueries({ queryKey: nominaKeys.procesosAll() });
+    },
+    onError: (err: unknown) => {
+      snackbar.error(mensajeDeError(err, t('nomina.detalle.errorReciboAccion')));
+    },
+  });
+
+  // Una acción de recibo a la vez evita doble submit sobre la misma fila.
+  const accionReciboPendiente =
+    aprobarReciboMutation.isPending || marcarPagadaMutation.isPending;
+
   function abrirProcesar() {
     setErrorProcesar(null);
     form.reset({
@@ -228,6 +266,30 @@ export default function ProcesoNominaDetailPage() {
       header: t('nomina.procesos.estado'),
       render: (r) => <StatusChip value={r.estado} />,
     },
+    {
+      key: 'acciones',
+      header: t('nomina.detalle.acciones'),
+      align: 'right',
+      render: (r) =>
+        r.estado === 'CALCULADA' ? (
+          <Button
+            size="small"
+            onClick={() => aprobarReciboMutation.mutate(r.id_nomina)}
+            disabled={accionReciboPendiente}
+          >
+            {t('nomina.detalle.aprobarRecibo')}
+          </Button>
+        ) : r.estado === 'APROBADA' ? (
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => marcarPagadaMutation.mutate(r.id_nomina)}
+            disabled={accionReciboPendiente}
+          >
+            {t('nomina.detalle.marcarPagada')}
+          </Button>
+        ) : null,
+    },
   ];
 
   // Totales de control sumados con decimal.js sobre los recibos (R-CODE-4).
@@ -247,6 +309,7 @@ export default function ProcesoNominaDetailPage() {
   }
 
   const enProceso = proceso?.estado === 'EN_PROCESO';
+  const completado = proceso?.estado === 'COMPLETADO';
 
   return (
     <PageContainer>
@@ -270,6 +333,17 @@ export default function ProcesoNominaDetailPage() {
             >
               {t('nomina.detalle.procesar')}
             </Button>
+            {completado && (
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<CheckCircleOutlined />}
+                onClick={() => aprobarProcesoMutation.mutate()}
+                disabled={aprobarProcesoMutation.isPending}
+              >
+                {t('nomina.detalle.aprobar')}
+              </Button>
+            )}
           </>
         }
       />

@@ -183,11 +183,36 @@ export const nominaService = {
     });
   },
 
+  /**
+   * Aprueba el proceso (POST .../aprobar/): solo válido desde COMPLETADO. El
+   * backend pasa el proceso a APROBADO y sus recibos CALCULADA → APROBADA.
+   * 400 si el proceso no está COMPLETADO.
+   */
+  aprobarProceso: async (id: string): Promise<ProcesoNomina> => {
+    return post<ProcesoNomina>(`${BASE}/procesos-nomina/${id}/aprobar/`, {});
+  },
+
   /** Recibos del proceso (filtro real `?id_proceso_nomina=` del ViewSet). */
   getRecibosProceso: async (procesoId: string): Promise<ReciboNomina[]> => {
     return fetchTodas<ReciboNomina>(
       `${BASE}/nominas/?id_proceso_nomina=${encodeURIComponent(procesoId)}`,
     );
+  },
+
+  /**
+   * Aprueba un recibo individual (POST /nominas/{id}/aprobar/): solo válido
+   * desde CALCULADA (CALCULADA → APROBADA). 400 en cualquier otro estado.
+   */
+  aprobarRecibo: async (id: string): Promise<ReciboNomina> => {
+    return post<ReciboNomina>(`${BASE}/nominas/${id}/aprobar/`, {});
+  },
+
+  /**
+   * Marca un recibo como pagado (POST /nominas/{id}/marcar_pagada/): solo
+   * válido desde APROBADA (APROBADA → PAGADA). 400 en cualquier otro estado.
+   */
+  marcarReciboPagada: async (id: string): Promise<ReciboNomina> => {
+    return post<ReciboNomina>(`${BASE}/nominas/${id}/marcar_pagada/`, {});
   },
 
   /** Todos los períodos visibles (para selects y mapa id → nombre). */
