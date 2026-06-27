@@ -273,3 +273,9 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   tabla base/IVA, KPIs, export TXT). E2E fiscal-libro-ventas.flow: siembra FacturaFiscal EMITIDA con IVA vía API →
   consulta libro por período en UI → verifica fila (nro control, base, IVA) + cruce con TXT SENIAT + KPI IVA. Gate:
   1547 tests EXIT 0, tsc 0, lint limpio. E2E-only (sin cambios de fuente). PR# pendiente.
+
+[2026-06-27] ✅ Fiscal Libro de Ventas PR#238 merged (E2E compliance SENIAT). CI verde.
+[2026-06-27] ✅ Gasto Completo — gastos→contabilidad→finanzas. UI ya completa. E2E gasto-completo.flow: registrar
+  gasto con detalle de imputación → aprobar (asiento GASTO + GASTO_IVA crédito fiscal, estado Contabilizado) →
+  crear reembolso → procesar pago (PAGADO). Helper crearPrereqGasto (cuenta contable + categoría + método pago).
+  Verifica cruzado por API (asiento balanceado, reembolso PAGADO). Gate: 1547 tests EXIT 0, tsc 0, lint. PR# pendiente.

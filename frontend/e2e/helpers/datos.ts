@@ -574,6 +574,75 @@ export async function crearPrereqNomina(
   };
 }
 
+export interface PrereqGasto {
+  /** Categoría de gasto activa, con cuenta de gasto (DEUDORA) por defecto. */
+  categoriaId: string;
+  categoriaNombre: string;
+  /** Cuenta contable de gasto (DEUDORA) — destino de las líneas de imputación. */
+  cuentaGastoId: string;
+  cuentaGastoCodigo: string;
+  /** Moneda base (USD) del gasto. */
+  monedaUsdId: string;
+  /** Método de pago activo de la empresa (para el reembolso). */
+  metodoPagoId: string;
+  metodoPagoNombre: string;
+}
+
+/**
+ * Siembra los prerequisitos del flujo Gasto Completo vía API:
+ *   - una cuenta contable de GASTO (DEUDORA) para las líneas de imputación,
+ *   - una CategoriaGasto activa que la usa por defecto (NO exige factura, para
+ *     que el gasto sin respaldo se apruebe igual),
+ *   - un MetodoPago activo de la empresa (la creación lo activa para el tenant,
+ *     ver MetodoPagoSerializer.create) para poder pagar el reembolso.
+ *
+ * `seed_empresa_inicial` no siembra catálogo de gastos: lo crea el spec.
+ */
+export async function crearPrereqGasto(
+  api: ApiE2E,
+  empresaId: string,
+  opciones?: { sufijo?: string },
+): Promise<PrereqGasto> {
+  const suf = opciones?.sufijo ?? sufijoUnico();
+  const usdId = await monedaUsd(api);
+
+  // Cuenta de gasto (DEUDORA). El código es único por empresa; se acota a 20 díg.
+  const cuentaGastoCodigo = `6${String(Date.now()).slice(-7)}`.slice(0, 20);
+  const cuenta = await api.post<{ id_cuenta_contable: string }>('/contabilidad/plan-cuentas/', {
+    id_empresa: empresaId,
+    codigo_cuenta: cuentaGastoCodigo,
+    nombre_cuenta: `Gasto E2E ${suf}`,
+    tipo_cuenta: 'GASTO',
+    naturaleza: 'DEUDORA',
+    nivel: 1,
+  });
+
+  const categoriaNombre = `Categoría Gasto E2E ${suf}`;
+  const categoria = await api.post<{ id_categoria_gasto: string }>(
+    '/gastos/categorias-gasto/',
+    {
+      id_empresa: empresaId,
+      nombre_categoria: categoriaNombre,
+      descripcion: `Categoría sembrada E2E ${suf}`,
+      id_cuenta_contable: cuenta.id_cuenta_contable,
+      requiere_factura: false,
+      activo: true,
+    },
+  );
+
+  const metodo = await crearMetodoPago(api, { empresaId, sufijo: suf });
+
+  return {
+    categoriaId: categoria.id_categoria_gasto,
+    categoriaNombre,
+    cuentaGastoId: cuenta.id_cuenta_contable,
+    cuentaGastoCodigo,
+    monedaUsdId: usdId,
+    metodoPagoId: metodo.metodoId,
+    metodoPagoNombre: metodo.nombre,
+  };
+}
+
 interface CajaVirtualApi {
   id_caja: string;
   nombre: string;
