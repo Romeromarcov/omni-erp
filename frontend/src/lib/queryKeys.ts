@@ -84,6 +84,19 @@ export const listasPrecioKeys = {
   detalles: (listaId: string) => ['listas-precio', 'detalles', listaId] as const,
 };
 
+// ── Comisiones de ventas ──────────────────────────────────────────────────────
+// Prefijo compartido `['comisiones', ...]` para que invalidar la familia
+// refresque esquemas, overrides por categoría, devengadas y el resumen a la vez.
+export const comisionesKeys = {
+  all: () => ['comisiones'] as const,
+  esquemas: () => ['comisiones', 'esquemas'] as const,
+  categorias: (esquemaId: string) => ['comisiones', 'categorias', esquemaId] as const,
+  devengadas: (params?: Record<string, string | undefined>) =>
+    ['comisiones', 'devengadas', params ?? null] as const,
+  resumen: (params?: Record<string, string | undefined>) =>
+    ['comisiones', 'resumen', params ?? null] as const,
+};
+
 // ── CxC (Cuentas por Cobrar) ──────────────────────────────────────────────────
 export const cxcKeys = {
   carteraDashboard: () => ['cxc', 'cartera', 'dashboard'] as const,
