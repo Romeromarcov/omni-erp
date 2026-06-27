@@ -325,3 +325,10 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
 [2026-06-27] ✅ Inventario: Datos Maestros (gap real). InventarioMaestrosPage (Tabs: Variantes de Producto,
   Conversiones de Unidad de Medida, Stock en Consignación cliente/proveedor). inventarioMaestrosService (4 entidades,
   toList). Gate verificado por orquestador: 1773 tests EXIT 0, services branches 94.13, global funcs 78.48, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Inventario: Datos Maestros PR#245 merged.
+[2026-06-27] ✅ Nómina: Conceptos + Extrasalarial (gap real, antes solo Procesos regulares). ConceptosNominaPage
+  (CRUD catálogo devengados/deducciones/aporte + filtro por_tipo), NominaExtrasalarialPage (procesos aguinaldo/
+  vacaciones/prestaciones/liquidación con workflow procesar→aprobar gated + drawer de recibos con aprobar/marcar_pagada).
+  nominaExtrasService (3 entidades + acciones, toList). Tests 31, +E2E. Gate: 1805 tests EXIT 0, services branches
+  94.15, tsc 0, lint. PR# pendiente.

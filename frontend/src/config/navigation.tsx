@@ -231,6 +231,8 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Empleados', path: '/rrhh/empleados' },
         { label: 'Beneficios y Licencias', path: '/rrhh/beneficios' },
         { label: 'Nómina', path: '/nomina/procesos' },
+        { label: 'Conceptos de Nómina', path: '/nomina/conceptos' },
+        { label: 'Nómina Extrasalarial', path: '/nomina/extrasalarial' },
       ],
     },
     {
