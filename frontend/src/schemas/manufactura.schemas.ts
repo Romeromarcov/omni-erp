@@ -39,6 +39,32 @@ export const avanzarEtapaSchema = z.object({
 
 export type AvanzarEtapaInput = z.infer<typeof avanzarEtapaSchema>;
 
+const esDecimalPositivo = (v: string): boolean => {
+  try {
+    const d = new Decimal(v);
+    return !d.isNaN() && d.greaterThan(0);
+  } catch {
+    return false;
+  }
+};
+
+export const crearOrdenSchema = z.object({
+  producto: z.string().min(1, 'El producto es obligatorio'),
+  cantidad: z.string().refine(esDecimalPositivo, { message: 'La cantidad debe ser un número mayor a 0' }),
+  fecha_inicio: z.string().min(1, 'La fecha de inicio es obligatoria'),
+  lista_materiales: z.string(),
+  referencia_externa: z.string().max(100, 'Máximo 100 caracteres'),
+  observaciones: z.string().max(500, 'Máximo 500 caracteres'),
+});
+
+export type CrearOrdenInput = z.infer<typeof crearOrdenSchema>;
+
+export const consumirMaterialesSchema = z.object({
+  almacen_id: z.string().min(1, 'El almacén es obligatorio'),
+});
+
+export type ConsumirMaterialesInput = z.infer<typeof consumirMaterialesSchema>;
+
 export const completarOrdenSchema = z.object({
   almacen_id: z.string().min(1, 'El almacén es obligatorio'),
   cantidad: z

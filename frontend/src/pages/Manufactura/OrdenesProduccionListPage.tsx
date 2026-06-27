@@ -60,7 +60,15 @@ export default function OrdenesProduccionListPage() {
 
   return (
     <PageContainer>
-      <PageHeader title={t('manufactura.ordenes.title')} subtitle={t('manufactura.ordenes.subtitle')} />
+      <PageHeader
+        title={t('manufactura.ordenes.title')}
+        subtitle={t('manufactura.ordenes.subtitle')}
+        actions={
+          <Button variant="contained" onClick={() => navigate('/manufactura/ordenes/nueva')}>
+            {t('manufactura.ordenes.nueva')}
+          </Button>
+        }
+      />
       <DataTable
         columns={columns}
         rows={ordenes}

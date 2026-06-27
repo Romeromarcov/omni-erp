@@ -144,11 +144,30 @@
       "cantidad": "Cantidad",
       "fechaInicio": "Fecha inicio",
       "estado": "Estado",
-      "ver": "Ver detalle"
+      "ver": "Ver detalle",
+      "nueva": "Nueva orden"
+    },
+    "form": {
+      "title": "Nueva Orden de Producción",
+      "subtitle": "La empresa la asigna el servidor; las etapas se materializan del catálogo",
+      "producto": "Producto terminado",
+      "cantidad": "Cantidad a producir",
+      "fechaInicio": "Fecha de inicio",
+      "listaMateriales": "Lista de materiales (BOM)",
+      "sinLista": "Sin lista de materiales",
+      "referencia": "Referencia",
+      "observaciones": "Observaciones",
+      "crear": "Crear orden",
+      "creada": "Orden de producción creada.",
+      "error": "No se pudo crear la orden de producción."
     },
     "detalle": {
       "title": "Orden de Producción",
       "etapas": "Etapas de fabricación",
+      "consumirMateriales": "Consumir materiales",
+      "confirmarConsumo": "Consumir materiales",
+      "consumoOk": "Materiales consumidos por {{monto}}.",
+      "errorConsumo": "No se pudo consumir los materiales.",
       "avanzarEtapa": "Avanzar etapa",
       "completarOrden": "Completar OF",
       "verCosteo": "Ver costeo",
