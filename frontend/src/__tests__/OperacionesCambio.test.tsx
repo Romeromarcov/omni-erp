@@ -51,14 +51,25 @@ const operacion = {
   fecha_creacion: '2026-06-10T10:00:00Z',
 };
 
+// Forma real del serializer empresa-activas: `moneda` = Moneda.id_moneda (el
+// valor que consume el FK), `moneda_codigo_iso`/`moneda_nombre` para la etiqueta.
 const monedas = [
-  { id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD' },
-  { id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES' },
+  {
+    id: 'act-usd', moneda: 'mon-usd', moneda_nombre: 'Dólar', moneda_codigo_iso: 'USD',
+    activa: true, id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD',
+  },
+  {
+    id: 'act-ves', moneda: 'mon-ves', moneda_nombre: 'Bolívar', moneda_codigo_iso: 'VES',
+    activa: true, id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES',
+  },
 ];
 
+// `id` = PK de la fila de activación; `metodo_pago` = MetodoPago.id_metodo_pago
+// (el valor que consume el FK); `nombre` = metodo_pago.nombre_metodo. Se incluyen
+// los campos legados (nombre_metodo/monedas) requeridos por la interfaz compartida.
 const metodos = [
-  { id: 'mp-1', nombre_metodo: 'Efectivo', monedas: [] },
-  { id: 'mp-2', nombre_metodo: 'Transferencia', monedas: [] },
+  { id: 'act-mp-1', metodo_pago: 'mp-1', nombre: 'Efectivo', activa: true, nombre_metodo: 'Efectivo', monedas: [] },
+  { id: 'act-mp-2', metodo_pago: 'mp-2', nombre: 'Transferencia', activa: true, nombre_metodo: 'Transferencia', monedas: [] },
 ];
 
 function renderList() {

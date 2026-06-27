@@ -259,3 +259,11 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   aprobarRecibo/marcarReciboPagada (+tests actualizados, i18n es+en). E2E nomina-completa.flow (período→proceso→
   procesar [genera recibos]→aprobar→recibos→marcar pagada; devengados/deducciones/neto>0, asiento balanceado vía API).
   Gate: tsc 0, lint limpio, 1546 tests verdes (solo flaky OperacionesCambio ajeno timeout 5s). Strings vs es.json. PR# pendiente.
+
+[2026-06-27] ✅ Nómina Completa PR#236 merged (cerró acciones aprobar/marcar-pagada + E2E). CI verde.
+[2026-06-27] ✅ Tesorería: Cambio de Divisa + Conciliación Bancaria — tesoreria→finanzas→contabilidad. BUG REAL
+  encontrado y corregido: OperacionCambioFormPage leía campos inexistentes del serializer (m.id_moneda/mp.id en
+  vez de moneda/mp.metodo_pago) → selectores rotos / FK equivocado. Fix form + interfaces de service (compat POS,
+  bug latente POS flagged task_53c9590b). +E2E cambio-divisa.flow (movimientos EGRESO/INGRESO por moneda + asiento
+  CAMBIO_DIVISA balanceado) y conciliacion-bancaria.flow (crear→conciliar-auto→cerrar, end-to-end por UI). Mocks
+  corregidos (OperacionesCambio test ahora estable). Gate: 1547 tests EXIT 0, services branches 97.88, tsc 0, lint. PR# pendiente.

@@ -26,6 +26,154 @@ export async function monedaUsd(api: ApiE2E): Promise<string> {
   return usd.id_moneda;
 }
 
+/**
+ * Devuelve el id de una moneda por su código ISO; si no existe la crea (pública,
+ * fiat). `seed_empresa_inicial` sólo siembra la moneda base (USD), así que los
+ * flujos de tesorería que necesitan una segunda moneda (VES) la crean aquí.
+ */
+export async function asegurarMoneda(
+  api: ApiE2E,
+  codigoIso: string,
+  datos: { nombre: string; simbolo: string },
+): Promise<string> {
+  const monedas = aLista<MonedaApi>(await api.get('/finanzas/monedas/'));
+  const existente = monedas.find((m) => m.codigo_iso === codigoIso);
+  if (existente) return existente.id_moneda;
+  const creada = await api.post<MonedaApi>('/finanzas/monedas/', {
+    codigo_iso: codigoIso,
+    nombre: datos.nombre,
+    simbolo: datos.simbolo,
+    tipo_moneda: 'fiat',
+    decimales: 2,
+    es_publica: true,
+  });
+  return creada.id_moneda;
+}
+
+export interface CuentaBancariaSembrada {
+  cuentaId: string;
+  nombreBanco: string;
+  numeroCuenta: string;
+}
+
+/** Crea una CuentaBancariaEmpresa en la moneda indicada (selector/filtros de tesorería). */
+export async function crearCuentaBancaria(
+  api: ApiE2E,
+  datos: { empresaId: string; monedaId: string; nombreBanco: string; sufijo?: string },
+): Promise<CuentaBancariaSembrada> {
+  // numero_cuenta es unique GLOBAL → se hace único por corrida (máx. 20 díg.),
+  // independiente de `datos.sufijo` (que puede compartirse entre cuentas).
+  const numeroCuenta = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(0, 20);
+  const cuenta = await api.post<{ id_cuenta_bancaria: string }>(
+    '/finanzas/cuentas-bancarias-empresa/',
+    {
+      id_empresa: datos.empresaId,
+      nombre_banco: datos.nombreBanco,
+      numero_cuenta: numeroCuenta,
+      tipo_cuenta: 'CORRIENTE',
+      id_moneda: datos.monedaId,
+    },
+  );
+  return { cuentaId: cuenta.id_cuenta_bancaria, nombreBanco: datos.nombreBanco, numeroCuenta };
+}
+
+/** Registra una TasaCambio origen→destino vigente al día (prerequisito del cambio de divisa). */
+export async function crearTasaCambio(
+  api: ApiE2E,
+  datos: { empresaId: string; monedaOrigenId: string; monedaDestinoId: string; valor: string },
+): Promise<void> {
+  await api.post('/finanzas/tasas-cambio/', {
+    id_empresa: datos.empresaId,
+    id_moneda_origen: datos.monedaOrigenId,
+    id_moneda_destino: datos.monedaDestinoId,
+    valor_tasa: datos.valor,
+    fecha_tasa: new Date().toISOString().slice(0, 10),
+    tipo_tasa: 'FIJA',
+  });
+}
+
+export interface MetodoPagoSembrado {
+  metodoId: string;
+  nombre: string;
+}
+
+/** Crea un MetodoPago electrónico para la empresa (egreso/ingreso del cambio). */
+export async function crearMetodoPago(
+  api: ApiE2E,
+  datos: { empresaId: string; tipo?: string; sufijo?: string },
+): Promise<MetodoPagoSembrado> {
+  const suf = datos.sufijo ?? sufijoUnico();
+  const nombre = `Transferencia E2E ${suf}`;
+  const metodo = await api.post<{ id_metodo_pago: string }>('/finanzas/metodos-pago/', {
+    empresa: datos.empresaId,
+    nombre_metodo: nombre,
+    tipo_metodo: datos.tipo ?? 'ELECTRONICO',
+  });
+  return { metodoId: metodo.id_metodo_pago, nombre };
+}
+
+/**
+ * Registra un Pago de INGRESO atado a una cuenta bancaria, SIN documento real
+ * (tipo_documento AJUSTE con id_documento aleatorio: no dispara efectos de saldo
+ * sobre pedidos/facturas). Sirve de contraparte interna para que la conciliación
+ * automática empareje un MovimientoBancario CREDITO del mismo monto/cuenta/fecha.
+ */
+export async function crearPagoIngresoBancario(
+  api: ApiE2E,
+  datos: {
+    cuentaBancariaId: string;
+    monedaId: string;
+    metodoPagoId: string;
+    monto: string;
+    referencia: string;
+    fecha?: string;
+  },
+): Promise<{ id_pago: string }> {
+  const idDocumento = (
+    globalThis.crypto?.randomUUID?.() ?? `00000000-0000-4000-8000-${Date.now()}`
+  ).slice(0, 36);
+  return api.post<{ id_pago: string }>('/finanzas/pagos/', {
+    tipo_operacion: 'INGRESO',
+    tipo_documento: 'AJUSTE',
+    id_documento: idDocumento,
+    fecha_pago: datos.fecha ?? new Date().toISOString().slice(0, 10),
+    monto: datos.monto,
+    id_moneda: datos.monedaId,
+    tasa: '1.00',
+    id_metodo_pago: datos.metodoPagoId,
+    id_cuenta_bancaria: datos.cuentaBancariaId,
+    referencia: datos.referencia,
+  });
+}
+
+/**
+ * Registra un MovimientoBancario (línea de extracto) vía API. El estado nace
+ * PENDIENTE (read_only en el serializer). `tipo` CREDITO es el único que la
+ * conciliación automática empareja contra pagos INGRESO.
+ */
+export async function crearMovimientoBancario(
+  api: ApiE2E,
+  datos: {
+    empresaId: string;
+    cuentaBancariaId: string;
+    descripcion: string;
+    monto: string;
+    referencia: string;
+    fecha?: string;
+    tipo?: 'CREDITO' | 'DEBITO';
+  },
+): Promise<{ id: string }> {
+  return api.post<{ id: string }>('/tesoreria/movimientos-bancarios/', {
+    id_empresa: datos.empresaId,
+    id_cuenta_bancaria: datos.cuentaBancariaId,
+    fecha_mov: datos.fecha ?? new Date().toISOString().slice(0, 10),
+    descripcion: datos.descripcion,
+    tipo: datos.tipo ?? 'CREDITO',
+    monto: datos.monto,
+    referencia: datos.referencia,
+  });
+}
+
 export interface ProductoSembrado {
   productoId: string;
   productoNombre: string;

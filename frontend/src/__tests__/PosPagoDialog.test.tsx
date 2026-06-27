@@ -8,13 +8,25 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import Decimal from 'decimal.js';
 import PosPagoDialog from '../pages/Ventas/POS/PosPagoDialog';
 
+// El POS lee los campos legados (nombre_metodo/monedas, id_moneda/codigo_iso/nombre);
+// se incluyen además los campos reales del serializer (metodo_pago/nombre, moneda/moneda_*)
+// para satisfacer la interfaz compartida MetodoPagoEmpresaActiva/MonedaEmpresaActiva.
 const METODOS = [
-  { id: 'met-efe', nombre_metodo: 'Efectivo', monedas: [] },
-  { id: 'met-pm', nombre_metodo: 'Pago Móvil', monedas: ['mon-ves'] },
+  { id: 'met-efe', nombre_metodo: 'Efectivo', monedas: [], metodo_pago: 'met-efe', nombre: 'Efectivo', activa: true },
+  {
+    id: 'met-pm', nombre_metodo: 'Pago Móvil', monedas: ['mon-ves'],
+    metodo_pago: 'met-pm', nombre: 'Pago Móvil', activa: true,
+  },
 ];
 const MONEDAS = [
-  { id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES' },
-  { id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD' },
+  {
+    id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES',
+    id: 'act-ves', moneda: 'mon-ves', moneda_nombre: 'Bolívar', moneda_codigo_iso: 'VES', activa: true,
+  },
+  {
+    id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD',
+    id: 'act-usd', moneda: 'mon-usd', moneda_nombre: 'Dólar', moneda_codigo_iso: 'USD', activa: true,
+  },
 ];
 
 const onConfirm = vi.fn();
