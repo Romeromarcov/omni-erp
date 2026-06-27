@@ -267,3 +267,9 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   bug latente POS flagged task_53c9590b). +E2E cambio-divisa.flow (movimientos EGRESO/INGRESO por moneda + asiento
   CAMBIO_DIVISA balanceado) y conciliacion-bancaria.flow (crear→conciliar-auto→cerrar, end-to-end por UI). Mocks
   corregidos (OperacionesCambio test ahora estable). Gate: 1547 tests EXIT 0, services branches 97.88, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Tesorería cambio-divisa+conciliación PR#237 merged (bug real form + 2 E2E). CI verde.
+[2026-06-27] ✅ Fiscal: Libro de Ventas (compliance VE SENIAT) — fiscal↔ventas. UI ya completa (filtro período,
+  tabla base/IVA, KPIs, export TXT). E2E fiscal-libro-ventas.flow: siembra FacturaFiscal EMITIDA con IVA vía API →
+  consulta libro por período en UI → verifica fila (nro control, base, IVA) + cruce con TXT SENIAT + KPI IVA. Gate:
+  1547 tests EXIT 0, tsc 0, lint limpio. E2E-only (sin cambios de fuente). PR# pendiente.
