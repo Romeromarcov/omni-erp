@@ -23,6 +23,25 @@ export const inventarioKeys = {
     ['inv-pasos-operacion', almacen, tipo] as const,
 };
 
+// ── Inventario: Datos Maestros (variantes, conversiones UM, consignación) ─────
+// Prefijo compartido `['inventario-maestros', <recurso>]` para que invalidar la
+// familia de un recurso refresque su lista y variantes (filtros) a la vez.
+export const inventarioMaestrosKeys = {
+  all: () => ['inventario-maestros'] as const,
+  variantesAll: () => ['inventario-maestros', 'variantes'] as const,
+  variantes: (producto?: string | null) =>
+    ['inventario-maestros', 'variantes', 'list', producto ?? null] as const,
+  conversionesAll: () => ['inventario-maestros', 'conversiones'] as const,
+  conversiones: (producto?: string | null) =>
+    ['inventario-maestros', 'conversiones', 'list', producto ?? null] as const,
+  consignacionClienteAll: () => ['inventario-maestros', 'consignacion-cliente'] as const,
+  consignacionCliente: (cliente?: string | null, estado?: string | null) =>
+    ['inventario-maestros', 'consignacion-cliente', 'list', cliente ?? null, estado ?? null] as const,
+  consignacionProveedorAll: () => ['inventario-maestros', 'consignacion-proveedor'] as const,
+  consignacionProveedor: (proveedor?: string | null, estado?: string | null) =>
+    ['inventario-maestros', 'consignacion-proveedor', 'list', proveedor ?? null, estado ?? null] as const,
+};
+
 export const notasVentaKeys = {
   all: () => ['notas-venta'] as const,
   detail: (id: string) => ['notas-venta', id] as const,

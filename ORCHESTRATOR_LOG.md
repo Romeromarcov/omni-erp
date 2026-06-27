@@ -320,3 +320,8 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
   Producción CRUD+pasos inline [centro+operación+secuencia], Centros de Trabajo CRUD). manufacturaMaestrosService
   (3 entidades + 2 detalles + operaciones, toList). Tests 43, +E2E. Gate: 1734 tests EXIT 0, services branches 94.05,
   tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Manufactura: Datos Maestros PR#244 merged.
+[2026-06-27] ✅ Inventario: Datos Maestros (gap real). InventarioMaestrosPage (Tabs: Variantes de Producto,
+  Conversiones de Unidad de Medida, Stock en Consignación cliente/proveedor). inventarioMaestrosService (4 entidades,
+  toList). Gate verificado por orquestador: 1773 tests EXIT 0, services branches 94.13, global funcs 78.48, tsc 0, lint. PR# pendiente.

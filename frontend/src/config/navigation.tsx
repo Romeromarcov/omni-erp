@@ -119,6 +119,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Dashboard', path: '/inventario' },
         { label: 'Stock Actual', path: '/inventario/stock' },
         { label: 'Ajuste Manual', path: '/inventario/ajustes' },
+        { label: 'Datos Maestros', path: '/inventario/maestros' },
       ],
     },
     {
