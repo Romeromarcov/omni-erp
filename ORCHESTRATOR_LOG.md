@@ -279,3 +279,14 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   gasto con detalle de imputación → aprobar (asiento GASTO + GASTO_IVA crédito fiscal, estado Contabilizado) →
   crear reembolso → procesar pago (PAGADO). Helper crearPrereqGasto (cuenta contable + categoría + método pago).
   Verifica cruzado por API (asiento balanceado, reembolso PAGADO). Gate: 1547 tests EXIT 0, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Gasto Completo PR#239 merged (E2E aprobación+asiento+reembolso). CI verde.
+
+## Fase 3 — Profundidad por módulo (acciones backend no surfaceadas) 2026-06-27
+Auditoría data-driven (url_path de @actions no referenciados en frontend): la mayoría falsos positivos
+(features bajo otro naming). Gaps REALES: ventas listas-precio (importar-masivo) y ventas comisiones (liquidar).
+
+[2026-06-27] ✅ Ventas: Listas de Precio (gap real, antes sin UI). ListasPrecioPage (CRUD listas + drawer de
+  precios por producto CRUD inline + Importar CSV vía importar-masivo/postForm), listasPrecioService +
+  detallesPrecioService (toList, campos reales: es_referencia/codigo/id_moneda). Tests 30, +E2E listas-precio.flow.
+  Gate: 1577 tests EXIT 0, services branches 94.45, tsc 0, lint. PR# pendiente.
