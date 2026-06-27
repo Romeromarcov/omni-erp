@@ -137,6 +137,34 @@ export async function crearCliente(
   return { clienteId: cliente.id_cliente, razonSocial };
 }
 
+export interface ProveedorSembrado {
+  proveedorId: string;
+  razonSocial: string;
+}
+
+/**
+ * Crea un proveedor en la empresa indicada (procure-to-pay). `id_empresa` lo
+ * fija el cliente aquí porque el endpoint de proveedores no usa
+ * `EmpresaInjectMixin` con la sesión del navegador; el RIF es único por empresa.
+ */
+export async function crearProveedor(
+  api: ApiE2E,
+  empresaId: string,
+  sufijo?: string,
+): Promise<ProveedorSembrado> {
+  const suf = sufijo ?? sufijoUnico();
+  const razonSocial = `Proveedor E2E ${suf}`;
+  // RIF venezolano válido: letra + guion + 8 dígitos (validador del backend),
+  // único por empresa (unique_together id_empresa+rif).
+  const rif = `J-${String(Date.now()).slice(-8)}`;
+  const proveedor = await api.post<{ id_proveedor: string }>('/proveedores/proveedores/', {
+    id_empresa: empresaId,
+    razon_social: razonSocial,
+    rif,
+  });
+  return { proveedorId: proveedor.id_proveedor, razonSocial };
+}
+
 export interface PedidoSembrado {
   pedidoId: string;
   numeroPedido: string;
