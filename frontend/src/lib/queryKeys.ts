@@ -351,6 +351,19 @@ export const nominaKeys = {
   periodos: () => ['nomina', 'periodos'] as const,
 };
 
+// ── Nómina Extrasalarial + Conceptos (catálogo) ──────────────────────────────
+// Prefijo compartido `['nomina-extras', <recurso>]` para que invalidar la familia
+// de un recurso refresque su lista y variantes (filtro por tipo / recibos) a la vez.
+export const nominaExtrasKeys = {
+  all: () => ['nomina-extras'] as const,
+  conceptosAll: () => ['nomina-extras', 'conceptos'] as const,
+  conceptos: (tipo?: string | null) =>
+    ['nomina-extras', 'conceptos', 'list', tipo ?? null] as const,
+  procesosAll: () => ['nomina-extras', 'procesos'] as const,
+  procesos: () => ['nomina-extras', 'procesos', 'list'] as const,
+  recibos: (procesoId: string) => ['nomina-extras', 'procesos', 'recibos', procesoId] as const,
+};
+
 // ── Manufactura (1.I) ─────────────────────────────────────────────────────────
 // Prefijo compartido `['manufactura', 'ordenes']` para que la invalidación por
 // familia refresque lista, detalle, etapas y costeo de una OF a la vez.
