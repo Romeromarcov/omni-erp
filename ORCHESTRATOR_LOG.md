@@ -306,3 +306,10 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
   filtrable por solicitud; StatusChip de estado). aprovisionamientoService (3 entidades + 3 detalles, toList).
   Backend es CRUD puro (sin endpoints de conversión req→cotización→oferta; documentado). Tests 47, +E2E.
   Gate: 1659 tests EXIT 0, services branches 93.95, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Compras: aprovisionamiento PR#242 merged.
+[2026-06-27] ✅ RRHH: Beneficios y Licencias (gap real, antes solo Empleados). BeneficiosLicenciasPage (Tabs:
+  Beneficios catálogo CRUD, Asignaciones BeneficioEmpleado, Tipos de Licencia CRUD, Licencias con StatusChip +
+  aprobar/rechazar/cancelar vía PATCH de estado). beneficiosLicenciasService (4 entidades + cambiarEstado, toList,
+  service 100%). Backend sin @actions (estado escribible). Tests 39, +E2E. Gate: 1698 tests EXIT 0, services
+  branches 94.02, tsc 0, lint. PR# pendiente.

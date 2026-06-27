@@ -225,6 +225,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       icon: <BadgeOutlined />,
       items: [
         { label: 'Empleados', path: '/rrhh/empleados' },
+        { label: 'Beneficios y Licencias', path: '/rrhh/beneficios' },
         { label: 'Nómina', path: '/nomina/procesos' },
       ],
     },
