@@ -85,6 +85,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Devoluciones', path: '/ventas/devoluciones-venta' },
         { label: 'Facturas Fiscales', path: '/ventas/facturas-fiscales' },
         { label: 'Listas de Precio', path: '/ventas/listas-precio' },
+        { label: 'Comisiones', path: '/ventas/comisiones' },
       ],
     },
     {

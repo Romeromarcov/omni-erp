@@ -290,3 +290,12 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
   precios por producto CRUD inline + Importar CSV vía importar-masivo/postForm), listasPrecioService +
   detallesPrecioService (toList, campos reales: es_referencia/codigo/id_moneda). Tests 30, +E2E listas-precio.flow.
   Gate: 1577 tests EXIT 0, services branches 94.45, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Ventas: Listas de Precio PR#240 merged.
+[2026-06-27] ✅ Ventas: Comisiones (gap real, antes sin UI). ComisionesPage (Tabs: Esquemas CRUD + overrides por
+  categoría inline; Comisiones devengadas read-only con filtros vendedor/estado + StatusChip + resumen KPIs +
+  Liquidar por vendedor/período). comisionesService (esquemas/categorias/comisiones con resumen+liquidar, toList).
+  Tests 35, +E2E comisiones.flow. Gate: 1612 tests EXIT 0, services branches 94.38, tsc 0, lint. PR# pendiente.
+  Backlog restante (auditoría sub-recursos sin UI, filtrando falsos positivos detalles-*/datafono): compras
+  procurement (requisiciones/solicitudes-cotizacion/ofertas-proveedor), rrhh (beneficios/tipos-licencia/licencias),
+  manufactura master (centros-trabajo/rutas-produccion), fiscal pagos-parafiscales, finanzas pagos-terceros, inventario consignación/variantes.
