@@ -299,3 +299,10 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
   Backlog restante (auditoría sub-recursos sin UI, filtrando falsos positivos detalles-*/datafono): compras
   procurement (requisiciones/solicitudes-cotizacion/ofertas-proveedor), rrhh (beneficios/tipos-licencia/licencias),
   manufactura master (centros-trabajo/rutas-produccion), fiscal pagos-parafiscales, finanzas pagos-terceros, inventario consignación/variantes.
+
+[2026-06-27] ✅ Ventas: Comisiones PR#241 merged.
+[2026-06-27] ✅ Compras: front de aprovisionamiento (source-to-PO) — gap real, antes sin UI. AprovisionamientoPage
+  (Tabs: Requisiciones CRUD+líneas, Solicitudes de Cotización/RFQ CRUD+líneas, Ofertas de Proveedor CRUD+líneas
+  filtrable por solicitud; StatusChip de estado). aprovisionamientoService (3 entidades + 3 detalles, toList).
+  Backend es CRUD puro (sin endpoints de conversión req→cotización→oferta; documentado). Tests 47, +E2E.
+  Gate: 1659 tests EXIT 0, services branches 93.95, tsc 0, lint. PR# pendiente.

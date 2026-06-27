@@ -5,10 +5,15 @@ const OrdenesCompraListPage = lazy(() => import('../pages/Compras/OrdenesCompraL
 const OrdenCompraFormPage = lazy(() => import('../pages/Compras/OrdenCompraFormPage'));
 const OrdenCompraDetailPage = lazy(() => import('../pages/Compras/OrdenCompraDetailPage'));
 const CuentasPorPagarPage = lazy(() => import('../pages/Compras/CuentasPorPagarPage'));
+const AprovisionamientoPage = lazy(() => import('../pages/Compras/AprovisionamientoPage'));
 
 export function comprasRoutes() {
   return (
     <>
+      <Route path="/compras/aprovisionamiento" element={<AprovisionamientoPage />} />
+      <Route path="/compras/requisiciones" element={<AprovisionamientoPage />} />
+      <Route path="/compras/cotizaciones" element={<AprovisionamientoPage />} />
+      <Route path="/compras/ofertas" element={<AprovisionamientoPage />} />
       <Route path="/compras/ordenes" element={<OrdenesCompraListPage />} />
       <Route path="/compras/ordenes/nueva" element={<OrdenCompraFormPage />} />
       <Route path="/compras/ordenes/:id" element={<OrdenCompraDetailPage />} />

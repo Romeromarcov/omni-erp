@@ -144,6 +144,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Compras',
       icon: <ShoppingCartOutlined />,
       items: [
+        { label: 'Aprovisionamiento', path: '/compras/aprovisionamiento' },
         { label: 'Órdenes de Compra', path: '/compras/ordenes' },
         { label: 'Cuentas por Pagar', path: '/compras/cuentas-por-pagar' },
       ],
