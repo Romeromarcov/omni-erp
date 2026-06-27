@@ -346,6 +346,19 @@ export const manufacturaKeys = {
   listasMateriales: () => ['manufactura', 'listas-materiales'] as const,
 };
 
+// ── Manufactura: Datos Maestros (BOM, rutas, centros de trabajo, operaciones) ─
+// Prefijo compartido `['manufactura-maestros', <recurso>]` para que invalidar la
+// familia de un recurso refresque su lista y los detalles (componentes/pasos).
+export const manufacturaMaestrosKeys = {
+  all: () => ['manufactura-maestros'] as const,
+  bomsAll: () => ['manufactura-maestros', 'boms'] as const,
+  componentes: (bomId: string) => ['manufactura-maestros', 'boms', 'componentes', bomId] as const,
+  rutasAll: () => ['manufactura-maestros', 'rutas'] as const,
+  pasos: (rutaId: string) => ['manufactura-maestros', 'rutas', 'pasos', rutaId] as const,
+  centrosAll: () => ['manufactura-maestros', 'centros'] as const,
+  operacionesAll: () => ['manufactura-maestros', 'operaciones'] as const,
+};
+
 // ── Costos (costeo de producción — complementa Manufactura) ───────────────────
 // Prefijo compartido `['costos', <recurso>]` para que invalidar la familia
 // refresque lista y detalle de cada entidad a la vez.

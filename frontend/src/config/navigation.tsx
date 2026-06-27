@@ -131,7 +131,10 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       id: 'manufactura',
       label: 'Manufactura',
       icon: <PrecisionManufacturingOutlined />,
-      items: [{ label: 'Órdenes de Producción', path: '/manufactura/ordenes' }],
+      items: [
+        { label: 'Datos Maestros', path: '/manufactura/maestros' },
+        { label: 'Órdenes de Producción', path: '/manufactura/ordenes' },
+      ],
     },
     {
       id: 'costos',

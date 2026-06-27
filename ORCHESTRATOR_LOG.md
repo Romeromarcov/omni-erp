@@ -313,3 +313,10 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
   aprobar/rechazar/cancelar vía PATCH de estado). beneficiosLicenciasService (4 entidades + cambiarEstado, toList,
   service 100%). Backend sin @actions (estado escribible). Tests 39, +E2E. Gate: 1698 tests EXIT 0, services
   branches 94.02, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ RRHH Beneficios y Licencias PR#243 merged.
+[2026-06-27] ✅ Manufactura: Datos Maestros (gap real, BOM/rutas/centros sin UI; la OF seleccionaba BOM pero no
+  había cómo crearlos). DatosMaestrosPage (Tabs: Listas de Materiales/BOM CRUD+componentes inline, Rutas de
+  Producción CRUD+pasos inline [centro+operación+secuencia], Centros de Trabajo CRUD). manufacturaMaestrosService
+  (3 entidades + 2 detalles + operaciones, toList). Tests 43, +E2E. Gate: 1734 tests EXIT 0, services branches 94.05,
+  tsc 0, lint. PR# pendiente.
