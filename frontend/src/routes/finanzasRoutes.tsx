@@ -28,6 +28,7 @@ const OverridesMetodosPagoPage = lazy(() => import('../pages/Finanzas/Cajas/Over
 const CajasFisicasListPage = lazy(() => import('../pages/Finanzas/Cajas/CajasFisicasListPage'));
 const CajaFisicaDetailPage = lazy(() => import('../pages/Finanzas/Cajas/CajaFisicaDetailPage'));
 const CajaFisicaFormPage = lazy(() => import('../pages/Finanzas/Cajas/CajaFisicaFormPage'));
+const PagosTercerosPage = lazy(() => import('../pages/Finanzas/PagosTerceros/PagosTercerosPage'));
 
 export function finanzasRoutes() {
   return (
@@ -68,6 +69,8 @@ export function finanzasRoutes() {
       <Route path="/empresas/:id_empresa/transacciones-financieras" element={<TransaccionFinancieraListPage />} />
       <Route path="/empresas/:id_empresa/transacciones-financieras/new" element={<TransaccionFinancieraFormPage />} />
       <Route path="/transacciones-financieras/:id_transaccion" element={<TransaccionFinancieraDetailPage />} />
+
+      <Route path="/finanzas/pagos-terceros" element={<PagosTercerosPage />} />
     </>
   );
 }
