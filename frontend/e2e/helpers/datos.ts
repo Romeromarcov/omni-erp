@@ -115,6 +115,114 @@ export async function crearCatalogoInventario(
   };
 }
 
+export interface PrereqProduccion {
+  /** Producto terminado a fabricar. */
+  productoTerminadoId: string;
+  productoTerminadoNombre: string;
+  /** Materia prima con stock inicial. */
+  materiaPrimaId: string;
+  materiaPrimaNombre: string;
+  /** Cantidad de materia prima requerida por unidad de producto terminado. */
+  cantidadPorUnidad: string;
+  /** Lista de materiales (BOM) que liga terminado ↔ materia prima. */
+  listaMaterialesId: string;
+  almacenId: string;
+  almacenNombre: string;
+}
+
+/**
+ * Siembra los prerequisitos de una orden de producción (Produce-to-Cost):
+ *   - un producto terminado,
+ *   - una materia prima con stock inicial (movimiento AJUSTE de entrada),
+ *   - un almacén,
+ *   - una BOM (ListaMateriales + 1 detalle) que consume `cantidadPorUnidad`
+ *     unidades de la materia prima por cada unidad de producto terminado.
+ *
+ * Todo vía API: `seed_empresa_inicial` no siembra catálogo de manufactura.
+ */
+export async function crearPrereqProduccion(
+  api: ApiE2E,
+  empresaId: string,
+  opciones: { stockMateriaPrima: string; cantidadPorUnidad: string; sufijo?: string },
+): Promise<PrereqProduccion> {
+  const suf = opciones.sufijo ?? sufijoUnico();
+  const usdId = await monedaUsd(api);
+
+  // Unidad de medida compartida por terminado y materia prima.
+  const unidad = await api.post<{ id_unidad_medida: string }>('/inventario/unidades-medida/', {
+    id_empresa: empresaId,
+    nombre: `Unidad MFG ${suf}`,
+    abreviatura: `UM${suf}`.slice(0, 10),
+    tipo: 'CANTIDAD',
+  });
+  const categoria = await api.post<{ id_categoria_producto: string }>(
+    '/inventario/categorias-producto/',
+    { id_empresa: empresaId, nombre_categoria: `Categoría MFG ${suf}` },
+  );
+
+  const crearProd = async (nombre: string, costo: string): Promise<string> => {
+    const p = await api.post<{ id_producto: string }>('/inventario/productos/', {
+      id_empresa: empresaId,
+      nombre_producto: nombre,
+      id_unidad_medida_base: unidad.id_unidad_medida,
+      id_categoria: categoria.id_categoria_producto,
+      id_moneda_precio: usdId,
+      precio_venta_sugerido: '100.00',
+      costo_promedio: costo,
+    });
+    return p.id_producto;
+  };
+
+  const productoTerminadoNombre = `Mueble Terminado ${suf}`;
+  const materiaPrimaNombre = `Madera MP ${suf}`;
+  const productoTerminadoId = await crearProd(productoTerminadoNombre, '0.00');
+  const materiaPrimaId = await crearProd(materiaPrimaNombre, '7.00');
+
+  const almacenNombre = `Almacén MFG ${suf}`;
+  const almacen = await api.post<{ id_almacen: string }>('/almacenes/almacenes/', {
+    id_empresa: empresaId,
+    nombre_almacen: almacenNombre,
+    codigo_almacen: `MFG${suf}`.slice(0, 10),
+  });
+
+  // Stock inicial de la materia prima (entrada por AJUSTE).
+  await api.post('/inventario/movimientos-inventario/', {
+    id_empresa: empresaId,
+    id_producto: materiaPrimaId,
+    tipo_movimiento: 'AJUSTE',
+    cantidad: opciones.stockMateriaPrima,
+    fecha_hora_movimiento: new Date().toISOString(),
+    id_almacen_destino: almacen.id_almacen,
+    costo_unitario_movimiento: '7.00',
+    observaciones: `Carga inicial MP producción ${suf}`,
+  });
+
+  // BOM: ListaMateriales del producto terminado + 1 componente (la materia prima).
+  const lista = await api.post<{ id: string }>('/manufactura/listas-materiales/', {
+    nombre: `BOM ${productoTerminadoNombre}`,
+    producto_final: productoTerminadoId,
+    descripcion: `BOM E2E ${suf}`,
+  });
+  await api.post('/manufactura/listas-materiales-detalle/', {
+    id_lista_materiales: lista.id,
+    id_producto: materiaPrimaId,
+    id_unidad_medida: unidad.id_unidad_medida,
+    cantidad_requerida: opciones.cantidadPorUnidad,
+    es_opcional: false,
+  });
+
+  return {
+    productoTerminadoId,
+    productoTerminadoNombre,
+    materiaPrimaId,
+    materiaPrimaNombre,
+    cantidadPorUnidad: opciones.cantidadPorUnidad,
+    listaMaterialesId: lista.id,
+    almacenId: almacen.id_almacen,
+    almacenNombre,
+  };
+}
+
 export interface ClienteSembrado {
   clienteId: string;
   razonSocial: string;

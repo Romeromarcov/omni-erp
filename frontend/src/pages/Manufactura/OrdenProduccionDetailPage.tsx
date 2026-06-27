@@ -35,8 +35,10 @@ import { almacenesService } from '../../services/almacenesService';
 import {
   avanzarEtapaSchema,
   completarOrdenSchema,
+  consumirMaterialesSchema,
   type AvanzarEtapaInput,
   type CompletarOrdenInput,
+  type ConsumirMaterialesInput,
 } from '../../schemas/manufactura.schemas';
 import { manufacturaKeys, almacenesKeys } from '../../lib/queryKeys';
 import { mensajeDeError } from '../../utils/api';
@@ -53,8 +55,10 @@ export default function OrdenProduccionDetailPage() {
 
   const [dialogoAvanzar, setDialogoAvanzar] = useState(false);
   const [dialogoCompletar, setDialogoCompletar] = useState(false);
+  const [dialogoConsumir, setDialogoConsumir] = useState(false);
   const [errorAvanzar, setErrorAvanzar] = useState('');
   const [errorCompletar, setErrorCompletar] = useState('');
+  const [errorConsumir, setErrorConsumir] = useState('');
 
   const { data: orden, isLoading: cargandoOrden } = useQuery({
     queryKey: manufacturaKeys.orden(id),
@@ -71,7 +75,7 @@ export default function OrdenProduccionDetailPage() {
   const { data: almacenes = [] } = useQuery({
     queryKey: almacenesKeys.all(),
     queryFn: () => almacenesService.getAll(),
-    enabled: dialogoCompletar,
+    enabled: dialogoCompletar || dialogoConsumir,
   });
 
   const formAvanzar = useForm<AvanzarEtapaInput>({
@@ -82,6 +86,11 @@ export default function OrdenProduccionDetailPage() {
   const formCompletar = useForm<CompletarOrdenInput>({
     resolver: zodResolver(completarOrdenSchema),
     defaultValues: { almacen_id: '', cantidad: '' },
+  });
+
+  const formConsumir = useForm<ConsumirMaterialesInput>({
+    resolver: zodResolver(consumirMaterialesSchema),
+    defaultValues: { almacen_id: '' },
   });
 
   const invalidarOrden = () => {
@@ -105,6 +114,20 @@ export default function OrdenProduccionDetailPage() {
     onError: (err: unknown) => {
       // 400 del backend: doble avance concurrente / sin etapas pendientes / OF cerrada.
       setErrorAvanzar(mensajeDeError(err, t('manufactura.detalle.errorAvanzar')));
+    },
+  });
+
+  const consumirMutation = useMutation({
+    mutationFn: (input: ConsumirMaterialesInput) =>
+      manufacturaService.consumirMateriales(id, { almacen_id: input.almacen_id }),
+    onSuccess: (res) => {
+      snackbar.success(t('manufactura.detalle.consumoOk', { monto: toFixedStr(res.costo_materiales) }));
+      cerrarConsumir();
+      invalidarOrden();
+    },
+    onError: (err: unknown) => {
+      // 400 del backend: sin BOM, stock insuficiente o OF cerrada.
+      setErrorConsumir(mensajeDeError(err, t('manufactura.detalle.errorConsumo')));
     },
   });
 
@@ -147,6 +170,17 @@ export default function OrdenProduccionDetailPage() {
     setErrorCompletar('');
   }
 
+  function abrirConsumir() {
+    setErrorConsumir('');
+    formConsumir.reset({ almacen_id: '' });
+    setDialogoConsumir(true);
+  }
+
+  function cerrarConsumir() {
+    setDialogoConsumir(false);
+    setErrorConsumir('');
+  }
+
   if (cargandoOrden || cargandoEtapas) {
     return (
       <PageContainer>
@@ -175,6 +209,13 @@ export default function OrdenProduccionDetailPage() {
             </Button>
             <Button variant="outlined" onClick={() => navigate(`/manufactura/ordenes/${id}/mrp`)}>
               {t('manufactura.detalle.verMrp')}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={abrirConsumir}
+              disabled={!orden?.lista_materiales || ordenCerrada}
+            >
+              {t('manufactura.detalle.consumirMateriales')}
             </Button>
             <Button
               variant="contained"
@@ -355,6 +396,44 @@ export default function OrdenProduccionDetailPage() {
             <Button onClick={cerrarCompletar}>{t('common.cancel')}</Button>
             <Button type="submit" variant="contained" color="success" disabled={completarMutation.isPending}>
               {t('manufactura.comun.confirmar')}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* ── Diálogo: consumir materiales ───────────────────────────────────── */}
+      <Dialog open={dialogoConsumir} onClose={cerrarConsumir} fullWidth maxWidth="sm">
+        <DialogTitle>{t('manufactura.detalle.consumirMateriales')}</DialogTitle>
+        <form
+          onSubmit={formConsumir.handleSubmit((input) => {
+            setErrorConsumir('');
+            consumirMutation.mutate(input);
+          })}
+        >
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 0.5 }}>
+              {errorConsumir && <Alert severity="error">{errorConsumir}</Alert>}
+              <TextField
+                select
+                label={t('manufactura.detalle.almacen')}
+                defaultValue=""
+                {...formConsumir.register('almacen_id')}
+                error={!!formConsumir.formState.errors.almacen_id}
+                helperText={formConsumir.formState.errors.almacen_id?.message}
+                fullWidth
+              >
+                {almacenes.map((a) => (
+                  <MenuItem key={a.id_almacen} value={a.id_almacen}>
+                    {a.nombre_almacen}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={cerrarConsumir}>{t('common.cancel')}</Button>
+            <Button type="submit" variant="contained" disabled={consumirMutation.isPending}>
+              {t('manufactura.detalle.confirmarConsumo')}
             </Button>
           </DialogActions>
         </form>

@@ -110,11 +110,79 @@ export interface CompletarOrdenResponse {
   costo: CostoProduccion;
 }
 
+export interface CrearOrdenPayload {
+  /** UUID del producto terminado a fabricar. */
+  producto: string;
+  /** Cantidad a producir, string decimal (R-CODE-4). */
+  cantidad: string;
+  fecha_inicio: string;
+  /** BOM/receta a explotar para el consumo de materiales (opcional). */
+  lista_materiales?: string;
+  referencia_externa?: string;
+  observaciones?: string;
+}
+
+export interface ConsumirMaterialesPayload {
+  almacen_id: string;
+  incluir_opcionales?: boolean;
+}
+
+export interface ConsumoMaterial {
+  id: string;
+  orden_produccion: string;
+  producto: string;
+  /** Montos como string decimal (R-CODE-4). */
+  cantidad: string;
+  costo_unitario: string;
+}
+
+export interface ConsumirMaterialesResponse {
+  estado: string;
+  consumos: ConsumoMaterial[];
+  costo_materiales: string;
+}
+
+export interface ListaMateriales {
+  id: string;
+  nombre: string;
+  producto_final: string;
+}
+
 const BASE = '/manufactura/ordenes-produccion';
+const BOM_BASE = '/manufactura/listas-materiales';
 
 // ── Service ────────────────────────────────────────────────────────────────
 
 export const manufacturaService = {
+  /**
+   * Crea una orden de producción en estado `pendiente`. El backend inyecta la
+   * empresa (CTF-004) y materializa las etapas del catálogo de la empresa.
+   */
+  crearOrden: async (payload: CrearOrdenPayload): Promise<OrdenProduccion> => {
+    return post<OrdenProduccion>(`${BASE}/`, payload as unknown as Record<string, unknown>);
+  },
+
+  /**
+   * Explota la BOM de la orden y descuenta los materiales del inventario
+   * (movimiento CONSUMO_PRODUCCION). El backend devuelve 400 si falta stock o
+   * la orden no tiene lista de materiales.
+   */
+  consumirMateriales: async (
+    ordenId: string,
+    payload: ConsumirMaterialesPayload,
+  ): Promise<ConsumirMaterialesResponse> => {
+    return post<ConsumirMaterialesResponse>(
+      `${BASE}/${ordenId}/consumir-materiales/`,
+      payload as unknown as Record<string, unknown>,
+    );
+  },
+
+  /** Listas de materiales (BOM) de la empresa para asociarlas a una OF. */
+  getListasMateriales: async (): Promise<ListaMateriales[]> => {
+    const response = await get<ListaMateriales[] | PaginatedResponse<ListaMateriales>>(`${BOM_BASE}/`);
+    return toList<ListaMateriales>(response);
+  },
+
   /** Lista paginada de órdenes de producción (normaliza lista directa o DRF paginada). */
   getOrdenesPaginated: async (page = 1, pageSize = 20): Promise<PaginatedResponse<OrdenProduccion>> => {
     const response = await get<PaginatedResponse<OrdenProduccion> | OrdenProduccion[]>(

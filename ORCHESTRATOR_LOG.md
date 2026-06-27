@@ -242,3 +242,13 @@ sweep 89 callers de registrar_movimiento sin regresión, ruff limpio. PR# pendie
   verificada nativo en worktree con el comando exacto de CI, toList en todo fetch de lista (evita crash con datos
   paginados reales). Deuda menor pendiente: estabilizar OperacionesCambio.test.tsx (flaky timeout 5s, no bloquea CI).
   Siguiente fase sugerida: profundizar paridad por módulo vs Odoo + flujos cruzados entre módulos + más E2E de negocio.
+
+## Fase 2 — Flujos de negocio cruzados (E2E) 2026-06-24
+
+[2026-06-24] ✅ E2E Compra Completa (procure-to-pay) PR#234 merged — CI verde. compras→inventario→CxP→finanzas→
+  contabilidad por UI (la UI del flujo ya existía completa). Verifica stock↑, CxP nace y se paga (PAGADA), balance cuadra.
+[2026-06-24] ✅ Producción Completa (produce-to-cost) — manufactura→inventario→costos→contabilidad. CERRÓ GAPS de UI:
+  faltaba crear orden de producción (nueva OrdenProduccionFormPage) y consumir-materiales (acción+diálogo). +E2E
+  produccion-completa.flow (crear OF→consumir [stock MP↓]→avanzar etapas→completar [PT↑]→costo persistido, balance).
+  manufacturaService +crearOrden/consumirMateriales/getListasMateriales, schemas, i18n es. Gate verde: 1540 tests,
+  services branches 97.87, tsc 0, lint limpio. Strings verificados vs es.json. PR# pendiente.

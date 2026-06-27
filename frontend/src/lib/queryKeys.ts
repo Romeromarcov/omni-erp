@@ -282,6 +282,7 @@ export const manufacturaKeys = {
   costeo: (ordenId: string) => ['manufactura', 'ordenes', 'costeo', ordenId] as const,
   mrp: (ordenId: string, almacenId?: string | null) =>
     ['manufactura', 'ordenes', 'mrp', ordenId, almacenId ?? null] as const,
+  listasMateriales: () => ['manufactura', 'listas-materiales'] as const,
 };
 
 // ── Costos (costeo de producción — complementa Manufactura) ───────────────────
