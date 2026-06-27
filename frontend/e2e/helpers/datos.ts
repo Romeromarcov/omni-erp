@@ -27,9 +27,15 @@ export async function monedaUsd(api: ApiE2E): Promise<string> {
 }
 
 /**
- * Devuelve el id de una moneda por su código ISO; si no existe la crea (pública,
- * fiat). `seed_empresa_inicial` sólo siembra la moneda base (USD), así que los
- * flujos de tesorería que necesitan una segunda moneda (VES) la crean aquí.
+ * Devuelve el id de una moneda por su código ISO; si no existe la crea como
+ * moneda PROPIA de la empresa (NO genérica, NO pública). `seed_empresa_inicial`
+ * sólo siembra la moneda base (USD), así que los flujos de tesorería que
+ * necesitan una segunda moneda (VES) la crean aquí.
+ *
+ * Importante (R-CODE-1): un usuario normal NO puede crear monedas genéricas,
+ * públicas ni asignar `empresa` (el `MonedaSerializer.validate` lo rechaza con
+ * 400); la empresa se inyecta sola en `create`. Por eso enviamos los flags en
+ * falso y NO mandamos `empresa`.
  */
 export async function asegurarMoneda(
   api: ApiE2E,
@@ -45,8 +51,14 @@ export async function asegurarMoneda(
     simbolo: datos.simbolo,
     tipo_moneda: 'fiat',
     decimales: 2,
-    es_publica: true,
+    es_generica: false,
+    es_publica: false,
   });
+  // La moneda creada es PRIVADA de la empresa (es_generica/es_publica=false); el
+  // signal `moneda_post_save` (apps/finanzas/models.py) la sincroniza sola en
+  // `MonedaEmpresaActiva` (activa=True) para la empresa del usuario, así que
+  // aparece en los selectores de tesorería (/finanzas/monedas-empresa-activas/)
+  // sin un paso de activación explícito.
   return creada.id_moneda;
 }
 
@@ -64,6 +76,14 @@ export async function crearCuentaBancaria(
   // numero_cuenta es unique GLOBAL → se hace único por corrida (máx. 20 díg.),
   // independiente de `datos.sufijo` (que puede compartirse entre cuentas).
   const numeroCuenta = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(0, 20);
+  // El `CuentaBancariaEmpresaSerializer` declara `metodos_pago` (many) como
+  // requerido (no tiene `required=False`), así que hay que sembrar al menos un
+  // método de pago de la empresa y pasarlo. Se crea uno propio (NO genérico/
+  // público) con sufijo único para no chocar con el unique_together por empresa.
+  const metodo = await crearMetodoPago(api, {
+    empresaId: datos.empresaId,
+    sufijo: `cb${datos.sufijo ?? ''}${numeroCuenta.slice(-6)}`,
+  });
   const cuenta = await api.post<{ id_cuenta_bancaria: string }>(
     '/finanzas/cuentas-bancarias-empresa/',
     {
@@ -72,6 +92,7 @@ export async function crearCuentaBancaria(
       numero_cuenta: numeroCuenta,
       tipo_cuenta: 'CORRIENTE',
       id_moneda: datos.monedaId,
+      metodos_pago: [metodo.metodoId],
     },
   );
   return { cuentaId: cuenta.id_cuenta_bancaria, nombreBanco: datos.nombreBanco, numeroCuenta };
@@ -97,7 +118,14 @@ export interface MetodoPagoSembrado {
   nombre: string;
 }
 
-/** Crea un MetodoPago electrónico para la empresa (egreso/ingreso del cambio). */
+/**
+ * Crea un MetodoPago propio de la empresa (egreso/ingreso del cambio).
+ *
+ * Importante (R-CODE-1): el `MetodoPagoSerializer.validate` rechaza con 400 si el
+ * usuario normal envía `es_generico`/`es_publico`/`empresa` en verdadero; la
+ * empresa se inyecta sola en `create`. Por eso enviamos los flags en falso y NO
+ * mandamos `empresa`. El nombre/tipo se usa para el unique_together por empresa.
+ */
 export async function crearMetodoPago(
   api: ApiE2E,
   datos: { empresaId: string; tipo?: string; sufijo?: string },
@@ -105,9 +133,10 @@ export async function crearMetodoPago(
   const suf = datos.sufijo ?? sufijoUnico();
   const nombre = `Transferencia E2E ${suf}`;
   const metodo = await api.post<{ id_metodo_pago: string }>('/finanzas/metodos-pago/', {
-    empresa: datos.empresaId,
     nombre_metodo: nombre,
     tipo_metodo: datos.tipo ?? 'ELECTRONICO',
+    es_generico: false,
+    es_publico: false,
   });
   return { metodoId: metodo.id_metodo_pago, nombre };
 }
@@ -669,10 +698,13 @@ export async function registrarPagoEnCaja(
   },
 ): Promise<{ id_pago: string }> {
   const suf = sufijoUnico();
+  // R-CODE-1: usuario normal NO puede crear métodos genéricos/públicos ni fijar
+  // `empresa` (se inyecta sola en `create`). Flags en falso, sin `empresa`.
   const metodo = await api.post<{ id_metodo_pago: string }>('/finanzas/metodos-pago/', {
-    id_empresa: datos.empresaId,
     nombre_metodo: `Efectivo E2E ${suf}`,
     tipo_metodo: 'EFECTIVO',
+    es_generico: false,
+    es_publico: false,
   });
   return api.post<{ id_pago: string }>('/finanzas/pagos/', {
     id_empresa: datos.empresaId,
