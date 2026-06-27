@@ -559,4 +559,202 @@ describe('AprovisionamientoPage — ofertas CRUD + líneas', () => {
     fireEvent.click(await screen.findByRole('option', { name: 'SOL-001' }));
     await waitFor(() => expect(screen.getByText('OF-001')).toBeInTheDocument());
   });
+
+  it('crea una oferta rellenando todos los campos opcionales (onChange)', async () => {
+    vi.mocked(post).mockResolvedValue({ id_oferta: 'o3' });
+    await irAOfertas();
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva oferta' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText(/Número de oferta/), { target: { value: 'OF-003' } });
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Solicitud de cotización/));
+    fireEvent.click(await screen.findByRole('option', { name: 'SOL-001' }));
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Proveedor/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Proveedor X' }));
+    // Estado select (no por defecto).
+    fireEvent.mouseDown(within(dialog).getByLabelText('Estado'));
+    fireEvent.click(await screen.findByRole('option', { name: 'EVALUADA' }));
+    fireEvent.change(within(dialog).getByLabelText('Monto total'), { target: { value: '120.50' } });
+    fireEvent.change(within(dialog).getByLabelText(/Fecha de oferta/), { target: { value: '2026-06-05' } });
+    fireEvent.change(within(dialog).getByLabelText(/Fecha de vencimiento/), { target: { value: '2026-06-25' } });
+    fireEvent.change(within(dialog).getByLabelText(/Condiciones de pago/), { target: { value: '30 días' } });
+    fireEvent.change(within(dialog).getByLabelText(/Tiempo de entrega/), { target: { value: '2 semanas' } });
+    fireEvent.change(within(dialog).getByLabelText(/Observaciones/), { target: { value: 'urgente' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/compras/ofertas-proveedor/',
+        expect.objectContaining({
+          numero_oferta: 'OF-003',
+          estado: 'EVALUADA',
+          monto_total: '120.50',
+          fecha_oferta: '2026-06-05',
+          fecha_vencimiento: '2026-06-25',
+          condiciones_pago: '30 días',
+          tiempo_entrega: '2 semanas',
+          observaciones: 'urgente',
+        }),
+      ),
+    );
+  });
+
+  it('cancela el diálogo de oferta sin guardar', async () => {
+    await irAOfertas();
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva oferta' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('muestra error al eliminar una línea de oferta (onError del drawer)', async () => {
+    mockGet({ detallesOfe: [detalleOfeApi] });
+    vi.mocked(del).mockRejectedValue(new Error('línea en uso'));
+    await irAOfertas();
+    fireEvent.click(screen.getByRole('button', { name: 'Líneas' }));
+    await screen.findByText('Líneas de la oferta');
+    await screen.findByText(/Producto A.*5\.0000.*10\.0000.*50\.0000/);
+    const delBtns = screen.getAllByRole('button', { name: 'Eliminar' });
+    fireEvent.click(delBtns[delBtns.length - 1]);
+    expect(await screen.findByText(/línea en uso/)).toBeInTheDocument();
+    // Cierra el alert del drawer (onClose).
+    fireEvent.click(screen.getAllByLabelText('Close')[0]);
+    await waitFor(() => expect(screen.queryByText(/línea en uso/)).not.toBeInTheDocument());
+  });
+
+  it('rellena tiempo de entrega de la línea de oferta y agrega', async () => {
+    vi.mocked(post).mockResolvedValue({ id_detalle_oferta: 'do-2' });
+    await irAOfertas();
+    fireEvent.click(screen.getByRole('button', { name: 'Líneas' }));
+    await screen.findByText('Líneas de la oferta');
+    fireEvent.mouseDown(screen.getByLabelText(/Producto/));
+    fireEvent.click(await screen.findByRole('option', { name: /Producto A/ }));
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Precio unitario'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText(/Tiempo de entrega/), { target: { value: '5 días' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar línea' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/compras/detalles-oferta-proveedor/',
+        expect.objectContaining({ subtotal: '10.0000', tiempo_entrega: '5 días' }),
+      ),
+    );
+  });
+});
+
+describe('AprovisionamientoPage — rutas de error y edición de drawers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGet();
+  });
+
+  it('muestra error al eliminar una requisición (onError)', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(del).mockRejectedValue(new Error('req con dependencias'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Eliminar' }));
+    expect(await screen.findByText(/req con dependencias/)).toBeInTheDocument();
+  });
+
+  it('cierra el diálogo de requisición con Cancelar', async () => {
+    renderPage();
+    await screen.findByText('REQ-001');
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva requisición' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('rellena precio estimado y justificación en la línea de requisición', async () => {
+    vi.mocked(post).mockResolvedValue({ id_detalle_requisicion: 'dr-x' });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Líneas' }));
+    await screen.findByText('Líneas de la requisición');
+    fireEvent.mouseDown(screen.getByLabelText(/Producto/));
+    fireEvent.click(await screen.findByRole('option', { name: /Producto A/ }));
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('Precio estimado'), { target: { value: '7.5' } });
+    fireEvent.change(screen.getByLabelText(/Justificación/), { target: { value: 'falta stock' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar línea' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/compras/detalles-requisicion-compra/',
+        expect.objectContaining({ precio_estimado: '7.5', justificacion: 'falta stock' }),
+      ),
+    );
+  });
+
+  it('cancela la edición de una línea de requisición (reset)', async () => {
+    mockGet({ detallesReq: [detalleReqApi] });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Líneas' }));
+    await screen.findByText(/Producto A.*5\.0000/);
+    const editBtns = screen.getAllByRole('button', { name: 'Editar' });
+    fireEvent.click(editBtns[editBtns.length - 1]);
+    await screen.findByRole('button', { name: 'Actualizar línea' });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Agregar línea' })).toBeInTheDocument(),
+    );
+  });
+
+  it('edita la solicitud rellenando observaciones y fechas', async () => {
+    vi.mocked(patch).mockResolvedValue({ id_solicitud_cotizacion: 's1' });
+    renderPage();
+    await screen.findByText('REQ-001');
+    fireEvent.click(screen.getByRole('tab', { name: 'Solicitudes de Cotización' }));
+    await screen.findByText('SOL-001');
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText(/Fecha de solicitud/), { target: { value: '2026-06-02' } });
+    fireEvent.change(within(dialog).getByLabelText(/Fecha de vencimiento/), { target: { value: '2026-06-30' } });
+    fireEvent.mouseDown(within(dialog).getByLabelText('Estado'));
+    fireEvent.click(await screen.findByRole('option', { name: 'ENVIADA' }));
+    fireEvent.change(within(dialog).getByLabelText(/Observaciones/), { target: { value: 'revisar' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(patch).toHaveBeenCalledWith(
+        '/compras/solicitudes-cotizacion/s1/',
+        expect.objectContaining({
+          fecha_solicitud: '2026-06-02',
+          fecha_vencimiento: '2026-06-30',
+          estado: 'ENVIADA',
+          observaciones: 'revisar',
+        }),
+      ),
+    );
+  });
+
+  it('agrega especificaciones a la línea de solicitud', async () => {
+    vi.mocked(post).mockResolvedValue({ id_detalle_solicitud: 'ds-x' });
+    renderPage();
+    await screen.findByText('REQ-001');
+    fireEvent.click(screen.getByRole('tab', { name: 'Solicitudes de Cotización' }));
+    await screen.findByText('SOL-001');
+    fireEvent.click(screen.getByRole('button', { name: 'Líneas' }));
+    await screen.findByText('Líneas de la solicitud');
+    fireEvent.mouseDown(screen.getByLabelText(/Producto/));
+    fireEvent.click(await screen.findByRole('option', { name: /Producto A/ }));
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText(/Especificaciones/), { target: { value: 'color azul' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar línea' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/compras/detalles-solicitud-cotizacion/',
+        expect.objectContaining({ especificaciones: 'color azul' }),
+      ),
+    );
+  });
+
+  it('cierra el alert de error de requisición con la X', async () => {
+    vi.mocked(post).mockRejectedValue(new Error('falló'));
+    renderPage();
+    await screen.findByText('REQ-001');
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva requisición' }));
+    fireEvent.change(await screen.findByLabelText(/Número de requisición/), { target: { value: 'X' } });
+    fireEvent.change(screen.getByLabelText(/Justificación/), { target: { value: 'X' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await screen.findByText(/falló/);
+    fireEvent.click(screen.getByLabelText('Close'));
+    await waitFor(() => expect(screen.queryByText(/falló/)).not.toBeInTheDocument());
+  });
 });
