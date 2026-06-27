@@ -339,3 +339,29 @@ Auditoría data-driven (url_path de @actions no referenciados en frontend): la m
   abonar/reintegro/anular), fiscal PagosParafiscales/IVSS-INCES-FAOV (alta+workflow pagar/anular). gapsMenoresService
   (4 entidades + acciones, toList). Tests: 51 (28 service + 23 página workflow). Gate: 1854 tests EXIT 0, services
   branches 94.32, global funcs 78.00, tsc 0, lint. PR# pendiente.
+
+[2026-06-27] ✅ Cierre de gaps menores PR#247 merged.
+
+## 🎉 DONE — Loop autónomo completo (Fases 1–3) 2026-06-27
+Re-auditoría data-driven (sub-recursos de router sin referencia en frontend) tras el sweep: **0 gaps reales
+de entidad**. Todo lo restante es falso positivo: abonos-cxp (modal Abonar inline), consumos/etapas/produccion-
+terminada/registros-operacion (runtime dentro del detalle de OF), flujo-documentos (motor interno), cajas-usuario/
+ajustes-caja-banco (tablas de asignación/ajuste internas).
+
+Resumen del loop:
+- FASE 1 — 15 módulos frontend nuevos (apps que no tenían UI): crm, proveedores, gastos, despacho, costos,
+  control_asistencia, servicio_cliente, gestion_aprobaciones, gestion_documental, notificaciones, banca_electronica,
+  migracion_datos, agentes, integracion_b2b, personalizacion. (#215–#232) + fix E2E (#226, bug real fetchUsuarios).
+- FASE 2 — 7 flujos de negocio cruzados con E2E + corrección de bugs reales: procure-to-pay (#234), produce-to-cost
+  (#235, +UI crear OF/consumir), hire-to-pay (#236, +aprobar/marcar-pagada), cambio-divisa+conciliación (#237, bug
+  real form), fiscal libro de ventas (#238), gasto completo (#239).
+- FASE 3 — 9 cierres de gaps de sub-módulo (auditoría data-driven): ventas listas-precio (#240) y comisiones (#241),
+  compras aprovisionamiento/RFQ (#242), rrhh beneficios/licencias (#243), manufactura datos maestros BOM/rutas/centros
+  (#244), inventario datos maestros (#245), nómina conceptos/extrasalarial (#246), sweep final 4 entidades (#247).
+
+Estado final: toda app del backend con router HTTP tiene frontend funcional; toda entidad de cara al usuario tiene
+UI de gestión; los flujos de negocio críticos (P2P, P2C, H2P, order-to-cash, tesorería/FX, fiscal, gasto) tienen
+E2E cross-módulo. Gate verde en cada PR (CI: tsc/eslint/vitest≈1854 + cobertura, pytest backend, E2E Playwright,
+seguridad, contract). Deuda menor abierta: estabilizar OperacionesCambio.test.tsx (flaky timeout 5s, task_dd4597a5);
+bug latente POS campos legados (task_53c9590b). Siguiente fase posible (incremental, no bloqueante): profundizar
+cobertura de tests de páginas pre-existentes con baja cobertura de funciones, y paridad fina de features vs Odoo.
