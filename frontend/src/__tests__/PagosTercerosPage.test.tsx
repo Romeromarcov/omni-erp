@@ -126,7 +126,9 @@ describe('PagosTercerosPage', () => {
           id_moneda: 'm1',
           monto: '120',
           referencia_zelle: 'Z-NEW',
-          fecha: '2026-06-27',
+          // El form usa la fecha de hoy por defecto; no acoplar al día (evita
+          // que el test se rompa al cambiar la fecha del sistema).
+          fecha: expect.any(String),
         }),
       ),
     );

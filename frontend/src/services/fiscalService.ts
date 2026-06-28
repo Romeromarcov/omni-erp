@@ -85,15 +85,22 @@ function parseTxt(txt: string): LibroEntry[] {
   });
 }
 
+// El backend (LibroVentasView/LibroComprasView, APIView de DRF) solo registra el
+// JSONRenderer, por lo que un `Accept: text/plain` dispara una negociación de
+// contenido fallida → 406 Not Acceptable, aunque la respuesta real sea un
+// HttpResponse de texto plano. Usamos `Accept: '*/*'` para que DRF acepte la
+// negociación y ejecute get() (devuelve 200 con el TXT). Ver fiscalService.test.ts.
+const TXT_ACCEPT_HEADER = { Accept: '*/*' } as const;
+
 async function fetchLibroTxt(tipo: 'ventas' | 'compras', empresaId: string, periodo: string): Promise<LibroEntry[]> {
   const endpoint = `/fiscal/libro-${tipo}/?empresa=${empresaId}&periodo=${periodo}`;
-  const txt = await fetchText(endpoint, { headers: { Accept: 'text/plain' } });
+  const txt = await fetchText(endpoint, { headers: { ...TXT_ACCEPT_HEADER } });
   return parseTxt(txt);
 }
 
 async function downloadLibroTxt(tipo: 'ventas' | 'compras', empresaId: string, periodo: string): Promise<void> {
   const endpoint = `/fiscal/libro-${tipo}/?empresa=${empresaId}&periodo=${periodo}`;
-  const blob = await fetchBlob(endpoint, { headers: { Accept: 'text/plain' } });
+  const blob = await fetchBlob(endpoint, { headers: { ...TXT_ACCEPT_HEADER } });
   const objUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = objUrl;
