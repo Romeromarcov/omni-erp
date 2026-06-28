@@ -10,6 +10,7 @@ import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
 import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
+import LocalGasStationOutlined from '@mui/icons-material/LocalGasStationOutlined';
 import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
 import SavingsOutlined from '@mui/icons-material/SavingsOutlined';
 import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined';
@@ -224,6 +225,19 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Gestiones', path: '/cobranza/gestiones' },
         { label: 'Acuerdos de Pago', path: '/cobranza/acuerdos' },
         { label: 'Agente IA', path: '/cobranza/agente' },
+      ],
+    },
+    {
+      id: 'cxc-lubrikca',
+      label: 'CxC Lubrikca',
+      icon: <LocalGasStationOutlined />,
+      items: [
+        { label: 'Dashboard', path: '/cxc-lubrikca/dashboard' },
+        { label: 'Config del Motor', path: '/cxc-lubrikca/config' },
+        { label: 'Captura', path: '/cxc-lubrikca/captura' },
+        { label: 'Bandeja', path: '/cxc-lubrikca/bandeja' },
+        { label: 'Conciliación', path: '/cxc-lubrikca/conciliacion' },
+        { label: 'Cartera', path: '/cxc-lubrikca/cartera' },
       ],
     },
     {

@@ -595,6 +595,25 @@ export const gapsMenoresKeys = {
     ['gaps-menores', 'pagos-parafiscales', 'list', estado ?? null] as const,
 };
 
+// ── CxC Lubrikca (subproyecto, perfil 'cobranza') ─────────────────────────────
+// Prefijo compartido `['cxc-lubrikca', <recurso>]` para invalidar por familia.
+// Los `*All` invalidan la familia completa de un recurso tras crear/editar/borrar.
+export const cxcLubrikcaKeys = {
+  all: () => ['cxc-lubrikca'] as const,
+  descuentosMarcaAll: () => ['cxc-lubrikca', 'descuentos-marca'] as const,
+  descuentosBcvAll: () => ['cxc-lubrikca', 'descuentos-bcv'] as const,
+  promocionesAll: () => ['cxc-lubrikca', 'promociones'] as const,
+  recurrenciaAll: () => ['cxc-lubrikca', 'recurrencia'] as const,
+  feriadosAll: () => ['cxc-lubrikca', 'feriados'] as const,
+  metodosPagoAll: () => ['cxc-lubrikca', 'metodos-pago'] as const,
+  configConciliacionAll: () => ['cxc-lubrikca', 'config-conciliacion'] as const,
+  pedidosAll: () => ['cxc-lubrikca', 'pedidos'] as const,
+  vinculacionesAll: () => ['cxc-lubrikca', 'vinculaciones'] as const,
+  bandejaAll: () => ['cxc-lubrikca', 'bandeja'] as const,
+  conciliacionesAll: () => ['cxc-lubrikca', 'conciliaciones'] as const,
+  resumen: () => ['cxc-lubrikca', 'conciliaciones', 'resumen'] as const,
+};
+
 // ── Notificaciones (centro de notificaciones del usuario) ─────────────────────
 // Prefijo compartido `['notificaciones', ...]` para invalidar lista e indicador
 // (campana) a la vez tras marcar como leída. El parámetro distingue la vista de

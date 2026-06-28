@@ -13,6 +13,7 @@ import { integracionesRoutes } from './routes/integracionesRoutes';
 import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
+import { cxcLubrikcaRoutes } from './routes/cxcLubrikcaRoutes';
 import { crmRoutes } from './routes/crmRoutes';
 import { servicioClienteRoutes } from './routes/servicioClienteRoutes';
 import { gestionDocumentalRoutes } from './routes/gestionDocumentalRoutes';
@@ -85,6 +86,7 @@ export default function AppRouter() {
             {isModuleEnabled('inventario') ? inventarioRoutes() : null}
             {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
+            {isModuleEnabled('cxc-lubrikca') ? cxcLubrikcaRoutes() : null}
             {crmRoutes()}
             {servicioClienteRoutes()}
             {gestionDocumentalRoutes()}

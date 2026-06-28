@@ -23,6 +23,7 @@ const COBRANZA_MODULES: ReadonlySet<string> = new Set([
   'inicio',
   'dashboard',
   'cobranza',
+  'cxc-lubrikca',
   'finanzas',
   'empresas',
   'usuarios',

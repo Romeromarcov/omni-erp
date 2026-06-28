@@ -225,6 +225,21 @@ RLS_TABLES = {
     "contabilidad_plan_cuentas": "id_empresa_id",
     # control_asistencia
     "control_asistencia_horariotrabajo": "id_empresa_id",
+    # cxc_lubrikca (subproyecto CxC Lubrikca, ADR-013 — todas con FK empresa)
+    "cxc_lubrikca_descuentomarcacategoria": "empresa_id",
+    "cxc_lubrikca_descuentobcvcompleto": "empresa_id",
+    "cxc_lubrikca_promocionprimeracompra": "empresa_id",
+    "cxc_lubrikca_reglarecurrencia": "empresa_id",
+    "cxc_lubrikca_feriado": "empresa_id",
+    "cxc_lubrikca_metodopago": "empresa_id",
+    "cxc_lubrikca_pedidolubrikca": "empresa_id",
+    "cxc_lubrikca_lineapedidolubrikca": "empresa_id",
+    "cxc_lubrikca_preciolistalubrikca": "empresa_id",
+    "cxc_lubrikca_pagolubrikca": "empresa_id",
+    "cxc_lubrikca_vinculacion": "empresa_id",
+    "cxc_lubrikca_bandejafacturacion": "empresa_id",
+    "cxc_lubrikca_configuracionconciliacion": "empresa_id",
+    "cxc_lubrikca_conciliacionlubrikca": "empresa_id",
     # core
     "core_capability_token": "empresa_id",
     "core_clave_idempotencia": "empresa_id",
