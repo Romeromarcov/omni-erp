@@ -138,6 +138,9 @@ class FeriadoSerializer(serializers.ModelSerializer):
 class MetodoPagoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MetodoPago
+        # ref_name explícito: evita colisión de OpenAPI con finanzas.MetodoPagoSerializer
+        # (drf-yasg deriva el ref del nombre de clase; ambos serían "MetodoPago").
+        ref_name = "CxcLubrikcaMetodoPago"
         fields = (
             "id",
             "codigo",

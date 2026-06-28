@@ -63,6 +63,20 @@
 | cxc | LoteFraccionado | ✅ | ✅ | — |
 | cxc | PlantillaCobranza | ✅ | ✅ | — |
 | cxc | VentaFraccionada | ✅ | ✅ | — |
+| cxc_lubrikca | BandejaFacturacion | ✅ | ✅ | — |
+| cxc_lubrikca | ConciliacionLubrikca | ✅ | ✅ | — |
+| cxc_lubrikca | ConfiguracionConciliacion | ✅ | ✅ | — |
+| cxc_lubrikca | DescuentoBCVCompleto | ✅ | ✅ | — |
+| cxc_lubrikca | DescuentoMarcaCategoria | ✅ | ✅ | — |
+| cxc_lubrikca | Feriado | ✅ | ✅ | empresa+fecha |
+| cxc_lubrikca | LineaPedidoLubrikca | ✅ | ✅ | — |
+| cxc_lubrikca | MetodoPago | ✅ | ✅ | empresa+codigo |
+| cxc_lubrikca | PagoLubrikca | ✅ | ✅ | empresa+pago_id |
+| cxc_lubrikca | PedidoLubrikca | ✅ | ✅ | empresa+so_id |
+| cxc_lubrikca | PrecioListaLubrikca | ✅ | ✅ | empresa+producto+lista |
+| cxc_lubrikca | PromocionPrimeraCompra | ✅ | ✅ | — |
+| cxc_lubrikca | ReglaRecurrencia | ✅ | ✅ | — |
+| cxc_lubrikca | Vinculacion | ✅ | ✅ | — |
 | despacho | Despacho | ✅ | ✅ | id_empresa+numero_despacho |
 | despacho | DetalleDespacho | — | ✅ | — |
 | finanzas | Caja | ✅ | ✅ | — |
@@ -209,4 +223,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 206_
+_Total modelos: 220_

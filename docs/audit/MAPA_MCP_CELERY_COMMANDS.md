@@ -67,6 +67,7 @@ _Total tareas Celery: 16_
 | `run_mcp_server` | apps.core |
 | `seed_empresa_inicial` | apps.core |
 | `seed_proveedores_integracion` | apps.integration_hub |
+| `sincronizar_cxc_lubrikca` | apps.cxc_lubrikca |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 17_
+_Total commands: 18_
