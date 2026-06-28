@@ -32,6 +32,7 @@ from apps.cxc_lubrikca.services.captura import (
     VinculacionError,
     registrar_vinculacion,
 )
+from apps.cxc_lubrikca.services.sync import SyncError, sincronizar_empresa
 
 from .operacion_serializers import (
     BandejaFacturacionSerializer,
@@ -84,6 +85,18 @@ class PedidoLubrikcaViewSet(_CxcLubrikcaTenantViewSet):
                 {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
             )
         return Response(BandejaFacturacionSerializer(bandeja).data)
+
+    @action(detail=False, methods=["post"])
+    def sincronizar(self, request):
+        """Sincroniza el espejo desde Odoo (solo lectura) para la empresa del usuario."""
+        empresa = self._empresa_usuario()
+        try:
+            counts = sincronizar_empresa(empresa, desde=request.data.get("desde"))
+        except SyncError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(counts)
 
 
 class LineaPedidoLubrikcaViewSet(_CxcLubrikcaTenantViewSet):
