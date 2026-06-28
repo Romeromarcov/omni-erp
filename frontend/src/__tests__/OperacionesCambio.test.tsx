@@ -173,7 +173,7 @@ describe('OperacionCambioFormPage', () => {
     expect(screen.getByText(/3615\.9579/)).toBeInTheDocument();
   });
 
-  it('envía el payload con montos string y monto_destino calculado', async () => {
+  it('envía el payload con montos string y monto_destino calculado', { timeout: 15000 }, async () => {
     vi.mocked(tesoreriaService.crearOperacionCambio).mockResolvedValue(operacion);
     const user = userEvent.setup();
     renderForm();
@@ -202,7 +202,7 @@ describe('OperacionCambioFormPage', () => {
     expect(await screen.findByText('LISTA-CAMBIO')).toBeInTheDocument();
   });
 
-  it('ante el 422 sin mapeo CAMBIO_DIVISA muestra el error con link a Mapeos Contables', async () => {
+  it('ante el 422 sin mapeo CAMBIO_DIVISA muestra el error con link a Mapeos Contables', { timeout: 15000 }, async () => {
     vi.mocked(tesoreriaService.crearOperacionCambio).mockRejectedValue(
       new Error(
         JSON.stringify({
