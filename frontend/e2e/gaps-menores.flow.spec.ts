@@ -40,7 +40,10 @@ test.describe('Gaps menores: ubicaciones de almacén', () => {
       await page.getByRole('button', { name: 'Nueva ubicación' }).click();
       await expect(page.getByRole('heading', { name: 'Nueva ubicación' })).toBeVisible();
 
-      await page.getByLabel(/Almacén/).click();
+      // Hay dos campos "Almacén" (el filtro de la página y el del formulario):
+      // se acota al diálogo de "Nueva ubicación" para no resolver a 2 elementos.
+      const dialogo = page.getByRole('dialog');
+      await dialogo.getByLabel('Almacén').click();
       await page.getByRole('option', { name: almacenNombre }).click();
       await page.getByLabel(/Código/).fill(codigo);
       await page.getByLabel(/Nombre/).fill(nombre);

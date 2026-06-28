@@ -86,9 +86,13 @@ test.describe('Fiscal: Libro de Ventas SENIAT (compliance VE)', () => {
 
     await test.step('la factura aparece en el Libro de Ventas vía API (TXT SENIAT)', async () => {
       // Cruce backend directo: el generador SENIAT debe incluir la factura.
+      // El endpoint LibroVentasView (APIView) solo tiene JSONRenderer registrado;
+      // un `Accept: text/plain` hace que DRF rechace la negociación con 406. La
+      // respuesta real es un HttpResponse text/plain crudo, así que pedimos `*/*`
+      // (JSONRenderer satisface la negociación) y el cuerpo TXT llega igual.
       const txt = await page.request.get(
         `/api/fiscal/libro-ventas/?empresa=${sesion.empresaId}&periodo=${periodo}`,
-        { headers: { Authorization: `Bearer ${sesion.api.access}`, Accept: 'text/plain' } },
+        { headers: { Authorization: `Bearer ${sesion.api.access}`, Accept: '*/*' } },
       );
       expect(txt.ok(), `libro-ventas TXT → ${txt.status()}`).toBeTruthy();
       const cuerpo = await txt.text();
@@ -136,9 +140,11 @@ test.describe('Fiscal: Libro de Ventas SENIAT (compliance VE)', () => {
       // El KPI "IVA" suma el IVA de todas las facturas del período. Se valida con
       // el cruce API exacto (sumar el libro completo) para no acoplarse a otras
       // facturas que el seed/otras corridas hayan dejado en el mismo período.
+      // `*/*` para que JSONRenderer satisfaga la negociación de DRF (ver paso
+      // anterior): un `Accept: text/plain` devolvería 406.
       const txt = await page.request.get(
         `/api/fiscal/libro-ventas/?empresa=${sesion.empresaId}&periodo=${periodo}`,
-        { headers: { Authorization: `Bearer ${sesion.api.access}`, Accept: 'text/plain' } },
+        { headers: { Authorization: `Bearer ${sesion.api.access}`, Accept: '*/*' } },
       );
       const lineas = (await txt.text()).trim().split('\n').slice(1).filter(Boolean);
       const ivaTotalLibro = lineas.reduce((acc, l) => {
