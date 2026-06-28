@@ -90,7 +90,7 @@ test.describe('Manufactura: datos maestros', () => {
       await fila.getByRole('button', { name: 'Componentes' }).click();
       await expect(page.getByText('Componentes del BOM')).toBeVisible();
 
-      await page.getByLabel(/Componente/).click();
+      await page.getByRole('combobox', { name: 'Componente', exact: true }).click();
       await page.getByRole('option', { name: componente }).click();
       await page.getByLabel('Cantidad requerida').fill('3');
       await page.getByLabel(/Unidad/).click();

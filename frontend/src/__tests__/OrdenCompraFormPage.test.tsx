@@ -59,10 +59,10 @@ describe('OrdenCompraFormPage', () => {
     vi.mocked(comprasService.getProveedores).mockResolvedValue([
       { id_proveedor: 'prov-1', razon_social: 'ACME C.A.' },
     ]);
-    // Mock fiel a la respuesta DRF paginada del backend de inventario.
-    vi.mocked(fetchProductos).mockResolvedValue({
-      results: [{ id_producto: 'prod-1', nombre_producto: 'Tornillo' }],
-    });
+    // fetchProductos normaliza la paginación DRF y devuelve un array plano.
+    vi.mocked(fetchProductos).mockResolvedValue([
+      { id_producto: 'prod-1', nombre_producto: 'Tornillo' },
+    ]);
     vi.mocked(comprasService.crearOrden).mockResolvedValue(ordenCreada);
     vi.mocked(comprasService.crearDetalle).mockResolvedValue({
       id_detalle_orden_compra: 'det-1',

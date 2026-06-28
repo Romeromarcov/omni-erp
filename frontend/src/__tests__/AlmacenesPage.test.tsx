@@ -37,7 +37,8 @@ describe('almacenesService CRUD escritura', () => {
   it('getAll normaliza la lista paginada', async () => {
     vi.mocked(get).mockResolvedValue({ results: [almacenApi], count: 1 });
     expect(await almacenesService.getAll()).toEqual([almacenApi]);
-    expect(get).toHaveBeenCalledWith('/almacenes/almacenes/');
+    // getAll recorre páginas: la primera petición incluye page=1.
+    expect(get).toHaveBeenCalledWith('/almacenes/almacenes/?page=1');
   });
 
   it('create postea al endpoint de almacenes', async () => {

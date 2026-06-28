@@ -27,6 +27,11 @@ class CarpetaViewSet(BaseModelViewSet):
         # R-CODE-1: filtrar por empresas visibles
         return Carpeta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("nombre_carpeta")
 
+    def perform_create(self, serializer):
+        # El creador lo fija el servidor (no el cliente): coherente con
+        # `id_usuario_subida` de los documentos y con R-CODE-1.
+        serializer.save(id_usuario_creacion=self.request.user)
+
 
 class DocumentoViewSet(BaseModelViewSet):
     queryset = Documento.objects.all()

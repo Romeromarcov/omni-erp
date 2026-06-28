@@ -28,12 +28,26 @@ export interface MetodoPagoEmpresaActiva {
 }
 
 export async function fetchMetodosPagoEmpresaActivos(empresa: string): Promise<MetodoPagoEmpresaActiva[]> {
-  const data = await get<MetodoPagoEmpresaActiva[] | { results: MetodoPagoEmpresaActiva[] }>(
-    `/finanzas/metodos-pago-empresa-activas/?empresa=${empresa}`
-  );
-  if (Array.isArray(data)) return data;
-  if (data && 'results' in data && Array.isArray(data.results)) return data.results;
-  return [];
+  // Recorre TODAS las páginas: los selectores de método de pago (reembolsos,
+  // cambio de divisa, etc.) necesitan el catálogo completo. Con sólo la página 1
+  // (20 ítems), una empresa con muchos métodos no vería los más recientes.
+  const acumulado: MetodoPagoEmpresaActiva[] = [];
+  for (let page = 1; page <= 50; page++) {
+    const data = await get<
+      MetodoPagoEmpresaActiva[] | { results: MetodoPagoEmpresaActiva[]; next?: string | null }
+    >(`/finanzas/metodos-pago-empresa-activas/?empresa=${empresa}&page=${page}`);
+    if (Array.isArray(data)) {
+      acumulado.push(...data);
+      break;
+    }
+    if (data && 'results' in data && Array.isArray(data.results)) {
+      acumulado.push(...data.results);
+      if (!data.next) break;
+    } else {
+      break;
+    }
+  }
+  return acumulado;
 }
 
 export async function updateMonedasMetodoPagoEmpresaActiva(id: string, monedas: string[]): Promise<unknown> {
