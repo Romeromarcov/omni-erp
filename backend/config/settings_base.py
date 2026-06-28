@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "apps.ventas",
     "apps.cuentas_por_cobrar",
     "apps.cxc",
+    "apps.cxc_lubrikca",  # Subproyecto CxC Lubrikca (aislado, perfil cobranza) — ADR-013
     "apps.manufactura",
     "apps.rrhh",
     "apps.tesoreria",
