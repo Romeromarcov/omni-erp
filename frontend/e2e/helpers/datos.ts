@@ -150,6 +150,7 @@ export async function crearMetodoPago(
 export async function crearPagoIngresoBancario(
   api: ApiE2E,
   datos: {
+    empresaId: string;
     cuentaBancariaId: string;
     monedaId: string;
     metodoPagoId: string;
@@ -161,7 +162,11 @@ export async function crearPagoIngresoBancario(
   const idDocumento = (
     globalThis.crypto?.randomUUID?.() ?? `00000000-0000-4000-8000-${Date.now()}`
   ).slice(0, 36);
+  // `Pago.id_empresa` NO es nullable y el `PagoSerializer` lo expone como campo
+  // requerido (la inyección en `create` llega tarde para la validación DRF):
+  // hay que pasarlo explícito o el POST falla con 400 "id_empresa requerido".
   return api.post<{ id_pago: string }>('/finanzas/pagos/', {
+    id_empresa: datos.empresaId,
     tipo_operacion: 'INGRESO',
     tipo_documento: 'AJUSTE',
     id_documento: idDocumento,

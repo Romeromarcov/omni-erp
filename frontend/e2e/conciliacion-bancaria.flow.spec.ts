@@ -67,6 +67,7 @@ test.describe('Conciliación bancaria: sesión → conciliar-auto → cerrar', (
     // Pago INGRESO (contraparte interna) y movimiento del extracto, mismo
     // monto/cuenta/fecha/referencia → la conciliación automática los empareja.
     await crearPagoIngresoBancario(sesion.api, {
+      empresaId: sesion.empresaId,
       cuentaBancariaId: cuenta.cuentaId,
       monedaId: usdId,
       metodoPagoId: metodo.metodoId,
