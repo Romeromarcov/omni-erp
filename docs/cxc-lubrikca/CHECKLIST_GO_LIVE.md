@@ -57,7 +57,23 @@ python manage.py sincronizar_cxc_lubrikca --empresa <empresa_id_or_rif>
 
 Puebla `PedidoLubrikca`/`LineaPedidoLubrikca`/`PrecioListaLubrikca`/`PagoLubrikca` +
 `monto_facturado`/`ncs_facturadas`. **Nunca** toca Vinculacion/Bandeja/Conciliacion ni
-escribe a Odoo. Programar como tarea periódica (Omni ya tiene D2 con Celery).
+escribe a Odoo.
+
+**Sync programado (Celery):** la tarea ya existe — `cxc_lubrikca.sync_todos` (fan-out a
+los tenants Mode-A con `ParametroSistema cxc.datasource='odoo'`) → `cxc_lubrikca.sync`
+por empresa. **owner/ops**: registrar el cronograma en django-celery-beat (igual que
+`integration_hub.sync_cartera_odoo_todos`), p. ej. cada 15–30 min, desde el admin de
+Django o una `PeriodicTask`:
+
+```python
+# shell / data-migration de ops
+from django_celery_beat.models import PeriodicTask, IntervalSchedule
+sched, _ = IntervalSchedule.objects.get_or_create(every=20, period=IntervalSchedule.MINUTES)
+PeriodicTask.objects.get_or_create(
+    name="cxc_lubrikca sync", task="cxc_lubrikca.sync_todos",
+    defaults={"interval": sched},
+)
+```
 
 ## 5. Smoke tests post-config (staging/prod)
 
