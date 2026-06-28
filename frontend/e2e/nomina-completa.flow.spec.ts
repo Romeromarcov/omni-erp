@@ -68,7 +68,13 @@ test.describe('Nómina completa: período → proceso → procesar → aprobar �
       // Procesar con los defaults del motor (30 días, sin horas extra).
       await dialogo.getByRole('button', { name: 'Procesar nómina' }).click();
 
-      await expect(page.getByText(/Nómina procesada\. Total neto:/)).toBeVisible();
+      // El snackbar "Nómina procesada…" es efímero (se auto-cierra). Validamos el
+      // resultado PERSISTENTE: el diálogo se cierra y la pantalla muestra el total
+      // neto calculado por el motor (heading "Total neto: …") y el estado avanza.
+      await expect(dialogo).toBeHidden();
+      await expect(
+        page.getByRole('heading', { name: /Total neto:/ }),
+      ).toBeVisible();
     });
 
     await test.step('el recibo del empleado tiene devengado/deducciones/neto > 0', async () => {

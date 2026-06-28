@@ -89,10 +89,8 @@ export default function PosPage() {
     queryFn: () => fetchProductos(empresaId),
     enabled: !!empresaId,
   });
-  const productos: Producto[] = useMemo(() => {
-    if (!productosData) return [];
-    return Array.isArray(productosData) ? productosData : productosData.results ?? [];
-  }, [productosData]);
+  // fetchProductos ya devuelve un array plano (recorre todas las páginas).
+  const productos: Producto[] = useMemo(() => productosData ?? [], [productosData]);
 
   const { data: metodos = [] } = useQuery({
     queryKey: ['pos', 'metodos-pago', empresaId],

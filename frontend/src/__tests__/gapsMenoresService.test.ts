@@ -28,6 +28,7 @@ beforeEach(() => vi.clearAllMocks());
 describe('ubicacionesAlmacenService', () => {
   const BASE = '/almacenes/ubicaciones-almacen/';
   const payload: UbicacionAlmacenPayload = {
+    id_empresa: 'emp-1',
     id_almacen: 'alm-1',
     codigo_ubicacion: 'A-01',
     nombre_ubicacion: 'Estante A',

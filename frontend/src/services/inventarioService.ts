@@ -145,11 +145,19 @@ export const stockActualService = {
     if (params?.empresa) qs.set('empresa', params.empresa);
     if (params?.producto) qs.set('producto', params.producto);
     if (params?.almacen) qs.set('almacen', params.almacen);
-    const query = qs.toString();
-    const response = await get<PaginatedResponse<StockActual> | StockActual[]>(
-      `/inventario/stock-actual/${query ? '?' + query : ''}`
-    );
-    return toList<StockActual>(response);
+    // Recorre todas las páginas: el filtro "Buscar producto…" de Stock Actual es
+    // client-side, así que necesita TODO el stock, no sólo los 20 primeros.
+    const acumulado: StockActual[] = [];
+    for (let page = 1; page <= 50; page++) {
+      qs.set('page', String(page));
+      const response = await get<PaginatedResponse<StockActual> | StockActual[]>(
+        `/inventario/stock-actual/?${qs.toString()}`
+      );
+      acumulado.push(...toList<StockActual>(response));
+      const next = Array.isArray(response) ? null : (response.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
   },
 
   /** Stock por debajo de la cantidad mínima (alertas) */
@@ -165,9 +173,18 @@ export const stockActualService = {
 
 export const productoInventarioService = {
   getAll: async (params?: { empresa?: string }): Promise<Producto[]> => {
-    const qs = params?.empresa ? `?empresa=${params.empresa}` : '';
-    const response = await get<PaginatedResponse<Producto> | Producto[]>(`/inventario/productos/${qs}`);
-    return toList<Producto>(response);
+    // Recorre TODAS las páginas: los selectores (p. ej. "Producto a fabricar"
+    // del BOM) necesitan el catálogo completo. Con sólo la página 1 (20 ítems),
+    // una empresa con muchos productos no podría seleccionar los más recientes.
+    const base = `/inventario/productos/${params?.empresa ? `?empresa=${params.empresa}&` : '?'}`;
+    const acumulado: Producto[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const response = await get<PaginatedResponse<Producto> | Producto[]>(`${base}page=${page}`);
+      acumulado.push(...toList<Producto>(response));
+      const next = Array.isArray(response) ? null : (response.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
   },
 
   getById: async (id: string): Promise<Producto> => {
@@ -225,19 +242,35 @@ export const productoInventarioService = {
 
 export const categoriasProductoService = {
   getAll: async (): Promise<CategoriaProducto[]> => {
-    const r = await get<PaginatedResponse<CategoriaProducto> | CategoriaProducto[]>(
-      '/inventario/categorias-producto/',
-    );
-    return toList<CategoriaProducto>(r);
+    // Recorre todas las páginas para que el catálogo de categorías esté completo
+    // en los selectores (no sólo los 20 primeros).
+    const acumulado: CategoriaProducto[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const r = await get<PaginatedResponse<CategoriaProducto> | CategoriaProducto[]>(
+        `/inventario/categorias-producto/?page=${page}`,
+      );
+      acumulado.push(...toList<CategoriaProducto>(r));
+      const next = Array.isArray(r) ? null : (r.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
   },
 };
 
 export const unidadesMedidaService = {
   getAll: async (): Promise<UnidadMedida[]> => {
-    const r = await get<PaginatedResponse<UnidadMedida> | UnidadMedida[]>(
-      '/inventario/unidades-medida/',
-    );
-    return toList<UnidadMedida>(r);
+    // Recorre todas las páginas: los selectores de unidad (p. ej. el componente
+    // del BOM) necesitan el catálogo completo, no sólo los 20 primeros.
+    const acumulado: UnidadMedida[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const r = await get<PaginatedResponse<UnidadMedida> | UnidadMedida[]>(
+        `/inventario/unidades-medida/?page=${page}`,
+      );
+      acumulado.push(...toList<UnidadMedida>(r));
+      const next = Array.isArray(r) ? null : (r.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
   },
 };
 

@@ -22,10 +22,20 @@ export interface AlmacenPayload {
 }
 
 export const almacenesService = {
-  /** Almacenes visibles del usuario (el backend ya filtra por empresas, R-CODE-1). */
+  /** Almacenes visibles del usuario (el backend ya filtra por empresas, R-CODE-1).
+   * Recorre todas las páginas: los selectores de almacén necesitan el catálogo
+   * completo, no sólo los 20 primeros. */
   getAll: async (): Promise<Almacen[]> => {
-    const response = await get<PaginatedResponse<Almacen> | Almacen[]>('/almacenes/almacenes/');
-    return toList<Almacen>(response);
+    const acumulado: Almacen[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const response = await get<PaginatedResponse<Almacen> | Almacen[]>(
+        `/almacenes/almacenes/?page=${page}`,
+      );
+      acumulado.push(...toList<Almacen>(response));
+      const next = Array.isArray(response) ? null : (response.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
   },
 
   create: async (payload: AlmacenPayload): Promise<Almacen> =>

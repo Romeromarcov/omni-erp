@@ -22,9 +22,14 @@ test.describe('Ventas: comisiones', () => {
       await page.getByRole('button', { name: 'Nuevo esquema' }).click();
       await expect(page.getByRole('heading', { name: 'Nuevo esquema' })).toBeVisible();
 
-      // Selecciona el primer vendedor disponible del seed de usuarios.
+      // Selecciona el primer vendedor REAL del seed (la opción 0 es el
+      // placeholder "— Seleccione —" con value vacío; hay que saltarla).
       await page.getByLabel(/Vendedor/).click();
-      await page.getByRole('option').first().click();
+      await page
+        .getByRole('option')
+        .filter({ hasNotText: 'Seleccione' })
+        .first()
+        .click();
       await page.getByLabel(/Porcentaje base/).fill('5');
       await page.getByRole('button', { name: 'Guardar' }).click();
 
@@ -32,7 +37,9 @@ test.describe('Ventas: comisiones', () => {
     });
 
     await test.step('el esquema aparece en la lista', async () => {
-      await expect(page.getByText('5.0000%')).toBeVisible();
+      // Contra una BD persistente pueden existir varios esquemas al 5 % de
+      // corridas previas; basta con que al menos uno (el recién creado) aparezca.
+      await expect(page.getByText('5.0000%').first()).toBeVisible();
     });
 
     await test.step('revisar la pestaña de comisiones devengadas', async () => {

@@ -912,6 +912,7 @@ const CENTRO_VACIO: CentroForm = {
 
 const CentrosTrabajoTab: React.FC = () => {
   const queryClient = useQueryClient();
+  const empresaId = getEmpresaId() || '';
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<CentroTrabajo | null>(null);
   const [form, setForm] = useState<CentroForm>(CENTRO_VACIO);
@@ -968,6 +969,7 @@ const CentrosTrabajoTab: React.FC = () => {
       return;
     }
     guardar.mutate({
+      id_empresa: empresaId,
       codigo_centro: form.codigo_centro.trim(),
       nombre_centro: form.nombre_centro.trim(),
       descripcion: form.descripcion.trim(),

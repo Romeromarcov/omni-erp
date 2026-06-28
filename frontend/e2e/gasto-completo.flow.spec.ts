@@ -52,8 +52,10 @@ test.describe('Gasto completo: registrar → aprobar → reembolso → pago', ()
       await page.getByRole('option', { name: prereq.categoriaNombre }).click();
 
       await dialogo.getByLabel('Descripción').fill(descripcionGasto);
-      await dialogo.getByLabel('Monto', { exact: true }).fill(montoTotal);
-      await dialogo.getByLabel('IVA', { exact: true }).fill(montoIva);
+      // Campos requeridos: MUI añade " *" al accessible name, por eso NO se usa
+      // `exact` (ya están acotados al diálogo, donde sólo hay un "Monto"/"IVA").
+      await dialogo.getByLabel(/^Monto/).fill(montoTotal);
+      await dialogo.getByLabel(/^IVA/).fill(montoIva);
 
       // Moneda (select MUI) → USD (única moneda sembrada por defecto).
       await dialogo.getByLabel('Moneda').click();
@@ -79,9 +81,10 @@ test.describe('Gasto completo: registrar → aprobar → reembolso → pago', ()
       await page.getByLabel('Cuenta contable').click();
       await page.getByRole('option').filter({ hasText: prereq.cuentaGastoCodigo }).first().click();
 
-      // base 100.00 + IVA 16.00 = 116.00 == encabezado.
-      await page.getByLabel('Monto', { exact: true }).fill(montoBase);
-      await page.getByLabel('IVA', { exact: true }).fill(montoIva);
+      // base 100.00 + IVA 16.00 = 116.00 == encabezado. Campos requeridos: MUI
+      // añade " *" al accessible name → se evita `exact` (regex anclada).
+      await page.getByLabel(/^Monto/).fill(montoBase);
+      await page.getByLabel(/^IVA/).fill(montoIva);
       await page.getByRole('button', { name: 'Agregar línea' }).click();
 
       // La línea aparece listada con la cuenta y el monto.

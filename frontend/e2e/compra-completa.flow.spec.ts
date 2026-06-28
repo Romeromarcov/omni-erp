@@ -80,7 +80,7 @@ test.describe('Compra completa: OC → recepción → factura → CxP → pago',
     await test.step('aprobar la orden', async () => {
       await page.getByRole('button', { name: 'Aprobar', exact: true }).click();
       await expect(page.getByText('Orden aprobada.')).toBeVisible();
-      await expect(page.getByText('APROBADA')).toBeVisible();
+      await expect(page.getByText('APROBADA', { exact: true })).toBeVisible();
     });
 
     await test.step('recepcionar la mercancía (entrada de inventario + CxP)', async () => {
@@ -121,7 +121,23 @@ test.describe('Compra completa: OC → recepción → factura → CxP → pago',
         page.getByRole('heading', { name: `Orden de Compra ${numeroOrden}` }),
       ).toBeVisible();
 
-      await page.getByRole('button', { name: 'Registrar factura' }).click();
+      // El botón "Registrar factura" se habilita cuando la query de recepciones
+      // de la OC resuelve con ≥1 recepción. Si la query falla por un hipo
+      // transitorio del backend (timeout de conexión a la BD bajo carga, 5xx),
+      // React Query cachea el resultado vacío durante `staleTime`; un reload
+      // fuerza un refetch limpio. Reintentamos hasta que el botón se habilite.
+      const botonFactura = page.getByRole('button', { name: 'Registrar factura' });
+      await expect(async () => {
+        if (await botonFactura.isDisabled()) {
+          await page.reload();
+          await expect(
+            page.getByRole('heading', { name: `Orden de Compra ${numeroOrden}` }),
+          ).toBeVisible();
+        }
+        await expect(botonFactura).toBeEnabled({ timeout: 5_000 });
+      }).toPass({ timeout: 60_000 });
+
+      await botonFactura.click();
       const dialogo = page.getByRole('dialog');
       await expect(dialogo).toBeVisible();
       const numeroFactura = `FAC-${suf}`;

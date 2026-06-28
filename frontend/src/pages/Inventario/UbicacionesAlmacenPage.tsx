@@ -25,6 +25,7 @@ import {
 import { almacenesService, type Almacen } from '../../services/almacenesService';
 import { gapsMenoresKeys, almacenesKeys } from '../../lib/queryKeys';
 import { mensajeDeError } from '../../utils/api';
+import { getEmpresaId } from '../../utils/empresa';
 
 const TIPOS: { value: TipoUbicacion; label: string }[] = [
   { value: 'ESTANTERIA', label: 'Estantería' },
@@ -145,6 +146,7 @@ const UbicacionesAlmacenPage: React.FC = () => {
       return;
     }
     const payload: UbicacionAlmacenPayload = {
+      id_empresa: getEmpresaId() || '',
       id_almacen: form.id_almacen,
       codigo_ubicacion: form.codigo_ubicacion.trim(),
       nombre_ubicacion: form.nombre_ubicacion.trim(),

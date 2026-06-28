@@ -28,7 +28,7 @@ test.describe('Notificaciones: centro del usuario', () => {
     });
 
     await test.step('alternar el filtro "Solo no leídas"', async () => {
-      const toggle = page.getByRole('checkbox', { name: 'Solo no leídas' });
+      const toggle = page.getByRole('switch', { name: 'Solo no leídas' });
       await expect(toggle).not.toBeChecked();
       await toggle.check();
       await expect(toggle).toBeChecked();

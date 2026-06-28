@@ -19,11 +19,40 @@ interface MonedaApi {
   codigo_iso: string;
 }
 
-export async function monedaUsd(api: ApiE2E): Promise<string> {
+export async function monedaUsd(api: ApiE2E, empresaId?: string): Promise<string> {
   const monedas = aLista<MonedaApi>(await api.get('/finanzas/monedas/'));
   const usd = monedas.find((m) => m.codigo_iso === 'USD');
   if (!usd) throw new Error('Seed incompleto: no existe la moneda USD.');
+  // La moneda base (USD) la siembra el seed, pero NO crea su registro en
+  // `MonedaEmpresaActiva` (el signal `moneda_post_save` sólo dispara al crear
+  // monedas propias). Sin ese registro, USD no aparece en los selectores de
+  // tesorería (/finanzas/monedas-empresa-activas/). La activamos aquí si se
+  // conoce la empresa.
+  if (empresaId) await asegurarMonedaActiva(api, empresaId, usd.id_moneda);
   return usd.id_moneda;
+}
+
+interface MonedaEmpresaActivaApi {
+  moneda: string;
+  activa: boolean;
+}
+
+/** Activa una moneda para la empresa del usuario (idempotente): aparece en los
+ * selectores de tesorería. Sin esto, una moneda existente pero no registrada en
+ * `MonedaEmpresaActiva` no se ofrece en los dropdowns. El serializer exige
+ * `empresa` explícita. */
+export async function asegurarMonedaActiva(
+  api: ApiE2E,
+  empresaId: string,
+  monedaId: string,
+): Promise<void> {
+  const activas = aLista<MonedaEmpresaActivaApi>(await api.get('/finanzas/monedas-empresa-activas/'));
+  if (activas.some((m) => m.moneda === monedaId && m.activa)) return;
+  await api.post('/finanzas/monedas-empresa-activas/', {
+    empresa: empresaId,
+    moneda: monedaId,
+    activa: true,
+  });
 }
 
 /**

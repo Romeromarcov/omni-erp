@@ -56,6 +56,7 @@ const pasoPayload: RutaProduccionDetallePayload = {
 };
 
 const centroPayload: CentroTrabajoPayload = {
+  id_empresa: 'emp-1',
   codigo_centro: 'CT-1',
   nombre_centro: 'Corte',
   descripcion: '',

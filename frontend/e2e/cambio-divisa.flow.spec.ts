@@ -58,7 +58,7 @@ test.describe('Cambio de divisa: operación por UI → doble registro + asiento'
     const suf = sufijoUnico();
 
     // ── Prerequisitos sembrados vía API ──────────────────────────────────────
-    const usdId = await monedaUsd(sesion.api); // moneda base de la empresa (seed)
+    const usdId = await monedaUsd(sesion.api, sesion.empresaId); // moneda base de la empresa (seed)
     const vesId = await asegurarMoneda(sesion.api, 'VES', {
       nombre: 'Bolívar',
       simbolo: 'Bs',
