@@ -32,9 +32,16 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
+    // Login único: persiste el storageState (cookie refresh) que reusa el resto.
+    { name: 'setup', testMatch: /global\.setup\.ts/ },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Todos los specs arrancan autenticados con la cookie del login único.
+        storageState: 'e2e/.auth/admin.json',
+      },
+      dependencies: ['setup'],
     },
   ],
 });

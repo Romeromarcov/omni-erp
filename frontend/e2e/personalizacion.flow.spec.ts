@@ -18,7 +18,9 @@ test.describe('Personalización: versiones del DSL', () => {
     await expect(page.getByRole('heading', { name: 'Personalización' })).toBeVisible();
 
     // El panel de configuración activa siempre se renderiza (con datos o vacío).
-    await expect(page.getByText('Configuración activa')).toBeVisible();
+    // exact: el texto vacío "No hay ninguna configuración activa…" también
+    // contiene la frase; el título de la tarjeta es exactamente "Configuración activa".
+    await expect(page.getByText('Configuración activa', { exact: true })).toBeVisible();
 
     // La sección de historial siempre está presente.
     await expect(
