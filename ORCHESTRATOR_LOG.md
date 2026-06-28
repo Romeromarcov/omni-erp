@@ -450,3 +450,41 @@ feature/cxc-lubrikca (base 22a9696 + plan 4e4b9eb). App nueva aislada apps/cxc_l
   E2E ❌: fallo PRE-EXISTENTE de develop (su propia CI está roja en E2E hoy 2026-06-28); 11 specs de módulos
   ajenos (cambio-divisa/comisiones/compra-completa/nómina/manufactura/etc.), CERO specs de cxc_lubrikca →
   no atribuible a este PR; bloqueo repo-wide para ESCALACIÓN al owner.
+
+[2026-06-28] ⚠️ ESCALATION — PR #256 listo, bloqueado por E2E repo-wide.
+  3ª corrida CI: TODOS los checks atribuibles al PR en VERDE (Backend ✅ con RLS, Contract ✅, Frontend ✅,
+  Static ✅, Security ✅, Agent Eval ✅, Railway deploys ✅). ÚNICO rojo: E2E (BLOQUEANTE).
+  Diagnóstico: 13 specs E2E fallan, TODAS de módulos ajenos (incl. login-multiempresa y venta — base) y
+  CERO de cxc_lubrikca. La CI de develop está roja en E2E hoy (mismo patrón). El fallo de login-multiempresa
+  implica que el setup de sesión/seed de E2E está roto a nivel repo, no por este PR.
+  No se hace merge: la política exige CI verde y E2E es BLOQUEANTE; arreglar 13 flujos E2E ajenos excede el
+  alcance de cxc-lubrikca y la causa raíz (seed/auth/entorno E2E en develop) es del owner.
+  ENTREGADO: subproyecto CxC Lubrikca Fases 0-6 100% (11 commits), PR #256, todo lo propio verde.
+
+[2026-06-28] Diagnóstico E2E refinado (debida diligencia tras hook): login-multiempresa y venta NO son
+  regresiones del PR — son FLAKY pre-existentes en develop. Evidencia: en 4 corridas E2E de develop,
+  login-multiempresa falla en 1/4 (run 28311404370); develop NO tiene mis cambios. LoginPage.tsx (que
+  renderiza 'Selecciona empresa y sucursal') no fue tocado y está fuera del layout autenticado que sí
+  modifiqué. Conclusión firme: 0 specs cxc_lubrikca fallan; el PR no introduce regresiones E2E; el job
+  E2E es inestable + tiene 11 specs rotos de forma consistente en develop (módulos ajenos). El merge
+  sigue bloqueado por causa repo-wide ajena al PR → ESCALATION se mantiene (decisión del owner).
+
+[2026-06-28] 🎉 DONE — PR #256 MERGEADO a develop (merge commit 837e270, override de admin autorizado
+  explícitamente por el owner ante el bloqueo E2E repo-wide ajeno al PR). Subproyecto CxC Lubrikca
+  completo: Fases 0–7, app aislada apps/cxc_lubrikca (config motor + motor determinístico + captura/
+  bandeja + conciliación + sync Odoo read-only + RLS), frontend cobranza (6 pantallas MUI). Todos los
+  checks propios verdes (Backend incl. RLS, Contract, Frontend, Static, Security). Go-live (config real +
+  validación Odoo real) = acción del owner por CHECKLIST_GO_LIVE.md. Railway auto-despliega develop a staging.
+
+[2026-06-28] ✅ Seguimiento — Sync programado (PLAN Fase 5 "Sync programado"). apps/cxc_lubrikca/tasks.py:
+  cxc_lubrikca.sync_todos (fan-out a tenants Mode-A datasource=odoo) + cxc_lubrikca.sync (por empresa,
+  tolerante a fallos). Reusa la infra D2/Celery; el cronograma se registra vía django-celery-beat (ops,
+  documentado en CHECKLIST_GO_LIVE.md). Rama feature/cxc-lubrikca-sync-beat desde develop (post-merge #256).
+  Gate: check + makemigrations + 4 tests EXIT 0, tasks.py 100%.
+
+[2026-06-28] ✅ Gate de visibilidad del módulo (pedido del owner). appProfile.isCxcLubrikcaVisible:
+  en build 'full' el módulo CxC Lubrikca solo se ve para empresas en allowlist (VITE_CXC_LUBRIKCA_EMPRESAS)
+  o el admin del sistema (es_superusuario_omni); en 'cobranza' standalone siempre. Gated en navigation.tsx
+  (sección) y router.tsx (rutas, evita acceso por URL). Tests appProfile (+4). Documentado enlace standalone
+  en CHECKLIST_GO_LIVE.md §6c. Gate: tsc + lint + appProfile tests OK (OperacionesCambio flaky local por carga;
+  el job Frontend de CI pasa).

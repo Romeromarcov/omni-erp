@@ -32,7 +32,7 @@ import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
 import FolderOutlined from '@mui/icons-material/FolderOutlined';
 import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
-import { isModuleEnabled } from './appProfile';
+import { isModuleEnabled, isCxcLubrikcaVisible } from './appProfile';
 
 export interface NavItem {
   label: string;
@@ -370,5 +370,13 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
 
   // Perfil de build (D4): el standalone de cobranza oculta los módulos no
   // imprescindibles (ventas, inventario, fiscal, escáner). En 'full' pasa todo.
-  return sections.filter((s) => isModuleEnabled(s.id));
+  // Además, CxC Lubrikca (subproyecto de un cliente) solo se ve para las empresas
+  // habilitadas o el admin del sistema (no para toda empresa en el build 'full').
+  return sections.filter((s) => {
+    if (!isModuleEnabled(s.id)) return false;
+    if (s.id === 'cxc-lubrikca') {
+      return isCxcLubrikcaVisible(empresaId, options.esSuperusuarioOmni ?? false);
+    }
+    return true;
+  });
 }

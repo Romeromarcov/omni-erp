@@ -57,7 +57,23 @@ python manage.py sincronizar_cxc_lubrikca --empresa <empresa_id_or_rif>
 
 Puebla `PedidoLubrikca`/`LineaPedidoLubrikca`/`PrecioListaLubrikca`/`PagoLubrikca` +
 `monto_facturado`/`ncs_facturadas`. **Nunca** toca Vinculacion/Bandeja/Conciliacion ni
-escribe a Odoo. Programar como tarea periódica (Omni ya tiene D2 con Celery).
+escribe a Odoo.
+
+**Sync programado (Celery):** la tarea ya existe — `cxc_lubrikca.sync_todos` (fan-out a
+los tenants Mode-A con `ParametroSistema cxc.datasource='odoo'`) → `cxc_lubrikca.sync`
+por empresa. **owner/ops**: registrar el cronograma en django-celery-beat (igual que
+`integration_hub.sync_cartera_odoo_todos`), p. ej. cada 15–30 min, desde el admin de
+Django o una `PeriodicTask`:
+
+```python
+# shell / data-migration de ops
+from django_celery_beat.models import PeriodicTask, IntervalSchedule
+sched, _ = IntervalSchedule.objects.get_or_create(every=20, period=IntervalSchedule.MINUTES)
+PeriodicTask.objects.get_or_create(
+    name="cxc_lubrikca sync", task="cxc_lubrikca.sync_todos",
+    defaults={"interval": sched},
+)
+```
 
 ## 5. Smoke tests post-config (staging/prod)
 
@@ -76,6 +92,38 @@ sistema previo CxC_Lubrikca) **antes** de arrancar la operación. Revisar especi
 marca/categoría de líneas (Odoo solo tiene marca en ~8/255 productos → normalizar en Odoo),
 `amount_total_signed_usd` para conciliación en USD, y precios de lista 4 vs 5 (Odoo 18 sin
 `price_get`; ver limitación en `MAPA_DATOS_GAPS.md §4`).
+
+## 6b. Visibilidad del módulo (solo Lubrikca + admin)
+
+En el build `full`, el módulo **CxC Lubrikca** se oculta para todas las empresas salvo
+las habilitadas y el **admin del sistema** (`es_superusuario_omni`). Habilitar la empresa
+de Lubrikca por **allowlist** en el build del frontend:
+
+```bash
+# frontend/.env (o el env del deploy)
+VITE_CXC_LUBRIKCA_EMPRESAS=<uuid-empresa-lubrikca>   # CSV si hay varias
+```
+
+- Sin la variable: solo el admin del sistema ve el módulo.
+- En el build standalone `cobranza` (la app dedicada de Lubrikca): siempre visible.
+- El backend ya aísla la data por empresa (RLS), así que aunque alguien llegara por URL,
+  solo vería su propia empresa (vacía si no es Lubrikca).
+
+## 6c. Enlace dedicado solo-cobranza para Lubrikca (standalone)
+
+Es el **mismo frontend**, compilado con el perfil `cobranza`, desplegado en su propia URL,
+apuntando al **mismo backend** (no hay backend nuevo). Pasos:
+
+1. `frontend/.env.cobranza` (o el env del deploy): `VITE_APP_PROFILE=cobranza`,
+   `VITE_API_URL=https://<backend-omni>/api`, opcional `VITE_CXC_LUBRIKCA_EMPRESAS=<uuid>`.
+2. `cd frontend && npm ci && npm run build:cobranza` → artefacto estático en `frontend/dist/`.
+3. Desplegar `dist/` como **sitio estático** en su propia URL/subdominio
+   (p. ej. `cobranza.lubrikca.<dominio>`): nuevo servicio estático en Railway / Netlify /
+   nginx. Apunta al backend Omni existente.
+4. Crear los usuarios de Lubrikca asociados **solo** a la empresa Lubrikca; el perfil
+   `cobranza` ya oculta el resto del ERP y el RLS aísla su data.
+
+Detalle en [`clients/cobranza-standalone/README.md`](../../clients/cobranza-standalone/README.md).
 
 ## 7. Deuda / pendientes conocidos
 

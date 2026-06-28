@@ -36,12 +36,18 @@ import { migracionDatosRoutes } from './routes/migracionDatosRoutes';
 import { integracionB2bRoutes } from './routes/integracionB2bRoutes';
 import { agentesRoutes } from './routes/agentesRoutes';
 import { personalizacionRoutes } from './routes/personalizacionRoutes';
-import { isModuleEnabled } from './config/appProfile';
+import { isModuleEnabled, isCxcLubrikcaVisible } from './config/appProfile';
+import { getEmpresaId } from './utils/empresa';
 
 const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
 
 export default function AppRouter() {
-  const { token, isLoading } = useAuth();
+  const { token, isLoading, user } = useAuth();
+  // CxC Lubrikca solo se monta para empresas habilitadas o el admin del sistema
+  // (además del gate de build). Evita el acceso por URL directa desde otras empresas.
+  const cxcLubrikcaOn =
+    isModuleEnabled('cxc-lubrikca') &&
+    isCxcLubrikcaVisible(getEmpresaId(), user?.es_superusuario_omni ?? false);
 
   // While rehydrating the session from the refresh cookie, avoid flashing the
   // login page (which would otherwise win the route race for a logged-in user).
@@ -86,7 +92,7 @@ export default function AppRouter() {
             {isModuleEnabled('inventario') ? inventarioRoutes() : null}
             {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
-            {isModuleEnabled('cxc-lubrikca') ? cxcLubrikcaRoutes() : null}
+            {cxcLubrikcaOn ? cxcLubrikcaRoutes() : null}
             {crmRoutes()}
             {servicioClienteRoutes()}
             {gestionDocumentalRoutes()}
