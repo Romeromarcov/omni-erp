@@ -450,4 +450,229 @@ describe('CostosPage — tab Análisis de variación', () => {
     expect(await screen.findByText(/en uso/)).toBeInTheDocument();
     confirmSpy.mockRestore();
   });
+
+  it('crea un análisis rellenando todos los campos (onChange y checkbox)', async () => {
+    vi.mocked(post).mockResolvedValue({ id_analisis_variacion: 'av9' });
+    renderPage();
+    irAVariacion();
+    await screen.findByText('FAVORABLE');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo análisis' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Orden de producción/));
+    fireEvent.click(await screen.findByRole('option', { name: 'OF-001' }));
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Producto/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Mesa de roble' }));
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Tipo de costo/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Overhead' }));
+    fireEvent.change(within(dialog).getByLabelText(/Costo estándar/), { target: { value: '100' } });
+    fireEvent.change(within(dialog).getByLabelText(/Costo real/), { target: { value: '90' } });
+    fireEvent.change(within(dialog).getByLabelText(/Variación cantidad/), { target: { value: '1' } });
+    fireEvent.change(within(dialog).getByLabelText(/Variación precio/), { target: { value: '9' } });
+    fireEvent.change(within(dialog).getByLabelText(/Variación total/), { target: { value: '10' } });
+    fireEvent.change(within(dialog).getByLabelText(/Porcentaje de variación/), { target: { value: '10' } });
+    fireEvent.mouseDown(within(dialog).getByLabelText('Resultado'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Desfavorable' }));
+    fireEvent.change(within(dialog).getByLabelText(/Fecha de análisis/), { target: { value: '2026-06-26' } });
+    fireEvent.change(within(dialog).getByLabelText(/Observaciones/), { target: { value: 'revisar overhead' } });
+    fireEvent.click(within(dialog).getByRole('checkbox')); // activo -> false
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/costos/analisis-variacion-costo/',
+        expect.objectContaining({
+          tipo_costo: 'OVERHEAD',
+          costo_estandar: '100',
+          costo_real: '90',
+          variacion_cantidad: '1',
+          variacion_precio: '9',
+          variacion_total: '10',
+          porcentaje_variacion: '10',
+          tipo_variacion: 'DESFAVORABLE',
+          fecha_analisis: '2026-06-26',
+          observaciones: 'revisar overhead',
+          activo: false,
+        }),
+      ),
+    );
+  });
+
+  it('precarga todos los campos al editar un análisis existente', async () => {
+    vi.mocked(patch).mockResolvedValue({ id_analisis_variacion: 'av1' });
+    renderPage();
+    irAVariacion();
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    const dialog = await screen.findByRole('dialog');
+    const costoReal = within(dialog).getByLabelText(/Costo real/) as HTMLInputElement;
+    await waitFor(() => expect(costoReal.value).toBe('48.0000'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+});
+
+describe('CostosPage — campos y rutas de error adicionales', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupGet();
+  });
+
+  it('costo real: rellena todos los campos opcionales (onChange y checkbox)', async () => {
+    vi.mocked(post).mockResolvedValue({ id_costo_produccion: 'cp9' });
+    renderPage();
+    await screen.findByText('OF-001');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo costo real' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Orden de producción/));
+    fireEvent.click(await screen.findByRole('option', { name: 'OF-001' }));
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Tipo de costo/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Overhead' }));
+    fireEvent.change(within(dialog).getByLabelText(/Costo unitario/), { target: { value: '8' } });
+    fireEvent.change(within(dialog).getByLabelText(/Cantidad/), { target: { value: '4' } });
+    fireEvent.change(within(dialog).getByLabelText(/Costo total/), { target: { value: '32' } });
+    fireEvent.change(within(dialog).getByLabelText(/Fecha de cálculo/), { target: { value: '2026-06-20' } });
+    fireEvent.change(within(dialog).getByLabelText(/Observaciones/), { target: { value: 'extra' } });
+    fireEvent.click(within(dialog).getByRole('checkbox')); // activo -> false
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/costos/costos-produccion/',
+        expect.objectContaining({
+          tipo_costo: 'OVERHEAD',
+          costo_unitario: '8',
+          cantidad: '4',
+          costo_total: '32',
+          fecha_calculo: '2026-06-20',
+          observaciones: 'extra',
+          activo: false,
+        }),
+      ),
+    );
+  });
+
+  it('costo real: valida moneda requerida cuando no hay monedas precargadas', async () => {
+    // Sin monedas, abrirCrear deja id_moneda vacío y se exige seleccionar.
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/inventario/productos')) return Promise.resolve([productoApi]);
+      if (url.startsWith('/finanzas/monedas')) return Promise.resolve([]);
+      if (url.startsWith('/manufactura/ordenes-produccion'))
+        return Promise.resolve({ count: 1, next: null, previous: null, results: [ordenApi] });
+      if (url.startsWith('/costos/costos-produccion')) return Promise.resolve([produccionApi]);
+      return Promise.resolve([]);
+    });
+    renderPage();
+    await screen.findByText('OF-001');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo costo real' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Orden de producción/));
+    fireEvent.click(await screen.findByRole('option', { name: 'OF-001' }));
+    fireEvent.change(within(dialog).getByLabelText(/Costo total/), { target: { value: '5' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByText(/Seleccione la moneda/)).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('costo real: cierra el diálogo con Cancelar y reporta error al eliminar', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(del).mockRejectedValue(new Error('costo en uso'));
+    renderPage();
+    await screen.findByText('OF-001');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo costo real' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(await screen.findByText(/costo en uso/)).toBeInTheDocument();
+    // Cierra el alert.
+    fireEvent.click(screen.getByLabelText('Close'));
+    await waitFor(() => expect(screen.queryByText(/costo en uso/)).not.toBeInTheDocument());
+    confirmSpy.mockRestore();
+  });
+
+  it('costo estándar: valida moneda requerida y rellena vigencia hasta', async () => {
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/inventario/productos')) return Promise.resolve([productoApi]);
+      if (url.startsWith('/finanzas/monedas')) return Promise.resolve([]);
+      if (url.startsWith('/manufactura/ordenes-produccion'))
+        return Promise.resolve({ count: 0, next: null, previous: null, results: [] });
+      if (url.startsWith('/costos/costos-estandar-producto')) return Promise.resolve([estandarApi]);
+      return Promise.resolve([]);
+    });
+    renderPage();
+    irAEstandar();
+    await screen.findByText('Mesa de roble');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo costo estándar' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Producto/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Mesa de roble' }));
+    fireEvent.change(within(dialog).getByLabelText(/Costo unitario estándar/), { target: { value: '9' } });
+    fireEvent.change(within(dialog).getByLabelText(/Vigencia desde/), { target: { value: '2026-07-01' } });
+    fireEvent.change(within(dialog).getByLabelText(/Vigencia hasta/), { target: { value: '2026-12-31' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByText(/Seleccione la moneda/)).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('costo estándar: cambia tipo de costo, alterna activo y crea con vigencia hasta', async () => {
+    vi.mocked(post).mockResolvedValue({ id_costo_estandar: 'ce9' });
+    renderPage();
+    irAEstandar();
+    await screen.findByText('Mesa de roble');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo costo estándar' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Producto/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Mesa de roble' }));
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Tipo de costo/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Costos Indirectos' }));
+    fireEvent.change(within(dialog).getByLabelText(/Costo unitario estándar/), { target: { value: '14' } });
+    fireEvent.change(within(dialog).getByLabelText(/Vigencia desde/), { target: { value: '2026-07-01' } });
+    fireEvent.change(within(dialog).getByLabelText(/Vigencia hasta/), { target: { value: '2026-09-30' } });
+    fireEvent.click(within(dialog).getByRole('checkbox')); // activo -> false
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/costos/costos-estandar-producto/',
+        expect.objectContaining({
+          tipo_costo: 'COSTOS_INDIRECTOS',
+          costo_unitario_estandar: '14',
+          fecha_vigencia_hasta: '2026-09-30',
+          activo: false,
+        }),
+      ),
+    );
+  });
+
+  it('costo estándar: cancela el diálogo y reporta error al eliminar', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(del).mockRejectedValue(new Error('estandar en uso'));
+    renderPage();
+    irAEstandar();
+    await screen.findByText('Mesa de roble');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo costo estándar' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(await screen.findByText(/estandar en uso/)).toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it('cancela el diálogo de análisis y reporta error al guardar', async () => {
+    vi.mocked(post).mockRejectedValue(new Error('análisis inválido'));
+    renderPage();
+    irAVariacion();
+    await screen.findByText('FAVORABLE');
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo análisis' }));
+    let dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo análisis' }));
+    dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Orden de producción/));
+    fireEvent.click(await screen.findByRole('option', { name: 'OF-001' }));
+    fireEvent.mouseDown(within(dialog).getByLabelText(/Producto/));
+    fireEvent.click(await screen.findByRole('option', { name: 'Mesa de roble' }));
+    fireEvent.change(within(dialog).getByLabelText(/Variación total/), { target: { value: '1' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByText(/análisis inválido/)).toBeInTheDocument();
+  });
 });
