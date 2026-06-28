@@ -20,6 +20,17 @@ from .config import (
     TipoFeriado,
     TipoTasa,
 )
+from .operacion import (
+    BandejaFacturacion,
+    EstadoBandeja,
+    EstadoEntrega,
+    EstadoVinculacion,
+    LineaPedidoLubrikca,
+    PagoLubrikca,
+    PedidoLubrikca,
+    PrecioListaLubrikca,
+    Vinculacion,
+)
 
 __all__ = [
     "CxcLubrikcaBaseModel",
@@ -35,4 +46,14 @@ __all__ = [
     "TipoDescuento",
     "TipoFeriado",
     "TipoTasa",
+    # Operación (Fase 3)
+    "BandejaFacturacion",
+    "EstadoBandeja",
+    "EstadoEntrega",
+    "EstadoVinculacion",
+    "LineaPedidoLubrikca",
+    "PagoLubrikca",
+    "PedidoLubrikca",
+    "PrecioListaLubrikca",
+    "Vinculacion",
 ]

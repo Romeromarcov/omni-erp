@@ -7,6 +7,14 @@ from django.http import JsonResponse
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .operacion_viewsets import (
+    BandejaFacturacionViewSet,
+    LineaPedidoLubrikcaViewSet,
+    PagoLubrikcaViewSet,
+    PedidoLubrikcaViewSet,
+    PrecioListaLubrikcaViewSet,
+    VinculacionViewSet,
+)
 from .viewsets import (
     DescuentoBCVCompletoViewSet,
     DescuentoMarcaCategoriaViewSet,
@@ -35,6 +43,14 @@ router.register(
 router.register("reglas-recurrencia", ReglaRecurrenciaViewSet, basename="cxcl-recurrencia")
 router.register("feriados", FeriadoViewSet, basename="cxcl-feriados")
 router.register("metodos-pago", MetodoPagoViewSet, basename="cxcl-metodos-pago")
+
+# Fase 3 — operación (espejo + cierre híbrido)
+router.register("pedidos", PedidoLubrikcaViewSet, basename="cxcl-pedidos")
+router.register("lineas-pedido", LineaPedidoLubrikcaViewSet, basename="cxcl-lineas-pedido")
+router.register("precios-lista", PrecioListaLubrikcaViewSet, basename="cxcl-precios-lista")
+router.register("pagos", PagoLubrikcaViewSet, basename="cxcl-pagos")
+router.register("vinculaciones", VinculacionViewSet, basename="cxcl-vinculaciones")
+router.register("bandeja", BandejaFacturacionViewSet, basename="cxcl-bandeja")
 
 urlpatterns = [
     *router.urls,
