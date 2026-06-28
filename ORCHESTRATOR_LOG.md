@@ -481,3 +481,10 @@ feature/cxc-lubrikca (base 22a9696 + plan 4e4b9eb). App nueva aislada apps/cxc_l
   tolerante a fallos). Reusa la infra D2/Celery; el cronograma se registra vía django-celery-beat (ops,
   documentado en CHECKLIST_GO_LIVE.md). Rama feature/cxc-lubrikca-sync-beat desde develop (post-merge #256).
   Gate: check + makemigrations + 4 tests EXIT 0, tasks.py 100%.
+
+[2026-06-28] ✅ Gate de visibilidad del módulo (pedido del owner). appProfile.isCxcLubrikcaVisible:
+  en build 'full' el módulo CxC Lubrikca solo se ve para empresas en allowlist (VITE_CXC_LUBRIKCA_EMPRESAS)
+  o el admin del sistema (es_superusuario_omni); en 'cobranza' standalone siempre. Gated en navigation.tsx
+  (sección) y router.tsx (rutas, evita acceso por URL). Tests appProfile (+4). Documentado enlace standalone
+  en CHECKLIST_GO_LIVE.md §6c. Gate: tsc + lint + appProfile tests OK (OperacionesCambio flaky local por carga;
+  el job Frontend de CI pasa).

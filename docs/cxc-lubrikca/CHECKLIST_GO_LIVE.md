@@ -93,6 +93,38 @@ marca/categoría de líneas (Odoo solo tiene marca en ~8/255 productos → norma
 `amount_total_signed_usd` para conciliación en USD, y precios de lista 4 vs 5 (Odoo 18 sin
 `price_get`; ver limitación en `MAPA_DATOS_GAPS.md §4`).
 
+## 6b. Visibilidad del módulo (solo Lubrikca + admin)
+
+En el build `full`, el módulo **CxC Lubrikca** se oculta para todas las empresas salvo
+las habilitadas y el **admin del sistema** (`es_superusuario_omni`). Habilitar la empresa
+de Lubrikca por **allowlist** en el build del frontend:
+
+```bash
+# frontend/.env (o el env del deploy)
+VITE_CXC_LUBRIKCA_EMPRESAS=<uuid-empresa-lubrikca>   # CSV si hay varias
+```
+
+- Sin la variable: solo el admin del sistema ve el módulo.
+- En el build standalone `cobranza` (la app dedicada de Lubrikca): siempre visible.
+- El backend ya aísla la data por empresa (RLS), así que aunque alguien llegara por URL,
+  solo vería su propia empresa (vacía si no es Lubrikca).
+
+## 6c. Enlace dedicado solo-cobranza para Lubrikca (standalone)
+
+Es el **mismo frontend**, compilado con el perfil `cobranza`, desplegado en su propia URL,
+apuntando al **mismo backend** (no hay backend nuevo). Pasos:
+
+1. `frontend/.env.cobranza` (o el env del deploy): `VITE_APP_PROFILE=cobranza`,
+   `VITE_API_URL=https://<backend-omni>/api`, opcional `VITE_CXC_LUBRIKCA_EMPRESAS=<uuid>`.
+2. `cd frontend && npm ci && npm run build:cobranza` → artefacto estático en `frontend/dist/`.
+3. Desplegar `dist/` como **sitio estático** en su propia URL/subdominio
+   (p. ej. `cobranza.lubrikca.<dominio>`): nuevo servicio estático en Railway / Netlify /
+   nginx. Apunta al backend Omni existente.
+4. Crear los usuarios de Lubrikca asociados **solo** a la empresa Lubrikca; el perfil
+   `cobranza` ya oculta el resto del ERP y el RLS aísla su data.
+
+Detalle en [`clients/cobranza-standalone/README.md`](../../clients/cobranza-standalone/README.md).
+
 ## 7. Deuda / pendientes conocidos
 
 - Precios lista USD (4) vs BCV (5): hoy el sync usa el precio de la lista de la propia SO;
