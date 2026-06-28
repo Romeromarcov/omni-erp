@@ -82,11 +82,12 @@ describe('productoInventarioService CRUD escritura', () => {
   it('catálogos de categorías y unidades usan sus endpoints', async () => {
     vi.mocked(get).mockResolvedValueOnce({ results: [{ id_categoria_producto: 'c1' }] });
     expect(await categoriasProductoService.getAll()).toEqual([{ id_categoria_producto: 'c1' }]);
-    expect(get).toHaveBeenCalledWith('/inventario/categorias-producto/');
+    // getAll recorre páginas: la primera petición incluye page=1.
+    expect(get).toHaveBeenCalledWith('/inventario/categorias-producto/?page=1');
 
     vi.mocked(get).mockResolvedValueOnce([{ id_unidad_medida: 'u1' }]);
     expect(await unidadesMedidaService.getAll()).toEqual([{ id_unidad_medida: 'u1' }]);
-    expect(get).toHaveBeenCalledWith('/inventario/unidades-medida/');
+    expect(get).toHaveBeenCalledWith('/inventario/unidades-medida/?page=1');
   });
 });
 

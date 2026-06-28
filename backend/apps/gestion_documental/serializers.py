@@ -17,6 +17,9 @@ class CarpetaSerializer(serializers.ModelSerializer):
             "id_carpeta_padre",
             "id_usuario_creacion",
         ]
+        # El creador lo fija el servidor desde request.user (CarpetaViewSet
+        # .perform_create); el cliente nunca debe poder suplantarlo (R-CODE-1).
+        read_only_fields = ["id_usuario_creacion"]
 
 
 class DocumentoSerializer(serializers.ModelSerializer):

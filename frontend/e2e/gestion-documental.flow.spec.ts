@@ -35,7 +35,11 @@ test.describe('Gestión Documental: carpetas y documentos', () => {
     });
 
     await test.step('la carpeta aparece en el panel de carpetas', async () => {
-      await expect(page.getByRole('button', { name: nombreCarpeta })).toBeVisible();
+      // `exact: true`: el nombre también aparece en los aria-label de los botones
+      // "Editar/Eliminar carpeta {nombre}" → sin exact matchearía 3 elementos.
+      await expect(
+        page.getByRole('button', { name: nombreCarpeta, exact: true }),
+      ).toBeVisible();
     });
 
     await test.step('seleccionar la carpeta filtra la lista de documentos', async () => {

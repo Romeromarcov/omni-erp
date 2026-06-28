@@ -19,7 +19,8 @@ describe('fetchMetodosPagoEmpresaActivos', () => {
       { id: 'link-1', nombre_metodo: 'Transferencia', monedas: ['m1'] },
     ]);
     const r = await fetchMetodosPagoEmpresaActivos('e1');
-    expect(get).toHaveBeenCalledWith('/finanzas/metodos-pago-empresa-activas/?empresa=e1');
+    // Recorre páginas: la primera petición incluye page=1.
+    expect(get).toHaveBeenCalledWith('/finanzas/metodos-pago-empresa-activas/?empresa=e1&page=1');
     expect(r.map((m) => m.id)).toEqual(['link-1']);
   });
 

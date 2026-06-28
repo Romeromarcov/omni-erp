@@ -68,7 +68,8 @@ describe('almacenesService', () => {
     const alm = { id_almacen: 'a1', nombre_almacen: 'Central', id_empresa: 'emp-1' };
     vi.mocked(get).mockResolvedValue({ results: [alm], count: 1 });
     const res = await almacenesService.getAll();
-    expect(get).toHaveBeenCalledWith('/almacenes/almacenes/');
+    // getAll recorre páginas: la primera petición incluye page=1.
+    expect(get).toHaveBeenCalledWith('/almacenes/almacenes/?page=1');
     expect(res).toEqual([alm]);
   });
 });

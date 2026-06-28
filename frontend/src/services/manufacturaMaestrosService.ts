@@ -74,8 +74,12 @@ export interface CentroTrabajo {
   fecha_creacion?: string;
 }
 
-/** Payload de escritura de CentroTrabajo (montos string; empresa la inyecta el backend). */
+/**
+ * Payload de escritura de CentroTrabajo (montos string). El ViewSet de
+ * manufactura NO usa `EmpresaInjectMixin`: el cliente debe enviar `id_empresa`.
+ */
 export interface CentroTrabajoPayload {
+  id_empresa: string;
   codigo_centro: string;
   nombre_centro: string;
   descripcion: string;

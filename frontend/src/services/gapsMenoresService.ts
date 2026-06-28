@@ -53,8 +53,13 @@ export interface UbicacionAlmacen {
   fecha_creacion?: string;
 }
 
-/** Payload de alta/edición de ubicación (whitelist; `id_empresa` lo inyecta el backend). */
+/**
+ * Payload de alta/edición de ubicación (whitelist). El ViewSet de almacenes NO
+ * usa `EmpresaInjectMixin` (igual que `AlmacenViewSet`): el contrato del módulo
+ * `almacenes` exige que el cliente envíe `id_empresa` explícitamente.
+ */
 export interface UbicacionAlmacenPayload {
+  id_empresa: string;
   id_almacen: string;
   codigo_ubicacion: string;
   nombre_ubicacion: string;
