@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -385,6 +385,227 @@ describe('DatosMaestrosPage — Centros de Trabajo', () => {
     await irACentros();
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     await waitFor(() => expect(del).toHaveBeenCalledWith('/manufactura/centros-trabajo/c1/'));
+    confirmSpy.mockRestore();
+  });
+
+  it('crea un centro rellenando todos los campos (tipo, capacidad, costo, descripción, activo)', async () => {
+    mockGet();
+    vi.mocked(post).mockResolvedValue({ id_centro_trabajo: 'c9' });
+    await irACentros();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo centro de trabajo' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText(/Código/), { target: { value: 'CT-9' } });
+    fireEvent.change(within(dialog).getByLabelText(/^Nombre/), { target: { value: 'Ensamblaje' } });
+    fireEvent.mouseDown(within(dialog).getByLabelText('Tipo'));
+    fireEvent.click(await screen.findByRole('option', { name: 'ENSAMBLE' }));
+    fireEvent.change(within(dialog).getByLabelText(/Capacidad/), { target: { value: '12' } });
+    fireEvent.change(within(dialog).getByLabelText(/Costo\/hora/), { target: { value: '25' } });
+    fireEvent.change(within(dialog).getByLabelText(/Descripción/), { target: { value: 'línea 2' } });
+    fireEvent.click(within(dialog).getByRole('checkbox')); // activo -> false
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/manufactura/centros-trabajo/',
+        expect.objectContaining({
+          codigo_centro: 'CT-9',
+          nombre_centro: 'Ensamblaje',
+          tipo_centro: 'ENSAMBLE',
+          capacidad_horas_dia: '12',
+          costo_hora: '25',
+          descripcion: 'línea 2',
+          activo: false,
+        }),
+      ),
+    );
+  });
+
+  it('cancela el diálogo del centro y muestra error al fallar el guardado', async () => {
+    mockGet();
+    await irACentros();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo centro de trabajo' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    vi.mocked(post).mockRejectedValue(new Error('código duplicado'));
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo centro de trabajo' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText(/Código/), { target: { value: 'CT-1' } });
+    fireEvent.change(within(dialog).getByLabelText(/^Nombre/), { target: { value: 'Dup' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByText(/código duplicado/)).toBeInTheDocument();
+  });
+
+  it('muestra error al eliminar un centro (onError)', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockGet();
+    vi.mocked(del).mockRejectedValue(new Error('centro en uso'));
+    await irACentros();
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(await screen.findByText(/centro en uso/)).toBeInTheDocument();
+  });
+});
+
+describe('DatosMaestrosPage — edición y rutas de error adicionales', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('edita una ruta (precarga abrirEditar) y rellena descripción/referencia', async () => {
+    mockGet();
+    vi.mocked(patch).mockResolvedValue({ id: 'r1' });
+    renderPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rutas de Producción' }));
+    await screen.findByText('Ruta mesa');
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText(/Referencia externa/), { target: { value: 'R2' } });
+    fireEvent.change(within(dialog).getByLabelText(/Descripción/), { target: { value: 'nueva desc' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(patch).toHaveBeenCalledWith(
+        '/manufactura/rutas-produccion/r1/',
+        expect.objectContaining({ referencia_externa: 'R2', descripcion: 'nueva desc' }),
+      ),
+    );
+  });
+
+  it('elimina una ruta con confirmación y reporta error si falla', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockGet();
+    vi.mocked(del).mockRejectedValue(new Error('ruta usada'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rutas de Producción' }));
+    await screen.findByText('Ruta mesa');
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(await screen.findByText(/ruta usada/)).toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it('edita un paso de ruta (precarga editar) y rellena tiempos/observaciones', async () => {
+    mockGet({ pasos: [pasoApi] });
+    vi.mocked(patch).mockResolvedValue({ id_detalle_ruta: 'rp1' });
+    renderPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rutas de Producción' }));
+    await screen.findByText('Ruta mesa');
+    fireEvent.click(screen.getByRole('button', { name: 'Pasos' }));
+    await screen.findByText(/Cortar/);
+    const editBtns = screen.getAllByRole('button', { name: 'Editar' });
+    fireEvent.click(editBtns[editBtns.length - 1]);
+    const secuencia = screen.getByLabelText('Secuencia') as HTMLInputElement;
+    await waitFor(() => expect(secuencia.value).toBe('1'));
+    fireEvent.change(screen.getByLabelText(/Preparación/), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText(/Operación \(min\)/), { target: { value: '45' } });
+    fireEvent.change(screen.getByLabelText(/Observaciones/), { target: { value: 'cuidado' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar paso' }));
+    await waitFor(() =>
+      expect(patch).toHaveBeenCalledWith(
+        '/manufactura/rutas-produccion-detalle/rp1/',
+        expect.objectContaining({
+          tiempo_preparacion_minutos: '10',
+          tiempo_operacion_minutos: '45',
+          observaciones: 'cuidado',
+        }),
+      ),
+    );
+    // Cancela la edición (reset).
+    fireEvent.click(editBtns[editBtns.length - 1]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Agregar paso' })).toBeInTheDocument());
+  });
+
+  it('valida secuencia no entera en el paso', async () => {
+    mockGet();
+    renderPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rutas de Producción' }));
+    await screen.findByText('Ruta mesa');
+    fireEvent.click(screen.getByRole('button', { name: 'Pasos' }));
+    await screen.findByText(/Pasos de la ruta/);
+    fireEvent.change(screen.getByLabelText('Secuencia'), { target: { value: '0' } });
+    fireEvent.mouseDown(screen.getByLabelText('Operación'));
+    fireEvent.click(await screen.findByRole('option', { name: /Cortar/ }));
+    fireEvent.mouseDown(screen.getByLabelText(/Centro de trabajo/));
+    fireEvent.click(await screen.findByRole('option', { name: /Corte/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar paso' }));
+    expect(await screen.findByText(/Indique una secuencia válida/)).toBeInTheDocument();
+  });
+
+  it('marca un componente como opcional, rellena observaciones y lo guarda', async () => {
+    mockGet();
+    vi.mocked(post).mockResolvedValue({ id_detalle_lista: 'd-opt' });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Componentes' }));
+    await screen.findByText('Componentes del BOM');
+    fireEvent.mouseDown(screen.getByLabelText('Componente'));
+    fireEvent.click(await screen.findByRole('option', { name: /Tornillo/ }));
+    fireEvent.change(screen.getByLabelText('Cantidad requerida'), { target: { value: '2' } });
+    fireEvent.mouseDown(screen.getByLabelText(/Unidad/));
+    fireEvent.click(await screen.findByRole('option', { name: /Unidad/ }));
+    fireEvent.change(screen.getByLabelText(/Observaciones/), { target: { value: 'opcional sí' } });
+    fireEvent.click(screen.getByRole('checkbox')); // es_opcional
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar componente' }));
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        '/manufactura/listas-materiales-detalle/',
+        expect.objectContaining({ es_opcional: true, observaciones: 'opcional sí' }),
+      ),
+    );
+  });
+
+  it('cancela la edición de un componente y cierra el drawer', async () => {
+    mockGet({ componentes: [componenteApi] });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Componentes' }));
+    await screen.findByText(/Tornillo/);
+    const editBtns = screen.getAllByRole('button', { name: 'Editar' });
+    fireEvent.click(editBtns[editBtns.length - 1]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Agregar componente' })).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle' }));
+    await waitFor(() => expect(screen.queryByText('Componentes del BOM')).not.toBeInTheDocument());
+  });
+
+  it('muestra error al guardar un componente y cierra el alert', async () => {
+    mockGet();
+    vi.mocked(post).mockRejectedValue(new Error('comp inválido'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Componentes' }));
+    await screen.findByText('Componentes del BOM');
+    fireEvent.mouseDown(screen.getByLabelText('Componente'));
+    fireEvent.click(await screen.findByRole('option', { name: /Tornillo/ }));
+    fireEvent.change(screen.getByLabelText('Cantidad requerida'), { target: { value: '2' } });
+    fireEvent.mouseDown(screen.getByLabelText(/Unidad/));
+    fireEvent.click(await screen.findByRole('option', { name: /Unidad/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar componente' }));
+    expect(await screen.findByText(/comp inválido/)).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Close'));
+    await waitFor(() => expect(screen.queryByText(/comp inválido/)).not.toBeInTheDocument());
+  });
+
+  it('muestra error al fallar el guardado de la ruta', async () => {
+    mockGet();
+    vi.mocked(post).mockRejectedValue(new Error('ruta inválida'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rutas de Producción' }));
+    await screen.findByText('Ruta mesa');
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva ruta de producción' }));
+    fireEvent.change(await screen.findByLabelText(/Nombre/), { target: { value: 'X' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByText(/ruta inválida/)).toBeInTheDocument();
+  });
+
+  it('cierra el diálogo de BOM con Cancelar y reporta error al eliminar', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockGet();
+    vi.mocked(del).mockRejectedValue(new Error('bom en uso'));
+    renderPage();
+    await screen.findByText('Mesa BOM');
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva lista de materiales' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(await screen.findByText(/bom en uso/)).toBeInTheDocument();
     confirmSpy.mockRestore();
   });
 });

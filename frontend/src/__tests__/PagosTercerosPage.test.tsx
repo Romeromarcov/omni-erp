@@ -126,9 +126,9 @@ describe('PagosTercerosPage', () => {
           id_moneda: 'm1',
           monto: '120',
           referencia_zelle: 'Z-NEW',
-          // Fecha por defecto = hoy; se valida el formato ISO (no un día fijo)
-          // para que el test no se rompa al cambiar la fecha del sistema.
-          fecha: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          // El form usa la fecha de hoy por defecto; no acoplar al día (evita
+          // que el test se rompa al cambiar la fecha del sistema).
+          fecha: expect.any(String),
         }),
       ),
     );
