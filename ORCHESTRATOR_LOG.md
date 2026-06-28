@@ -434,3 +434,19 @@ feature/cxc-lubrikca (base 22a9696 + plan 4e4b9eb). App nueva aislada apps/cxc_l
   D2, sincronización, smoke tests, validación contra Odoo real). PLAN_TRABAJO.md actualizado (DoD).
   Pasos que requieren acceso a producción (cargar config real, validar Odoo real) → acción del OWNER.
   Pendiente: push rama + PR a develop + automerge con CI verde.
+
+[2026-06-28] PR #256 a develop — 1ª corrida CI: 3 fallos diagnosticados y corregidos:
+  - Backend: `mapa_superficie --check` (la app nueva añadió superficie) → regeneradas matrices A1.
+  - Contract: drf_yasg SwaggerGenerationError por colisión de ref_name MetodoPago con finanzas →
+    ref_name explícito 'CxcLubrikcaMetodoPago'.
+  - E2E: fallos pre-existentes (cambio-divisa/comisiones/compra-completa) por base stale (rama nacía
+    21 commits atrás de develop) → merge de origin/develop (trae fix asegurarMoneda en e2e/helpers/datos.ts).
+  Re-push (merge e84c9a3 + fix 14824d9); 2ª corrida CI en curso.
+
+[2026-06-28] PR #256 — 2ª corrida CI: Contract ✅, Frontend ✅, Static ✅, Security ✅, Agent Eval ✅.
+  Backend ❌ por gate RLS (test_rls_rollout): las 14 tablas tenant nuevas necesitaban RLS → añadidas a
+  apps/core/rls.py RLS_TABLES + migración 0004_rls_cxc_lubrikca (política omni_rls_tenant, columna empresa_id,
+  null_visible=False). Verificado local: test_rls_rollout 162 passed; suite cxc_lubrikca 201 passed con RLS forzado.
+  E2E ❌: fallo PRE-EXISTENTE de develop (su propia CI está roja en E2E hoy 2026-06-28); 11 specs de módulos
+  ajenos (cambio-divisa/comisiones/compra-completa/nómina/manufactura/etc.), CERO specs de cxc_lubrikca →
+  no atribuible a este PR; bloqueo repo-wide para ESCALACIÓN al owner.
