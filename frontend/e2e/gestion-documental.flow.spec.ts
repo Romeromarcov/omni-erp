@@ -43,7 +43,9 @@ test.describe('Gestión Documental: carpetas y documentos', () => {
     });
 
     await test.step('seleccionar la carpeta filtra la lista de documentos', async () => {
-      await page.getByRole('button', { name: nombreCarpeta }).click();
+      // `exact: true`: igual que arriba, el nombre vive también en los aria-label
+      // de los IconButton "Editar/Eliminar carpeta {nombre}".
+      await page.getByRole('button', { name: nombreCarpeta, exact: true }).click();
       // Con la carpeta recién creada y vacía, la tabla muestra el estado vacío.
       await expect(page.getByText('Sin documentos. Sube el primero.')).toBeVisible();
     });

@@ -62,6 +62,20 @@ export class ApiE2E {
     expect(resp.ok(), `POST ${ruta} → ${resp.status()}: ${await resp.text()}`).toBeTruthy();
     return (await resp.json()) as T;
   }
+
+  /**
+   * POST idempotente que NO falla ante respuestas de error: devuelve el status.
+   * Para sembrar configuración con restricción de unicidad (p. ej. un
+   * `ParametroSistema` por empresa+código) que los reintentos de Playwright
+   * vuelven a crear: un 400 por "ya existe" es esperado y no debe romper el spec.
+   */
+  async postTolerante(ruta: string, data: Record<string, unknown>): Promise<number> {
+    const resp = await this.page.request.post(`/api${ruta}`, {
+      headers: this.cabeceras(),
+      data,
+    });
+    return resp.status();
+  }
 }
 
 export interface EmpresaApi {

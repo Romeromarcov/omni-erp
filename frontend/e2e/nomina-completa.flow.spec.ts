@@ -66,13 +66,27 @@ test.describe('Nómina completa: período → proceso → procesar → aprobar �
       await expect(dialogo.getByText(empleadoCompleto, { exact: false })).toBeVisible();
 
       // Procesar con los defaults del motor (30 días, sin horas extra).
+      // Esperamos la RESPUESTA real del endpoint en lugar de competir con la
+      // animación de cierre del diálogo: procesar genera recibos + asiento (op.
+      // pesada que bajo carga de CI puede tardar > 10 s). Si el backend devolviera
+      // un error, lo afirmamos aquí con el status real en vez de un opaco
+      // "el diálogo sigue visible".
+      const respProcesar = page.waitForResponse(
+        (r) => /\/nomina\/procesos-nomina\/[^/]+\/procesar\/$/.test(r.url()) && r.request().method() === 'POST',
+        { timeout: 60_000 },
+      );
       await dialogo.getByRole('button', { name: 'Procesar nómina' }).click();
+      const resProcesar = await respProcesar;
+      expect(
+        resProcesar.ok(),
+        `procesar devolvió ${resProcesar.status()}: ${await resProcesar.text().catch(() => '<sin cuerpo>')}`,
+      ).toBeTruthy();
 
       // El snackbar "Nómina procesada…" es efímero (se auto-cierra). Validamos el
       // resultado PERSISTENTE: el diálogo se cierra y la pantalla muestra el total
-      // neto calculado por el motor (heading "Total neto: …") y el estado avanza.
-      // Timeout amplio: procesar genera recibos + asiento (op. de backend pesada
-      // que bajo carga de CI tarda > 10 s en cerrar el diálogo).
+      // neto calculado por el motor (heading "Total neto: …"). Ya esperamos la
+      // respuesta del endpoint arriba, así que el cierre del diálogo es inminente;
+      // el timeout amplio sólo cubre la animación bajo carga de CI.
       await expect(dialogo).toBeHidden({ timeout: 30_000 });
       await expect(
         page.getByRole('heading', { name: /Total neto:/ }),

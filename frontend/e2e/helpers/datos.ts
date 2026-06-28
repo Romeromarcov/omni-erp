@@ -605,6 +605,22 @@ export async function crearPrereqNomina(
   const empleadoNombre = `Nomina${suf}`.slice(0, 20);
   const empleadoApellido = `Test${suf}`.slice(0, 20);
 
+  // Salario mínimo de empresa: fallback del motor LOTTT cuando un empleado no
+  // tiene salario propio. La BD E2E es COMPARTIDA y serial: otros flujos (p. ej.
+  // control de asistencia) siembran empleados SIN salario en la misma empresa, y
+  // `procesar` recorre TODOS los empleados activos del período — sin este
+  // parámetro, ese empleado ajeno hace fallar el POST con 400 ("no tiene salario
+  // definido y no hay parámetro 'nomina.salario_minimo'"). Idempotente: el
+  // unique (id_empresa, codigo_parametro) hace que el reintento devuelva 400 y lo
+  // toleramos (ya configurado).
+  await api.postTolerante('/configuracion/parametros-sistema/', {
+    id_empresa: empresaId,
+    nombre_parametro: 'Salario mínimo',
+    codigo_parametro: 'nomina.salario_minimo',
+    valor_parametro: '130.00',
+    tipo_dato: 'NUMERO',
+  });
+
   const empleado = await api.post<{ id: number }>('/rrhh/empleados/', {
     empresa: empresaId,
     nombre: empleadoNombre,
