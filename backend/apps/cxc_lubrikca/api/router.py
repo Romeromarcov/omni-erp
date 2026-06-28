@@ -7,6 +7,10 @@ from django.http import JsonResponse
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .conciliacion_viewsets import (
+    ConciliacionLubrikcaViewSet,
+    ConfiguracionConciliacionViewSet,
+)
 from .operacion_viewsets import (
     BandejaFacturacionViewSet,
     LineaPedidoLubrikcaViewSet,
@@ -51,6 +55,16 @@ router.register("precios-lista", PrecioListaLubrikcaViewSet, basename="cxcl-prec
 router.register("pagos", PagoLubrikcaViewSet, basename="cxcl-pagos")
 router.register("vinculaciones", VinculacionViewSet, basename="cxcl-vinculaciones")
 router.register("bandeja", BandejaFacturacionViewSet, basename="cxcl-bandeja")
+
+# Fase 4 — conciliación (semáforo motor-vs-factura)
+router.register(
+    "config-conciliacion",
+    ConfiguracionConciliacionViewSet,
+    basename="cxcl-config-conciliacion",
+)
+router.register(
+    "conciliaciones", ConciliacionLubrikcaViewSet, basename="cxcl-conciliaciones"
+)
 
 urlpatterns = [
     *router.urls,

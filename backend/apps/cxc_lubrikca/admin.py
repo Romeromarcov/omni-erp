@@ -7,6 +7,8 @@ ofrece como herramienta de soporte/diagnóstico.
 from django.contrib import admin
 
 from .models import (
+    ConciliacionLubrikca,
+    ConfiguracionConciliacion,
     DescuentoBCVCompleto,
     DescuentoMarcaCategoria,
     Feriado,
@@ -44,3 +46,13 @@ class FeriadoAdmin(admin.ModelAdmin):
 @admin.register(MetodoPago)
 class MetodoPagoAdmin(admin.ModelAdmin):
     list_display = ("codigo", "nombre", "moneda", "tipo_tasa", "es_contado", "activo")
+
+
+@admin.register(ConfiguracionConciliacion)
+class ConfiguracionConciliacionAdmin(admin.ModelAdmin):
+    list_display = ("empresa", "tolerance_rounding", "tolerance_red", "created_at")
+
+
+@admin.register(ConciliacionLubrikca)
+class ConciliacionLubrikcaAdmin(admin.ModelAdmin):
+    list_display = ("pedido", "resultado", "diferencia", "total_motor", "monto_facturado", "conciliado_en")

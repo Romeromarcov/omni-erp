@@ -16,10 +16,19 @@ Reglas inviolables:
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django.db import models
 
 from .base import CxcLubrikcaBaseModel
 from .config import Moneda, TipoTasa
+
+
+# --- 3.11 ResultadoConciliacion (semáforo motor-vs-factura) -----------------
+class ResultadoConciliacion(models.TextChoices):
+    VERDE = "verde", "Verde (cuadra)"
+    AMARILLO = "amarillo", "Amarillo (revisar)"
+    ROJO = "rojo", "Rojo (se facturó distinto)"
 
 
 # --- Enumerados propios de operación ---------------------------------------
@@ -59,6 +68,10 @@ class PedidoLubrikca(CxcLubrikcaBaseModel):
     factura_id = models.CharField(max_length=100, blank=True)
     monto_facturado = models.DecimalField(
         max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    # Notas de crédito reales de Odoo (out_refund). Fase 5 las poblará.
+    ncs_facturadas = models.DecimalField(
+        max_digits=18, decimal_places=2, default=Decimal("0")
     )
     estado_entrega = models.CharField(
         max_length=20, choices=EstadoEntrega.choices, blank=True
@@ -223,3 +236,60 @@ class BandejaFacturacion(CxcLubrikcaBaseModel):
 
     def __str__(self) -> str:
         return f"Bandeja {self.pedido.so_id} — {self.total_motor}"
+
+
+# --- Fase 4: Conciliación (semáforo motor-vs-factura) -----------------------
+class ConfiguracionConciliacion(CxcLubrikcaBaseModel):
+    """Tolerancias del semáforo de conciliación por empresa.
+
+    El servicio usa get-or-create con defaults; se ordena por ``-created_at``
+    para que la fila más reciente sea la activa (no hay unique por empresa para
+    permitir historial editable vía CRUD).
+    """
+
+    tolerance_rounding = models.DecimalField(
+        max_digits=18, decimal_places=2, default=Decimal("0.01")
+    )
+    tolerance_red = models.DecimalField(
+        max_digits=18, decimal_places=2, default=Decimal("1.00")
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Configuración de conciliación"
+        verbose_name_plural = "Configuraciones de conciliación"
+
+    def __str__(self) -> str:
+        return f"Tolerancias ±{self.tolerance_rounding}/±{self.tolerance_red}"
+
+
+class ConciliacionLubrikca(CxcLubrikcaBaseModel):
+    """Resultado del semáforo motor-vs-factura para un pedido facturado.
+
+    El motor dice lo que la factura DEBERÍA ser (``total_motor``); Odoo dice lo
+    que FUE (``monto_facturado`` − ``ncs``). La diferencia se clasifica con el
+    semáforo verde/amarillo/rojo. Write-back purista: nada se escribe a Odoo.
+    """
+
+    pedido = models.OneToOneField(
+        PedidoLubrikca, on_delete=models.CASCADE, related_name="conciliacion"
+    )
+    total_motor = models.DecimalField(max_digits=18, decimal_places=2)
+    monto_facturado = models.DecimalField(max_digits=18, decimal_places=2)
+    ncs = models.DecimalField(max_digits=18, decimal_places=2)
+    diferencia = models.DecimalField(max_digits=18, decimal_places=2)
+    resultado = models.CharField(
+        max_length=10, choices=ResultadoConciliacion.choices
+    )
+    revisado_por = models.ForeignKey(
+        "core.Usuarios", null=True, blank=True, on_delete=models.SET_NULL
+    )
+    conciliado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-conciliado_en"]
+        verbose_name = "Conciliación"
+        verbose_name_plural = "Conciliaciones"
+
+    def __str__(self) -> str:
+        return f"Conciliación {self.pedido.so_id} — {self.resultado}"

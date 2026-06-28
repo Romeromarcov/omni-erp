@@ -8,6 +8,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.cxc_lubrikca.models import (
+    BandejaFacturacion,
     DescuentoMarcaCategoria,
     LineaPedidoLubrikca,
     MetodoPago,
@@ -70,6 +71,19 @@ def crear_pago(empresa, **kwargs):
     )
     defaults.update(kwargs)
     return PagoLubrikca.objects.create(empresa=empresa, **defaults)
+
+
+def crear_bandeja(empresa, pedido, total_motor="100", **kwargs):
+    """Crea una BandejaFacturacion directa (sin pasar por el motor)."""
+    defaults = dict(
+        lista_aplicada=pedido.lista_precios,
+        precio_base_calculado=Decimal(total_motor),
+        total_motor=Decimal(total_motor),
+    )
+    defaults.update(kwargs)
+    return BandejaFacturacion.objects.create(
+        empresa=empresa, pedido=pedido, **defaults
+    )
 
 
 def crear_metodo(empresa, codigo="ZELLE", moneda="USD", tipo_tasa="N_A", es_contado=True):

@@ -22,6 +22,8 @@ from .config import (
 )
 from .operacion import (
     BandejaFacturacion,
+    ConciliacionLubrikca,
+    ConfiguracionConciliacion,
     EstadoBandeja,
     EstadoEntrega,
     EstadoVinculacion,
@@ -29,6 +31,7 @@ from .operacion import (
     PagoLubrikca,
     PedidoLubrikca,
     PrecioListaLubrikca,
+    ResultadoConciliacion,
     Vinculacion,
 )
 
@@ -56,4 +59,8 @@ __all__ = [
     "PedidoLubrikca",
     "PrecioListaLubrikca",
     "Vinculacion",
+    # Conciliación (Fase 4)
+    "ConciliacionLubrikca",
+    "ConfiguracionConciliacion",
+    "ResultadoConciliacion",
 ]
