@@ -365,3 +365,72 @@ E2E cross-módulo. Gate verde en cada PR (CI: tsc/eslint/vitest≈1854 + cobertu
 seguridad, contract). Deuda menor abierta: estabilizar OperacionesCambio.test.tsx (flaky timeout 5s, task_dd4597a5);
 bug latente POS campos legados (task_53c9590b). Siguiente fase posible (incremental, no bloqueante): profundizar
 cobertura de tests de páginas pre-existentes con baja cobertura de funciones, y paridad fina de features vs Odoo.
+
+## 🚀 Loop CxC Lubrikca (subproyecto) — arranque 2026-06-27
+Fuente de verdad: docs/cxc-lubrikca/PLAN_TRABAJO.md (Fases 0–7). Worktree dedicado
+feature/cxc-lubrikca (base 22a9696 + plan 4e4b9eb). App nueva aislada apps/cxc_lubrikca.
+
+[2026-06-27] ✅ Fase 0 — Diseño e integración (commit 2ad6b19). ADR-013 (app dedicada,
+  aislamiento estricto solo-lectura del core, Odoo solo lectura, feature-flag perfil cobranza).
+  Scaffold apps/cxc_lubrikca registrado en INSTALLED_APPS + /api/cxc-lubrikca/ con health.
+  MAPA_DATOS_GAPS.md: gaps del conector Odoo (delivery_status, date_done picking, qty_delivered,
+  brand_id, categoria raiz, amount_total_signed_usd, user_id.login) → cierre en Fase 5 por extension.
+  Recon previa: motor CxC_Lubrikca (~37 tests puros portables: business_days/effective_dating/
+  equivalents/discounts/reconcile/hour_audit), convenciones Omni (uuid7+empresa, get_empresas_visible,
+  generar_asiento_o_fallar, pytest cov-fail-under=92). Gate: check + makemigrations --check + 2 tests EXIT 0.
+
+[2026-06-27] ✅ Fase 1 — Config del motor con effective dating (commit 2425719). 6 modelos
+  (DescuentoMarcaCategoria, DescuentoBCVCompleto, PromocionPrimeraCompra, ReglaRecurrencia,
+  Feriado, MetodoPago) sobre base abstracta CxcLubrikcaBaseModel (uuid7+empresa+soft delete).
+  services/effective_dating.py portado (semántica idéntica a CxC_Lubrikca, verificado por review).
+  DRF serializers+viewsets multi-tenant (empresa forzada, scope get_empresas_visible, soft delete)
+  en /api/cxc-lubrikca/. Review SEC/DIFF/correctness: sin blockers; 3 hardenings aplicados
+  (403 sin empresa, valor>=0, test cross-tenant PATCH 404). Gate: check + makemigrations --check +
+  33 tests EXIT 0, 100% cobertura del paquete (309 stmts, 0 miss).
+
+[2026-06-27] ✅ Fase 2 — Motor determinístico portado (commit 2c1712b). Port fiel y Django-free a
+  services/motor/ (dataclasses propias): business_days, equivalents, effective_dating (canónico),
+  discounts.calcular_factura (neto-objetivo/apilamiento/reselección lista/contado ventana/BCV-completo/
+  mezcla→Binance/promo/devoluciones D/cierre híbrido), reconcile.clasificar_diferencia, hour_audit,
+  price_resolver, decimal_utils, config. Paridad verificada por diff (lógica idéntica al origen).
+  61 tests puros EXIT 0 en 1.14s; 100% cobertura motor (565 stmts). Bridge Django/Odoo→dataclasses = Fase 3.
+
+[2026-06-28] ✅ Fase 3 — Captura + bandeja de aprobación (commit da1cb16). Modelos espejo
+  (PedidoLubrikca/LineaPedidoLubrikca/PrecioListaLubrikca/PagoLubrikca) + Vinculacion (equivalentes
+  congelados, extensión sin tocar AbonoCxC) + BandejaFacturacion. Bridge Django→dataclasses del motor
+  (construir_engine_inputs/recalcular_bandeja). Captura registrar_vinculacion (validaciones, estampado de
+  tasas por fecha local Caracas, congelado de equivalentes). Aprobación por roles reutilizando
+  gestion_aprobaciones. API tenant-scoped; guard precio faltante→400. Review sin blockers (mapeo enum del
+  bridge verificado). Gate: check + makemigrations + 135 tests EXIT 0, 100% cobertura app (1340 stmts).
+
+[2026-06-28] ✅ Fase 4 — Conciliación (commit a1bfa9f). ConfiguracionConciliacion (tolerancias/empresa)
+  + ConciliacionLubrikca (OneToOne pedido) + PedidoLubrikca.ncs_facturadas. conciliar_pedido usa
+  motor.reconcile.clasificar_diferencia (neto USD = monto_facturado − NCs) → semáforo. resumen_cartera
+  (tablero DSO/devoluciones/candidatas). API tenant-scoped (conciliar/revisar/resumen). Gate: check +
+  makemigrations + 27 tests EXIT 0, 100% archivos nuevos. Odoo poblará facturado/NCs en Fase 5.
+
+[2026-06-28] ✅ Fase 5 — Sync Odoo→espejo solo lectura (commit 9033804). LubrikcaOdooReader (execute
+  inyectable, testeable con fakes) + sync que puebla el espejo cerrando gaps (delivery_status, date_done,
+  qty_delivered neto, devoluciones, brand_id, raíz categoría, amount_total_signed_usd, NCs, vendedor login).
+  Reusa cliente XML-RPC de integration_hub por composición (cero cambios al core, cero escritura Odoo);
+  nunca toca Vinculacion/Bandeja/Conciliacion. Command + acción API. Gate: check + makemigrations + 39 tests
+  EXIT 0 (sync 97.7%, reader 99.4%). Aislamiento verificado. Limitación: precios lista 4/5 (Odoo18 sin price_get).
+
+[2026-06-28] ✅ Fase 6a — Frontend cobranza: fundación + Dashboard + Config del Motor (commit 17a65ef).
+  cxcLubrikcaService (todos los endpoints), cxcLubrikcaKeys, schemas zod (decimal.js), wiring (perfil
+  cobranza + nav + rutas gated). Páginas: DashboardCxcLubrikca (KPIs resumen + sincronizar Odoo),
+  ConfigMotor (tabs CRUD de 7 entidades). Gate: tsc + lint + test:coverage verde (umbrales globales/carpeta).
+[2026-06-28] ✅ Estabilización tests dependientes de fecha/tiempo (commit f071456). PagosTercerosPage
+  (fecha hoy → validar formato ISO) + OperacionesCambio (timeout 15s en 2 tests con userEvent, deuda
+  conocida task_dd4597a5). Necesario para CI verde del PR final. Fase 6b en curso (captura/bandeja/
+  conciliación/cartera).
+
+[2026-06-28] ✅ Fase 6b — Frontend captura/bandeja/conciliación/cartera (commit eddbe63). 4 páginas MUI
+  (CapturaPage: pedidos+recalcular+vincular pago; BandejaPage: proponer/confirmar cierre híbrido;
+  ConciliacionPage: semáforo+conciliar+revisar+KPIs; CarteraPage: devoluciones+DSO). Gate: tsc+lint+
+  test:coverage verde (2008 tests). Frontend cobranza completo. Inicia Fase 7 (gate final + PR a develop).
+
+[2026-06-28] ✅ Fase 7 — Preparación a producción. CHECKLIST_GO_LIVE.md (config a cargar, conector Odoo
+  D2, sincronización, smoke tests, validación contra Odoo real). PLAN_TRABAJO.md actualizado (DoD).
+  Pasos que requieren acceso a producción (cargar config real, validar Odoo real) → acción del OWNER.
+  Pendiente: push rama + PR a develop + automerge con CI verde.

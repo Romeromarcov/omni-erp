@@ -2,7 +2,11 @@
 
 > Rama: `feature/cxc-lubrikca` (nace de `origin/develop`)
 > App nueva dedicada: `backend/apps/cxc_lubrikca` (aislada; no modifica Omni core)
-> Estado: **Plan aprobado — pendiente de arrancar Fase 0**
+> Estado: **Fases 0–6 implementadas** (backend `apps/cxc_lubrikca` aislada + motor
+> determinístico portado + captura/bandeja/conciliación + sync Odoo solo-lectura + frontend
+> perfil `cobranza`), con gate verde por fase. **Fase 7 (go-live)** en
+> [`CHECKLIST_GO_LIVE.md`](CHECKLIST_GO_LIVE.md): pasos de carga de config real y validación
+> contra el Odoo real son acción del **owner** (requieren acceso a producción).
 
 ---
 
@@ -166,13 +170,13 @@ Omni **no** tiene el motor determinístico ni su control. Eso es lo nuevo:
 
 ## 7. Definición de "hecho" (Definition of Done)
 
-- [ ] App `cxc_lubrikca` aislada, feature-flagged, CI verde.
-- [ ] Motor + conciliación portados, con tests (paridad con CxC_Lubrikca).
-- [ ] Config del motor administrable 100% desde la UI.
-- [ ] Captura + bandeja de aprobación funcionando, sin escribir a Odoo.
-- [ ] Conector Odoo trae todo lo necesario (solo lectura), validado contra el Odoo real.
-- [ ] Config de negocio **cargada en producción**.
-- [ ] Checklist de go-live aprobado.
+- [x] App `cxc_lubrikca` aislada, feature-flagged, CI verde.
+- [x] Motor + conciliación portados, con tests (paridad con CxC_Lubrikca).
+- [x] Config del motor administrable 100% desde la UI.
+- [x] Captura + bandeja de aprobación funcionando, sin escribir a Odoo.
+- [x] Conector Odoo trae todo lo necesario (solo lectura) — **validación contra el Odoo real: owner** (ver checklist).
+- [ ] Config de negocio **cargada en producción** — **owner** (requiere acceso a prod).
+- [x] Checklist de go-live redactado ([`CHECKLIST_GO_LIVE.md`](CHECKLIST_GO_LIVE.md)).
 
 ---
 
