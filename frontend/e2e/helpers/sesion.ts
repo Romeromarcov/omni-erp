@@ -21,6 +21,9 @@ import { expect, type Page } from '@playwright/test';
 const USUARIO = process.env.E2E_ADMIN_USER ?? 'admin_e2e';
 const PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? '';
 
+/** Archivo de storageState del login único (ver `global.setup.ts` y la config). */
+export const AUTH_STORAGE_FILE = 'e2e/.auth/admin.json';
+
 interface Paginado<T> {
   results: T[];
 }
@@ -58,6 +61,20 @@ export class ApiE2E {
     });
     expect(resp.ok(), `POST ${ruta} → ${resp.status()}: ${await resp.text()}`).toBeTruthy();
     return (await resp.json()) as T;
+  }
+
+  /**
+   * POST idempotente que NO falla ante respuestas de error: devuelve el status.
+   * Para sembrar configuración con restricción de unicidad (p. ej. un
+   * `ParametroSistema` por empresa+código) que los reintentos de Playwright
+   * vuelven a crear: un 400 por "ya existe" es esperado y no debe romper el spec.
+   */
+  async postTolerante(ruta: string, data: Record<string, unknown>): Promise<number> {
+    const resp = await this.page.request.post(`/api${ruta}`, {
+      headers: this.cabeceras(),
+      data,
+    });
+    return resp.status();
   }
 }
 
@@ -122,9 +139,25 @@ function idDeEmpresa(sucursal: SucursalApi): string {
     : sucursal.id_empresa;
 }
 
+/**
+ * Obtiene un `access` fresco SIN hacer login: usa la cookie `refresh_token` que
+ * el `storageState` (login único en global.setup) ya trae. `/token/refresh/` no
+ * está bajo el throttle de login (5/min, SEC-07), así que cada spec puede pedir
+ * el suyo (token de 15 min) sin agotar la ventana. Si no hay cookie (p.ej. una
+ * corrida sin el proyecto `setup`), cae a un login directo.
+ */
+async function accessFresco(page: Page): Promise<string> {
+  const resp = await page.request.post('/api/auth/token/refresh/', { data: {} });
+  if (resp.ok()) {
+    const cuerpo = (await resp.json()) as { access?: string };
+    if (cuerpo.access) return cuerpo.access;
+  }
+  return loginApi(page);
+}
+
 /** Inicia sesión (API) y deja el contexto listo para navegar la app autenticada. */
 export async function iniciarSesion(page: Page): Promise<SesionE2E> {
-  const access = await loginApi(page);
+  const access = await accessFresco(page);
   const api = new ApiE2E(page, access);
 
   const empresas = aLista<EmpresaApi>(await api.get('/core/empresas/')).slice();

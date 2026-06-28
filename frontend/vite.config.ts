@@ -93,6 +93,19 @@ export default defineConfig({
       },
     },
   },
+  // `vite preview` no hereda `server.proxy`: se replica aquí para que el E2E
+  // local contra el build (recomendado sobre `dev`, ver e2e/README.md) pueda
+  // resolver las llamadas relativas a `/api` (login programático del helper de
+  // sesión) contra el backend.
+  preview: {
+    proxy: {
+      '/api': {
+        target: backendUrl,
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

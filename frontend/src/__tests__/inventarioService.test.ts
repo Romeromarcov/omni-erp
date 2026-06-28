@@ -89,7 +89,8 @@ describe('stockActualService', () => {
   it('arma el querystring de filtros', async () => {
     vi.mocked(get).mockResolvedValue([]);
     await stockActualService.getAll({ empresa: 'e1', producto: 'p1' });
-    expect(get).toHaveBeenCalledWith('/inventario/stock-actual/?empresa=e1&producto=p1');
+    // getAll recorre páginas: la primera petición incluye page=1.
+    expect(get).toHaveBeenCalledWith('/inventario/stock-actual/?empresa=e1&producto=p1&page=1');
   });
 
   it('getBajoMinimo filtra stock por debajo del mínimo', async () => {
@@ -111,7 +112,8 @@ describe('productoInventarioService CRUD', () => {
   it('getAll y getById usan los endpoints de productos', async () => {
     vi.mocked(get).mockResolvedValueOnce({ results: [{ id_producto: 'p1' }] });
     expect(await productoInventarioService.getAll({ empresa: 'e1' })).toEqual([{ id_producto: 'p1' }]);
-    expect(get).toHaveBeenCalledWith('/inventario/productos/?empresa=e1');
+    // getAll recorre páginas: la primera petición incluye page=1.
+    expect(get).toHaveBeenCalledWith('/inventario/productos/?empresa=e1&page=1');
 
     vi.mocked(get).mockResolvedValueOnce({ id_producto: 'p1' });
     await productoInventarioService.getById('p1');

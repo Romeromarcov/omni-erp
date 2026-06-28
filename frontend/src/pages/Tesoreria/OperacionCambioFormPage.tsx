@@ -196,8 +196,8 @@ export default function OperacionCambioFormPage() {
                 {...register('moneda_origen')}
               >
                 {monedas.map((m) => (
-                  <MenuItem key={m.id_moneda} value={m.id_moneda}>
-                    {m.codigo_iso} — {m.nombre}
+                  <MenuItem key={m.moneda} value={m.moneda}>
+                    {m.moneda_codigo_iso} — {m.moneda_nombre}
                   </MenuItem>
                 ))}
               </TextField>
@@ -212,8 +212,8 @@ export default function OperacionCambioFormPage() {
                 {...register('moneda_destino')}
               >
                 {monedas.map((m) => (
-                  <MenuItem key={m.id_moneda} value={m.id_moneda}>
-                    {m.codigo_iso} — {m.nombre}
+                  <MenuItem key={m.moneda} value={m.moneda}>
+                    {m.moneda_codigo_iso} — {m.moneda_nombre}
                   </MenuItem>
                 ))}
               </TextField>
@@ -261,8 +261,8 @@ export default function OperacionCambioFormPage() {
                 {...register('metodo_pago_origen')}
               >
                 {metodosPago.map((mp) => (
-                  <MenuItem key={mp.id} value={mp.id}>
-                    {mp.nombre_metodo}
+                  <MenuItem key={mp.id} value={mp.metodo_pago}>
+                    {mp.nombre}
                   </MenuItem>
                 ))}
               </TextField>
@@ -277,8 +277,8 @@ export default function OperacionCambioFormPage() {
                 {...register('metodo_pago_destino')}
               >
                 {metodosPago.map((mp) => (
-                  <MenuItem key={mp.id} value={mp.id}>
-                    {mp.nombre_metodo}
+                  <MenuItem key={mp.id} value={mp.metodo_pago}>
+                    {mp.nombre}
                   </MenuItem>
                 ))}
               </TextField>

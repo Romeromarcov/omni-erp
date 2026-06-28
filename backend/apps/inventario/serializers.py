@@ -4,6 +4,10 @@ from .models import (
     CategoriaProducto,
     ConversionUnidadMedida,
     MovimientoInventario,
+    OperacionInventario,
+    OperacionInventarioLinea,
+    OperacionInventarioPaso,
+    PasoOperacion,
     Producto,
     StockActual,
     StockConsignacionCliente,
@@ -75,7 +79,10 @@ class ProductoSerializer(serializers.ModelSerializer):
             "tipo_producto",
             "maneja_lotes",
             "maneja_seriales",
+            "es_vendible",
+            "es_comprable",
             "costo_promedio",
+            "metodo_valoracion",
             "precio_venta_sugerido",
             "punto_reorden",
             "id_empresa",
@@ -227,3 +234,113 @@ class StockConsignacionProveedorSerializer(serializers.ModelSerializer):
             "id_variante",
             "id_moneda",
         ]
+
+
+class PasoOperacionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PasoOperacion
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_paso_operacion",
+            "id_empresa",
+            "id_almacen",
+            "tipo_operacion",
+            "nombre_paso",
+            "secuencia",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+
+
+class OperacionInventarioPasoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OperacionInventarioPaso
+        fields = [
+            "id_operacion_paso",
+            "secuencia",
+            "nombre_paso",
+            "confirmado",
+            "id_usuario_confirmacion",
+            "fecha_confirmacion",
+        ]
+        read_only_fields = fields
+
+
+class OperacionInventarioLineaSerializer(serializers.ModelSerializer):
+    producto_nombre = serializers.CharField(source="id_producto.nombre_producto", read_only=True)
+
+    class Meta:
+        model = OperacionInventarioLinea
+        fields = [
+            "id_linea",
+            "id_producto",
+            "producto_nombre",
+            "id_variante",
+            "cantidad",
+            "costo_unitario",
+        ]
+
+
+class OperacionInventarioSerializer(serializers.ModelSerializer):
+    """Lectura: operación con sus pasos y líneas anidados."""
+
+    pasos = OperacionInventarioPasoSerializer(many=True, read_only=True)
+    lineas = OperacionInventarioLineaSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = OperacionInventario
+        fields = [
+            "id_operacion",
+            "numero",
+            "tipo_operacion",
+            "origen_tipo",
+            "origen_id",
+            "id_almacen",
+            "id_almacen_contraparte",
+            "estado",
+            "motivo",
+            "fecha",
+            "id_empresa",
+            "pasos",
+            "lineas",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        # Serializer SOLO de lectura: la creación va por CrearOperacionSerializer,
+        # que acota cada FK a la empresa visible del usuario. Marcar todo read-only
+        # evita exponer FKs writable sin scope (SEC-M1 / TenantFKScopeMixin).
+        read_only_fields = [
+            "numero",
+            "estado",
+            "id_empresa",
+            "pasos",
+            "lineas",
+            "tipo_operacion",
+            "origen_tipo",
+            "origen_id",
+            "id_almacen",
+            "id_almacen_contraparte",
+            "motivo",
+            "fecha",
+        ]
+
+
+class _LineaInputSerializer(serializers.Serializer):
+    producto = serializers.UUIDField()
+    variante = serializers.UUIDField(required=False, allow_null=True)
+    cantidad = serializers.DecimalField(max_digits=18, decimal_places=4)
+    costo_unitario = serializers.DecimalField(
+        max_digits=18, decimal_places=4, required=False, allow_null=True
+    )
+
+
+class CrearOperacionSerializer(serializers.Serializer):
+    """Escritura: crea una operación con su lista de líneas."""
+
+    almacen = serializers.UUIDField()
+    origen_tipo = serializers.ChoiceField(choices=[c[0] for c in OperacionInventario.ORIGENES])
+    origen_id = serializers.UUIDField(required=False, allow_null=True)
+    almacen_contraparte = serializers.UUIDField(required=False, allow_null=True)
+    motivo = serializers.CharField(required=False, allow_blank=True, default="")
+    lineas = _LineaInputSerializer(many=True)

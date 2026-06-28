@@ -270,3 +270,219 @@ class TestCxPEndpoints:
     def test_aging_sin_empresa_retorna_400(self, db, client_a):
         resp = client_a.get("/api/cuentas-por-pagar/cuentas-por-pagar/aging/")
         assert resp.status_code == 400
+
+
+# ─────────────────────────────────────────────
+# Asiento PAGO_CXP (R-CODE-11)
+# ─────────────────────────────────────────────
+
+
+def _cuenta(empresa, codigo, nombre, tipo, naturaleza):
+    from apps.contabilidad.models import PlanCuentas
+
+    return PlanCuentas.objects.create(
+        id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta=nombre,
+        tipo_cuenta=tipo, naturaleza=naturaleza, nivel=1,
+    )
+
+
+def _mapeo_pago_cxp(empresa):
+    from apps.contabilidad.models import MapeoContable
+
+    debe = _cuenta(empresa, "2101", "CxP Proveedores", "PASIVO", "ACREEDORA")
+    haber = _cuenta(empresa, "1101", "Banco", "ACTIVO", "DEUDORA")
+    return MapeoContable.objects.create(
+        id_empresa=empresa, tipo_asiento="PAGO_CXP", cuenta_debe=debe,
+        cuenta_haber=haber, descripcion_plantilla="Pago CxP - {numero}", activo=True,
+    )
+
+
+class TestAsientoPagoCxP:
+    def test_abono_genera_asiento_pago_cxp(self, db, cxp_pendiente, user_a, empresa_a):
+        from apps.contabilidad.models import AsientoContable
+
+        _mapeo_pago_cxp(empresa_a)
+        registrar_abono_cxp(cxp_pendiente, Decimal("400.00"), user_a)
+        asiento = AsientoContable.objects.get(nombre_modelo_origen="AbonoCxP")
+        assert asiento.id_usuario_registro == user_a
+        detalles = list(asiento.detalleasiento_set.all())
+        assert sum(d.debe for d in detalles) == sum(d.haber for d in detalles) == Decimal("400.00")
+
+    def test_abono_sin_mapeo_no_falla(self, db, cxp_pendiente, user_a):
+        """Empresa informal sin mapeo (R-PROD-3): el abono procede sin asiento."""
+        from apps.contabilidad.models import AsientoContable
+
+        registrar_abono_cxp(cxp_pendiente, Decimal("400.00"), user_a)
+        cxp_pendiente.refresh_from_db()
+        assert cxp_pendiente.monto_pendiente == Decimal("600.00")
+        assert not AsientoContable.objects.filter(nombre_modelo_origen="AbonoCxP").exists()
+
+    def test_generar_asiento_false_omite_asiento(self, db, cxp_pendiente, user_a, empresa_a):
+        """Flujos con asiento propio (pago de tercero) pasan generar_asiento=False:
+        el abono se aplica pero NO se postea PAGO_CXP, ni con mapeo y contabilidad
+        activa — evita el doble cargo a la CxP."""
+        from apps.contabilidad.models import AsientoContable
+
+        _mapeo_pago_cxp(empresa_a)
+        empresa_a.contabilidad_activa = True
+        empresa_a.save(update_fields=["contabilidad_activa"])
+        registrar_abono_cxp(cxp_pendiente, Decimal("400.00"), user_a, generar_asiento=False)
+        cxp_pendiente.refresh_from_db()
+        assert cxp_pendiente.monto_pendiente == Decimal("600.00")
+        assert not AsientoContable.objects.filter(nombre_modelo_origen="AbonoCxP").exists()
+
+
+class TestAbonoCxPReadOnly:
+    """La deuda 'AbonoCxP CRUD libre': el endpoint es de solo lectura."""
+
+    @pytest.fixture
+    def client_a(self, user_a):
+        from rest_framework.test import APIClient
+
+        c = APIClient()
+        c.force_authenticate(user=user_a)
+        return c
+
+    def test_post_directo_bloqueado_405(self, db, cxp_pendiente, client_a):
+        resp = client_a.post(
+            "/api/cuentas-por-pagar/abonos-cxp/",
+            {"cuenta_por_pagar": str(cxp_pendiente.pk), "monto": "100.00"},
+            format="json",
+        )
+        assert resp.status_code == 405
+
+    def test_list_solo_lectura_ok(self, db, cxp_pendiente, user_a, client_a):
+        registrar_abono_cxp(cxp_pendiente, Decimal("100.00"), user_a)
+        resp = client_a.get("/api/cuentas-por-pagar/abonos-cxp/")
+        assert resp.status_code == 200
+
+
+# ─────────────────────────────────────────────
+# Diferencia cambiaria (multi-tasa) — T06
+# ─────────────────────────────────────────────
+
+
+def _mapeos_diferencia(empresa):
+    """Configura PAGO_CXP + GANANCIA/PERDIDA_CAMBIARIA para una empresa."""
+    from apps.contabilidad.models import MapeoContable
+
+    _mapeo_pago_cxp(empresa)
+    perd_d = _cuenta(empresa, "5701", "Pérdida Cambiaria", "GASTO", "DEUDORA")
+    perd_h = _cuenta(empresa, "1101b", "Banco Dif", "ACTIVO", "DEUDORA")
+    gan_d = _cuenta(empresa, "2101b", "CxP Dif", "PASIVO", "ACREEDORA")
+    gan_h = _cuenta(empresa, "4701", "Ganancia Cambiaria", "INGRESO", "ACREEDORA")
+    MapeoContable.objects.create(
+        id_empresa=empresa, tipo_asiento="PERDIDA_CAMBIARIA", cuenta_debe=perd_d,
+        cuenta_haber=perd_h, descripcion_plantilla="Pérdida cambiaria", activo=True,
+    )
+    MapeoContable.objects.create(
+        id_empresa=empresa, tipo_asiento="GANANCIA_CAMBIARIA", cuenta_debe=gan_d,
+        cuenta_haber=gan_h, descripcion_plantilla="Ganancia cambiaria", activo=True,
+    )
+
+
+class TestDiferenciaCambiaria:
+    def test_pago_a_tasa_mayor_genera_perdida(self, db, cxp_pendiente, user_a, empresa_a):
+        from apps.cuentas_por_pagar.models import DiferenciaCambiaria
+        from apps.cuentas_por_pagar.services import registrar_abono_cxp
+
+        _mapeos_diferencia(empresa_a)
+        # CxP en divisa: pago de 100 a tasa 40 vs reconocida a 36 → pérdida 100*4=400
+        registrar_abono_cxp(
+            cxp_pendiente, Decimal("100.00"), user_a,
+            tasa_original=Decimal("36"), tasa_pago=Decimal("40"),
+        )
+        dif = DiferenciaCambiaria.objects.get(id_empresa=empresa_a)
+        assert dif.tipo == "PERDIDA"
+        assert dif.monto_diferencia == Decimal("400.0000")
+
+    def test_pago_a_tasa_menor_genera_ganancia(self, db, cxp_pendiente, user_a, empresa_a):
+        from apps.cuentas_por_pagar.models import DiferenciaCambiaria
+        from apps.cuentas_por_pagar.services import registrar_abono_cxp
+
+        _mapeos_diferencia(empresa_a)
+        registrar_abono_cxp(
+            cxp_pendiente, Decimal("100.00"), user_a,
+            tasa_original=Decimal("40"), tasa_pago=Decimal("36"),
+        )
+        dif = DiferenciaCambiaria.objects.get(id_empresa=empresa_a)
+        assert dif.tipo == "GANANCIA"
+        assert dif.monto_diferencia == Decimal("400.0000")
+
+    def test_asiento_diferencia_cuadrado(self, db, cxp_pendiente, user_a, empresa_a):
+        from apps.contabilidad.models import AsientoContable
+        from apps.cuentas_por_pagar.services import registrar_abono_cxp
+
+        _mapeos_diferencia(empresa_a)
+        registrar_abono_cxp(
+            cxp_pendiente, Decimal("100.00"), user_a,
+            tasa_original=Decimal("36"), tasa_pago=Decimal("40"),
+        )
+        asiento = AsientoContable.objects.get(nombre_modelo_origen="DiferenciaCambiaria")
+        detalles = list(asiento.detalleasiento_set.all())
+        assert sum(d.debe for d in detalles) == sum(d.haber for d in detalles) == Decimal("400.00")
+
+    def test_tasas_iguales_sin_diferencia(self, db, cxp_pendiente, user_a, empresa_a):
+        from apps.cuentas_por_pagar.models import DiferenciaCambiaria
+        from apps.cuentas_por_pagar.services import registrar_abono_cxp
+
+        _mapeos_diferencia(empresa_a)
+        registrar_abono_cxp(
+            cxp_pendiente, Decimal("100.00"), user_a,
+            tasa_original=Decimal("36"), tasa_pago=Decimal("36"),
+        )
+        assert not DiferenciaCambiaria.objects.filter(id_empresa=empresa_a).exists()
+
+    def test_sin_tasas_sin_diferencia(self, db, cxp_pendiente, user_a, empresa_a):
+        from apps.cuentas_por_pagar.models import DiferenciaCambiaria
+        from apps.cuentas_por_pagar.services import registrar_abono_cxp
+
+        _mapeo_pago_cxp(empresa_a)
+        registrar_abono_cxp(cxp_pendiente, Decimal("100.00"), user_a)
+        assert not DiferenciaCambiaria.objects.filter(id_empresa=empresa_a).exists()
+
+    def test_tasa_no_positiva_en_servicio_lanza_error(self, db, cxp_pendiente, user_a):
+        """Defensa en profundidad: el helper rechaza tasas no positivas."""
+        from apps.cuentas_por_pagar.models import AbonoCxP
+        from apps.cuentas_por_pagar.services import (
+            AbonoCxPError,
+            registrar_diferencia_cambiaria_cxp,
+        )
+
+        abono = AbonoCxP.objects.create(
+            cuenta_por_pagar=cxp_pendiente, monto=Decimal("100.00"), usuario=user_a
+        )
+        with pytest.raises(AbonoCxPError, match="mayores a cero"):
+            registrar_diferencia_cambiaria_cxp(abono, Decimal("100"), Decimal("0"), Decimal("40"))
+
+
+class TestDiferenciaCambiariaEndpoint:
+    @pytest.fixture
+    def client_a(self, user_a):
+        from rest_framework.test import APIClient
+
+        c = APIClient()
+        c.force_authenticate(user=user_a)
+        return c
+
+    def test_abonar_con_tasas_devuelve_diferencia(self, db, cxp_pendiente, client_a, empresa_a):
+        _mapeos_diferencia(empresa_a)
+        url = f"/api/cuentas-por-pagar/cuentas-por-pagar/{cxp_pendiente.pk}/abonar/"
+        resp = client_a.post(
+            url, {"monto": "100.00", "tasa_original": "36", "tasa_pago": "40"}, format="json"
+        )
+        assert resp.status_code == 201
+        assert resp.data["diferencia_cambiaria"]["tipo"] == "PERDIDA"
+        assert resp.data["diferencia_cambiaria"]["monto"] == "400.0000"
+
+    def test_abonar_sin_tasas_diferencia_null(self, db, cxp_pendiente, client_a, empresa_a):
+        _mapeo_pago_cxp(empresa_a)
+        url = f"/api/cuentas-por-pagar/cuentas-por-pagar/{cxp_pendiente.pk}/abonar/"
+        resp = client_a.post(url, {"monto": "100.00"}, format="json")
+        assert resp.status_code == 201
+        assert resp.data["diferencia_cambiaria"] is None
+
+    def test_abonar_tasa_invalida_400(self, db, cxp_pendiente, client_a):
+        url = f"/api/cuentas-por-pagar/cuentas-por-pagar/{cxp_pendiente.pk}/abonar/"
+        resp = client_a.post(url, {"monto": "100.00", "tasa_pago": "-1"}, format="json")
+        assert resp.status_code == 400

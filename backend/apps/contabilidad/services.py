@@ -35,11 +35,16 @@ TIPOS_ASIENTO = frozenset(
         "DEVOLUCION_VENTA",      # 1.G: reverso de la venta (espejo del asiento de venta)
         "DEVOLUCION_VENTA_IVA",  # 1.G: reverso del IVA débito fiscal de la factura
         "FACTURA_COMPRA",
+        "GASTO",                 # Gasto aprobado → DR Cuenta Gasto / CR CxP o Banco
+        "GASTO_IVA",             # Porción IVA crédito fiscal del gasto (asiento separado)
         "RECEPCION_MERCANCIA",
+        "COSTO_VENTA",         # COGS: DR Costo de Ventas / CR Inventario al despachar venta
         "AJUSTE_INVENTARIO",
         "SALIDA_INTERNA",
         "PAGO_CXC",
         "PAGO_CXP",
+        "GANANCIA_CAMBIARIA",  # Diferencia en cambio favorable al pagar una CxP en divisa
+        "PERDIDA_CAMBIARIA",   # Diferencia en cambio desfavorable al pagar una CxP en divisa
         "NOMINA",              # CTF-013: asiento del proceso de nómina LOTTT
         "CAMBIO_DIVISA",       # CTF-013: asiento de la operación de cambio de divisa
         "PAGO_TERCERO",        # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro

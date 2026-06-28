@@ -7,7 +7,8 @@
  *      with the expected payload shape.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FeedbackProvider } from '../contexts/FeedbackContext';
@@ -48,7 +49,17 @@ vi.mock('../services/productosService', () => ({
   ]),
 }));
 vi.mock('../services/clientesService', () => ({
-  buscarClientes: vi.fn().mockResolvedValue([]),
+  buscarClientes: vi.fn().mockResolvedValue([
+    {
+      id_cliente: 'cli-buscado',
+      razon_social: 'Cliente Buscado',
+      rif: 'J-999',
+      telefono: '0414',
+      direccion_fiscal: 'Av. Siempreviva',
+      email: 'cli@example.com',
+      codigo_cliente: 'COD-1',
+    },
+  ]),
   buscarClientesSimilares: vi.fn().mockResolvedValue([]),
   crearClienteConEmpresa: vi.fn().mockResolvedValue({ id_cliente: 'c-auto' }),
 }));
@@ -144,5 +155,125 @@ describe('CotizacionFormPage (characterization)', () => {
     const [, payload] = patchMock.mock.calls[0] as [string, Record<string, unknown>];
     expect(Array.isArray(payload.detalles)).toBe(true);
     expect((payload.detalles as unknown[]).length).toBe(1);
+  });
+
+  it('renderiza en modo alta con el título "Nueva Cotización" y submit deshabilitado', async () => {
+    renderForm();
+    expect(await screen.findByText(/nueva cotización/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /guardar cotización/i })).toBeDisabled();
+    // Sin líneas, no hay preview.
+    expect(screen.queryByText(/preview de la cotización/i)).not.toBeInTheDocument();
+  });
+
+  it('selecciona un cliente desde el modal de búsqueda (cubre getFieldString)', async () => {
+    localStorage.setItem('id_empresa', 'emp-1');
+    const user = userEvent.setup();
+    renderForm();
+    await screen.findByText(/nueva cotización/i);
+
+    await user.click(screen.getByRole('button', { name: /buscar cliente existente/i }));
+    // El modal busca al teclear; el mock devuelve un cliente.
+    const dialog = await screen.findByRole('dialog');
+    const input = within(dialog).getByPlaceholderText(/buscar por nombre/i);
+    await user.type(input, 'Cliente');
+    const seleccionar = await within(dialog).findAllByRole('button', { name: /seleccionar/i });
+    await user.click(seleccionar[seleccionar.length - 1]);
+
+    // Los datos del cliente se vuelcan en el formulario de cliente.
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Cliente Buscado')).toBeInTheDocument();
+      // direccion derivada de direccion_fiscal y correo de email (getFieldString).
+      expect(screen.getByDisplayValue('Av. Siempreviva')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('cli@example.com')).toBeInTheDocument();
+    });
+    // El número de RIF se separa del prefijo (J | 999).
+    expect(screen.getByDisplayValue('999')).toBeInTheDocument();
+    // Al haber cliente, el submit se habilita.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /guardar cotización/i })).toBeEnabled(),
+    );
+  });
+
+  it('agrega una línea desde el modal de producto y calcula el total con decimal.js', async () => {
+    localStorage.setItem('id_empresa', 'emp-1');
+    const user = userEvent.setup();
+    renderForm();
+    await screen.findByText(/nueva cotización/i);
+
+    // Abrir modal de producto y seleccionar (esperando a que carguen los productos).
+    await user.click(screen.getByRole('button', { name: /buscar producto/i }));
+    const dialog = await screen.findByRole('dialog');
+    const buscar = within(dialog).getByPlaceholderText(/buscar por nombre/i);
+    await user.type(buscar, 'Producto');
+    await user.click(await within(dialog).findByRole('button', { name: /^Seleccionar$/ }));
+
+    // Esperar a que el modal se cierre por completo (deja de bloquear el foco/aria).
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // El precio se autocompleta (10); fijar cantidad = 3.
+    const cantidad = await screen.findByLabelText(/^cantidad$/i);
+    fireEvent.change(cantidad, { target: { value: '3' } });
+    // Agregar la línea.
+    await user.click(screen.getByRole('button', { name: /^agregar$/i }));
+
+    // Aparece la preview con la línea y el total 3 * 10 = 30.00.
+    expect(await screen.findByText(/preview de la cotización/i)).toBeInTheDocument();
+    // El total/subtotal calculado con decimal.js aparece como 30.00 (no 30.00000001).
+    expect(screen.getAllByText('30.00').length).toBeGreaterThan(0);
+
+    // Eliminar la línea.
+    await user.click(screen.getByRole('button', { name: /eliminar/i }));
+    await waitFor(() =>
+      expect(screen.queryByText(/preview de la cotización/i)).not.toBeInTheDocument(),
+    );
+  });
+
+  it('abre el modal de Pago con el monto sumado de los detalles', async () => {
+    localStorage.setItem('id_empresa', 'emp-1');
+    const user = userEvent.setup();
+    renderForm();
+    await screen.findByText(/nueva cotización/i);
+
+    // Agregar una línea (producto precio 10 x cantidad 2 = 20).
+    await user.click(screen.getByRole('button', { name: /buscar producto/i }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByPlaceholderText(/buscar por nombre/i), 'Producto');
+    await user.click(await within(dialog).findByRole('button', { name: /^Seleccionar$/ }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    const cantidad = await screen.findByLabelText(/^cantidad$/i);
+    fireEvent.change(cantidad, { target: { value: '2' } });
+    await user.click(screen.getByRole('button', { name: /^agregar$/i }));
+    await screen.findByText(/preview de la cotización/i);
+
+    // Pulsar Pagar abre el ModalPago.
+    await user.click(screen.getByRole('button', { name: /^pagar$/i }));
+    // ModalPago se abre (cabecera "Registrar Pago").
+    expect(await screen.findByText(/registrar pago/i)).toBeInTheDocument();
+  });
+
+  it('los botones Enviar/Anular/Imprimir disparan un aviso informativo en edición', async () => {
+    paramsMock = { id: 'cot-1' };
+    localStorage.setItem('id_sucursal', 'suc-1');
+    setGetRouting(EXISTING_COTIZACION);
+    const user = userEvent.setup();
+    renderForm();
+
+    const enviar = await screen.findByRole('button', { name: /^enviar$/i });
+    await user.click(enviar);
+    expect(await screen.findByText(/convertir en nota de venta/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^anular$/i }));
+    expect(await screen.findByText(/cambiar estado a anulado/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^imprimir$/i }));
+    expect(await screen.findByText(/generar documento de cotización/i)).toBeInTheDocument();
+  });
+
+  it('navega a la lista al pulsar Cancelar', async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await screen.findByText(/nueva cotización/i);
+    await user.click(screen.getByRole('button', { name: /cancelar/i }));
+    expect(navigateMock).toHaveBeenCalledWith('/ventas/cotizaciones');
   });
 });

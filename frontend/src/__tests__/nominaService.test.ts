@@ -119,6 +119,27 @@ describe('nominaService', () => {
     expect(res.map((r) => r.id_nomina)).toEqual(['nom-1', 'nom-2']);
   });
 
+  it('aprobarProceso postea a la acción aprobar del proceso', async () => {
+    vi.mocked(post).mockResolvedValue({ ...proceso, estado: 'APROBADO' });
+    const res = await nominaService.aprobarProceso('proc-1');
+    expect(post).toHaveBeenCalledWith('/nomina/procesos-nomina/proc-1/aprobar/', {});
+    expect(res.estado).toBe('APROBADO');
+  });
+
+  it('aprobarRecibo postea a la acción aprobar del recibo', async () => {
+    vi.mocked(post).mockResolvedValue({ ...recibo, estado: 'APROBADA' });
+    const res = await nominaService.aprobarRecibo('nom-1');
+    expect(post).toHaveBeenCalledWith('/nomina/nominas/nom-1/aprobar/', {});
+    expect(res.estado).toBe('APROBADA');
+  });
+
+  it('marcarReciboPagada postea a la acción marcar_pagada del recibo', async () => {
+    vi.mocked(post).mockResolvedValue({ ...recibo, estado: 'PAGADA' });
+    const res = await nominaService.marcarReciboPagada('nom-1');
+    expect(post).toHaveBeenCalledWith('/nomina/nominas/nom-1/marcar_pagada/', {});
+    expect(res.estado).toBe('PAGADA');
+  });
+
   it('getPeriodos camina las páginas hasta agotar next', async () => {
     const periodo = {
       id_periodo_nomina: 'per-1',

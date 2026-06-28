@@ -1,0 +1,145 @@
+"""Effective dating del MOTOR — selección de la fila vigente a una fecha (sección 8.4).
+
+Capa: esta es la versión CANÓNICA del motor determinístico; opera sobre las
+dataclasses del motor (con ``regla_id`` como desempate). Es independiente del
+adaptador Django-ORM en ``apps/cxc_lubrikca/services/effective_dating.py``
+(Fase 1), que aplica la misma semántica sobre modelos Django. No mezclar.
+
+Sin esto, cambiar un descuento rompería la conciliación de órdenes anteriores
+con falsos rojos: una orden de hace dos semanas debe auditarse con el % que
+regía entonces, no con el de hoy.
+"""
+
+from __future__ import annotations
+
+from datetime import date
+from decimal import Decimal
+
+from .models import (
+    Condicion,
+    DescuentoBCVCompleto,
+    DescuentoMarcaCategoria,
+    PromocionPrimeraCompra,
+    ReglaRecurrencia,
+    TipoDescuento,
+)
+
+
+def _vigente(
+    vigencia_desde: date,
+    vigencia_hasta: date | None,
+    activo: bool,
+    fecha: date,
+) -> bool:
+    if not activo:
+        return False
+    if fecha < vigencia_desde:
+        return False
+    return not (vigencia_hasta is not None and fecha > vigencia_hasta)
+
+
+def _especificidad(regla: DescuentoMarcaCategoria) -> int:
+    """Prioridad de comodines: marca exacta pesa más que categoría exacta.
+
+    (marca exacta, categoría exacta) = 3 > (marca exacta, '*') = 2 >
+    ('*', categoría exacta) = 1 > ('*', '*') = 0.
+    """
+    score = 0
+    if regla.marca != "*":
+        score += 2
+    if regla.categoria != "*":
+        score += 1
+    return score
+
+
+def descuento_vigente(
+    reglas: list[DescuentoMarcaCategoria],
+    *,
+    marca: str,
+    categoria: str,
+    tipo: TipoDescuento,
+    fecha: date,
+) -> DescuentoMarcaCategoria | None:
+    """Fila de DescuentosMarcaCategoria vigente para (marca, categoría) a ``fecha``.
+
+    Resuelve comodines por especificidad. Empates (configuración inconsistente)
+    se rompen de forma conservadora: menor porcentaje (no regalar descuento),
+    luego ``regla_id`` para determinismo.
+    """
+    candidatas = [
+        r
+        for r in reglas
+        if r.tipo_descuento == tipo
+        and (r.marca == marca or r.marca == "*")
+        and (r.categoria == categoria or r.categoria == "*")
+        and _vigente(r.vigencia_desde, r.vigencia_hasta, r.activo, fecha)
+    ]
+    if not candidatas:
+        return None
+    return min(
+        candidatas,
+        key=lambda r: (-_especificidad(r), r.porcentaje, r.regla_id),
+    )
+
+
+def promocion_primera_compra_vigente(
+    promos: list[PromocionPrimeraCompra],
+    *,
+    fecha: date,
+) -> PromocionPrimeraCompra | None:
+    """Promoción de primera compra vigente a ``fecha`` (la más reciente)."""
+    candidatas = [
+        p
+        for p in promos
+        if _vigente(p.vigencia_desde, p.vigencia_hasta, p.activo, fecha)
+    ]
+    if not candidatas:
+        return None
+    return max(candidatas, key=lambda p: p.vigencia_desde)
+
+
+def tasa_bcv_completo_vigente(
+    reglas: list[DescuentoBCVCompleto],
+    *,
+    fecha: date,
+) -> Decimal | None:
+    """Tasa de descuento BCV-completo que fijó la gerencia, vigente a ``fecha``.
+
+    Empate: gana la de ``vigencia_desde`` más reciente; luego el menor porcentaje
+    (conservador). None si no hay tasa configurada → el motor no otorga el
+    descuento (no se regala sin instrucción explícita).
+    """
+    candidatas = [
+        r
+        for r in reglas
+        if _vigente(r.vigencia_desde, r.vigencia_hasta, r.activo, fecha)
+    ]
+    if not candidatas:
+        return None
+    elegida = max(candidatas, key=lambda r: (r.vigencia_desde, -r.porcentaje))
+    return elegida.porcentaje
+
+
+def regla_recurrencia_vigente(
+    reglas: list[ReglaRecurrencia],
+    *,
+    condicion: Condicion,
+    fecha: date,
+) -> ReglaRecurrencia | None:
+    """Regla de recurrencia vigente para la condición dada a ``fecha``.
+
+    Empate: gana la de ``vigencia_desde`` más reciente (la regla más nueva
+    aplicable), luego menor ``valor`` por conservadurismo.
+    """
+    candidatas = [
+        r
+        for r in reglas
+        if r.condicion == condicion
+        and _vigente(r.vigencia_desde, r.vigencia_hasta, r.activo, fecha)
+    ]
+    if not candidatas:
+        return None
+    return max(
+        candidatas,
+        key=lambda r: (r.vigencia_desde, -r.valor),
+    )

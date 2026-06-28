@@ -33,6 +33,8 @@ _Total tools MCP: 17_
 | `config.celery.debug_task` | config.celery |
 | `core.log_evento` | apps.core.tasks |
 | `core.ping` | apps.core.tasks |
+| `cxc_lubrikca.sync` | apps.cxc_lubrikca.tasks |
+| `cxc_lubrikca.sync_todos` | apps.cxc_lubrikca.tasks |
 | `gestion_documental.eliminar_archivo_s3` | apps.gestion_documental.tasks |
 | `gestion_documental.limpiar_archivos_huerfanos` | apps.gestion_documental.tasks |
 | `integration_hub.ejecutar_job_sincronizacion` | apps.integration_hub.tasks |
@@ -45,7 +47,7 @@ _Total tools MCP: 17_
 | `integration_hub.sync_tasas_ve` | apps.integration_hub.tasks |
 | `notificaciones.enviar_notificacion_email` | apps.notificaciones.tasks |
 
-_Total tareas Celery: 16_
+_Total tareas Celery: 18_
 
 ## Management commands
 
@@ -67,6 +69,7 @@ _Total tareas Celery: 16_
 | `run_mcp_server` | apps.core |
 | `seed_empresa_inicial` | apps.core |
 | `seed_proveedores_integracion` | apps.integration_hub |
+| `sincronizar_cxc_lubrikca` | apps.cxc_lubrikca |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 17_
+_Total commands: 18_

@@ -194,6 +194,9 @@ RLS_TABLES = {
     "inventario_producto": "id_empresa_id",
     "inventario_stock_actual": "id_empresa_id",
     "inventario_movimiento_inventario": "id_empresa_id",
+    "inventario_valoracion_inventario": "id_empresa_id",
+    "inventario_paso_operacion": "id_empresa_id",
+    "inventario_operacion_inventario": "id_empresa_id",
     "compras_orden_compra": "id_empresa_id",
     "compras_recepcion_mercancia": "id_empresa_id",
     "crm_cliente": "id_empresa_id",
@@ -222,6 +225,21 @@ RLS_TABLES = {
     "contabilidad_plan_cuentas": "id_empresa_id",
     # control_asistencia
     "control_asistencia_horariotrabajo": "id_empresa_id",
+    # cxc_lubrikca (subproyecto CxC Lubrikca, ADR-013 — todas con FK empresa)
+    "cxc_lubrikca_descuentomarcacategoria": "empresa_id",
+    "cxc_lubrikca_descuentobcvcompleto": "empresa_id",
+    "cxc_lubrikca_promocionprimeracompra": "empresa_id",
+    "cxc_lubrikca_reglarecurrencia": "empresa_id",
+    "cxc_lubrikca_feriado": "empresa_id",
+    "cxc_lubrikca_metodopago": "empresa_id",
+    "cxc_lubrikca_pedidolubrikca": "empresa_id",
+    "cxc_lubrikca_lineapedidolubrikca": "empresa_id",
+    "cxc_lubrikca_preciolistalubrikca": "empresa_id",
+    "cxc_lubrikca_pagolubrikca": "empresa_id",
+    "cxc_lubrikca_vinculacion": "empresa_id",
+    "cxc_lubrikca_bandejafacturacion": "empresa_id",
+    "cxc_lubrikca_configuracionconciliacion": "empresa_id",
+    "cxc_lubrikca_conciliacionlubrikca": "empresa_id",
     # core
     "core_capability_token": "empresa_id",
     "core_clave_idempotencia": "empresa_id",
@@ -241,6 +259,7 @@ RLS_TABLES = {
     "cuentas_por_cobrar_cuentaporcobrar": "empresa_id",
     # cuentas_por_pagar
     "cuentas_por_pagar_cuentaporpagar": "id_empresa_id",
+    "cuentas_por_pagar_diferencia_cambiaria": "id_empresa_id",
     # cxc
     "cxc_lotefraccionado": "empresa_id",
     "cxc_plantillacobranza": "empresa_id",

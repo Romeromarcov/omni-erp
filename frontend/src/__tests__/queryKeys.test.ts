@@ -25,6 +25,8 @@ describe('queryKeys factory', () => {
       '2024-02-01',
     ]);
     expect(inventarioKeys.kardexAll()).toEqual(['kardex']);
+    expect(inventarioKeys.categoriasProducto()).toEqual(['inv-categorias-producto']);
+    expect(inventarioKeys.unidadesMedida()).toEqual(['inv-unidades-medida']);
   });
 
   it('notas de venta usan prefijo común para invalidación por familia', () => {

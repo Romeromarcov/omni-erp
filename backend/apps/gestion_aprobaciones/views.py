@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
@@ -40,6 +42,39 @@ class SolicitudAprobacionViewSet(BaseModelViewSet):
     def get_queryset(self):
         # R-CODE-1 — SolicitudAprobacion llega via id_tipo_aprobacion→TipoAprobacion
         return SolicitudAprobacion.objects.filter(id_tipo_aprobacion__id_empresa__in=_empresas(self.request))
+
+    def create(self, request, *args, **kwargs):
+        # Las solicitudes las crea el servicio (crear_solicitud) desde el flujo de
+        # aprobación de compras/gastos, nunca por POST directo: así no se pueden
+        # fabricar solicitudes apuntando a documentos arbitrarios (SEC LOW-5).
+        return Response(
+            {"detail": "Las solicitudes se crean desde el flujo de aprobación, no por POST directo."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    @action(detail=True, methods=["post"])
+    def decidir(self, request, pk=None):
+        """Registra una decisión (aprobar/rechazar) sobre la etapa actual.
+
+        Body: {"aprobado": true|false, "comentarios": "..."}. El avance entre
+        etapas y el cierre (APROBADA/RECHAZADA) lo maneja el servicio atómico.
+        """
+        from .services import AprobacionError, registrar_decision
+
+        solicitud = self.get_object()  # acotado por tenant vía get_queryset
+        aprobado = request.data.get("aprobado")
+        if aprobado is None:
+            return Response(
+                {"error": "El campo 'aprobado' (true/false) es requerido."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        comentarios = request.data.get("comentarios", "")
+        try:
+            registrar_decision(solicitud, request.user, bool(aprobado), comentarios)
+        except AprobacionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        solicitud.refresh_from_db()
+        return Response(self.get_serializer(solicitud).data)
 
 
 class RegistroAprobacionViewSet(BaseModelViewSet):

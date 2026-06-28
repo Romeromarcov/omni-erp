@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "apps.ventas",
     "apps.cuentas_por_cobrar",
     "apps.cxc",
+    "apps.cxc_lubrikca",  # Subproyecto CxC Lubrikca (aislado, perfil cobranza) — ADR-013
     "apps.manufactura",
     "apps.rrhh",
     "apps.tesoreria",
@@ -332,6 +333,17 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Cabeceras permitidas en peticiones cross-origin. Extiende la lista por defecto
+# de django-cors-headers con las cabeceras propias del producto, de modo que el
+# preflight (OPTIONS) las whiteliste en `Access-Control-Allow-Headers`. Sin esto,
+# el navegador bloquea el POST real con "Failed to fetch" aunque el preflight
+# devuelva 200 (p. ej. el abono de CxP envía `Idempotency-Key`, PR #86). Aplica
+# a cualquier despliegue donde el SPA y la API estén en orígenes distintos
+# (build con VITE_API_URL absoluta, E2E con preview→backend, etc.).
+from corsheaders.defaults import default_headers  # noqa: E402
+
+CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key")
 
 # Django REST Framework settings
 REST_FRAMEWORK = {

@@ -1,19 +1,61 @@
-import { get, post } from './api';
+import { get, post, patch, del } from './api';
 import { toList, type PaginatedResponse } from '../utils/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
+export type MetodoValoracion = 'PROMEDIO' | 'FIFO';
+
 export interface Producto {
   id_producto: string;
+  id_empresa: string;
   nombre_producto: string;
   sku: string | null;
   descripcion: string | null;
   tipo_producto: string;
+  maneja_lotes: boolean;
+  maneja_seriales: boolean;
   costo_promedio: string;
+  metodo_valoracion: MetodoValoracion;
   precio_venta_sugerido: string;
+  punto_reorden: string | null;
+  id_categoria: string;
+  id_unidad_medida_base: string;
+  id_moneda_precio: string;
   nombre_categoria: string | null;
   nombre_unidad_medida: string | null;
   activo: boolean;
+}
+
+/**
+ * Payload de escritura de Producto: whitelist explícita de campos editables
+ * (CTF-005, defensa en profundidad CWE-915). Los montos viajan como string para
+ * no perder precisión del DecimalField del backend (R-CODE-4).
+ */
+export interface ProductoPayload {
+  id_empresa: string;
+  nombre_producto: string;
+  sku: string | null;
+  id_categoria: string;
+  id_unidad_medida_base: string;
+  tipo_producto: string;
+  maneja_lotes: boolean;
+  maneja_seriales: boolean;
+  costo_promedio: string;
+  precio_venta_sugerido: string;
+  punto_reorden: string | null;
+  metodo_valoracion: MetodoValoracion;
+  id_moneda_precio: string;
+}
+
+export interface CategoriaProducto {
+  id_categoria_producto: string;
+  nombre_categoria: string;
+}
+
+export interface UnidadMedida {
+  id_unidad_medida: string;
+  nombre: string;
+  abreviatura: string;
 }
 
 export interface StockActual {
@@ -103,11 +145,19 @@ export const stockActualService = {
     if (params?.empresa) qs.set('empresa', params.empresa);
     if (params?.producto) qs.set('producto', params.producto);
     if (params?.almacen) qs.set('almacen', params.almacen);
-    const query = qs.toString();
-    const response = await get<PaginatedResponse<StockActual> | StockActual[]>(
-      `/inventario/stock-actual/${query ? '?' + query : ''}`
-    );
-    return toList<StockActual>(response);
+    // Recorre todas las páginas: el filtro "Buscar producto…" de Stock Actual es
+    // client-side, así que necesita TODO el stock, no sólo los 20 primeros.
+    const acumulado: StockActual[] = [];
+    for (let page = 1; page <= 50; page++) {
+      qs.set('page', String(page));
+      const response = await get<PaginatedResponse<StockActual> | StockActual[]>(
+        `/inventario/stock-actual/?${qs.toString()}`
+      );
+      acumulado.push(...toList<StockActual>(response));
+      const next = Array.isArray(response) ? null : (response.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
   },
 
   /** Stock por debajo de la cantidad mínima (alertas) */
@@ -123,13 +173,32 @@ export const stockActualService = {
 
 export const productoInventarioService = {
   getAll: async (params?: { empresa?: string }): Promise<Producto[]> => {
-    const qs = params?.empresa ? `?empresa=${params.empresa}` : '';
-    const response = await get<PaginatedResponse<Producto> | Producto[]>(`/inventario/productos/${qs}`);
-    return toList<Producto>(response);
+    // Recorre TODAS las páginas: los selectores (p. ej. "Producto a fabricar"
+    // del BOM) necesitan el catálogo completo. Con sólo la página 1 (20 ítems),
+    // una empresa con muchos productos no podría seleccionar los más recientes.
+    const base = `/inventario/productos/${params?.empresa ? `?empresa=${params.empresa}&` : '?'}`;
+    const acumulado: Producto[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const response = await get<PaginatedResponse<Producto> | Producto[]>(`${base}page=${page}`);
+      acumulado.push(...toList<Producto>(response));
+      const next = Array.isArray(response) ? null : (response.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
   },
 
   getById: async (id: string): Promise<Producto> => {
     return get<Producto>(`/inventario/productos/${id}/`);
+  },
+
+  create: async (payload: ProductoPayload): Promise<Producto> =>
+    post<Producto>('/inventario/productos/', payload as unknown as Record<string, unknown>),
+
+  update: async (id: string, payload: ProductoPayload): Promise<Producto> =>
+    patch<Producto>(`/inventario/productos/${id}/`, payload as unknown as Record<string, unknown>),
+
+  remove: async (id: string): Promise<void> => {
+    await del<void>(`/inventario/productos/${id}/`);
   },
 
   getKardex: async (
@@ -169,10 +238,176 @@ export const productoInventarioService = {
   },
 };
 
+// ── Catálogos (categorías / unidades) ────────────────────────────────────────
+
+export const categoriasProductoService = {
+  getAll: async (): Promise<CategoriaProducto[]> => {
+    // Recorre todas las páginas para que el catálogo de categorías esté completo
+    // en los selectores (no sólo los 20 primeros).
+    const acumulado: CategoriaProducto[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const r = await get<PaginatedResponse<CategoriaProducto> | CategoriaProducto[]>(
+        `/inventario/categorias-producto/?page=${page}`,
+      );
+      acumulado.push(...toList<CategoriaProducto>(r));
+      const next = Array.isArray(r) ? null : (r.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
+  },
+};
+
+export const unidadesMedidaService = {
+  getAll: async (): Promise<UnidadMedida[]> => {
+    // Recorre todas las páginas: los selectores de unidad (p. ej. el componente
+    // del BOM) necesitan el catálogo completo, no sólo los 20 primeros.
+    const acumulado: UnidadMedida[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const r = await get<PaginatedResponse<UnidadMedida> | UnidadMedida[]>(
+        `/inventario/unidades-medida/?page=${page}`,
+      );
+      acumulado.push(...toList<UnidadMedida>(r));
+      const next = Array.isArray(r) ? null : (r.next ?? null);
+      if (!next) break;
+    }
+    return acumulado;
+  },
+};
+
 // ── Movimientos ────────────────────────────────────────────────────────────
 
 export const movimientoService = {
   registrarAjuste: async (payload: AjusteInventarioPayload): Promise<MovimientoInventario> => {
     return post<MovimientoInventario>('/inventario/movimientos-inventario/', payload as unknown as Record<string, unknown>);
+  },
+};
+
+// ── Operaciones con stepper (recepciones / entregas) ─────────────────────────
+
+export interface OperacionPaso {
+  id_operacion_paso: string;
+  secuencia: number;
+  nombre_paso: string;
+  confirmado: boolean;
+  fecha_confirmacion: string | null;
+}
+
+export interface OperacionLinea {
+  id_linea: string;
+  id_producto: string;
+  producto_nombre?: string;
+  cantidad: string;
+  costo_unitario: string | null;
+}
+
+export type TipoOperacion = 'RECEPCION' | 'ENTREGA';
+export type EstadoOperacion = 'EN_PROCESO' | 'COMPLETADA' | 'CANCELADA';
+
+export interface OperacionInventario {
+  id_operacion: string;
+  numero: string;
+  tipo_operacion: TipoOperacion;
+  origen_tipo: string;
+  origen_id: string | null;
+  id_almacen: string;
+  id_almacen_contraparte: string | null;
+  estado: EstadoOperacion;
+  motivo: string;
+  fecha: string;
+  pasos: OperacionPaso[];
+  lineas: OperacionLinea[];
+}
+
+export interface CrearOperacionLinea {
+  producto: string;
+  variante?: string | null;
+  cantidad: string;
+  costo_unitario?: string | null;
+}
+
+export interface CrearOperacionPayload {
+  almacen: string;
+  origen_tipo: string;
+  origen_id?: string | null;
+  almacen_contraparte?: string | null;
+  motivo?: string;
+  lineas: CrearOperacionLinea[];
+}
+
+function operacionService(base: 'recepciones' | 'entregas') {
+  return {
+    list: async (): Promise<OperacionInventario[]> => {
+      const r = await get<PaginatedResponse<OperacionInventario> | OperacionInventario[]>(
+        `/inventario/${base}/`,
+      );
+      return toList(r);
+    },
+    create: async (payload: CrearOperacionPayload): Promise<OperacionInventario> =>
+      post<OperacionInventario>(`/inventario/${base}/`, payload as unknown as Record<string, unknown>),
+    confirmStep: async (opId: string, stepId: string): Promise<OperacionInventario> =>
+      post<OperacionInventario>(`/inventario/${base}/${opId}/step/${stepId}/confirm/`, {}),
+  };
+}
+
+export const recepcionesService = operacionService('recepciones');
+export const entregasService = operacionService('entregas');
+
+// ── Pasos de operación (configuración por almacén) ───────────────────────────
+
+export interface PasoOperacion {
+  id_paso_operacion: string;
+  id_empresa: string;
+  id_almacen: string;
+  tipo_operacion: TipoOperacion;
+  nombre_paso: string;
+  secuencia: number;
+  activo: boolean;
+}
+
+export interface CrearPasoPayload {
+  id_empresa: string;
+  id_almacen: string;
+  tipo_operacion: TipoOperacion;
+  nombre_paso: string;
+  secuencia: number;
+}
+
+export const pasosOperacionService = {
+  list: async (almacen: string, tipo: TipoOperacion): Promise<PasoOperacion[]> => {
+    const r = await get<PaginatedResponse<PasoOperacion> | PasoOperacion[]>(
+      `/inventario/pasos-operacion/?almacen=${almacen}&tipo_operacion=${tipo}`,
+    );
+    return toList(r);
+  },
+  create: async (payload: CrearPasoPayload): Promise<PasoOperacion> =>
+    post<PasoOperacion>('/inventario/pasos-operacion/', payload as unknown as Record<string, unknown>),
+  remove: async (id: string): Promise<void> => {
+    await del<void>(`/inventario/pasos-operacion/${id}/`);
+  },
+};
+
+// ── Reporte de valoración ────────────────────────────────────────────────────
+
+export interface ValoracionFila {
+  producto_id: string;
+  producto: string;
+  almacen_id: string;
+  almacen: string;
+  metodo: string;
+  cantidad: string;
+  valor_total: string;
+  costo_promedio: string;
+}
+
+export const reportesInventarioService = {
+  valoracion: async (params?: { producto?: string; almacen?: string }): Promise<ValoracionFila[]> => {
+    const qs = new URLSearchParams();
+    if (params?.producto) qs.set('producto', params.producto);
+    if (params?.almacen) qs.set('almacen', params.almacen);
+    const q = qs.toString();
+    const r = await get<{ valoracion: ValoracionFila[] }>(
+      `/inventario/reportes/valoracion/${q ? `?${q}` : ''}`,
+    );
+    return r.valoracion ?? [];
   },
 };

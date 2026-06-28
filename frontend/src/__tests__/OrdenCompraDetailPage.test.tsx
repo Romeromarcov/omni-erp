@@ -103,12 +103,10 @@ describe('OrdenCompraDetailPage', () => {
     vi.mocked(almacenesService.getAll).mockResolvedValue([
       { id_almacen: 'alm-1', nombre_almacen: 'Principal', id_empresa: 'emp-1' },
     ]);
-    vi.mocked(fetchProductos).mockResolvedValue({
-      results: [
-        { id_producto: 'prod-1', nombre_producto: 'Tornillo' },
-        { id_producto: 'prod-2', nombre_producto: 'Tuerca' },
-      ],
-    });
+    vi.mocked(fetchProductos).mockResolvedValue([
+      { id_producto: 'prod-1', nombre_producto: 'Tornillo' },
+      { id_producto: 'prod-2', nombre_producto: 'Tuerca' },
+    ]);
   });
 
   afterEach(() => {

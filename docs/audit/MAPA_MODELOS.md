@@ -56,12 +56,27 @@
 | cuentas_por_cobrar | CuentaPorCobrar | ✅ | — | — |
 | cuentas_por_pagar | AbonoCxP | — | ✅ | — |
 | cuentas_por_pagar | CuentaPorPagar | ✅ | ✅ | — |
+| cuentas_por_pagar | DiferenciaCambiaria | ✅ | ✅ | — |
 | cxc | AcuerdoPago | ✅ | ✅ | — |
 | cxc | CuotaAcuerdo | — | ✅ | — |
 | cxc | GestionCobranza | ✅ | ✅ | — |
 | cxc | LoteFraccionado | ✅ | ✅ | — |
 | cxc | PlantillaCobranza | ✅ | ✅ | — |
 | cxc | VentaFraccionada | ✅ | ✅ | — |
+| cxc_lubrikca | BandejaFacturacion | ✅ | ✅ | — |
+| cxc_lubrikca | ConciliacionLubrikca | ✅ | ✅ | — |
+| cxc_lubrikca | ConfiguracionConciliacion | ✅ | ✅ | — |
+| cxc_lubrikca | DescuentoBCVCompleto | ✅ | ✅ | — |
+| cxc_lubrikca | DescuentoMarcaCategoria | ✅ | ✅ | — |
+| cxc_lubrikca | Feriado | ✅ | ✅ | empresa+fecha |
+| cxc_lubrikca | LineaPedidoLubrikca | ✅ | ✅ | — |
+| cxc_lubrikca | MetodoPago | ✅ | ✅ | empresa+codigo |
+| cxc_lubrikca | PagoLubrikca | ✅ | ✅ | empresa+pago_id |
+| cxc_lubrikca | PedidoLubrikca | ✅ | ✅ | empresa+so_id |
+| cxc_lubrikca | PrecioListaLubrikca | ✅ | ✅ | empresa+producto+lista |
+| cxc_lubrikca | PromocionPrimeraCompra | ✅ | ✅ | — |
+| cxc_lubrikca | ReglaRecurrencia | ✅ | ✅ | — |
+| cxc_lubrikca | Vinculacion | ✅ | ✅ | — |
 | despacho | Despacho | ✅ | ✅ | id_empresa+numero_despacho |
 | despacho | DetalleDespacho | — | ✅ | — |
 | finanzas | Caja | ✅ | ✅ | — |
@@ -102,6 +117,7 @@
 | fiscal | RetencionEmpresaActiva | ✅ | — | empresa+retencion |
 | fiscal | TasaIVAEmpresa | ✅ | ✅ | id_empresa+tipo |
 | gastos | CategoriaGasto | ✅ | ✅ | — |
+| gastos | DetalleGasto | — | ✅ | — |
 | gastos | Gasto | ✅ | ✅ | — |
 | gastos | ReembolsoGasto | ✅ | ✅ | — |
 | gestion_aprobaciones | FlujoAprobacion | — | ✅ | — |
@@ -124,12 +140,17 @@
 | inventario | ConversionUnidadMedida | ✅ | ✅ | id_producto+id_unidad_origen+id_unidad_destino |
 | inventario | DetalleRequisicion | — | ✅ | id_requisicion+id_producto |
 | inventario | MovimientoInventario | ✅ | ✅ | — |
+| inventario | OperacionInventario | ✅ | ✅ | id_empresa+numero |
+| inventario | OperacionInventarioLinea | — | ✅ | — |
+| inventario | OperacionInventarioPaso | — | ✅ | id_operacion+secuencia |
+| inventario | PasoOperacion | ✅ | ✅ | id_almacen+tipo_operacion+secuencia; id_almacen+tipo_operacion+nombre_paso |
 | inventario | Producto | ✅ | ✅ | id_empresa+sku |
 | inventario | RequisicionInterna | ✅ | ✅ | id_empresa+numero_requisicion |
 | inventario | StockActual | ✅ | ✅ | id_producto+id_variante+id_almacen |
 | inventario | StockConsignacionCliente | ✅ | ✅ | — |
 | inventario | StockConsignacionProveedor | ✅ | ✅ | — |
 | inventario | UnidadMedida | ✅ | ✅ | id_empresa+abreviatura |
+| inventario | ValoracionInventario | ✅ | ✅ | — |
 | inventario | VarianteProducto | — | ✅ | — |
 | manufactura | CentroTrabajo | ✅ | ✅ | id_empresa+codigo_centro |
 | manufactura | ConfiguracionManufactura | ✅ | ✅ | — |
@@ -202,4 +223,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 199_
+_Total modelos: 220_

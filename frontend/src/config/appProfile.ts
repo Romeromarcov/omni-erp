@@ -23,6 +23,7 @@ const COBRANZA_MODULES: ReadonlySet<string> = new Set([
   'inicio',
   'dashboard',
   'cobranza',
+  'cxc-lubrikca',
   'finanzas',
   'empresas',
   'usuarios',
@@ -38,4 +39,40 @@ export function isModuleEnabled(moduleId: string): boolean {
 
 export function isCobranzaStandalone(): boolean {
   return getAppProfile() === 'cobranza';
+}
+
+// ── Visibilidad del módulo CxC Lubrikca ─────────────────────────────────────
+// CxC Lubrikca es un subproyecto específico de un cliente (Lubrikca). En el build
+// 'full' NO debe verse para todas las empresas: solo para las empresas habilitadas
+// (allowlist por id, configurable sin recompilar lógica) y para el admin del sistema
+// (es_superusuario_omni). En el build standalone 'cobranza' (la app dedicada de
+// Lubrikca) siempre está visible.
+//
+// Config: VITE_CXC_LUBRIKCA_EMPRESAS = CSV de UUIDs de empresa habilitados.
+
+/** Conjunto de ids de empresa habilitados para CxC Lubrikca (env, CSV). */
+export function getCxcLubrikcaEmpresas(): ReadonlySet<string> {
+  const raw = String(import.meta.env.VITE_CXC_LUBRIKCA_EMPRESAS ?? '');
+  return new Set(
+    raw
+      .split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+/**
+ * ¿Debe verse el módulo CxC Lubrikca para esta empresa/usuario?
+ * - Standalone 'cobranza' (app de Lubrikca): siempre.
+ * - Admin del sistema (es_superusuario_omni): siempre.
+ * - Resto: solo si la empresa activa está en la allowlist.
+ */
+export function isCxcLubrikcaVisible(
+  empresaId: string | null | undefined,
+  esSuperusuarioOmni: boolean,
+): boolean {
+  if (getAppProfile() === 'cobranza') return true;
+  if (esSuperusuarioOmni) return true;
+  if (!empresaId) return false;
+  return getCxcLubrikcaEmpresas().has(empresaId);
 }

@@ -1,23 +1,38 @@
 import type { ReactNode } from 'react';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
 import PointOfSaleOutlined from '@mui/icons-material/PointOfSaleOutlined';
+import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import PrecisionManufacturingOutlined from '@mui/icons-material/PrecisionManufacturingOutlined';
+import CalculateOutlined from '@mui/icons-material/CalculateOutlined';
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
+import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
+import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
+import LocalGasStationOutlined from '@mui/icons-material/LocalGasStationOutlined';
 import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
 import SavingsOutlined from '@mui/icons-material/SavingsOutlined';
+import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import BadgeOutlined from '@mui/icons-material/BadgeOutlined';
+import FingerprintOutlined from '@mui/icons-material/FingerprintOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import TuneOutlined from '@mui/icons-material/TuneOutlined';
 import HubOutlined from '@mui/icons-material/HubOutlined';
+import SyncAltOutlined from '@mui/icons-material/SyncAltOutlined';
+import CloudUploadOutlined from '@mui/icons-material/CloudUploadOutlined';
 import QrCodeScannerOutlined from '@mui/icons-material/QrCodeScannerOutlined';
 import AppsOutlined from '@mui/icons-material/AppsOutlined';
 import WorkspacePremiumOutlined from '@mui/icons-material/WorkspacePremiumOutlined';
-import { isModuleEnabled } from './appProfile';
+import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined';
+import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
+import FolderOutlined from '@mui/icons-material/FolderOutlined';
+import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import { isModuleEnabled, isCxcLubrikcaVisible } from './appProfile';
 
 export interface NavItem {
   label: string;
@@ -70,6 +85,25 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Notas de Crédito Fiscal', path: '/ventas/notas-credito-fiscal' },
         { label: 'Devoluciones', path: '/ventas/devoluciones-venta' },
         { label: 'Facturas Fiscales', path: '/ventas/facturas-fiscales' },
+        { label: 'Listas de Precio', path: '/ventas/listas-precio' },
+        { label: 'Comisiones', path: '/ventas/comisiones' },
+      ],
+    },
+    {
+      id: 'crm',
+      label: 'Clientes (CRM)',
+      icon: <PeopleAltOutlined />,
+      items: [{ label: 'Clientes', path: '/crm/clientes' }],
+    },
+    {
+      id: 'servicio-cliente',
+      label: 'Servicio al Cliente',
+      icon: <SupportAgentOutlined />,
+      items: [
+        { label: 'Tickets', path: '/servicio-cliente/tickets' },
+        { label: 'Categorías', path: '/servicio-cliente/categorias' },
+        { label: 'Base de Conocimiento', path: '/servicio-cliente/base-conocimiento' },
+        { label: 'Feedback', path: '/servicio-cliente/feedback' },
       ],
     },
     {
@@ -85,22 +119,56 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       items: [
         { label: 'Dashboard', path: '/inventario' },
         { label: 'Stock Actual', path: '/inventario/stock' },
+        { label: 'Ubicaciones', path: '/inventario/ubicaciones' },
         { label: 'Ajuste Manual', path: '/inventario/ajustes' },
+        { label: 'Datos Maestros', path: '/inventario/maestros' },
       ],
+    },
+    {
+      id: 'despacho',
+      label: 'Despacho',
+      icon: <LocalShippingOutlined />,
+      items: [{ label: 'Despachos', path: '/despacho' }],
     },
     {
       id: 'manufactura',
       label: 'Manufactura',
       icon: <PrecisionManufacturingOutlined />,
-      items: [{ label: 'Órdenes de Producción', path: '/manufactura/ordenes' }],
+      items: [
+        { label: 'Datos Maestros', path: '/manufactura/maestros' },
+        { label: 'Órdenes de Producción', path: '/manufactura/ordenes' },
+      ],
+    },
+    {
+      id: 'costos',
+      label: 'Costos',
+      icon: <CalculateOutlined />,
+      items: [{ label: 'Costeo de Producción', path: '/costos' }],
     },
     {
       id: 'compras',
       label: 'Compras',
       icon: <ShoppingCartOutlined />,
       items: [
+        { label: 'Aprovisionamiento', path: '/compras/aprovisionamiento' },
         { label: 'Órdenes de Compra', path: '/compras/ordenes' },
         { label: 'Cuentas por Pagar', path: '/compras/cuentas-por-pagar' },
+      ],
+    },
+    {
+      id: 'proveedores',
+      label: 'Proveedores',
+      icon: <LocalShippingOutlined />,
+      items: [{ label: 'Proveedores', path: '/proveedores/proveedores' }],
+    },
+    {
+      id: 'gastos',
+      label: 'Gastos',
+      icon: <PaymentsOutlined />,
+      items: [
+        { label: 'Gastos', path: '/gastos' },
+        { label: 'Categorías', path: '/gastos/categorias' },
+        { label: 'Reembolsos', path: '/gastos/reembolsos' },
       ],
     },
     {
@@ -115,6 +183,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Cajas Físicas', path: '/finanzas/cajas-fisicas' },
         { label: 'Cuentas Bancarias', path: `/empresas/${emp}/cuentas-bancarias` },
         { label: 'Transacciones', path: `/empresas/${emp}/transacciones-financieras` },
+        { label: 'Pagos de Terceros', path: '/finanzas/pagos-terceros' },
         { label: 'Plantillas Maestro', path: '/finanzas/plantillas-maestro' },
         { label: 'Overrides por Sucursal', path: '/finanzas/overrides-metodos-pago' },
       ],
@@ -137,7 +206,14 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Movimientos Bancarios', path: '/tesoreria/movimientos-bancarios' },
         { label: 'Conciliación Bancaria', path: '/tesoreria/conciliaciones' },
         { label: 'Cambio de Divisa', path: '/tesoreria/cambio-divisa' },
+        { label: 'Movimientos Internos', path: '/tesoreria/movimientos-internos' },
       ],
+    },
+    {
+      id: 'banca-electronica',
+      label: 'Banca Electrónica',
+      icon: <AccountBalanceOutlined />,
+      items: [{ label: 'Cuentas Bancarias', path: '/banca-electronica' }],
     },
     {
       id: 'cobranza',
@@ -152,13 +228,35 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       ],
     },
     {
+      id: 'cxc-lubrikca',
+      label: 'CxC Lubrikca',
+      icon: <LocalGasStationOutlined />,
+      items: [
+        { label: 'Dashboard', path: '/cxc-lubrikca/dashboard' },
+        { label: 'Config del Motor', path: '/cxc-lubrikca/config' },
+        { label: 'Captura', path: '/cxc-lubrikca/captura' },
+        { label: 'Bandeja', path: '/cxc-lubrikca/bandeja' },
+        { label: 'Conciliación', path: '/cxc-lubrikca/conciliacion' },
+        { label: 'Cartera', path: '/cxc-lubrikca/cartera' },
+      ],
+    },
+    {
       id: 'rrhh',
       label: 'RRHH',
       icon: <BadgeOutlined />,
       items: [
         { label: 'Empleados', path: '/rrhh/empleados' },
+        { label: 'Beneficios y Licencias', path: '/rrhh/beneficios' },
         { label: 'Nómina', path: '/nomina/procesos' },
+        { label: 'Conceptos de Nómina', path: '/nomina/conceptos' },
+        { label: 'Nómina Extrasalarial', path: '/nomina/extrasalarial' },
       ],
+    },
+    {
+      id: 'control-asistencia',
+      label: 'Control de Asistencia',
+      icon: <FingerprintOutlined />,
+      items: [{ label: 'Asistencia', path: '/control-asistencia' }],
     },
     {
       id: 'fiscal',
@@ -168,6 +266,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Configuración', path: '/configuracion/fiscal' },
         { label: 'Libro de Ventas', path: '/fiscal/libro-ventas' },
         { label: 'Libro de Compras', path: '/fiscal/libro-compras' },
+        { label: 'Pagos Parafiscales', path: '/fiscal/pagos-parafiscales' },
       ],
     },
     {
@@ -192,6 +291,21 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       ],
     },
     {
+      id: 'gestion-aprobaciones',
+      label: 'Aprobaciones',
+      icon: <FactCheckOutlined />,
+      items: [
+        { label: 'Solicitudes', path: '/aprobaciones/solicitudes' },
+        { label: 'Configuración', path: '/aprobaciones/configuracion' },
+      ],
+    },
+    {
+      id: 'gestion-documental',
+      label: 'Documentos',
+      icon: <FolderOutlined />,
+      items: [{ label: 'Documentos', path: '/gestion-documental/documentos' }],
+    },
+    {
       id: 'configuracion',
       label: 'Configuración',
       icon: <SettingsOutlined />,
@@ -202,10 +316,40 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       ],
     },
     {
+      id: 'personalizacion',
+      label: 'Personalización',
+      icon: <TuneOutlined />,
+      items: [{ label: 'Personalización', path: '/personalizacion' }],
+    },
+    {
       id: 'integraciones',
       label: 'Integraciones',
       icon: <HubOutlined />,
       items: [{ label: 'Hub de Integraciones', path: '/integraciones' }],
+    },
+    {
+      id: 'integracion-b2b',
+      label: 'Integración B2B',
+      icon: <SyncAltOutlined />,
+      items: [{ label: 'Integración B2B', path: '/integracion-b2b' }],
+    },
+    {
+      id: 'migracion-datos',
+      label: 'Migración de Datos',
+      icon: <CloudUploadOutlined />,
+      items: [{ label: 'Migración de Datos', path: '/migracion-datos' }],
+    },
+    {
+      id: 'notificaciones',
+      label: 'Notificaciones',
+      icon: <NotificationsOutlined />,
+      path: '/notificaciones',
+    },
+    {
+      id: 'agentes',
+      label: 'Agentes IA',
+      icon: <AutoAwesomeOutlined />,
+      path: '/agentes',
     },
   ];
 
@@ -226,5 +370,13 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
 
   // Perfil de build (D4): el standalone de cobranza oculta los módulos no
   // imprescindibles (ventas, inventario, fiscal, escáner). En 'full' pasa todo.
-  return sections.filter((s) => isModuleEnabled(s.id));
+  // Además, CxC Lubrikca (subproyecto de un cliente) solo se ve para las empresas
+  // habilitadas o el admin del sistema (no para toda empresa en el build 'full').
+  return sections.filter((s) => {
+    if (!isModuleEnabled(s.id)) return false;
+    if (s.id === 'cxc-lubrikca') {
+      return isCxcLubrikcaVisible(empresaId, options.esSuperusuarioOmni ?? false);
+    }
+    return true;
+  });
 }

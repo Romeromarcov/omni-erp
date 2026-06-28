@@ -13,19 +13,41 @@ import { integracionesRoutes } from './routes/integracionesRoutes';
 import { inventarioRoutes } from './routes/inventarioRoutes';
 import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
+import { cxcLubrikcaRoutes } from './routes/cxcLubrikcaRoutes';
+import { crmRoutes } from './routes/crmRoutes';
+import { servicioClienteRoutes } from './routes/servicioClienteRoutes';
+import { gestionDocumentalRoutes } from './routes/gestionDocumentalRoutes';
+import { proveedoresRoutes } from './routes/proveedoresRoutes';
+import { gastosRoutes } from './routes/gastosRoutes';
+import { despachoRoutes } from './routes/despachoRoutes';
 import { manufacturaRoutes } from './routes/manufacturaRoutes';
+import { costosRoutes } from './routes/costosRoutes';
 import { comprasRoutes } from './routes/comprasRoutes';
 import { rrhhRoutes } from './routes/rrhhRoutes';
+import { controlAsistenciaRoutes } from './routes/controlAsistenciaRoutes';
 import { contabilidadRoutes } from './routes/contabilidadRoutes';
 import { tesoreriaRoutes } from './routes/tesoreriaRoutes';
 import { escanerRoutes } from './routes/escanerRoutes';
 import { saasRoutes } from './routes/saasRoutes';
-import { isModuleEnabled } from './config/appProfile';
+import { aprobacionesRoutes } from './routes/aprobacionesRoutes';
+import { notificacionesRoutes } from './routes/notificacionesRoutes';
+import { bancaElectronicaRoutes } from './routes/bancaElectronicaRoutes';
+import { migracionDatosRoutes } from './routes/migracionDatosRoutes';
+import { integracionB2bRoutes } from './routes/integracionB2bRoutes';
+import { agentesRoutes } from './routes/agentesRoutes';
+import { personalizacionRoutes } from './routes/personalizacionRoutes';
+import { isModuleEnabled, isCxcLubrikcaVisible } from './config/appProfile';
+import { getEmpresaId } from './utils/empresa';
 
 const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
 
 export default function AppRouter() {
-  const { token, isLoading } = useAuth();
+  const { token, isLoading, user } = useAuth();
+  // CxC Lubrikca solo se monta para empresas habilitadas o el admin del sistema
+  // (además del gate de build). Evita el acceso por URL directa desde otras empresas.
+  const cxcLubrikcaOn =
+    isModuleEnabled('cxc-lubrikca') &&
+    isCxcLubrikcaVisible(getEmpresaId(), user?.es_superusuario_omni ?? false);
 
   // While rehydrating the session from the refresh cookie, avoid flashing the
   // login page (which would otherwise win the route race for a logged-in user).
@@ -70,13 +92,29 @@ export default function AppRouter() {
             {isModuleEnabled('inventario') ? inventarioRoutes() : null}
             {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
             {cxcRoutes()}
+            {cxcLubrikcaOn ? cxcLubrikcaRoutes() : null}
+            {crmRoutes()}
+            {servicioClienteRoutes()}
+            {gestionDocumentalRoutes()}
+            {proveedoresRoutes()}
+            {gastosRoutes()}
+            {despachoRoutes()}
             {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
+            {costosRoutes()}
             {isModuleEnabled('compras') ? comprasRoutes() : null}
             {isModuleEnabled('rrhh') ? rrhhRoutes() : null}
+            {controlAsistenciaRoutes()}
             {isModuleEnabled('contabilidad') ? contabilidadRoutes() : null}
             {isModuleEnabled('tesoreria') ? tesoreriaRoutes() : null}
             {isModuleEnabled('escaner') ? escanerRoutes() : null}
             {saasRoutes()}
+            {aprobacionesRoutes()}
+            {notificacionesRoutes()}
+            {bancaElectronicaRoutes()}
+            {migracionDatosRoutes()}
+            {integracionB2bRoutes()}
+            {agentesRoutes()}
+            {personalizacionRoutes()}
           </Route>
         )}
 

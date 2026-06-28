@@ -103,6 +103,7 @@ urlpatterns = [
     path("api/migracion-datos/", include("apps.migracion_datos.urls")),
     path("api/personalizacion/", include("apps.personalizacion.urls")),
     path("api/cobranza/", include("apps.cxc.api.router")),
+    path("api/cxc-lubrikca/", include("apps.cxc_lubrikca.api.router")),
     path("api/sync/", include("apps.sync.urls")),
 ]
 

@@ -130,6 +130,52 @@ describe('manufacturaService', () => {
     );
   });
 
+  it('crearOrden envía el payload de la OF y devuelve la orden creada', async () => {
+    vi.mocked(post).mockResolvedValue({ ...orden, id: 'of-new' });
+    const res = await manufacturaService.crearOrden({
+      producto: 'prod-1',
+      cantidad: '4',
+      fecha_inicio: '2026-06-26',
+      lista_materiales: 'bom-1',
+      referencia_externa: 'OF-9',
+    });
+    expect(post).toHaveBeenCalledWith('/manufactura/ordenes-produccion/', {
+      producto: 'prod-1',
+      cantidad: '4',
+      fecha_inicio: '2026-06-26',
+      lista_materiales: 'bom-1',
+      referencia_externa: 'OF-9',
+    });
+    expect(res.id).toBe('of-new');
+  });
+
+  it('consumirMateriales descuenta el inventario y devuelve el costo', async () => {
+    vi.mocked(post).mockResolvedValue({
+      estado: 'en_proceso',
+      consumos: [],
+      costo_materiales: '140.0000',
+    });
+    const res = await manufacturaService.consumirMateriales('of-1', { almacen_id: 'alm-1' });
+    expect(post).toHaveBeenCalledWith('/manufactura/ordenes-produccion/of-1/consumir-materiales/', {
+      almacen_id: 'alm-1',
+    });
+    expect(res.costo_materiales).toBe('140.0000');
+    expect(res.estado).toBe('en_proceso');
+  });
+
+  it('getListasMateriales normaliza la lista de BOM', async () => {
+    vi.mocked(get).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ id: 'bom-1', nombre: 'BOM Mesa', producto_final: 'prod-1' }],
+    });
+    const res = await manufacturaService.getListasMateriales();
+    expect(get).toHaveBeenCalledWith('/manufactura/listas-materiales/');
+    expect(res).toHaveLength(1);
+    expect(res[0].nombre).toBe('BOM Mesa');
+  });
+
   it('completarOrden envía almacen_id y cantidad opcional', async () => {
     vi.mocked(post).mockResolvedValue({
       estado: 'finalizada',
