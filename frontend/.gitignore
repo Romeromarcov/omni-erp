@@ -34,3 +34,6 @@ dist-ssr
 /test-results
 /playwright-report
 /playwright/.cache
+
+# Playwright E2E auth state (login unico)
+e2e/.auth/

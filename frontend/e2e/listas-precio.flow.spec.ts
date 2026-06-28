@@ -42,7 +42,9 @@ test.describe('Ventas: listas de precio', () => {
       const fila = page.getByRole('row').filter({ hasText: nombre });
       await expect(fila).toBeVisible();
       await fila.getByRole('button', { name: 'Precios' }).click();
-      await expect(page.getByText('Precios por producto')).toBeVisible();
+      // exact: el contenedor (Stack con "Importar CSV") también contiene el
+      // texto; el título es exactamente "Precios por producto".
+      await expect(page.getByText('Precios por producto', { exact: true })).toBeVisible();
     });
 
     await test.step('agregar un precio para un producto', async () => {
