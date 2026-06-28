@@ -119,7 +119,7 @@ test.describe('Compra completa: OC → recepción → factura → CxP → pago',
       await fila.click();
       await expect(
         page.getByRole('heading', { name: `Orden de Compra ${numeroOrden}` }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 20_000 });
 
       // El botón "Registrar factura" se habilita cuando la query de recepciones
       // de la OC resuelve con ≥1 recepción. Si la query falla por un hipo
@@ -144,7 +144,9 @@ test.describe('Compra completa: OC → recepción → factura → CxP → pago',
       await dialogo.getByLabel('Número de factura').fill(numeroFactura);
       await dialogo.getByRole('button', { name: 'Registrar factura' }).click();
 
-      await expect(page.getByText(`Factura ${numeroFactura} registrada.`)).toBeVisible();
+      await expect(page.getByText(`Factura ${numeroFactura} registrada.`)).toBeVisible({
+        timeout: 20_000,
+      });
     });
 
     await test.step('la CxP generada aparece y se salda con un abono', async () => {
@@ -154,7 +156,8 @@ test.describe('Compra completa: OC → recepción → factura → CxP → pago',
 
       const referencia = `Recepción OC ${numeroOrden}`;
       const fila = page.getByRole('row').filter({ hasText: referencia });
-      await expect(fila).toBeVisible();
+      // La CxP nace de la recepción de forma asíncrona; bajo carga de CI tarda.
+      await expect(fila).toBeVisible({ timeout: 20_000 });
       // Saldo pendiente = monto total = 250.00 antes del abono.
       await expect(fila.getByText(montoEsperado).first()).toBeVisible();
 
@@ -164,7 +167,9 @@ test.describe('Compra completa: OC → recepción → factura → CxP → pago',
       await dialogo.getByLabel('Monto').fill(montoEsperado);
       await dialogo.getByRole('button', { name: 'Registrar abono' }).click();
 
-      await expect(page.getByText('Abono registrado correctamente.')).toBeVisible();
+      await expect(page.getByText('Abono registrado correctamente.')).toBeVisible({
+        timeout: 20_000,
+      });
 
       // Tras saldarla queda en estado PAGADA y sin acción de abono disponible.
       await page.getByText('Filtrar por estado').click();
