@@ -172,7 +172,9 @@ test.describe('Compra completa: OC → recepción → factura → CxP → pago',
       });
 
       // Tras saldarla queda en estado PAGADA y sin acción de abono disponible.
-      await page.getByText('Filtrar por estado').click();
+      // El combobox (no getByText: "Filtrar por estado" aparece como label Y como
+      // valor seleccionado → strict mode con 2 elementos).
+      await page.getByRole('combobox', { name: 'Filtrar por estado' }).click();
       await page.getByRole('option', { name: 'PAGADA' }).click();
       const filaPagada = page.getByRole('row').filter({ hasText: referencia });
       await expect(filaPagada).toBeVisible();
