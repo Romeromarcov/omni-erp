@@ -247,6 +247,13 @@ RLS_TABLES = {
     "cxc_lubrikca_bandejafacturacion": "empresa_id",
     "cxc_lubrikca_configuracionconciliacion": "empresa_id",
     "cxc_lubrikca_conciliacionlubrikca": "empresa_id",
+    # activaciones (eventos en puntos de venta) y bots_ingest (ingesta desde Telegram)
+    "activaciones_calendario": "id_empresa_id",
+    "activaciones_recurso": "id_empresa_id",
+    "activaciones_evento": "id_empresa_id",
+    "activaciones_uso_recurso": "id_empresa_id",
+    "bots_ingest_usuario": "id_empresa_id",
+    "bots_ingest_ingesta": "id_empresa_id",
     # core
     "core_capability_token": "empresa_id",
     "core_clave_idempotencia": "empresa_id",

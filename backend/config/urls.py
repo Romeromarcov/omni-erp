@@ -105,6 +105,8 @@ urlpatterns = [
     path("api/cobranza/", include("apps.cxc.api.router")),
     path("api/cxc-lubrikca/", include("apps.cxc_lubrikca.api.router")),
     path("api/sync/", include("apps.sync.urls")),
+    path("api/activaciones/", include("apps.activaciones.urls")),
+    path("api/bots/", include("apps.bots_ingest.urls")),
 ]
 
 if settings.DEBUG:

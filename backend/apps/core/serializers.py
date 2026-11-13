@@ -346,6 +346,7 @@ class ContactoSerializer(BaseModelSerializer):
             "id_contacto", "id_empresa", "tipo_persona",
             "nombre", "apellido", "nombre_comercial", "nombre_completo",
             "rif", "cedula", "email", "telefono", "direccion_fiscal",
+            "latitud", "longitud", "gps_precision_m", "gps_capturado_en",
             "es_cliente", "es_proveedor", "es_empleado", "es_usuario",
             "tipo_credito", "limite_credito", "dias_credito", "lista_precio",
             "dias_pago", "usuario", "activo", "fecha_creacion",
