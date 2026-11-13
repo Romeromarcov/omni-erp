@@ -314,6 +314,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 | ADR-010 | Extensibilidad y marketplace de extensiones | ✅ Aceptado 2026-06-12 |
 | ADR-011 | Servicios hermanos / fábricas | ✅ Aceptado 2026-06-12 |
 | ADR-012 | Modelo transaccional de venta POS offline | ✅ Aceptado 2026-06-19 (backend implementado) |
+| ADR-014 | Omni Connect (tarjetas NFC + CRM ligero) como módulo dentro de Omni | ✅ Aceptado 2026-11-13 (S1 esquema) |
 
 ---
 

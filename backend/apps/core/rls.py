@@ -202,6 +202,13 @@ RLS_TABLES = {
     "crm_cliente": "id_empresa_id",
     "crm_contacto_cliente": "id_empresa_id",
     "crm_direccion_cliente": "id_empresa_id",
+    # crm ligero + connect (Omni Connect S1)
+    "crm_pipeline": "id_empresa_id",
+    "crm_etapa": "id_empresa_id",
+    "crm_lead": "id_empresa_id",
+    "connect_perfil": "id_empresa_id",
+    "connect_tarjeta": "id_empresa_id",
+    "connect_toque": "id_empresa_id",
     # Lote 3 (CTF-012) — resto de tablas tenant, por app.
     # agentes
     "agentes_config_agente": "id_empresa_id",
