@@ -158,7 +158,9 @@ jobs:
   # ──────────────────────────────────────────────────────────────
   e2e:
     name: "E2E (Playwright flujos críticos — BLOQUEANTE)"
-    runs-on: ubuntu-latest
+    # Fijado a 24.04: `ubuntu-latest` pasó a 26.04 y Playwright aún no soporta
+    # chromium ahí ("does not support chromium on ubuntu26.04-x64").
+    runs-on: ubuntu-24.04
 
     services:
       postgres:

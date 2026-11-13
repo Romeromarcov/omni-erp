@@ -413,14 +413,25 @@ class TestDatafonoRealizarCierre:
         assert gasto.monto_transaccion == Decimal("2.00")
 
     def test_segunda_corrida_solo_toma_posteriores_al_ultimo_cierre(self, datafono_a, user_a):
-        TransaccionDatafono.objects.create(
+        # Tiempos explícitos: con timezone.now() la transacción posterior podía caer en el
+        # mismo tick del reloj que el cierre (resolución ~15 ms en Windows) y quedar fuera
+        # del filtro estricto fecha_hora_transaccion > fecha_ultimo_cierre.
+        # fecha_hora_transaccion es auto_now_add: se fija con update() tras crear.
+        corte = timezone.now() - datetime.timedelta(minutes=5)
+        previa = TransaccionDatafono.objects.create(
             id_datafono=datafono_a, monto=Decimal("100.00"), id_usuario_registro=user_a
         )
-        datafono_a.realizar_cierre(usuario=user_a)
+        TransaccionDatafono.objects.filter(pk=previa.pk).update(
+            fecha_hora_transaccion=corte - datetime.timedelta(seconds=30)
+        )
+        datafono_a.realizar_cierre(usuario=user_a, hasta=corte)
         datafono_a.refresh_from_db()
         # Nueva transacción tras el cierre
-        TransaccionDatafono.objects.create(
+        posterior = TransaccionDatafono.objects.create(
             id_datafono=datafono_a, monto=Decimal("40.00"), id_usuario_registro=user_a
+        )
+        TransaccionDatafono.objects.filter(pk=posterior.pk).update(
+            fecha_hora_transaccion=corte + datetime.timedelta(minutes=1)
         )
         resultado = datafono_a.realizar_cierre(usuario=user_a)
         assert resultado["total"] == Decimal("40.00")

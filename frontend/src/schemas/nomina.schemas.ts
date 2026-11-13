@@ -48,7 +48,7 @@ export const periodoNominaSchema = z
       .min(1, 'El nombre del período es obligatorio')
       .max(100, 'Máximo 100 caracteres'),
     tipo_periodo: z.enum(['SEMANAL', 'QUINCENAL', 'MENSUAL', 'ANUAL'], {
-      errorMap: () => ({ message: 'El tipo de período es obligatorio' }),
+      error: () => 'El tipo de período es obligatorio',
     }),
     fecha_inicio: z.string().min(1, 'La fecha de inicio es obligatoria'),
     fecha_fin: z.string().min(1, 'La fecha de fin es obligatoria'),

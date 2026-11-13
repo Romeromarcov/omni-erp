@@ -9,11 +9,18 @@ import Decimal from 'decimal.js';
 /** Valor que puede convertirse a Decimal. */
 export type DecimalInput = Decimal | string | number | null | undefined;
 
-/** Construye un Decimal de forma segura a partir de string | number | Decimal | null | undefined. */
-export const D = (x: DecimalInput): Decimal => {
+/**
+ * Construye un Decimal de forma segura a partir de string | number | Decimal | null | undefined.
+ *
+ * Acepta `unknown` porque con zod 4 los campos `z.coerce` tienen entrada tipada `unknown`
+ * (los valores de formulario). El comportamiento no cambia: cualquier valor que decimal.js
+ * no pueda interpretar cae en el `catch` y se trata como 0; no se convierte vía `Number()`,
+ * así que no se pierde precisión decimal.
+ */
+export const D = (x: unknown): Decimal => {
   if (x === null || x === undefined || x === '') return new Decimal(0);
   try {
-    const d = new Decimal(x);
+    const d = new Decimal(x as Decimal.Value);
     return d.isNaN() ? new Decimal(0) : d;
   } catch {
     // decimal.js lanza ante strings no numéricos (p. ej. 'abc'); tratarlos como 0.
