@@ -15,6 +15,12 @@ Dockerfile.*
 .dockerignore
 README.md
 CHANGELOG.md
-src/__tests__
+# Tests: no van en la imagen de produccion. tsconfig.app.json compila todo `src`, y sin
+# src/test-setup.ts (tipos de jest-dom) los tests que queden en el contexto no compilan
+# (TS2339 toBeInTheDocument) y `npm run build` falla con exit 2. Hay tests anidados
+# (src/components/*/__tests__, src/hooks/__tests__, src/lib/__tests__), por eso `**/`.
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
 src/test-setup.ts
 vitest.config.ts
