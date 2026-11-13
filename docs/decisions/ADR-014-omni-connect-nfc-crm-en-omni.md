@@ -51,6 +51,22 @@ Había cuatro decisiones abiertas que bloqueaban el backlog (S1 en adelante).
 - **Odoo de Lubrikca:** el conector actual hace `push_contacto` hacia `res.partner`, que puede
   disparar la lógica fiscal custom (`l10n_ve_full`). Connect solo escribe `crm.lead`.
 
+## Requisitos para las siguientes historias
+
+- **S2 (perfil público):** un request anónimo es fail-closed bajo RLS. Resolver el slug dentro de
+  `rls.rls_bypass()` acotado a esa consulta, proyectando solo campos públicos, y servir solo
+  tarjetas en estado `ACTIVA` (una `PERDIDA` o `DESACTIVADA` conserva su perfil por historial).
+  `Perfil.botones` ya se valida con allowlist (tipos, `http(s)`, teléfonos, correo); la vista debe
+  además escapar todo valor al renderizarlo.
+- **S2/S3/S6 (servicios que crean registros):** deben llamar `full_clean()`. Las validaciones
+  cross-tenant de FKs viven en `clean()` (RLS solo valida la empresa de la fila propia) y
+  `objects.create()` no las ejecuta.
+- **Unicidad:** `slug`, `uid_chip` y un perfil por usuario son globales y no se liberan al
+  desactivar (reasignar un slug impreso en una tarjeta física sería un riesgo). Nombres de
+  pipeline y etapa son únicos solo entre registros activos; `Etapa.orden` no es único para
+  permitir reordenar el kanban.
+- **`Toque`:** tabla de alto volumen sin política de retención aún; definirla en S10 (analíticas).
+
 ## Pendiente (no bloquea S1–S6)
 
 - Marca y dominio propios para el producto, o bajo la marca Omni.

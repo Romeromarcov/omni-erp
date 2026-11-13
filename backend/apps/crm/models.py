@@ -1,12 +1,12 @@
 import re
 import uuid
-from apps.core.uuid import uuid7
 
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from apps.connect.validators import validar_misma_empresa
 from apps.core.base_models import IntegrationFieldsMixin, OmniBaseModel
+from apps.core.uuid import uuid7
+from apps.core.validators import validar_misma_empresa
 
 
 def validar_rif(value):
@@ -140,11 +140,16 @@ class Pipeline(OmniBaseModel):
         verbose_name_plural = "Pipelines"
         ordering = ["nombre"]
         constraints = [
-            models.UniqueConstraint(fields=["id_empresa", "nombre"], name="crm_pipeline_nombre_unico"),
-            # A lo sumo un pipeline predeterminado por empresa.
+            # Unicidad solo entre pipelines activos: el nombre de uno desactivado se puede reutilizar.
+            models.UniqueConstraint(
+                fields=["id_empresa", "nombre"],
+                condition=models.Q(activo=True),
+                name="crm_pipeline_nombre_unico",
+            ),
+            # A lo sumo un pipeline predeterminado (activo) por empresa.
             models.UniqueConstraint(
                 fields=["id_empresa"],
-                condition=models.Q(es_predeterminado=True),
+                condition=models.Q(es_predeterminado=True, activo=True),
                 name="crm_pipeline_un_predeterminado",
             ),
         ]
@@ -174,10 +179,16 @@ class Etapa(OmniBaseModel):
         db_table = "crm_etapa"
         verbose_name = "Etapa"
         verbose_name_plural = "Etapas"
-        ordering = ["pipeline", "orden"]
+        # ``orden`` no es único: reordenar (drag-and-drop del kanban) intercambia posiciones
+        # y una restricción no diferible lo rechazaría a mitad de la actualización.
+        ordering = ["pipeline", "orden", "nombre"]
         constraints = [
-            models.UniqueConstraint(fields=["pipeline", "nombre"], name="crm_etapa_nombre_unico"),
-            models.UniqueConstraint(fields=["pipeline", "orden"], name="crm_etapa_orden_unico"),
+            # Unicidad solo entre etapas activas: el nombre de una desactivada se puede reutilizar.
+            models.UniqueConstraint(
+                fields=["pipeline", "nombre"],
+                condition=models.Q(activo=True),
+                name="crm_etapa_nombre_unico",
+            ),
         ]
         indexes = [models.Index(fields=["id_empresa", "pipeline"])]
 
@@ -278,5 +289,7 @@ class Lead(OmniBaseModel):
         )
         if self.etapa_id and self.pipeline_id and self.etapa.pipeline_id != self.pipeline_id:
             raise ValidationError({"etapa": "La etapa no pertenece al pipeline del lead."})
+        if self.tarjeta_id and self.perfil_id and self.tarjeta.perfil_id != self.perfil_id:
+            raise ValidationError({"tarjeta": "La tarjeta no está asignada al perfil del lead."})
         if self.propietario_id and not self.propietario.empresas.filter(pk=self.id_empresa_id).exists():
             raise ValidationError({"propietario": "El propietario no pertenece a esta empresa."})

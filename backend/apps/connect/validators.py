@@ -3,9 +3,10 @@
 import re
 
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 
 # Slugs que colisionarían con rutas del sistema o serían engañosos en una URL
-# pública corta (omni.link/<slug>).
+# pública corta (omni.link/<slug>). Se aplican también como CheckConstraint.
 SLUGS_RESERVADOS = frozenset(
     {
         "admin", "api", "static", "media", "login", "logout", "registro",
@@ -15,6 +16,22 @@ SLUGS_RESERVADOS = frozenset(
 
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,58}[a-z0-9]$")
 _UID_RE = re.compile(r"^[0-9A-F]{8,20}$")
+_TELEFONO_RE = re.compile(r"^\+?[0-9]{7,15}$")
+_URL_RE = re.compile(r"^https?://[^\s]{3,480}$", re.IGNORECASE)
+
+# Botones del perfil público: tipo -> clase de valor permitida. Allowlist
+# estricta: el perfil se sirve sin login, así que jamás se aceptan esquemas
+# como ``javascript:`` o ``data:``.
+BOTONES_URL = frozenset({"web", "instagram", "catalogo", "pago", "ubicacion"})
+BOTONES_TELEFONO = frozenset({"whatsapp", "telefono"})
+BOTONES_CORREO = frozenset({"correo"})
+BOTONES_TIPOS = BOTONES_URL | BOTONES_TELEFONO | BOTONES_CORREO
+BOTONES_MAX = 30
+
+
+def normalizar_slug(value: str) -> str:
+    """Minúsculas y sin espacios en los extremos (``' Juan-Perez '`` → ``'juan-perez'``)."""
+    return (value or "").strip().lower()
 
 
 def validar_slug_perfil(value: str) -> None:
@@ -41,18 +58,28 @@ def validar_uid_chip(value: str) -> None:
         raise ValidationError("UID de chip inválido: se esperan 8–20 dígitos hexadecimales.")
 
 
-def validar_misma_empresa(instancia, **relacionados) -> None:
-    """Rechaza FKs que apunten a registros de otra empresa (R-CODE-1).
-
-    ``relacionados`` mapea nombre de campo → objeto relacionado (o ``None``).
-    Cada objeto debe exponer ``id_empresa_id``; se compara contra el de
-    ``instancia``.
-    """
-    errores = {}
-    for campo, obj in relacionados.items():
-        if obj is None:
-            continue
-        if getattr(obj, "id_empresa_id", None) != instancia.id_empresa_id:
-            errores[campo] = "Debe pertenecer a la misma empresa."
-    if errores:
-        raise ValidationError(errores)
+def validar_botones(value) -> None:
+    """Estructura y valores de ``Perfil.botones`` (lista de ``{tipo, etiqueta, valor}``)."""
+    if not isinstance(value, list):
+        raise ValidationError("Los botones deben ser una lista.")
+    if len(value) > BOTONES_MAX:
+        raise ValidationError(f"Máximo {BOTONES_MAX} botones por perfil.")
+    for i, boton in enumerate(value, start=1):
+        if not isinstance(boton, dict) or set(boton) != {"tipo", "etiqueta", "valor"}:
+            raise ValidationError(f"Botón {i}: debe tener exactamente tipo, etiqueta y valor.")
+        tipo, etiqueta, valor = boton["tipo"], boton["etiqueta"], boton["valor"]
+        if not all(isinstance(x, str) for x in (tipo, etiqueta, valor)):
+            raise ValidationError(f"Botón {i}: tipo, etiqueta y valor deben ser texto.")
+        if tipo not in BOTONES_TIPOS:
+            raise ValidationError(f"Botón {i}: tipo '{tipo}' no permitido.")
+        if not 1 <= len(etiqueta.strip()) <= 60:
+            raise ValidationError(f"Botón {i}: la etiqueta debe tener entre 1 y 60 caracteres.")
+        if tipo in BOTONES_URL and not _URL_RE.match(valor):
+            raise ValidationError(f"Botón {i}: el valor debe ser una URL http(s).")
+        if tipo in BOTONES_TELEFONO and not _TELEFONO_RE.match(valor):
+            raise ValidationError(f"Botón {i}: el valor debe ser un teléfono (7–15 dígitos, + opcional).")
+        if tipo in BOTONES_CORREO:
+            try:
+                validate_email(valor)
+            except ValidationError:
+                raise ValidationError(f"Botón {i}: correo inválido.") from None

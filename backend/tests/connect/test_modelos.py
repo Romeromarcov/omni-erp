@@ -9,13 +9,15 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
-from apps.connect.models import Tarjeta
+from apps.connect.models import Perfil, Tarjeta
 from apps.connect.validators import (
+    normalizar_slug,
     normalizar_uid_chip,
+    validar_botones,
     validar_slug_perfil,
     validar_uid_chip,
 )
-from apps.crm.models import Lead
+from apps.crm.models import Etapa, Lead, Pipeline
 
 from .builders import (
     consentimiento,
@@ -62,7 +64,99 @@ def test_uid_invalido(uid):
         validar_uid_chip(uid)
 
 
+@pytest.mark.unit
+def test_normalizar_slug():
+    assert normalizar_slug("  Juan-Perez ") == "juan-perez"
+    assert normalizar_slug(None) == ""
+
+
+_BOTON_OK = {"tipo": "web", "etiqueta": "Mi web", "valor": "https://ejemplo.com/x"}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "botones",
+    [
+        [],
+        [_BOTON_OK],
+        [{"tipo": "whatsapp", "etiqueta": "WhatsApp", "valor": "+584121234567"}],
+        [{"tipo": "telefono", "etiqueta": "Llamar", "valor": "02121234567"}],
+        [{"tipo": "correo", "etiqueta": "Correo", "valor": "a@b.com"}],
+        [{"tipo": "instagram", "etiqueta": "IG", "valor": "HTTP://instagram.com/u"}],
+    ],
+)
+def test_botones_validos(botones):
+    validar_botones(botones)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "botones",
+    [
+        {"tipo": "web"},  # no es lista
+        "texto",
+        [{"tipo": "web", "etiqueta": "x"}],  # faltan claves
+        [{**_BOTON_OK, "extra": "1"}],  # clave extra
+        [{**_BOTON_OK, "tipo": "script"}],  # tipo fuera del allowlist
+        [{**_BOTON_OK, "valor": "javascript:alert(1)"}],  # esquema peligroso
+        [{**_BOTON_OK, "valor": "data:text/html;base64,AAAA"}],
+        [{**_BOTON_OK, "valor": "ftp://ejemplo.com"}],
+        [{**_BOTON_OK, "valor": "https://a b.com"}],  # espacios
+        [{**_BOTON_OK, "etiqueta": ""}],
+        [{**_BOTON_OK, "etiqueta": "x" * 61}],
+        [{**_BOTON_OK, "valor": 123}],  # no es texto
+        [{"tipo": "whatsapp", "etiqueta": "W", "valor": "javascript:1"}],
+        [{"tipo": "correo", "etiqueta": "C", "valor": "no-es-correo"}],
+        [_BOTON_OK] * 31,  # demasiados botones
+    ],
+)
+def test_botones_invalidos(botones):
+    with pytest.raises(ValidationError):
+        validar_botones(botones)
+
+
 # ── Perfil ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_perfil_normaliza_slug_al_guardar_y_en_full_clean(empresa_a):
+    perfil = crear_perfil(empresa_a, slug="  Juan-Perez ")
+    perfil.refresh_from_db()
+    assert perfil.slug == "juan-perez"
+
+    otro = crear_perfil(empresa_a)
+    otro.slug = "Ana-Lopez "  # lo que llega de un formulario/admin
+    otro.full_clean()  # los validadores corren sobre el slug ya normalizado
+    assert otro.slug == "ana-lopez"
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_perfil_slug_reservado_se_rechaza_en_bd_aun_sin_validadores(empresa_a):
+    """CheckConstraint: protege rutas como /admin aunque se use objects.create/update."""
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Perfil.objects.bulk_create(
+            [Perfil(id_empresa=empresa_a, usuario=crear_usuario(empresa_a), slug="admin", nombre_publico="X")]
+        )
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_perfil_slug_en_mayusculas_se_rechaza_en_bd_con_update(empresa_a):
+    perfil = crear_perfil(empresa_a)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Perfil.objects.filter(pk=perfil.pk).update(slug="MAYUS-CULAS")
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_perfil_valida_botones_en_full_clean(empresa_a):
+    perfil = crear_perfil(empresa_a)
+    perfil.botones = [{"tipo": "web", "etiqueta": "Web", "valor": "javascript:alert(1)"}]
+    with pytest.raises(ValidationError) as exc:
+        perfil.full_clean()
+    assert "botones" in exc.value.message_dict
 
 
 @pytest.mark.django_db
@@ -103,6 +197,27 @@ def test_tarjeta_guarda_uid_normalizado(empresa_a):
     assert tarjeta.uid_chip == "04A2B3C4D5E6F7"
     assert tarjeta.estado == Tarjeta.Estado.INVENTARIO
     assert tarjeta.perfil is None  # tarjeta en inventario, aún sin asignar
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_tarjeta_full_clean_acepta_uid_con_separadores_y_minusculas(empresa_a):
+    """El validador de campo corre antes de clean(): debe ver el UID ya normalizado."""
+    tarjeta = crear_tarjeta(empresa_a)
+    tarjeta.uid_chip = "04:a2:b3:c4:d5:e6:f7"
+    tarjeta.full_clean()
+    assert tarjeta.uid_chip == "04A2B3C4D5E6F7"
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_tarjeta_activa_registra_fecha_de_activacion(empresa_a):
+    perfil = crear_perfil(empresa_a)
+    inventario = crear_tarjeta(empresa_a)
+    assert inventario.fecha_activacion is None
+
+    activa = crear_tarjeta(empresa_a, perfil=perfil, estado=Tarjeta.Estado.ACTIVA)
+    assert activa.fecha_activacion is not None
 
 
 @pytest.mark.django_db
@@ -166,6 +281,25 @@ def test_toque_rechaza_perfil_o_tarjeta_de_otra_empresa(empresa_a, empresa_b):
 
 @pytest.mark.django_db
 @pytest.mark.integration
+def test_toque_rechaza_tarjeta_de_otro_perfil_o_sin_perfil(empresa_a):
+    perfil_a, perfil_b = crear_perfil(empresa_a), crear_perfil(empresa_a)
+    tarjeta_de_b = crear_tarjeta(empresa_a, perfil=perfil_b, estado=Tarjeta.Estado.ACTIVA)
+    tarjeta_inventario = crear_tarjeta(empresa_a)
+
+    for tarjeta in (tarjeta_de_b, tarjeta_inventario):
+        toque = crear_toque(empresa_a, perfil=perfil_a)
+        toque.tarjeta = tarjeta
+        with pytest.raises(ValidationError) as exc:
+            toque.full_clean()
+        assert "tarjeta" in exc.value.message_dict
+
+    # Coherente: la tarjeta pertenece al perfil del toque.
+    toque = crear_toque(empresa_a, perfil=perfil_b, tarjeta=tarjeta_de_b)
+    toque.full_clean()
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
 def test_no_se_puede_borrar_perfil_con_toques(empresa_a):
     """PROTECT: la analítica histórica no se pierde por borrar el perfil."""
     from django.db.models import ProtectedError
@@ -190,15 +324,30 @@ def test_un_solo_pipeline_predeterminado_por_empresa(empresa_a, empresa_b):
 
 @pytest.mark.django_db
 @pytest.mark.integration
-def test_etapa_nombre_y_orden_unicos_por_pipeline(empresa_a):
+def test_pipeline_desactivado_libera_nombre_y_predeterminado(empresa_a):
+    viejo = crear_pipeline(empresa_a, nombre="Ventas", es_predeterminado=True)
+    viejo.soft_delete()
+    # Con el viejo desactivado se puede reutilizar el nombre y fijar otro predeterminado.
+    crear_pipeline(empresa_a, nombre="Ventas", es_predeterminado=True)
+    assert Pipeline.objects.filter(id_empresa=empresa_a, nombre="Ventas").count() == 2
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_etapa_nombre_unico_entre_activas_pero_orden_repetible(empresa_a):
     pipeline = crear_pipeline(empresa_a)
-    crear_etapa(empresa_a, pipeline, nombre="Nuevo", orden=1)
+    nuevo = crear_etapa(empresa_a, pipeline, nombre="Nuevo", orden=1)
     with pytest.raises(IntegrityError), transaction.atomic():
         crear_etapa(empresa_a, pipeline, nombre="Nuevo", orden=2)
-    with pytest.raises(IntegrityError), transaction.atomic():
-        crear_etapa(empresa_a, pipeline, nombre="Contactado", orden=1)
-    # Mismo nombre/orden en otro pipeline: permitido.
+    # El orden NO es único: reordenar intercambia posiciones sin chocar.
+    otra = crear_etapa(empresa_a, pipeline, nombre="Contactado", orden=2)
+    Etapa.objects.filter(pk=nuevo.pk).update(orden=2)
+    Etapa.objects.filter(pk=otra.pk).update(orden=1)
+    assert list(pipeline.etapas.values_list("nombre", flat=True)) == ["Contactado", "Nuevo"]
+    # Mismo nombre en otro pipeline: permitido. Y tras desactivar, el nombre se libera.
     crear_etapa(empresa_a, crear_pipeline(empresa_a), nombre="Nuevo", orden=1)
+    nuevo.soft_delete()
+    crear_etapa(empresa_a, pipeline, nombre="Nuevo", orden=3)
 
 
 @pytest.mark.django_db
@@ -270,6 +419,18 @@ def test_lead_rechaza_etapa_de_otro_pipeline(empresa_a):
     with pytest.raises(ValidationError) as exc:
         lead.full_clean()
     assert "etapa" in exc.value.message_dict
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_lead_rechaza_tarjeta_que_no_es_del_perfil(empresa_a):
+    perfil_a, perfil_b = crear_perfil(empresa_a), crear_perfil(empresa_a)
+    tarjeta_de_b = crear_tarjeta(empresa_a, perfil=perfil_b, estado=Tarjeta.Estado.ACTIVA)
+    lead = crear_lead(empresa_a, fuente=Lead.Fuente.NFC, perfil=perfil_a, **consentimiento())
+    lead.tarjeta = tarjeta_de_b
+    with pytest.raises(ValidationError) as exc:
+        lead.full_clean()
+    assert "tarjeta" in exc.value.message_dict
 
 
 @pytest.mark.django_db

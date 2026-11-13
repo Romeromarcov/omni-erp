@@ -3,19 +3,32 @@
 Todas las tablas son multi-tenant (``id_empresa``) y están protegidas por RLS
 (ver ``migrations/0002_rls_connect.py`` y ``apps.core.rls.RLS_TABLES``).
 
-El perfil es público (se resuelve por slug sin login); esa lectura pública se
-implementa en S2 en contexto de sistema y solo expone campos del propio perfil.
+El perfil es público (se resuelve por slug sin login). Un request anónimo queda
+fail-closed bajo RLS, así que en S2 la resolución del slug debe hacerse dentro de
+``rls.rls_bypass()`` acotada a esa única consulta y proyectando solo campos
+públicos; nunca se amplía el bypass al resto de la vista. La vista también debe
+servir solo tarjetas en estado ACTIVA.
+
+Los servicios que crean registros (S2 captura pública, S3 formulario, S6
+conversión) deben llamar ``full_clean()``: las validaciones cross-tenant viven en
+``clean()`` y ``objects.create()`` no las ejecuta (RLS solo valida la empresa de
+la fila propia, no la de sus FKs).
 """
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Lower
+from django.utils import timezone
 
 from apps.core.base_models import OmniBaseModel
 from apps.core.uuid import uuid7
+from apps.core.validators import validar_misma_empresa
 
 from .validators import (
+    SLUGS_RESERVADOS,
+    normalizar_slug,
     normalizar_uid_chip,
-    validar_misma_empresa,
+    validar_botones,
     validar_slug_perfil,
     validar_uid_chip,
 )
@@ -39,8 +52,9 @@ class Perfil(OmniBaseModel):
     telefono_publico = models.CharField(max_length=50, blank=True, default="")
     email_publico = models.EmailField(blank=True, default="")
     tema = models.CharField(max_length=30, default="CLASICO")
-    # [{"tipo": "whatsapp", "etiqueta": "...", "valor": "..."}]; se valida en S2.
-    botones = models.JSONField(default=list, blank=True)
+    # [{"tipo": "whatsapp", "etiqueta": "...", "valor": "..."}]; allowlist estricta
+    # (el perfil se sirve sin login): ver validators.validar_botones.
+    botones = models.JSONField(default=list, blank=True, validators=[validar_botones])
     # En cuentas Equipo, el admin bloquea la plantilla corporativa.
     plantilla_bloqueada = models.BooleanField(default=False)
 
@@ -52,11 +66,27 @@ class Perfil(OmniBaseModel):
             models.UniqueConstraint(
                 fields=["id_empresa", "usuario"], name="connect_perfil_unico_por_usuario"
             ),
+            # Garantía en BD (también para objects.create/update): slug en minúsculas
+            # y no reservado. El formato completo lo valida validar_slug_perfil.
+            models.CheckConstraint(
+                condition=models.Q(slug=Lower("slug")) & ~models.Q(slug__in=sorted(SLUGS_RESERVADOS)),
+                name="connect_perfil_slug_normalizado",
+            ),
         ]
         indexes = [models.Index(fields=["id_empresa", "activo"])]
 
     def __str__(self):
         return f"{self.nombre_publico} ({self.slug})"
+
+    def save(self, *args, **kwargs):
+        self.slug = normalizar_slug(self.slug)
+        super().save(*args, **kwargs)
+
+    def clean_fields(self, exclude=None):
+        # Los validadores de campo corren antes de clean(): se normaliza primero
+        # para que 'Juan-Perez ' sea válido en admin/ModelForm igual que en save().
+        self.slug = normalizar_slug(self.slug)
+        super().clean_fields(exclude=exclude)
 
     def clean(self):
         super().clean()
@@ -122,11 +152,18 @@ class Tarjeta(OmniBaseModel):
 
     def save(self, *args, **kwargs):
         self.uid_chip = normalizar_uid_chip(self.uid_chip)
+        if self.estado == self.Estado.ACTIVA and self.fecha_activacion is None:
+            self.fecha_activacion = timezone.now()
         super().save(*args, **kwargs)
+
+    def clean_fields(self, exclude=None):
+        # Los validadores de campo corren antes de clean(): se normaliza primero
+        # para que '04:a2:b3:...' sea válido en admin/ModelForm igual que en save().
+        self.uid_chip = normalizar_uid_chip(self.uid_chip)
+        super().clean_fields(exclude=exclude)
 
     def clean(self):
         super().clean()
-        self.uid_chip = normalizar_uid_chip(self.uid_chip)
         validar_misma_empresa(self, perfil=self.perfil)
 
 
@@ -157,7 +194,10 @@ class Toque(OmniBaseModel):
     dispositivo = models.CharField(
         max_length=12, choices=Dispositivo.choices, default=Dispositivo.OTRO
     )
-    fecha_toque = models.DateTimeField(auto_now_add=True, db_index=True)
+    # Sin db_index propio: las consultas siempre filtran por empresa, así que sirven
+    # los índices compuestos de Meta. Tabla de alto volumen: definir retención/particionado
+    # cuando S10 (analíticas) fije los periodos de consulta.
+    fecha_toque = models.DateTimeField(auto_now_add=True)
     # Privacidad: nunca se guarda la IP en claro, solo un hash salado (anti-spam/únicos).
     ip_hash = models.CharField(max_length=64, blank=True, default="")
 
@@ -176,3 +216,7 @@ class Toque(OmniBaseModel):
     def clean(self):
         super().clean()
         validar_misma_empresa(self, perfil=self.perfil, tarjeta=self.tarjeta)
+        # Un toque desde una tarjeta solo cuenta para el perfil al que esa tarjeta
+        # apunta (una tarjeta en inventario, sin perfil, no genera toques).
+        if self.tarjeta_id and self.perfil_id and self.tarjeta.perfil_id != self.perfil_id:
+            raise ValidationError({"tarjeta": "La tarjeta no está asignada a este perfil."})
