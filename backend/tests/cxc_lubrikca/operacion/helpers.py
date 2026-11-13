@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.utils import timezone
@@ -23,13 +23,17 @@ from apps.finanzas.models import TasaCambio
 
 
 def crear_pedido(empresa, **kwargs):
+    # Fechas relativas a hoy: con fechas fijas, el pedido "reciente" por defecto
+    # termina contando como cartera atascada (entrega > DIAS_CARTERA_ATASCADA) al
+    # pasar el tiempo y los tests de resumen_cartera dejan de ser deterministas.
+    hoy = timezone.now().date()
     defaults = dict(
         so_id="SO1",
         cliente_externo_id="C1",
         cliente_nombre="Cliente 1",
         vendedor_email="rep@lubrikca.com",
-        fecha=date(2026, 6, 1),
-        fecha_entrega=date(2026, 6, 5),
+        fecha=hoy - timedelta(days=10),
+        fecha_entrega=hoy - timedelta(days=5),
         monto_total=Decimal("100"),
         lista_precios=LISTA_BCV_DEFAULT,
         es_primera_compra=False,

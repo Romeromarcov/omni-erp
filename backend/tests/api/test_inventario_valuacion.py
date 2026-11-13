@@ -10,6 +10,7 @@ Cubre apps/inventario/valuation.py y su integración con registrar_movimiento():
   - AJUSTE negativo consume capas; el costo calculado fija costo_unitario_movimiento.
 """
 
+import datetime
 from decimal import Decimal
 
 import pytest
@@ -118,8 +119,17 @@ def test_fifo_consume_capas_antiguas_primero(
     empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a
 ):
     prod = _producto(empresa_a, categoria, unidad, moneda_usd, "FIFO")
-    _entrada(empresa_a, prod, almacen_a, user_a, 10, "10.00")
-    _entrada(empresa_a, prod, almacen_a, user_a, 10, "20.00")
+    primera = _entrada(empresa_a, prod, almacen_a, user_a, 10, "10.00")
+    segunda = _entrada(empresa_a, prod, almacen_a, user_a, 10, "20.00")
+    # Antigüedad explícita de las capas: dos altas consecutivas pueden recibir el mismo
+    # fecha_creacion (reloj de ~15 ms en Windows) y el FIFO desempata por una PK UUIDv7
+    # que no es monótona dentro del mismo milisegundo. fecha_creacion es auto_now_add,
+    # por eso se fija con update().
+    ahora = timezone.now()
+    for movimiento, hace in ((primera, 2), (segunda, 1)):
+        ValoracionInventario.objects.filter(
+            id_movimiento=movimiento, sentido="ENTRADA"
+        ).update(fecha_creacion=ahora - datetime.timedelta(minutes=hace))
 
     salida = registrar_movimiento(
         empresa=empresa_a,
