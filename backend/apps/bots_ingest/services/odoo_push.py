@@ -39,15 +39,6 @@ KINDS_SINCRONIZABLES = (
     IngestaBot.Kind.PAGO,
     IngestaBot.Kind.PAGO_PROVEEDOR,
 )
-_ALIAS_MONEDA = {
-    "BS": "VES",
-    "BSF": "VES",
-    "VEF": "VES",
-    "VES": "VES",
-    "USD": "USD",
-    "$": "USD",
-    "EUR": "EUR",
-}
 
 
 class NoSincronizable(Exception):
@@ -68,14 +59,12 @@ def debe_sincronizar(ing: IngestaBot) -> bool:
 
 
 def instancia_odoo(empresa) -> ConectorInstancia | None:
+    """Conector Odoo activo de la empresa: la MISMA selección que usa CxC Lubrikca
+    (``cxc_lubrikca/services/odoo_reader.py``), para que lectura y escritura vayan a la misma instancia."""
     return (
-        ConectorInstancia.objects.filter(
-            id_empresa=empresa,
-            id_proveedor__codigo="odoo",
-            estado="activo",
-            activo=True,
-        )
-        .order_by("-fecha_creacion")
+        ConectorInstancia.objects.select_related("id_proveedor", "id_empresa")
+        .filter(id_empresa=empresa, id_proveedor__codigo="odoo", activo=True)
+        .order_by("-fecha_actualizacion")
         .first()
     )
 
@@ -203,22 +192,40 @@ def _producto_odoo(cli, inst, producto) -> int | None:
 
 
 def _vendedor_odoo(cli, email: str) -> int | None:
+    """``res.users`` por ``login`` y, si no, por ``email`` (en Odoo el login no siempre es el correo).
+
+    Si hay más de un candidato no se adivina: el pedido se crea sin vendedor."""
     if not email:
         return None
+    e = email.strip()
     ids = cli.call(
-        "res.users", "search", [[["login", "=ilike", email.strip()]]], {"limit": 1}
+        "res.users",
+        "search",
+        [["|", ["login", "=ilike", e], ["email", "=ilike", e]]],
+        {"limit": 2},
     )
-    return ids[0] if ids else None
+    return ids[0] if len(ids) == 1 else None
+
+
+# Como en CxC: el dólar se llama exactamente "USD"; el bolívar aparece como VES/VEF/VED según la versión.
+_FAMILIA_VES = {"VES", "VEF", "VED", "BS", "BSF", "BSD"}
+
+
+def _clase_moneda(codigo: str) -> str:
+    c = (codigo or "").strip().upper()
+    return "USD" if c in ("USD", "$") else "VES" if c in _FAMILIA_VES else c
 
 
 def _moneda_odoo(cli, codigo: str) -> int | None:
-    objetivo = _ALIAS_MONEDA.get(
-        (codigo or "").strip().upper(), (codigo or "").strip().upper()
-    )
-    for m in cli.get_monedas():
-        if _ALIAS_MONEDA.get(m["name"].upper(), m["name"].upper()) == objetivo:
-            return m["id"]
-    return None
+    c = (codigo or "").strip().upper()
+    monedas = cli.get_monedas()
+    if c in ("USD", "$"):
+        return next((m["id"] for m in monedas if m["name"].upper() == "USD"), None)
+    if c in _FAMILIA_VES:
+        return next(
+            (m["id"] for m in monedas if m["name"].upper() in _FAMILIA_VES), None
+        )
+    return next((m["id"] for m in monedas if m["name"].upper() == c), None)
 
 
 def _diario_odoo(cli, cfg: dict, metodo: str, moneda: str) -> int:
@@ -229,15 +236,12 @@ def _diario_odoo(cli, cfg: dict, metodo: str, moneda: str) -> int:
         if clave and _es_id(mapa.get(clave)):
             return int(mapa[clave])
     # Sin configuración: solo si hay un único diario banco/caja compatible con la moneda.
-    obj = _ALIAS_MONEDA.get((moneda or "").upper(), (moneda or "").upper())
+    obj = _clase_moneda(moneda)
     candidatos = []
     for j in cli.get_diarios(["bank", "cash"]):
         cur = j.get("currency_id")
         nombre_cur = cur[1] if isinstance(cur, list) and len(cur) > 1 else None
-        if (
-            nombre_cur is None
-            or _ALIAS_MONEDA.get(nombre_cur.upper(), nombre_cur.upper()) == obj
-        ):
+        if nombre_cur is None or _clase_moneda(nombre_cur) == obj:
             candidatos.append(j["id"])
     if len(candidatos) == 1:
         return candidatos[0]

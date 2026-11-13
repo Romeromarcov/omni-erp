@@ -455,3 +455,38 @@ def test_endpoint_sincronizar(api, bot_usuario, catalogo, cliente_odoo):  # noqa
     assert api.post(f"/api/bots/ingest/{ing.pk}/sincronizar/").status_code == 409
     inc = _pago(api, referencia=None, k="pg9")
     assert api.post(f"/api/bots/ingest/{inc.pk}/sincronizar/").status_code == 422
+
+
+# ── reglas aprendidas de CxC (producción) ────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "codigo,esperado",
+    [
+        ("USD", 1),
+        ("$", 1),
+        ("usd", 1),
+        ("VES", 2),
+        ("Bs", 2),
+        ("VEF", 2),
+        ("VED", 2),
+        ("EUR", None),
+    ],
+)
+def test_moneda_usd_exacta_y_familia_bolivar(codigo, esperado):
+    assert odoo_push._moneda_odoo(FakeCli(), codigo) == esperado
+
+
+def test_vendedor_se_busca_por_login_o_email_y_no_se_adivina():
+    una = FakeCli(**{"res.users:search": [4]})
+    assert odoo_push._vendedor_odoo(una, "Ana@x.com") == 4
+    dominio = una.llamadas[0][2][0]
+    assert dominio[0] == "|" and ["email", "=ilike", "Ana@x.com"] in dominio
+    assert (
+        odoo_push._vendedor_odoo(FakeCli(**{"res.users:search": [4, 5]}), "a@x.com")
+        is None
+    )
+    assert (
+        odoo_push._vendedor_odoo(FakeCli(**{"res.users:search": []}), "a@x.com") is None
+    )
+    assert odoo_push._vendedor_odoo(FakeCli(), "") is None
