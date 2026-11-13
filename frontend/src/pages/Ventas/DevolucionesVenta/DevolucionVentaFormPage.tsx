@@ -8,7 +8,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
-import { devolucionVentaSchema, type DevolucionVentaInput } from '../../../schemas/ventas.schemas';
+import { devolucionVentaSchema, type DevolucionVentaFormValues, type DevolucionVentaInput } from '../../../schemas/ventas.schemas';
 import { ventasKeys } from '../../../lib/queryKeys';
 import type { DevolucionVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
@@ -19,7 +19,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { D, sumDecimals } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
-const defaultValues: DevolucionVentaInput = {
+const defaultValues: DevolucionVentaFormValues = {
   id_cliente: '',
   id_factura_origen: '',
   fecha_devolucion: new Date().toISOString().split('T')[0],
@@ -46,7 +46,7 @@ const DevolucionVentaFormPage: React.FC = () => {
     reset,
     watch,
     formState: { errors, isDirty },
-  } = useForm<DevolucionVentaInput>({
+  } = useForm<DevolucionVentaFormValues, unknown, DevolucionVentaInput>({
     resolver: zodResolver(devolucionVentaSchema),
     mode: 'onBlur',
     defaultValues,

@@ -6,13 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { post, get } from '../../../services/api';
 import { toList } from '../../../utils/api';
 import { findSimilarMoneda } from '../../../utils/fuzzyDuplicate';
-import { monedaSchema, type MonedaInput } from '../../../schemas/finanzas.schemas';
+import { monedaSchema, type MonedaFormValues, type MonedaInput } from '../../../schemas/finanzas.schemas';
 import type { Moneda } from './MonedaListPage';
 import { finanzasKeys } from '../../../lib/queryKeys';
 import { PageContainer, PageHeader } from '../../../components/ui';
 import { Alert, Box, Button, Card, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 
-const defaultValues: MonedaInput = {
+const defaultValues: MonedaFormValues = {
   tipo_moneda: 'fiat',
   codigo_iso: '',
   nombre: '',
@@ -36,7 +36,7 @@ const MonedaFormPage: React.FC = () => {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<MonedaInput>({
+  } = useForm<MonedaFormValues, unknown, MonedaInput>({
     resolver: zodResolver(monedaSchema),
     mode: 'onBlur',
     defaultValues,

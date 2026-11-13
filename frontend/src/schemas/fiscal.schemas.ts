@@ -26,7 +26,7 @@ const tipoTasaIVA = ['GENERAL', 'REDUCIDO', 'ADICIONAL', 'EXENTO'] as const;
 export const tasaIVASchema = z.object({
   nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
   tipo: z.enum(tipoTasaIVA, {
-    errorMap: () => ({ message: 'El tipo de tasa no es válido' }),
+    error: () => 'El tipo de tasa no es válido',
   }),
   tasa: z
     .string()

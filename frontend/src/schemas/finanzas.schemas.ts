@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 export const monedaSchema = z.object({
   tipo_moneda: z.enum(['fiat', 'crypto', 'otro'], {
-    errorMap: () => ({ message: 'El tipo de moneda no es válido' }),
+    error: () => 'El tipo de moneda no es válido',
   }),
   codigo_iso: z
     .string()
@@ -17,7 +17,7 @@ export const monedaSchema = z.object({
   nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
   simbolo: z.string().min(1, 'El símbolo es obligatorio').max(10),
   decimales: z.coerce
-    .number({ invalid_type_error: 'Los decimales deben ser un número' })
+    .number({ error: 'Los decimales deben ser un número' })
     .int('Los decimales deben ser un número entero')
     .min(0, 'Los decimales no pueden ser negativos')
     .max(8, 'Los decimales no pueden superar 8'),
@@ -34,6 +34,8 @@ export const monedaSchema = z.object({
 });
 
 export type MonedaInput = z.infer<typeof monedaSchema>;
+// zod 4: con z.coerce la entrada del formulario (unknown) difiere de la salida validada.
+export type MonedaFormValues = z.input<typeof monedaSchema>;
 
 // ── Transacción Financiera ─────────────────────────────────────────────────────
 
@@ -41,7 +43,7 @@ const tipoTransaccion = ['INGRESO', 'EGRESO', 'TRANSFERENCIA'] as const;
 
 export const transaccionFinancieraSchema = z.object({
   tipo: z.enum(tipoTransaccion, {
-    errorMap: () => ({ message: 'El tipo de transacción no es válido' }),
+    error: () => 'El tipo de transacción no es válido',
   }),
   id_cuenta_origen: z.string().optional(),
   id_cuenta_destino: z.string().optional(),

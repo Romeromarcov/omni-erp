@@ -3,14 +3,14 @@ uvicorn[standard]==0.34.0
 # Sirve los archivos estáticos (incl. los del admin de Django) en producción
 # sin depender de un servidor web aparte. Ver MIDDLEWARE y STORAGES en settings_base.
 whitenoise==6.9.0
-Django==5.2.15
-djangorestframework==3.16.0
+Django==5.2.17
+djangorestframework==3.18.2
 djangorestframework_simplejwt==5.5.1
 django-filter==24.3
 psycopg2-binary==2.9.10
-PyJWT==2.13.0
+PyJWT==2.15.0
 python-dotenv==1.2.2
-sqlparse==0.5.4
+sqlparse==0.6.0
 tzdata==2025.2
 django-cors-headers==4.7.0
 # P1-3 hardening: bloqueo de cuenta por usuario+IP tras N intentos fallidos de login
@@ -62,7 +62,7 @@ anthropic>=0.40.0
 sentry-sdk[django]==2.25.1
 
 pre-commit==4.6.0
-black==26.3.1
+black==26.10.1
 isort==8.0.1
 flake8==7.3.0
-cryptography==48.0.1  # GHSA-537c-gmf6-5ccf (fix 48.0.1); prev 46.0.7 (GHSA-r6ph-v2qm-q3c2)
+cryptography==50.0.0  # GHSA-537c-gmf6-5ccf (fix 48.0.1); prev 46.0.7 (GHSA-r6ph-v2qm-q3c2)

@@ -8,7 +8,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
-import { notaCreditoVentaSchema, type NotaCreditoVentaInput } from '../../../schemas/ventas.schemas';
+import { notaCreditoVentaSchema, type NotaCreditoVentaFormValues, type NotaCreditoVentaInput } from '../../../schemas/ventas.schemas';
 import { ventasKeys } from '../../../lib/queryKeys';
 import type { NotaCreditoVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
@@ -19,7 +19,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { D, sumDecimals } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
-const defaultValues: NotaCreditoVentaInput = {
+const defaultValues: NotaCreditoVentaFormValues = {
   id_cliente: '',
   fecha_emision: new Date().toISOString().split('T')[0],
   estado: 'BORRADOR',
@@ -44,7 +44,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
     reset,
     watch,
     formState: { errors, isDirty },
-  } = useForm<NotaCreditoVentaInput>({
+  } = useForm<NotaCreditoVentaFormValues, unknown, NotaCreditoVentaInput>({
     resolver: zodResolver(notaCreditoVentaSchema),
     mode: 'onBlur',
     defaultValues,

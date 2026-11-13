@@ -34,9 +34,19 @@ def rls_test_role(django_db_setup, django_db_blocker):
     privilegios sobre el esquema, para que los tests hagan ``SET ROLE`` y RLS se
     aplique de verdad. Devuelve el nombre del rol o ``None``.
     """
+    import os
+
     from django.db import connection
 
     from apps.core import rls
+
+    # Los roles de PostgreSQL son globales del clúster, no de la BD. Con pytest-xdist
+    # cada worker tiene su propia BD de test (test_<db>_gwN) pero compartiría un único
+    # rol: el DROP ROLE de un worker falla porque otro worker tiene privilegios sobre
+    # él ("role cannot be dropped because some objects depend on it"). Un rol por
+    # worker evita la carrera; sin xdist el nombre sigue siendo omni_rls_test_role.
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+    role = f"omni_rls_test_role_{worker}" if worker else "omni_rls_test_role"
 
     with django_db_blocker.unblock():
         if not rls.current_role_bypasses_rls():
@@ -44,21 +54,21 @@ def rls_test_role(django_db_setup, django_db_blocker):
         with connection.cursor() as cur:
             cur.execute(
                 "DO $$ BEGIN "
-                "IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='omni_rls_test_role') THEN "
-                "DROP OWNED BY omni_rls_test_role; DROP ROLE omni_rls_test_role; "
+                f"IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='{role}') THEN "
+                f"DROP OWNED BY {role}; DROP ROLE {role}; "
                 "END IF; END $$;"
             )
-            cur.execute("CREATE ROLE omni_rls_test_role NOSUPERUSER NOBYPASSRLS")
-            cur.execute("GRANT USAGE ON SCHEMA public TO omni_rls_test_role")
+            cur.execute(f"CREATE ROLE {role} NOSUPERUSER NOBYPASSRLS")
+            cur.execute(f"GRANT USAGE ON SCHEMA public TO {role}")
             cur.execute(
                 "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES "
-                "IN SCHEMA public TO omni_rls_test_role"
+                f"IN SCHEMA public TO {role}"
             )
             cur.execute(
                 "GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES "
-                "IN SCHEMA public TO omni_rls_test_role"
+                f"IN SCHEMA public TO {role}"
             )
-    return "omni_rls_test_role"
+    return role
 
 
 # ---------------------------------------------------------------------------
