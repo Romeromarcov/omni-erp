@@ -178,7 +178,7 @@ export const facturaFiscalSchema = z.object({
   id_empresa: requiredUUID('Empresa'),
   id_cliente: requiredUUID('Cliente'),
   condicion_pago: z.enum(['CONTADO', 'CREDITO'], {
-    errorMap: () => ({ message: 'La condición de pago debe ser CONTADO o CREDITO' }),
+    error: () => 'La condición de pago debe ser CONTADO o CREDITO',
   }),
   dias_credito: z
     .number()
@@ -247,10 +247,10 @@ export const notaCreditoVentaSchema = z.object({
   id_cliente: requiredUUID('Cliente'),
   fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
   motivo: z.enum(motivoNotaCredito, {
-    errorMap: () => ({ message: 'El motivo no es válido' }),
+    error: () => 'El motivo no es válido',
   }),
   estado: z.enum(estadoNotaCredito, {
-    errorMap: () => ({ message: 'El estado no es válido' }),
+    error: () => 'El estado no es válido',
   }),
   observaciones: z.string().max(1000).optional(),
   detalles: z
@@ -259,6 +259,8 @@ export const notaCreditoVentaSchema = z.object({
 });
 
 export type NotaCreditoVentaInput = z.infer<typeof notaCreditoVentaSchema>;
+// zod 4: con z.coerce la entrada del formulario difiere de la salida validada.
+export type NotaCreditoVentaFormValues = z.input<typeof notaCreditoVentaSchema>;
 
 // ── Nota de Crédito Fiscal ──────────────────────────────────────────────────────
 
@@ -287,10 +289,10 @@ export const notaCreditoFiscalSchema = z.object({
   numero_control: z.string().min(1, 'El número de control es obligatorio'),
   fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
   motivo: z.enum(motivoNotaCreditoFiscal, {
-    errorMap: () => ({ message: 'El motivo no es válido' }),
+    error: () => 'El motivo no es válido',
   }),
   estado: z.enum(estadoNotaCredito, {
-    errorMap: () => ({ message: 'El estado no es válido' }),
+    error: () => 'El estado no es válido',
   }),
   afecta_inventario_fiscal: z.boolean(),
   observaciones: z.string().max(1000).optional(),
@@ -300,6 +302,8 @@ export const notaCreditoFiscalSchema = z.object({
 });
 
 export type NotaCreditoFiscalInput = z.infer<typeof notaCreditoFiscalSchema>;
+// zod 4: con z.coerce la entrada del formulario difiere de la salida validada.
+export type NotaCreditoFiscalFormValues = z.input<typeof notaCreditoFiscalSchema>;
 
 // ── Devolución de Venta ─────────────────────────────────────────────────────────
 
@@ -330,10 +334,10 @@ export const devolucionVentaSchema = z.object({
   id_factura_origen: z.string().optional(),
   fecha_devolucion: z.string().min(1, 'La fecha de devolución es obligatoria'),
   motivo_devolucion: z.enum(motivoDevolucion, {
-    errorMap: () => ({ message: 'El motivo no es válido' }),
+    error: () => 'El motivo no es válido',
   }),
   estado: z.enum(estadoDevolucion, {
-    errorMap: () => ({ message: 'El estado no es válido' }),
+    error: () => 'El estado no es válido',
   }),
   generar_nota_credito: z.boolean(),
   observaciones: z.string().max(1000).optional(),
@@ -343,3 +347,5 @@ export const devolucionVentaSchema = z.object({
 });
 
 export type DevolucionVentaInput = z.infer<typeof devolucionVentaSchema>;
+// zod 4: con z.coerce la entrada del formulario difiere de la salida validada.
+export type DevolucionVentaFormValues = z.input<typeof devolucionVentaSchema>;

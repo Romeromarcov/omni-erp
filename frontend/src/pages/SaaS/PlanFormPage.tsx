@@ -12,9 +12,9 @@ import {
   PLAN_NIVELES, PLAN_SOPORTES,
   type PlanPayload,
 } from '../../services/saasService';
-import { planSchema, type PlanInput } from '../../schemas/saas.schemas';
+import { planSchema, type PlanFormValues, type PlanInput } from '../../schemas/saas.schemas';
 
-const DEFAULTS: PlanInput = {
+const DEFAULTS: PlanFormValues = {
   nombre: '',
   nivel: 'STARTER',
   descripcion: '',
@@ -40,7 +40,7 @@ const PlanFormPage: React.FC = () => {
   const {
     control, handleSubmit, reset, setError: setFormError,
     formState: { errors, isSubmitting },
-  } = useForm<PlanInput>({
+  } = useForm<PlanFormValues, unknown, PlanInput>({
     resolver: zodResolver(planSchema),
     mode: 'onBlur',
     defaultValues: DEFAULTS,

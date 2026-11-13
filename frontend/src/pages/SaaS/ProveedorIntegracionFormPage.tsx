@@ -14,7 +14,7 @@ import {
 } from '../../services/integrationHubService';
 import {
   ESTADOS_PROVEEDOR, parseVersiones, proveedorIntegracionSchema,
-  type ProveedorIntegracionInput,
+  type ProveedorIntegracionFormValues, type ProveedorIntegracionInput,
 } from '../../schemas/saas.schemas';
 
 // Entidades sincronizables conocidas (espejo de EntidadSincronizada.TIPO_CHOICES).
@@ -23,7 +23,7 @@ const CAPACIDADES_DISPONIBLES = [
   'facturas_venta', 'pagos', 'inventario',
 ];
 
-const DEFAULTS: ProveedorIntegracionInput = {
+const DEFAULTS: ProveedorIntegracionFormValues = {
   codigo: '',
   nombre: '',
   descripcion: '',
@@ -46,7 +46,7 @@ const ProveedorIntegracionFormPage: React.FC = () => {
   const {
     control, handleSubmit, reset, setError: setFormError,
     formState: { errors, isSubmitting },
-  } = useForm<ProveedorIntegracionInput>({
+  } = useForm<ProveedorIntegracionFormValues, unknown, ProveedorIntegracionInput>({
     resolver: zodResolver(proveedorIntegracionSchema),
     mode: 'onBlur',
     defaultValues: DEFAULTS,

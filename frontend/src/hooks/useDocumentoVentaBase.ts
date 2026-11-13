@@ -96,7 +96,8 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
 }: UseDocumentoVentaBaseOptions<TForm>) => {
   // ── react-hook-form ──────────────────────────────────────────────────────────
   const formMethods = useForm<TForm>({
-    resolver: zodResolver(schema) as unknown as Resolver<TForm>,
+    // zod 4: el esquema genérico (ZodTypeAny) no infiere FieldValues; el resolver se tipa a mano.
+    resolver: zodResolver(schema as never) as unknown as Resolver<TForm>,
     mode: 'onBlur',
     defaultValues,
   });

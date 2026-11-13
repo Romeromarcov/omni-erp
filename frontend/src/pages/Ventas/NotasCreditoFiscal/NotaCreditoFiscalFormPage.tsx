@@ -8,7 +8,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
-import { notaCreditoFiscalSchema, type NotaCreditoFiscalInput } from '../../../schemas/ventas.schemas';
+import { notaCreditoFiscalSchema, type NotaCreditoFiscalFormValues, type NotaCreditoFiscalInput } from '../../../schemas/ventas.schemas';
 import { ventasKeys } from '../../../lib/queryKeys';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
@@ -21,7 +21,7 @@ import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui'
 
 const IVA_RATE = 0.16;
 
-const defaultValues: NotaCreditoFiscalInput = {
+const defaultValues: NotaCreditoFiscalFormValues = {
   id_cliente: '',
   id_factura_origen: '',
   numero_control: '',
@@ -59,7 +59,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
     reset,
     watch,
     formState: { errors, isDirty },
-  } = useForm<NotaCreditoFiscalInput>({
+  } = useForm<NotaCreditoFiscalFormValues, unknown, NotaCreditoFiscalInput>({
     resolver: zodResolver(notaCreditoFiscalSchema),
     mode: 'onBlur',
     defaultValues,

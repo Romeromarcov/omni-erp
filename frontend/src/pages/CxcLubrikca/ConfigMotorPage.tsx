@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
@@ -322,7 +322,8 @@ function ConfigTab({ def }: { def: TabDef }) {
     control,
     formState: { errors },
   } = useForm<Record<string, unknown>>({
-    resolver: zodResolver(def.schema),
+    // zod 4: el esquema llega con el tipo borrado (ZodTypeAny); el resolver se tipa a mano.
+    resolver: zodResolver(def.schema as never) as unknown as Resolver<Record<string, unknown>>,
     defaultValues: def.defaults,
   });
 
