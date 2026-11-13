@@ -21,14 +21,21 @@ from .services.handlers import HandlerError
 
 
 class PuedeIngestar(permissions.BasePermission):
-    """Solo cuentas de servicio con el permiso ``bots_ingest.ingestar`` (o superusuario)."""
+    """Enviar borradores: solo cuentas de servicio con ``bots_ingest.ingestar`` (o superusuario).
+
+    Consultar y completar lo ya recibido también lo puede hacer el staff (pantalla de administración).
+    """
 
     def has_permission(self, request, view):
         u = request.user
-        return bool(
-            u
-            and u.is_authenticated
-            and (u.is_superuser or u.has_perm("bots_ingest.ingestar"))
+        if not (u and u.is_authenticated):
+            return False
+        if u.is_superuser or u.has_perm("bots_ingest.ingestar"):
+            return True
+        return u.is_staff and getattr(view, "action", None) in (
+            "list",
+            "retrieve",
+            "completar",
         )
 
 
@@ -93,6 +100,9 @@ class BotUsuarioViewSet(EmpresaInjectMixin, BaseModelViewSet):
     """Alta de usuarios de Telegram autorizados (administración)."""
 
     serializer_class = BotUsuarioSerializer
+    permission_classes = [
+        permissions.IsAdminUser
+    ]  # mapea ids de Telegram a vendedores: solo staff
     search_fields = ["nombre"]
 
     def get_queryset(self):

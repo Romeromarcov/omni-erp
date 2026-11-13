@@ -8,6 +8,7 @@ from datetime import datetime
 
 from django.db import transaction
 
+from .tasks import encolar_sync
 from .models import (
     CalendarioActivacion,
     EventoActivacion,
@@ -177,7 +178,7 @@ def crear_evento(
             for c, n in usos.items()
         ]
     )
-    transaction.on_commit(lambda: sincronizar_google(evento.pk))
+    transaction.on_commit(lambda: encolar_sync(evento.pk))
     return evento
 
 
@@ -187,7 +188,7 @@ def cancelar_evento(evento: EventoActivacion) -> EventoActivacion:
         raise ActivacionError("El evento ya está cancelado.")
     evento.estado = EventoActivacion.Estado.CANCELADO
     evento.save(update_fields=["estado", "fecha_actualizacion"])
-    transaction.on_commit(lambda: sincronizar_google(evento.pk))
+    transaction.on_commit(lambda: encolar_sync(evento.pk))
     return evento
 
 

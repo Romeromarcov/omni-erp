@@ -491,3 +491,37 @@ def test_usuario_telegram_de_otra_empresa_no_resuelve(
         id_empresa=empresa_b, telegram_user_id=555, usuario=user_b
     )
     assert enviar(api, "contacto", {"nombre": "A"}, tg=555).status_code == 403
+
+
+# ── permisos de administración ──────────────────────────────────────────────
+
+
+def test_bot_usuarios_solo_staff(client_a, user_a, empresa_a):
+    r = client_a.get("/api/bots/usuarios/")
+    assert r.status_code == 403
+    user_a.is_staff = True
+    user_a.save()
+    ok = client_a.post(
+        "/api/bots/usuarios/",
+        {"telegram_user_id": 42, "usuario": str(user_a.pk), "nombre": "V"},
+        format="json",
+    )
+    assert ok.status_code == 201, ok.data
+    assert BotUsuario.objects.get(telegram_user_id=42).id_empresa_id == empresa_a.pk
+
+
+def test_staff_consulta_ingestas_pero_no_envia(client_a, user_a, empresa_a):
+    user_a.is_staff = True
+    user_a.save()
+    assert client_a.get(URL).status_code == 200
+    r = client_a.post(
+        URL,
+        {
+            "kind": "pago",
+            "draft": {},
+            "source": {"telegram_user_id": 1},
+            "idempotency_key": "k",
+        },
+        format="json",
+    )
+    assert r.status_code == 403

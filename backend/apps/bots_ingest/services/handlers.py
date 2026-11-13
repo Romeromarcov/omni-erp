@@ -465,19 +465,20 @@ def pedido(ctx: Ctx) -> Resultado:
 # ── pagos ────────────────────────────────────────────────────────────────────
 
 
-def _pago_base(ctx: Ctx, requeridos: list[str]) -> tuple[list[str], dict]:
+def _faltantes_pago(ctx: Ctx, requeridos: list[str]) -> list[str]:
     p = ctx.payload
     incompleto = [c for c in requeridos if _vacio(p.get(c))]
     if p.get("monto") is not None:
         if _dec(p["monto"], "Monto") <= 0:
             raise HandlerError("El monto debe ser mayor que cero.", faltan=["monto"])
-    return incompleto, {}
+    return incompleto
 
 
 def pago(ctx: Ctx) -> Resultado:
     """Pago de cliente. El cliente se identifica por nombre, RIF *o* referencia de pedido (basta uno)."""
     p = ctx.payload
-    incompleto, res = _pago_base(ctx, ["monto", "moneda", "referencia"])
+    incompleto = _faltantes_pago(ctx, ["monto", "moneda", "referencia"])
+    res: dict = {}
     cliente = None
     pedido_ref = (p.get("pedido_ref") or "").strip()
     if pedido_ref:
@@ -510,7 +511,8 @@ def pago_proveedor(ctx: Ctx) -> Resultado:
     from apps.proveedores.models import Proveedor
 
     p = ctx.payload
-    incompleto, res = _pago_base(ctx, ["proveedor", "monto", "moneda"])
+    incompleto = _faltantes_pago(ctx, ["proveedor", "monto", "moneda"])
+    res: dict = {}
     if p.get("proveedor"):
         prov = (
             Proveedor.objects.filter(id_empresa=ctx.empresa)
@@ -563,9 +565,6 @@ def evento(ctx: Ctx) -> Resultado:
             "Fecha u hora inválida (usa AAAA-MM-DD y HH:MM).", faltan=["fecha"]
         ) from e
     usos = {"promotoras": int(p["promotoras"]), "igloos": int(p["igloos"])}
-    # Solo se exigen los recursos que el calendario administra; el resto se ignora si es 0.
-    existentes = set(cal.recursos.filter(activo=True).values_list("codigo", flat=True))
-    usos = {k: v for k, v in usos.items() if v > 0 or k in existentes}
     try:
         ev = activ.crear_evento(
             empresa=ctx.empresa,

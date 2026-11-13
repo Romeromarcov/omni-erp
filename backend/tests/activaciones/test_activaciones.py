@@ -156,11 +156,16 @@ def test_api_cancelar(client_a, cal):
     )
 
 
-def test_api_configurar_capacidad(client_a, cal):
+def test_api_configurar_capacidad_solo_staff(client_a, user_a, cal):
     rec = RecursoActivacion.objects.get(calendario=cal, codigo="promotoras")
-    r = client_a.patch(
-        f"{BASE}/recursos/{rec.id_recurso}/", {"capacidad": 5}, format="json"
-    )
+    url = f"{BASE}/recursos/{rec.id_recurso}/"
+    assert client_a.patch(url, {"capacidad": 5}, format="json").status_code == 403
+    assert (
+        client_a.get(url).status_code == 200
+    )  # lectura abierta al usuario autenticado
+    user_a.is_staff = True
+    user_a.save()
+    r = client_a.patch(url, {"capacidad": 5}, format="json")
     assert r.status_code == 200
     rec.refresh_from_db()
     assert rec.capacidad == 5
@@ -175,7 +180,9 @@ def test_sin_calendario_predeterminado_da_400(client_a):
 
 
 @pytest.mark.tenant
-def test_no_ve_ni_usa_calendarios_ajenos(client_a, empresa_b):
+def test_no_ve_ni_usa_calendarios_ajenos(client_a, user_a, empresa_b):
+    user_a.is_staff = True
+    user_a.save()
     ajeno = CalendarioActivacion.objects.create(
         id_empresa=empresa_b, nombre="Ajeno", es_predeterminado=True
     )
@@ -207,3 +214,49 @@ def test_no_ve_ni_usa_calendarios_ajenos(client_a, empresa_b):
         format="json",
     )
     assert rr.status_code in (400, 403)
+
+
+# ── Sincronización con Google Calendar ──────────────────────────────────────
+
+
+def test_crear_y_cancelar_encolan_la_sync(
+    empresa_a, cal, django_capture_on_commit_callbacks
+):
+    from unittest.mock import patch
+
+    with patch("apps.activaciones.services.encolar_sync") as encolar:
+        with django_capture_on_commit_callbacks(execute=True):
+            ev = crear(empresa_a, cal, 0, 1, promotoras=1)
+        with django_capture_on_commit_callbacks(execute=True):
+            services.cancelar_evento(ev)
+    assert encolar.call_count == 2
+
+
+def test_sync_guarda_id_de_google_y_registra_fallos(empresa_a, cal):
+    from unittest.mock import patch
+
+    cal.google_calendar_id = "abc@group.calendar.google.com"
+    cal.save()
+    ev = crear(empresa_a, cal, 0, 1, promotoras=1)
+    with patch("apps.activaciones.google_calendar.configurado", return_value=True):
+        with patch("apps.activaciones.google_calendar.upsert", return_value="gid-1"):
+            services.sincronizar_google(ev.pk)
+        ev.refresh_from_db()
+        assert ev.google_event_id == "gid-1" and ev.sync_error == ""
+        with patch(
+            "apps.activaciones.google_calendar.upsert", side_effect=RuntimeError("boom")
+        ):
+            services.sincronizar_google(ev.pk)  # nunca lanza
+        ev.refresh_from_db()
+        assert (
+            ev.sync_error and "boom" not in ev.sync_error
+        )  # sin filtrar detalles internos
+
+
+def test_sync_sin_credenciales_se_omite(empresa_a, cal):
+    cal.google_calendar_id = "abc@group.calendar.google.com"
+    cal.save()
+    ev = crear(empresa_a, cal, 0, 1, promotoras=1)
+    services.sincronizar_google(ev.pk)
+    ev.refresh_from_db()
+    assert ev.google_event_id == "" and ev.sync_error == ""

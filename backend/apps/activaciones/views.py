@@ -10,6 +10,7 @@ from apps.core.viewsets import (
     get_empresa_primaria,
     get_empresas_visible,
 )
+from apps.core.permissions import IsAdminOrReadOnly
 from apps.crm.models import Cliente
 
 from . import services
@@ -36,6 +37,8 @@ class _TenantViewSet(EmpresaInjectMixin, BaseModelViewSet):
 
 
 class CalendarioActivacionViewSet(_TenantViewSet):
+    # Configuración: cualquier usuario autenticado lee; solo staff escribe.
+    permission_classes = [IsAdminOrReadOnly]
     model = CalendarioActivacion
     serializer_class = CalendarioActivacionSerializer
     search_fields = ["nombre"]
@@ -66,6 +69,7 @@ class CalendarioActivacionViewSet(_TenantViewSet):
 
 
 class RecursoActivacionViewSet(_TenantViewSet):
+    permission_classes = [IsAdminOrReadOnly]
     model = RecursoActivacion
     serializer_class = RecursoActivacionSerializer
     search_fields = ["codigo", "nombre"]
