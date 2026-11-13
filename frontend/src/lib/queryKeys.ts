@@ -576,6 +576,27 @@ export const agentesKeys = {
   metricasClasificador: () => ['agentes', 'metricas-clasificador'] as const,
 };
 
+// ── Activaciones (eventos en puntos de venta) ────────────────────────────────
+export const activacionesKeys = {
+  all: () => ['activaciones'] as const,
+  calendarios: () => ['activaciones', 'calendarios'] as const,
+  recursos: () => ['activaciones', 'recursos'] as const,
+  eventos: (estado?: string | null, desde?: string | null, hasta?: string | null) =>
+    ['activaciones', 'eventos', estado ?? null, desde ?? null, hasta ?? null] as const,
+  eventosAll: () => ['activaciones', 'eventos'] as const,
+  disponibilidad: (calendario?: string | null, inicio?: string | null, fin?: string | null) =>
+    ['activaciones', 'disponibilidad', calendario ?? null, inicio ?? null, fin ?? null] as const,
+};
+
+// ── Bots de Telegram (ingestas y usuarios autorizados) ───────────────────────
+export const botsKeys = {
+  all: () => ['bots'] as const,
+  ingestas: (estado?: string | null, kind?: string | null) =>
+    ['bots', 'ingestas', estado ?? null, kind ?? null] as const,
+  ingestasAll: () => ['bots', 'ingestas'] as const,
+  usuarios: () => ['bots', 'usuarios'] as const,
+};
+
 // ── Gaps menores (entidades con backend operativo, pantalla nueva) ────────────
 // Ubicaciones de almacén · Movimientos internos de fondo · Pagos de terceros ·
 // Pagos parafiscales. Prefijo `['gaps-menores', <recurso>]` para invalidar por
