@@ -114,6 +114,12 @@
 | `^cajas/tipo-caja-choices/$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
 | `^cajas/tipo-caja-choices\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
 | `^cajas\.(?P<format>[a-z0-9]+)/?$` | CajaViewSet | Caja | ✅ | ✅ | IsAuthenticated |
+| `^calendarios/$` | CalendarioActivacionViewSet | CalendarioActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^calendarios/(?P<pk>[^/.]+)/$` | CalendarioActivacionViewSet | CalendarioActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^calendarios/(?P<pk>[^/.]+)/disponibilidad/$` | CalendarioActivacionViewSet | CalendarioActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^calendarios/(?P<pk>[^/.]+)/disponibilidad\.(?P<format>[a-z0-9]+)/?$` | CalendarioActivacionViewSet | CalendarioActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^calendarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CalendarioActivacionViewSet | CalendarioActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^calendarios\.(?P<format>[a-z0-9]+)/?$` | CalendarioActivacionViewSet | CalendarioActivacion | ✅ | — | IsAdminOrReadOnly |
 | `^cargos/$` | CargoViewSet | Cargo | ✅ | ✅ | IsAuthenticated |
 | `^cargos/(?P<pk>[^/.]+)/$` | CargoViewSet | Cargo | ✅ | ✅ | IsAuthenticated |
 | `^cargos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CargoViewSet | Cargo | ✅ | ✅ | IsAuthenticated |
@@ -480,6 +486,12 @@
 | `^etapas-produccion/crear-estandar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^etapas-produccion/crear-estandar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^etapas-produccion\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^eventos/$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
+| `^eventos/(?P<pk>[^/.]+)/$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
+| `^eventos/(?P<pk>[^/.]+)/cancelar/$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
+| `^eventos/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
+| `^eventos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
+| `^eventos\.(?P<format>[a-z0-9]+)/?$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
@@ -548,6 +560,14 @@
 | `^horarios-trabajo/activos/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^horarios-trabajo/activos\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^horarios-trabajo\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^ingest/$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
+| `^ingest/(?P<pk>[^/.]+)/$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
+| `^ingest/(?P<pk>[^/.]+)/completar/$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
+| `^ingest/(?P<pk>[^/.]+)/completar\.(?P<format>[a-z0-9]+)/?$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
+| `^ingest/(?P<pk>[^/.]+)/sincronizar/$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
+| `^ingest/(?P<pk>[^/.]+)/sincronizar\.(?P<format>[a-z0-9]+)/?$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
+| `^ingest/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
+| `^ingest\.(?P<format>[a-z0-9]+)/?$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
 | `^instancias/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
 | `^instancias/(?P<pk>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
 | `^instancias/(?P<pk>[^/.]+)/entidades/(?P<tipo_entidad>[^/.]+)/$` | ConectorInstanciaViewSet | — | — | ✅ | IsAuthenticated |
@@ -970,6 +990,10 @@
 | `^recepciones/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recursos/$` | RecursoActivacionViewSet | RecursoActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^recursos/(?P<pk>[^/.]+)/$` | RecursoActivacionViewSet | RecursoActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^recursos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecursoActivacionViewSet | RecursoActivacion | ✅ | — | IsAdminOrReadOnly |
+| `^recursos\.(?P<format>[a-z0-9]+)/?$` | RecursoActivacionViewSet | RecursoActivacion | ✅ | — | IsAdminOrReadOnly |
 | `^reembolsos-gasto/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
 | `^reembolsos-gasto/(?P<pk>[^/.]+)/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
 | `^reembolsos-gasto/(?P<pk>[^/.]+)/anular/$` | ReembolsoGastoViewSet | ReembolsoGasto | ✅ | ✅ | IsAuthenticated |
@@ -1146,9 +1170,13 @@
 | `^unidades-medida/(?P<pk>[^/.]+)/$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^unidades-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^unidades-medida\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^usuarios/$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
 | `^usuarios/$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
+| `^usuarios/(?P<pk>[^/.]+)/$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
 | `^usuarios/(?P<pk>[^/.]+)/$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
+| `^usuarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
 | `^usuarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
+| `^usuarios\.(?P<format>[a-z0-9]+)/?$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
 | `^usuarios\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
 | `^variantes-producto/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
 | `^variantes-producto/(?P<pk>[^/.]+)/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
@@ -1209,4 +1237,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 217_
+_Total ViewSets: 222_

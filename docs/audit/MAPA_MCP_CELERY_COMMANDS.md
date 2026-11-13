@@ -28,8 +28,10 @@ _Total tools MCP: 17_
 
 | Tarea | Módulo |
 |---|---|
+| `activaciones.sincronizar_google` | apps.activaciones.tasks |
 | `agentes.generar_sugerencias_diarias` | apps.agentes.tasks |
 | `auditoria.registrar_evento` | apps.auditoria.tasks |
+| `bots_ingest.sincronizar_odoo` | apps.bots_ingest.tasks |
 | `config.celery.debug_task` | config.celery |
 | `core.log_evento` | apps.core.tasks |
 | `core.ping` | apps.core.tasks |
@@ -47,7 +49,7 @@ _Total tools MCP: 17_
 | `integration_hub.sync_tasas_ve` | apps.integration_hub.tasks |
 | `notificaciones.enviar_notificacion_email` | apps.notificaciones.tasks |
 
-_Total tareas Celery: 18_
+_Total tareas Celery: 20_
 
 ## Management commands
 
