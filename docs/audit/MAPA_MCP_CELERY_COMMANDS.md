@@ -59,6 +59,7 @@ _Total tareas Celery: 20_
 | `configurar_conector_sheets` | apps.integration_hub |
 | `configurar_rol_rls` | apps.core |
 | `consumir_eventos` | apps.eventos |
+| `crear_usuario_bot` | apps.bots_ingest |
 | `create_initial_data` | apps.core |
 | `exportar_a_sheets` | apps.integration_hub |
 | `importar_clientes` | apps.migracion_datos |
@@ -74,4 +75,4 @@ _Total tareas Celery: 20_
 | `sincronizar_cxc_lubrikca` | apps.cxc_lubrikca |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 18_
+_Total commands: 19_
