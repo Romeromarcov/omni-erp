@@ -201,6 +201,18 @@ class BaseConnector(ABC):
             f"{self.PROVIDER_NAME} no soporta push de productos"
         )
 
+    def push_pedido_venta(self, datos: dict) -> str:
+        """Crea un pedido de venta en borrador en el sistema externo. Retorna su ID externo."""
+        raise ConnectorNotSupportedError(
+            f"{self.PROVIDER_NAME} no soporta push de pedidos de venta"
+        )
+
+    def push_pago(self, datos: dict) -> str:
+        """Crea un pago (cliente o proveedor) en borrador en el sistema externo. Retorna su ID externo."""
+        raise ConnectorNotSupportedError(
+            f"{self.PROVIDER_NAME} no soporta push de pagos"
+        )
+
     def push_entidades(self, tipo_entidad: str, registros: list[dict]) -> "SyncResult":
         """
         Exporta un lote de registros canónicos al sistema externo de destino.

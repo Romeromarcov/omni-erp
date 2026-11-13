@@ -582,6 +582,60 @@ class OdooConnector(BaseConnector):
             nuevo_id = client.crear_socio(vals)
             return str(nuevo_id)
 
+    def push_pedido_venta(self, datos: dict) -> str:
+        """
+        Crea un pedido de venta en Odoo (``sale.order`` en borrador, queda por confirmar allí).
+
+        ``datos`` (ids ya resueltos al espacio de Odoo):
+        ``partner_id`` (int), ``lineas`` [{``product_id`` (product.product), ``cantidad``, ``precio``}],
+        opcionales ``referencia`` (client_order_ref), ``nota``, ``vendedor_id`` (res.users),
+        ``pricelist_id``, ``fecha_entrega`` (commitment_date ISO).
+        """
+        if not datos.get("partner_id") or not datos.get("lineas"):
+            raise ConnectorDataError("push_pedido_venta requiere partner_id y al menos una línea")
+        vals = {
+            "partner_id": int(datos["partner_id"]),
+            "client_order_ref": datos.get("referencia"),
+            "note": datos.get("nota"),
+            "user_id": int(datos["vendedor_id"]) if datos.get("vendedor_id") else None,
+            "pricelist_id": int(datos["pricelist_id"]) if datos.get("pricelist_id") else None,
+            "commitment_date": datos.get("fecha_entrega"),
+            "order_line": [
+                (0, 0, {
+                    "product_id": int(ln["product_id"]),
+                    "product_uom_qty": float(ln["cantidad"]),
+                    "price_unit": float(ln["precio"]),
+                })
+                for ln in datos["lineas"]
+            ],
+        }
+        return str(self._get_client().crear_pedido_venta(vals))
+
+    def push_pago(self, datos: dict) -> str:
+        """
+        Crea un pago en Odoo (``account.payment`` en borrador, sin publicar: se confirma en Odoo).
+
+        ``datos``: ``partner_id``, ``monto`` (>0), ``journal_id``, ``tipo`` (``cliente`` | ``proveedor``);
+        opcionales ``moneda_id``, ``fecha`` (ISO), ``referencia`` (memo).
+        """
+        for campo in ("partner_id", "monto", "journal_id"):
+            if not datos.get(campo):
+                raise ConnectorDataError(f"push_pago requiere {campo}")
+        if float(datos["monto"]) <= 0:
+            raise ConnectorDataError("push_pago: el monto debe ser mayor que cero")
+        es_cliente = datos.get("tipo", "cliente") == "cliente"
+        vals = {
+            "partner_id": int(datos["partner_id"]),
+            "amount": float(datos["monto"]),
+            "payment_type": "inbound" if es_cliente else "outbound",
+            "partner_type": "customer" if es_cliente else "supplier",
+            "journal_id": int(datos["journal_id"]),
+            "currency_id": int(datos["moneda_id"]) if datos.get("moneda_id") else None,
+            "date": datos.get("fecha"),
+            "memo": datos.get("referencia"),  # Odoo 18: ``memo`` (antes ``ref``)
+        }
+        return str(self._get_client().crear_pago(vals))
+
     def push_producto(self, datos: dict) -> str:
         """Crea o actualiza un producto en Odoo."""
         client = self._get_client()

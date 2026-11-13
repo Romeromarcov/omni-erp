@@ -505,3 +505,15 @@ class OdooXMLRPCClient:
         """Actualiza una plantilla de producto."""
         clean = {k: v for k, v in vals.items() if v is not None}
         return self.call("product.template", "write", [[tmpl_id], clean])
+
+    def crear_pedido_venta(self, vals: dict) -> int:
+        """Crea una ``sale.order`` (queda en borrador/cotización) y retorna su ID."""
+        clean = {k: v for k, v in vals.items() if v is not None}
+        result = self.call("sale.order", "create", [clean])
+        return result[0] if isinstance(result, list) else result
+
+    def crear_pago(self, vals: dict) -> int:
+        """Crea un ``account.payment`` en borrador (sin publicar) y retorna su ID."""
+        clean = {k: v for k, v in vals.items() if v is not None}
+        result = self.call("account.payment", "create", [clean])
+        return result[0] if isinstance(result, list) else result
