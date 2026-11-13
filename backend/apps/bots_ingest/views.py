@@ -95,6 +95,27 @@ class IngestaBotViewSet(
             return Response({"error": str(e)}, status=e.status)
         return Response(IngestaSerializer(ing).data)
 
+    @action(detail=True, methods=["post"], url_path="sincronizar")
+    def sincronizar(self, request, pk=None):
+        """Reintenta el envío a Odoo (pedidos y pagos completos). Responde 202; es asíncrono."""
+        from .services.odoo_push import KINDS_SINCRONIZABLES, debe_sincronizar
+        from .tasks import encolar_sync
+
+        ing = self.get_object()
+        if ing.kind not in KINDS_SINCRONIZABLES:
+            return Response(
+                {"error": "Este tipo de ingesta no se envía a Odoo."}, status=422
+            )
+        if ing.estado == IngestaBot.Estado.SINCRONIZADO:
+            return Response({"error": "Ya está sincronizada con Odoo."}, status=409)
+        if not debe_sincronizar(ing):
+            return Response(
+                {"error": "Faltan datos: complétala antes de enviarla a Odoo."},
+                status=422,
+            )
+        encolar_sync(ing.pk)
+        return Response(IngestaSerializer(ing).data, status=status.HTTP_202_ACCEPTED)
+
 
 class BotUsuarioViewSet(EmpresaInjectMixin, BaseModelViewSet):
     """Alta de usuarios de Telegram autorizados (administración)."""

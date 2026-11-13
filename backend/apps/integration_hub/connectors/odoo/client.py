@@ -12,6 +12,7 @@ Seguridad (R-CODE-8):
   - Las contraseñas/api_keys se enmascaran en mensajes de error.
   - El constructor lanza OdooAuthError si las credenciales son inválidas.
 """
+
 from __future__ import annotations
 
 import logging
@@ -232,28 +233,55 @@ class OdooXMLRPCClient:
         if desde:
             domain.append(["write_date", ">=", desde])
 
-        return self.call("res.partner", "search_read", [domain], {
-            "fields": [
-                "id", "name", "email", "phone", "mobile",
-                "street", "city", "country_id", "state_id",
-                "vat",  # número fiscal
-                "customer_rank", "supplier_rank",
-                "company_type",  # person | company
-                "parent_id",     # empresa padre si es contacto
-                "website", "comment",
-                "write_date", "create_date",
-                "active",
-            ],
-            "limit": limite,
-        })
+        return self.call(
+            "res.partner",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "email",
+                    "phone",
+                    "mobile",
+                    "street",
+                    "city",
+                    "country_id",
+                    "state_id",
+                    "vat",  # número fiscal
+                    "customer_rank",
+                    "supplier_rank",
+                    "company_type",  # person | company
+                    "parent_id",  # empresa padre si es contacto
+                    "website",
+                    "comment",
+                    "write_date",
+                    "create_date",
+                    "active",
+                ],
+                "limit": limite,
+            },
+        )
 
     def buscar_socio(self, query: str, limite: int = 15) -> list[dict]:
         """Búsqueda incremental de socios por nombre."""
-        return self.call("res.partner", "search_read",
-                         [[["name", "ilike", query], ["active", "=", True]]],
-                         {"fields": ["id", "name", "email", "phone", "vat",
-                                     "customer_rank", "supplier_rank"],
-                          "limit": limite})
+        return self.call(
+            "res.partner",
+            "search_read",
+            [[["name", "ilike", query], ["active", "=", True]]],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "email",
+                    "phone",
+                    "vat",
+                    "customer_rank",
+                    "supplier_rank",
+                ],
+                "limit": limite,
+            },
+        )
 
     # ── Productos ─────────────────────────────────────────────────────────────
 
@@ -262,27 +290,52 @@ class OdooXMLRPCClient:
         domain: list = [["active", "=", True]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("product.template", "search_read", [domain], {
-            "fields": [
-                "id", "name", "default_code", "description_sale",
-                "list_price", "standard_price",
-                "categ_id", "uom_id", "uom_po_id",
-                "type",  # consu | service | product
-                "sale_ok", "purchase_ok", "active",
-                "barcode",
-                "weight", "volume",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-        })
+        return self.call(
+            "product.template",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "default_code",
+                    "description_sale",
+                    "list_price",
+                    "standard_price",
+                    "categ_id",
+                    "uom_id",
+                    "uom_po_id",
+                    "type",  # consu | service | product
+                    "sale_ok",
+                    "purchase_ok",
+                    "active",
+                    "barcode",
+                    "weight",
+                    "volume",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+            },
+        )
 
     def get_variantes_producto(self, tmpl_id: int) -> list[dict]:
         """Variantes de un product.template."""
-        return self.call("product.product", "search_read",
-                         [[["product_tmpl_id", "=", tmpl_id], ["active", "=", True]]],
-                         {"fields": ["id", "name", "default_code", "barcode",
-                                     "product_template_attribute_value_ids"],
-                          "limit": 100})
+        return self.call(
+            "product.product",
+            "search_read",
+            [[["product_tmpl_id", "=", tmpl_id], ["active", "=", True]]],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "default_code",
+                    "barcode",
+                    "product_template_attribute_value_ids",
+                ],
+                "limit": 100,
+            },
+        )
 
     # ── Ventas ────────────────────────────────────────────────────────────────
 
@@ -293,30 +346,59 @@ class OdooXMLRPCClient:
         limite: int = 200,
     ) -> list[dict]:
         """Pedidos de venta (sale.order)."""
-        states = ["sale", "done"] if solo_confirmadas else ["draft", "sent", "sale", "done"]
+        states = (
+            ["sale", "done"] if solo_confirmadas else ["draft", "sent", "sale", "done"]
+        )
         domain: list = [["state", "in", states]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("sale.order", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "user_id",
-                "date_order", "state", "invoice_status",
-                "amount_untaxed", "amount_tax", "amount_total",
-                "currency_id", "pricelist_id", "payment_term_id",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "date_order desc",
-        })
+        return self.call(
+            "sale.order",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "partner_id",
+                    "user_id",
+                    "date_order",
+                    "state",
+                    "invoice_status",
+                    "amount_untaxed",
+                    "amount_tax",
+                    "amount_total",
+                    "currency_id",
+                    "pricelist_id",
+                    "payment_term_id",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+                "order": "date_order desc",
+            },
+        )
 
     def get_lineas_pedido_venta(self, order_id: int) -> list[dict]:
         """Líneas de un pedido de venta."""
-        return self.call("sale.order.line", "search_read",
-                         [[["order_id", "=", order_id]]],
-                         {"fields": ["id", "product_id", "product_uom_qty",
-                                     "price_unit", "discount",
-                                     "price_subtotal", "price_tax", "price_total",
-                                     "tax_id"]})
+        return self.call(
+            "sale.order.line",
+            "search_read",
+            [[["order_id", "=", order_id]]],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "product_uom_qty",
+                    "price_unit",
+                    "discount",
+                    "price_subtotal",
+                    "price_tax",
+                    "price_total",
+                    "tax_id",
+                ]
+            },
+        )
 
     # ── Compras ───────────────────────────────────────────────────────────────
 
@@ -329,26 +411,52 @@ class OdooXMLRPCClient:
         domain: list = [["state", "in", ["purchase", "done"]]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("purchase.order", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "user_id",
-                "date_order", "date_approve", "state",
-                "invoice_status", "invoice_ids",
-                "amount_untaxed", "amount_tax", "amount_total",
-                "currency_id",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "date_order desc",
-        })
+        return self.call(
+            "purchase.order",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "partner_id",
+                    "user_id",
+                    "date_order",
+                    "date_approve",
+                    "state",
+                    "invoice_status",
+                    "invoice_ids",
+                    "amount_untaxed",
+                    "amount_tax",
+                    "amount_total",
+                    "currency_id",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+                "order": "date_order desc",
+            },
+        )
 
     def get_lineas_pedido_compra(self, order_id: int) -> list[dict]:
         """Líneas de una orden de compra."""
-        return self.call("purchase.order.line", "search_read",
-                         [[["order_id", "=", order_id]]],
-                         {"fields": ["id", "product_id", "product_qty",
-                                     "price_unit", "price_subtotal",
-                                     "taxes_id", "qty_invoiced", "qty_received"]})
+        return self.call(
+            "purchase.order.line",
+            "search_read",
+            [[["order_id", "=", order_id]]],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "product_qty",
+                    "price_unit",
+                    "price_subtotal",
+                    "taxes_id",
+                    "qty_invoiced",
+                    "qty_received",
+                ]
+            },
+        )
 
     # ── Facturas ──────────────────────────────────────────────────────────────
 
@@ -368,18 +476,34 @@ class OdooXMLRPCClient:
         domain: list = [["move_type", "=", tipo], ["state", "=", "posted"]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("account.move", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "invoice_origin",
-                "invoice_date", "invoice_date_due",
-                "amount_untaxed", "amount_tax", "amount_total", "amount_residual",
-                "currency_id", "payment_state", "state",
-                "move_type", "ref",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "invoice_date desc",
-        })
+        return self.call(
+            "account.move",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "partner_id",
+                    "invoice_origin",
+                    "invoice_date",
+                    "invoice_date_due",
+                    "amount_untaxed",
+                    "amount_tax",
+                    "amount_total",
+                    "amount_residual",
+                    "currency_id",
+                    "payment_state",
+                    "state",
+                    "move_type",
+                    "ref",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+                "order": "invoice_date desc",
+            },
+        )
 
     def get_lineas_factura(self, move_id: int) -> list[dict]:
         """
@@ -388,13 +512,29 @@ class OdooXMLRPCClient:
         Filtra a líneas reales de producto: excluye secciones/notas
         (``display_type``) y líneas sin producto (impuesto, término de pago).
         """
-        return self.call("account.move.line", "search_read",
-                         [[["move_id", "=", move_id],
-                           ["display_type", "=", False],
-                           ["product_id", "!=", False]]],
-                         {"fields": ["id", "product_id", "quantity",
-                                     "price_unit", "discount",
-                                     "price_subtotal", "price_total", "tax_ids"]})
+        return self.call(
+            "account.move.line",
+            "search_read",
+            [
+                [
+                    ["move_id", "=", move_id],
+                    ["display_type", "=", False],
+                    ["product_id", "!=", False],
+                ]
+            ],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "quantity",
+                    "price_unit",
+                    "discount",
+                    "price_subtotal",
+                    "price_total",
+                    "tax_ids",
+                ]
+            },
+        )
 
     # ── Pagos ─────────────────────────────────────────────────────────────────
 
@@ -415,19 +555,33 @@ class OdooXMLRPCClient:
             domain.append(["payment_type", "=", tipo])
         if desde:
             domain.append(["date", ">=", desde])
-        return self.call("account.payment", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "payment_type", "partner_type",
-                "amount", "date", "state",
-                "journal_id", "currency_id",
-                "memo", "ref",
-                # Reconciliación: facturas (account.move) saldadas por este pago.
-                "reconciled_invoice_ids",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "date desc",
-        })
+        return self.call(
+            "account.payment",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "partner_id",
+                    "payment_type",
+                    "partner_type",
+                    "amount",
+                    "date",
+                    "state",
+                    "journal_id",
+                    "currency_id",
+                    "memo",
+                    "ref",
+                    # Reconciliación: facturas (account.move) saldadas por este pago.
+                    "reconciled_invoice_ids",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+                "order": "date desc",
+            },
+        )
 
     # ── Inventario ────────────────────────────────────────────────────────────
 
@@ -436,29 +590,52 @@ class OdooXMLRPCClient:
         Stock actual por producto y ubicación (stock.quant).
         Solo ubicaciones internas.
         """
-        return self.call("stock.quant", "search_read",
-                         [[["location_id.usage", "=", "internal"]]],
-                         {"fields": ["id", "product_id", "location_id",
-                                     "quantity", "reserved_quantity",
-                                     "lot_id"],
-                          "limit": limite})
+        return self.call(
+            "stock.quant",
+            "search_read",
+            [[["location_id.usage", "=", "internal"]]],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "location_id",
+                    "quantity",
+                    "reserved_quantity",
+                    "lot_id",
+                ],
+                "limit": limite,
+            },
+        )
 
-    def get_movimientos_stock(self, desde: str | None = None, limite: int = 300) -> list[dict]:
+    def get_movimientos_stock(
+        self, desde: str | None = None, limite: int = 300
+    ) -> list[dict]:
         """Movimientos de stock realizados (stock.move en estado done)."""
         domain: list = [["state", "=", "done"]]
         if desde:
             domain.append(["date", ">=", desde])
-        return self.call("stock.move", "search_read", [domain], {
-            "fields": [
-                "id", "name", "product_id",
-                "product_uom_qty", "quantity_done",
-                "location_id", "location_dest_id",
-                "picking_id", "date", "origin",
-                "state",
-            ],
-            "limit": limite,
-            "order": "date desc",
-        })
+        return self.call(
+            "stock.move",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "product_id",
+                    "product_uom_qty",
+                    "quantity_done",
+                    "location_id",
+                    "location_dest_id",
+                    "picking_id",
+                    "date",
+                    "origin",
+                    "state",
+                ],
+                "limit": limite,
+                "order": "date desc",
+            },
+        )
 
     # ── Información del sistema ───────────────────────────────────────────────
 
@@ -467,19 +644,30 @@ class OdooXMLRPCClient:
         domain: list = []
         if tipos:
             domain.append(["type", "in", tipos])
-        return self.call("account.journal", "search_read", [domain],
-                         {"fields": ["id", "name", "type", "currency_id"], "limit": 100})
+        return self.call(
+            "account.journal",
+            "search_read",
+            [domain],
+            {"fields": ["id", "name", "type", "currency_id"], "limit": 100},
+        )
 
     def get_monedas(self) -> list[dict]:
         """Monedas activas."""
-        return self.call("res.currency", "search_read",
-                         [[["active", "=", True]]],
-                         {"fields": ["id", "name", "symbol", "rate"], "limit": 50})
+        return self.call(
+            "res.currency",
+            "search_read",
+            [[["active", "=", True]]],
+            {"fields": ["id", "name", "symbol", "rate"], "limit": 50},
+        )
 
     def get_paises(self) -> list[dict]:
         """Lista de países."""
-        return self.call("res.country", "search_read", [[]],
-                         {"fields": ["id", "name", "code"], "limit": 300})
+        return self.call(
+            "res.country",
+            "search_read",
+            [[]],
+            {"fields": ["id", "name", "code"], "limit": 300},
+        )
 
     # ── Escritura ─────────────────────────────────────────────────────────────
 

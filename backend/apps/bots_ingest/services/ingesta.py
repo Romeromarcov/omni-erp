@@ -7,7 +7,7 @@ from django.db import IntegrityError, transaction
 from apps.core.viewsets import get_empresas_visible
 
 from ..models import BotUsuario, IngestaBot
-from . import handlers
+from . import handlers, odoo_push
 from .handlers import Ctx, HandlerError
 
 # Pagos: se pueden completar después de enviados (desde el grupo o desde Odoo).
@@ -69,6 +69,7 @@ def ingerir(*, servicio, kind: str, draft: dict, fuente: dict, idempotency_key: 
                 incompleto=r.incompleto,
                 resultado=r.resultado,
             )
+            _encolar_si_corresponde(ing)
     except IntegrityError:
         # Carrera: otra petición con la misma clave ganó. Si no existe esa ingesta, el conflicto
         # es de otra restricción (dato real duplicado): no se enmascara.
@@ -120,7 +121,16 @@ def completar(ingesta: IngestaBot, cambios: dict) -> IngestaBot:
             "fecha_actualizacion",
         ]
     )
+    _encolar_si_corresponde(ingesta)
     return ingesta
+
+
+def _encolar_si_corresponde(ing: IngestaBot) -> None:
+    """Tras confirmar la transacción, empuja a Odoo lo que ya está completo."""
+    from ..tasks import encolar_sync
+
+    if odoo_push.debe_sincronizar(ing):
+        transaction.on_commit(lambda: encolar_sync(ing.pk))
 
 
 _CAMPOS_PAGO = {

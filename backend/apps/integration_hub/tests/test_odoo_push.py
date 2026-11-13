@@ -117,3 +117,52 @@ def test_base_no_soporta_push_por_defecto():
         d.push_pedido_venta({})
     with pytest.raises(ConnectorNotSupportedError):
         d.push_pago({})
+
+
+# ── push_contacto: GPS y marca de cliente ────────────────────────────────────
+
+
+def test_contacto_envia_gps_y_marca_de_cliente(conn):
+    conn._cli.crear_socio.return_value = 55
+    assert (
+        conn.push_contacto(
+            {
+                "nombre": "Taller",
+                "es_cliente": True,
+                "latitud": "10.48",
+                "longitud": "-66.9",
+            }
+        )
+        == "55"
+    )
+    v = conn._cli.crear_socio.call_args.args[0]
+    assert (
+        v["customer_rank"] == 1
+        and v["partner_latitude"] == 10.48
+        and v["partner_longitude"] == -66.9
+    )
+
+
+def test_contacto_reintenta_sin_gps_si_odoo_no_tiene_geolocalizacion(conn):
+    from apps.integration_hub.connectors.odoo.client import OdooCallError
+
+    conn._cli.crear_socio.side_effect = [
+        OdooCallError("Invalid field 'partner_latitude' on res.partner"),
+        56,
+    ]
+    assert conn.push_contacto({"nombre": "Taller", "latitud": 1, "longitud": 2}) == "56"
+    assert "partner_latitude" not in conn._cli.crear_socio.call_args.args[0]
+
+
+def test_contacto_no_oculta_otros_errores_de_odoo(conn):
+    from apps.integration_hub.connectors.odoo.client import OdooCallError
+
+    conn._cli.crear_socio.side_effect = OdooCallError("Access denied")
+    with pytest.raises(OdooCallError):
+        conn.push_contacto({"nombre": "Taller", "latitud": 1, "longitud": 2})
+
+
+def test_contacto_sin_gps_no_envia_campos_de_geolocalizacion(conn):
+    conn._cli.crear_socio.return_value = 57
+    conn.push_contacto({"nombre": "Taller"})
+    assert "partner_latitude" not in conn._cli.crear_socio.call_args.args[0]

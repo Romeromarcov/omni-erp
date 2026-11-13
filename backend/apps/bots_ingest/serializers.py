@@ -27,6 +27,7 @@ class IngestaSerializer(serializers.ModelSerializer):
             "auto",
             "payload",
             "odoo_ref",
+            "error",
             "idempotency_key",
             "fecha_creacion",
             "fecha_actualizacion",
