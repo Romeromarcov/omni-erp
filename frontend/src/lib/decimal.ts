@@ -51,3 +51,12 @@ export function subtotalLinea(
 export function toFixedStr(value: Decimal | string | number, decimals = 2): string {
   return (value instanceof Decimal ? value : D(value)).toFixed(decimals);
 }
+
+/**
+ * Formato de moneda SOLO para mostrar en pantalla (nunca para cálculos ni payloads).
+ * Acepta el string decimal que devuelve la API. Vacío/nulo no muestra nada.
+ */
+export function formatoMoneda(valor: DecimalInput, moneda = 'VES', locale = 'es-VE'): string {
+  if (valor === null || valor === undefined || valor === '') return '';
+  return D(valor).toNumber().toLocaleString(locale, { style: 'currency', currency: moneda });
+}

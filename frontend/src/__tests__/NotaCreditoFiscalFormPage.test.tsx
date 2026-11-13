@@ -152,21 +152,21 @@ describe('NotaCreditoFiscalFormPage', () => {
 
     const payload = createMock.mock.calls[0][0] as Record<string, unknown>;
     expect(payload.numero_control).toBe('NC-0001');
-    expect(payload.base_imponible).toBe(90);
-    expect(payload.monto_iva).toBe(14.4);
-    expect(payload.monto_total).toBe(104.4);
+    expect(payload.base_imponible).toBe('90');
+    expect(payload.monto_iva).toBe('14.4');
+    expect(payload.monto_total).toBe('104.4');
     expect(payload.id_cliente).toMatchObject({ id_cliente: 'c1', razon_social: 'Cliente Uno' });
     expect(payload.afecta_inventario_fiscal).toBe(true);
     const detalles = payload.detalles as Array<Record<string, unknown>>;
     expect(detalles[0]).toMatchObject({
       id_producto: 'p1',
-      cantidad: 10,
-      precio_unitario: 10,
-      descuento_porcentaje: 10,
-      descuento_monto: 10,
-      subtotal: 90,
-      monto_impuesto: 14.4,
-      total_linea: 104.4,
+      cantidad: '10',
+      precio_unitario: '10',
+      descuento_porcentaje: '10',
+      descuento_monto: '10',
+      subtotal: '90',
+      monto_impuesto: '14.4',
+      total_linea: '104.4',
     });
     expect(navigateMock).toHaveBeenCalledWith('/ventas/notas-credito-fiscal');
   });
@@ -218,7 +218,7 @@ describe('NotaCreditoFiscalFormPage', () => {
       afecta_inventario_fiscal: false,
       observaciones: 'Obs fiscal',
       detalles: [
-        { id_producto: 'p1', cantidad: 5, precio_unitario: 20, descuento_porcentaje: 0 },
+        { id_producto: 'p1', cantidad: '5', precio_unitario: '20', descuento_porcentaje: '0' },
       ],
     });
     const user = userEvent.setup();
@@ -234,8 +234,8 @@ describe('NotaCreditoFiscalFormPage', () => {
     expect(updateMock.mock.calls[0][0]).toBe('ncf-1');
     const payload = updateMock.mock.calls[0][1] as Record<string, unknown>;
     expect(payload.afecta_inventario_fiscal).toBe(false);
-    expect(payload.base_imponible).toBe(100);
-    expect(payload.monto_iva).toBe(16);
+    expect(payload.base_imponible).toBe('100');
+    expect(payload.monto_iva).toBe('16');
     expect(createMock).not.toHaveBeenCalled();
   });
 });

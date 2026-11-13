@@ -81,8 +81,8 @@ const NotaCreditoVentaFormPage: React.FC = () => {
         observaciones: notaCreditoData.observaciones || '',
         detalles: (notaCreditoData.detalles || []).map((d) => ({
           id_producto: d.id_producto || '',
-          cantidad: Number(d.cantidad ?? 0),
-          precio_unitario: Number(d.precio_unitario ?? 0),
+          cantidad: String(d.cantidad ?? '0'),
+          precio_unitario: String(d.precio_unitario ?? '0'),
         })),
       });
     }
@@ -120,12 +120,12 @@ const NotaCreditoVentaFormPage: React.FC = () => {
         id_producto: d.id_producto,
         cantidad: d.cantidad,
         precio_unitario: d.precio_unitario,
-        subtotal: subtotal.toNumber(),
-        monto_impuesto: 0,
-        total_linea: subtotal.toNumber(),
+        subtotal: subtotal.toFixed(),
+        monto_impuesto: '0',
+        total_linea: subtotal.toFixed(),
       };
     });
-    const total = sumDecimals(detallesPayload.map((d) => d.total_linea)).toNumber();
+    const total = sumDecimals(detallesPayload.map((d) => d.total_linea)).toFixed();
     const payload: Partial<NotaCreditoVenta> = {
       fecha_emision: values.fecha_emision,
       estado: values.estado,
@@ -251,7 +251,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
               variant="contained"
               color="secondary"
               size="small"
-              onClick={() => append({ id_producto: '', cantidad: 1, precio_unitario: 0 })}
+              onClick={() => append({ id_producto: '', cantidad: '1', precio_unitario: '0' })}
             >
               <AddIcon fontSize="small" /> Agregar
             </Button>
