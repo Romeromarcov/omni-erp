@@ -23,6 +23,9 @@
 | configuracion_motor | CatalogoValor | — | ✅ | — |
 | configuracion_motor | ParametroSistema | ✅ | ✅ | id_empresa+codigo_parametro |
 | configuracion_motor | TipoDocumento | — | ✅ | — |
+| connect | Perfil | ✅ | ✅ | — |
+| connect | Tarjeta | ✅ | ✅ | — |
+| connect | Toque | ✅ | ✅ | — |
 | contabilidad | AsientoContable | ✅ | ✅ | id_empresa+numero_asiento |
 | contabilidad | DetalleAsiento | — | ✅ | — |
 | contabilidad | MapeoContable | ✅ | ✅ | id_empresa+tipo_asiento |
@@ -52,6 +55,9 @@
 | crm | Cliente | ✅ | ✅ | id_empresa+rif |
 | crm | ContactoCliente | ✅ | ✅ | — |
 | crm | DireccionCliente | ✅ | ✅ | — |
+| crm | Etapa | ✅ | ✅ | — |
+| crm | Lead | ✅ | ✅ | — |
+| crm | Pipeline | ✅ | ✅ | — |
 | cuentas_por_cobrar | AbonoCxC | — | — | — |
 | cuentas_por_cobrar | CuentaPorCobrar | ✅ | — | — |
 | cuentas_por_pagar | AbonoCxP | — | ✅ | — |
@@ -223,4 +229,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 220_
+_Total modelos: 226_

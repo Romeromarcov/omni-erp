@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "apps.compras",
     "apps.cuentas_por_pagar",
     "apps.crm",
+    "apps.connect",  # Omni Connect: tarjetas NFC + captura de leads (S1)
     "apps.ventas",
     "apps.cuentas_por_cobrar",
     "apps.cxc",
