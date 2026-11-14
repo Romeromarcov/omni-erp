@@ -149,16 +149,16 @@ describe('NotaCreditoVentaFormPage', () => {
     const payload = createMock.mock.calls[0][0] as Record<string, unknown>;
     // Whitelist: NO debe filtrarse id_cliente como string plano; debe ir expandido.
     expect(payload.id_cliente).toMatchObject({ id_cliente: 'c1', razon_social: 'Cliente Uno', rif: 'J-123' });
-    expect(payload.monto_total).toBe(100);
+    expect(payload.monto_total).toBe('100');
     const detalles = payload.detalles as Array<Record<string, unknown>>;
     expect(detalles).toHaveLength(1);
     expect(detalles[0]).toMatchObject({
       id_producto: 'p1',
-      cantidad: 2,
-      precio_unitario: 50,
-      subtotal: 100,
-      monto_impuesto: 0,
-      total_linea: 100,
+      cantidad: '2',
+      precio_unitario: '50',
+      subtotal: '100',
+      monto_impuesto: '0',
+      total_linea: '100',
     });
     // numero/estado se mandan; campos de UI no contemplados no deben colarse.
     expect(payload.estado).toBe('BORRADOR');
@@ -212,7 +212,7 @@ describe('NotaCreditoVentaFormPage', () => {
       motivo: 'DESCUENTO',
       observaciones: 'Observación guardada',
       detalles: [
-        { id_producto: 'p1', cantidad: 4, precio_unitario: 25 },
+        { id_producto: 'p1', cantidad: '4', precio_unitario: '25' },
       ],
     });
     const user = userEvent.setup();
@@ -230,7 +230,7 @@ describe('NotaCreditoVentaFormPage', () => {
     expect(updateMock.mock.calls[0][0]).toBe('nc-1');
     const payload = updateMock.mock.calls[0][1] as Record<string, unknown>;
     expect(payload.id_cliente).toMatchObject({ id_cliente: 'c2' });
-    expect(payload.monto_total).toBe(100);
+    expect(payload.monto_total).toBe('100');
     expect(createMock).not.toHaveBeenCalled();
   });
 

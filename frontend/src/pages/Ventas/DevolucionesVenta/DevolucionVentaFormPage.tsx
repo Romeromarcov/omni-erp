@@ -85,8 +85,8 @@ const DevolucionVentaFormPage: React.FC = () => {
         observaciones: devolucionData.observaciones || '',
         detalles: (devolucionData.detalles || []).map((d) => ({
           id_producto: d.id_producto || '',
-          cantidad_devuelta: Number(d.cantidad_devuelta ?? 0),
-          precio_unitario: Number(d.precio_unitario ?? 0),
+          cantidad_devuelta: String(d.cantidad_devuelta ?? '0'),
+          precio_unitario: String(d.precio_unitario ?? '0'),
           estado_producto: d.estado_producto || 'BUENO',
           accion_inventario: d.accion_inventario || 'REINTEGRAR',
           observaciones: d.observaciones || '',
@@ -126,12 +126,12 @@ const DevolucionVentaFormPage: React.FC = () => {
       id_producto: d.id_producto,
       cantidad_devuelta: d.cantidad_devuelta,
       precio_unitario: d.precio_unitario,
-      subtotal: D(d.cantidad_devuelta).times(D(d.precio_unitario)).toNumber(),
+      subtotal: D(d.cantidad_devuelta).times(D(d.precio_unitario)).toFixed(),
       estado_producto: d.estado_producto,
       accion_inventario: d.accion_inventario,
       observaciones: d.observaciones,
     }));
-    const total = sumDecimals(detallesPayload.map((d) => d.subtotal)).toNumber();
+    const total = sumDecimals(detallesPayload.map((d) => d.subtotal)).toFixed();
     const payload: Partial<DevolucionVenta> & { generar_nota_credito: boolean } = {
       id_factura_origen: values.id_factura_origen,
       fecha_devolucion: values.fecha_devolucion,
@@ -293,8 +293,8 @@ const DevolucionVentaFormPage: React.FC = () => {
               onClick={() =>
                 append({
                   id_producto: '',
-                  cantidad_devuelta: 1,
-                  precio_unitario: 0,
+                  cantidad_devuelta: '1',
+                  precio_unitario: '0',
                   estado_producto: 'BUENO',
                   accion_inventario: 'REINTEGRAR',
                   observaciones: '',

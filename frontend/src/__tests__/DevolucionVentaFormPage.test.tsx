@@ -152,15 +152,15 @@ describe('DevolucionVentaFormPage', () => {
     await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
 
     const payload = createMock.mock.calls[0][0] as Record<string, unknown>;
-    expect(payload.monto_total).toBe(100);
+    expect(payload.monto_total).toBe('100');
     expect(payload.generar_nota_credito).toBe(true);
     expect(payload.id_cliente).toMatchObject({ id_cliente: 'c1', razon_social: 'Cliente Uno' });
     const detalles = payload.detalles as Array<Record<string, unknown>>;
     expect(detalles[0]).toMatchObject({
       id_producto: 'p1',
-      cantidad_devuelta: 2,
-      precio_unitario: 50,
-      subtotal: 100,
+      cantidad_devuelta: '2',
+      precio_unitario: '50',
+      subtotal: '100',
       estado_producto: 'BUENO',
       accion_inventario: 'REINTEGRAR',
     });
@@ -213,8 +213,8 @@ describe('DevolucionVentaFormPage', () => {
       detalles: [
         {
           id_producto: 'p1',
-          cantidad_devuelta: 3,
-          precio_unitario: 30,
+          cantidad_devuelta: '3',
+          precio_unitario: '30',
           estado_producto: 'DEFECTUOSO',
           accion_inventario: 'CUARENTENA',
           observaciones: 'roto',
@@ -235,7 +235,7 @@ describe('DevolucionVentaFormPage', () => {
     await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1));
     expect(updateMock.mock.calls[0][0]).toBe('dev-1');
     const payload = updateMock.mock.calls[0][1] as Record<string, unknown>;
-    expect(payload.monto_total).toBe(90);
+    expect(payload.monto_total).toBe('90');
     expect(payload.generar_nota_credito).toBe(false);
     expect(createMock).not.toHaveBeenCalled();
   });

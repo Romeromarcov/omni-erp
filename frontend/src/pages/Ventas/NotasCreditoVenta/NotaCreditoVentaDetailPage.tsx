@@ -7,6 +7,7 @@ import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { ventasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Card, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { PageContainer, PageHeader, SectionTitle, StatusChip } from '../../../components/ui';
+import { formatoMoneda } from '../../../lib/decimal';
 
 const NotaCreditoVentaDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -95,7 +96,7 @@ const NotaCreditoVentaDetailPage: React.FC = () => {
           <Box>
             <Typography variant="body2" color="text.secondary">Monto Total</Typography>
             <Typography variant="body1" fontWeight={700} fontSize="1.2em">
-              {notaCredito.monto_total?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+              {formatoMoneda(notaCredito.monto_total)}
             </Typography>
           </Box>
         </Box>
@@ -127,10 +128,10 @@ const NotaCreditoVentaDetailPage: React.FC = () => {
                     <TableCell>{detalle.id_producto}</TableCell>
                     <TableCell align="right">{detalle.cantidad}</TableCell>
                     <TableCell align="right">
-                      {detalle.precio_unitario?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                      {formatoMoneda(detalle.precio_unitario)}
                     </TableCell>
                     <TableCell align="right">
-                      {detalle.subtotal?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                      {formatoMoneda(detalle.subtotal)}
                     </TableCell>
                   </TableRow>
                 ))}
