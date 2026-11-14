@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 
 /**
  * Smoke E2E (TEST-6) — el flujo más simple: cargar la pantalla de login y
