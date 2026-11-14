@@ -2,12 +2,18 @@
 
 | App | Modelo | Tenant-aware | PK UUID | unique_together |
 |---|---|---|---|---|
+| activaciones | CalendarioActivacion | ✅ | ✅ | — |
+| activaciones | EventoActivacion | ✅ | ✅ | — |
+| activaciones | RecursoActivacion | ✅ | ✅ | — |
+| activaciones | UsoRecursoEvento | ✅ | ✅ | — |
 | agentes | ConfigAgente | ✅ | ✅ | id_empresa+agente |
 | agentes | PrediccionAgente | ✅ | ✅ | — |
 | almacenes | Almacen | ✅ | ✅ | id_empresa+codigo_almacen |
 | almacenes | UbicacionAlmacen | ✅ | ✅ | id_almacen+codigo_ubicacion |
 | auditoria | LogAuditoria | ✅ | ✅ | — |
 | banca_electronica | CuentaBancariaEmpresa | ✅ | — | — |
+| bots_ingest | BotUsuario | ✅ | ✅ | — |
+| bots_ingest | IngestaBot | ✅ | ✅ | — |
 | compras | DetalleFacturaCompra | — | ✅ | — |
 | compras | DetalleOfertaProveedor | — | ✅ | — |
 | compras | DetalleOrdenCompra | — | ✅ | — |
@@ -229,4 +235,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 226_
+_Total modelos: 232_

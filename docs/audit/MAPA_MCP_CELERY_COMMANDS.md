@@ -28,8 +28,10 @@ _Total tools MCP: 17_
 
 | Tarea | Módulo |
 |---|---|
+| `activaciones.sincronizar_google` | apps.activaciones.tasks |
 | `agentes.generar_sugerencias_diarias` | apps.agentes.tasks |
 | `auditoria.registrar_evento` | apps.auditoria.tasks |
+| `bots_ingest.sincronizar_odoo` | apps.bots_ingest.tasks |
 | `config.celery.debug_task` | config.celery |
 | `core.log_evento` | apps.core.tasks |
 | `core.ping` | apps.core.tasks |
@@ -47,7 +49,7 @@ _Total tools MCP: 17_
 | `integration_hub.sync_tasas_ve` | apps.integration_hub.tasks |
 | `notificaciones.enviar_notificacion_email` | apps.notificaciones.tasks |
 
-_Total tareas Celery: 18_
+_Total tareas Celery: 20_
 
 ## Management commands
 
@@ -57,6 +59,7 @@ _Total tareas Celery: 18_
 | `configurar_conector_sheets` | apps.integration_hub |
 | `configurar_rol_rls` | apps.core |
 | `consumir_eventos` | apps.eventos |
+| `crear_usuario_bot` | apps.bots_ingest |
 | `create_initial_data` | apps.core |
 | `exportar_a_sheets` | apps.integration_hub |
 | `importar_clientes` | apps.migracion_datos |
@@ -72,4 +75,4 @@ _Total tareas Celery: 18_
 | `sincronizar_cxc_lubrikca` | apps.cxc_lubrikca |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 18_
+_Total commands: 19_
