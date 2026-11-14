@@ -30,6 +30,12 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
+    // La app es una PWA: su Service Worker responde las lecturas de /api/ con NetworkFirst y
+    // networkTimeoutSeconds=5, es decir, si el backend tarda >5 s sirve la copia en caché. Los specs
+    // mutan datos por API y recargan la página; con el SW activo y un backend lento (CI bajo carga)
+    // la UI mostraba el estado anterior (p. ej. PENDIENTE en vez de APROBADO) y el test fallaba de
+    // forma intermitente. Los E2E prueban la app contra el backend real, no el caché offline.
+    serviceWorkers: 'block',
   },
   projects: [
     // Login único: persiste el storageState (cookie refresh) que reusa el resto.

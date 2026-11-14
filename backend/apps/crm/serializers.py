@@ -70,6 +70,10 @@ class DireccionClienteSerializer(serializers.ModelSerializer):
             "persona_contacto",
             "es_direccion_principal",
             "observaciones",
+            "latitud",
+            "longitud",
+            "gps_precision_m",
+            "gps_capturado_en",
             "id_empresa",
             "id_cliente",
         ]

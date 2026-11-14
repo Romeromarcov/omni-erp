@@ -114,6 +114,12 @@ class DireccionCliente(OmniBaseModel):
     es_direccion_principal = models.BooleanField(default=False)
     observaciones = models.TextField(null=True, blank=True)
 
+    # Geolocalización (capturada p. ej. desde el bot de Telegram) para ubicar al cliente en mapa/rutas.
+    latitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    gps_precision_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    gps_capturado_en = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         db_table = "crm_direccion_cliente"
         verbose_name = "Dirección de Cliente"

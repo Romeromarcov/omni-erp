@@ -875,6 +875,12 @@ class Contacto(OmniBaseModel):
     telefono = models.CharField(max_length=50, blank=True, default="")
     direccion_fiscal = models.TextField(blank=True, default="")
 
+    # Geolocalización (capturada p. ej. desde el bot de Telegram) para ubicar al cliente en mapa/rutas.
+    latitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    gps_precision_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    gps_capturado_en = models.DateTimeField(null=True, blank=True)
+
     # Roles booleanos
     es_cliente = models.BooleanField(default=False)
     es_proveedor = models.BooleanField(default=False)
