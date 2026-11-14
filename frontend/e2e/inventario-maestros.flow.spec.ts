@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { iniciarSesion, type ApiE2E } from './helpers/sesion';
 import { sufijoUnico, monedaUsd } from './helpers/datos';
 

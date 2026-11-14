@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { iniciarSesion } from './helpers/sesion';
 import { crearPrereqNomina, sufijoUnico } from './helpers/datos';
 
