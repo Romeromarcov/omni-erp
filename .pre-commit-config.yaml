@@ -67,3 +67,15 @@ repos:
         entry: bash -c 'cd frontend && npm run lint -- --max-warnings=0'
         files: '^frontend/src/.*\.(ts|tsx)$'
         pass_filenames: false
+
+  # ── Matrices de superficie (A1) — mismo chequeo que CI ──────────────────────
+  # mapa_superficie --check no necesita BD alcanzable, solo que DB_HOST exista.
+  - repo: local
+    hooks:
+      - id: mapa-superficie
+        name: Matrices de superficie al día (mapa_superficie --check)
+        language: system
+        entry: bash -c 'cd backend && DJANGO_ENV=dev SECRET_KEY=hook-local-no-secreto-0123456789abcdef0123456789abcdef DB_HOST=localhost DB_NAME=x DB_USER=x DB_PASSWORD=x python manage.py mapa_superficie --check || { echo "Regenera con  cd backend && python manage.py mapa_superficie  (y commitea solo las matrices que cambien de verdad)"; exit 1; }'
+        files: '^backend/(apps|config)/.*(models|views|urls|tasks|mcp_tools|serializers)[^/]*\.py$|^backend/apps/.*/management/commands/.*\.py$'
+        pass_filenames: false
+        stages: [pre-push]
