@@ -35,6 +35,7 @@ import { bancaElectronicaRoutes } from './routes/bancaElectronicaRoutes';
 import { migracionDatosRoutes } from './routes/migracionDatosRoutes';
 import { integracionB2bRoutes } from './routes/integracionB2bRoutes';
 import { agentesRoutes } from './routes/agentesRoutes';
+import { activacionesRoutes } from './routes/activacionesRoutes';
 import { personalizacionRoutes } from './routes/personalizacionRoutes';
 import { isModuleEnabled, isCxcLubrikcaVisible } from './config/appProfile';
 import { getEmpresaId } from './utils/empresa';
@@ -114,6 +115,7 @@ export default function AppRouter() {
             {migracionDatosRoutes()}
             {integracionB2bRoutes()}
             {agentesRoutes()}
+            {isModuleEnabled('activaciones') ? activacionesRoutes() : null}
             {personalizacionRoutes()}
           </Route>
         )}

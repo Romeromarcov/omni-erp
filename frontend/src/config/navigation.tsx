@@ -32,6 +32,7 @@ import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
 import FolderOutlined from '@mui/icons-material/FolderOutlined';
 import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined';
 import { isModuleEnabled, isCxcLubrikcaVisible } from './appProfile';
 
 export interface NavItem {
@@ -350,6 +351,15 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Agentes IA',
       icon: <AutoAwesomeOutlined />,
       path: '/agentes',
+    },
+    {
+      id: 'activaciones',
+      label: 'Activaciones',
+      icon: <EventAvailableOutlined />,
+      items: [
+        { label: 'Eventos y capacidad', path: '/activaciones' },
+        { label: 'Bots de Telegram', path: '/bots' },
+      ],
     },
   ];
 
