@@ -41,6 +41,7 @@ de esfuerzo, dependencias y **Definition of Done** alineado al gate de cierre
 | **C** | [`03-panel-saas.md`](03-panel-saas.md) | Consola del proveedor SaaS (planes, tenants, suscripciones, signup) | ~2.5 semanas (+ billing futuro) | **COMPLETADO (MVP)** — C1–C3 ✅ 2026-06-07; falta toggle en staging; C4 (billing) diferido |
 | **D** | [`04-cobranza-standalone-lubrikca-odoo.md`](04-cobranza-standalone-lubrikca-odoo.md) | Standalone de Cobranza en Lubrikca integrado a Odoo por el Hub | ~2–3 semanas | **COMPLETADO (MVP)** — D1/D4 ✅, D2 falta validación ops con credenciales reales; D3 diferido ([CTF-011](../ctf/CTF-011.md)) |
 | **05** | [`05-seguridad-hardening.md`](05-seguridad-hardening.md) | Hardening de seguridad y resiliencia (RLS, CI de CVEs, gateway LLM, idempotencia, 2FA…) | ~3–4 semanas | **EN CURSO** — P0-1 RLS infra ✅ (activación bloqueada por [CTF-012](../ctf/CTF-012.md)); P1–P3 pendientes |
+| **06** | [`06-limpieza-y-estabilizacion.md`](06-limpieza-y-estabilizacion.md) | Limpieza y estabilización: runner, monedas, `uuid7` monótono, RLS real, higiene del repo | ~3–4 semanas (PRs pequeños) | EN CURSO — fase 0 |
 
 ## Secuenciación recomendada
 
