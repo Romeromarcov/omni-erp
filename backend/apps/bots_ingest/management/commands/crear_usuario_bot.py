@@ -124,4 +124,4 @@ class Command(BaseCommand):
                     "nombre": usuario.get_full_name() or usuario.username,
                 },
             )
-            self.stdout.write(f"Telegram {tid} → {usuario.email}")
+            self.stdout.write(f"Telegram {tid} -> {usuario.email}")

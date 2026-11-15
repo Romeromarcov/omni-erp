@@ -571,9 +571,31 @@ def _proveedor_por(empresa, nombre: str | None = None, rif: str | None = None):
     return None
 
 
+def _obtener_o_crear_proveedor(empresa, rif: str, **campos):
+    """→ (proveedor, creado). Si otro envío simultáneo ganó la carrera por el RIF, devuelve el que quedó (sin 500)."""
+    from django.db import IntegrityError, transaction
+
+    from apps.proveedores.models import Proveedor
+
+    try:
+        with transaction.atomic():  # savepoint: el IntegrityError no envenena la transacción de la ingesta
+            return Proveedor.objects.create(id_empresa=empresa, rif=rif, **campos), True
+    except IntegrityError:
+        prov = _proveedor_por(empresa, rif=rif)
+        if prov is None:
+            raise
+        return prov, False
+
+
+def _bloquear_proveedor(prov):
+    """Serializa los envíos simultáneos sobre un mismo proveedor (altas, completar datos, facturas)."""
+    from apps.proveedores.models import Proveedor
+
+    return Proveedor.objects.select_for_update().get(pk=prov.pk)
+
+
 def proveedor(ctx: Ctx) -> Resultado:
     """Crea (o completa) un proveedor: nombre, RIF y teléfono obligatorios; GPS, correo y crédito opcionales."""
-    from apps.proveedores.models import Proveedor
 
     p = ctx.payload
     _exigir(p, ["nombre", "rif", "telefono"])
@@ -590,18 +612,19 @@ def proveedor(ctx: Ctx) -> Resultado:
         )
 
     prov = _proveedor_por(ctx.empresa, rif=rif)
-    creado = prov is None
-    if creado:
-        prov = Proveedor.objects.create(
-            id_empresa=ctx.empresa,
+    creado = False
+    if prov is None:
+        prov, creado = _obtener_o_crear_proveedor(
+            ctx.empresa,
+            rif,
             razon_social=p["nombre"].strip(),
-            rif=rif,
             telefono=p["telefono"].strip(),
             email=p.get("email") or None,
             direccion=p.get("direccion") or None,
             documento_json={"origen": "bot", "notas": p.get("notas") or ""},
         )
-    else:  # ya existía: solo se completa lo que le faltaba, nunca se pisa
+    prov = _bloquear_proveedor(prov)
+    if not creado:  # ya existía: solo se completa lo que le faltaba, nunca se pisa
         for campo, valor in (
             ("telefono", p["telefono"].strip()),
             ("email", p.get("email")),
@@ -657,7 +680,6 @@ def _fecha_iso(valor, campo: str):
 def factura_proveedor(ctx: Ctx) -> Resultado:
     """Factura de proveedor → cuenta por pagar. Faltantes tolerables: queda INCOMPLETA y se completa después."""
     from apps.cuentas_por_pagar.models import CuentaPorPagar
-    from apps.proveedores.models import Proveedor
 
     p = ctx.payload
     faltan = [c for c in _REQ_FACTURA_PROV if _vacio(p.get(c))]
@@ -694,12 +716,15 @@ def factura_proveedor(ctx: Ctx) -> Resultado:
                 "o indica su nombre y su RIF.",
                 faltan=["proveedor"],
             )
-        prov = Proveedor.objects.create(
-            id_empresa=ctx.empresa,
+        prov, _ = _obtener_o_crear_proveedor(
+            ctx.empresa,
+            _normalizar_rif(p["rif"]),
             razon_social=p["proveedor"].strip(),
-            rif=_normalizar_rif(p["rif"]),
             documento_json={"origen": "bot", "provisional": True},
         )
+    # Bloqueo de la fila del proveedor: dos envíos simultáneos de la misma factura se serializan y el segundo
+    # ve el duplicado (sin esto ambos pasaban la comprobación y se creaban dos cuentas por pagar).
+    prov = _bloquear_proveedor(prov)
     if CuentaPorPagar.objects.filter(
         id_empresa=ctx.empresa, id_proveedor=prov, documento_json__numero_factura=numero
     ).exists():

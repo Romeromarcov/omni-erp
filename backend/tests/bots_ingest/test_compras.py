@@ -333,3 +333,87 @@ def test_no_usa_proveedores_de_otra_empresa(api, bot_usuario, empresa_b):  # noq
         ).status_code
         == 422
     )
+
+
+# ── carreras y robustez (hallazgos de las pruebas de punta a punta) ──────────
+
+
+def test_alta_de_proveedor_que_pierde_la_carrera_devuelve_el_existente(
+    api, bot_usuario, empresa_a, monkeypatch
+):
+    """Si otro envío simultáneo creó el proveedor entre la búsqueda y el alta, no hay 500: se usa el que quedó."""
+    from apps.bots_ingest.services import handlers
+
+    Proveedor.objects.create(
+        id_empresa=empresa_a, razon_social="Ya existe", rif="J-301234567"
+    )
+    real = handlers._proveedor_por
+    llamadas = {"n": 0}
+
+    def primero_no_lo_ve(*a, **k):
+        llamadas["n"] += 1
+        return (
+            None if llamadas["n"] == 1 else real(*a, **k)
+        )  # la 1.ª búsqueda ocurre «antes» de que el otro cree
+
+    monkeypatch.setattr(handlers, "_proveedor_por", primero_no_lo_ve)
+    r = enviar(api, "proveedor", _prov())
+    assert r.status_code == 201, r.data
+    assert (
+        r.data["resultado"]["creado"] is False
+        and Proveedor.objects.filter(id_empresa=empresa_a).count() == 1
+    )
+
+
+def test_factura_con_proveedor_nuevo_que_pierde_la_carrera_tambien_se_resuelve(
+    api, bot_usuario, empresa_a, monkeypatch
+):
+    from apps.bots_ingest.services import handlers
+
+    Proveedor.objects.create(
+        id_empresa=empresa_a, razon_social="Nuevo Prov", rif="J-999999999"
+    )
+    real = handlers._proveedor_por
+    llamadas = {"n": 0}
+
+    def primero_no_lo_ve(*a, **k):
+        llamadas["n"] += 1
+        return None if llamadas["n"] == 1 else real(*a, **k)
+
+    monkeypatch.setattr(handlers, "_proveedor_por", primero_no_lo_ve)
+    r = enviar(
+        api, "factura_proveedor", _factura(proveedor="Nuevo Prov", rif="J-999999999")
+    )
+    assert r.status_code == 201, r.data
+    assert (
+        Proveedor.objects.filter(id_empresa=empresa_a, rif="J-999999999").count() == 1
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_la_misma_factura_enviada_en_paralelo_se_carga_una_sola_vez(
+    servicio, bot_usuario, proveedor, empresa_a
+):
+    """Seis envíos simultáneos de la misma factura (claves distintas): una sola cuenta por pagar."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from django.db import connection
+    from rest_framework.test import APIClient
+
+    def enviar_en_hilo(i):
+        try:
+            c = APIClient()
+            c.force_authenticate(user=servicio)
+            return enviar(
+                c,
+                "factura_proveedor",
+                _factura(numero_factura="RACE-1"),
+                key=f"carrera-{i}",
+            ).status_code
+        finally:
+            connection.close()
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        codigos = list(ex.map(enviar_en_hilo, range(6)))
+    assert codigos.count(201) == 1 and codigos.count(409) == 5, codigos
+    assert CuentaPorPagar.objects.filter(id_proveedor=proveedor).count() == 1
