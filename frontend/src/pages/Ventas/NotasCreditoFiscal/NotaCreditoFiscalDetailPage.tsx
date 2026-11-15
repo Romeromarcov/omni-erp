@@ -7,6 +7,7 @@ import { useSnackbar } from '../../../contexts/feedbackTypes';
 import { ventasKeys } from '../../../lib/queryKeys';
 import { Alert, Box, Button, Card, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { PageContainer, PageHeader, SectionTitle, StatusChip } from '../../../components/ui';
+import { formatoMoneda } from '../../../lib/decimal';
 
 const NotaCreditoFiscalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -99,19 +100,19 @@ const NotaCreditoFiscalDetailPage: React.FC = () => {
           <Box>
             <Typography variant="body2" color="text.secondary">Monto Total</Typography>
             <Typography variant="body1" fontWeight={700} fontSize="1.2em">
-              {notaCredito.monto_total?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+              {formatoMoneda(notaCredito.monto_total)}
             </Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">IVA</Typography>
             <Typography variant="body1">
-              {notaCredito.monto_iva?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+              {formatoMoneda(notaCredito.monto_iva)}
             </Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">Base Imponible</Typography>
             <Typography variant="body1">
-              {notaCredito.base_imponible?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+              {formatoMoneda(notaCredito.base_imponible)}
             </Typography>
           </Box>
         </Box>
@@ -145,16 +146,16 @@ const NotaCreditoFiscalDetailPage: React.FC = () => {
                     <TableCell>{detalle.id_producto}</TableCell>
                     <TableCell align="right">{detalle.cantidad}</TableCell>
                     <TableCell align="right">
-                      {detalle.precio_unitario?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                      {formatoMoneda(detalle.precio_unitario)}
                     </TableCell>
                     <TableCell align="right">
-                      {detalle.subtotal?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                      {formatoMoneda(detalle.subtotal)}
                     </TableCell>
                     <TableCell align="right">
-                      {detalle.monto_impuesto?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                      {formatoMoneda(detalle.monto_impuesto)}
                     </TableCell>
                     <TableCell align="right">
-                      {detalle.total_linea?.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                      {formatoMoneda(detalle.total_linea)}
                     </TableCell>
                   </TableRow>
                 ))}

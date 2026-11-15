@@ -16,7 +16,7 @@ import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Card, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, sumDecimals, type DecimalInput } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const IVA_RATE = 0.16;
@@ -34,9 +34,9 @@ const defaultValues: NotaCreditoFiscalFormValues = {
 };
 
 // Calcula los importes de una línea con decimal.js.
-const calcularLinea = (cantidad: number, precio: number, descPct: number) => {
-  const subtotalSinDescuento = D(cantidad || 0).times(D(precio || 0));
-  const descuentoMonto = subtotalSinDescuento.times(D(descPct || 0).div(100));
+const calcularLinea = (cantidad: DecimalInput, precio: DecimalInput, descPct: DecimalInput) => {
+  const subtotalSinDescuento = D(cantidad).times(D(precio));
+  const descuentoMonto = subtotalSinDescuento.times(D(descPct).div(100));
   const subtotal = subtotalSinDescuento.minus(descuentoMonto);
   const montoImpuesto = subtotal.times(IVA_RATE);
   const totalLinea = subtotal.plus(montoImpuesto);
@@ -99,9 +99,9 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
         observaciones: notaCreditoData.observaciones || '',
         detalles: (notaCreditoData.detalles || []).map((d) => ({
           id_producto: d.id_producto || '',
-          cantidad: Number(d.cantidad ?? 0),
-          precio_unitario: Number(d.precio_unitario ?? 0),
-          descuento_porcentaje: Number(d.descuento_porcentaje ?? 0),
+          cantidad: String(d.cantidad ?? '0'),
+          precio_unitario: String(d.precio_unitario ?? '0'),
+          descuento_porcentaje: String(d.descuento_porcentaje ?? '0'),
         })),
       });
     }
@@ -111,7 +111,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
   // Totales en vivo calculados con decimal.js sobre los detalles observados.
   const detalles = watch('detalles');
   const lineas = (detalles || []).map((d) =>
-    calcularLinea(Number(d.cantidad) || 0, Number(d.precio_unitario) || 0, Number(d.descuento_porcentaje) || 0),
+    calcularLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje),
   );
   const baseImponible = sumDecimals(lineas.map((l) => l.subtotal));
   const montoIva = sumDecimals(lineas.map((l) => l.montoImpuesto));
@@ -145,10 +145,10 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
         cantidad: d.cantidad,
         precio_unitario: d.precio_unitario,
         descuento_porcentaje: d.descuento_porcentaje,
-        descuento_monto: descuentoMonto.toNumber(),
-        subtotal: subtotal.toNumber(),
-        monto_impuesto: montoImpuesto.toNumber(),
-        total_linea: totalLinea.toNumber(),
+        descuento_monto: descuentoMonto.toFixed(),
+        subtotal: subtotal.toFixed(),
+        monto_impuesto: montoImpuesto.toFixed(),
+        total_linea: totalLinea.toFixed(),
       };
     });
     const payload: Partial<NotaCreditoFiscal> = {
@@ -159,9 +159,9 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
       motivo: values.motivo,
       afecta_inventario_fiscal: values.afecta_inventario_fiscal,
       observaciones: values.observaciones,
-      base_imponible: baseImponible.toNumber(),
-      monto_iva: montoIva.toNumber(),
-      monto_total: montoTotal.toNumber(),
+      base_imponible: baseImponible.toFixed(),
+      monto_iva: montoIva.toFixed(),
+      monto_total: montoTotal.toFixed(),
       detalles: detallesPayload as NotaCreditoFiscal['detalles'],
       id_cliente: cliente
         ? {
@@ -301,7 +301,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
               variant="contained"
               color="secondary"
               size="small"
-              onClick={() => append({ id_producto: '', cantidad: 1, precio_unitario: 0, descuento_porcentaje: 0 })}
+              onClick={() => append({ id_producto: '', cantidad: '1', precio_unitario: '0', descuento_porcentaje: '0' })}
             >
               <AddIcon fontSize="small" /> Agregar
             </Button>

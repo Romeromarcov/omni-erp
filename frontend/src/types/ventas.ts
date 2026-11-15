@@ -207,7 +207,7 @@ export interface NotaCreditoVenta {
   numero_nota_credito: string;
   fecha_emision: string;
   motivo: 'DEVOLUCION' | 'DESCUENTO' | 'ERROR_FACTURACION' | 'ANULACION' | 'OTRO';
-  monto_total: number;
+  monto_total: string;
   id_moneda: string;
   estado: 'BORRADOR' | 'EMITIDA' | 'APLICADA' | 'ANULADA';
   observaciones?: string;
@@ -220,11 +220,11 @@ export interface DetalleNotaCreditoVenta {
   id_nota_credito: string;
   id_producto: string;
   id_variante?: string;
-  cantidad: number;
-  precio_unitario: number;
-  subtotal: number;
-  monto_impuesto: number;
-  total_linea: number;
+  cantidad: string;
+  precio_unitario: string;
+  subtotal: string;
+  monto_impuesto: string;
+  total_linea: string;
   observaciones?: string;
 }
 
@@ -248,13 +248,13 @@ export interface NotaCreditoFiscal {
   fecha_vencimiento?: string;
 
   // Montos
-  base_imponible: number;
-  monto_iva: number;
-  monto_total: number;
+  base_imponible: string;
+  monto_iva: string;
+  monto_total: string;
 
   // Moneda e impuestos
   id_moneda: string;
-  tasa_cambio: number;
+  tasa_cambio: string;
 
   // Motivo fiscal
   motivo: 'DEVOLUCION' | 'DESCUENTO' | 'ERROR_FACTURACION' | 'ANULACION' | 'AJUSTE_PRECIO' | 'OTRO';
@@ -278,13 +278,13 @@ export interface DetalleNotaCreditoFiscal {
   id_nota_credito_fiscal: string;
   id_producto: string;
   id_variante?: string;
-  cantidad: number;
-  precio_unitario: number;
-  descuento_porcentaje: number;
-  descuento_monto: number;
-  subtotal: number;
-  monto_impuesto: number;
-  total_linea: number;
+  cantidad: string;
+  precio_unitario: string;
+  descuento_porcentaje: string;
+  descuento_monto: string;
+  subtotal: string;
+  monto_impuesto: string;
+  total_linea: string;
   observaciones?: string;
 }
 
@@ -306,7 +306,7 @@ export interface DevolucionVenta {
   fecha_devolucion: string;
   motivo_devolucion: 'DEFECTO' | 'GARANTIA' | 'ERROR_ENTREGA' | 'CAMBIO_CLIENTE' | 'VENCIMIENTO' | 'OTRO';
   estado: 'PENDIENTE' | 'APROBADA' | 'PROCESADA' | 'RECHAZADA' | 'ANULADA';
-  monto_total: number;
+  monto_total: string;
   id_moneda: string;
   observaciones?: string;
   fecha_creacion: string;
@@ -318,9 +318,9 @@ export interface DetalleDevolucionVenta {
   id_devolucion: string;
   id_producto: string;
   id_variante?: string;
-  cantidad_devuelta: number;
-  precio_unitario: number;
-  subtotal: number;
+  cantidad_devuelta: string;
+  precio_unitario: string;
+  subtotal: string;
   estado_producto: 'BUENO' | 'DEFECTUOSO' | 'VENCIDO' | 'DAÑADO';
   accion_inventario: 'REINTEGRAR' | 'CUARENTENA' | 'DESCARTAR' | 'REPARAR';
   observaciones?: string;

@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { subtotalLinea, sumDecimals } from '../lib/decimal';
+import { decimalEntre, decimalNoNegativo, decimalPositivo } from './decimal.schemas';
 
 /** Tolerancia de redondeo para comparaciones monetarias (1 céntimo). */
 const MONTO_EPSILON = 0.01;
@@ -239,8 +240,11 @@ const estadoNotaCredito = ['BORRADOR', 'EMITIDA', 'APLICADA', 'ANULADA'] as cons
 
 export const detalleNotaCreditoVentaSchema = z.object({
   id_producto: requiredUUID('Producto'),
-  cantidad: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
-  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
+  cantidad: decimalPositivo('La cantidad es obligatoria', 'La cantidad debe ser mayor a 0'),
+  precio_unitario: decimalNoNegativo(
+    'El precio unitario es obligatorio',
+    'El precio unitario no puede ser negativo',
+  ),
 });
 
 export const notaCreditoVentaSchema = z.object({
@@ -275,12 +279,17 @@ const motivoNotaCreditoFiscal = [
 
 export const detalleNotaCreditoFiscalSchema = z.object({
   id_producto: requiredUUID('Producto'),
-  cantidad: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
-  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
-  descuento_porcentaje: z.coerce
-    .number()
-    .min(0, 'El descuento no puede ser negativo')
-    .max(100, 'El descuento no puede superar 100'),
+  cantidad: decimalPositivo('La cantidad es obligatoria', 'La cantidad debe ser mayor a 0'),
+  precio_unitario: decimalNoNegativo(
+    'El precio unitario es obligatorio',
+    'El precio unitario no puede ser negativo',
+  ),
+  descuento_porcentaje: decimalEntre(0, 100, {
+    requerido: 'El descuento es obligatorio',
+    invalido: 'El descuento debe ser un número',
+    bajoElMinimo: 'El descuento no puede ser negativo',
+    sobreElMaximo: 'El descuento no puede superar 100',
+  }),
 });
 
 export const notaCreditoFiscalSchema = z.object({
@@ -322,8 +331,11 @@ const accionInventario = ['REINTEGRAR', 'CUARENTENA', 'DESCARTAR', 'REPARAR'] as
 
 export const detalleDevolucionVentaSchema = z.object({
   id_producto: requiredUUID('Producto'),
-  cantidad_devuelta: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
-  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
+  cantidad_devuelta: decimalPositivo('La cantidad es obligatoria', 'La cantidad debe ser mayor a 0'),
+  precio_unitario: decimalNoNegativo(
+    'El precio unitario es obligatorio',
+    'El precio unitario no puede ser negativo',
+  ),
   estado_producto: z.enum(estadoProducto),
   accion_inventario: z.enum(accionInventario),
   observaciones: z.string().optional(),
