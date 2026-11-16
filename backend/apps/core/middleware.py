@@ -48,6 +48,8 @@ class RLSContextMiddleware:
                 rls.apply_system_default()
 
     def _apply_context(self, request) -> None:
+        # Garantiza punto de partida limpio antes de consultar tablas de autenticación.
+        rls.apply_system_default()
         user = self._resolve_user(request)
         if user is None or not getattr(user, "is_authenticated", False):
             # Anónimo => fail-closed (sin empresas, sin bypass).
@@ -68,14 +70,22 @@ class RLSContextMiddleware:
         user = getattr(request, "user", None)
         if user is not None and getattr(user, "is_authenticated", False):
             return user
-        # Resolver vía JWT (la API no usa sesión).
+        # 1. Resolver vía JWT (la API no usa sesión).
         try:
             from rest_framework_simplejwt.authentication import JWTAuthentication
 
             result = JWTAuthentication().authenticate(request)
         except Exception:
-            # Token inválido/ausente => tratado como anónimo (fail-closed).
-            return None
+            result = None
         if result is not None:
             return result[0]
+        # 2. Resolver vía CapabilityToken (servicios máquina-a-máquina).
+        try:
+            from .capability_auth import resolve_capability_principal
+
+            cap = resolve_capability_principal(request, mark_used=False)
+        except Exception:
+            return None
+        if cap is not None:
+            return cap[0]
         return None

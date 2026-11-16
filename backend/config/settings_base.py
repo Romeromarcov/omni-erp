@@ -346,7 +346,7 @@ CORS_ALLOW_CREDENTIALS = True
 # (build con VITE_API_URL absoluta, E2E con preview→backend, etc.).
 from corsheaders.defaults import default_headers  # noqa: E402
 
-CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key")
+CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key", "x-capability-token", "x-bot-key")
 
 # Django REST Framework settings
 REST_FRAMEWORK = {

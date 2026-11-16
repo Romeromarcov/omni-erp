@@ -1150,6 +1150,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.nomina.mcp",
     "apps.fiscal.mcp",
     "apps.despacho.mcp",
+    "apps.bots_ingest.mcp",
 ]
 
 

@@ -12,6 +12,9 @@
 | almacenes | UbicacionAlmacen | ✅ | ✅ | id_almacen+codigo_ubicacion |
 | auditoria | LogAuditoria | ✅ | ✅ | — |
 | banca_electronica | CuentaBancariaEmpresa | ✅ | — | — |
+| bots_ingest | BotBitacora | ✅ | ✅ | — |
+| bots_ingest | BotLatidoDiario | ✅ | ✅ | — |
+| bots_ingest | BotRegistro | ✅ | ✅ | — |
 | bots_ingest | BotUsuario | ✅ | ✅ | — |
 | bots_ingest | IngestaBot | ✅ | ✅ | — |
 | compras | DetalleFacturaCompra | — | ✅ | — |
@@ -235,4 +238,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 232_
+_Total modelos: 235_

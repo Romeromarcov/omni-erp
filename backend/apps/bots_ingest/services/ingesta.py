@@ -23,11 +23,19 @@ class UsuarioBotDesconocido(Exception):
     pass
 
 
-def resolver_bot_usuario(servicio, telegram_user_id) -> BotUsuario:
+def resolver_bot_usuario(
+    servicio, telegram_user_id, *, bot_codigo: str | None = None
+) -> BotUsuario:
+    from .control import usuario_autorizado_en_bot
+
+    if isinstance(telegram_user_id, bool):
+        raise UsuarioBotDesconocido("telegram_user_id inválido.")
     try:
         tid = int(telegram_user_id)
     except (TypeError, ValueError) as e:
         raise UsuarioBotDesconocido("telegram_user_id inválido.") from e
+    if not 1 <= tid <= 2**63 - 1:
+        raise UsuarioBotDesconocido("telegram_user_id inválido.")
     bu = (
         BotUsuario.objects.filter(
             telegram_user_id=tid,
@@ -40,12 +48,19 @@ def resolver_bot_usuario(servicio, telegram_user_id) -> BotUsuario:
     )
     if bu is None:
         raise UsuarioBotDesconocido("Usuario de Telegram no autorizado.")
+    if bot_codigo and isinstance(bot_codigo, str) and bot_codigo.strip():
+        if not usuario_autorizado_en_bot(bu.bots, bot_codigo.strip().lower()):
+            raise UsuarioBotDesconocido(
+                "Usuario de Telegram no autorizado para este bot."
+            )
     return bu
 
 
 def ingerir(*, servicio, kind: str, draft: dict, fuente: dict, idempotency_key: str):
     """→ (IngestaBot, creada: bool). Lanza UsuarioBotDesconocido / HandlerError."""
-    bu = resolver_bot_usuario(servicio, fuente.get("telegram_user_id"))
+    bu = resolver_bot_usuario(
+        servicio, fuente.get("telegram_user_id"), bot_codigo=fuente.get("bot")
+    )
     existente = IngestaBot.objects.filter(
         id_empresa=bu.id_empresa, idempotency_key=idempotency_key
     ).first()
