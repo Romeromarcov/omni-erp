@@ -252,15 +252,40 @@ class TestSyncTasasVe:
         assert "binance_p2p" not in resultado
         assert TasaCambio.objects.filter(tipo_tasa="PROMEDIO_MERCADO").count() == 0
 
-    def test_monedas_faltantes_retorna_error(self, db):
-        # Sin USD/VES en BD
+    def test_monedas_faltantes_falla_de_forma_visible_y_sin_reintentos(self, db):
+        """Sin USD/VES la tarea debe terminar en FAILURE (visible), no "con éxito" con un dict de error."""
+        from apps.integration_hub.tasks import CatalogoMonedasIncompleto
+
         mock_connector = MagicMock()
         with patch(
             "apps.integration_hub.connectors.tasas_ve.connector.TasasVeConnector",
             return_value=mock_connector,
         ):
-            resultado = sync_tasas_ve.apply().get()
-        assert resultado == {"error": "Monedas no encontradas"}
+            with pytest.raises(CatalogoMonedasIncompleto, match="seed_catalogo_monedas"):
+                sync_tasas_ve.apply(throw=True).get()
+        # Es un problema de configuración: ni siquiera se llega a consultar las fuentes externas.
+        mock_connector.pull_tasa_bcv.assert_not_called()
+
+    def test_tras_sembrar_el_catalogo_la_tarea_persiste_la_tasa(self, db):
+        """Camino completo de un entorno nuevo: seed del catálogo → sync_tasas_ve guarda la tasa."""
+        from apps.finanzas.catalogo_monedas import sembrar_catalogo_monedas
+        from apps.finanzas.models import TasaCambio
+
+        sembrar_catalogo_monedas()
+        mock_connector = MagicMock()
+        mock_connector.pull_tasa_bcv.return_value = Decimal("36.50")
+        mock_connector.pull_tasa_binance_p2p.return_value = None
+
+        with patch(
+            "apps.integration_hub.connectors.tasas_ve.connector.TasasVeConnector",
+            return_value=mock_connector,
+        ):
+            resultado = sync_tasas_ve.apply(throw=True).get()
+
+        assert resultado["bcv"]["tasa"] == "36.50"
+        tasa = TasaCambio.objects.get(tipo_tasa="OFICIAL_BCV")
+        assert (tasa.id_moneda_origen.codigo_iso, tasa.id_moneda_destino.codigo_iso) == ("USD", "VES")
+        assert tasa.valor_tasa == Decimal("36.50")
 
     def test_bcv_no_disponible_reintenta(self, monedas):
         from celery.exceptions import Retry
