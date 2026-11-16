@@ -80,6 +80,12 @@ fi
 echo "Sembrando catálogo de proveedores de integración (idempotente)..."
 python manage.py seed_proveedores_integracion || echo "WARN: seed de proveedores de integración falló (no bloqueante)."
 
+# Catálogo base de monedas (USD, VES, EUR, USDT). Idempotente y no destructivo: completa solo lo que
+# falte o siga en placeholder. Sin USD/VES, integration_hub.sync_tasas_ve y la captura de CxC Lubrikca
+# no funcionan en un entorno nuevo. No bloqueante, igual que el seed anterior.
+echo "Sembrando catálogo de monedas (idempotente)..."
+python manage.py seed_catalogo_monedas || echo "WARN: seed del catálogo de monedas falló (no bloqueante)."
+
 # Seed demo opcional e idempotente, SOLO para entornos de desarrollo. Activar con
 # RUN_SEED=1 en un entorno nuevo para crear la empresa y el superusuario demo. El
 # comando create_initial_data está bloqueado fuera de DEBUG (crea admin/admin123),

@@ -29,7 +29,11 @@ def evento(empresa_a):
         zona_horaria="America/Caracas",
     )
     RecursoActivacion.objects.create(
-        id_empresa=empresa_a, calendario=cal, codigo="promotoras", nombre="Promotoras", capacidad=3
+        id_empresa=empresa_a,
+        calendario=cal,
+        codigo="promotoras",
+        nombre="Promotoras",
+        capacidad=3,
     )
     return services.crear_evento(
         empresa=empresa_a,
@@ -85,7 +89,12 @@ def test_el_cuerpo_del_evento_resume_vendedor_materiales_recursos_y_notas(evento
     cuerpo = google_calendar._cuerpo(evento)
     assert cuerpo["summary"] == "Activación Bodega X"
     assert cuerpo["location"] == "Av. 1"
-    for fragmento in ("Vendedor: Ana", "Llevar: toldo, mesa", "Recursos: Promotoras: 2", "Llegar temprano"):
+    for fragmento in (
+        "Vendedor: Ana",
+        "Llevar: toldo, mesa",
+        "Recursos: Promotoras: 2",
+        "Llegar temprano",
+    ):
         assert fragmento in cuerpo["description"]
     assert cuerpo["start"]["timeZone"] == "America/Caracas"
     assert cuerpo["start"]["dateTime"] == evento.inicio.isoformat()
@@ -104,8 +113,12 @@ def test_el_cuerpo_omite_las_lineas_vacias(evento):
 def test_un_evento_nuevo_se_crea_con_post_y_devuelve_el_id_de_google(evento):
     evento.google_event_id = ""
     with (
-        patch.object(google_calendar, "_headers", return_value={"Authorization": "Bearer x"}),
-        patch.object(google_calendar.requests, "post", return_value=_respuesta({"id": "gid-1"})) as post,
+        patch.object(
+            google_calendar, "_headers", return_value={"Authorization": "Bearer x"}
+        ),
+        patch.object(
+            google_calendar.requests, "post", return_value=_respuesta({"id": "gid-1"})
+        ) as post,
         patch.object(google_calendar.requests, "put") as put,
     ):
         assert google_calendar.upsert(evento) == "gid-1"
@@ -118,7 +131,9 @@ def test_un_evento_ya_sincronizado_se_actualiza_con_put(evento):
     evento.google_event_id = "gid-7"
     with (
         patch.object(google_calendar, "_headers", return_value={}),
-        patch.object(google_calendar.requests, "put", return_value=_respuesta({"id": "gid-7"})) as put,
+        patch.object(
+            google_calendar.requests, "put", return_value=_respuesta({"id": "gid-7"})
+        ) as put,
         patch.object(google_calendar.requests, "post") as post,
     ):
         assert google_calendar.upsert(evento) == "gid-7"
@@ -135,7 +150,9 @@ def test_un_error_http_al_guardar_se_propaga(evento):
         patch.object(google_calendar.requests, "post", return_value=fallo),
     ):
         with pytest.raises(RuntimeError):
-            google_calendar.upsert(evento)  # el servicio lo captura y lo guarda en sync_error
+            google_calendar.upsert(
+                evento
+            )  # el servicio lo captura y lo guarda en sync_error
 
 
 @pytest.mark.parametrize("estado", [200, 204, 404, 410])

@@ -25,7 +25,13 @@ pytestmark = [pytest.mark.django_db]
 USUARIOS = "/api/bots/usuarios/"
 
 
-def _ingesta(bot_usuario, *, kind=IngestaBot.Kind.PAGO, estado=IngestaBot.Estado.INCOMPLETO, key="k"):
+def _ingesta(
+    bot_usuario,
+    *,
+    kind=IngestaBot.Kind.PAGO,
+    estado=IngestaBot.Estado.INCOMPLETO,
+    key="k",
+):
     return IngestaBot.objects.create(
         id_empresa=bot_usuario.id_empresa,
         bot_usuario=bot_usuario,
@@ -56,7 +62,12 @@ def test_sin_autenticar_no_puede_consultar():
 def test_la_fuente_debe_traer_telegram_user_id(api, bot_usuario):
     r = api.post(
         URL,
-        {"kind": "contacto", "draft": {"nombre": "A"}, "source": {}, "idempotency_key": "k1"},
+        {
+            "kind": "contacto",
+            "draft": {"nombre": "A"},
+            "source": {},
+            "idempotency_key": "k1",
+        },
         format="json",
     )
     assert r.status_code == 400
@@ -83,7 +94,10 @@ def test_un_telegram_user_id_no_numerico_es_403(api, bot_usuario):
 def test_el_listado_filtra_por_tipo_y_por_estado(api, bot_usuario):
     pago = _ingesta(bot_usuario, kind=IngestaBot.Kind.PAGO, key="a")
     ped = _ingesta(
-        bot_usuario, kind=IngestaBot.Kind.PEDIDO, estado=IngestaBot.Estado.BORRADOR, key="b"
+        bot_usuario,
+        kind=IngestaBot.Kind.PEDIDO,
+        estado=IngestaBot.Estado.BORRADOR,
+        key="b",
     )
 
     def ids(**params):
@@ -97,7 +111,9 @@ def test_el_listado_filtra_por_tipo_y_por_estado(api, bot_usuario):
 # ── completar ────────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("cuerpo", [{}, {"cambios": {}}, {"cambios": "texto"}, {"cambios": ["x"]}])
+@pytest.mark.parametrize(
+    "cuerpo", [{}, {"cambios": {}}, {"cambios": "texto"}, {"cambios": ["x"]}]
+)
 def test_completar_exige_cambios_con_al_menos_un_campo(api, bot_usuario, cuerpo):
     ing = _ingesta(bot_usuario)
     r = api.post(f"{URL}{ing.pk}/completar/", cuerpo, format="json")
@@ -107,7 +123,9 @@ def test_completar_exige_cambios_con_al_menos_un_campo(api, bot_usuario, cuerpo)
 
 def test_completar_una_ingesta_ya_sincronizada_da_409(api, bot_usuario):
     ing = _ingesta(bot_usuario, estado=IngestaBot.Estado.SINCRONIZADO)
-    r = api.post(f"{URL}{ing.pk}/completar/", {"cambios": {"referencia": "9"}}, format="json")
+    r = api.post(
+        f"{URL}{ing.pk}/completar/", {"cambios": {"referencia": "9"}}, format="json"
+    )
     assert r.status_code == 409
     ing.refresh_from_db()
     assert ing.estado == IngestaBot.Estado.SINCRONIZADO  # no se tocó
@@ -126,9 +144,13 @@ def _ingerir(servicio, key):
     )
 
 
-def test_si_otra_peticion_gano_la_carrera_se_devuelve_su_ingesta(servicio, bot_usuario, empresa_a):
+def test_si_otra_peticion_gano_la_carrera_se_devuelve_su_ingesta(
+    servicio, bot_usuario, empresa_a
+):
     """Dos envíos simultáneos con la misma clave: el perdedor recibe la ingesta ganadora."""
-    pipe = Pipeline.objects.create(id_empresa=empresa_a, nombre="Ventas", es_predeterminado=True)
+    pipe = Pipeline.objects.create(
+        id_empresa=empresa_a, nombre="Ventas", es_predeterminado=True
+    )
     Etapa.objects.create(id_empresa=empresa_a, pipeline=pipe, nombre="Nuevo", orden=1)
     ganadora = _ingesta(bot_usuario, kind=IngestaBot.Kind.CONTACTO, key="k-carrera")
     real_filter = IngestaBot.objects.filter
@@ -137,11 +159,17 @@ def test_si_otra_peticion_gano_la_carrera_se_devuelve_su_ingesta(servicio, bot_u
     def filtro(*args, **kwargs):
         llamadas["n"] += 1
         # La comprobación previa de idempotencia aún no ve a la ganadora; la posterior sí.
-        return real_filter(pk__in=[]) if llamadas["n"] == 1 else real_filter(*args, **kwargs)
+        return (
+            real_filter(pk__in=[])
+            if llamadas["n"] == 1
+            else real_filter(*args, **kwargs)
+        )
 
     with (
         patch.object(IngestaBot.objects, "filter", side_effect=filtro),
-        patch.object(IngestaBot.objects, "create", side_effect=IntegrityError("duplicada")),
+        patch.object(
+            IngestaBot.objects, "create", side_effect=IntegrityError("duplicada")
+        ),
     ):
         ing, creada = _ingerir(servicio, "k-carrera")
 
@@ -149,11 +177,17 @@ def test_si_otra_peticion_gano_la_carrera_se_devuelve_su_ingesta(servicio, bot_u
     assert creada is False
 
 
-def test_un_conflicto_que_no_es_de_idempotencia_no_se_enmascara(servicio, bot_usuario, empresa_a):
+def test_un_conflicto_que_no_es_de_idempotencia_no_se_enmascara(
+    servicio, bot_usuario, empresa_a
+):
     """Si tras el IntegrityError no existe ninguna ingesta con esa clave, el error real sube."""
-    pipe = Pipeline.objects.create(id_empresa=empresa_a, nombre="Ventas", es_predeterminado=True)
+    pipe = Pipeline.objects.create(
+        id_empresa=empresa_a, nombre="Ventas", es_predeterminado=True
+    )
     Etapa.objects.create(id_empresa=empresa_a, pipeline=pipe, nombre="Nuevo", orden=1)
-    with patch.object(IngestaBot.objects, "create", side_effect=IntegrityError("otra restriccion")):
+    with patch.object(
+        IngestaBot.objects, "create", side_effect=IntegrityError("otra restriccion")
+    ):
         with pytest.raises(IntegrityError):
             _ingerir(servicio, "k-inexistente")
 
@@ -183,7 +217,9 @@ def test_alta_de_un_usuario_de_telegram(api_staff, user_a, empresa_a):
 @pytest.mark.tenant
 def test_la_api_no_acepta_vincular_un_usuario_de_otra_empresa(api_staff, empresa_b):
     """El campo `usuario` ya se acota a las empresas visibles: el ajeno ni siquiera existe."""
-    ajeno = UsuariosFactory(username="ajeno_b", email="ajeno@beta.test", empresa=empresa_b)
+    ajeno = UsuariosFactory(
+        username="ajeno_b", email="ajeno@beta.test", empresa=empresa_b
+    )
     r = api_staff.post(
         USUARIOS, {"telegram_user_id": 888, "usuario": str(ajeno.pk)}, format="json"
     )
@@ -201,7 +237,9 @@ def test_la_vista_rechaza_por_si_misma_a_un_usuario_de_otra_empresa(user_a, empr
 
     from apps.bots_ingest.views import BotUsuarioViewSet
 
-    ajeno = UsuariosFactory(username="ajeno_c", email="ajeno_c@beta.test", empresa=empresa_b)
+    ajeno = UsuariosFactory(
+        username="ajeno_c", email="ajeno_c@beta.test", empresa=empresa_b
+    )
     vista = BotUsuarioViewSet()
     vista.request = SimpleNamespace(user=user_a)
     serializer = SimpleNamespace(validated_data={"usuario": ajeno})
@@ -210,7 +248,9 @@ def test_la_vista_rechaza_por_si_misma_a_un_usuario_de_otra_empresa(user_a, empr
 
 
 def test_borrar_un_usuario_de_telegram_es_borrado_logico(api_staff, user_a, empresa_a):
-    bu = BotUsuario.objects.create(id_empresa=empresa_a, telegram_user_id=999, usuario=user_a)
+    bu = BotUsuario.objects.create(
+        id_empresa=empresa_a, telegram_user_id=999, usuario=user_a
+    )
     r = api_staff.delete(f"{USUARIOS}{bu.pk}/")
     assert r.status_code == 204
     bu.refresh_from_db()
@@ -224,7 +264,10 @@ def test_la_tarea_de_sync_envia_la_ingesta_a_odoo(bot_usuario):
     from apps.bots_ingest import tasks
 
     ing = _ingesta(
-        bot_usuario, kind=IngestaBot.Kind.PEDIDO, estado=IngestaBot.Estado.BORRADOR, key="t1"
+        bot_usuario,
+        kind=IngestaBot.Kind.PEDIDO,
+        estado=IngestaBot.Estado.BORRADOR,
+        key="t1",
     )
     with patch("apps.bots_ingest.services.odoo_push.sincronizar") as sync:
         tasks.sincronizar_odoo_task(str(ing.pk))
@@ -245,16 +288,18 @@ def test_la_tarea_de_sync_ignora_una_ingesta_que_ya_no_existe():
 def test_encolar_sync_encola_con_el_id_como_texto():
     from apps.bots_ingest import tasks
 
-    with patch.object(tasks.sincronizar_odoo_task, "delay") as delay:
+    with patch.object(tasks.sincronizar_odoo_task, "apply_async") as publicar:
         tasks.encolar_sync(42)
-    delay.assert_called_once_with("42")
+    publicar.assert_called_once_with(args=["42"], retry=False)
 
 
 def test_encolar_sync_no_propaga_un_broker_caido():
     from apps.bots_ingest import tasks
 
     with patch.object(
-        tasks.sincronizar_odoo_task, "delay", side_effect=ConnectionError("broker")
-    ) as delay:
+        tasks.sincronizar_odoo_task,
+        "apply_async",
+        side_effect=ConnectionError("broker"),
+    ) as publicar:
         tasks.encolar_sync("ing-1")  # la ingesta ya está confirmada: no debe fallar
-    delay.assert_called_once_with("ing-1")
+    publicar.assert_called_once_with(args=["ing-1"], retry=False)

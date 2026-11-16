@@ -524,6 +524,18 @@ def pago_proveedor(ctx: Ctx) -> Resultado:
         )
         if prov:
             res["proveedor_id"] = str(prov.pk)
+            if p.get(
+                "factura_ref"
+            ):  # solo se referencia; la aplicación del abono la hace quien concilia
+                from apps.cuentas_por_pagar.models import CuentaPorPagar
+
+                cxp = CuentaPorPagar.objects.filter(
+                    id_empresa=ctx.empresa,
+                    id_proveedor=prov,
+                    documento_json__numero_factura=str(p["factura_ref"]).strip(),
+                ).first()
+                if cxp:
+                    res["cxp_id"] = str(cxp.pk)
         else:
             res["aviso"] = (
                 "Proveedor no encontrado en Omni; se resolverá al confirmar en Odoo."
@@ -532,6 +544,227 @@ def pago_proveedor(ctx: Ctx) -> Resultado:
         resultado=res,
         incompleto=incompleto,
         estado="INCOMPLETO" if incompleto else "BORRADOR",
+    )
+
+
+# ── compras: proveedores y facturas de proveedor ────────────────────────────
+
+
+def _proveedor_por(empresa, nombre: str | None = None, rif: str | None = None):
+    """Proveedor por RIF (con o sin guiones) y, si no, por nombre exacto (razón social o comercial)."""
+    from apps.proveedores.models import Proveedor
+
+    qs = Proveedor.objects.filter(id_empresa=empresa)
+    if rif:
+        try:
+            candidatos = {rif.strip(), _normalizar_rif(rif)}
+        except HandlerError:
+            candidatos = {rif.strip()}
+        prov = qs.filter(rif__in=candidatos).first()
+        if prov:
+            return prov
+    if nombre:
+        n = nombre.strip()
+        return qs.filter(
+            Q(razon_social__iexact=n) | Q(nombre_comercial__iexact=n)
+        ).first()
+    return None
+
+
+def _obtener_o_crear_proveedor(empresa, rif: str, **campos):
+    """→ (proveedor, creado). Si otro envío simultáneo ganó la carrera por el RIF, devuelve el que quedó (sin 500)."""
+    from django.db import IntegrityError, transaction
+
+    from apps.proveedores.models import Proveedor
+
+    try:
+        with transaction.atomic():  # savepoint: el IntegrityError no envenena la transacción de la ingesta
+            return Proveedor.objects.create(id_empresa=empresa, rif=rif, **campos), True
+    except IntegrityError:
+        prov = _proveedor_por(empresa, rif=rif)
+        if prov is None:
+            raise
+        return prov, False
+
+
+def _bloquear_proveedor(prov):
+    """Serializa los envíos simultáneos sobre un mismo proveedor (altas, completar datos, facturas)."""
+    from apps.proveedores.models import Proveedor
+
+    return Proveedor.objects.select_for_update().get(pk=prov.pk)
+
+
+def proveedor(ctx: Ctx) -> Resultado:
+    """Crea (o completa) un proveedor: nombre, RIF y teléfono obligatorios; GPS, correo y crédito opcionales."""
+
+    p = ctx.payload
+    _exigir(p, ["nombre", "rif", "telefono"])
+    rif = _normalizar_rif(p["rif"])
+    tel = _digitos(p["telefono"])
+    if not 7 <= len(tel) <= 15:
+        raise HandlerError("Teléfono inválido (7 a 15 dígitos).", faltan=["telefono"])
+    gps = _gps(p["ubicacion"]) if p.get("ubicacion") else {}
+    dias = p.get("dias_credito")
+    if dias is not None and (not str(dias).isdigit() or int(dias) > 365):
+        raise HandlerError(
+            "Los días de crédito deben ser un número entre 0 y 365.",
+            faltan=["dias_credito"],
+        )
+
+    prov = _proveedor_por(ctx.empresa, rif=rif)
+    creado = False
+    if prov is None:
+        prov, creado = _obtener_o_crear_proveedor(
+            ctx.empresa,
+            rif,
+            razon_social=p["nombre"].strip(),
+            telefono=p["telefono"].strip(),
+            email=p.get("email") or None,
+            direccion=p.get("direccion") or None,
+            documento_json={"origen": "bot", "notas": p.get("notas") or ""},
+        )
+    prov = _bloquear_proveedor(prov)
+    if not creado:  # ya existía: solo se completa lo que le faltaba, nunca se pisa
+        for campo, valor in (
+            ("telefono", p["telefono"].strip()),
+            ("email", p.get("email")),
+            ("direccion", p.get("direccion")),
+        ):
+            if valor and not getattr(prov, campo):
+                setattr(prov, campo, valor)
+        if not prov.activo:
+            prov.activo = True
+        prov.save()
+
+    contacto = (
+        prov.contacto
+        or Contacto.objects.filter(id_empresa=ctx.empresa, rif=rif).first()
+    )
+    if contacto is None:
+        contacto = Contacto.objects.create(
+            id_empresa=ctx.empresa,
+            nombre=prov.razon_social,
+            rif=rif,
+            telefono=prov.telefono or "",
+            email=prov.email or "",
+            direccion_fiscal=prov.direccion or "",
+        )
+    contacto.es_proveedor = True
+    if dias is not None:
+        contacto.dias_pago = int(dias)
+    for k, v in gps.items():
+        setattr(contacto, k, v)
+    contacto.save()
+    if prov.contacto_id != contacto.pk:
+        prov.contacto = contacto
+        prov.save(update_fields=["contacto", "fecha_actualizacion"])
+    return Resultado(
+        resultado={
+            "proveedor_id": str(prov.pk),
+            "contacto_id": str(contacto.pk),
+            "creado": creado,
+        }
+    )
+
+
+_REQ_FACTURA_PROV = ["numero_factura", "fecha_emision", "monto_total", "moneda"]
+
+
+def _fecha_iso(valor, campo: str):
+    try:
+        return date.fromisoformat(str(valor))
+    except ValueError as e:
+        raise HandlerError(f"{campo} inválida (usa AAAA-MM-DD).", faltan=[campo]) from e
+
+
+def factura_proveedor(ctx: Ctx) -> Resultado:
+    """Factura de proveedor → cuenta por pagar. Faltantes tolerables: queda INCOMPLETA y se completa después."""
+    from apps.cuentas_por_pagar.models import CuentaPorPagar
+
+    p = ctx.payload
+    faltan = [c for c in _REQ_FACTURA_PROV if _vacio(p.get(c))]
+    if _vacio(p.get("proveedor")) and _vacio(p.get("rif")):
+        faltan.append("proveedor (nombre o RIF)")
+    if p.get("monto_total") is not None and _dec(p["monto_total"], "Monto") <= 0:
+        raise HandlerError(
+            "El monto de la factura debe ser mayor que cero.", faltan=["monto_total"]
+        )
+    emision = (
+        _fecha_iso(p["fecha_emision"], "fecha_emision")
+        if p.get("fecha_emision")
+        else None
+    )
+    vence = (
+        _fecha_iso(p["fecha_vencimiento"], "fecha_vencimiento")
+        if p.get("fecha_vencimiento")
+        else None
+    )
+    if emision and vence and vence < emision:
+        raise HandlerError(
+            "El vencimiento no puede ser anterior a la emisión.",
+            faltan=["fecha_vencimiento"],
+        )
+    if faltan:
+        return Resultado(incompleto=faltan, estado="INCOMPLETO")
+
+    numero = str(p["numero_factura"]).strip()
+    prov = _proveedor_por(ctx.empresa, p.get("proveedor"), p.get("rif"))
+    if prov is None:
+        if _vacio(p.get("rif")) or _vacio(p.get("proveedor")):
+            raise HandlerError(
+                f"Proveedor «{p.get('proveedor') or p.get('rif')}» no encontrado: créalo con /proveedor "
+                "o indica su nombre y su RIF.",
+                faltan=["proveedor"],
+            )
+        prov, _ = _obtener_o_crear_proveedor(
+            ctx.empresa,
+            _normalizar_rif(p["rif"]),
+            razon_social=p["proveedor"].strip(),
+            documento_json={"origen": "bot", "provisional": True},
+        )
+    # Bloqueo de la fila del proveedor: dos envíos simultáneos de la misma factura se serializan y el segundo
+    # ve el duplicado (sin esto ambos pasaban la comprobación y se creaban dos cuentas por pagar).
+    prov = _bloquear_proveedor(prov)
+    if CuentaPorPagar.objects.filter(
+        id_empresa=ctx.empresa, id_proveedor=prov, documento_json__numero_factura=numero
+    ).exists():
+        raise HandlerError(
+            f"La factura {numero} de «{prov.razon_social}» ya está cargada.", status=409
+        )
+
+    monto = _dec(p["monto_total"], "Monto")
+    dias = prov.contacto.dias_pago if prov.contacto_id else 30
+    cxp = CuentaPorPagar.objects.create(
+        id_empresa=ctx.empresa,
+        id_proveedor=prov,
+        monto_total=monto,
+        monto_pendiente=monto,
+        fecha_emision=emision,
+        fecha_vencimiento=vence or emision + timedelta(days=dias),
+        observaciones=p.get("concepto") or None,
+        documento_json={
+            "origen": "bot",
+            "numero_factura": numero,
+            "numero_control": p.get("numero_control"),
+            "moneda": p[
+                "moneda"
+            ],  # CxP no tiene campo de moneda: queda aquí para quien la concilie
+            "base_imponible": str(p["base_imponible"])
+            if p.get("base_imponible") is not None
+            else None,
+            "iva": str(p["iva"]) if p.get("iva") is not None else None,
+            "orden_ref": p.get("orden_ref"),
+            "vendedor": str(ctx.usuario.pk),
+        },
+    )
+    aviso = [] if p.get("numero_control") else ["sin número de control"]
+    return Resultado(
+        resultado={
+            "cxp_id": str(cxp.pk),
+            "proveedor_id": str(prov.pk),
+            "numero_factura": numero,
+            "avisos": aviso,
+        }
     )
 
 
@@ -598,5 +831,7 @@ HANDLERS = {
     "pedido": pedido,
     "pago": pago,
     "pago_proveedor": pago_proveedor,
+    "proveedor": proveedor,
+    "factura_proveedor": factura_proveedor,
     "evento": evento,
 }
