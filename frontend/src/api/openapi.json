@@ -40018,11 +40018,235 @@
                 }
             ]
         },
+        "/tesoreria/extractos-bancarios/": {
+            "get": {
+                "operationId": "tesoreria_extractos-bancarios_list",
+                "summary": "Gestión multi-tenant de extractos bancarios validados.",
+                "description": "GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)\nGET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte\nDELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)\nPOST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv\nGET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ExtractoBancarioArchivo"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/extractos-bancarios/importar/": {
+            "post": {
+                "operationId": "tesoreria_extractos-bancarios_importar",
+                "summary": "Gestión multi-tenant de extractos bancarios validados.",
+                "description": "GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)\nGET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte\nDELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)\nPOST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv\nGET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad",
+                "parameters": [
+                    {
+                        "name": "empresa",
+                        "in": "formData",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "cuenta_bancaria",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "formato_banco",
+                        "in": "formData",
+                        "required": false,
+                        "type": "string",
+                        "maxLength": 30
+                    },
+                    {
+                        "name": "archivo",
+                        "in": "formData",
+                        "required": true,
+                        "type": "file"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ImportarExtractoResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ImportarExtractoResponse"
+                        }
+                    }
+                },
+                "consumes": [
+                    "multipart/form-data",
+                    "application/x-www-form-urlencoded"
+                ],
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/extractos-bancarios/saldos-consolidados/": {
+            "get": {
+                "operationId": "tesoreria_extractos-bancarios_saldos_consolidados",
+                "summary": "Gestión multi-tenant de extractos bancarios validados.",
+                "description": "GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)\nGET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte\nDELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)\nPOST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv\nGET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa",
+                        "in": "query",
+                        "description": "UUID de la empresa (opcional; usa la empresa activa accesible).",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "cuenta",
+                        "in": "query",
+                        "description": "UUID de CuentaBancariaEmpresa para filtrar.",
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SaldosConsolidadosResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/extractos-bancarios/{id}/": {
+            "get": {
+                "operationId": "tesoreria_extractos-bancarios_read",
+                "summary": "Gestión multi-tenant de extractos bancarios validados.",
+                "description": "GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)\nGET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte\nDELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)\nPOST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv\nGET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ExtractoBancarioArchivo"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "delete": {
+                "operationId": "tesoreria_extractos-bancarios_delete",
+                "summary": "Gestión multi-tenant de extractos bancarios validados.",
+                "description": "GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)\nGET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte\nDELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)\nPOST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv\nGET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este extracto bancario archivo.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/tesoreria/movimientos-bancarios/": {
             "get": {
                 "operationId": "tesoreria_movimientos-bancarios_list",
                 "summary": "CRUD de movimientos bancarios.",
-                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
+                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
                 "parameters": [
                     {
                         "name": "search",
@@ -40086,7 +40310,7 @@
             "post": {
                 "operationId": "tesoreria_movimientos-bancarios_create",
                 "summary": "CRUD de movimientos bancarios.",
-                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
+                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
                 "parameters": [
                     {
                         "name": "data",
@@ -40171,7 +40395,7 @@
             "get": {
                 "operationId": "tesoreria_movimientos-bancarios_read",
                 "summary": "CRUD de movimientos bancarios.",
-                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
+                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -40188,7 +40412,7 @@
             "put": {
                 "operationId": "tesoreria_movimientos-bancarios_update",
                 "summary": "CRUD de movimientos bancarios.",
-                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
+                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
                 "parameters": [
                     {
                         "name": "data",
@@ -40214,7 +40438,7 @@
             "patch": {
                 "operationId": "tesoreria_movimientos-bancarios_partial_update",
                 "summary": "CRUD de movimientos bancarios.",
-                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
+                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
                 "parameters": [
                     {
                         "name": "data",
@@ -40240,7 +40464,7 @@
             "delete": {
                 "operationId": "tesoreria_movimientos-bancarios_delete",
                 "summary": "CRUD de movimientos bancarios.",
-                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
+                "description": "GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)\nPOST /tesoreria/movimientos-bancarios/                   — registrar manual\nPOST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV\nPOST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática",
                 "parameters": [],
                 "responses": {
                     "204": {
@@ -50335,7 +50559,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-16T14:01:16.817977-04:00"
+                    "default": "2026-11-16T15:55:53.789796-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -58329,6 +58553,329 @@
                 }
             }
         },
+        "ExtractoBancarioArchivo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "title": "Id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_cuenta_bancaria": {
+                    "title": "Id cuenta bancaria",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "cuenta_nombre_banco": {
+                    "title": "Cuenta nombre banco",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "cuenta_numero": {
+                    "title": "Cuenta numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "formato_banco": {
+                    "title": "Formato banco",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nombre_archivo": {
+                    "title": "Nombre archivo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "sha256": {
+                    "title": "Sha256",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tamano_bytes": {
+                    "title": "Tamano bytes",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "moneda": {
+                    "title": "Moneda",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_desde": {
+                    "title": "Fecha desde",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_hasta": {
+                    "title": "Fecha hasta",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "saldo_inicial": {
+                    "title": "Saldo inicial",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "saldo_final": {
+                    "title": "Saldo final",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_debitos": {
+                    "title": "Total debitos",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_creditos": {
+                    "title": "Total creditos",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_lineas": {
+                    "title": "Total lineas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "lineas_nuevas": {
+                    "title": "Lineas nuevas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "lineas_duplicadas": {
+                    "title": "Lineas duplicadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "cuadra": {
+                    "title": "Cuadra",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "subido_por": {
+                    "title": "Subido por",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha creacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ImportarExtractoResponse": {
+            "type": "object",
+            "properties": {
+                "archivo": {
+                    "$ref": "#/definitions/ExtractoBancarioArchivo"
+                },
+                "ya_existia_archivo": {
+                    "title": "Ya existia archivo",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "lineas_nuevas": {
+                    "title": "Lineas nuevas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "lineas_duplicadas": {
+                    "title": "Lineas duplicadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "cuadra": {
+                    "title": "Cuadra",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "saltos": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "readOnly": true
+                },
+                "avisos": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "readOnly": true
+                }
+            }
+        },
+        "SaldoCuentaExtracto": {
+            "type": "object",
+            "properties": {
+                "cuenta_id": {
+                    "title": "Cuenta id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "nombre_banco": {
+                    "title": "Nombre banco",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_cuenta": {
+                    "title": "Numero cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda": {
+                    "title": "Moneda",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_corte": {
+                    "title": "Fecha corte",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "saldo": {
+                    "title": "Saldo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "tasa_usd_ves": {
+                    "title": "Tasa usd ves",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "saldo_usd": {
+                    "title": "Saldo usd",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "saldo_ves": {
+                    "title": "Saldo ves",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "n_cortes": {
+                    "title": "N cortes",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "cortes_sin_cuadrar": {
+                    "title": "Cortes sin cuadrar",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "alertas": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "readOnly": true
+                }
+            }
+        },
+        "SaldosConsolidadosResponse": {
+            "type": "object",
+            "properties": {
+                "total_usd": {
+                    "title": "Total usd",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "total_ves": {
+                    "title": "Total ves",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fechas_de_corte": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "readOnly": true
+                },
+                "cuentas_sin_tasa": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "readOnly": true
+                },
+                "cuentas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SaldoCuentaExtracto"
+                    },
+                    "readOnly": true
+                },
+                "formatos_soportados": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "readOnly": true
+                }
+            }
+        },
         "MovimientoBancario": {
             "required": [
                 "id_empresa",
@@ -58355,6 +58902,13 @@
                     "title": "Id cuenta bancaria",
                     "type": "string",
                     "format": "uuid"
+                },
+                "id_archivo_extracto": {
+                    "title": "Id archivo extracto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
                 },
                 "fecha_mov": {
                     "title": "Fecha mov",
@@ -58402,10 +58956,61 @@
                     "readOnly": true,
                     "x-nullable": true
                 },
+                "huella": {
+                    "title": "Huella",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "minLength": 1
+                },
+                "saldo_posterior": {
+                    "title": "Saldo posterior",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "orden_en_archivo": {
+                    "title": "Orden en archivo",
+                    "type": "integer",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "codigo_operacion": {
+                    "title": "Codigo operacion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "correlativo": {
+                    "title": "Correlativo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "categoria_clasificacion": {
+                    "title": "Categoria clasificacion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "regla_clasificacion": {
+                    "title": "Regla clasificacion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": true
+                },
                 "origen": {
                     "title": "Origen",
                     "type": "string",
                     "enum": [
+                        "EXTRACTO",
                         "CSV",
                         "MANUAL",
                         "API"

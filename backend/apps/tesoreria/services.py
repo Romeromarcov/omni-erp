@@ -189,6 +189,7 @@ def conciliar_automatico(
                 id_cuenta_bancaria=cuenta_bancaria,
                 estado="PENDIENTE",
                 tipo="CREDITO",
+                activo=True,
             )
             .order_by("fecha_mov")
         )
@@ -241,7 +242,7 @@ def _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias: int):
         if pago is None:
             return None
         pago = Pago.objects.select_for_update().get(pk=pago.pk)
-        if MovimientoBancario.objects.filter(id_pago_conciliado=pago).exists():
+        if MovimientoBancario.objects.filter(id_pago_conciliado=pago, activo=True).exists():
             return None
         return pago
 
@@ -326,6 +327,7 @@ def _contar_pendientes(empresa, cuenta, inicio, fin) -> int:
         fecha_mov__gte=inicio,
         fecha_mov__lte=fin,
         estado="PENDIENTE",
+        activo=True,
     ).count()
 
 
@@ -337,4 +339,5 @@ def _contar_conciliados(empresa, cuenta, inicio, fin) -> int:
         fecha_mov__gte=inicio,
         fecha_mov__lte=fin,
         estado="CONCILIADO",
+        activo=True,
     ).count()

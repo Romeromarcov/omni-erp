@@ -106,7 +106,65 @@ class OperacionCambioDivisa(models.Model):
         return f"{self.numero_operacion} - {self.tipo_operacion}: {self.monto_origen} {self.moneda_origen} -> {self.monto_destino} {self.moneda_destino}"
 
 
-# ── Conciliación Bancaria ─────────────────────────────────────────────────────
+# ── Extractos y Conciliación Bancaria ─────────────────────────────────────────
+
+
+class ExtractoBancarioArchivo(models.Model):
+    """Corte de estado de cuenta bancario importado y validado fila a fila."""
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="extractos_bancarios",
+    )
+    id_cuenta_bancaria = models.ForeignKey(
+        "finanzas.CuentaBancariaEmpresa",
+        on_delete=models.CASCADE,
+        related_name="extractos_bancarios",
+    )
+    formato_banco = models.CharField(max_length=30)
+    nombre_archivo = models.CharField(max_length=255)
+    sha256 = models.CharField(max_length=64, db_index=True)
+    tamano_bytes = models.PositiveIntegerField(default=0)
+    moneda = models.CharField(max_length=10)
+    fecha_desde = models.DateField(null=True, blank=True)
+    fecha_hasta = models.DateField(null=True, blank=True)
+    saldo_inicial = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    saldo_final = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    total_debitos = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_creditos = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_lineas = models.PositiveIntegerField(default=0)
+    lineas_nuevas = models.PositiveIntegerField(default=0)
+    lineas_duplicadas = models.PositiveIntegerField(default=0)
+    cuadra = models.BooleanField(default=True)
+    observaciones = models.TextField(blank=True, default="")
+    subido_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="extractos_bancarios_subidos",
+    )
+    activo = models.BooleanField(default=True, db_index=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "tesoreria_extracto_bancario_archivo"
+        ordering = ["-fecha_hasta", "-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "id_cuenta_bancaria", "activo"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "id_cuenta_bancaria", "sha256"],
+                condition=models.Q(activo=True),
+                name="uq_tesoreria_extracto_empresa_cta_sha256_activo",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.nombre_archivo} ({self.formato_banco} · {self.moneda})"
 
 
 class MovimientoBancario(models.Model):
@@ -126,6 +184,12 @@ class MovimientoBancario(models.Model):
         ("CONCILIADO", "Conciliado"),
         ("DESCARTADO", "Descartado"),
     ]
+    ORIGEN_CHOICES = [
+        ("EXTRACTO", "Extracto bancario validado"),
+        ("CSV", "Importado CSV"),
+        ("MANUAL", "Registrado manualmente"),
+        ("API", "API bancaria"),
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
@@ -137,6 +201,13 @@ class MovimientoBancario(models.Model):
         "finanzas.CuentaBancariaEmpresa",
         on_delete=models.CASCADE,
         related_name="movimientos_bancarios",
+    )
+    id_archivo_extracto = models.ForeignKey(
+        "tesoreria.ExtractoBancarioArchivo",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="movimientos",
     )
     fecha_mov = models.DateField()
     descripcion = models.CharField(max_length=300)
@@ -152,10 +223,18 @@ class MovimientoBancario(models.Model):
         blank=True,
         related_name="movimientos_bancarios_conciliados",
     )
+    huella = models.CharField(max_length=24, blank=True, default="", db_index=True)
+    saldo_posterior = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    orden_en_archivo = models.PositiveIntegerField(null=True, blank=True)
+    codigo_operacion = models.CharField(max_length=30, blank=True, default="")
+    correlativo = models.CharField(max_length=50, blank=True, default="")
+    categoria_clasificacion = models.CharField(max_length=50, blank=True, default="", db_index=True)
+    regla_clasificacion = models.CharField(max_length=50, blank=True, default="")
+    activo = models.BooleanField(default=True, db_index=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     origen = models.CharField(
         max_length=20,
-        choices=[("CSV", "Importado CSV"), ("MANUAL", "Registrado manualmente"), ("API", "API bancaria")],
+        choices=ORIGEN_CHOICES,
         default="MANUAL",
     )
 
@@ -166,6 +245,17 @@ class MovimientoBancario(models.Model):
             models.Index(fields=["id_empresa", "estado"]),
             models.Index(fields=["id_cuenta_bancaria", "fecha_mov"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "id_cuenta_bancaria", "huella"],
+                condition=models.Q(activo=True) & ~models.Q(huella=""),
+                name="uq_tesoreria_mov_empresa_cta_huella_activo",
+            ),
+        ]
+
+    def soft_delete(self):
+        self.activo = False
+        self.save(update_fields=["activo"])
 
     def __str__(self):
         return f"{self.tipo} {self.monto} — {self.descripcion[:40]} ({self.estado})"

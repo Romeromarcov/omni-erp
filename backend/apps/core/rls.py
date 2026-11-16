@@ -370,6 +370,7 @@ RLS_TABLES = {
     "servicio_cliente_ticket_soporte": "id_empresa_id",
     # tesoreria
     "tesoreria_conciliacion_bancaria": "id_empresa_id",
+    "tesoreria_extracto_bancario_archivo": "id_empresa_id",
     "tesoreria_movimiento_bancario": "id_empresa_id",
     "tesoreria_operacion_cambio_divisa": "empresa_id",
     # ventas

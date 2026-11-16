@@ -496,6 +496,14 @@
 | `^eventos/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
 | `^eventos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
 | `^eventos\.(?P<format>[a-z0-9]+)/?$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios/$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios/(?P<pk>[^/.]+)/$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios/importar/$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios/importar\.(?P<format>[a-z0-9]+)/?$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios/saldos-consolidados/$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios/saldos-consolidados\.(?P<format>[a-z0-9]+)/?$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
+| `^extractos-bancarios\.(?P<format>[a-z0-9]+)/?$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
@@ -1244,4 +1252,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 226_
+_Total ViewSets: 227_

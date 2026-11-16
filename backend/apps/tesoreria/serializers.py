@@ -4,9 +4,16 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db import transaction
 from rest_framework import serializers
 
-logger = logging.getLogger(__name__)
+from .models import (
+    Caja,
+    ConciliacionBancaria,
+    ExtractoBancarioArchivo,
+    MovimientoBancario,
+    MovimientoInternoFondo,
+    OperacionCambioDivisa,
+)
 
-from .models import Caja, ConciliacionBancaria, MovimientoBancario, MovimientoInternoFondo, OperacionCambioDivisa
+logger = logging.getLogger(__name__)
 
 
 class CajaSerializer(serializers.ModelSerializer):
@@ -329,15 +336,178 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
         return operacion
 
 
+class ExtractoBancarioArchivoSerializer(serializers.ModelSerializer):
+    cuenta_nombre_banco = serializers.CharField(
+        source="id_cuenta_bancaria.nombre_banco", read_only=True
+    )
+    cuenta_numero = serializers.CharField(
+        source="id_cuenta_bancaria.numero_cuenta", read_only=True
+    )
+
+    class Meta:
+        model = ExtractoBancarioArchivo
+        fields = [
+            "id",
+            "id_empresa",
+            "id_cuenta_bancaria",
+            "cuenta_nombre_banco",
+            "cuenta_numero",
+            "formato_banco",
+            "nombre_archivo",
+            "sha256",
+            "tamano_bytes",
+            "moneda",
+            "fecha_desde",
+            "fecha_hasta",
+            "saldo_inicial",
+            "saldo_final",
+            "total_debitos",
+            "total_creditos",
+            "total_lineas",
+            "lineas_nuevas",
+            "lineas_duplicadas",
+            "cuadra",
+            "observaciones",
+            "subido_por",
+            "activo",
+            "fecha_creacion",
+        ]
+        read_only_fields = fields
+
+
+class ImportarExtractoRequestSerializer(serializers.Serializer):
+    empresa = serializers.UUIDField(required=False)
+    cuenta_bancaria = serializers.UUIDField(required=True)
+    formato_banco = serializers.CharField(required=False, allow_blank=True, max_length=30)
+    archivo = serializers.FileField(required=True)
+
+
+class ImportarExtractoResponseSerializer(serializers.Serializer):
+    archivo = ExtractoBancarioArchivoSerializer(read_only=True)
+    ya_existia_archivo = serializers.BooleanField(read_only=True)
+    lineas_nuevas = serializers.IntegerField(read_only=True)
+    lineas_duplicadas = serializers.IntegerField(read_only=True)
+    cuadra = serializers.BooleanField(read_only=True)
+    saltos = serializers.ListField(child=serializers.CharField(), read_only=True)
+    avisos = serializers.ListField(child=serializers.CharField(), read_only=True)
+
+
+class SaldoCuentaExtractoSerializer(serializers.Serializer):
+    cuenta_id = serializers.UUIDField(read_only=True)
+    nombre_banco = serializers.CharField(read_only=True)
+    numero_cuenta = serializers.CharField(read_only=True)
+    moneda = serializers.CharField(read_only=True)
+    fecha_corte = serializers.DateField(allow_null=True, read_only=True)
+    saldo = serializers.CharField(allow_null=True, read_only=True)
+    tasa_usd_ves = serializers.CharField(allow_null=True, read_only=True)
+    saldo_usd = serializers.CharField(allow_null=True, read_only=True)
+    saldo_ves = serializers.CharField(allow_null=True, read_only=True)
+    n_cortes = serializers.IntegerField(read_only=True)
+    cortes_sin_cuadrar = serializers.IntegerField(read_only=True)
+    alertas = serializers.ListField(child=serializers.CharField(), read_only=True)
+
+
+class SaldosConsolidadosResponseSerializer(serializers.Serializer):
+    total_usd = serializers.CharField(read_only=True)
+    total_ves = serializers.CharField(read_only=True)
+    fechas_de_corte = serializers.ListField(child=serializers.DateField(), read_only=True)
+    cuentas_sin_tasa = serializers.ListField(child=serializers.CharField(), read_only=True)
+    cuentas = SaldoCuentaExtractoSerializer(many=True, read_only=True)
+    formatos_soportados = serializers.ListField(child=serializers.CharField(), read_only=True)
+
+
 class MovimientoBancarioSerializer(serializers.ModelSerializer):
+    _CAMPOS_INMUTABLES_CONTABLE = (
+        "id_empresa",
+        "id_cuenta_bancaria",
+        "fecha_mov",
+        "tipo",
+        "monto",
+        "origen",
+        "referencia",
+    )
+
     class Meta:
         model = MovimientoBancario
         fields = [
-            "id", "id_empresa", "id_cuenta_bancaria",
-            "fecha_mov", "descripcion", "tipo", "monto", "referencia",
-            "estado", "id_pago_conciliado", "origen", "fecha_creacion",
+            "id",
+            "id_empresa",
+            "id_cuenta_bancaria",
+            "id_archivo_extracto",
+            "fecha_mov",
+            "descripcion",
+            "tipo",
+            "monto",
+            "referencia",
+            "estado",
+            "id_pago_conciliado",
+            "huella",
+            "saldo_posterior",
+            "orden_en_archivo",
+            "codigo_operacion",
+            "correlativo",
+            "categoria_clasificacion",
+            "regla_clasificacion",
+            "activo",
+            "origen",
+            "fecha_creacion",
         ]
-        read_only_fields = ["id", "estado", "id_pago_conciliado", "fecha_creacion"]
+        read_only_fields = [
+            "id",
+            "id_archivo_extracto",
+            "estado",
+            "id_pago_conciliado",
+            "huella",
+            "saldo_posterior",
+            "orden_en_archivo",
+            "codigo_operacion",
+            "correlativo",
+            "categoria_clasificacion",
+            "regla_clasificacion",
+            "activo",
+            "fecha_creacion",
+        ]
+
+    def validate_monto(self, value):
+        if Decimal(str(value)) <= Decimal("0"):
+            raise serializers.ValidationError(
+                "El monto del movimiento bancario debe ser mayor a cero."
+            )
+        return value
+
+    def validate(self, attrs):
+        empresa = attrs.get("id_empresa") or (
+            self.instance.id_empresa if self.instance is not None else None
+        )
+        cuenta = attrs.get("id_cuenta_bancaria") or (
+            self.instance.id_cuenta_bancaria if self.instance is not None else None
+        )
+        if empresa is not None and cuenta is not None and str(cuenta.id_empresa_id) != str(empresa.pk):
+            raise serializers.ValidationError(
+                {"id_cuenta_bancaria": "La cuenta bancaria no pertenece a la empresa indicada."}
+            )
+
+        if self.instance is not None and (
+            self.instance.estado == "CONCILIADO" or self.instance.origen == "EXTRACTO"
+        ):
+            modificados = [
+                campo
+                for campo in self._CAMPOS_INMUTABLES_CONTABLE
+                if campo in attrs and attrs[campo] != getattr(self.instance, campo)
+            ]
+            if modificados:
+                motivo = (
+                    "conciliado"
+                    if self.instance.estado == "CONCILIADO"
+                    else "importado desde un extracto bancario validado"
+                )
+                raise serializers.ValidationError(
+                    {
+                        campo: f"No se puede modificar '{campo}' en un movimiento {motivo}."
+                        for campo in modificados
+                    }
+                )
+        return attrs
 
 
 class ConciliacionBancariaSerializer(serializers.ModelSerializer):
