@@ -708,23 +708,9 @@ def factura_proveedor(ctx: Ctx) -> Resultado:
         return Resultado(incompleto=faltan, estado="INCOMPLETO")
 
     numero = str(p["numero_factura"]).strip()
-    prov = _proveedor_por(ctx.empresa, p.get("proveedor"), p.get("rif"))
-    if prov is None:
-        if _vacio(p.get("rif")) or _vacio(p.get("proveedor")):
-            raise HandlerError(
-                f"Proveedor «{p.get('proveedor') or p.get('rif')}» no encontrado: créalo con /proveedor "
-                "o indica su nombre y su RIF.",
-                faltan=["proveedor"],
-            )
-        prov, _ = _obtener_o_crear_proveedor(
-            ctx.empresa,
-            _normalizar_rif(p["rif"]),
-            razon_social=p["proveedor"].strip(),
-            documento_json={"origen": "bot", "provisional": True},
-        )
-    # Bloqueo de la fila del proveedor: dos envíos simultáneos de la misma factura se serializan y el segundo
-    # ve el duplicado (sin esto ambos pasaban la comprobación y se creaban dos cuentas por pagar).
-    prov = _bloquear_proveedor(prov)
+    prov, creado = _proveedor_de_documento(
+        ctx, p
+    )  # busca o crea; bloquea la fila (serializa duplicados)
     if CuentaPorPagar.objects.filter(
         id_empresa=ctx.empresa, id_proveedor=prov, documento_json__numero_factura=numero
     ).exists():
@@ -762,8 +748,245 @@ def factura_proveedor(ctx: Ctx) -> Resultado:
         resultado={
             "cxp_id": str(cxp.pk),
             "proveedor_id": str(prov.pk),
+            "proveedor_creado": creado,
             "numero_factura": numero,
             "avisos": aviso,
+        }
+    )
+
+
+# ── proveedor leído de un documento (factura, nota de contado, recibo) ──────
+
+
+def _rif_provisional(nombre: str) -> str:
+    """RIF provisional y determinista para un proveedor sin RIF en el documento: el mismo nombre da el mismo valor,
+    así el siguiente documento de ese proveedor lo encuentra en lugar de duplicarlo."""
+    import hashlib
+
+    base = " ".join((nombre or "").split()).upper()
+    return (
+        "PEND-"
+        + hashlib.sha1(base.encode("utf-8"), usedforsecurity=False)
+        .hexdigest()[:8]
+        .upper()
+    )
+
+
+def _asegurar_contacto_proveedor(ctx: Ctx, prov):
+    """Contacto unificado del proveedor (marcado es_proveedor). Idempotente."""
+    contacto = (
+        prov.contacto
+        or Contacto.objects.filter(id_empresa=ctx.empresa, rif=prov.rif).first()
+    )
+    if contacto is None:
+        contacto = Contacto.objects.create(
+            id_empresa=ctx.empresa,
+            nombre=prov.razon_social,
+            rif=prov.rif,
+            telefono=prov.telefono or "",
+            email=prov.email or "",
+            direccion_fiscal=prov.direccion or "",
+        )
+    if not contacto.es_proveedor:
+        contacto.es_proveedor = True
+        contacto.save(update_fields=["es_proveedor", "fecha_actualizacion"])
+    if prov.contacto_id != contacto.pk:
+        prov.contacto = contacto
+        prov.save(update_fields=["contacto", "fecha_actualizacion"])
+    return contacto
+
+
+def _proveedor_de_documento(ctx: Ctx, p: dict):
+    """→ (proveedor, creado). Busca por RIF y, si no hay, por nombre; si no existe lo CREA con los datos del
+    documento (decisión del owner: el bot de Compras no pide dar de alta antes). Dos documentos simultáneos del
+    mismo proveedor nuevo no lo duplican (bloqueo + savepoint)."""
+    nombre = " ".join((p.get("proveedor") or "").split())
+    rif = _normalizar_rif(p["rif"]) if not _vacio(p.get("rif")) else None
+    prov = _proveedor_por(ctx.empresa, nombre or None, rif)
+    if (
+        prov is not None
+        and rif
+        and prov.rif != rif
+        and not prov.rif.startswith("PEND-")
+    ):
+        prov = None  # mismo nombre pero otro RIF: es otro proveedor, no se mezclan
+    creado = False
+    if prov is None:
+        if not nombre:
+            raise HandlerError(
+                "Indica el nombre del proveedor tal como sale en el documento.",
+                faltan=["proveedor"],
+            )
+        prov, creado = _obtener_o_crear_proveedor(
+            ctx.empresa,
+            rif or _rif_provisional(nombre),
+            razon_social=nombre,
+            telefono=(p.get("proveedor_telefono") or "").strip() or None,
+            email=p.get("proveedor_email") or None,
+            direccion=p.get("proveedor_direccion") or None,
+            documento_json={
+                "origen": "bot",
+                "provisional": True,
+                "creado_desde": "documento",
+            },
+        )
+    prov = _bloquear_proveedor(prov)
+    if (
+        not creado
+    ):  # existente: solo se completa lo que le faltaba, nunca se pisa lo que ya tenía
+        for campo, valor in (
+            ("telefono", (p.get("proveedor_telefono") or "").strip()),
+            ("email", p.get("proveedor_email")),
+            ("direccion", p.get("proveedor_direccion")),
+        ):
+            if valor and not getattr(prov, campo):
+                setattr(prov, campo, valor)
+        if rif and prov.rif.startswith(
+            "PEND-"
+        ):  # llegó el RIF de un proveedor que se creó sin él
+            if not _proveedor_por(ctx.empresa, rif=rif):
+                prov.rif = rif
+        if not prov.activo:
+            prov.activo = True
+        prov.save()
+    _asegurar_contacto_proveedor(ctx, prov)
+    return prov, creado
+
+
+_REQ_GASTO = ["proveedor", "fecha_emision", "monto_total", "moneda"]
+_FAMILIA_VES = ("VES", "VED", "VEF", "VEB")
+_ALIAS_VES = {
+    "VES",
+    "VED",
+    "VEF",
+    "VEB",
+    "BS",
+    "BS.",
+    "BSF",
+    "BSD",
+    "BOLIVARES",
+    "BOLÍVARES",
+}
+
+
+def _moneda_omni(empresa, codigo: str):
+    from django.db.models import Q
+
+    from apps.finanzas.models import Moneda
+
+    c = (codigo or "").strip().upper()
+    if c in _ALIAS_VES:
+        candidatos = _FAMILIA_VES
+    elif c in ("USD", "$", "US$", "DOLARES", "DÓLARES"):
+        candidatos = ("USD",)
+    else:
+        candidatos = (c,)
+    visibles = Moneda.objects.filter(
+        Q(empresa__isnull=True)
+        | Q(es_generica=True)
+        | Q(es_publica=True)
+        | Q(empresa=empresa),
+        activo=True,
+    )
+    for cod in candidatos:
+        m = visibles.filter(codigo_iso__iexact=cod).first()
+        if m is not None:
+            return m
+    raise HandlerError(f"La moneda «{codigo}» no existe en Omni.", faltan=["moneda"])
+
+
+def _categoria_gasto(empresa, nombre: str | None):
+    """Categoría por nombre (exacto o contenido); si no hay coincidencia, la categoría por defecto «Compras menores»."""
+    from apps.gastos.models import CategoriaGasto
+
+    qs = CategoriaGasto.objects.filter(id_empresa=empresa, activo=True)
+    n = " ".join((nombre or "").split())
+    if n:
+        cat = (
+            qs.filter(nombre_categoria__iexact=n).first()
+            or qs.filter(nombre_categoria__icontains=n).first()
+        )
+        if cat:
+            return cat
+    cat, _ = qs.get_or_create(
+        nombre_categoria="Compras menores",
+        defaults={
+            "id_empresa": empresa,
+            "descripcion": "Compras menores y gastos de consumo (bot de Compras)",
+        },
+    )
+    return cat
+
+
+def gasto(ctx: Ctx) -> Resultado:
+    """Compra menor / gasto de consumo YA PAGADO (nota de contado, recibo, factura al contado) → ``gastos.Gasto``.
+
+    El proveedor se lee del documento y se busca o se crea. Faltantes tolerables: queda INCOMPLETO y se completa."""
+    from apps.gastos.models import Gasto
+
+    p = ctx.payload
+    faltan = [c for c in _REQ_GASTO if _vacio(p.get(c))]
+    if p.get("monto_total") is not None and _dec(p["monto_total"], "Monto") <= 0:
+        raise HandlerError("El monto debe ser mayor que cero.", faltan=["monto_total"])
+    if p.get("iva") is not None and _dec(p["iva"], "IVA") < 0:
+        raise HandlerError("El IVA no puede ser negativo.", faltan=["iva"])
+    fecha = (
+        _fecha_iso(p["fecha_emision"], "fecha_emision")
+        if p.get("fecha_emision")
+        else None
+    )
+    if not _vacio(p.get("rif")):
+        _normalizar_rif(p["rif"])  # valida el formato antes de decidir nada
+    if faltan:
+        return Resultado(incompleto=faltan, estado="INCOMPLETO")
+
+    moneda = _moneda_omni(ctx.empresa, p["moneda"])
+    numero = (
+        str(p["numero_factura"]).strip()
+        if not _vacio(p.get("numero_factura"))
+        else None
+    )
+    prov, creado = _proveedor_de_documento(
+        ctx, p
+    )  # bloquea la fila del proveedor: serializa duplicados
+    if (
+        numero
+        and Gasto.objects.filter(
+            id_empresa=ctx.empresa, id_proveedor=prov, numero_factura=numero
+        ).exists()
+    ):
+        raise HandlerError(
+            f"La factura {numero} de «{prov.razon_social}» ya está cargada.", status=409
+        )
+
+    cat = _categoria_gasto(ctx.empresa, p.get("categoria"))
+    g = Gasto.objects.create(
+        id_empresa=ctx.empresa,
+        fecha_gasto=fecha,
+        descripcion=(p.get("concepto") or f"Compra en {prov.razon_social}").strip(),
+        monto=_dec(p["monto_total"], "Monto").quantize(Decimal("0.01")),
+        monto_iva=_dec(p["iva"], "IVA").quantize(Decimal("0.01"))
+        if p.get("iva") is not None
+        else Decimal("0"),
+        id_moneda=moneda,
+        id_categoria_gasto=cat,
+        id_proveedor=prov,
+        tiene_factura=bool(numero),
+        numero_factura=numero,
+        id_usuario_registro=ctx.usuario,
+    )
+    avisos = []
+    if not numero:
+        avisos.append("sin número de factura")
+    if prov.rif.startswith("PEND-"):
+        avisos.append("proveedor sin RIF: pendiente de completar")
+    return Resultado(
+        resultado={
+            "gasto_id": str(g.pk),
+            "proveedor_id": str(prov.pk),
+            "proveedor_creado": creado,
+            "categoria": cat.nombre_categoria,
+            "avisos": avisos,
         }
     )
 
@@ -833,5 +1056,6 @@ HANDLERS = {
     "pago_proveedor": pago_proveedor,
     "proveedor": proveedor,
     "factura_proveedor": factura_proveedor,
+    "gasto": gasto,
     "evento": evento,
 }
