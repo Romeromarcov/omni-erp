@@ -25,6 +25,11 @@ class BotUsuario(OmniBaseModel):
         "core.Usuarios", on_delete=models.CASCADE, related_name="bots_usuarios"
     )
     nombre = models.CharField(max_length=150, blank=True, default="")
+    bots = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Códigos de bots permitidos; lista vacía autoriza todos los bots de la empresa.",
+    )
 
     class Meta:
         db_table = "bots_ingest_usuario"
@@ -99,3 +104,93 @@ class IngestaBot(OmniBaseModel):
 
     def __str__(self):
         return f"{self.kind} {self.estado} {self.idempotency_key}"
+
+
+class BotRegistro(OmniBaseModel):
+    """Ficha de gobierno y estado en vivo de un bot por empresa (plano de control)."""
+
+    id_bot_registro = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="bots_registros"
+    )
+    codigo = models.CharField(
+        max_length=30,
+        help_text="Identificador estable del bot (ej. pedidos, cobranza, compras, eventos, tareas).",
+    )
+    nombre = models.CharField(max_length=100)
+    habilitado = models.BooleanField(default=True)
+    parametros = models.JSONField(default=dict, blank=True)
+    chats = models.JSONField(default=dict, blank=True)
+    url_panel = models.CharField(max_length=300, blank=True, default="")
+    mensaje = models.CharField(max_length=280, blank=True, default="")
+    version = models.CharField(max_length=50, blank=True, default="")
+    estado = models.JSONField(default=dict, blank=True)
+    # Genuinamente ausente hasta que el proceso del bot envía su primer latido.
+    ultimo_latido = models.DateTimeField(null=True, blank=True)
+    actualizado_por = models.CharField(max_length=150, default="sistema")
+
+    class Meta:
+        db_table = "bots_ingest_registro"
+        ordering = ["codigo"]
+        permissions = [
+            ("ver_bots", "Puede consultar el plano de control de bots"),
+            ("gestionar_bots", "Puede configurar o pausar bots de la empresa"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "codigo"], name="bots_registro_empresa_codigo_unico"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.codigo} ({self.id_empresa_id})"
+
+
+class BotLatidoDiario(OmniBaseModel):
+    """Resumen diario de actividad reportada por cada bot de la empresa."""
+
+    id_bot_latido = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="bots_latidos"
+    )
+    codigo = models.CharField(max_length=30)
+    dia = models.DateField()
+    latidos = models.PositiveIntegerField(default=0)
+    mensajes = models.PositiveIntegerField(default=0)
+    errores = models.PositiveIntegerField(default=0)
+    ultimo = models.DateTimeField()
+
+    class Meta:
+        db_table = "bots_ingest_latido"
+        ordering = ["-dia", "codigo"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "codigo", "dia"],
+                name="bots_latido_empresa_codigo_dia_unico",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.codigo} {self.dia}"
+
+
+class BotBitacora(OmniBaseModel):
+    """Bitácora inmutable de cambios de configuración y usuarios del panel de bots."""
+
+    id_bot_bitacora = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="bots_bitacora"
+    )
+    entidad = models.CharField(max_length=80)
+    accion = models.CharField(max_length=30)
+    antes = models.JSONField(default=dict, blank=True)
+    despues = models.JSONField(default=dict, blank=True)
+    actor = models.CharField(max_length=150)
+
+    class Meta:
+        db_table = "bots_ingest_bitacora"
+        ordering = ["-fecha_creacion"]
+        indexes = [models.Index(fields=["id_empresa", "entidad", "-fecha_creacion"])]
+
+    def __str__(self):
+        return f"{self.entidad} {self.accion} ({self.actor})"

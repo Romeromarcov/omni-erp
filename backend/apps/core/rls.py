@@ -254,6 +254,9 @@ RLS_TABLES = {
     "activaciones_uso_recurso": "id_empresa_id",
     "bots_ingest_usuario": "id_empresa_id",
     "bots_ingest_ingesta": "id_empresa_id",
+    "bots_ingest_registro": "id_empresa_id",
+    "bots_ingest_latido": "id_empresa_id",
+    "bots_ingest_bitacora": "id_empresa_id",
     # core
     "core_capability_token": "empresa_id",
     "core_clave_idempotencia": "empresa_id",

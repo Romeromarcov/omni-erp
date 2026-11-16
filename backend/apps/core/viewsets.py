@@ -231,6 +231,11 @@ def get_all_subsidiarias(empresa):
 def get_empresas_visible(user):
     if getattr(user, "es_superusuario_omni", False):
         return Empresa.objects.all()
+    cap_token = getattr(user, "capability_token", None)
+    if cap_token is not None:
+        return Empresa.objects.filter(id_empresa=cap_token.empresa_id, activo=True)
+    if not getattr(user, "is_authenticated", False) or not hasattr(user, "empresas"):
+        return Empresa.objects.none()
     empresas = user.empresas.all()
     ids = set(empresas.values_list("id_empresa", flat=True))
     for empresa in empresas:

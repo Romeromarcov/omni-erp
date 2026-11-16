@@ -244,6 +244,10 @@
 | `^contactos/(?P<pk>[^/.]+)/$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
 | `^contactos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
 | `^contactos\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
+| `^control/$` | BotControlViewSet | — | — | — | PuedePanelBots |
+| `^control/(?P<codigo>[^/.]+)/$` | BotControlViewSet | — | — | — | PuedePanelBots |
+| `^control/(?P<codigo>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BotControlViewSet | — | — | — | PuedePanelBots |
+| `^control\.(?P<format>[a-z0-9]+)/?$` | BotControlViewSet | — | — | — | PuedePanelBots |
 | `^conversiones-unidad-medida/$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^conversiones-unidad-medida/(?P<pk>[^/.]+)/$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^conversiones-unidad-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
@@ -1170,13 +1174,13 @@
 | `^unidades-medida/(?P<pk>[^/.]+)/$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^unidades-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^unidades-medida\.(?P<format>[a-z0-9]+)/?$` | UnidadMedidaViewSet | UnidadMedida | ✅ | ✅ | IsAuthenticated |
-| `^usuarios/$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
+| `^usuarios/$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | PuedePanelBots |
 | `^usuarios/$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
-| `^usuarios/(?P<pk>[^/.]+)/$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
+| `^usuarios/(?P<pk>[^/.]+)/$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | PuedePanelBots |
 | `^usuarios/(?P<pk>[^/.]+)/$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
-| `^usuarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
+| `^usuarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | PuedePanelBots |
 | `^usuarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
-| `^usuarios\.(?P<format>[a-z0-9]+)/?$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | IsAdminUser |
+| `^usuarios\.(?P<format>[a-z0-9]+)/?$` | BotUsuarioViewSet | BotUsuario | ✅ | ✅ | PuedePanelBots |
 | `^usuarios\.(?P<format>[a-z0-9]+)/?$` | UsuariosViewSet | Usuarios | — | ✅ | IsAuthenticated |
 | `^variantes-producto/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
 | `^variantes-producto/(?P<pk>[^/.]+)/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
@@ -1216,11 +1220,14 @@
 | `api/docs/` | SchemaView | — | — | — | IsAuthenticated |
 | `api/health/` | health_view | — | — | — | AllowAny |
 | `api/redoc/` | SchemaView | — | — | — | IsAuthenticated |
+| `bitacora/` | BotBitacoraView | — | — | — | PuedePanelBots |
 | `cartera/dashboard/` | CarteraDashboardView | — | — | — | IsAuthenticated |
 | `chat/` | AsistenteChatView | — | — | — | IsAuthenticated |
 | `dashboard/kpis/` | dashboard_kpis_view | — | — | — | IsAuthenticated |
 | `dashboard/stats/` | dashboard_stats_view | — | — | — | IsAuthenticated |
+| `destinos/` | BotDestinosView | — | — | — | PuedePanelBots |
 | `dispositivos/accion/` | dispositivo_accion_view | — | — | — | IsAuthenticated |
+| `heartbeat/` | BotHeartbeatView | — | — | — | PuedeEnviarLatido |
 | `libro-compras-pdf/` | LibroComprasPDFView | — | — | — | IsAuthenticated |
 | `libro-compras/` | LibroComprasView | — | — | — | IsAuthenticated |
 | `libro-maestro-caja/` | LibroMaestroCajaView | — | — | — | IsAuthenticated |
@@ -1237,4 +1244,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 222_
+_Total ViewSets: 226_
