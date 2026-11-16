@@ -16,7 +16,15 @@ test.describe('Login y navegación multi-empresa', () => {
       await page.goto('/login');
       await page.getByLabel(/usuario/i).fill(usuario);
       await page.getByLabel(/contraseña/i).fill(password);
+      const respLogin = page.waitForResponse(
+        (r) => r.url().includes('/api/auth/login/') && r.request().method() === 'POST',
+      );
       await page.getByRole('button', { name: /ingresar/i }).click();
+      if ((await respLogin).status() === 429) {
+        // SEC-07 (5 logins/min por IP): si la ventana venía caliente, esperar y reintentar una vez.
+        await page.waitForTimeout(61_000);
+        await page.getByRole('button', { name: /ingresar/i }).click();
+      }
     });
 
     await test.step('el selector ofrece las dos empresas del seed', async () => {

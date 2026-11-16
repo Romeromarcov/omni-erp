@@ -379,11 +379,13 @@ class TestMetodoPagoEmpresaActivaViewSet:
 
     def test_list_acotado_y_filtros(self, client_a, empresa_a, metodo_a, user_b):
         fila = MetodoPagoEmpresaActiva.objects.get(empresa=empresa_a, metodo_pago=metodo_a)
+        esperadas = MetodoPagoEmpresaActiva.objects.filter(empresa=empresa_a).count()
         resp = client_a.get(self.URL)
         assert resp.status_code == 200
-        assert resp.json()["count"] == 1
+        assert resp.json()["count"] == esperadas
+        assert str(fila.id) in {r["id"] for r in resp.json()["results"]}
         resp_e = client_a.get(self.URL, {"empresa": str(empresa_a.id_empresa)})
-        assert resp_e.json()["count"] == 1
+        assert resp_e.json()["count"] == esperadas
         resp_m = client_a.get(self.URL, {"metodo_pago": str(metodo_a.id_metodo_pago)})
         assert resp_m.json()["count"] == 1
         resp_otro = client_a.get(self.URL, {"metodo_pago": str(uuid.uuid4())})
@@ -391,7 +393,7 @@ class TestMetodoPagoEmpresaActivaViewSet:
         # tenant ajeno no ve la fila de A
         client_b = APIClient()
         client_b.force_authenticate(user=user_b)
-        assert fila.id not in {r["id"] for r in client_b.get(self.URL).json()["results"]}
+        assert str(fila.id) not in {r["id"] for r in client_b.get(self.URL).json()["results"]}
 
 
 class TestMonedaSuperusuario:
