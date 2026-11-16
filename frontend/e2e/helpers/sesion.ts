@@ -1,12 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { expect, type Page } from '@playwright/test';
 
 /**
  * Sesión E2E (TEST-6 / Fase 4).
  *
  * Los specs de flujos críticos comparten un mismo patrón de arranque:
- *   1. Login programático vía `POST /api/auth/login/` usando el request context
- *      de la página (la cookie httpOnly `refresh_token` queda en el contexto del
- *      navegador, y el frontend rehidrata la sesión al cargar cualquier ruta).
+ *   1. Login único en `global.setup.ts` vía `POST /api/auth/login/` (cookie
+ *      httpOnly `refresh_token` rotada y persistida entre specs + `access`
+ *      cacheado para llamadas API de seeding).
  *   2. Resolución de la empresa "primaria" del usuario (la que el backend
  *      inyecta al crear documentos vía `EmpresaInjectMixin`): es la primera
  *      empresa visible ordenada por `nombre_legal` (Empresa.Meta.ordering).
@@ -23,6 +25,30 @@ const PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? '';
 
 /** Archivo de storageState del login único (ver `global.setup.ts` y la config). */
 export const AUTH_STORAGE_FILE = 'e2e/.auth/admin.json';
+const ACCESS_CACHE_FILE = 'e2e/.auth/access.json';
+/** Margen conservador sobre ACCESS_TOKEN_LIFETIME (15 min en settings_base.py). */
+const ACCESS_CACHE_TTL_MS = 10 * 60_000;
+
+export function guardarAccessCache(access: string): void {
+  fs.mkdirSync(path.dirname(ACCESS_CACHE_FILE), { recursive: true });
+  fs.writeFileSync(
+    ACCESS_CACHE_FILE,
+    JSON.stringify({ access, expMs: Date.now() + ACCESS_CACHE_TTL_MS }),
+  );
+}
+
+function leerAccessCache(): string | null {
+  try {
+    const raw = fs.readFileSync(ACCESS_CACHE_FILE, 'utf8');
+    const parsed = JSON.parse(raw) as { access?: string; expMs?: number };
+    if (parsed.access && parsed.expMs && Date.now() < parsed.expMs) {
+      return parsed.access;
+    }
+  } catch {
+    // Sin caché previo: se solicitará por refresh o login.
+  }
+  return null;
+}
 
 interface Paginado<T> {
   results: T[];
@@ -128,6 +154,7 @@ async function loginApi(page: Page): Promise<string> {
     }
     expect(resp.ok(), `login API → ${resp.status()}: ${await resp.text()}`).toBeTruthy();
     const cuerpo = (await resp.json()) as { access: string };
+    guardarAccessCache(cuerpo.access);
     return cuerpo.access;
   }
   throw new Error('Login E2E: rate limit persistente (429).');
@@ -140,17 +167,30 @@ function idDeEmpresa(sucursal: SucursalApi): string {
 }
 
 /**
- * Obtiene un `access` fresco SIN hacer login: usa la cookie `refresh_token` que
- * el `storageState` (login único en global.setup) ya trae. `/token/refresh/` no
- * está bajo el throttle de login (5/min, SEC-07), así que cada spec puede pedir
- * el suyo (token de 15 min) sin agotar la ventana. Si no hay cookie (p.ej. una
- * corrida sin el proyecto `setup`), cae a un login directo.
+ * Obtiene un `access` vigente SIN agotar los throttles de login (5/min, SEC-07)
+ * ni de refresh (20/min, M-SEC-13): reutiliza el `access` cacheado mientras sea
+ * válido (<10 min de sus 15 min) y, si caducó, renueva con la cookie `refresh_token`
+ * tolerando 429 sin caer a `/auth/login/`. Solo cae a login directo si no hay
+ * cookie válida (p. ej. corrida local de un spec aislado sin `setup`).
  */
 async function accessFresco(page: Page): Promise<string> {
-  const resp = await page.request.post('/api/auth/token/refresh/', { data: {} });
-  if (resp.ok()) {
-    const cuerpo = (await resp.json()) as { access?: string };
-    if (cuerpo.access) return cuerpo.access;
+  const cacheado = leerAccessCache();
+  if (cacheado) return cacheado;
+
+  for (let intento = 0; intento < 2; intento += 1) {
+    const resp = await page.request.post('/api/auth/token/refresh/', { data: {} });
+    if (resp.status() === 429 && intento === 0) {
+      await page.waitForTimeout(61_000);
+      continue;
+    }
+    if (resp.ok()) {
+      const cuerpo = (await resp.json()) as { access?: string };
+      if (cuerpo.access) {
+        guardarAccessCache(cuerpo.access);
+        return cuerpo.access;
+      }
+    }
+    break;
   }
   return loginApi(page);
 }

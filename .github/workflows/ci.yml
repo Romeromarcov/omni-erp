@@ -269,6 +269,21 @@ jobs:
         working-directory: frontend
         run: npm run test:e2e
 
+      # Evidencia del fallo: un E2E intermitente solo se puede diagnosticar con lo que Playwright vio
+      # (captura del estado de la página en `error-context.md` y trazas de los reintentos). Sin esto
+      # hubo que reproducir el fallo en local. Solo se sube si el job falla. Las credenciales de este job
+      # son valores ficticios de CI (E2E_ADMIN_PASSWORD, SECRET_KEY de arriba), no secretos reales.
+      - name: Subir evidencia de Playwright (solo si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-evidencia
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
   # ──────────────────────────────────────────────────────────────
   # Agent eval — Shadow mode quality gate (CTF-003)
   # Corre siempre en main/PR; filtra por paths para no bloquear

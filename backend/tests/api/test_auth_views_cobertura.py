@@ -198,8 +198,20 @@ class TestRefreshRotation:
         assert cookie is not None
         assert cookie["httponly"] is True
 
-    def test_refresh_rate_limit_429(self, user_a):
-        """M-SEC-13: >20 POST/min por IP al refresh → 429."""
+    def test_refresh_rate_limit_429(self, user_a, monkeypatch):
+        """M-SEC-13: >20 POST/min por IP al refresh → 429.
+
+        Flaky-fix (R-PROC-4): congela la ventana de django_ratelimit.core.time
+        igual que ``test_login_rate_limit_429`` para que los 22 POST no se
+        partan si cruzan el segundo :00 en un runner lento.
+        """
+        import django_ratelimit.core as rl_core
+
+        ts_fijo = rl_core.time.time()
+        monkeypatch.setattr(
+            rl_core, "time", type("_T", (), {"time": staticmethod(lambda: ts_fijo)})
+        )
+
         client = APIClient()
         refresh = str(RefreshToken.for_user(user_a))
         codigos = [
@@ -207,3 +219,4 @@ class TestRefreshRotation:
             for _ in range(22)
         ]
         assert 429 in codigos
+

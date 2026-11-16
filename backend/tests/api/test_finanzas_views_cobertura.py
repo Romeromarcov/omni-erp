@@ -152,8 +152,11 @@ class TestMonedaViewSet:
         self, client_a, empresa_a, moneda_privada_a
     ):
         """`activas` devuelve solo las monedas marcadas activas para la empresa."""
-        MonedaEmpresaActiva.objects.create(
-            empresa=empresa_a, moneda=moneda_privada_a, activa=True
+        MonedaEmpresaActiva.objects.filter(empresa=empresa_a).exclude(
+            moneda=moneda_privada_a
+        ).update(activa=False)
+        MonedaEmpresaActiva.objects.update_or_create(
+            empresa=empresa_a, moneda=moneda_privada_a, defaults={"activa": True}
         )
         resp = client_a.get(self.URL + "activas/")
         assert resp.status_code == 200

@@ -612,6 +612,74 @@ class TestSincronizacionEmpresaActiva:
             metodo_pago=metodo_electronico_a, empresa=empresa_b
         ).exists()
 
+    @pytest.mark.tenant
+    def test_empresa_nueva_hereda_globales_pero_no_privados_ajenos(
+        self, empresa_a, metodo_electronico_a
+    ):
+        from apps.core.models import Empresa
+
+        moneda_pub = Moneda.objects.create(
+            nombre="Bolívar venezolano",
+            codigo_iso="VES",
+            simbolo="Bs.",
+            tipo_moneda="fiat",
+            es_publica=True,
+        )
+        moneda_gen = Moneda.objects.create(
+            nombre="Euro",
+            codigo_iso="EUR",
+            simbolo="€",
+            tipo_moneda="fiat",
+            es_generica=True,
+        )
+        moneda_inactiva = Moneda.objects.create(
+            nombre="Peso Antiguo",
+            codigo_iso="PSO",
+            simbolo="P",
+            tipo_moneda="fiat",
+            es_publica=True,
+            activo=False,
+        )
+        moneda_privada_a = Moneda.objects.create(
+            nombre="Vale Interno A",
+            codigo_iso="VLA",
+            simbolo="VA",
+            tipo_moneda="otro",
+            empresa=empresa_a,
+        )
+        metodo_pub = MetodoPago.objects.create(
+            nombre_metodo="Transferencia Global",
+            tipo_metodo="ELECTRONICO",
+            es_publico=True,
+        )
+
+        empresa_nueva = Empresa.objects.create(
+            nombre_legal="Empresa Posterior C.A.",
+            identificador_fiscal="J-98765432-1",
+            id_moneda_base=moneda_pub,
+            activo=True,
+        )
+
+        assert MonedaEmpresaActiva.objects.filter(
+            empresa=empresa_nueva, moneda=moneda_pub, activa=True
+        ).exists()
+        assert MonedaEmpresaActiva.objects.filter(
+            empresa=empresa_nueva, moneda=moneda_gen, activa=True
+        ).exists()
+        assert not MonedaEmpresaActiva.objects.filter(
+            empresa=empresa_nueva, moneda=moneda_inactiva
+        ).exists()
+        assert not MonedaEmpresaActiva.objects.filter(
+            empresa=empresa_nueva, moneda=moneda_privada_a
+        ).exists()
+        assert MetodoPagoEmpresaActiva.objects.filter(
+            empresa=empresa_nueva, metodo_pago=metodo_pub, activa=True
+        ).exists()
+        assert not MetodoPagoEmpresaActiva.objects.filter(
+            empresa=empresa_nueva, metodo_pago=metodo_electronico_a
+        ).exists()
+
+
     def test_validar_monedas_metodopago_rechaza_crypto_en_efectivo(self, empresa_a):
         metodo = MetodoPago.objects.create(
             nombre_metodo="Efectivo Caja", tipo_metodo="EFECTIVO", empresa=empresa_a
