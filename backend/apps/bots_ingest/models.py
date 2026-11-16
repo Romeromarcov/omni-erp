@@ -50,6 +50,7 @@ class IngestaBot(OmniBaseModel):
         PAGO_PROVEEDOR = "pago_proveedor", "Pago a proveedor"
         PROVEEDOR = "proveedor", "Proveedor (compras)"
         FACTURA_PROVEEDOR = "factura_proveedor", "Factura de proveedor"
+        GASTO = "gasto", "Gasto / compra menor"
         EVENTO = "evento", "Evento de activación"
 
     class Estado(models.TextChoices):

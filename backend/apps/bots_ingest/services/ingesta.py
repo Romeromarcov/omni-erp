@@ -15,6 +15,7 @@ COMPLETABLES = {
     IngestaBot.Kind.PAGO,
     IngestaBot.Kind.PAGO_PROVEEDOR,
     IngestaBot.Kind.FACTURA_PROVEEDOR,
+    IngestaBot.Kind.GASTO,
 }
 
 
@@ -160,4 +161,9 @@ _CAMPOS_PAGO = {
     "monto_total",
     "concepto",
     "orden_ref",
+    # gasto / proveedor leído del documento
+    "proveedor_direccion",
+    "proveedor_telefono",
+    "proveedor_email",
+    "categoria",
 }
