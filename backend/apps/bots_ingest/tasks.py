@@ -33,6 +33,8 @@ def sincronizar_odoo_task(ingesta_id: str) -> None:
 def encolar_sync(ingesta_id) -> None:
     """Encola el envío; con el broker caído la ingesta queda guardada y se puede reintentar a mano."""
     try:
-        sincronizar_odoo_task.delay(str(ingesta_id))
+        # retry=False: con el broker caído falla al instante (el registro ya está guardado) en vez de bloquear
+        # la petición del bot varios segundos con los reintentos de publicación.
+        sincronizar_odoo_task.apply_async(args=[str(ingesta_id)], retry=False)
     except Exception:  # noqa: BLE001 - un broker caído no debe romper la ingesta ya confirmada
         logger.exception("No se pudo encolar el envío a Odoo (ingesta %s)", ingesta_id)

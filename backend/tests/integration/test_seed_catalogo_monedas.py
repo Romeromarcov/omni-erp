@@ -113,5 +113,15 @@ def test_seed_empresa_inicial_siembra_el_catalogo(monkeypatch):
 
     assert sorted(Moneda.objects.filter(codigo_iso__in=CODIGOS).values_list("codigo_iso", flat=True)) == CODIGOS
     empresa = Empresa.objects.get(identificador_fiscal="J-40111222-3")
-    # La moneda base sale completa porque el catálogo se siembra antes de crearla.
+    # La moneda base sale completa porque el catálogo se siembra antes de crearla,
+    # y todas las monedas del catálogo quedan activas en MonedaEmpresaActiva para la empresa.
     assert empresa.id_moneda_base.nombre == "Dólar estadounidense"
+    from apps.finanzas.models import MonedaEmpresaActiva
+
+    activas = sorted(
+        MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list(
+            "moneda__codigo_iso", flat=True
+        )
+    )
+    assert activas == CODIGOS
+

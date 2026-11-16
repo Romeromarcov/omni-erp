@@ -288,16 +288,18 @@ def test_la_tarea_de_sync_ignora_una_ingesta_que_ya_no_existe():
 def test_encolar_sync_encola_con_el_id_como_texto():
     from apps.bots_ingest import tasks
 
-    with patch.object(tasks.sincronizar_odoo_task, "delay") as delay:
+    with patch.object(tasks.sincronizar_odoo_task, "apply_async") as publicar:
         tasks.encolar_sync(42)
-    delay.assert_called_once_with("42")
+    publicar.assert_called_once_with(args=["42"], retry=False)
 
 
 def test_encolar_sync_no_propaga_un_broker_caido():
     from apps.bots_ingest import tasks
 
     with patch.object(
-        tasks.sincronizar_odoo_task, "delay", side_effect=ConnectionError("broker")
-    ) as delay:
+        tasks.sincronizar_odoo_task,
+        "apply_async",
+        side_effect=ConnectionError("broker"),
+    ) as publicar:
         tasks.encolar_sync("ing-1")  # la ingesta ya está confirmada: no debe fallar
-    delay.assert_called_once_with("ing-1")
+    publicar.assert_called_once_with(args=["ing-1"], retry=False)
