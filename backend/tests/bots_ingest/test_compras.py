@@ -422,8 +422,11 @@ def test_la_misma_factura_enviada_en_paralelo_se_carga_una_sola_vez(
         finally:
             connection.close()
 
-    with ThreadPoolExecutor(max_workers=6) as ex:
-        codigos = list(ex.map(enviar_en_hilo, range(6)))
+    from unittest.mock import patch
+
+    with patch("apps.bots_ingest.tasks.encolar_sync"):
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            codigos = list(ex.map(enviar_en_hilo, range(6)))
     assert codigos.count(201) == 1 and codigos.count(409) == 5, codigos
     assert CuentaPorPagar.objects.filter(id_proveedor=proveedor).count() == 1
 
@@ -679,8 +682,11 @@ def test_gastos_simultaneos_de_un_proveedor_nuevo_no_lo_duplican(
         finally:
             connection.close()
 
-    with ThreadPoolExecutor(max_workers=6) as ex:
-        codigos = list(ex.map(enviar_en_hilo, range(6)))
+    from unittest.mock import patch
+
+    with patch("apps.bots_ingest.tasks.encolar_sync"):
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            codigos = list(ex.map(enviar_en_hilo, range(6)))
     assert codigos == [201] * 6, codigos
     assert (
         Proveedor.objects.filter(id_empresa=empresa_a).count() == 1

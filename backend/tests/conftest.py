@@ -102,6 +102,19 @@ def _celery_memory_broker(settings):
         )
     except Exception:
         pass
+    try:
+        yield
+    finally:
+        # Celery guarda _task_join_will_block como booleano global (no thread-local)
+        # en celery.result.denied_join_result(); cuando un test con ThreadPoolExecutor
+        # ejecuta apply() eager en varios hilos a la vez, el solapamiento puede dejar
+        # _task_join_will_block=True y romper result.get() en tests posteriores.
+        try:
+            from celery._state import _set_task_join_will_block
+
+            _set_task_join_will_block(False)
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------------------
