@@ -11,7 +11,11 @@ from . import handlers, odoo_push
 from .handlers import Ctx, HandlerError
 
 # Pagos: se pueden completar después de enviados (desde el grupo o desde Odoo).
-COMPLETABLES = {IngestaBot.Kind.PAGO, IngestaBot.Kind.PAGO_PROVEEDOR}
+COMPLETABLES = {
+    IngestaBot.Kind.PAGO,
+    IngestaBot.Kind.PAGO_PROVEEDOR,
+    IngestaBot.Kind.FACTURA_PROVEEDOR,
+}
 
 
 class UsuarioBotDesconocido(Exception):
@@ -82,6 +86,7 @@ def ingerir(*, servicio, kind: str, draft: dict, fuente: dict, idempotency_key: 
     return ing, True
 
 
+@transaction.atomic
 def completar(ingesta: IngestaBot, cambios: dict) -> IngestaBot:
     """Completa/corrige un pago ya enviado: fusiona campos y reevalúa lo que falta."""
     if ingesta.kind not in COMPLETABLES:
@@ -145,4 +150,14 @@ _CAMPOS_PAGO = {
     "pedido_ref",
     "proveedor",
     "factura_ref",
+    # factura de proveedor
+    "numero_factura",
+    "numero_control",
+    "fecha_emision",
+    "fecha_vencimiento",
+    "base_imponible",
+    "iva",
+    "monto_total",
+    "concepto",
+    "orden_ref",
 }

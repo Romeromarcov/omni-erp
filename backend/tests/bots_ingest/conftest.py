@@ -25,7 +25,9 @@ from .helpers import TG
 def servicio(user_a):
     """Usuario de servicio con el permiso de ingesta."""
     user_a.user_permissions.add(
-        Permission.objects.get(codename="ingestar", content_type__app_label="bots_ingest")
+        Permission.objects.get(
+            codename="ingestar", content_type__app_label="bots_ingest"
+        )
     )
     return user_a
 
@@ -54,8 +56,12 @@ def catalogo(empresa_a, moneda_usd):
         es_referencia=True,
         id_moneda=moneda_usd,
     )
-    prod = ProductoFactory(id_empresa=empresa_a, nombre_producto="Aceite 20W50", sku="AC-20W50")
-    DetallePrecio.objects.create(id_lista=lista, id_producto=prod, precio=Decimal("12.50"))
+    prod = ProductoFactory(
+        id_empresa=empresa_a, nombre_producto="Aceite 20W50", sku="AC-20W50"
+    )
+    DetallePrecio.objects.create(
+        id_lista=lista, id_producto=prod, precio=Decimal("12.50")
+    )
     return lista, prod
 
 
@@ -66,9 +72,17 @@ def calendario(empresa_a):
         id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True
     )
     RecursoActivacion.objects.create(
-        id_empresa=empresa_a, calendario=c, codigo="promotoras", nombre="Promotoras", capacidad=2
+        id_empresa=empresa_a,
+        calendario=c,
+        codigo="promotoras",
+        nombre="Promotoras",
+        capacidad=2,
     )
     RecursoActivacion.objects.create(
-        id_empresa=empresa_a, calendario=c, codigo="igloos", nombre="Igloos", capacidad=3
+        id_empresa=empresa_a,
+        calendario=c,
+        codigo="igloos",
+        nombre="Igloos",
+        capacidad=3,
     )
     return c

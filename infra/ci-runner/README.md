@@ -64,3 +64,14 @@ railway up --service ci-runner
 En GitHub: **Settings → Actions → Runners** debe aparecer `railway-ci-runner`
 en estado *Idle*. Luego lanza el workflow de tests largos
 (**Actions → Long tests → Run workflow**) y comprobará que toma el job.
+
+## Diagnóstico: el servicio cae al arrancar
+
+Mira los logs del servicio (`railway logs -e <entorno> -s ci-runner -d`):
+
+| Síntoma en el log | Causa | Qué hacer |
+|---|---|---|
+| `curl: (22) … error: 401` al pedir el *registration token* | `ACCESS_TOKEN` inválido, caducado o revocado | Crear un PAT nuevo (clásico con `repo`, o fine-grained con **Administration: Read and write** sobre este repo) y actualizar la variable `ACCESS_TOKEN` |
+| `Response status code does not indicate success: 404 (Not Found)` al ejecutar `config.sh`, con un enlace a *self-hosted runner minimum version enforcement* | La versión del runner (`ARG RUNNER_VERSION` en el `Dockerfile`) quedó por debajo del mínimo que exige GitHub | Subir `RUNNER_VERSION` a la última de <https://github.com/actions/runner/releases> y redesplegar |
+
+El `ACCESS_TOKEN` es un secreto: no lo pegues en chats, PRs ni logs.

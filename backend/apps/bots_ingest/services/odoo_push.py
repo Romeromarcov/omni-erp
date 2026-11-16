@@ -9,7 +9,7 @@ Reglas:
 
 Configuración opcional en ``ConectorInstancia.configuracion`` (Odoo):
 ``diarios_pago``: {"default": 12, "transferencia": 12, "efectivo_usd": 5, …} (id de ``account.journal``);
-``empujar_bots``: false para desactivar el envío automático.
+``empujar_bots``: true para que Omni envíe a Odoo (por defecto NO: hoy escribe CxC; activar solo uno).
 """
 
 from __future__ import annotations
@@ -407,8 +407,9 @@ def sincronizar(ing: IngestaBot) -> IngestaBot:
     ):
         return ing
     inst = instancia_odoo(ing.id_empresa)
-    if inst is None or inst.get_config().get("empujar_bots") is False:
-        return ing  # sin Odoo conectado (o desactivado): no hay nada que empujar
+    if inst is None or inst.get_config().get("empujar_bots") is not True:
+        # Opt-in explícito: mientras CxC sea quien escribe en Odoo, Omni NO debe empujar (se duplicaría).
+        return ing
     if not debe_sincronizar(ing):
         _anotar(ing, "Faltan datos: complétala antes de enviarla a Odoo.")
         return ing
