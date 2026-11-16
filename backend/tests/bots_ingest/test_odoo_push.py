@@ -74,7 +74,7 @@ class FakeConn:
 
 class Inst:
     def __init__(self, cfg=None):
-        self.cfg = cfg or {}
+        self.cfg = {"empujar_bots": True, **(cfg or {})}
 
     def get_config(self):
         return self.cfg
@@ -210,6 +210,20 @@ def test_empujar_bots_false_lo_desactiva(api, bot_usuario, catalogo, odoo):  # n
     conn = odoo(FakeCli(), {"empujar_bots": False})
     odoo_push.sincronizar(_pedido_ingesta(api, catalogo))
     assert conn.pedidos == []
+
+
+def test_por_defecto_omni_no_empuja_a_odoo(
+    api, bot_usuario, catalogo, odoo, monkeypatch
+):  # noqa: F811
+    """Mientras CxC sea quien escribe en Odoo, sin ``empujar_bots: true`` explícito Omni no envía nada."""
+    conn = odoo(FakeCli())
+    monkeypatch.setattr(
+        odoo_push,
+        "instancia_odoo",
+        lambda empresa: type("I", (), {"get_config": lambda self: {}})(),
+    )
+    ing = odoo_push.sincronizar(_pedido_ingesta(api, catalogo))
+    assert conn.pedidos == [] and conn.contactos == [] and ing.estado == "PROCESADO"
 
 
 def test_caida_de_odoo_es_transitoria(api, bot_usuario, catalogo, odoo, monkeypatch):  # noqa: F811

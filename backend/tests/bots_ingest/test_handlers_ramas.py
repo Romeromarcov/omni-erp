@@ -38,7 +38,11 @@ def test_sin_ubicacion_no_hay_gps():
 
 @pytest.mark.parametrize(
     "ubicacion",
-    [{"latitud": "10.4"}, {"longitud": "-66.9"}, {"latitud": "abc", "longitud": "-66.9"}],
+    [
+        {"latitud": "10.4"},
+        {"longitud": "-66.9"},
+        {"latitud": "abc", "longitud": "-66.9"},
+    ],
 )
 def test_una_ubicacion_incompleta_o_no_numerica_se_rechaza(ubicacion):
     with pytest.raises(handlers.HandlerError, match="Ubicación GPS inválida"):
@@ -58,7 +62,9 @@ def test_buscar_cliente_por_rif_tolera_un_rif_que_no_se_puede_normalizar(empresa
 
 
 def test_contacto_con_telefono_invalido_pide_el_telefono(api, bot_usuario):
-    r = enviar(api, "contacto", {"nombre": "Pedro", "telefono": "123", "ubicacion": UBIC})
+    r = enviar(
+        api, "contacto", {"nombre": "Pedro", "telefono": "123", "ubicacion": UBIC}
+    )
     assert r.status_code == 422
     assert "telefono" in r.data["faltan"]
 
@@ -67,7 +73,11 @@ def test_contacto_con_ubicacion_invalida_se_rechaza(api, bot_usuario):
     r = enviar(
         api,
         "contacto",
-        {"nombre": "Pedro", "telefono": "0414-1234567", "ubicacion": {"latitud": "x", "longitud": "y"}},
+        {
+            "nombre": "Pedro",
+            "telefono": "0414-1234567",
+            "ubicacion": {"latitud": "x", "longitud": "y"},
+        },
     )
     assert r.status_code == 422
     assert "Ubicación GPS inválida" in r.data["error"]
@@ -83,21 +93,32 @@ def test_pedido_con_fecha_de_entrega_invalida_pide_la_fecha(api, bot_usuario, ca
     assert Pedido.objects.count() == 0
 
 
-def test_pedido_con_fecha_de_entrega_valida_la_guarda(api, bot_usuario, catalogo, empresa_a):
+def test_pedido_con_fecha_de_entrega_valida_la_guarda(
+    api, bot_usuario, catalogo, empresa_a
+):
     r = enviar(api, "pedido", pedido_draft(fecha_entrega="2026-12-31"))
     assert r.status_code == 201, r.data
-    assert Pedido.objects.get(id_empresa=empresa_a).fecha_cierre_estimada.isoformat() == "2026-12-31"
+    assert (
+        Pedido.objects.get(id_empresa=empresa_a).fecha_cierre_estimada.isoformat()
+        == "2026-12-31"
+    )
 
 
 def test_pedido_con_cantidad_cero_se_rechaza(api, bot_usuario, catalogo):
-    r = enviar(api, "pedido", pedido_draft(lineas=[{"producto": "AC-20W50", "cantidad": "0"}]))
+    r = enviar(
+        api, "pedido", pedido_draft(lineas=[{"producto": "AC-20W50", "cantidad": "0"}])
+    )
     assert r.status_code == 422
     assert "cantidad" in r.data["error"].lower()
     assert Pedido.objects.count() == 0
 
 
 def test_pedido_con_cantidad_no_numerica_se_rechaza(api, bot_usuario, catalogo):
-    r = enviar(api, "pedido", pedido_draft(lineas=[{"producto": "AC-20W50", "cantidad": "abc"}]))
+    r = enviar(
+        api,
+        "pedido",
+        pedido_draft(lineas=[{"producto": "AC-20W50", "cantidad": "abc"}]),
+    )
     assert r.status_code == 422
     assert "inválid" in r.data["error"].lower()
 
@@ -106,7 +127,9 @@ def test_pedido_de_un_producto_sin_precio_en_la_lista_se_rechaza(
     api, bot_usuario, catalogo, empresa_a
 ):
     ProductoFactory(id_empresa=empresa_a, nombre_producto="Sin precio", sku="SP-1")
-    r = enviar(api, "pedido", pedido_draft(lineas=[{"producto": "SP-1", "cantidad": "1"}]))
+    r = enviar(
+        api, "pedido", pedido_draft(lineas=[{"producto": "SP-1", "cantidad": "1"}])
+    )
     assert r.status_code == 422
     assert "no está en la lista del cliente" in r.data["error"]
     assert Pedido.objects.count() == 0
@@ -120,7 +143,9 @@ def test_el_pedido_usa_la_lista_de_precios_del_contacto_del_cliente(
     lista_vip = ListaPrecio.objects.create(
         id_empresa=empresa_a, nombre="VIP", codigo="VIP", id_moneda=moneda_usd
     )
-    DetallePrecio.objects.create(id_lista=lista_vip, id_producto=producto, precio=Decimal("20.00"))
+    DetallePrecio.objects.create(
+        id_lista=lista_vip, id_producto=producto, precio=Decimal("20.00")
+    )
     contacto = Contacto.objects.create(
         id_empresa=empresa_a,
         nombre="Taller VIP",
@@ -129,12 +154,17 @@ def test_el_pedido_usa_la_lista_de_precios_del_contacto_del_cliente(
         lista_precio=lista_vip,
     )
     Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Taller VIP", rif="J-111111111", contacto=contacto
+        id_empresa=empresa_a,
+        razon_social="Taller VIP",
+        rif="J-111111111",
+        contacto=contacto,
     )
     r = enviar(api, "pedido", pedido_draft(cliente="Taller VIP", rif="J-111111111"))
     assert r.status_code == 201, r.data
     # 2 unidades a 20.00 (lista VIP), no a 12.50 (lista de referencia).
-    assert Pedido.objects.get(id_empresa=empresa_a).detalles.get().subtotal == Decimal("40.0000")
+    assert Pedido.objects.get(id_empresa=empresa_a).detalles.get().subtotal == Decimal(
+        "40.0000"
+    )
 
 
 # ── Pago a proveedor ─────────────────────────────────────────────────────────
