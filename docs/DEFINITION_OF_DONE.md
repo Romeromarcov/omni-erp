@@ -38,6 +38,8 @@ npx tsc -b        # type-check en modo build (idéntico a `npm run build`)
 npm run lint      # ESLint
 ```
 
+Si tocaste modelos, vistas, URLs, tareas Celery, herramientas MCP o comandos de gestión, corre también `python manage.py mapa_superficie --check`; si falla, regenera con `python manage.py mapa_superficie` y commitea solo las matrices con cambios reales. El hook `mapa-superficie` (`pre-commit install --hook-type pre-push`) lo hace al hacer push.
+
 ### 2. Tests verdes
 
 ```bash
