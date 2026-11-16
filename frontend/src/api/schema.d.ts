@@ -11481,6 +11481,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tesoreria/extractos-bancarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        get: operations["tesoreria_extractos-bancarios_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/extractos-bancarios/importar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        post: operations["tesoreria_extractos-bancarios_importar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/extractos-bancarios/saldos-consolidados/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        get: operations["tesoreria_extractos-bancarios_saldos_consolidados"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/extractos-bancarios/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este extracto bancario archivo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        get: operations["tesoreria_extractos-bancarios_read"];
+        put?: never;
+        post?: never;
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        delete: operations["tesoreria_extractos-bancarios_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tesoreria/movimientos-bancarios/": {
         parameters: {
             query?: never;
@@ -11490,7 +11597,7 @@ export interface paths {
         };
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -11499,7 +11606,7 @@ export interface paths {
         put?: never;
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -11557,7 +11664,7 @@ export interface paths {
         };
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -11565,7 +11672,7 @@ export interface paths {
         get: operations["tesoreria_movimientos-bancarios_read"];
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -11574,7 +11681,7 @@ export interface paths {
         post?: never;
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -11584,7 +11691,7 @@ export interface paths {
         head?: never;
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -16237,7 +16344,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-16T14:01:16.817977-04:00
+             * @default 2026-11-16T15:55:53.789796-04:00
              */
             fecha_despacho: string;
             /**
@@ -21145,6 +21252,146 @@ export interface components {
             /** Observaciones */
             observaciones?: string;
         };
+        ExtractoBancarioArchivo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            readonly id_cuenta_bancaria?: string;
+            /** Cuenta nombre banco */
+            readonly cuenta_nombre_banco?: string;
+            /** Cuenta numero */
+            readonly cuenta_numero?: string;
+            /** Formato banco */
+            readonly formato_banco?: string;
+            /** Nombre archivo */
+            readonly nombre_archivo?: string;
+            /** Sha256 */
+            readonly sha256?: string;
+            /** Tamano bytes */
+            readonly tamano_bytes?: number;
+            /** Moneda */
+            readonly moneda?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string | null;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string | null;
+            /**
+             * Saldo inicial
+             * Format: decimal
+             */
+            readonly saldo_inicial?: string | null;
+            /**
+             * Saldo final
+             * Format: decimal
+             */
+            readonly saldo_final?: string | null;
+            /**
+             * Total debitos
+             * Format: decimal
+             */
+            readonly total_debitos?: string;
+            /**
+             * Total creditos
+             * Format: decimal
+             */
+            readonly total_creditos?: string;
+            /** Total lineas */
+            readonly total_lineas?: number;
+            /** Lineas nuevas */
+            readonly lineas_nuevas?: number;
+            /** Lineas duplicadas */
+            readonly lineas_duplicadas?: number;
+            /** Cuadra */
+            readonly cuadra?: boolean;
+            /** Observaciones */
+            readonly observaciones?: string;
+            /**
+             * Subido por
+             * Format: uuid
+             */
+            readonly subido_por?: string | null;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+        };
+        ImportarExtractoResponse: {
+            archivo?: components["schemas"]["ExtractoBancarioArchivo"];
+            /** Ya existia archivo */
+            readonly ya_existia_archivo?: boolean;
+            /** Lineas nuevas */
+            readonly lineas_nuevas?: number;
+            /** Lineas duplicadas */
+            readonly lineas_duplicadas?: number;
+            /** Cuadra */
+            readonly cuadra?: boolean;
+            readonly saltos?: string[];
+            readonly avisos?: string[];
+        };
+        SaldoCuentaExtracto: {
+            /**
+             * Cuenta id
+             * Format: uuid
+             */
+            readonly cuenta_id?: string;
+            /** Nombre banco */
+            readonly nombre_banco?: string;
+            /** Numero cuenta */
+            readonly numero_cuenta?: string;
+            /** Moneda */
+            readonly moneda?: string;
+            /**
+             * Fecha corte
+             * Format: date
+             */
+            readonly fecha_corte?: string | null;
+            /** Saldo */
+            readonly saldo?: string | null;
+            /** Tasa usd ves */
+            readonly tasa_usd_ves?: string | null;
+            /** Saldo usd */
+            readonly saldo_usd?: string | null;
+            /** Saldo ves */
+            readonly saldo_ves?: string | null;
+            /** N cortes */
+            readonly n_cortes?: number;
+            /** Cortes sin cuadrar */
+            readonly cortes_sin_cuadrar?: number;
+            readonly alertas?: string[];
+        };
+        SaldosConsolidadosResponse: {
+            /** Total usd */
+            readonly total_usd?: string;
+            /** Total ves */
+            readonly total_ves?: string;
+            readonly fechas_de_corte?: string[];
+            readonly cuentas_sin_tasa?: string[];
+            readonly cuentas?: components["schemas"]["SaldoCuentaExtracto"][];
+            readonly formatos_soportados?: string[];
+        };
         MovimientoBancario: {
             /**
              * Id
@@ -21161,6 +21408,11 @@ export interface components {
              * Format: uuid
              */
             id_cuenta_bancaria: string;
+            /**
+             * Id archivo extracto
+             * Format: uuid
+             */
+            readonly id_archivo_extracto?: string | null;
             /**
              * Fecha mov
              * Format: date
@@ -21191,10 +21443,35 @@ export interface components {
              */
             readonly id_pago_conciliado?: string | null;
             /**
+             * Huella
+             * @default
+             */
+            readonly huella: string;
+            /**
+             * Saldo posterior
+             * Format: decimal
+             */
+            readonly saldo_posterior?: string | null;
+            /** Orden en archivo */
+            readonly orden_en_archivo?: number | null;
+            /** Codigo operacion */
+            readonly codigo_operacion?: string;
+            /** Correlativo */
+            readonly correlativo?: string;
+            /** Categoria clasificacion */
+            readonly categoria_clasificacion?: string;
+            /** Regla clasificacion */
+            readonly regla_clasificacion?: string;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
              * Origen
              * @enum {string}
              */
-            origen?: "CSV" | "MANUAL" | "API";
+            origen?: "EXTRACTO" | "CSV" | "MANUAL" | "API";
             /**
              * Fecha creacion
              * Format: date-time
@@ -51781,6 +52058,150 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConciliacionBancaria"];
                 };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ExtractoBancarioArchivo"][];
+                    };
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_importar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: uuid */
+                    empresa?: string;
+                    /** Format: uuid */
+                    cuenta_bancaria: string;
+                    formato_banco?: string;
+                    /** Format: binary */
+                    archivo: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportarExtractoResponse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportarExtractoResponse"];
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_saldos_consolidados": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description UUID de la empresa (opcional; usa la empresa activa accesible). */
+                empresa?: string;
+                /** @description UUID de CuentaBancariaEmpresa para filtrar. */
+                cuenta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaldosConsolidadosResponse"];
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este extracto bancario archivo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractoBancarioArchivo"];
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este extracto bancario archivo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

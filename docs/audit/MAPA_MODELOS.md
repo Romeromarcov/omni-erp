@@ -215,6 +215,7 @@
 | servicio_cliente | InteraccionTicket | — | ✅ | — |
 | servicio_cliente | TicketSoporte | ✅ | ✅ | id_empresa+numero_ticket |
 | tesoreria | ConciliacionBancaria | ✅ | ✅ | — |
+| tesoreria | ExtractoBancarioArchivo | ✅ | ✅ | — |
 | tesoreria | MovimientoBancario | ✅ | ✅ | — |
 | tesoreria | MovimientoInternoFondo | — | — | — |
 | tesoreria | OperacionCambioDivisa | ✅ | — | empresa+numero_operacion |
@@ -238,4 +239,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 235_
+_Total modelos: 236_
