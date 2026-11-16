@@ -1269,6 +1269,44 @@ def metodopago_post_save(sender, instance, created, **kwargs):
         )
 
 
+def sync_catalogo_empresa_nueva(empresa):
+    """
+    Activa en la empresa recién creada las monedas y métodos de pago globales
+    (genéricos o públicos) que ya existían antes de crear la empresa, más su
+    moneda base si ya está definida. Complementa ``moneda_post_save`` y
+    ``metodopago_post_save`` cuando el catálogo se siembra antes del tenant.
+    """
+    monedas_globales = Moneda.objects.filter(
+        models.Q(es_generica=True) | models.Q(es_publica=True),
+        activo=True,
+    )
+    for moneda in monedas_globales:
+        MonedaEmpresaActiva.objects.get_or_create(
+            empresa=empresa, moneda=moneda, defaults={"activa": True}
+        )
+    if empresa.id_moneda_base_id:
+        MonedaEmpresaActiva.objects.get_or_create(
+            empresa=empresa,
+            moneda_id=empresa.id_moneda_base_id,
+            defaults={"activa": True},
+        )
+
+    metodos_globales = MetodoPago.objects.filter(
+        models.Q(es_generico=True) | models.Q(es_publico=True),
+        activo=True,
+    )
+    for metodo in metodos_globales:
+        MetodoPagoEmpresaActiva.objects.get_or_create(
+            empresa=empresa, metodo_pago=metodo, defaults={"activa": True}
+        )
+
+
+@receiver(post_save, sender="core.Empresa")
+def empresa_post_save_catalogo(sender, instance, created, **kwargs):
+    if created:
+        sync_catalogo_empresa_nueva(instance)
+
+
 # --- VALIDACIÓN EN EL MODELO METODOPAGO ---
 from django.core.exceptions import ValidationError
 
