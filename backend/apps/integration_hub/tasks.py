@@ -245,6 +245,14 @@ def limpiar_logs_antiguos(dias: int = 30):
     return {"eliminados": eliminados}
 
 
+class CatalogoMonedasIncompleto(RuntimeError):
+    """Faltan USD/VES en el catálogo global. No se arregla reintentando: hay que sembrarlo.
+
+    Se propaga sin reintentos para que Celery marque la tarea como FAILURE (visible en los
+    resultados y en Sentry) en lugar de terminar "con éxito" devolviendo un diccionario de error.
+    """
+
+
 @shared_task(
     name="integration_hub.sync_tasas_ve",
     bind=True,
@@ -273,9 +281,11 @@ def sync_tasas_ve(self):
         try:
             usd = Moneda.objects.get(codigo_iso="USD")
             ves = Moneda.objects.get(codigo_iso="VES")
-        except Moneda.DoesNotExist:
+        except Moneda.DoesNotExist as exc:
             logger.error("sync_tasas_ve: Monedas USD/VES no encontradas en BD")
-            return {"error": "Monedas no encontradas"}
+            raise CatalogoMonedasIncompleto(
+                "Monedas USD/VES no encontradas: ejecuta `python manage.py seed_catalogo_monedas`."
+            ) from exc
 
         resultados = {}
 
@@ -328,6 +338,8 @@ def sync_tasas_ve(self):
     except self.MaxRetriesExceededError:
         logger.error("sync_tasas_ve: máximo de reintentos alcanzado")
         return {"error": "max_retries"}
+    except CatalogoMonedasIncompleto:
+        raise  # configuración, no un fallo transitorio: sin reintentos
     except Exception as exc:
         logger.exception("sync_tasas_ve error inesperado: %s", exc)
         raise self.retry(exc=exc, countdown=60)

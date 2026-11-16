@@ -37,6 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.core.models import Empresa, Sucursal, Usuarios
+from apps.finanzas.catalogo_monedas import sembrar_catalogo_monedas
 from apps.finanzas.models import Caja, CajaFisica, Moneda
 
 
@@ -112,6 +113,10 @@ class Command(BaseCommand):
         # Resolver la contraseña ANTES de tocar la BD: una contraseña inválida
         # debe abortar sin crear nada.
         password, generada = self._resolver_password(options["admin_password"])
+
+        # 0. Catálogo base de monedas (USD, VES, EUR, USDT): la sincronización de tasas y otras piezas
+        #    asumen que existen. Idempotente; debe ir antes de la moneda base para que esta ya salga completa.
+        sembrar_catalogo_monedas()
 
         # 1. Moneda base (catálogo global compartido).
         moneda, _ = Moneda.objects.get_or_create(

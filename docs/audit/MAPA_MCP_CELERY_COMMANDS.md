@@ -70,9 +70,10 @@ _Total tareas Celery: 20_
 | `mapa_superficie` | apps.core |
 | `migrar_contactos` | apps.core |
 | `run_mcp_server` | apps.core |
+| `seed_catalogo_monedas` | apps.finanzas |
 | `seed_empresa_inicial` | apps.core |
 | `seed_proveedores_integracion` | apps.integration_hub |
 | `sincronizar_cxc_lubrikca` | apps.cxc_lubrikca |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 19_
+_Total commands: 20_
