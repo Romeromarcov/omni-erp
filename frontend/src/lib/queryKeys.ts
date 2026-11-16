@@ -588,13 +588,19 @@ export const activacionesKeys = {
     ['activaciones', 'disponibilidad', calendario ?? null, inicio ?? null, fin ?? null] as const,
 };
 
-// ── Bots de Telegram (ingestas y usuarios autorizados) ───────────────────────
+// ── Bots de Telegram (ingestas, plano de control, usuarios y bitácora) ───────
 export const botsKeys = {
   all: () => ['bots'] as const,
   ingestas: (estado?: string | null, kind?: string | null) =>
     ['bots', 'ingestas', estado ?? null, kind ?? null] as const,
   ingestasAll: () => ['bots', 'ingestas'] as const,
   usuarios: () => ['bots', 'usuarios'] as const,
+  flota: () => ['bots', 'flota'] as const,
+  botDetalle: (codigo: string) => ['bots', 'flota', codigo] as const,
+  destinos: () => ['bots', 'destinos'] as const,
+  bitacoraAll: () => ['bots', 'bitacora'] as const,
+  bitacora: (entidad?: string | null, limite?: number | null) =>
+    ['bots', 'bitacora', entidad ?? null, limite ?? null] as const,
 };
 
 // ── Gaps menores (entidades con backend operativo, pantalla nueva) ────────────

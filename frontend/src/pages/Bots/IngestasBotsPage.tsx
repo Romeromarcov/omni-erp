@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { Box, Tab, Tabs } from '@mui/material';
 import { PageContainer, PageHeader } from '../../components/ui';
+import BitacoraBotsTab from './BitacoraBotsTab';
+import FlotaControlTab from './FlotaControlTab';
 import IngestasTab from './IngestasTab';
 import UsuariosBotTab from './UsuariosBotTab';
 
-const TABS = ['Ingestas', 'Usuarios de Telegram'] as const;
+const TABS = [
+  'Ingestas',
+  'Flota y Control',
+  'Usuarios de Telegram',
+  'Bitácora',
+] as const;
 
 const IngestasBotsPage: React.FC = () => {
   const [tab, setTab] = useState(0);
@@ -13,7 +20,7 @@ const IngestasBotsPage: React.FC = () => {
     <PageContainer>
       <PageHeader
         title="Bots de Telegram"
-        subtitle="Lo que envían los bots (pedidos, cotizaciones, pagos, eventos), pagos por completar y usuarios autorizados."
+        subtitle="Plano de control multi-tenant de la flota, borradores recibidos, sincronización en borrador con Odoo, usuarios autorizados y bitácora."
       />
       <Tabs
         value={tab}
@@ -27,7 +34,12 @@ const IngestasBotsPage: React.FC = () => {
           <Tab key={t} label={t} />
         ))}
       </Tabs>
-      <Box role="tabpanel">{tab === 0 ? <IngestasTab /> : <UsuariosBotTab />}</Box>
+      <Box role="tabpanel">
+        {tab === 0 && <IngestasTab />}
+        {tab === 1 && <FlotaControlTab />}
+        {tab === 2 && <UsuariosBotTab />}
+        {tab === 3 && <BitacoraBotsTab />}
+      </Box>
     </PageContainer>
   );
 };

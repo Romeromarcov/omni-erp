@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,13 +13,20 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import { DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
-import { botUsuariosService, type BotUsuario } from '../../services/botsIngestService';
+import {
+  botUsuariosService,
+  CODIGOS_BOT_ESTANDAR,
+  type BotUsuario,
+  type BotUsuarioPayload,
+} from '../../services/botsIngestService';
 import { fetchUsuarios } from '../../services/users';
 import { botsKeys } from '../../lib/queryKeys';
 import { mensajeActivacion } from '../Activaciones/utils';
+import { etiquetaBot } from './utils';
 
 const UsuariosBotTab: React.FC = () => {
   const qc = useQueryClient();
@@ -26,7 +34,7 @@ const UsuariosBotTab: React.FC = () => {
   const [dialog, setDialog] = useState<BotUsuario | 'nuevo' | null>(null);
   const [borrar, setBorrar] = useState<BotUsuario | null>(null);
 
-  const { data: bots = [], isLoading } = useQuery({
+  const { data: bots = [], isLoading, isError, error } = useQuery({
     queryKey: botsKeys.usuarios(),
     queryFn: () => botUsuariosService.getAll(),
   });
@@ -45,6 +53,8 @@ const UsuariosBotTab: React.FC = () => {
     onSuccess: () => {
       setBorrar(null);
       void qc.invalidateQueries({ queryKey: botsKeys.usuarios() });
+      void qc.invalidateQueries({ queryKey: botsKeys.flota() });
+      void qc.invalidateQueries({ queryKey: botsKeys.bitacoraAll() });
     },
     onError: (e: unknown) => {
       setBorrar(null);
@@ -56,6 +66,20 @@ const UsuariosBotTab: React.FC = () => {
     { key: 'tg', header: 'ID de Telegram', render: (b) => b.telegram_user_id },
     { key: 'nombre', header: 'Nombre', render: (b) => b.nombre || '—' },
     { key: 'usuario', header: 'Vendedor / usuario Omni', render: (b) => nombreUsuario(b.usuario) },
+    {
+      key: 'bots',
+      header: 'Bots permitidos',
+      render: (b) =>
+        b.bots && b.bots.length > 0 ? (
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+            {b.bots.map((cod) => (
+              <Chip key={cod} size="small" variant="outlined" label={etiquetaBot(cod)} />
+            ))}
+          </Stack>
+        ) : (
+          <Chip size="small" color="success" variant="outlined" label="Todos los bots" />
+        ),
+    },
     {
       key: 'acc',
       header: 'Acciones',
@@ -74,15 +98,20 @@ const UsuariosBotTab: React.FC = () => {
 
   return (
     <Box>
+      {isError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {mensajeActivacion(error, 'No se pudieron cargar los usuarios autorizados.')}
+        </Alert>
+      )}
       {errorMsg && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg('')}>
           {errorMsg}
         </Alert>
       )}
-      <Stack direction="row" sx={{ mb: 2 }}>
-        <Alert severity="info" sx={{ flexGrow: 1, mr: 2 }}>
-          Solo estos usuarios de Telegram pueden enviar pedidos, pagos y eventos a Omni. El vendedor asociado recibe las
-          comisiones de sus pedidos.
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mb: 2 }}>
+        <Alert severity="info" sx={{ flexGrow: 1 }}>
+          Solo estos usuarios de Telegram pueden operar los bots de tu empresa. Puedes restringir cada cuenta a bots
+          específicos o dejarla habilitada para toda la flota.
         </Alert>
         <Button variant="contained" onClick={() => setDialog('nuevo')}>
           Autorizar usuario
@@ -105,6 +134,8 @@ const UsuariosBotTab: React.FC = () => {
           onSaved={() => {
             setDialog(null);
             void qc.invalidateQueries({ queryKey: botsKeys.usuarios() });
+            void qc.invalidateQueries({ queryKey: botsKeys.flota() });
+            void qc.invalidateQueries({ queryKey: botsKeys.bitacoraAll() });
           }}
         />
       )}
@@ -136,18 +167,32 @@ const UsuarioBotDialog: React.FC<{
   const [tg, setTg] = useState(inicial ? String(inicial.telegram_user_id) : '');
   const [usuario, setUsuario] = useState(inicial?.usuario ?? '');
   const [nombre, setNombre] = useState(inicial?.nombre ?? '');
+  const [botsSel, setBotsSel] = useState<string[]>(() => [...(inicial?.bots ?? [])]);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const alternarBot = (codigo: string) => {
+    setBotsSel((prev) => (prev.includes(codigo) ? prev.filter((x) => x !== codigo) : [...prev, codigo]));
+  };
+
+  const tgLimpio = tg.trim();
+  const tgNum = /^\d+$/.test(tgLimpio) ? Number(tgLimpio) : Number.NaN;
+  const valido = Number.isSafeInteger(tgNum) && tgNum >= 1 && usuario !== '';
 
   const guardar = useMutation({
     mutationFn: () => {
-      const p = { telegram_user_id: Number(tg), usuario, nombre: nombre.trim() };
+      const p: BotUsuarioPayload = {
+        telegram_user_id: tgNum,
+        usuario,
+        nombre: nombre.trim(),
+      };
+      if (botsSel.length > 0 || (inicial?.bots && inicial.bots.length > 0)) {
+        p.bots = botsSel;
+      }
       return inicial ? botUsuariosService.update(inicial.id_bot_usuario, p) : botUsuariosService.create(p);
     },
     onSuccess: onSaved,
     onError: (e: unknown) => setErrorMsg(mensajeActivacion(e, 'No se pudo guardar el usuario.')),
   });
-
-  const valido = /^\d+$/.test(tg.trim()) && Number(tg) > 0 && usuario !== '';
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
@@ -178,6 +223,27 @@ const UsuarioBotDialog: React.FC<{
             ))}
           </TextField>
           <TextField size="small" label="Nombre (referencia)" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+              Bots permitidos (vacío = todos los bots de la empresa)
+            </Typography>
+            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              {CODIGOS_BOT_ESTANDAR.map((cod) => {
+                const activo = botsSel.includes(cod);
+                return (
+                  <Chip
+                    key={cod}
+                    size="small"
+                    clickable
+                    color={activo ? 'primary' : 'default'}
+                    variant={activo ? 'filled' : 'outlined'}
+                    label={etiquetaBot(cod)}
+                    onClick={() => alternarBot(cod)}
+                  />
+                );
+              })}
+            </Stack>
+          </Box>
         </Stack>
       </DialogContent>
       <DialogActions>
