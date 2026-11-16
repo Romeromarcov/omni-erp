@@ -409,11 +409,16 @@ def desactivar_extracto_bancario(archivo: "ExtractoBancarioArchivo") -> int:
     """Desactiva lógicamente (R-CODE-6) un extracto y sus movimientos aún pendientes.
 
     Rechaza con ``ExtractoBancarioError`` si el extracto ya posee movimientos
-    conciliados para preservar la trazabilidad contable, bloqueando la cuenta,
-    el corte y sus movimientos activos con ``select_for_update()``.
+    conciliados o propuestas de pre-conciliación decididas por un usuario para
+    preservar la trazabilidad contable, bloqueando la cuenta, el corte y sus
+    movimientos activos con ``select_for_update()``.
     """
     from apps.finanzas.models import CuentaBancariaEmpresa
-    from apps.tesoreria.models import ExtractoBancarioArchivo
+    from apps.tesoreria.models import (
+        ConciliacionBancaria,
+        ExtractoBancarioArchivo,
+        PropuestaConciliacionBancaria,
+    )
 
     with transaction.atomic():
         CuentaBancariaEmpresa.objects.select_for_update().get(pk=archivo.id_cuenta_bancaria_id)
@@ -423,7 +428,38 @@ def desactivar_extracto_bancario(archivo: "ExtractoBancarioArchivo") -> int:
             raise ExtractoBancarioError(
                 "No se puede desactivar un extracto que ya tiene movimientos conciliados."
             )
+        fechas_mov = [m.fecha_mov for m in movimientos_activos]
+        f_min = min(fechas_mov) if fechas_mov else archivo_locked.fecha_desde
+        f_max = max(fechas_mov) if fechas_mov else archivo_locked.fecha_hasta
+        if f_min is not None and f_max is not None:
+            periodo_cerrado = ConciliacionBancaria.objects.filter(
+                id_empresa_id=archivo_locked.id_empresa_id,
+                id_cuenta_bancaria_id=archivo_locked.id_cuenta_bancaria_id,
+                periodo_inicio__lte=f_max,
+                periodo_fin__gte=f_min,
+                estado="CERRADA",
+            ).exists()
+            if periodo_cerrado:
+                raise ExtractoBancarioError(
+                    "No se puede desactivar un extracto dentro de un período de conciliación cerrado."
+                )
         ids_activos = [m.pk for m in movimientos_activos]
+        if ids_activos:
+            props_activas = list(
+                PropuestaConciliacionBancaria.objects.select_for_update().filter(
+                    id_empresa_id=archivo_locked.id_empresa_id,
+                    id_movimiento_bancario_id__in=ids_activos,
+                    activo=True,
+                )
+            )
+            if any(p.estado != "PENDIENTE" for p in props_activas):
+                raise ExtractoBancarioError(
+                    "No se puede desactivar un extracto con decisiones humanas de pre-conciliación registradas."
+                )
+            if props_activas:
+                PropuestaConciliacionBancaria.objects.filter(
+                    pk__in=[p.pk for p in props_activas]
+                ).update(activo=False)
         desactivados = (
             archivo_locked.movimientos.filter(pk__in=ids_activos).update(activo=False)
             if ids_activos

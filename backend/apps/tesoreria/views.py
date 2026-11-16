@@ -1,10 +1,13 @@
+from datetime import date
 import uuid
 
+from django.db import IntegrityError, transaction
+from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
@@ -15,20 +18,29 @@ from apps.core.viewsets import ActiveFilterMixin, BaseModelViewSet, get_empresas
 from .models import (
     Caja,
     ConciliacionBancaria,
+    ConfiguracionConciliacionCuenta,
+    DecisionPreconciliacionBancaria,
     ExtractoBancarioArchivo,
     MovimientoBancario,
     MovimientoInternoFondo,
     OperacionCambioDivisa,
+    PropuestaConciliacionBancaria,
 )
 from .serializers import (
     CajaSerializer,
     ConciliacionBancariaSerializer,
+    ConfiguracionConciliacionCuentaSerializer,
+    DecidirPropuestaRequestSerializer,
+    DecisionPreconciliacionBancariaSerializer,
     ExtractoBancarioArchivoSerializer,
+    GenerarPropuestasRequestSerializer,
+    GenerarPropuestasResponseSerializer,
     ImportarExtractoRequestSerializer,
     ImportarExtractoResponseSerializer,
     MovimientoBancarioSerializer,
     MovimientoInternoFondoSerializer,
     OperacionCambioDivisaSerializer,
+    PropuestaConciliacionBancariaSerializer,
     SaldosConsolidadosResponseSerializer,
 )
 
@@ -42,6 +54,13 @@ def _validar_uuid(valor, campo: str) -> str:
         return str(uuid.UUID(str(valor)))
     except (ValueError, TypeError) as exc:
         raise ValidationError({campo: f"'{valor}' no es un UUID válido."}) from exc
+
+
+def _validar_fecha(valor, campo: str) -> date:
+    try:
+        return date.fromisoformat(str(valor).replace("\x00", "").strip())
+    except (ValueError, TypeError) as exc:
+        raise ValidationError({campo: f"'{valor}' no es una fecha ISO válida (YYYY-MM-DD)."}) from exc
 
 
 class CajaViewSet(BaseModelViewSet):
@@ -329,11 +348,52 @@ class MovimientoBancarioViewSet(ActiveFilterMixin, BaseModelViewSet):
         serializer.save()
 
     def perform_destroy(self, instance):
-        if instance.estado == "CONCILIADO":
-            raise ValidationError(
-                {"error": "No se puede desactivar un movimiento bancario ya conciliado."}
+        from apps.finanzas.models import CuentaBancariaEmpresa
+
+        with transaction.atomic():
+            CuentaBancariaEmpresa.objects.select_for_update().get(pk=instance.id_cuenta_bancaria_id)
+            mov_locked = MovimientoBancario.objects.select_for_update().get(pk=instance.pk)
+            if mov_locked.estado == "CONCILIADO":
+                raise ValidationError(
+                    {"error": "No se puede desactivar un movimiento bancario ya conciliado."}
+                )
+            if ConciliacionBancaria.objects.filter(
+                id_empresa_id=mov_locked.id_empresa_id,
+                id_cuenta_bancaria_id=mov_locked.id_cuenta_bancaria_id,
+                periodo_inicio__lte=mov_locked.fecha_mov,
+                periodo_fin__gte=mov_locked.fecha_mov,
+                estado="CERRADA",
+            ).exists():
+                raise ValidationError(
+                    {
+                        "error": (
+                            "No se puede desactivar un movimiento dentro de un período "
+                            "de conciliación cerrado."
+                        )
+                    }
+                )
+            props_activas = list(
+                PropuestaConciliacionBancaria.objects.select_for_update().filter(
+                    id_empresa_id=mov_locked.id_empresa_id,
+                    id_movimiento_bancario=mov_locked,
+                    activo=True,
+                )
             )
-        instance.soft_delete()
+            if any(p.estado != "PENDIENTE" for p in props_activas):
+                raise ValidationError(
+                    {
+                        "error": (
+                            "No se puede desactivar un movimiento con una decisión humana "
+                            "de pre-conciliación registrada."
+                        )
+                    }
+                )
+            if props_activas:
+                PropuestaConciliacionBancaria.objects.filter(
+                    pk__in=[p.pk for p in props_activas]
+                ).update(activo=False)
+            mov_locked.soft_delete()
+            instance.activo = False
 
     @action(detail=False, methods=["post"], url_path="importar-csv")
     def importar_csv(self, request):
@@ -419,6 +479,7 @@ class ConciliacionBancariaViewSet(BaseModelViewSet):
 
     queryset = ConciliacionBancaria.objects.all()
     serializer_class = ConciliacionBancariaSerializer
+    search_fields = ["observaciones", "estado", "id_cuenta_bancaria__nombre_banco"]
 
     def get_queryset(self):
         return ConciliacionBancaria.objects.filter(
@@ -426,7 +487,6 @@ class ConciliacionBancariaViewSet(BaseModelViewSet):
         ).select_related("id_cuenta_bancaria", "id_empresa")
 
     def perform_create(self, serializer):
-        from decimal import Decimal
         from .services import iniciar_conciliacion
 
         empresa = serializer.validated_data["id_empresa"]
@@ -465,3 +525,365 @@ class ConciliacionBancariaViewSet(BaseModelViewSet):
             )
         cerrar_conciliacion(conciliacion, usuario=request.user)
         return Response(ConciliacionBancariaSerializer(conciliacion).data)
+
+
+@method_decorator(
+    name="list",
+    decorator=swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter(
+                "cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+        ]
+    ),
+)
+class ConfiguracionConciliacionCuentaViewSet(ActiveFilterMixin, BaseModelViewSet):
+    """Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria."""
+
+    queryset = ConfiguracionConciliacionCuenta.objects.all()
+    serializer_class = ConfiguracionConciliacionCuentaSerializer
+    search_fields = [
+        "codigo_cuenta_comisiones",
+        "codigo_cuenta_igtf",
+        "codigo_cuenta_transito_pendientes",
+        "id_cuenta_bancaria__nombre_banco",
+        "id_cuenta_bancaria__numero_cuenta",
+    ]
+    ordering_fields = ["fecha_creacion", "fecha_actualizacion", "ventana_dias"]
+
+    def get_queryset(self):
+        empresas = _empresas(self.request)
+        qs = (
+            super()
+            .get_queryset()
+            .filter(id_empresa__in=empresas)
+            .select_related(
+                "id_empresa",
+                "id_cuenta_bancaria",
+                "id_cuenta_comisiones",
+                "id_cuenta_igtf",
+                "id_cuenta_transito_pendientes",
+                "id_conector_odoo__id_proveedor",
+            )
+        )
+        empresa_id = self.request.query_params.get("empresa")
+        cuenta_id = self.request.query_params.get("cuenta")
+        if empresa_id:
+            qs = qs.filter(id_empresa=_validar_uuid(empresa_id, "empresa"))
+        if cuenta_id:
+            qs = qs.filter(id_cuenta_bancaria=_validar_uuid(cuenta_id, "cuenta"))
+        return qs.order_by("-fecha_creacion")
+
+    def perform_create(self, serializer):
+        empresa = serializer.validated_data["id_empresa"]
+        if empresa not in _empresas(self.request):
+            raise PermissionDenied("Sin acceso a esta empresa.")
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError as exc:
+            raise ValidationError(
+                {
+                    "id_cuenta_bancaria": (
+                        "Ya existe una configuración de conciliación activa para esta cuenta bancaria."
+                    )
+                }
+            ) from exc
+
+    def perform_update(self, serializer):
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError as exc:
+            raise ValidationError(
+                {
+                    "id_cuenta_bancaria": (
+                        "Ya existe otra configuración de conciliación activa para esta cuenta bancaria."
+                    )
+                }
+            ) from exc
+
+    def perform_destroy(self, instance):
+        instance.soft_delete()
+
+
+@method_decorator(
+    name="list",
+    decorator=swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter(
+                "cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter("estado", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+            openapi.Parameter("tipo", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+            openapi.Parameter("regla", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+            openapi.Parameter(
+                "desde", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE
+            ),
+            openapi.Parameter(
+                "hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE
+            ),
+        ]
+    ),
+)
+class PropuestaConciliacionBancariaViewSet(
+    ActiveFilterMixin,
+    TenantFKScopeMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+
+    GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+    GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+    POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+    POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+    GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+    GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+    """
+
+    queryset = PropuestaConciliacionBancaria.objects.all()
+    serializer_class = PropuestaConciliacionBancariaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PageNumberPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = [
+        "motivo",
+        "pago_nombre",
+        "pago_socio",
+        "cuenta_contable_codigo",
+        "id_movimiento_bancario__descripcion",
+        "id_movimiento_bancario__referencia",
+    ]
+    ordering_fields = ["puntaje", "generada_en", "decidida_en"]
+
+    def paginate_queryset(self, queryset):
+        if queryset.ordered is False:
+            queryset = queryset.order_by("pk")
+        return super().paginate_queryset(queryset)
+
+    def get_queryset(self):
+        empresas = _empresas(self.request)
+        qs = (
+            super()
+            .get_queryset()
+            .filter(id_empresa__in=empresas, id_movimiento_bancario__activo=True)
+            .select_related(
+                "id_empresa",
+                "id_movimiento_bancario__id_cuenta_bancaria__id_moneda",
+                "id_pago_nativo",
+                "id_cuenta_contable",
+                "decidida_por",
+            )
+        )
+        params = self.request.query_params
+        empresa_id = params.get("empresa")
+        cuenta_id = params.get("cuenta")
+        estado = params.get("estado")
+        tipo = params.get("tipo")
+        regla = params.get("regla")
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+
+        if empresa_id:
+            qs = qs.filter(id_empresa=_validar_uuid(empresa_id, "empresa"))
+        if cuenta_id:
+            qs = qs.filter(
+                id_movimiento_bancario__id_cuenta_bancaria=_validar_uuid(cuenta_id, "cuenta")
+            )
+        if estado:
+            qs = qs.filter(estado=estado.replace("\x00", "").strip().upper())
+        if tipo:
+            qs = qs.filter(tipo=tipo.replace("\x00", "").strip().upper())
+        if regla:
+            qs = qs.filter(regla=regla.replace("\x00", "").strip().upper())
+        if desde:
+            qs = qs.filter(id_movimiento_bancario__fecha_mov__gte=_validar_fecha(desde, "desde"))
+        if hasta:
+            qs = qs.filter(id_movimiento_bancario__fecha_mov__lte=_validar_fecha(hasta, "hasta"))
+        return qs.order_by(
+            "-id_movimiento_bancario__fecha_mov",
+            "-id_movimiento_bancario__orden_en_archivo",
+            "-generada_en",
+        )
+
+    @swagger_auto_schema(
+        request_body=GenerarPropuestasRequestSerializer,
+        responses={200: GenerarPropuestasResponseSerializer},
+    )
+    @action(detail=False, methods=["post"], url_path="generar")
+    def generar(self, request):
+        from apps.finanzas.models import CuentaBancariaEmpresa
+
+        from .preconciliacion import PreconciliacionError, generar_propuestas_conciliacion
+
+        req_ser = GenerarPropuestasRequestSerializer(data=request.data)
+        req_ser.is_valid(raise_exception=True)
+        datos = req_ser.validated_data
+
+        empresas = _empresas(request)
+        empresa_id = datos.get("empresa")
+        cuenta_uuid = datos["cuenta_bancaria"]
+
+        if empresa_id:
+            empresa = empresas.filter(pk=empresa_id).first()
+            if empresa is None:
+                return Response(
+                    {"error": "Sin empresa accesible."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            cuenta = CuentaBancariaEmpresa.objects.select_related(
+                "id_empresa", "id_moneda"
+            ).filter(pk=cuenta_uuid, id_empresa=empresa).first()
+        else:
+            cuenta = CuentaBancariaEmpresa.objects.select_related(
+                "id_empresa", "id_moneda"
+            ).filter(pk=cuenta_uuid, id_empresa__in=empresas).first()
+            empresa = cuenta.id_empresa if cuenta is not None else None
+
+        if cuenta is None or empresa is None:
+            return Response(
+                {"error": "Cuenta bancaria no encontrada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            resumen = generar_propuestas_conciliacion(
+                empresa=empresa,
+                cuenta_bancaria=cuenta,
+                desde=datos.get("desde"),
+                hasta=datos.get("hasta"),
+                incluir_odoo=datos.get("incluir_odoo"),
+            )
+        except PreconciliacionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(resumen, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        request_body=DecidirPropuestaRequestSerializer,
+        responses={200: PropuestaConciliacionBancariaSerializer},
+    )
+    @action(detail=True, methods=["post"], url_path="decidir")
+    def decidir(self, request, pk=None):
+        from .preconciliacion import (
+            DecisionPreconciliacionInvalida,
+            PreconciliacionError,
+            decidir_propuesta_conciliacion,
+        )
+
+        instancia = self.get_object()
+        req_ser = DecidirPropuestaRequestSerializer(data=request.data)
+        req_ser.is_valid(raise_exception=True)
+        datos = req_ser.validated_data
+
+        try:
+            actualizada = decidir_propuesta_conciliacion(
+                empresa=instancia.id_empresa,
+                propuesta_id=str(instancia.pk),
+                accion=datos["accion"],
+                usuario=request.user,
+                pago_nativo_id=(
+                    str(datos["pago_nativo_id"]) if datos.get("pago_nativo_id") else None
+                ),
+                pago_externo_id=datos.get("pago_externo_id") or "",
+                pago_nombre=datos.get("pago_nombre") or "",
+                cuenta_contable_id=(
+                    str(datos["cuenta_contable_id"]) if datos.get("cuenta_contable_id") else None
+                ),
+                cuenta_contable_codigo=datos.get("cuenta_contable_codigo") or "",
+                comentario=datos.get("comentario") or "",
+            )
+        except DecisionPreconciliacionInvalida as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except PreconciliacionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        actualizada_full = self.get_queryset().get(pk=actualizada.pk)
+        return Response(
+            PropuestaConciliacionBancariaSerializer(actualizada_full).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter(
+                "cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter("decididas_desde", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+            openapi.Parameter("decididas_hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+        ],
+        responses={200: PropuestaConciliacionBancariaSerializer(many=True)},
+    )
+    @action(detail=False, methods=["get"], url_path="aprobadas")
+    def aprobadas(self, request):
+        qs = self.get_queryset().filter(estado__in=["APROBADA", "CORREGIDA"])
+        dec_desde = request.query_params.get("decididas_desde")
+        dec_hasta = request.query_params.get("decididas_hasta")
+        if dec_desde:
+            qs = qs.filter(decidida_en__date__gte=_validar_fecha(dec_desde, "decididas_desde"))
+        if dec_hasta:
+            qs = qs.filter(decidida_en__date__lte=_validar_fecha(dec_hasta, "decididas_hasta"))
+        qs = qs.order_by(
+            "id_movimiento_bancario__id_cuenta_bancaria__nombre_banco",
+            "id_movimiento_bancario__fecha_mov",
+            "id_movimiento_bancario__orden_en_archivo",
+        )
+        pagina = self.paginate_queryset(qs)
+        if pagina is not None:
+            ser = PropuestaConciliacionBancariaSerializer(pagina, many=True)
+            return self.get_paginated_response(ser.data)
+        return Response(PropuestaConciliacionBancariaSerializer(qs, many=True).data)
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter(
+                "propuesta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter(
+                "movimiento", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter("accion", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+        ],
+        responses={200: DecisionPreconciliacionBancariaSerializer(many=True)},
+    )
+    @action(detail=False, methods=["get"], url_path="bitacora")
+    def bitacora(self, request):
+        empresas = _empresas(request)
+        qs = DecisionPreconciliacionBancaria.objects.filter(
+            id_empresa__in=empresas, activo=True
+        ).select_related("id_movimiento_bancario", "id_propuesta")
+
+        params = request.query_params
+        if params.get("empresa"):
+            qs = qs.filter(id_empresa=_validar_uuid(params.get("empresa"), "empresa"))
+        if params.get("propuesta"):
+            qs = qs.filter(id_propuesta=_validar_uuid(params.get("propuesta"), "propuesta"))
+        if params.get("movimiento"):
+            qs = qs.filter(
+                id_movimiento_bancario=_validar_uuid(params.get("movimiento"), "movimiento")
+            )
+        if params.get("accion"):
+            qs = qs.filter(accion=str(params.get("accion")).replace("\x00", "").strip().upper())
+
+        qs = qs.order_by("-fecha_decision")
+        pagina = self.paginate_queryset(qs)
+        if pagina is not None:
+            ser = DecisionPreconciliacionBancariaSerializer(pagina, many=True)
+            return self.get_paginated_response(ser.data)
+        return Response(DecisionPreconciliacionBancariaSerializer(qs, many=True).data)
+

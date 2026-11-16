@@ -40018,6 +40018,200 @@
                 }
             ]
         },
+        "/tesoreria/configuraciones-conciliacion/": {
+            "get": {
+                "operationId": "tesoreria_configuraciones-conciliacion_list",
+                "description": "Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "cuenta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "post": {
+                "operationId": "tesoreria_configuraciones-conciliacion_create",
+                "description": "Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/configuraciones-conciliacion/{id}/": {
+            "get": {
+                "operationId": "tesoreria_configuraciones-conciliacion_read",
+                "description": "Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "put": {
+                "operationId": "tesoreria_configuraciones-conciliacion_update",
+                "description": "Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "patch": {
+                "operationId": "tesoreria_configuraciones-conciliacion_partial_update",
+                "description": "Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguracionConciliacionCuenta"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "delete": {
+                "operationId": "tesoreria_configuraciones-conciliacion_delete",
+                "description": "Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este configuracion conciliacion cuenta.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/tesoreria/extractos-bancarios/": {
             "get": {
                 "operationId": "tesoreria_extractos-bancarios_list",
@@ -40845,6 +41039,343 @@
                     "description": "Un valor de entero único que identifique este Operación de Cambio de Divisa.",
                     "required": true,
                     "type": "integer"
+                }
+            ]
+        },
+        "/tesoreria/propuestas-conciliacion/": {
+            "get": {
+                "operationId": "tesoreria_propuestas-conciliacion_list",
+                "summary": "Cola multi-tenant de pre-conciliación bancaria y revisión humana.",
+                "description": "GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)\nGET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta\nPOST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta\nPOST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir\nGET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)\nGET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "cuenta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "estado",
+                        "in": "query",
+                        "type": "string"
+                    },
+                    {
+                        "name": "tipo",
+                        "in": "query",
+                        "type": "string"
+                    },
+                    {
+                        "name": "regla",
+                        "in": "query",
+                        "type": "string"
+                    },
+                    {
+                        "name": "desde",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "hasta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PropuestaConciliacionBancaria"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/propuestas-conciliacion/aprobadas/": {
+            "get": {
+                "operationId": "tesoreria_propuestas-conciliacion_aprobadas",
+                "summary": "Cola multi-tenant de pre-conciliación bancaria y revisión humana.",
+                "description": "GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)\nGET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta\nPOST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta\nPOST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir\nGET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)\nGET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "cuenta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "decididas_desde",
+                        "in": "query",
+                        "type": "string"
+                    },
+                    {
+                        "name": "decididas_hasta",
+                        "in": "query",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PropuestaConciliacionBancaria"
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/propuestas-conciliacion/bitacora/": {
+            "get": {
+                "operationId": "tesoreria_propuestas-conciliacion_bitacora",
+                "summary": "Cola multi-tenant de pre-conciliación bancaria y revisión humana.",
+                "description": "GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)\nGET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta\nPOST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta\nPOST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir\nGET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)\nGET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "propuesta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "movimiento",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "accion",
+                        "in": "query",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/DecisionPreconciliacionBancaria"
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/propuestas-conciliacion/generar/": {
+            "post": {
+                "operationId": "tesoreria_propuestas-conciliacion_generar",
+                "summary": "Cola multi-tenant de pre-conciliación bancaria y revisión humana.",
+                "description": "GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)\nGET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta\nPOST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta\nPOST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir\nGET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)\nGET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GenerarPropuestasRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/GenerarPropuestasResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": []
+        },
+        "/tesoreria/propuestas-conciliacion/{id}/": {
+            "get": {
+                "operationId": "tesoreria_propuestas-conciliacion_read",
+                "summary": "Cola multi-tenant de pre-conciliación bancaria y revisión humana.",
+                "description": "GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)\nGET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta\nPOST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta\nPOST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir\nGET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)\nGET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PropuestaConciliacionBancaria"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este propuesta conciliacion bancaria.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/tesoreria/propuestas-conciliacion/{id}/decidir/": {
+            "post": {
+                "operationId": "tesoreria_propuestas-conciliacion_decidir",
+                "summary": "Cola multi-tenant de pre-conciliación bancaria y revisión humana.",
+                "description": "GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)\nGET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta\nPOST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta\nPOST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir\nGET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)\nGET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DecidirPropuestaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PropuestaConciliacionBancaria"
+                        }
+                    }
+                },
+                "tags": [
+                    "tesoreria"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este propuesta conciliacion bancaria.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
                 }
             ]
         },
@@ -50559,7 +51090,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-16T15:55:53.789796-04:00"
+                    "default": "2026-11-16T17:21:52.055970-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -58553,6 +59084,121 @@
                 }
             }
         },
+        "ConfiguracionConciliacionCuenta": {
+            "required": [
+                "id_empresa",
+                "id_cuenta_bancaria"
+            ],
+            "type": "object",
+            "properties": {
+                "id": {
+                    "title": "Id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_cuenta_bancaria": {
+                    "title": "Id cuenta bancaria",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "cuenta_nombre_banco": {
+                    "title": "Cuenta nombre banco",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "cuenta_numero": {
+                    "title": "Cuenta numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_cuenta_comisiones": {
+                    "title": "Id cuenta comisiones",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "codigo_cuenta_comisiones": {
+                    "title": "Codigo cuenta comisiones",
+                    "type": "string",
+                    "maxLength": 120
+                },
+                "id_cuenta_igtf": {
+                    "title": "Id cuenta igtf",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "codigo_cuenta_igtf": {
+                    "title": "Codigo cuenta igtf",
+                    "type": "string",
+                    "maxLength": 120
+                },
+                "id_cuenta_transito_pendientes": {
+                    "title": "Id cuenta transito pendientes",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "codigo_cuenta_transito_pendientes": {
+                    "title": "Codigo cuenta transito pendientes",
+                    "type": "string",
+                    "maxLength": 120
+                },
+                "id_conector_odoo": {
+                    "title": "Id conector odoo",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "odoo_journal_id": {
+                    "title": "Odoo journal id",
+                    "type": "integer",
+                    "maximum": 2147483647,
+                    "minimum": 0,
+                    "x-nullable": true
+                },
+                "ventana_dias": {
+                    "title": "Ventana dias",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "incluir_pagos_nativos": {
+                    "title": "Incluir pagos nativos",
+                    "type": "boolean"
+                },
+                "incluir_pagos_odoo": {
+                    "title": "Incluir pagos odoo",
+                    "type": "boolean"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha creacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha actualizacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
         "ExtractoBancarioArchivo": {
             "type": "object",
             "properties": {
@@ -59263,6 +59909,449 @@
                     "title": "Casa de cambio",
                     "type": "string",
                     "format": "uuid",
+                    "x-nullable": true
+                }
+            }
+        },
+        "PropuestaConciliacionBancaria": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "title": "Id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_movimiento_bancario": {
+                    "title": "Id movimiento bancario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "cuenta_bancaria_id": {
+                    "title": "Cuenta bancaria id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "cuenta_nombre_banco": {
+                    "title": "Cuenta nombre banco",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "cuenta_numero": {
+                    "title": "Cuenta numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda": {
+                    "title": "Moneda",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "movimiento_fecha": {
+                    "title": "Movimiento fecha",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "movimiento_tipo": {
+                    "title": "Movimiento tipo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "movimiento_monto": {
+                    "title": "Movimiento monto",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "movimiento_referencia": {
+                    "title": "Movimiento referencia",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "movimiento_descripcion": {
+                    "title": "Movimiento descripcion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "movimiento_categoria": {
+                    "title": "Movimiento categoria",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "movimiento_huella": {
+                    "title": "Movimiento huella",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "enum": [
+                        "PAGO",
+                        "CUENTA",
+                        "AMBIGUO",
+                        "SIN_PROPUESTA"
+                    ],
+                    "readOnly": true
+                },
+                "regla": {
+                    "title": "Regla",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "motivo": {
+                    "title": "Motivo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fuente_pago": {
+                    "title": "Fuente pago",
+                    "type": "string",
+                    "enum": [
+                        "",
+                        "OMNI",
+                        "ODOO"
+                    ],
+                    "readOnly": true,
+                    "default": ""
+                },
+                "id_pago_nativo": {
+                    "title": "Id pago nativo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "pago_externo_id": {
+                    "title": "Pago externo id",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "minLength": 1
+                },
+                "pago_nombre": {
+                    "title": "Pago nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "pago_socio": {
+                    "title": "Pago socio",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_cuenta_contable": {
+                    "title": "Id cuenta contable",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cuenta_contable_codigo": {
+                    "title": "Cuenta contable codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "puntaje": {
+                    "title": "Puntaje",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "candidatos_json": {
+                    "title": "Candidatos json",
+                    "type": "object",
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "PENDIENTE",
+                        "APROBADA",
+                        "RECHAZADA",
+                        "CORREGIDA"
+                    ],
+                    "readOnly": true,
+                    "default": "PENDIENTE"
+                },
+                "ultimo_comentario": {
+                    "title": "Ultimo comentario",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "decidida_por": {
+                    "title": "Decidida por",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "decidida_por_username": {
+                    "title": "Decidida por username",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "minLength": 1
+                },
+                "decidida_en": {
+                    "title": "Decidida en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "generada_en": {
+                    "title": "Generada en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "actualizada_en": {
+                    "title": "Actualizada en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": true
+                }
+            }
+        },
+        "DecisionPreconciliacionBancaria": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "title": "Id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_propuesta": {
+                    "title": "Id propuesta",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_movimiento_bancario": {
+                    "title": "Id movimiento bancario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "movimiento_referencia": {
+                    "title": "Movimiento referencia",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "movimiento_descripcion": {
+                    "title": "Movimiento descripcion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "accion": {
+                    "title": "Accion",
+                    "type": "string",
+                    "enum": [
+                        "APROBAR",
+                        "RECHAZAR",
+                        "CORREGIR",
+                        "REABRIR"
+                    ],
+                    "readOnly": true
+                },
+                "estado_anterior_json": {
+                    "title": "Estado anterior json",
+                    "type": "object",
+                    "readOnly": true
+                },
+                "estado_nuevo_json": {
+                    "title": "Estado nuevo json",
+                    "type": "object",
+                    "readOnly": true
+                },
+                "comentario": {
+                    "title": "Comentario",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_usuario": {
+                    "title": "Id usuario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "usuario_nombre": {
+                    "title": "Usuario nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_decision": {
+                    "title": "Fecha decision",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true
+                }
+            }
+        },
+        "GenerarPropuestasRequest": {
+            "required": [
+                "cuenta_bancaria"
+            ],
+            "type": "object",
+            "properties": {
+                "empresa": {
+                    "title": "Empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "cuenta_bancaria": {
+                    "title": "Cuenta bancaria",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "desde": {
+                    "title": "Desde",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "hasta": {
+                    "title": "Hasta",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "incluir_odoo": {
+                    "title": "Incluir odoo",
+                    "type": "boolean",
+                    "x-nullable": true
+                }
+            }
+        },
+        "GenerarPropuestasResponse": {
+            "type": "object",
+            "properties": {
+                "nuevas": {
+                    "title": "Nuevas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "actualizadas": {
+                    "title": "Actualizadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "ya_decididas": {
+                    "title": "Ya decididas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "total_evaluados": {
+                    "title": "Total evaluados",
+                    "type": "integer",
+                    "readOnly": true
+                }
+            }
+        },
+        "DecidirPropuestaRequest": {
+            "required": [
+                "accion"
+            ],
+            "type": "object",
+            "properties": {
+                "accion": {
+                    "title": "Accion",
+                    "type": "string",
+                    "enum": [
+                        "APROBAR",
+                        "RECHAZAR",
+                        "CORREGIR",
+                        "REABRIR",
+                        "aprobar",
+                        "rechazar",
+                        "corregir",
+                        "reabrir"
+                    ]
+                },
+                "pago_nativo_id": {
+                    "title": "Pago nativo id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "pago_externo_id": {
+                    "title": "Pago externo id",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 64,
+                    "x-nullable": true
+                },
+                "pago_nombre": {
+                    "title": "Pago nombre",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 200,
+                    "x-nullable": true
+                },
+                "cuenta_contable_id": {
+                    "title": "Cuenta contable id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cuenta_contable_codigo": {
+                    "title": "Cuenta contable codigo",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 150,
+                    "x-nullable": true
+                },
+                "comentario": {
+                    "title": "Comentario",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 1000,
                     "x-nullable": true
                 }
             }

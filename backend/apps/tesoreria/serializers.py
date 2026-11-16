@@ -7,10 +7,13 @@ from rest_framework import serializers
 from .models import (
     Caja,
     ConciliacionBancaria,
+    ConfiguracionConciliacionCuenta,
+    DecisionPreconciliacionBancaria,
     ExtractoBancarioArchivo,
     MovimientoBancario,
     MovimientoInternoFondo,
     OperacionCambioDivisa,
+    PropuestaConciliacionBancaria,
 )
 
 logger = logging.getLogger(__name__)
@@ -487,26 +490,62 @@ class MovimientoBancarioSerializer(serializers.ModelSerializer):
                 {"id_cuenta_bancaria": "La cuenta bancaria no pertenece a la empresa indicada."}
             )
 
-        if self.instance is not None and (
-            self.instance.estado == "CONCILIADO" or self.instance.origen == "EXTRACTO"
-        ):
-            modificados = [
-                campo
-                for campo in self._CAMPOS_INMUTABLES_CONTABLE
-                if campo in attrs and attrs[campo] != getattr(self.instance, campo)
-            ]
-            if modificados:
-                motivo = (
-                    "conciliado"
-                    if self.instance.estado == "CONCILIADO"
-                    else "importado desde un extracto bancario validado"
+        fechas_revisar: list = []
+        if "fecha_mov" in attrs and attrs["fecha_mov"] is not None:
+            fechas_revisar.append(attrs["fecha_mov"])
+        if self.instance is not None and self.instance.fecha_mov is not None:
+            fechas_revisar.append(self.instance.fecha_mov)
+        if empresa is not None and cuenta is not None and fechas_revisar:
+            for f_mov in set(fechas_revisar):
+                if ConciliacionBancaria.objects.filter(
+                    id_empresa=empresa,
+                    id_cuenta_bancaria=cuenta,
+                    periodo_inicio__lte=f_mov,
+                    periodo_fin__gte=f_mov,
+                    estado="CERRADA",
+                ).exists():
+                    raise serializers.ValidationError(
+                        {
+                            "fecha_mov": (
+                                "El período de conciliación bancaria para esta fecha "
+                                "ya se encuentra cerrado."
+                            )
+                        }
+                    )
+
+        if self.instance is not None:
+            tiene_decision_humana = (
+                PropuestaConciliacionBancaria.objects.filter(
+                    id_empresa_id=self.instance.id_empresa_id,
+                    id_movimiento_bancario=self.instance,
+                    activo=True,
                 )
-                raise serializers.ValidationError(
-                    {
-                        campo: f"No se puede modificar '{campo}' en un movimiento {motivo}."
-                        for campo in modificados
-                    }
-                )
+                .exclude(estado="PENDIENTE")
+                .exists()
+            )
+            if (
+                self.instance.estado == "CONCILIADO"
+                or self.instance.origen == "EXTRACTO"
+                or tiene_decision_humana
+            ):
+                modificados = [
+                    campo
+                    for campo in self._CAMPOS_INMUTABLES_CONTABLE
+                    if campo in attrs and attrs[campo] != getattr(self.instance, campo)
+                ]
+                if modificados:
+                    if self.instance.estado == "CONCILIADO":
+                        motivo = "conciliado"
+                    elif tiene_decision_humana:
+                        motivo = "con una decisión humana de pre-conciliación registrada"
+                    else:
+                        motivo = "importado desde un extracto bancario validado"
+                    raise serializers.ValidationError(
+                        {
+                            campo: f"No se puede modificar '{campo}' en un movimiento {motivo}."
+                            for campo in modificados
+                        }
+                    )
         return attrs
 
 
@@ -525,3 +564,274 @@ class ConciliacionBancariaSerializer(serializers.ModelSerializer):
             "movimientos_conciliados", "movimientos_pendientes",
             "fecha_creacion", "fecha_cierre",
         ]
+
+
+class ConfiguracionConciliacionCuentaSerializer(serializers.ModelSerializer):
+    cuenta_nombre_banco = serializers.CharField(
+        source="id_cuenta_bancaria.nombre_banco", read_only=True
+    )
+    cuenta_numero = serializers.CharField(
+        source="id_cuenta_bancaria.numero_cuenta", read_only=True
+    )
+
+    class Meta:
+        model = ConfiguracionConciliacionCuenta
+        fields = [
+            "id",
+            "id_empresa",
+            "id_cuenta_bancaria",
+            "cuenta_nombre_banco",
+            "cuenta_numero",
+            "id_cuenta_comisiones",
+            "codigo_cuenta_comisiones",
+            "id_cuenta_igtf",
+            "codigo_cuenta_igtf",
+            "id_cuenta_transito_pendientes",
+            "codigo_cuenta_transito_pendientes",
+            "id_conector_odoo",
+            "odoo_journal_id",
+            "ventana_dias",
+            "incluir_pagos_nativos",
+            "incluir_pagos_odoo",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = [
+            "id",
+            "cuenta_nombre_banco",
+            "cuenta_numero",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+
+    def validate_ventana_dias(self, value: int) -> int:
+        if value < 0 or value > 30:
+            raise serializers.ValidationError("ventana_dias debe estar entre 0 y 30 días.")
+        return value
+
+    def validate(self, attrs):
+        empresa = attrs.get("id_empresa") or (
+            self.instance.id_empresa if self.instance is not None else None
+        )
+        cuenta = attrs.get("id_cuenta_bancaria") or (
+            self.instance.id_cuenta_bancaria if self.instance is not None else None
+        )
+        if (
+            self.instance is not None
+            and "id_empresa" in attrs
+            and str(attrs["id_empresa"].pk) != str(self.instance.id_empresa_id)
+        ):
+            raise serializers.ValidationError(
+                {"id_empresa": "No se puede transferir una configuración a otra empresa."}
+            )
+        if empresa is not None and cuenta is not None and str(cuenta.id_empresa_id) != str(empresa.pk):
+            raise serializers.ValidationError(
+                {"id_cuenta_bancaria": "La cuenta bancaria no pertenece a la empresa indicada."}
+            )
+
+        for campo_cuenta in (
+            "id_cuenta_comisiones",
+            "id_cuenta_igtf",
+            "id_cuenta_transito_pendientes",
+        ):
+            plan = attrs.get(
+                campo_cuenta,
+                getattr(self.instance, campo_cuenta, None) if self.instance is not None else None,
+            )
+            if plan is not None:
+                if empresa is not None and str(plan.id_empresa_id) != str(empresa.pk):
+                    raise serializers.ValidationError(
+                        {campo_cuenta: "La cuenta contable pertenece a otra empresa."}
+                    )
+                if not plan.activo:
+                    raise serializers.ValidationError(
+                        {campo_cuenta: "La cuenta contable indicada se encuentra inactiva."}
+                    )
+
+        conector = attrs.get(
+            "id_conector_odoo",
+            self.instance.id_conector_odoo if self.instance is not None else None,
+        )
+        if conector is not None:
+            if empresa is not None and str(conector.id_empresa_id) != str(empresa.pk):
+                raise serializers.ValidationError(
+                    {"id_conector_odoo": "El conector Odoo pertenece a otra empresa."}
+                )
+            if conector.id_proveedor is None or conector.id_proveedor.codigo != "odoo":
+                raise serializers.ValidationError(
+                    {
+                        "id_conector_odoo": (
+                            "El conector seleccionado no corresponde al proveedor 'odoo'."
+                        )
+                    }
+                )
+
+        incluir_odoo = attrs.get(
+            "incluir_pagos_odoo",
+            self.instance.incluir_pagos_odoo if self.instance is not None else False,
+        )
+        journal_id = attrs.get(
+            "odoo_journal_id",
+            self.instance.odoo_journal_id if self.instance is not None else None,
+        )
+        if incluir_odoo and (conector is None or not journal_id):
+            raise serializers.ValidationError(
+                {
+                    "incluir_pagos_odoo": (
+                        "Para consultar pagos candidatos en Odoo debe indicar "
+                        "id_conector_odoo y odoo_journal_id."
+                    )
+                }
+            )
+        return attrs
+
+
+class PropuestaConciliacionBancariaSerializer(serializers.ModelSerializer):
+    movimiento_fecha = serializers.DateField(
+        source="id_movimiento_bancario.fecha_mov", read_only=True
+    )
+    movimiento_tipo = serializers.CharField(
+        source="id_movimiento_bancario.tipo", read_only=True
+    )
+    movimiento_monto = serializers.DecimalField(
+        source="id_movimiento_bancario.monto",
+        max_digits=18,
+        decimal_places=2,
+        read_only=True,
+    )
+    movimiento_referencia = serializers.CharField(
+        source="id_movimiento_bancario.referencia", read_only=True
+    )
+    movimiento_descripcion = serializers.CharField(
+        source="id_movimiento_bancario.descripcion", read_only=True
+    )
+    movimiento_categoria = serializers.CharField(
+        source="id_movimiento_bancario.categoria_clasificacion", read_only=True
+    )
+    movimiento_huella = serializers.CharField(
+        source="id_movimiento_bancario.huella", read_only=True
+    )
+    cuenta_bancaria_id = serializers.UUIDField(
+        source="id_movimiento_bancario.id_cuenta_bancaria_id", read_only=True
+    )
+    cuenta_nombre_banco = serializers.CharField(
+        source="id_movimiento_bancario.id_cuenta_bancaria.nombre_banco", read_only=True
+    )
+    cuenta_numero = serializers.CharField(
+        source="id_movimiento_bancario.id_cuenta_bancaria.numero_cuenta", read_only=True
+    )
+    moneda = serializers.CharField(
+        source="id_movimiento_bancario.id_cuenta_bancaria.id_moneda.codigo_iso",
+        read_only=True,
+    )
+    decidida_por_username = serializers.CharField(
+        source="decidida_por.username", read_only=True, default=""
+    )
+
+    class Meta:
+        model = PropuestaConciliacionBancaria
+        fields = [
+            "id",
+            "id_empresa",
+            "id_movimiento_bancario",
+            "cuenta_bancaria_id",
+            "cuenta_nombre_banco",
+            "cuenta_numero",
+            "moneda",
+            "movimiento_fecha",
+            "movimiento_tipo",
+            "movimiento_monto",
+            "movimiento_referencia",
+            "movimiento_descripcion",
+            "movimiento_categoria",
+            "movimiento_huella",
+            "tipo",
+            "regla",
+            "motivo",
+            "fuente_pago",
+            "id_pago_nativo",
+            "pago_externo_id",
+            "pago_nombre",
+            "pago_socio",
+            "id_cuenta_contable",
+            "cuenta_contable_codigo",
+            "puntaje",
+            "candidatos_json",
+            "estado",
+            "ultimo_comentario",
+            "decidida_por",
+            "decidida_por_username",
+            "decidida_en",
+            "generada_en",
+            "actualizada_en",
+            "activo",
+        ]
+        read_only_fields = fields
+
+
+class GenerarPropuestasRequestSerializer(serializers.Serializer):
+    empresa = serializers.UUIDField(required=False)
+    cuenta_bancaria = serializers.UUIDField(required=True)
+    desde = serializers.DateField(required=False, allow_null=True)
+    hasta = serializers.DateField(required=False, allow_null=True)
+    incluir_odoo = serializers.BooleanField(required=False, allow_null=True, default=None)
+
+
+class GenerarPropuestasResponseSerializer(serializers.Serializer):
+    nuevas = serializers.IntegerField(read_only=True)
+    actualizadas = serializers.IntegerField(read_only=True)
+    ya_decididas = serializers.IntegerField(read_only=True)
+    total_evaluados = serializers.IntegerField(read_only=True)
+
+
+class DecidirPropuestaRequestSerializer(serializers.Serializer):
+    accion = serializers.ChoiceField(
+        choices=["APROBAR", "RECHAZAR", "CORREGIR", "REABRIR", "aprobar", "rechazar", "corregir", "reabrir"],
+        required=True,
+    )
+    pago_nativo_id = serializers.UUIDField(required=False, allow_null=True)
+    pago_externo_id = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default="", max_length=64
+    )
+    pago_nombre = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default="", max_length=200
+    )
+    cuenta_contable_id = serializers.UUIDField(required=False, allow_null=True)
+    cuenta_contable_codigo = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default="", max_length=150
+    )
+    comentario = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default="", max_length=1000
+    )
+
+
+class DecisionPreconciliacionBancariaSerializer(serializers.ModelSerializer):
+    movimiento_referencia = serializers.CharField(
+        source="id_movimiento_bancario.referencia", read_only=True
+    )
+    movimiento_descripcion = serializers.CharField(
+        source="id_movimiento_bancario.descripcion", read_only=True
+    )
+
+    class Meta:
+        model = DecisionPreconciliacionBancaria
+        fields = [
+            "id",
+            "id_empresa",
+            "id_propuesta",
+            "id_movimiento_bancario",
+            "movimiento_referencia",
+            "movimiento_descripcion",
+            "accion",
+            "estado_anterior_json",
+            "estado_nuevo_json",
+            "comentario",
+            "id_usuario",
+            "usuario_nombre",
+            "fecha_decision",
+            "activo",
+        ]
+        read_only_fields = fields
+
