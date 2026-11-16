@@ -705,3 +705,24 @@ def test_gasto_no_usa_el_proveedor_ni_la_categoria_de_otra_empresa(
         g.id_proveedor.id_empresa_id == empresa_a.pk
         and g.id_categoria_gasto.id_empresa_id == empresa_a.pk
     )
+
+
+@pytest.mark.tenant
+def test_gasto_no_usa_moneda_privada_de_otra_empresa(
+    api, bot_usuario, monedas, empresa_a, empresa_b
+):  # noqa: F811
+    Moneda.objects.create(
+        codigo_iso="TKB",
+        nombre="Token Privado B",
+        simbolo="TB",
+        tipo_moneda="otro",
+        es_generica=False,
+        es_publica=False,
+        empresa=empresa_b,
+    )
+    r = enviar(api, "gasto", _gasto(moneda="TKB"))
+    assert r.status_code == 422
+    assert "no existe en Omni" in r.data["error"]
+    assert "moneda" in r.data["faltan"]
+    assert not Gasto.objects.filter(id_empresa=empresa_a).exists()
+

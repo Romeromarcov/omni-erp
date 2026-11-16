@@ -764,7 +764,12 @@ def _rif_provisional(nombre: str) -> str:
     import hashlib
 
     base = " ".join((nombre or "").split()).upper()
-    return "PEND-" + hashlib.sha1(base.encode("utf-8")).hexdigest()[:8].upper()
+    return (
+        "PEND-"
+        + hashlib.sha1(base.encode("utf-8"), usedforsecurity=False)
+        .hexdigest()[:8]
+        .upper()
+    )
 
 
 def _asegurar_contacto_proveedor(ctx: Ctx, prov):
@@ -864,7 +869,9 @@ _ALIAS_VES = {
 }
 
 
-def _moneda_omni(codigo: str):
+def _moneda_omni(empresa, codigo: str):
+    from django.db.models import Q
+
     from apps.finanzas.models import Moneda
 
     c = (codigo or "").strip().upper()
@@ -874,8 +881,15 @@ def _moneda_omni(codigo: str):
         candidatos = ("USD",)
     else:
         candidatos = (c,)
+    visibles = Moneda.objects.filter(
+        Q(empresa__isnull=True)
+        | Q(es_generica=True)
+        | Q(es_publica=True)
+        | Q(empresa=empresa),
+        activo=True,
+    )
     for cod in candidatos:
-        m = Moneda.objects.filter(codigo_iso__iexact=cod).first()
+        m = visibles.filter(codigo_iso__iexact=cod).first()
         if m is not None:
             return m
     raise HandlerError(f"La moneda «{codigo}» no existe en Omni.", faltan=["moneda"])
@@ -926,7 +940,7 @@ def gasto(ctx: Ctx) -> Resultado:
     if faltan:
         return Resultado(incompleto=faltan, estado="INCOMPLETO")
 
-    moneda = _moneda_omni(p["moneda"])
+    moneda = _moneda_omni(ctx.empresa, p["moneda"])
     numero = (
         str(p["numero_factura"]).strip()
         if not _vacio(p.get("numero_factura"))
