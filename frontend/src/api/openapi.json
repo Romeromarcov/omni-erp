@@ -39610,6 +39610,1487 @@
             },
             "parameters": []
         },
+        "/tareas/alertas/": {
+            "get": {
+                "operationId": "tareas_alertas_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/RegistroAlertaTarea"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/alertas/{id_alerta_tarea}/": {
+            "get": {
+                "operationId": "tareas_alertas_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RegistroAlertaTarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_alerta_tarea",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/areas/": {
+            "get": {
+                "operationId": "tareas_areas_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/AreaOperativa"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_areas_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/areas/{id_area}/": {
+            "get": {
+                "operationId": "tareas_areas_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "put": {
+                "operationId": "tareas_areas_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "patch": {
+                "operationId": "tareas_areas_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "delete": {
+                "operationId": "tareas_areas_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_area",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/areas/{id_area}/miembros/": {
+            "post": {
+                "operationId": "tareas_areas_sincronizar_miembros",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AreaOperativa"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_area",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/configuracion/": {
+            "get": {
+                "operationId": "tareas_configuracion_list",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "patch": {
+                "operationId": "tareas_configuracion_partial_update",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/items/": {
+            "get": {
+                "operationId": "tareas_items_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Tarea"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_items_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/items/{id}/": {
+            "get": {
+                "operationId": "tareas_items_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "put": {
+                "operationId": "tareas_items_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "patch": {
+                "operationId": "tareas_items_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "delete": {
+                "operationId": "tareas_items_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/items/{id}/cambiar-estado/": {
+            "post": {
+                "operationId": "tareas_items_cambiar_estado",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/items/{id}/comentarios/": {
+            "get": {
+                "operationId": "tareas_items_comentarios_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_items_comentarios_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/items/{id}/dependencias/": {
+            "get": {
+                "operationId": "tareas_items_dependencias_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_items_dependencias_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/items/{id}/mover/": {
+            "post": {
+                "operationId": "tareas_items_mover",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarea"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/minutas/": {
+            "get": {
+                "operationId": "tareas_minutas_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/MinutaReunion"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_minutas_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MinutaReunion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MinutaReunion"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/minutas/{id_minuta}/": {
+            "get": {
+                "operationId": "tareas_minutas_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MinutaReunion"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "delete": {
+                "operationId": "tareas_minutas_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_minuta",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/minutas/{id_minuta}/confirmar/": {
+            "post": {
+                "operationId": "tareas_minutas_confirmar",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MinutaReunion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MinutaReunion"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_minuta",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/proyectos/": {
+            "get": {
+                "operationId": "tareas_proyectos_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Proyecto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_proyectos_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/proyectos/mi-tablero/": {
+            "post": {
+                "operationId": "tareas_proyectos_mi_tablero",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/proyectos/{id}/": {
+            "get": {
+                "operationId": "tareas_proyectos_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "put": {
+                "operationId": "tareas_proyectos_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "patch": {
+                "operationId": "tareas_proyectos_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Proyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "delete": {
+                "operationId": "tareas_proyectos_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/recurrentes/": {
+            "get": {
+                "operationId": "tareas_recurrentes_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlantillaTareaRecurrente"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_recurrentes_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/recurrentes/materializar/": {
+            "post": {
+                "operationId": "tareas_recurrentes_materializar",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/recurrentes/{id_plantilla_recurrente}/": {
+            "get": {
+                "operationId": "tareas_recurrentes_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "put": {
+                "operationId": "tareas_recurrentes_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "patch": {
+                "operationId": "tareas_recurrentes_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PlantillaTareaRecurrente"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "delete": {
+                "operationId": "tareas_recurrentes_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_plantilla_recurrente",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/resumen/": {
+            "get": {
+                "operationId": "tareas_resumen_list",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/secciones/": {
+            "get": {
+                "operationId": "tareas_secciones_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/SeccionProyecto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "post": {
+                "operationId": "tareas_secciones_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SeccionProyecto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SeccionProyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
+        "/tareas/secciones/{id}/": {
+            "get": {
+                "operationId": "tareas_secciones_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SeccionProyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "put": {
+                "operationId": "tareas_secciones_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SeccionProyecto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SeccionProyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "patch": {
+                "operationId": "tareas_secciones_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SeccionProyecto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SeccionProyecto"
+                        }
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "delete": {
+                "operationId": "tareas_secciones_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/tareas/seguimiento/ejecutar/": {
+            "post": {
+                "operationId": "tareas_seguimiento_ejecutar_create",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "tareas"
+                ]
+            },
+            "parameters": []
+        },
         "/tesoreria/cajas/": {
             "get": {
                 "operationId": "tesoreria_cajas_list",
@@ -51090,7 +52571,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-16T17:21:52.055970-04:00"
+                    "default": "2026-11-17T08:51:04.703387-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -58982,6 +60463,883 @@
                     "title": "Id categoria ticket",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "RegistroAlertaTarea": {
+            "type": "object",
+            "properties": {
+                "id_alerta_tarea": {
+                    "title": "Id alerta tarea",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "tarea": {
+                    "title": "Tarea",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "tarea_titulo": {
+                    "title": "Tarea titulo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "clave_alerta": {
+                    "title": "Clave alerta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "destinatario": {
+                    "title": "Destinatario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "canal": {
+                    "title": "Canal",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "detalle": {
+                    "title": "Detalle",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "AreaOperativa": {
+            "required": [
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_area": {
+                    "title": "Id area",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 120,
+                    "minLength": 1
+                },
+                "slug": {
+                    "title": "Slug",
+                    "type": "string",
+                    "format": "slug",
+                    "pattern": "^[-a-zA-Z0-9_]+$",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "color": {
+                    "title": "Color",
+                    "type": "string",
+                    "maxLength": 16,
+                    "minLength": 1
+                },
+                "departamento": {
+                    "title": "Departamento",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "lider": {
+                    "title": "Lider",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "lider_nombre": {
+                    "title": "Lider nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "palabras_clave": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "minLength": 1
+                    },
+                    "default": []
+                },
+                "miembros": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    },
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "Tarea": {
+            "required": [
+                "titulo"
+            ],
+            "type": "object",
+            "properties": {
+                "id_tarea": {
+                    "title": "Id tarea",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "titulo": {
+                    "title": "Titulo",
+                    "type": "string",
+                    "maxLength": 240,
+                    "minLength": 1
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string"
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "PENDIENTE",
+                        "EN_EJECUCION",
+                        "EN_REVISION",
+                        "COMPLETADA",
+                        "BLOQUEADA",
+                        "CANCELADA"
+                    ]
+                },
+                "prioridad": {
+                    "title": "Prioridad",
+                    "type": "string",
+                    "enum": [
+                        "BAJA",
+                        "MEDIA",
+                        "ALTA",
+                        "URGENTE"
+                    ]
+                },
+                "origen": {
+                    "title": "Origen",
+                    "type": "string",
+                    "enum": [
+                        "WEB",
+                        "BOT",
+                        "MINUTA_IA",
+                        "RECURRENCIA",
+                        "AGENTE",
+                        "ERP_EVENTO"
+                    ]
+                },
+                "proyecto": {
+                    "title": "Proyecto",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "proyecto_nombre": {
+                    "title": "Proyecto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "minLength": 1
+                },
+                "seccion": {
+                    "title": "Seccion",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "seccion_nombre": {
+                    "title": "Seccion nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "minLength": 1
+                },
+                "area": {
+                    "title": "Area",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "area_nombre": {
+                    "title": "Area nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "minLength": 1
+                },
+                "tarea_padre": {
+                    "title": "Tarea padre",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "asignado_a": {
+                    "title": "Asignado a",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "asignado_nombre": {
+                    "title": "Asignado nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "creado_por": {
+                    "title": "Creado por",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_inicio": {
+                    "title": "Fecha inicio",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "hora_vencimiento": {
+                    "title": "Hora vencimiento",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "completada_en": {
+                    "title": "Completada en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "bloqueada_por_escalacion": {
+                    "title": "Bloqueada por escalacion",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "motivo_bloqueo": {
+                    "title": "Motivo bloqueo",
+                    "type": "string",
+                    "maxLength": 280
+                },
+                "entidad_tipo": {
+                    "title": "Entidad tipo",
+                    "description": "Etiqueta 'app.Modelo' del objeto vinculado (ej. ventas.Pedido).",
+                    "type": "string",
+                    "maxLength": 80
+                },
+                "entidad_id": {
+                    "title": "Entidad id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "plantilla_recurrente": {
+                    "title": "Plantilla recurrente",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "minuta_origen": {
+                    "title": "Minuta origen",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "idempotency_key": {
+                    "title": "Idempotency key",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 120
+                },
+                "orden_tablero": {
+                    "title": "Orden tablero",
+                    "type": "integer",
+                    "maximum": 2147483647,
+                    "minimum": 0
+                },
+                "usar_tablero_personal_si_falta": {
+                    "title": "Usar tablero personal si falta",
+                    "type": "boolean",
+                    "default": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "MinutaItemPropuesto": {
+            "type": "object",
+            "properties": {
+                "titulo": {
+                    "title": "Titulo",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 240
+                },
+                "task_name": {
+                    "title": "Task name",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 240
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string",
+                    "default": ""
+                },
+                "notes": {
+                    "title": "Notes",
+                    "type": "string",
+                    "default": ""
+                },
+                "prioridad": {
+                    "title": "Prioridad",
+                    "type": "string",
+                    "enum": [
+                        "BAJA",
+                        "MEDIA",
+                        "ALTA",
+                        "URGENTE"
+                    ],
+                    "default": "MEDIA"
+                },
+                "asignado_a_id": {
+                    "title": "Asignado a id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "asignado_nombre": {
+                    "title": "Asignado nombre",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 150
+                },
+                "assignee_name": {
+                    "title": "Assignee name",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 150
+                },
+                "area": {
+                    "title": "Area",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 120
+                },
+                "area_id": {
+                    "title": "Area id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "maxLength": 40,
+                    "x-nullable": true
+                },
+                "due_on": {
+                    "title": "Due on",
+                    "type": "string",
+                    "maxLength": 40,
+                    "x-nullable": true
+                }
+            },
+            "default": {
+                "titulo": "",
+                "task_name": "",
+                "descripcion": "",
+                "notes": "",
+                "prioridad": "MEDIA",
+                "asignado_a_id": null,
+                "asignado_nombre": "",
+                "assignee_name": "",
+                "area": "",
+                "area_id": null,
+                "fecha_vencimiento": null,
+                "due_on": null
+            }
+        },
+        "MinutaReunion": {
+            "required": [
+                "titulo"
+            ],
+            "type": "object",
+            "properties": {
+                "id_minuta": {
+                    "title": "Id minuta",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "titulo": {
+                    "title": "Titulo",
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                },
+                "fecha_reunion": {
+                    "title": "Fecha reunion",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "texto_fuente": {
+                    "title": "Texto fuente",
+                    "type": "string"
+                },
+                "documento_adjunto": {
+                    "title": "Documento adjunto",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "items_propuestos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MinutaItemPropuesto"
+                    },
+                    "default": []
+                },
+                "borrador_tareas": {
+                    "title": "Borrador tareas",
+                    "description": "Ítems estructurados propuestos antes de materializar las tareas.",
+                    "type": "object",
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "BORRADOR",
+                        "CONFIRMADA",
+                        "DESCARTADA"
+                    ],
+                    "readOnly": true
+                },
+                "creado_por": {
+                    "title": "Creado por",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "confirmada_en": {
+                    "title": "Confirmada en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "Proyecto": {
+            "required": [
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_proyecto": {
+                    "title": "Id proyecto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 160,
+                    "minLength": 1
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string"
+                },
+                "color": {
+                    "title": "Color",
+                    "type": "string",
+                    "maxLength": 16,
+                    "minLength": 1
+                },
+                "vista_predeterminada": {
+                    "title": "Vista predeterminada",
+                    "type": "string",
+                    "enum": [
+                        "TABLERO",
+                        "LISTA",
+                        "CALENDARIO"
+                    ]
+                },
+                "es_personal": {
+                    "title": "Es personal",
+                    "description": "True si es el tablero personal automático de un colaborador.",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": false
+                },
+                "archivado": {
+                    "title": "Archivado",
+                    "type": "boolean"
+                },
+                "area": {
+                    "title": "Area",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "area_nombre": {
+                    "title": "Area nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "minLength": 1
+                },
+                "propietario": {
+                    "title": "Propietario",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "propietario_nombre": {
+                    "title": "Propietario nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "secciones": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    },
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "PlantillaTareaRecurrente": {
+            "required": [
+                "titulo",
+                "frecuencia",
+                "proxima_ejecucion"
+            ],
+            "type": "object",
+            "properties": {
+                "id_plantilla_recurrente": {
+                    "title": "Id plantilla recurrente",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "titulo": {
+                    "title": "Titulo",
+                    "type": "string",
+                    "maxLength": 240,
+                    "minLength": 1
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string"
+                },
+                "prioridad": {
+                    "title": "Prioridad",
+                    "type": "string",
+                    "enum": [
+                        "BAJA",
+                        "MEDIA",
+                        "ALTA",
+                        "URGENTE"
+                    ]
+                },
+                "frecuencia": {
+                    "title": "Frecuencia",
+                    "type": "string",
+                    "enum": [
+                        "INTRADIA",
+                        "DIARIA",
+                        "SEMANAL",
+                        "QUINCENAL",
+                        "MENSUAL"
+                    ]
+                },
+                "dias_semana": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "maximum": 6,
+                        "minimum": 0
+                    },
+                    "default": []
+                },
+                "dia_mes": {
+                    "title": "Dia mes",
+                    "type": "integer",
+                    "maximum": 31,
+                    "minimum": 1,
+                    "x-nullable": true
+                },
+                "horas_dia": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                        "minLength": 1
+                    },
+                    "default": []
+                },
+                "proxima_ejecucion": {
+                    "title": "Proxima ejecucion",
+                    "type": "string",
+                    "format": "date"
+                },
+                "ultima_generacion_en": {
+                    "title": "Ultima generacion en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "proyecto": {
+                    "title": "Proyecto",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "area": {
+                    "title": "Area",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "asignado_a": {
+                    "title": "Asignado a",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "asignado_nombre": {
+                    "title": "Asignado nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "creado_por": {
+                    "title": "Creado por",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "SeccionProyecto": {
+            "required": [
+                "proyecto",
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_seccion": {
+                    "title": "Id seccion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "proyecto": {
+                    "title": "Proyecto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "estado_destino": {
+                    "title": "Estado destino",
+                    "type": "string",
+                    "enum": [
+                        "PENDIENTE",
+                        "EN_EJECUCION",
+                        "EN_REVISION",
+                        "COMPLETADA",
+                        "BLOQUEADA",
+                        "CANCELADA"
+                    ]
+                },
+                "orden": {
+                    "title": "Orden",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true,
+                    "default": true
                 }
             }
         },

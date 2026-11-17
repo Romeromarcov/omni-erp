@@ -649,3 +649,56 @@ export const notificacionesKeys = {
   all: () => ['notificaciones'] as const,
   mis: (soloNoLeidas: boolean) => ['notificaciones', 'mis', soloNoLeidas] as const,
 };
+
+// ── Tareas y Proyectos Operativos (Fase B — reemplazo nativo de Asana) ────────
+// Todas las keys incluyen `empresaId` en el segundo segmento para aislar el
+// caché persistido entre tenants (R-CODE-1) y permitir invalidación jerárquica.
+export interface FiltroTareasKey {
+  proyecto?: string | null;
+  estado?: string | null;
+  prioridad?: string | null;
+  area?: string | null;
+  asignado_a?: string | null;
+  vencidas?: boolean | null;
+  search?: string | null;
+}
+
+export const tareasKeys = {
+  all: () => ['tareas'] as const,
+  porEmpresa: (empresaId?: string | null) => ['tareas', empresaId ?? null] as const,
+  areas: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'areas'] as const,
+  proyectos: (empresaId?: string | null, archivado?: boolean | null) =>
+    ['tareas', empresaId ?? null, 'proyectos', archivado ?? null] as const,
+  miTablero: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'mi-tablero'] as const,
+  secciones: (empresaId?: string | null, proyectoId?: string | null) =>
+    ['tareas', empresaId ?? null, 'secciones', proyectoId ?? null] as const,
+  itemsAll: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'items'] as const,
+  items: (empresaId?: string | null, filtros?: FiltroTareasKey) =>
+    [
+      'tareas',
+      empresaId ?? null,
+      'items',
+      'list',
+      filtros?.proyecto ?? null,
+      filtros?.estado ?? null,
+      filtros?.prioridad ?? null,
+      filtros?.area ?? null,
+      filtros?.asignado_a ?? null,
+      filtros?.vencidas ?? null,
+      filtros?.search ?? null,
+    ] as const,
+  item: (empresaId: string | null | undefined, id: string) =>
+    ['tareas', empresaId ?? null, 'items', 'detail', id] as const,
+  comentarios: (empresaId: string | null | undefined, tareaId: string) =>
+    ['tareas', empresaId ?? null, 'items', 'comentarios', tareaId] as const,
+  dependencias: (empresaId: string | null | undefined, tareaId: string) =>
+    ['tareas', empresaId ?? null, 'items', 'dependencias', tareaId] as const,
+  recurrentes: (empresaId?: string | null) =>
+    ['tareas', empresaId ?? null, 'recurrentes'] as const,
+  minutas: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'minutas'] as const,
+  configuracion: (empresaId?: string | null) =>
+    ['tareas', empresaId ?? null, 'configuracion'] as const,
+  resumen: (empresaId?: string | null, fecha?: string | null) =>
+    ['tareas', empresaId ?? null, 'resumen', fecha ?? null] as const,
+  alertas: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'alertas'] as const,
+};
