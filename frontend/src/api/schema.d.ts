@@ -11481,6 +11481,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tesoreria/configuraciones-conciliacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        get: operations["tesoreria_configuraciones-conciliacion_list"];
+        put?: never;
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        post: operations["tesoreria_configuraciones-conciliacion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/configuraciones-conciliacion/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        get: operations["tesoreria_configuraciones-conciliacion_read"];
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        put: operations["tesoreria_configuraciones-conciliacion_update"];
+        post?: never;
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        delete: operations["tesoreria_configuraciones-conciliacion_delete"];
+        options?: never;
+        head?: never;
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        patch: operations["tesoreria_configuraciones-conciliacion_partial_update"];
+        trace?: never;
+    };
     "/tesoreria/extractos-bancarios/": {
         parameters: {
             query?: never;
@@ -11767,6 +11808,162 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["tesoreria_operaciones-cambio-divisa_partial_update"];
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/aprobadas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_aprobadas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/bitacora/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_bitacora"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/generar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        post: operations["tesoreria_propuestas-conciliacion_generar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/{id}/decidir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        post: operations["tesoreria_propuestas-conciliacion_decidir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/ventas/comisiones/": {
@@ -16344,7 +16541,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-16T15:55:53.789796-04:00
+             * @default 2026-11-16T17:21:52.055970-04:00
              */
             fecha_despacho: string;
             /**
@@ -21252,6 +21449,76 @@ export interface components {
             /** Observaciones */
             observaciones?: string;
         };
+        ConfiguracionConciliacionCuenta: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria: string;
+            /** Cuenta nombre banco */
+            readonly cuenta_nombre_banco?: string;
+            /** Cuenta numero */
+            readonly cuenta_numero?: string;
+            /**
+             * Id cuenta comisiones
+             * Format: uuid
+             */
+            id_cuenta_comisiones?: string | null;
+            /** Codigo cuenta comisiones */
+            codigo_cuenta_comisiones?: string;
+            /**
+             * Id cuenta igtf
+             * Format: uuid
+             */
+            id_cuenta_igtf?: string | null;
+            /** Codigo cuenta igtf */
+            codigo_cuenta_igtf?: string;
+            /**
+             * Id cuenta transito pendientes
+             * Format: uuid
+             */
+            id_cuenta_transito_pendientes?: string | null;
+            /** Codigo cuenta transito pendientes */
+            codigo_cuenta_transito_pendientes?: string;
+            /**
+             * Id conector odoo
+             * Format: uuid
+             */
+            id_conector_odoo?: string | null;
+            /** Odoo journal id */
+            odoo_journal_id?: number | null;
+            /** Ventana dias */
+            ventana_dias?: number;
+            /** Incluir pagos nativos */
+            incluir_pagos_nativos?: boolean;
+            /** Incluir pagos odoo */
+            incluir_pagos_odoo?: boolean;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha actualizacion
+             * Format: date-time
+             */
+            readonly fecha_actualizacion?: string;
+        };
         ExtractoBancarioArchivo: {
             /**
              * Id
@@ -21634,6 +21901,254 @@ export interface components {
              * Format: uuid
              */
             casa_de_cambio?: string | null;
+        };
+        PropuestaConciliacionBancaria: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id movimiento bancario
+             * Format: uuid
+             */
+            readonly id_movimiento_bancario?: string;
+            /**
+             * Cuenta bancaria id
+             * Format: uuid
+             */
+            readonly cuenta_bancaria_id?: string;
+            /** Cuenta nombre banco */
+            readonly cuenta_nombre_banco?: string;
+            /** Cuenta numero */
+            readonly cuenta_numero?: string;
+            /** Moneda */
+            readonly moneda?: string;
+            /**
+             * Movimiento fecha
+             * Format: date
+             */
+            readonly movimiento_fecha?: string;
+            /** Movimiento tipo */
+            readonly movimiento_tipo?: string;
+            /**
+             * Movimiento monto
+             * Format: decimal
+             */
+            readonly movimiento_monto?: string;
+            /** Movimiento referencia */
+            readonly movimiento_referencia?: string;
+            /** Movimiento descripcion */
+            readonly movimiento_descripcion?: string;
+            /** Movimiento categoria */
+            readonly movimiento_categoria?: string;
+            /** Movimiento huella */
+            readonly movimiento_huella?: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            readonly tipo?: "PAGO" | "CUENTA" | "AMBIGUO" | "SIN_PROPUESTA";
+            /** Regla */
+            readonly regla?: string;
+            /** Motivo */
+            readonly motivo?: string;
+            /**
+             * Fuente pago
+             * @default
+             * @enum {string}
+             */
+            readonly fuente_pago: "" | "OMNI" | "ODOO";
+            /**
+             * Id pago nativo
+             * Format: uuid
+             */
+            readonly id_pago_nativo?: string | null;
+            /**
+             * Pago externo id
+             * @default
+             */
+            readonly pago_externo_id: string;
+            /** Pago nombre */
+            readonly pago_nombre?: string;
+            /** Pago socio */
+            readonly pago_socio?: string;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string | null;
+            /** Cuenta contable codigo */
+            readonly cuenta_contable_codigo?: string;
+            /** Puntaje */
+            readonly puntaje?: number;
+            /** Candidatos json */
+            readonly candidatos_json?: Record<string, never>;
+            /**
+             * Estado
+             * @default PENDIENTE
+             * @enum {string}
+             */
+            readonly estado: "PENDIENTE" | "APROBADA" | "RECHAZADA" | "CORREGIDA";
+            /** Ultimo comentario */
+            readonly ultimo_comentario?: string;
+            /**
+             * Decidida por
+             * Format: uuid
+             */
+            readonly decidida_por?: string | null;
+            /**
+             * Decidida por username
+             * @default
+             */
+            readonly decidida_por_username: string;
+            /**
+             * Decidida en
+             * Format: date-time
+             */
+            readonly decidida_en?: string | null;
+            /**
+             * Generada en
+             * Format: date-time
+             */
+            readonly generada_en?: string;
+            /**
+             * Actualizada en
+             * Format: date-time
+             */
+            readonly actualizada_en?: string;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+        };
+        DecisionPreconciliacionBancaria: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id propuesta
+             * Format: uuid
+             */
+            readonly id_propuesta?: string;
+            /**
+             * Id movimiento bancario
+             * Format: uuid
+             */
+            readonly id_movimiento_bancario?: string;
+            /** Movimiento referencia */
+            readonly movimiento_referencia?: string;
+            /** Movimiento descripcion */
+            readonly movimiento_descripcion?: string;
+            /**
+             * Accion
+             * @enum {string}
+             */
+            readonly accion?: "APROBAR" | "RECHAZAR" | "CORREGIR" | "REABRIR";
+            /** Estado anterior json */
+            readonly estado_anterior_json?: Record<string, never>;
+            /** Estado nuevo json */
+            readonly estado_nuevo_json?: Record<string, never>;
+            /** Comentario */
+            readonly comentario?: string;
+            /**
+             * Id usuario
+             * Format: uuid
+             */
+            readonly id_usuario?: string | null;
+            /** Usuario nombre */
+            readonly usuario_nombre?: string;
+            /**
+             * Fecha decision
+             * Format: date-time
+             */
+            readonly fecha_decision?: string;
+            /** Activo */
+            readonly activo?: boolean;
+        };
+        GenerarPropuestasRequest: {
+            /**
+             * Empresa
+             * Format: uuid
+             */
+            empresa?: string;
+            /**
+             * Cuenta bancaria
+             * Format: uuid
+             */
+            cuenta_bancaria: string;
+            /**
+             * Desde
+             * Format: date
+             */
+            desde?: string | null;
+            /**
+             * Hasta
+             * Format: date
+             */
+            hasta?: string | null;
+            /** Incluir odoo */
+            incluir_odoo?: boolean | null;
+        };
+        GenerarPropuestasResponse: {
+            /** Nuevas */
+            readonly nuevas?: number;
+            /** Actualizadas */
+            readonly actualizadas?: number;
+            /** Ya decididas */
+            readonly ya_decididas?: number;
+            /** Total evaluados */
+            readonly total_evaluados?: number;
+        };
+        DecidirPropuestaRequest: {
+            /**
+             * Accion
+             * @enum {string}
+             */
+            accion: "APROBAR" | "RECHAZAR" | "CORREGIR" | "REABRIR" | "aprobar" | "rechazar" | "corregir" | "reabrir";
+            /**
+             * Pago nativo id
+             * Format: uuid
+             */
+            pago_nativo_id?: string | null;
+            /**
+             * Pago externo id
+             * @default
+             */
+            pago_externo_id: string | null;
+            /**
+             * Pago nombre
+             * @default
+             */
+            pago_nombre: string | null;
+            /**
+             * Cuenta contable id
+             * Format: uuid
+             */
+            cuenta_contable_id?: string | null;
+            /**
+             * Cuenta contable codigo
+             * @default
+             */
+            cuenta_contable_codigo: string | null;
+            /**
+             * Comentario
+             * @default
+             */
+            comentario: string | null;
         };
         ComisionVenta: {
             /**
@@ -22823,6 +23338,11 @@ export interface components {
         Cargo: {
             content: {
                 "application/json": components["schemas"]["Cargo"];
+            };
+        };
+        ConfiguracionConciliacionCuenta: {
+            content: {
+                "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
             };
         };
         DetalleNomina: {
@@ -52061,6 +52581,146 @@ export interface operations {
             };
         };
     };
+    "tesoreria_configuraciones-conciliacion_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                empresa?: string;
+                cuenta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConfiguracionConciliacionCuenta"][];
+                    };
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacionCuenta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacionCuenta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacionCuenta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
     "tesoreria_extractos-bancarios_list": {
         parameters: {
             query?: {
@@ -52653,6 +53313,177 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OperacionCambioDivisa"];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                empresa?: string;
+                cuenta?: string;
+                estado?: string;
+                tipo?: string;
+                regla?: string;
+                desde?: string;
+                hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PropuestaConciliacionBancaria"][];
+                    };
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_aprobadas": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                empresa?: string;
+                cuenta?: string;
+                decididas_desde?: string;
+                decididas_hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropuestaConciliacionBancaria"][];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_bitacora": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                empresa?: string;
+                propuesta?: string;
+                movimiento?: string;
+                accion?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionPreconciliacionBancaria"][];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_generar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarPropuestasRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerarPropuestasResponse"];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropuestaConciliacionBancaria"];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_decidir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecidirPropuestaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropuestaConciliacionBancaria"];
                 };
             };
         };

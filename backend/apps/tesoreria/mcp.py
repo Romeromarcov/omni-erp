@@ -133,6 +133,156 @@ def tesoreria_listar_extractos(
     ]
 
 
+def tesoreria_listar_propuestas_conciliacion(
+    capability_token: str,
+    empresa_id: str,
+    cuenta_id: str | None = None,
+    estado: str | None = None,
+    tipo: str | None = None,
+    limite: int = 50,
+) -> list[dict[str, Any]]:
+    """Lista las propuestas de pre-conciliación bancaria de la empresa.
+
+    Scope requerido: ``tesoreria:read``
+    """
+    from apps.tesoreria.models import PropuestaConciliacionBancaria  # noqa: PLC0415
+
+    ctx = _ctx(capability_token, f"{_SCOPE}:read")
+    if str(empresa_id) != ctx["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    if cuenta_id:
+        try:
+            uuid.UUID(str(cuenta_id))
+        except (ValueError, TypeError) as exc:
+            raise ValueError("cuenta_id no es un UUID válido.") from exc
+
+    empresa = _empresa_activa(ctx["empresa_id"])
+    try:
+        limite_int = int(limite)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("limite debe ser un entero válido.") from exc
+    tope = max(1, min(limite_int, 200))
+
+    qs = (
+        PropuestaConciliacionBancaria.objects.filter(
+            id_empresa=empresa, activo=True, id_movimiento_bancario__activo=True
+        )
+        .select_related("id_movimiento_bancario__id_cuenta_bancaria")
+        .order_by(
+            "-id_movimiento_bancario__fecha_mov",
+            "-id_movimiento_bancario__orden_en_archivo",
+            "-generada_en",
+        )
+    )
+    if cuenta_id:
+        qs = qs.filter(id_movimiento_bancario__id_cuenta_bancaria_id=uuid.UUID(str(cuenta_id)))
+    if estado:
+        qs = qs.filter(estado=str(estado).replace("\x00", "").strip().upper())
+    if tipo:
+        qs = qs.filter(tipo=str(tipo).replace("\x00", "").strip().upper())
+
+    items = list(qs[:tope])
+    logger.info(
+        "tesoreria_listar_propuestas_conciliacion | actor=%s | tenant=%s | count=%d",
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(items),
+    )
+    return [
+        {
+            "id": str(p.id),
+            "movimiento_id": str(p.id_movimiento_bancario_id),
+            "cuenta_id": str(p.id_movimiento_bancario.id_cuenta_bancaria_id),
+            "nombre_banco": p.id_movimiento_bancario.id_cuenta_bancaria.nombre_banco,
+            "fecha": p.id_movimiento_bancario.fecha_mov.isoformat(),
+            "tipo_movimiento": p.id_movimiento_bancario.tipo,
+            "monto": f"{p.id_movimiento_bancario.monto:.2f}",
+            "referencia": p.id_movimiento_bancario.referencia,
+            "descripcion": p.id_movimiento_bancario.descripcion,
+            "tipo_propuesta": p.tipo,
+            "regla": p.regla,
+            "motivo": p.motivo,
+            "fuente_pago": p.fuente_pago,
+            "id_pago_nativo": str(p.id_pago_nativo_id) if p.id_pago_nativo_id else None,
+            "pago_externo_id": p.pago_externo_id or None,
+            "pago_nombre": p.pago_nombre,
+            "pago_socio": p.pago_socio,
+            "cuenta_contable_codigo": p.cuenta_contable_codigo,
+            "puntaje": p.puntaje,
+            "estado": p.estado,
+        }
+        for p in items
+    ]
+
+
+def tesoreria_generar_propuestas_conciliacion(
+    capability_token: str,
+    empresa_id: str,
+    cuenta_id: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    incluir_odoo: bool | None = None,
+) -> dict[str, Any]:
+    """Ejecuta el motor determinístico R1/R2/R3 de pre-conciliación para una cuenta bancaria.
+
+    Scope requerido: ``tesoreria:write``
+    """
+    from datetime import date  # noqa: PLC0415
+
+    from apps.finanzas.models import CuentaBancariaEmpresa  # noqa: PLC0415
+    from apps.tesoreria.preconciliacion import (  # noqa: PLC0415
+        PreconciliacionError,
+        generar_propuestas_conciliacion,
+    )
+
+    ctx = _ctx(capability_token, f"{_SCOPE}:write")
+    if str(empresa_id) != ctx["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    try:
+        cuenta_uuid = uuid.UUID(str(cuenta_id))
+    except (ValueError, TypeError) as exc:
+        raise ValueError("cuenta_id no es un UUID válido.") from exc
+
+    fecha_desde = None
+    fecha_hasta = None
+    try:
+        if desde:
+            fecha_desde = date.fromisoformat(str(desde).strip())
+        if hasta:
+            fecha_hasta = date.fromisoformat(str(hasta).strip())
+    except ValueError as exc:
+        raise ValueError("Las fechas desde/hasta deben usar formato ISO YYYY-MM-DD.") from exc
+
+    empresa = _empresa_activa(ctx["empresa_id"])
+    cuenta = (
+        CuentaBancariaEmpresa.objects.select_related("id_empresa", "id_moneda")
+        .filter(pk=cuenta_uuid, id_empresa=empresa, activo=True)
+        .first()
+    )
+    if cuenta is None:
+        raise ValueError("Cuenta bancaria no encontrada en esta empresa.")
+
+    try:
+        resumen = generar_propuestas_conciliacion(
+            empresa=empresa,
+            cuenta_bancaria=cuenta,
+            desde=fecha_desde,
+            hasta=fecha_hasta,
+            incluir_odoo=incluir_odoo,
+        )
+    except PreconciliacionError as exc:
+        raise ValueError(str(exc)) from exc
+
+    logger.info(
+        "tesoreria_generar_propuestas_conciliacion | actor=%s | tenant=%s | nuevas=%d | actualizadas=%d",
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        resumen["nuevas"],
+        resumen["actualizadas"],
+    )
+    return resumen
+
+
 MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": tesoreria_saldos_extractos,
@@ -143,5 +293,15 @@ MCP_TOOLS: list[dict[str, Any]] = [
         "fn": tesoreria_listar_extractos,
         "name": "tesoreria_listar_extractos",
         "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": tesoreria_listar_propuestas_conciliacion,
+        "name": "tesoreria_listar_propuestas_conciliacion",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": tesoreria_generar_propuestas_conciliacion,
+        "name": "tesoreria_generar_propuestas_conciliacion",
+        "scope": f"{_SCOPE}:write",
     },
 ]

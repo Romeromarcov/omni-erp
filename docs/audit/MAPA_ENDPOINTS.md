@@ -218,6 +218,10 @@
 | `^configuracion/(?P<pk>[^/.]+)/$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
 | `^configuracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
 | `^configuracion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionManufacturaViewSet | ConfiguracionManufactura | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones-conciliacion/$` | ConfiguracionConciliacionCuentaViewSet | ConfiguracionConciliacionCuenta | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones-conciliacion/(?P<pk>[^/.]+)/$` | ConfiguracionConciliacionCuentaViewSet | ConfiguracionConciliacionCuenta | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones-conciliacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionConciliacionCuentaViewSet | ConfiguracionConciliacionCuenta | ✅ | ✅ | IsAuthenticated |
+| `^configuraciones-conciliacion\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionConciliacionCuentaViewSet | ConfiguracionConciliacionCuenta | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/(?P<pk>[^/.]+)/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/(?P<pk>[^/.]+)/activar/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
@@ -980,6 +984,18 @@
 | `^promociones-primera-compra/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PromocionPrimeraCompraViewSet | PromocionPrimeraCompra | ✅ | — | IsAuthenticated |
 | `^promociones-primera-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PromocionPrimeraCompraViewSet | PromocionPrimeraCompra | ✅ | — | IsAuthenticated |
 | `^promociones-primera-compra\.(?P<format>[a-z0-9]+)/?$` | PromocionPrimeraCompraViewSet | PromocionPrimeraCompra | ✅ | — | IsAuthenticated |
+| `^propuestas-conciliacion/$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/(?P<pk>[^/.]+)/$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/(?P<pk>[^/.]+)/decidir/$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/(?P<pk>[^/.]+)/decidir\.(?P<format>[a-z0-9]+)/?$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/aprobadas/$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/aprobadas\.(?P<format>[a-z0-9]+)/?$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/bitacora/$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/bitacora\.(?P<format>[a-z0-9]+)/?$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/generar/$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion/generar\.(?P<format>[a-z0-9]+)/?$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
+| `^propuestas-conciliacion\.(?P<format>[a-z0-9]+)/?$` | PropuestaConciliacionBancariaViewSet | PropuestaConciliacionBancaria | ✅ | ✅ | IsAuthenticated |
 | `^proveedores/$` | ConectorProveedorViewSet | ConectorProveedor | — | ✅ | IsAuthenticated |
 | `^proveedores/$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
 | `^proveedores/(?P<pk>[^/.]+)/$` | ConectorProveedorViewSet | ConectorProveedor | — | ✅ | IsAuthenticated |
@@ -1252,4 +1268,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 227_
+_Total ViewSets: 229_

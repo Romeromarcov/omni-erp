@@ -172,17 +172,28 @@ def conciliar_automatico(
     """
     from django.db import transaction
 
-    from .models import MovimientoBancario
+    from apps.finanzas.models import CuentaBancariaEmpresa
+
+    from .models import (
+        ConciliacionBancaria,
+        MovimientoBancario,
+        PropuestaConciliacionBancaria,
+    )
 
     conciliados = 0
     sin_match = 0
 
-    # BUG-M5: todo el emparejamiento corre en una transacción con lock sobre
-    # los movimientos pendientes y sobre el Pago candidato, para que dos
-    # ejecuciones concurrentes no concilien el mismo Pago contra dos
-    # movimientos distintos.
+    # BUG-M5 + orden canónico de locks: CuentaBancariaEmpresa -> MovimientoBancario -> Propuesta
     with transaction.atomic():
-        movimientos_pendientes = (
+        CuentaBancariaEmpresa.objects.select_for_update().get(pk=cuenta_bancaria.pk)
+        periodos_cerrados = list(
+            ConciliacionBancaria.objects.filter(
+                id_empresa=empresa,
+                id_cuenta_bancaria=cuenta_bancaria,
+                estado="CERRADA",
+            ).values_list("periodo_inicio", "periodo_fin")
+        )
+        movimientos_pendientes = list(
             MovimientoBancario.objects.select_for_update()
             .filter(
                 id_empresa=empresa,
@@ -193,16 +204,37 @@ def conciliar_automatico(
             )
             .order_by("fecha_mov")
         )
+        props_por_mov = {
+            p.id_movimiento_bancario_id: p
+            for p in PropuestaConciliacionBancaria.objects.select_for_update().filter(
+                id_empresa=empresa,
+                id_movimiento_bancario_id__in=[m.pk for m in movimientos_pendientes],
+                activo=True,
+            )
+        }
 
+        props_desactivar: list = []
         for mov in movimientos_pendientes:
+            if any(ini <= mov.fecha_mov <= fin for ini, fin in periodos_cerrados):
+                continue
+            prop_act = props_por_mov.get(mov.pk)
+            if prop_act is not None and prop_act.estado != "PENDIENTE":
+                continue
             pago = _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias)
             if pago:
                 mov.estado = "CONCILIADO"
                 mov.id_pago_conciliado = pago
                 mov.save(update_fields=["estado", "id_pago_conciliado"])
+                if prop_act is not None and prop_act.estado == "PENDIENTE":
+                    props_desactivar.append(prop_act.pk)
                 conciliados += 1
             else:
                 sin_match += 1
+
+        if props_desactivar:
+            PropuestaConciliacionBancaria.objects.filter(pk__in=props_desactivar).update(
+                activo=False
+            )
 
     return {
         "conciliados": conciliados,
@@ -223,7 +255,7 @@ def _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias: int):
 
     from apps.finanzas.models import Pago
 
-    from .models import MovimientoBancario
+    from .models import MovimientoBancario, PropuestaConciliacionBancaria
 
     ventana_inicio = mov.fecha_mov - timedelta(days=tolerancia_dias)
     ventana_fin = mov.fecha_mov + timedelta(days=tolerancia_dias)
@@ -238,11 +270,18 @@ def _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias: int):
     )
 
     def _lock_y_verificar(pago):
-        """Bloquea el Pago y confirma que nadie lo concilió en paralelo."""
+        """Bloquea el Pago y confirma que nadie lo concilió ni comprometió en paralelo."""
         if pago is None:
             return None
         pago = Pago.objects.select_for_update().get(pk=pago.pk)
         if MovimientoBancario.objects.filter(id_pago_conciliado=pago, activo=True).exists():
+            return None
+        if PropuestaConciliacionBancaria.objects.filter(
+            id_empresa_id=mov.id_empresa_id,
+            id_pago_nativo=pago,
+            activo=True,
+            estado__in=["APROBADA", "CORREGIDA"],
+        ).exists():
             return None
         return pago
 
@@ -298,8 +337,6 @@ def iniciar_conciliacion(
 def cerrar_conciliacion(conciliacion, usuario=None) -> "ConciliacionBancaria":
     """Cierra la sesión de conciliación y recalcula contadores."""
     from django.utils import timezone
-
-    from .models import MovimientoBancario
 
     empresa = conciliacion.id_empresa
     cuenta = conciliacion.id_cuenta_bancaria

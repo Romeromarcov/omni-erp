@@ -1,6 +1,5 @@
 from django.db import models
 
-from apps.core.models import Empresa
 from apps.core.uuid import uuid7
 from apps.finanzas.models import Caja, Moneda
 
@@ -307,3 +306,243 @@ class ConciliacionBancaria(models.Model):
 
     def __str__(self):
         return f"Conciliación {self.id_cuenta_bancaria} {self.periodo_inicio}→{self.periodo_fin} [{self.estado}]"
+
+
+# ── Pre-conciliación determinística y cola de revisión humana ─────────────────
+
+
+class ConfiguracionConciliacionCuenta(models.Model):
+    """Configuración multi-tenant de reglas contables y diario externo por cuenta bancaria."""
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="configuraciones_conciliacion_bancaria",
+    )
+    id_cuenta_bancaria = models.ForeignKey(
+        "finanzas.CuentaBancariaEmpresa",
+        on_delete=models.CASCADE,
+        related_name="configuraciones_conciliacion",
+    )
+    id_cuenta_comisiones = models.ForeignKey(
+        "contabilidad.PlanCuentas",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="configs_conciliacion_comisiones",
+    )
+    codigo_cuenta_comisiones = models.CharField(max_length=120, blank=True, default="")
+    id_cuenta_igtf = models.ForeignKey(
+        "contabilidad.PlanCuentas",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="configs_conciliacion_igtf",
+    )
+    codigo_cuenta_igtf = models.CharField(max_length=120, blank=True, default="")
+    id_cuenta_transito_pendientes = models.ForeignKey(
+        "contabilidad.PlanCuentas",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="configs_conciliacion_transito",
+    )
+    codigo_cuenta_transito_pendientes = models.CharField(max_length=120, blank=True, default="")
+    id_conector_odoo = models.ForeignKey(
+        "integration_hub.ConectorInstancia",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="configs_conciliacion_bancaria",
+    )
+    odoo_journal_id = models.PositiveIntegerField(null=True, blank=True)
+    ventana_dias = models.PositiveSmallIntegerField(default=3)
+    incluir_pagos_nativos = models.BooleanField(default=True)
+    incluir_pagos_odoo = models.BooleanField(default=False)
+    activo = models.BooleanField(default=True, db_index=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "tesoreria_configuracion_conciliacion_cuenta"
+        ordering = ["-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "activo"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "id_cuenta_bancaria"],
+                condition=models.Q(activo=True),
+                name="uq_tesoreria_cfg_concil_empresa_cta_activo",
+            ),
+        ]
+
+    def soft_delete(self) -> None:
+        self.activo = False
+        self.save(update_fields=["activo", "fecha_actualizacion"])
+
+    def __str__(self) -> str:
+        return f"Reglas conciliación {self.id_cuenta_bancaria}"
+
+
+class PropuestaConciliacionBancaria(models.Model):
+    """Propuesta determinística (R1/R2/R3) y estado de revisión humana por movimiento bancario."""
+
+    TIPO_CHOICES = [
+        ("PAGO", "Emparejar con pago"),
+        ("CUENTA", "Imputar a cuenta contable"),
+        ("AMBIGUO", "Empate ambiguo entre pagos"),
+        ("SIN_PROPUESTA", "Sin propuesta automática"),
+    ]
+    ESTADO_CHOICES = [
+        ("PENDIENTE", "Pendiente de revisión"),
+        ("APROBADA", "Aprobada"),
+        ("RECHAZADA", "Rechazada"),
+        ("CORREGIDA", "Corregida manualmente"),
+    ]
+    FUENTE_PAGO_CHOICES = [
+        ("", "Sin pago"),
+        ("OMNI", "Pago nativo Omni ERP"),
+        ("ODOO", "Pago externo Odoo"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="propuestas_conciliacion_bancaria",
+    )
+    id_movimiento_bancario = models.ForeignKey(
+        "tesoreria.MovimientoBancario",
+        on_delete=models.CASCADE,
+        related_name="propuestas_conciliacion",
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, db_index=True)
+    regla = models.CharField(max_length=10, default="-")
+    motivo = models.CharField(max_length=500, blank=True, default="")
+    fuente_pago = models.CharField(
+        max_length=10, choices=FUENTE_PAGO_CHOICES, blank=True, default=""
+    )
+    id_pago_nativo = models.ForeignKey(
+        "finanzas.Pago",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="propuestas_conciliacion_bancaria",
+    )
+    pago_externo_id = models.CharField(max_length=64, blank=True, default="")
+    pago_nombre = models.CharField(max_length=200, blank=True, default="")
+    pago_socio = models.CharField(max_length=255, blank=True, default="")
+    id_cuenta_contable = models.ForeignKey(
+        "contabilidad.PlanCuentas",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="propuestas_conciliacion_bancaria",
+    )
+    cuenta_contable_codigo = models.CharField(max_length=150, blank=True, default="")
+    puntaje = models.PositiveSmallIntegerField(default=0)
+    candidatos_json = models.JSONField(default=list, blank=True)
+    estado = models.CharField(
+        max_length=15, choices=ESTADO_CHOICES, default="PENDIENTE", db_index=True
+    )
+    ultimo_comentario = models.TextField(blank=True, default="")
+    decidida_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="propuestas_conciliacion_decididas",
+    )
+    decidida_en = models.DateTimeField(null=True, blank=True, db_index=True)
+    generada_en = models.DateTimeField(auto_now_add=True)
+    actualizada_en = models.DateTimeField(auto_now=True)
+    activo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "tesoreria_propuesta_conciliacion_bancaria"
+        ordering = ["-id_movimiento_bancario__fecha_mov", "-generada_en"]
+        indexes = [
+            models.Index(fields=["id_empresa", "estado", "activo"]),
+            models.Index(fields=["id_empresa", "tipo", "activo"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "id_movimiento_bancario"],
+                condition=models.Q(activo=True),
+                name="uq_tesoreria_propuesta_empresa_mov_activo",
+            ),
+            models.UniqueConstraint(
+                fields=["id_empresa", "id_pago_nativo"],
+                condition=models.Q(
+                    activo=True,
+                    estado__in=["APROBADA", "CORREGIDA"],
+                    id_pago_nativo__isnull=False,
+                ),
+                name="uq_tesoreria_prop_pago_nativo_aprobado",
+            ),
+            models.UniqueConstraint(
+                fields=["id_empresa", "fuente_pago", "pago_externo_id"],
+                condition=models.Q(activo=True, estado__in=["APROBADA", "CORREGIDA"])
+                & ~models.Q(pago_externo_id=""),
+                name="uq_tesoreria_prop_pago_ext_aprobado",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tipo} ({self.regla}) [{self.estado}] — mov {self.id_movimiento_bancario_id}"
+
+
+class DecisionPreconciliacionBancaria(models.Model):
+    """Bitácora inmutable de decisiones humanas sobre propuestas de conciliación bancaria."""
+
+    ACCION_CHOICES = [
+        ("APROBAR", "Aprobar propuesta"),
+        ("RECHAZAR", "Rechazar propuesta"),
+        ("CORREGIR", "Corregir propuesta"),
+        ("REABRIR", "Reabrir propuesta"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="decisiones_preconciliacion_bancaria",
+    )
+    id_propuesta = models.ForeignKey(
+        "tesoreria.PropuestaConciliacionBancaria",
+        on_delete=models.CASCADE,
+        related_name="decisiones",
+    )
+    id_movimiento_bancario = models.ForeignKey(
+        "tesoreria.MovimientoBancario",
+        on_delete=models.CASCADE,
+        related_name="decisiones_preconciliacion",
+    )
+    accion = models.CharField(max_length=15, choices=ACCION_CHOICES, db_index=True)
+    estado_anterior_json = models.JSONField(default=dict)
+    estado_nuevo_json = models.JSONField(default=dict)
+    comentario = models.TextField(blank=True, default="")
+    id_usuario = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="decisiones_preconciliacion_bancaria",
+    )
+    usuario_nombre = models.CharField(max_length=150, blank=True, default="")
+    fecha_decision = models.DateTimeField(auto_now_add=True, db_index=True)
+    activo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "tesoreria_decision_preconciliacion_bancaria"
+        ordering = ["-fecha_decision"]
+        indexes = [
+            models.Index(fields=["id_empresa", "fecha_decision"]),
+            models.Index(fields=["id_propuesta", "fecha_decision"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.accion} por {self.usuario_nombre or self.id_usuario_id} ({self.fecha_decision})"
+
