@@ -36,6 +36,7 @@ import { migracionDatosRoutes } from './routes/migracionDatosRoutes';
 import { integracionB2bRoutes } from './routes/integracionB2bRoutes';
 import { agentesRoutes } from './routes/agentesRoutes';
 import { activacionesRoutes } from './routes/activacionesRoutes';
+import { tareasRoutes } from './routes/tareasRoutes';
 import { personalizacionRoutes } from './routes/personalizacionRoutes';
 import { isModuleEnabled, isCxcLubrikcaVisible } from './config/appProfile';
 import { getEmpresaId } from './utils/empresa';
@@ -116,6 +117,7 @@ export default function AppRouter() {
             {integracionB2bRoutes()}
             {agentesRoutes()}
             {isModuleEnabled('activaciones') ? activacionesRoutes() : null}
+            {isModuleEnabled('tareas') ? tareasRoutes() : null}
             {personalizacionRoutes()}
           </Route>
         )}

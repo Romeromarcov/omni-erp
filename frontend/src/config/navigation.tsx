@@ -33,6 +33,7 @@ import FolderOutlined from '@mui/icons-material/FolderOutlined';
 import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined';
+import AssignmentTurnedInOutlined from '@mui/icons-material/AssignmentTurnedInOutlined';
 import { isModuleEnabled, isCxcLubrikcaVisible } from './appProfile';
 
 export interface NavItem {
@@ -360,6 +361,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Eventos y capacidad', path: '/activaciones' },
         { label: 'Bots de Telegram', path: '/bots' },
       ],
+    },
+    {
+      id: 'tareas',
+      label: 'Tareas y Proyectos',
+      icon: <AssignmentTurnedInOutlined />,
+      path: '/tareas',
     },
   ];
 

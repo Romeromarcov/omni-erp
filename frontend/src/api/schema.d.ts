@@ -11352,6 +11352,432 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tareas/alertas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_alertas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/alertas/{id_alerta_tarea}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_alerta_tarea: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_alertas_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/areas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_areas_list"];
+        put?: never;
+        post: operations["tareas_areas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/areas/{id_area}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_areas_read"];
+        put: operations["tareas_areas_update"];
+        post?: never;
+        delete: operations["tareas_areas_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_areas_partial_update"];
+        trace?: never;
+    };
+    "/tareas/areas/{id_area}/miembros/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_areas_sincronizar_miembros"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/configuracion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_configuracion_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["tareas_configuracion_partial_update"];
+        trace?: never;
+    };
+    "/tareas/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_items_list"];
+        put?: never;
+        post: operations["tareas_items_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_items_read"];
+        put: operations["tareas_items_update"];
+        post?: never;
+        delete: operations["tareas_items_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_items_partial_update"];
+        trace?: never;
+    };
+    "/tareas/items/{id}/cambiar-estado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_items_cambiar_estado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/comentarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_items_comentarios_read"];
+        put?: never;
+        post: operations["tareas_items_comentarios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/dependencias/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_items_dependencias_read"];
+        put?: never;
+        post: operations["tareas_items_dependencias_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/mover/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_items_mover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/minutas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_minutas_list"];
+        put?: never;
+        post: operations["tareas_minutas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/minutas/{id_minuta}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_minutas_read"];
+        put?: never;
+        post?: never;
+        delete: operations["tareas_minutas_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/minutas/{id_minuta}/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_minutas_confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/proyectos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_proyectos_list"];
+        put?: never;
+        post: operations["tareas_proyectos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/proyectos/mi-tablero/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_proyectos_mi_tablero"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/proyectos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_proyectos_read"];
+        put: operations["tareas_proyectos_update"];
+        post?: never;
+        delete: operations["tareas_proyectos_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_proyectos_partial_update"];
+        trace?: never;
+    };
+    "/tareas/recurrentes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_recurrentes_list"];
+        put?: never;
+        post: operations["tareas_recurrentes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/recurrentes/materializar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_recurrentes_materializar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/recurrentes/{id_plantilla_recurrente}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_recurrentes_read"];
+        put: operations["tareas_recurrentes_update"];
+        post?: never;
+        delete: operations["tareas_recurrentes_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_recurrentes_partial_update"];
+        trace?: never;
+    };
+    "/tareas/resumen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_resumen_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/secciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_secciones_list"];
+        put?: never;
+        post: operations["tareas_secciones_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/secciones/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_secciones_read"];
+        put: operations["tareas_secciones_update"];
+        post?: never;
+        delete: operations["tareas_secciones_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_secciones_partial_update"];
+        trace?: never;
+    };
+    "/tareas/seguimiento/ejecutar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_seguimiento_ejecutar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tesoreria/cajas/": {
         parameters: {
             query?: never;
@@ -16541,7 +16967,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-16T17:21:52.055970-04:00
+             * @default 2026-11-17T08:51:04.703387-04:00
              */
             fecha_despacho: string;
             /**
@@ -21379,6 +21805,558 @@ export interface components {
              */
             id_categoria_ticket: string;
         };
+        RegistroAlertaTarea: {
+            /**
+             * Id alerta tarea
+             * Format: uuid
+             */
+            readonly id_alerta_tarea?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Tarea
+             * Format: uuid
+             */
+            readonly tarea?: string;
+            /** Tarea titulo */
+            readonly tarea_titulo?: string;
+            /** Clave alerta */
+            readonly clave_alerta?: string;
+            /**
+             * Destinatario
+             * Format: uuid
+             */
+            readonly destinatario?: string | null;
+            /** Canal */
+            readonly canal?: string;
+            /** Detalle */
+            readonly detalle?: string;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+        };
+        AreaOperativa: {
+            /**
+             * Id area
+             * Format: uuid
+             */
+            readonly id_area?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Slug
+             * Format: slug
+             */
+            readonly slug?: string;
+            /** Color */
+            color?: string;
+            /**
+             * Departamento
+             * Format: uuid
+             */
+            departamento?: string | null;
+            /**
+             * Lider
+             * Format: uuid
+             */
+            lider?: string | null;
+            /** Lider nombre */
+            readonly lider_nombre?: string;
+            /** @default [] */
+            palabras_clave: string[];
+            readonly miembros?: Record<string, never>[];
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Tarea: {
+            /**
+             * Id tarea
+             * Format: uuid
+             */
+            readonly id_tarea?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Titulo */
+            titulo: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado?: "PENDIENTE" | "EN_EJECUCION" | "EN_REVISION" | "COMPLETADA" | "BLOQUEADA" | "CANCELADA";
+            /**
+             * Prioridad
+             * @enum {string}
+             */
+            prioridad?: "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+            /**
+             * Origen
+             * @enum {string}
+             */
+            origen?: "WEB" | "BOT" | "MINUTA_IA" | "RECURRENCIA" | "AGENTE" | "ERP_EVENTO";
+            /**
+             * Proyecto
+             * Format: uuid
+             */
+            proyecto?: string | null;
+            /**
+             * Proyecto nombre
+             * @default
+             */
+            readonly proyecto_nombre: string;
+            /**
+             * Seccion
+             * Format: uuid
+             */
+            seccion?: string | null;
+            /**
+             * Seccion nombre
+             * @default
+             */
+            readonly seccion_nombre: string;
+            /**
+             * Area
+             * Format: uuid
+             */
+            area?: string | null;
+            /**
+             * Area nombre
+             * @default
+             */
+            readonly area_nombre: string;
+            /**
+             * Tarea padre
+             * Format: uuid
+             */
+            tarea_padre?: string | null;
+            /**
+             * Asignado a
+             * Format: uuid
+             */
+            asignado_a?: string | null;
+            /** Asignado nombre */
+            readonly asignado_nombre?: string;
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string | null;
+            /**
+             * Fecha inicio
+             * Format: date
+             */
+            fecha_inicio?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /** Hora vencimiento */
+            hora_vencimiento?: string | null;
+            /**
+             * Completada en
+             * Format: date-time
+             */
+            readonly completada_en?: string | null;
+            /** Bloqueada por escalacion */
+            readonly bloqueada_por_escalacion?: boolean;
+            /** Motivo bloqueo */
+            motivo_bloqueo?: string;
+            /**
+             * Entidad tipo
+             * @description Etiqueta 'app.Modelo' del objeto vinculado (ej. ventas.Pedido).
+             */
+            entidad_tipo?: string;
+            /**
+             * Entidad id
+             * Format: uuid
+             */
+            entidad_id?: string | null;
+            /**
+             * Plantilla recurrente
+             * Format: uuid
+             */
+            readonly plantilla_recurrente?: string | null;
+            /**
+             * Minuta origen
+             * Format: uuid
+             */
+            readonly minuta_origen?: string | null;
+            /**
+             * Idempotency key
+             * @default
+             */
+            idempotency_key: string;
+            /** Orden tablero */
+            orden_tablero?: number;
+            /**
+             * Usar tablero personal si falta
+             * @default true
+             */
+            usar_tablero_personal_si_falta: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        /**
+         * @default {
+         *       "titulo": "",
+         *       "task_name": "",
+         *       "descripcion": "",
+         *       "notes": "",
+         *       "prioridad": "MEDIA",
+         *       "asignado_nombre": "",
+         *       "assignee_name": "",
+         *       "area": ""
+         *     }
+         */
+        MinutaItemPropuesto: {
+            /**
+             * Titulo
+             * @default
+             */
+            titulo: string;
+            /**
+             * Task name
+             * @default
+             */
+            task_name: string;
+            /**
+             * Descripcion
+             * @default
+             */
+            descripcion: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Prioridad
+             * @default MEDIA
+             * @enum {string}
+             */
+            prioridad: "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+            /**
+             * Asignado a id
+             * Format: uuid
+             */
+            asignado_a_id?: string | null;
+            /**
+             * Asignado nombre
+             * @default
+             */
+            asignado_nombre: string;
+            /**
+             * Assignee name
+             * @default
+             */
+            assignee_name: string;
+            /**
+             * Area
+             * @default
+             */
+            area: string;
+            /**
+             * Area id
+             * Format: uuid
+             */
+            area_id?: string | null;
+            /** Fecha vencimiento */
+            fecha_vencimiento?: string | null;
+            /** Due on */
+            due_on?: string | null;
+        };
+        MinutaReunion: {
+            /**
+             * Id minuta
+             * Format: uuid
+             */
+            readonly id_minuta?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Titulo */
+            titulo: string;
+            /**
+             * Fecha reunion
+             * Format: date
+             */
+            fecha_reunion?: string | null;
+            /** Texto fuente */
+            texto_fuente?: string;
+            /**
+             * Documento adjunto
+             * Format: uuid
+             */
+            documento_adjunto?: string | null;
+            /** @default [] */
+            items_propuestos: components["schemas"]["MinutaItemPropuesto"][];
+            /**
+             * Borrador tareas
+             * @description Ítems estructurados propuestos antes de materializar las tareas.
+             */
+            readonly borrador_tareas?: Record<string, never>;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "BORRADOR" | "CONFIRMADA" | "DESCARTADA";
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string | null;
+            /**
+             * Confirmada en
+             * Format: date-time
+             */
+            readonly confirmada_en?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Proyecto: {
+            /**
+             * Id proyecto
+             * Format: uuid
+             */
+            readonly id_proyecto?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Descripcion */
+            descripcion?: string;
+            /** Color */
+            color?: string;
+            /**
+             * Vista predeterminada
+             * @enum {string}
+             */
+            vista_predeterminada?: "TABLERO" | "LISTA" | "CALENDARIO";
+            /**
+             * Es personal
+             * @description True si es el tablero personal automático de un colaborador.
+             * @default false
+             */
+            readonly es_personal: boolean;
+            /** Archivado */
+            archivado?: boolean;
+            /**
+             * Area
+             * Format: uuid
+             */
+            area?: string | null;
+            /**
+             * Area nombre
+             * @default
+             */
+            readonly area_nombre: string;
+            /**
+             * Propietario
+             * Format: uuid
+             */
+            propietario?: string | null;
+            /** Propietario nombre */
+            readonly propietario_nombre?: string;
+            readonly secciones?: Record<string, never>[];
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        PlantillaTareaRecurrente: {
+            /**
+             * Id plantilla recurrente
+             * Format: uuid
+             */
+            readonly id_plantilla_recurrente?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Titulo */
+            titulo: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Prioridad
+             * @enum {string}
+             */
+            prioridad?: "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+            /**
+             * Frecuencia
+             * @enum {string}
+             */
+            frecuencia: "INTRADIA" | "DIARIA" | "SEMANAL" | "QUINCENAL" | "MENSUAL";
+            /** @default [] */
+            dias_semana: number[];
+            /** Dia mes */
+            dia_mes?: number | null;
+            /** @default [] */
+            horas_dia: string[];
+            /**
+             * Proxima ejecucion
+             * Format: date
+             */
+            proxima_ejecucion: string;
+            /**
+             * Ultima generacion en
+             * Format: date-time
+             */
+            readonly ultima_generacion_en?: string | null;
+            /**
+             * Proyecto
+             * Format: uuid
+             */
+            proyecto?: string | null;
+            /**
+             * Area
+             * Format: uuid
+             */
+            area?: string | null;
+            /**
+             * Asignado a
+             * Format: uuid
+             */
+            asignado_a?: string | null;
+            /** Asignado nombre */
+            readonly asignado_nombre?: string;
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        SeccionProyecto: {
+            /**
+             * Id seccion
+             * Format: uuid
+             */
+            readonly id_seccion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Proyecto
+             * Format: uuid
+             */
+            proyecto: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Estado destino
+             * @enum {string}
+             */
+            estado_destino?: "PENDIENTE" | "EN_EJECUCION" | "EN_REVISION" | "COMPLETADA" | "BLOQUEADA" | "CANCELADA";
+            /** Orden */
+            orden?: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             * @default true
+             */
+            readonly activo: boolean;
+        };
         ConciliacionBancaria: {
             /**
              * Id
@@ -23455,6 +24433,11 @@ export interface components {
                 "application/json": components["schemas"]["ConfiguracionManufactura"];
             };
         };
+        Proyecto: {
+            content: {
+                "application/json": components["schemas"]["Proyecto"];
+            };
+        };
         CajaTesoreria: {
             content: {
                 "application/json": components["schemas"]["CajaTesoreria"];
@@ -23463,6 +24446,11 @@ export interface components {
         DevolucionVenta: {
             content: {
                 "application/json": components["schemas"]["DevolucionVenta"];
+            };
+        };
+        AreaOperativa: {
+            content: {
+                "application/json": components["schemas"]["AreaOperativa"];
             };
         };
         "gestion-documental_documentos_create": {
@@ -23502,6 +24490,11 @@ export interface components {
         DetalleDevolucionVenta: {
             content: {
                 "application/json": components["schemas"]["DetalleDevolucionVenta"];
+            };
+        };
+        Tarea: {
+            content: {
+                "application/json": components["schemas"]["Tarea"];
             };
         };
         DetallePedido: {
@@ -23587,6 +24580,11 @@ export interface components {
         RegistroAprobacion: {
             content: {
                 "application/json": components["schemas"]["RegistroAprobacion"];
+            };
+        };
+        SeccionProyecto: {
+            content: {
+                "application/json": components["schemas"]["SeccionProyecto"];
             };
         };
         Ingesta: {
@@ -24127,6 +25125,16 @@ export interface components {
         InteraccionTicket: {
             content: {
                 "application/json": components["schemas"]["InteraccionTicket"];
+            };
+        };
+        MinutaReunion: {
+            content: {
+                "application/json": components["schemas"]["MinutaReunion"];
+            };
+        };
+        PlantillaTareaRecurrente: {
+            content: {
+                "application/json": components["schemas"]["PlantillaTareaRecurrente"];
             };
         };
         ConciliacionBancaria: {
@@ -52267,6 +53275,1096 @@ export interface operations {
         };
     };
     sync_push_ventas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_alertas_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["RegistroAlertaTarea"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_alertas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_alerta_tarea: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistroAlertaTarea"];
+                };
+            };
+        };
+    };
+    tareas_areas_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["AreaOperativa"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_areas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_areas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_sincronizar_miembros: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_configuracion_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_configuracion_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_items_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Tarea"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_items_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_cambiar_estado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_comentarios_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_comentarios_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_dependencias_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_dependencias_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_mover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_minutas_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["MinutaReunion"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_minutas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MinutaReunion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinutaReunion"];
+                };
+            };
+        };
+    };
+    tareas_minutas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinutaReunion"];
+                };
+            };
+        };
+    };
+    tareas_minutas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_minutas_confirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MinutaReunion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinutaReunion"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Proyecto"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_proyectos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_mi_tablero: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_proyectos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PlantillaTareaRecurrente"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_recurrentes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_materializar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_recurrentes_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_resumen_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_secciones_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["SeccionProyecto"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_secciones_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["SeccionProyecto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_secciones_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_secciones_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["SeccionProyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_secciones_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_secciones_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["SeccionProyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_seguimiento_ejecutar_create: {
         parameters: {
             query?: never;
             header?: never;
