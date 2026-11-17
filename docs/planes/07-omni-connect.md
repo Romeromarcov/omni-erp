@@ -121,7 +121,7 @@ Modelos existentes en código (con RLS forzada registrada en `apps/core/rls.py`)
 - **Lógica de normalización y resolución (`apps/crm/services_dedup.py`):**
   - Normalizadores puros y reutilizables: `normalizar_email(email)` y `normalizar_telefono(telefono, codigo_pais_default="58")`.
   - Regla de resolución multi-tenant (`id_empresa` estricto):
-    1. Match exacto en `core.Contacto` activo de la misma empresa por `email_normalizado` (si no vacío) o `telefono_normalizado` (sufijo últimos 10 dígitos / E.164).
+    1. Nota de esquema: `core.Contacto` (`backend/apps/core/models.py:874-875`) actualmente solo define `email` y `telefono` (a diferencia de `crm.Lead`, que ya incluye `email_normalizado` y `telefono_normalizado`). En `S5` se añaden `email_normalizado` y `telefono_normalizado` (+ índices compuestos por `id_empresa`) a `core.Contacto` con migración de backfill —o bien normalización indexada sobre `email`/`telefono`— para ejecutar match exacto en la misma empresa sin full scan.
     2. Búsqueda de candidatos en otros `crm.Lead` activos o `crm.Cliente` de la misma empresa para evitar duplicar leads en un mismo toque repetido o múltiples formularios.
   - Acción explícita o automática `vincular_lead_a_contacto(lead, contacto=None, crear_si_no_existe=False)`: dentro de `@transaction.atomic` + `select_for_update()` sobre `lead`, enlaza `lead.contacto` sin sobreescribir campos verificados del `Contacto` salvo los vacíos, o permite fusionar dos leads duplicados conservando `actividades` y `toques`/origen.
   - **Derecho al olvido / supresión de datos (`R-CODE-6` excepción legal documentada):** acción `anonimizar_lead(lead, usuario, motivo)` que limpia PII (`nombre="Anonimizado"`, `apellido=""`, `email=""`, `telefono=""`, `email_normalizado=""`, `telefono_normalizado=""`, `mensaje=""`), marca `activo=False`, registra auditoría en `RegistroAuditoria` y encola evento de borrado para `S7`.
@@ -193,7 +193,7 @@ Modelos existentes en código (con RLS forzada registrada en `apps/core/rls.py`)
     - Generación de código QR SVG/PNG descargable para cada `Perfil` apuntando a `/c/<slug>?src=qr`.
   - UI `/connect/tarjetas`: tabla de inventario/asignación de chips, cambio de estado con confirmación y visor/descarga QR.
 - **S12 — Agentes IA Connect registrados en `apps/agentes` con `gestion_aprobaciones`:**
-  - Registro de nuevos agentes en `agentes.ConfigAgente.agente` (`AGENTE_CHOICES` en `apps/agentes/models.py`):
+  - Registro de nuevos agentes ampliando **tanto** los `choices` inline de `ConfigAgente.agente` (`apps/agentes/models.py:38-43`) **como** `PrediccionAgente.AGENTE_CHOICES` (`apps/agentes/models.py:80`, idealmente consolidando ambos en una única constante compartida `AGENTE_CHOICES` + migración):
     - `connect_calificador`: analiza `Lead` recién capturado + `Toque` + historial en `core.Contacto` vía `llm_gateway.get_gateway()` (`apps/core/llm_gateway.py`), propone prioridad, score y siguiente `Actividad` en `PrediccionAgente`.
     - `connect_seguimiento`: redacta borrador de mensaje de seguimiento (WhatsApp/correo) para leads sin respuesta.
   - **Regla estricta v1 (`ADR-014`):** usando `NivelAutonomia` (`SOMBRA` / `SUGERENCIA` por defecto), **ningún agente envía mensajes externos al lead ni escribe en Odoo sin aprobación humana**. Toda propuesta de envío externo crea una `gestion_aprobaciones.SolicitudAprobacion` (`crear_solicitud(..., codigo_tipo="CONNECT_ENVIO_EXTERNO")`) y solo se ejecuta tras `registrar_decision(..., aprobado=True)` + bitácora completa (`R-PROD-5`).

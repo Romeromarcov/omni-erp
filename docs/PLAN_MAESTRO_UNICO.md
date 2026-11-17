@@ -28,7 +28,7 @@ Este plan **consolida y reemplaza como fuente de verdad operativa** a todos los 
 3. [Arquitectura técnica](#3--arquitectura-técnica)
 4. [Estado actual real del proyecto](#4--estado-actual-real-del-proyecto)
 5. [Roadmap unificado — desde hoy hasta la culminación](#5--roadmap-unificado)
-6. [Especificaciones del mercado venezolano](#6--especificaciones-del-mercado-venezolano)
+6. [Localización Venezuela (l10n-ve)](#6--localización-venezuela-l10n-ve)
 7. [Estándares de código y proceso de desarrollo](#7--estándares-de-código-y-proceso)
 8. [Protocolo de trabajo por sesión (founder + IA)](#8--protocolo-de-trabajo-por-sesión)
 9. [Guía de incorporación al equipo](#9--guía-de-incorporación)
@@ -49,7 +49,7 @@ No es un clon de SAP ni de Odoo. Su diferenciador es ser **AI-nativo**: cada cap
 
 - **Modular sin fricción:** cada empresa activa solo los módulos que necesita.
 - **Sin rigidez contable impuesta:** una bodega informal puede vender, cobrar y controlar stock sin plan de cuentas; una empresa formal tiene contabilidad automática completa.
-- **Venezuela-first, world-ready:** resolver lo más difícil (IVA + IGTF + retenciones + multimoneda + nómina LOTTT) hace que funcione en cualquier contexto más simple. **Pero "Venezuela-first" no significa "Venezuela-hardcoded":** todo lo específico de Venezuela vive en una **localización activable/desactivable**, no incrustado en el núcleo (ver [§3.7](#37--arquitectura-de-localización-l10n-de-dos-capas)). El sistema debe poder operar de forma genérica para una empresa no venezolana sin arrastrar la tropicalización venezolana.
+- **Venezuela-first, world-ready:** resolver lo más difícil (IVA + IGTF + retenciones + multimoneda + nómina LOTTT) hace que funcione en cualquier contexto más simple. **Pero "Venezuela-first" no significa "Venezuela-hardcoded":** todo lo específico de Venezuela vive en una **localización activable/desactivable**, no incrustado en el núcleo (ver [§3.7](#37-arquitectura-de-localización-l10n-de-dos-capas)). El sistema debe poder operar de forma genérica para una empresa no venezolana sin arrastrar la tropicalización venezolana.
 - **Núcleo agnóstico + localizaciones enchufables:** el core no conoce ningún país. Las reglas, documentos y dinámicas de cada país son paquetes de localización que el core descubre y activa por empresa.
 - **AI-nativo, no "AI-powered":** la IA no es un chatbot pegado encima; es la forma de operar el sistema (R-PROD-1).
 - **La complejidad se esconde, no se elimina** (R-PROD-3).
@@ -371,7 +371,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 > CTFs abiertos en [`docs/ctf/`](ctf/) (**fechas `Vence` intocadas por Plan 06 D3**): **CTF-008** (offline),
 > **CTF-010** (firma de apps), **CTF-011** (push Odoo), **CTF-012** (RLS en entornos reales; 11 CTFs cerrados).
 
-- **Plan 06 (Fases 1–4 restantes):** auditar 38 respuestas `Response({...str(e|exc|err)...})` en 15 archivos (Tarea 1.1), fijar 4 dependencias + Dependabot + audits nocturnos (Tarea 1.3), activar rol no-dueño `omni_app` con `bypass='off'` (Fase 2 / CTF-012), migrar a `ruff` y limpiar 201 `# noqa` / 40 `eslint-disable` (Tareas 3.3–3.4), segunda pasada Decimal FE (Tarea 4.2) y ajustes Railway del owner (Tarea 4.3).
+- **Plan 06 (Fases 1–4 restantes):** auditar 38 respuestas `Response({...str(e|exc|err)...})` en 15 archivos (Tarea 1.1), activar rol no-dueño `omni_app` con `bypass='off'` (Fase 2 / CTF-012), migrar a `ruff` y limpiar 201 `# noqa` / 40 `eslint-disable` (Tareas 3.3–3.4), segunda pasada Decimal FE (Tarea 4.2) y ajustes Railway del owner (Tarea 4.3). *(Tareas `1.3` pines/Dependabot/audits nocturnos y `3.6` Actions Node 24 cerradas en PR `#289`.)*
 - **Seguridad residual (Plan 05):** `P1-5` (auditoría inmutable BD), `P1-6` (pasada IDOR), `P1-7` (cargar secrets backup owner), `P2-2` (agentes síncronos en vistas → Celery), `P2-3` (persistencia dedicada de costos LLM), `P2-4` (cacheo consultas calientes + N+1), `P2-6` (OpenTelemetry).
 - **Conciliación N:M + Paridad ERP Odoo (`Plan 08`):** `finanzas.Pago` hoy apunta a un único `id_documento`; falta `finanzas.AsignacionPago` anclada en `core.Contacto` (para dividir un pago entre N facturas, aplicar anticipos/saldos a favor, y desbloquear inbound de `facturas_compra` y pagos multi-factura desde Odoo en [`docs/integracion-hub/ESTADO.md`](integracion-hub/ESTADO.md) §4.1).
 - **Acoplamiento a Venezuela en el núcleo:** lógica VE dispersa (`fiscal`, IGTF en `ventas`, libros SENIAT); completar los 4 puertos pendientes en `localizacion_ve`.
@@ -475,7 +475,7 @@ solapan con P0 quedan cubiertos y el resto triagéado en `docs/tech-debt/INVENTO
 ```
 P0 (✅ cerrado #64–#73) + UI/E2E sweep (✅ cerrado #215–#247) + Plan 06 Fase 0 (✅)
    ├─ Ola 1 — Cierre Plan 06 + Seguridad residual:
-   │    • Plan 06 Fases 1–4 (str(e), pines/Dependabot, RLS rol omni_app CTF-012, ruff, Decimal FE)
+   │    • Plan 06 Fases 1–4 (str(e), RLS rol omni_app CTF-012, ruff, Decimal FE; 1.3 y 3.6 ✅ en #289)
    │    • Plan 05 residuales: P1-5 (auditoría inmutable), P1-6 (IDOR), P1-7 (secret owner), P2-2/P2-3/P2-4/P2-6
    ├─ Ola 2 — Pilotos y Offline POS:
    │    • 1.F Distribuidora en producción (datos reales + 30d operación)
@@ -538,14 +538,14 @@ datos reales + operación 30 días** (los importadores ya están, ver
 > Es **transversal**, no una fase. No frena la sub-fase 1.F (la distribuidora se pone en producción con la lógica VE actual), pero **gobierna cómo se escribe todo código país-específico desde ahora** (R-PROC-1) para no profundizar el acoplamiento.
 
 **Desde ahora (regla activa, costo cero):**
-- [ ] Todo código nuevo con lógica de un país entra por un **puerto de localización**, nunca hardcodeado en el core (ver [§3.7](#37--arquitectura-de-localización-l10n-de-dos-capas)).
+- [ ] Todo código nuevo con lógica de un país entra por un **puerto de localización**, nunca hardcodeado en el core (ver [§3.7](#37-arquitectura-de-localización-l10n-de-dos-capas)).
 - [ ] Redactar **ADR-007** (arquitectura de localización de dos capas).
 
 **Extracción gradual (mayormente en Bloque 2, strangler fig):**
 - [ ] Crear `apps/localizacion/` (framework: registro, resolución por empresa, puertos `MotorImpuestos`/`GeneradorDocumentoLegal`/`CalculadoraNomina`/`ProveedorTasas`/`MetodosPagoLocales`/`LibroLegal`).
 - [ ] Expandir `apps/vzla_localizacion` → `localizacion_ve`: mover Capa A (fiscal, libros SENIAT, factura legal, nómina LOTTT, pagos parafiscales) y Capa B (multimoneda, doble tasa, métodos de pago, pagos de terceros, cambios de divisa, ventas con/sin factura, libro maestro de caja).
 - [ ] Añadir `Empresa.pais` + flags `localizacion_legal_activa` / `localizacion_mercado_activa`; el core opera genérico si están off.
-- [ ] Portar insumos de `GestionCxC` que aún no están en Omni (ver [§6.8](#68--backlog-de-tropicalización-desde-gestioncxc)).
+- [ ] Portar insumos de `GestionCxC` que aún no están en Omni (ver [§6.8](#68-backlog-de-tropicalización-desde-gestioncxc)).
 
 **Criterio de salida:** una empresa de prueba **no venezolana** opera el ciclo comercial completo (cotización→factura→cobro→asiento) sin ver IGTF, doble tasa, ni métodos de pago venezolanos, y una empresa venezolana sigue teniendo todo. Eso prueba que la localización es realmente enchufable.
 
@@ -581,7 +581,7 @@ datos reales + operación 30 días** (los importadores ya están, ver
 - Auditar y endurecer la PWA actual (cobertura de caché, expiración, fallback offline).
 - Reintento de mutaciones con backoff (sin outbox completo).
 - Banner global de estado online/offline + badge "datos stale".
-- **DoD:** un corte de 5 minutos no rompe consultas y los reintentos completan al volver la red. Cierra la deuda "Service Workers / offline real" de [§4.3](#43-deuda-técnica-conocida-y-abierta).
+- **DoD:** un corte de 5 minutos no rompe consultas y los reintentos completan al volver la red. Cierra la deuda "Service Workers / offline real" de [§4.3](#43-deuda-técnica-activa-verificada-en-código).
 
 **Fase 3 — Shell Desktop (Tauri 2)** (trigger: Fase 1 cerrada).
 - `clients/desktop` envolviendo el build de `clients/web`.
@@ -640,7 +640,7 @@ Del catálogo del Master Plan, en orden de prioridad histórica:
 
 # 6 — Localización Venezuela (l10n-ve)
 
-> Esta sección es el **catálogo de la localización venezolana**, organizada en las dos capas de [§3.7](#37--arquitectura-de-localización-l10n-de-dos-capas). Todo lo de aquí se activa/desactiva por empresa y, a término, vive en `apps/localizacion_ve`, no en el núcleo.
+> Esta sección es el **catálogo de la localización venezolana**, organizada en las dos capas de [§3.7](#37-arquitectura-de-localización-l10n-de-dos-capas). Todo lo de aquí se activa/desactiva por empresa y, a término, vive en `apps/localizacion_ve`, no en el núcleo.
 
 ## CAPA A — Regulatoria / Legal
 
@@ -698,7 +698,7 @@ Ledger unificado ("maestro de operaciones") que normaliza **ingresos y egresos d
 
 ## 6.8 Backlog de tropicalización desde GestionCxC
 
-`C:\Users\PC\Proyectos\GestionCxC` es un sistema previo (FastAPI + Odoo) con lógica venezolana madura y probada en producción. La conexión Odoo y las CxC/cobranza **ya se portaron** a Omni (`apps/integration_hub`, `apps/cxc`, `apps/cuentas_por_cobrar`). Quedan como insumos a portar hacia `apps/localizacion_ve` (Capa B, salvo lo fiscal que es Capa A):
+GestionCxC (repositorio previo en FastAPI + Odoo) es un sistema previo con lógica venezolana madura y probada en producción. La conexión Odoo y las CxC/cobranza **ya se portaron** a Omni (`apps/integration_hub`, `apps/cxc`, `apps/cuentas_por_cobrar`). Quedan como insumos a portar hacia `apps/localizacion_ve` (Capa B, salvo lo fiscal que es Capa A):
 
 | Origen en GestionCxC | Concepto a portar | Capa | Destino sugerido en Omni |
 |---|---|---|---|

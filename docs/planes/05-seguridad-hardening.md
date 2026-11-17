@@ -341,6 +341,9 @@ P2-1 (gateway LLM), P2-6 (OTel), P3-1 (2FA), P3-2 (RAG), P3-3 (WebSockets).
 
 Cada tarea pasa el gate completo de [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md):
 build verde, tests verdes, `/security-review`, `/code-review`, revisión de gaps, cero deuda
-nueva (o CTF), auto-checklist R-CODE/R-PROC. PRs pequeños y focales (R-PROC-2), en draft,
-por la rama correcta según [`FLUJO_DE_TRABAJO.md`](../FLUJO_DE_TRABAJO.md) (fix/hotfix desde
-`main` para lo P0; feature desde `develop` para el resto).
+nueva (o CTF), auto-checklist R-CODE/R-PROC. PRs pequeños y focales (`R-PROC-2`), abiertos en
+`draft` desde `develop` hacia `develop` conforme a [`FLUJO_DE_TRABAJO.md`](../FLUJO_DE_TRABAJO.md)
+(*toda rama —feature, fix, hotfix, chore, docs— nace de `develop` y hace PR a `develop`*);
+en PRs a `develop`, tras Gate DoD + dictamen `APROBADO` en comentario de revisor independiente
+distinto del autor, el agente/orquestador marca `ready`, espera CI 100 % verde y mergea a
+`develop`. La puerta `develop`→`main` requiere siempre aprobación humana obligatoria del owner (`R-PROC-3`).

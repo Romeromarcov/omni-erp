@@ -65,7 +65,9 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 2. **Validación estricta de topes:**
    - `sum(asignaciones ACTIVAS del pago) <= pago.monto`.
    - `sum(asignaciones ACTIVAS del documento) <= saldo_aplicable_documento` (cualquier excedente queda sin asignar en el `Pago`, nunca sobre-aplica la factura).
-   - Validación cross-tenant obligatoria: `pago.id_empresa_id == documento.empresa_id == contacto.id_empresa_id`.
+   - Validación cross-tenant y de identidad obligatoria:
+     - Utilizar un helper polimórfico `_extraer_empresa_id(documento)` (análogo a `_extraer_empresa` en `apps/contabilidad/services.py:105`): `cuentas_por_pagar.CuentaPorPagar`, `ventas.FacturaFiscal` y `compras.FacturaCompra` usan `id_empresa_id`, mientras `cuentas_por_cobrar.CuentaPorCobrar` usa `empresa_id` **nullable** (`ADR-009`). Si `_extraer_empresa_id(documento)` retorna `None`, la operación falla cerrado (fail-closed) y siempre exige `pago.id_empresa_id == _extraer_empresa_id(documento) == contacto.id_empresa_id`.
+     - Validación del `id_contacto` común: para documentos con `crm.Cliente` o `proveedores.Proveedor` se resuelve vía su `OneToOneField` a `core.Contacto` (exigiendo que exista o enlazándolo primero). Si una `CuentaPorCobrar` proviene de fuente externa sin `crm.Cliente` (`cliente=None` y `cliente_externo_id` poblado, `ADR-009`), el servicio resuelve el `core.Contacto` por el mapa `EntidadSincronizada` / coincidencia normalizada en la misma empresa antes de conciliar; si no existe `Contacto` resuelto o difiere del `id_contacto` del `Pago`, rechaza la asignación con error de dominio (`400`/`422`).
 3. **Saldo a favor / anticipo del contacto:**
    - Todo `Pago` (o remanente `pago.monto - sum(asignaciones ACTIVAS.monto_asignado_pago) > 0`) pertenece al `id_contacto` y queda disponible como **anticipo / saldo a favor** (`INGRESO` para clientes, `EGRESO` pagado por adelantado para proveedores).
    - Endpoint y helper `saldo_a_favor_contacto(empresa, contacto, tipo_operacion)` calculado en BD con `Sum`/`Coalesce`, aplicable a futuras facturas/obligaciones sin crear `Pago` duplicado.
@@ -153,9 +155,9 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
    - Unicidad activa `(id_empresa, id_producto, id_variante, id_almacen)`.
    - Servicio `evaluar_reabastecimiento(empresa, almacen=None)` que calcula `deficit` considerando `cantidad_disponible - cantidad_comprometida + cantidad_en_transito`, integrado con `ReordenSugeridorAgent` y acción para generar borrador de `compras.RequisicionCompra` o `manufactura.OrdenProduccion` según `ruta`.
 2. **Trazabilidad opt-in de `LoteProducto` (`inventario_lote_producto`):**
-   - `Producto.controlar_lotes = BooleanField(default=False)` y `Producto.estrategia_salida = CharField(choices=[("FIFO", "FIFO"), ("FEFO", "FEFO")], default="FIFO")`: **comercios simples mantienen `False` y operan sin fricción (`R-PROD-3`)**.
+   - Reutilizar **`Producto.maneja_lotes`** (y respetar el existente `Producto.maneja_seriales` en `backend/apps/inventario/models.py:60-61`, sin duplicar campos booleanos) añadiendo solo `Producto.estrategia_salida = CharField(choices=[("FIFO", "FIFO"), ("FEFO", "FEFO")], default="FIFO")`: **comercios simples mantienen `maneja_lotes=False` y operan sin fricción (`R-PROD-3`)**.
    - Modelo `LoteProducto`: `id_empresa`, `id_producto`, `id_variante`, `id_almacen`, `numero_lote` (único por `(id_empresa, id_producto, numero_lote)`), `fecha_fabricacion`, `fecha_vencimiento`, `cantidad_disponible`, `cantidad_reservada`, `activo`.
-   - Integración en el chokepoint `registrar_movimiento()` (`inventario/services.py`): si `producto.controlar_lotes=True`, exige `lote` en entradas o selecciona automáticamente por FEFO/FIFO en salidas atómicas (`select_for_update`).
+   - Integración en el chokepoint `registrar_movimiento()` (`inventario/services.py`): si `producto.maneja_lotes=True`, exige `lote` en entradas o selecciona automáticamente por FEFO/FIFO en salidas atómicas (`select_for_update`).
 3. **Transferencias y reservas por `UbicacionAlmacen` (`almacenes`):**
    - `Almacen.usa_ubicaciones = BooleanField(default=False)` (opt-in para bodegas simples).
    - `StockUbicacion` (`almacenes_stock_ubicacion`): `(id_empresa, id_almacen, id_ubicacion, id_producto, id_variante)` con `cantidad_disponible` y `cantidad_reservada`.
