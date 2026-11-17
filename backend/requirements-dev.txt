@@ -4,7 +4,7 @@
 
 # ── Análisis estático de seguridad ──
 bandit==1.9.4
-semgrep==1.97.0
+semgrep==1.97.0; sys_platform != 'win32'
 
 # ── Tipos ──
 mypy==1.13.0

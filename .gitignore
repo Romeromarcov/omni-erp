@@ -41,6 +41,7 @@ coverage.xml
 
 # Virtualenv
 .venv/
+.venv*/
 venv/
 
 # Docker
@@ -48,8 +49,10 @@ venv/
 **/omni_db_data*
 **/innovaerp_db_data*
 
-# SQLite tools binaries
+# SQLite tools binaries & stray Windows folders
 backend/sqlite-tools/
+backend/%SystemDrive%/
+%SystemDrive%/
 
 # Others
 *.bak

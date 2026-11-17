@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — fase 0 iniciada                |
+| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 |
 | **Fecha**    | 2026-11-14                                |
 | **Esfuerzo** | ~3–4 semanas, repartibles en PRs pequeños (R-PROC-2) |
 | **Owner**    | equipo-backend / devops (acciones del propietario marcadas con 👤) |
@@ -58,17 +58,17 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 
 | # | Tarea | Resuelve | Aceptación |
 |---|-------|----------|------------|
-| 0.1 | ⬜ Subir `RUNNER_VERSION` a 2.338.2 y documentar el síntoma (404) en `infra/ci-runner/README.md` | H1 | El servicio `ci-runner` se registra y `long-tests.yml` lo toma 👤 verifica en Railway |
-| 0.2 | ⬜ **Monedas**: comando idempotente `seed_catalogo_monedas` (USD, VES, EUR, USDT), llamado desde `entrypoint.sh` y desde `seed_empresa_inicial`; `sync_tasas_ve` lanza una excepción visible si faltan monedas; tests | H2, H3 | Tras el despliegue de staging el worker devuelve `bcv`/`binance_p2p` y hay filas en `TasaCambio`; el comando es idempotente y no pisa ediciones |
-| 0.3 | ⬜ Subir `frontend/test-results` como artefacto cuando falle el E2E | H10 | Un E2E fallido deja `error-context.md` y trazas descargables |
-| 0.4 | ⬜ Automatizar las matrices: hook `pre-push` que corre `mapa_superficie --check` + una línea en el DoD | H9 | Un cambio de modelos sin regenerar matrices no sale de la máquina |
+| 0.1 | ✅ Subir `RUNNER_VERSION` a 2.338.2 y documentar el síntoma (404) en `infra/ci-runner/README.md` | H1 | El servicio `ci-runner` se registra y `long-tests.yml` lo toma 👤 verifica en Railway |
+| 0.2 | ✅ **Monedas**: comando idempotente `seed_catalogo_monedas` (USD, VES, EUR, USDT), llamado desde `entrypoint.sh` y desde `seed_empresa_inicial`; `sync_tasas_ve` lanza una excepción visible si faltan monedas; tests | H2, H3 | Tras el despliegue de staging el worker devuelve `bcv`/`binance_p2p` y hay filas en `TasaCambio`; el comando es idempotente y no pisa ediciones |
+| 0.3 | ✅ Subir `frontend/test-results` como artefacto cuando falle el E2E | H10 | Un E2E fallido deja `error-context.md` y trazas descargables |
+| 0.4 | ✅ Automatizar las matrices: hook `pre-push` que corre `mapa_superficie --check` + una línea en el DoD | H9 | Un cambio de modelos sin regenerar matrices no sale de la máquina |
 
 ### Fase 1 — Fiabilidad
 
 | # | Tarea | Resuelve | Aceptación |
 |---|-------|----------|------------|
 | 1.1 | ⬜ Auditar los 32 `str(e)`: clasificar (mensaje de dominio seguro vs excepción genérica), helper común y reemplazo por app | H5 | Ninguna respuesta expone una excepción no controlada; test por app |
-| 1.2 | ⬜ `uuid7` monótono (D1) y desempate por `created_at` + pk en `_config_de`; corregir `test_tolerancia_custom_cambia_resultado` | H6 | Los tests dejan de variar; tests de monotonicidad (mismo ms, hilos) |
+| 1.2 | ✅ `uuid7` monótono (D1) y desempate por `created_at` + pk en `_config_de`; corregir `test_tolerancia_custom_cambia_resultado` | H6 | Los tests dejan de variar; tests de monotonicidad (mismo ms, hilos) |
 | 1.3 | ⬜ Fijar versión exacta de las 4 dependencias; Dependabot semanal; mover `pip-audit`/`npm audit` a un job nocturno que abra un aviso y bloquee solo en la rama de release | H7, H8 | Un aviso nuevo no bloquea un PR no relacionado |
 
 ### Fase 2 — RLS real (CTF-012)
@@ -87,7 +87,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 | # | Tarea | Resuelve |
 |---|-------|----------|
 | 3.1 | 👤 Borrar ramas integradas y activar *Automatically delete head branches* | H11 |
-| 3.2 | ⬜ Revisar `frontend/test-import.js`; ignorar carpetas locales basura (`backend/%SystemDrive%`, `backend/sqlite-tools`, `.venv*`) | H12 |
+| 3.2 | ✅ Revisar `frontend/test-import.js`; ignorar carpetas locales basura (`backend/%SystemDrive%`, `backend/sqlite-tools`, `.venv*`) | H12 |
 | 3.3 | ⬜ D2: migrar a `ruff` (config en `setup.cfg`/`pyproject`), quitar `black`/`isort`, PR mecánico de reformateo | H12 |
 | 3.4 | ⬜ Barrido: justificar o quitar `# noqa`/`eslint-disable`, imports sin usar, TODOs | H12 |
 | 3.5 | ⬜ Actualizar `docs/tech-debt/INVENTORY.md`; unificar `docs/archive` y `docs/_archive`. **No** se modifican fechas de CTF (D3) | H12 |
@@ -97,7 +97,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 
 | # | Tarea | Resuelve |
 |---|-------|----------|
-| 4.1 | ⬜ D4: `PersistQueryClientProvider onSuccess` → invalidar consultas activas; test | H13 |
+| 4.1 | ✅ D4: `PersistQueryClientProvider onSuccess` → invalidar consultas activas; test | H13 |
 | 4.2 | ⬜ Montos, segunda pasada (R-CODE-4): otros formularios con `number`, `utils/formatCurrency`, volver a tipar `D()`, alias `XFormValues` redundantes | — |
 | 4.3 | 👤 Railway: `DATABASE_URL`/`REDIS_URL` como referencias; quitar el host de producción de `DJANGO_ALLOWED_HOSTS`; no usar *Sync* con entornos de PR | H14 |
 | 4.4 | ⬜ Connect S2 en adelante, **después de la fase 2** (perfil público con `rls.rls_bypass()` acotado y solo tarjetas `ACTIVA`) | — |
