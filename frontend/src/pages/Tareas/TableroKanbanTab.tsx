@@ -57,6 +57,7 @@ const TableroKanbanTab: React.FC<TableroKanbanTabProps> = ({ empresaId }) => {
   const qc = useQueryClient();
   const [proyectoIdSel, setProyectoIdSel] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [dialogError, setDialogError] = useState('');
   const [dialogNueva, setDialogNueva] = useState(false);
   const [form, setForm] = useState(FORM_NUEVA_VACIO);
   const [detalleTarea, setDetalleTarea] = useState<Tarea | null>(null);
@@ -141,11 +142,12 @@ const TableroKanbanTab: React.FC<TableroKanbanTabProps> = ({ empresaId }) => {
     onSuccess: () => {
       setDialogNueva(false);
       setForm(FORM_NUEVA_VACIO);
+      setDialogError('');
       setErrorMsg('');
       invalidarTodo();
     },
     onError: (e: unknown) => {
-      setErrorMsg(mensajeTareas(e, 'No se pudo crear la tarea.'));
+      setDialogError(mensajeTareas(e, 'No se pudo crear la tarea.'));
     },
   });
 
@@ -214,8 +216,10 @@ const TableroKanbanTab: React.FC<TableroKanbanTabProps> = ({ empresaId }) => {
 
         <Button
           variant="contained"
+          disabled={!proyectoActivo}
           onClick={() => {
             setErrorMsg('');
+            setDialogError('');
             setDialogNueva(true);
           }}
         >
@@ -341,7 +345,7 @@ const TableroKanbanTab: React.FC<TableroKanbanTabProps> = ({ empresaId }) => {
                                 select
                                 size="small"
                                 label="Mover a"
-                                value={t.seccion ?? sec.id_seccion}
+                                value={sec.id_seccion}
                                 onChange={(ev) =>
                                   moverTarjeta.mutate({
                                     tareaId: t.id_tarea,
@@ -382,9 +386,22 @@ const TableroKanbanTab: React.FC<TableroKanbanTabProps> = ({ empresaId }) => {
       )}
 
       {/* Diálogo Nueva Tarea */}
-      <Dialog open={dialogNueva} onClose={() => setDialogNueva(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogNueva}
+        onClose={() => {
+          setDialogError('');
+          setDialogNueva(false);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Nueva tarea operativa</DialogTitle>
         <DialogContent>
+          {dialogError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 1 }} onClose={() => setDialogError('')}>
+              {dialogError}
+            </Alert>
+          )}
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="Título"
@@ -471,13 +488,29 @@ const TableroKanbanTab: React.FC<TableroKanbanTabProps> = ({ empresaId }) => {
                 onChange={(ev) => setForm({ ...form, entidad_id: ev.target.value })}
               />
             </Stack>
+            {Boolean(form.entidad_tipo.trim()) !== Boolean(form.entidad_id.trim()) && (
+              <Alert severity="warning">
+                Si vinculas una entidad del ERP debes indicar tanto el tipo como el UUID.
+              </Alert>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogNueva(false)}>Cancelar</Button>
+          <Button
+            onClick={() => {
+              setDialogError('');
+              setDialogNueva(false);
+            }}
+          >
+            Cancelar
+          </Button>
           <Button
             variant="contained"
-            disabled={!form.titulo.trim() || crearTarea.isPending}
+            disabled={
+              !form.titulo.trim() ||
+              Boolean(form.entidad_tipo.trim()) !== Boolean(form.entidad_id.trim()) ||
+              crearTarea.isPending
+            }
             onClick={() => crearTarea.mutate()}
           >
             Guardar tarea
@@ -485,12 +518,15 @@ const TableroKanbanTab: React.FC<TableroKanbanTabProps> = ({ empresaId }) => {
         </DialogActions>
       </Dialog>
 
-      <TareaDetalleDialog
-        empresaId={empresaId}
-        tarea={detalleTarea}
-        candidatasDependencia={tareas}
-        onClose={() => setDetalleTarea(null)}
-      />
+      {detalleTarea && (
+        <TareaDetalleDialog
+          key={detalleTarea.id_tarea}
+          empresaId={empresaId}
+          tarea={detalleTarea}
+          candidatasDependencia={tareas}
+          onClose={() => setDetalleTarea(null)}
+        />
+      )}
     </Box>
   );
 };

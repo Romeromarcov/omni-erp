@@ -303,12 +303,15 @@ const ListaTareasTab: React.FC<ListaTareasTabProps> = ({ empresaId }) => {
         </DialogActions>
       </Dialog>
 
-      <TareaDetalleDialog
-        empresaId={empresaId}
-        tarea={detalleTarea}
-        candidatasDependencia={tareas}
-        onClose={() => setDetalleTarea(null)}
-      />
+      {detalleTarea && (
+        <TareaDetalleDialog
+          key={detalleTarea.id_tarea}
+          empresaId={empresaId}
+          tarea={detalleTarea}
+          candidatasDependencia={tareas}
+          onClose={() => setDetalleTarea(null)}
+        />
+      )}
     </Box>
   );
 };

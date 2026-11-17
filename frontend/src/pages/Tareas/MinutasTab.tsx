@@ -54,6 +54,7 @@ const MinutasTab: React.FC<MinutasTabProps> = ({ empresaId }) => {
   const [form, setForm] = useState(FORM_MINUTA_VACIO);
   const [proyectoDestino, setProyectoDestino] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [dialogError, setDialogError] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
 
   const { data: minutas = [], isLoading } = useQuery({
@@ -81,12 +82,13 @@ const MinutasTab: React.FC<MinutasTabProps> = ({ empresaId }) => {
     onSuccess: () => {
       setDialogAbierto(false);
       setForm(FORM_MINUTA_VACIO);
+      setDialogError('');
       setErrorMsg('');
       setInfoMsg('Borrador de minuta creado y enriquecido con responsables, áreas y fechas.');
       invalidar();
     },
     onError: (e: unknown) => {
-      setErrorMsg(mensajeTareas(e, 'No se pudo generar el borrador de la minuta.'));
+      setDialogError(mensajeTareas(e, 'No se pudo generar el borrador de la minuta.'));
     },
   });
 
@@ -142,7 +144,13 @@ const MinutasTab: React.FC<MinutasTabProps> = ({ empresaId }) => {
             </MenuItem>
           ))}
         </TextField>
-        <Button variant="contained" onClick={() => setDialogAbierto(true)}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setDialogError('');
+            setDialogAbierto(true);
+          }}
+        >
           Nueva minuta
         </Button>
       </Stack>
@@ -241,7 +249,13 @@ const MinutasTab: React.FC<MinutasTabProps> = ({ empresaId }) => {
                         {it.asignado_nombre && (
                           <Chip size="small" variant="outlined" label={it.asignado_nombre} />
                         )}
-                        {it.area && <Chip size="small" variant="outlined" label={it.area} />}
+                        {(it.area_nombre || it.area) && (
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            label={it.area_nombre || it.area}
+                          />
+                        )}
                         {it.fecha_vencimiento && (
                           <Chip
                             size="small"
@@ -261,12 +275,20 @@ const MinutasTab: React.FC<MinutasTabProps> = ({ empresaId }) => {
 
       <Dialog
         open={dialogAbierto}
-        onClose={() => setDialogAbierto(false)}
+        onClose={() => {
+          setDialogError('');
+          setDialogAbierto(false);
+        }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>Registrar minuta y acuerdos</DialogTitle>
         <DialogContent>
+          {dialogError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 1 }} onClose={() => setDialogError('')}>
+              {dialogError}
+            </Alert>
+          )}
           <Stack spacing={2} sx={{ mt: 1 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
               <TextField
@@ -306,7 +328,14 @@ const MinutasTab: React.FC<MinutasTabProps> = ({ empresaId }) => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogAbierto(false)}>Cancelar</Button>
+          <Button
+            onClick={() => {
+              setDialogError('');
+              setDialogAbierto(false);
+            }}
+          >
+            Cancelar
+          </Button>
           <Button
             variant="contained"
             disabled={

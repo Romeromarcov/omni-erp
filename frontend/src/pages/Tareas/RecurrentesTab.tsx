@@ -58,6 +58,7 @@ const RecurrentesTab: React.FC<RecurrentesTabProps> = ({ empresaId }) => {
   const [dialogAbierto, setDialogAbierto] = useState(false);
   const [form, setForm] = useState(FORM_RECURRENTE_VACIO);
   const [errorMsg, setErrorMsg] = useState('');
+  const [dialogError, setDialogError] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
 
   const { data: plantillas = [], isLoading } = useQuery({
@@ -113,12 +114,13 @@ const RecurrentesTab: React.FC<RecurrentesTabProps> = ({ empresaId }) => {
     onSuccess: () => {
       setDialogAbierto(false);
       setForm(FORM_RECURRENTE_VACIO);
+      setDialogError('');
       setErrorMsg('');
       setInfoMsg('Plantilla recurrente registrada.');
       invalidar();
     },
     onError: (e: unknown) => {
-      setErrorMsg(mensajeTareas(e, 'No se pudo registrar la plantilla recurrente.'));
+      setDialogError(mensajeTareas(e, 'No se pudo registrar la plantilla recurrente.'));
     },
   });
 
@@ -226,7 +228,13 @@ const RecurrentesTab: React.FC<RecurrentesTabProps> = ({ empresaId }) => {
         >
           Materializar pendientes de hoy
         </Button>
-        <Button variant="contained" onClick={() => setDialogAbierto(true)}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setDialogError('');
+            setDialogAbierto(true);
+          }}
+        >
           Nueva recurrencia
         </Button>
       </Stack>
@@ -241,12 +249,20 @@ const RecurrentesTab: React.FC<RecurrentesTabProps> = ({ empresaId }) => {
 
       <Dialog
         open={dialogAbierto}
-        onClose={() => setDialogAbierto(false)}
+        onClose={() => {
+          setDialogError('');
+          setDialogAbierto(false);
+        }}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Nueva plantilla recurrente</DialogTitle>
         <DialogContent>
+          {dialogError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 1 }} onClose={() => setDialogError('')}>
+              {dialogError}
+            </Alert>
+          )}
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="Título"
@@ -332,6 +348,13 @@ const RecurrentesTab: React.FC<RecurrentesTabProps> = ({ empresaId }) => {
                 type="number"
                 fullWidth
                 value={form.dia_mes}
+                error={
+                  Boolean(form.dia_mes) &&
+                  (!Number.isInteger(Number(form.dia_mes)) ||
+                    Number(form.dia_mes) < 1 ||
+                    Number(form.dia_mes) > 31)
+                }
+                helperText="Opcional: entero entre 1 y 31."
                 onChange={(ev) => setForm({ ...form, dia_mes: ev.target.value })}
               />
             )}
@@ -393,11 +416,25 @@ const RecurrentesTab: React.FC<RecurrentesTabProps> = ({ empresaId }) => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogAbierto(false)}>Cancelar</Button>
+          <Button
+            onClick={() => {
+              setDialogError('');
+              setDialogAbierto(false);
+            }}
+          >
+            Cancelar
+          </Button>
           <Button
             variant="contained"
             disabled={
-              !form.titulo.trim() || !form.proxima_ejecucion || crearPlantilla.isPending
+              !form.titulo.trim() ||
+              !form.proxima_ejecucion ||
+              (form.frecuencia === 'MENSUAL' &&
+                Boolean(form.dia_mes) &&
+                (!Number.isInteger(Number(form.dia_mes)) ||
+                  Number(form.dia_mes) < 1 ||
+                  Number(form.dia_mes) > 31)) ||
+              crearPlantilla.isPending
             }
             onClick={() => crearPlantilla.mutate()}
           >

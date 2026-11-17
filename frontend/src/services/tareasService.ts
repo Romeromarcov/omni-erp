@@ -39,7 +39,15 @@ export const PRIORIDADES_TAREA: readonly PrioridadTarea[] = [
   'URGENTE',
 ] as const;
 
-export type OrigenTarea = 'WEB' | 'BOT' | 'RECURRENTE' | 'MINUTA_IA' | 'AGENTE_IA' | 'SISTEMA';
+export type OrigenTarea =
+  | 'WEB'
+  | 'BOT'
+  | 'MINUTA_IA'
+  | 'RECURRENCIA'
+  | 'AGENTE'
+  | 'ERP_EVENTO';
+
+export type VistaPredeterminadaProyecto = 'TABLERO' | 'LISTA' | 'CALENDARIO';
 
 export type FrecuenciaRecurrente = 'INTRADIA' | 'DIARIA' | 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
 
@@ -100,7 +108,7 @@ export interface Proyecto {
   nombre: string;
   descripcion: string;
   color: string;
-  vista_predeterminada: 'TABLERO' | 'LISTA';
+  vista_predeterminada: VistaPredeterminadaProyecto;
   es_personal: boolean;
   archivado: boolean;
   area: string | null;
@@ -193,14 +201,17 @@ export interface PlantillaTareaRecurrente {
 }
 
 export interface ItemBorradorMinuta {
+  indice?: number;
   titulo: string;
   descripcion?: string;
   prioridad?: PrioridadTarea;
   asignado_a_id?: string | null;
   asignado_nombre?: string;
   area_id?: string | null;
+  area_nombre?: string;
   area?: string;
   fecha_vencimiento?: string | null;
+  incompleto?: string[];
 }
 
 export interface MinutaReunion {
@@ -279,10 +290,9 @@ export interface ResultadoMaterializacionRecurrente {
 
 export interface ResultadoSeguimientoTareas {
   momento: string;
-  recordatorios_preventivos: number;
-  escalaciones_vencidas: number;
-  bloqueadas_automaticamente: number;
-  recurrentes_creadas: number;
+  instante: string;
+  alertas_emitidas: number;
+  tareas_bloqueadas: number;
 }
 
 // ── Payloads de entrada (whitelist explícita) ────────────────────────────────
@@ -298,7 +308,7 @@ export interface ProyectoPayload {
   nombre: string;
   descripcion?: string;
   color?: string;
-  vista_predeterminada?: 'TABLERO' | 'LISTA';
+  vista_predeterminada?: VistaPredeterminadaProyecto;
   area?: string | null;
   propietario?: string | null;
 }
@@ -488,7 +498,7 @@ export const tareasService = {
   },
 
   cambiarEstado: (id: string, estado: EstadoTarea, motivo = ''): Promise<Tarea> =>
-    post<Tarea>(`${BASE}/items/${id}/estado/`, { estado, motivo }),
+    post<Tarea>(`${BASE}/items/${id}/cambiar-estado/`, { estado, motivo }),
 
   mover: (id: string, seccion: string, ordenTablero?: number): Promise<Tarea> => {
     const body: Record<string, unknown> = { seccion };

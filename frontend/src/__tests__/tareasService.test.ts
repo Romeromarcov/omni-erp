@@ -220,7 +220,7 @@ describe('tareasService', () => {
 
     vi.mocked(post).mockResolvedValueOnce({ id_tarea: 't1', estado: 'COMPLETADA' });
     await tareasService.cambiarEstado('t1', 'COMPLETADA');
-    expect(post).toHaveBeenLastCalledWith('/tareas/items/t1/estado/', {
+    expect(post).toHaveBeenLastCalledWith('/tareas/items/t1/cambiar-estado/', {
       estado: 'COMPLETADA',
       motivo: '',
     });
@@ -403,7 +403,12 @@ describe('tareasService', () => {
       gerente: 'u1',
     });
 
-    vi.mocked(post).mockResolvedValueOnce({ momento: 'AUTO' });
+    vi.mocked(post).mockResolvedValueOnce({
+      momento: 'AUTO',
+      instante: '2026-11-17T09:00:00-04:00',
+      alertas_emitidas: 1,
+      tareas_bloqueadas: 0,
+    });
     await seguimientoTareasService.ejecutarCiclo();
     expect(post).toHaveBeenLastCalledWith('/tareas/seguimiento/ejecutar/', { momento: 'AUTO' });
   });

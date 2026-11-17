@@ -53,9 +53,10 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
   const [dialogProy, setDialogProy] = useState(false);
   const [formArea, setFormArea] = useState(FORM_AREA_VACIO);
   const [formProy, setFormProy] = useState(FORM_PROY_VACIO);
-  const [horasBloqueoEdit, setHorasBloqueoEdit] = useState<string>('');
+  const [horasBloqueoEdit, setHorasBloqueoEdit] = useState<string | null>(null);
   const [gerenteEdit, setGerenteEdit] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [dialogError, setDialogError] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
 
   const { data: resumen, isLoading: cargandoResumen } = useQuery({
@@ -87,7 +88,7 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
     onSuccess: (res) => {
       setErrorMsg('');
       setInfoMsg(
-        `Ciclo ejecutado (${res.momento}): ${res.recordatorios_preventivos} preventivos, ${res.escalaciones_vencidas} escalaciones, ${res.bloqueadas_automaticamente} bloqueos 72h, ${res.recurrentes_creadas} recurrentes.`,
+        `Ciclo ejecutado (${res.momento}): ${res.alertas_emitidas} alertas emitidas, ${res.tareas_bloqueadas} tareas bloqueadas automáticamente.`,
       );
       invalidar();
     },
@@ -109,12 +110,13 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
     onSuccess: () => {
       setDialogArea(false);
       setFormArea(FORM_AREA_VACIO);
+      setDialogError('');
       setErrorMsg('');
       setInfoMsg('Área operativa creada.');
       invalidar();
     },
     onError: (e: unknown) => {
-      setErrorMsg(mensajeTareas(e, 'No se pudo crear el área operativa.'));
+      setDialogError(mensajeTareas(e, 'No se pudo crear el área operativa.'));
     },
   });
 
@@ -129,20 +131,22 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
     onSuccess: () => {
       setDialogProy(false);
       setFormProy(FORM_PROY_VACIO);
+      setDialogError('');
       setErrorMsg('');
       setInfoMsg('Proyecto creado con sus 5 secciones Kanban estándar.');
       invalidar();
     },
     onError: (e: unknown) => {
-      setErrorMsg(mensajeTareas(e, 'No se pudo crear el proyecto.'));
+      setDialogError(mensajeTareas(e, 'No se pudo crear el proyecto.'));
     },
   });
 
   const guardarConfig = useMutation({
     mutationFn: () => {
-      const horasNum = horasBloqueoEdit
-        ? Number(horasBloqueoEdit)
-        : (config?.horas_bloqueo_vencida ?? 72);
+      const horasNum =
+        horasBloqueoEdit !== null
+          ? Number(horasBloqueoEdit)
+          : (config?.horas_bloqueo_vencida ?? 72);
       const gerenteVal = gerenteEdit !== null ? gerenteEdit || null : (config?.gerente ?? null);
       return seguimientoTareasService.updateConfiguracion({
         horas_bloqueo_vencida: horasNum,
@@ -150,6 +154,8 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
       });
     },
     onSuccess: () => {
+      setHorasBloqueoEdit(null);
+      setGerenteEdit(null);
       setErrorMsg('');
       setInfoMsg('Parámetros de seguimiento actualizados.');
       invalidar();
@@ -194,7 +200,11 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
 
   const tot = resumen?.totales;
   const horasActuales =
-    horasBloqueoEdit !== '' ? horasBloqueoEdit : String(config?.horas_bloqueo_vencida ?? 72);
+    horasBloqueoEdit !== null ? horasBloqueoEdit : String(config?.horas_bloqueo_vencida ?? 72);
+  const horasValidas =
+    horasActuales.trim() !== '' &&
+    Number.isInteger(Number(horasActuales)) &&
+    Number(horasActuales) >= 1;
   const gerenteActual = gerenteEdit !== null ? gerenteEdit : (config?.gerente ?? '');
 
   return (
@@ -217,10 +227,22 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
         sx={{ mb: 2.5 }}
       >
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          <Button variant="outlined" onClick={() => setDialogArea(true)}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setDialogError('');
+              setDialogArea(true);
+            }}
+          >
             Nueva área operativa
           </Button>
-          <Button variant="outlined" onClick={() => setDialogProy(true)}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setDialogError('');
+              setDialogProy(true);
+            }}
+          >
             Nuevo proyecto
           </Button>
         </Stack>
@@ -313,6 +335,7 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
               type="number"
               label="Horas vencida para bloqueo automático"
               value={horasActuales}
+              error={!horasValidas}
               onChange={(ev) => setHorasBloqueoEdit(ev.target.value)}
               sx={{ minWidth: 260 }}
             />
@@ -325,6 +348,11 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
               sx={{ minWidth: 260 }}
             >
               <MenuItem value="">Sin gerente asignado</MenuItem>
+              {gerenteActual && !usuarios.some((u) => u.id === gerenteActual) && (
+                <MenuItem value={gerenteActual}>
+                  Gerente asignado ({gerenteActual.slice(0, 8)}…)
+                </MenuItem>
+              )}
               {usuarios.map((u) => (
                 <MenuItem key={u.id} value={u.id}>
                   {`${u.first_name} ${u.last_name}`.trim() || u.username}
@@ -333,7 +361,7 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
             </TextField>
             <Button
               variant="contained"
-              disabled={guardarConfig.isPending}
+              disabled={!horasValidas || guardarConfig.isPending}
               onClick={() => guardarConfig.mutate()}
             >
               Guardar reglas
@@ -343,9 +371,22 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
       </Card>
 
       {/* Diálogo Nueva Área */}
-      <Dialog open={dialogArea} onClose={() => setDialogArea(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogArea}
+        onClose={() => {
+          setDialogError('');
+          setDialogArea(false);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Nueva área operativa</DialogTitle>
         <DialogContent>
+          {dialogError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 1 }} onClose={() => setDialogError('')}>
+              {dialogError}
+            </Alert>
+          )}
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="Nombre del área"
@@ -380,7 +421,14 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogArea(false)}>Cancelar</Button>
+          <Button
+            onClick={() => {
+              setDialogError('');
+              setDialogArea(false);
+            }}
+          >
+            Cancelar
+          </Button>
           <Button
             variant="contained"
             disabled={!formArea.nombre.trim() || crearArea.isPending}
@@ -392,9 +440,22 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
       </Dialog>
 
       {/* Diálogo Nuevo Proyecto */}
-      <Dialog open={dialogProy} onClose={() => setDialogProy(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogProy}
+        onClose={() => {
+          setDialogError('');
+          setDialogProy(false);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Nuevo proyecto / tablero</DialogTitle>
         <DialogContent>
+          {dialogError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 1 }} onClose={() => setDialogError('')}>
+              {dialogError}
+            </Alert>
+          )}
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="Nombre del proyecto"
@@ -428,7 +489,14 @@ const ResumenEquiposTab: React.FC<ResumenEquiposTabProps> = ({ empresaId }) => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogProy(false)}>Cancelar</Button>
+          <Button
+            onClick={() => {
+              setDialogError('');
+              setDialogProy(false);
+            }}
+          >
+            Cancelar
+          </Button>
           <Button
             variant="contained"
             disabled={!formProy.nombre.trim() || crearProyecto.isPending}

@@ -10,6 +10,18 @@ vi.mock('../services/api', () => ({
   del: vi.fn(),
 }));
 
+const useAuthMock = vi.fn(() => ({
+  user: {
+    id: 'u1',
+    username: 'ana',
+    empresas: [{ id_empresa: 'e1', nombre: 'Empresa 1' }],
+  },
+}));
+
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => useAuthMock(),
+}));
+
 import { get, post, patch, del } from '../services/api';
 import TareasPage from '../pages/Tareas/TareasPage';
 import {
@@ -128,11 +140,14 @@ const minutaMock = {
   documento_adjunto: null,
   borrador_tareas: [
     {
+      indice: 0,
       titulo: 'Enviar corte CxC',
       prioridad: 'URGENTE' as const,
       asignado_nombre: 'Ana Pérez',
-      area: 'Tesorería',
+      area_id: 'a1',
+      area_nombre: 'Tesorería',
       fecha_vencimiento: '2026-11-18',
+      incompleto: [],
     },
   ],
   estado: 'BORRADOR' as const,
@@ -259,8 +274,8 @@ function configurarMocksGet() {
   });
 }
 
-function renderizarRuta(rutaInicial = '/tareas') {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderizarRuta(rutaInicial = '/tareas', qcExterno?: QueryClient) {
+  const qc = qcExterno ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[rutaInicial]}>
@@ -286,6 +301,8 @@ describe('TareasPage y utilidades', () => {
     expect(etiquetaPrioridadTarea('URGENTE')).toBe('Urgente');
     expect(etiquetaFrecuencia('QUINCENAL')).toBe('Quincenal');
     expect(etiquetaOrigenTarea('MINUTA_IA')).toBe('Minuta IA');
+    expect(etiquetaOrigenTarea('RECURRENCIA')).toBe('Recurrente');
+    expect(etiquetaOrigenTarea('ERP_EVENTO')).toBe('Evento ERP');
 
     expect(
       esTareaVencida({ estado: 'PENDIENTE', fecha_vencimiento: '2026-11-10' }, '2026-11-17'),
@@ -317,6 +334,12 @@ describe('TareasPage y utilidades', () => {
       'Ciclo detectado',
     );
     expect(mensajeTareas(new Error('{"detail":"No permitido"}'), 'Fallback')).toBe('No permitido');
+    const msgAnidado = mensajeTareas(
+      new Error('{"horas_dia":{"0":["Formato HH:MM requerido"]},"items_propuestos":[{"titulo":["Requerido"]}]}'),
+      'Fallback',
+    );
+    expect(msgAnidado).toContain('horas_dia: Formato HH:MM requerido');
+    expect(msgAnidado).not.toContain('[object Object]');
     expect(mensajeTareas('nada', 'Fallback')).toBe('Fallback');
   });
 
@@ -370,7 +393,7 @@ describe('TareasPage y utilidades', () => {
 
     fireEvent.click(within(dlgDetalle).getByRole('button', { name: 'Marcar completada' }));
     await waitFor(() =>
-      expect(post).toHaveBeenCalledWith('/tareas/items/t1/estado/', {
+      expect(post).toHaveBeenCalledWith('/tareas/items/t1/cambiar-estado/', {
         estado: 'COMPLETADA',
         motivo: '',
       }),
@@ -395,6 +418,7 @@ describe('TareasPage y utilidades', () => {
     // Pestaña 2: Minutas y Acuerdos (crear borrador + confirmar minuta)
     fireEvent.click(screen.getByRole('tab', { name: 'Minutas y Acuerdos' }));
     expect(await screen.findByText('Comité Operativo Lunes')).toBeInTheDocument();
+    expect(screen.getByText('Tesorería')).toBeInTheDocument();
     vi.mocked(post).mockResolvedValueOnce({
       minuta: { ...minutaMock, estado: 'CONFIRMADA' },
       tareas_creadas: [tareaMock],
@@ -442,15 +466,19 @@ describe('TareasPage y utilidades', () => {
     expect(await screen.findByText('Carga por área operativa')).toBeInTheDocument();
     vi.mocked(post).mockResolvedValueOnce({
       momento: 'MANANA',
-      recordatorios_preventivos: 1,
-      escalaciones_vencidas: 1,
-      bloqueadas_automaticamente: 0,
-      recurrentes_creadas: 1,
+      instante: '2026-11-17T09:00:00-04:00',
+      alertas_emitidas: 2,
+      tareas_bloqueadas: 1,
     });
     fireEvent.click(screen.getByRole('button', { name: 'Ejecutar ciclo de seguimiento' }));
     await waitFor(() =>
       expect(post).toHaveBeenCalledWith('/tareas/seguimiento/ejecutar/', { momento: 'AUTO' }),
     );
+    expect(
+      await screen.findByText(
+        'Ciclo ejecutado (MANANA): 2 alertas emitidas, 1 tareas bloqueadas automáticamente.',
+      ),
+    ).toBeInTheDocument();
 
     vi.mocked(patch).mockResolvedValueOnce(configMock);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar reglas' }));
@@ -476,9 +504,48 @@ describe('TareasPage y utilidades', () => {
     );
   });
 
-  it('abre automáticamente el diálogo de detalle al entrar por enlace profundo /tareas/:tareaId', async () => {
-    renderizarRuta('/tareas/t1');
+  it('abre automáticamente el diálogo de detalle al entrar por enlace profundo /tareas/:tareaId y avisa si falla', async () => {
+    const { unmount } = renderizarRuta('/tareas/t1');
     const dlg = await screen.findByRole('dialog');
     expect(within(dlg).getByText('Revisar extracto bancario')).toBeInTheDocument();
+    unmount();
+
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/tareas/items/inexistente/')) {
+        return Promise.reject(new Error('{"detail":"No encontrado."}'));
+      }
+      return Promise.resolve([]);
+    });
+    renderizarRuta('/tareas/inexistente');
+    expect(await screen.findByText('No encontrado.')).toBeInTheDocument();
+  });
+
+  it('aísla el caché de tareas entre empresas distintas sobre el mismo QueryClient y usa fallback de AuthContext', async () => {
+    const qcCompartido = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 60_000 } },
+    });
+
+    localStorage.removeItem('id_empresa');
+    useAuthMock.mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'ana',
+        empresas: [{ id_empresa: 'e1', nombre: 'Empresa Alpha' }],
+      },
+    });
+    const vistaE1 = renderizarRuta('/tareas', qcCompartido);
+    expect(await screen.findByText('Conciliar Mercantil USD')).toBeInTheDocument();
+    vistaE1.unmount();
+
+    // Cambia a empresa e2 (vacía) sobre el mismo QueryClient con staleTime alto: no debe filtrar datos de e1
+    localStorage.setItem('id_empresa', 'e2');
+    vi.mocked(get).mockResolvedValue([]);
+    renderizarRuta('/tareas', qcCompartido);
+    expect(
+      await screen.findByText('Aún no tienes tableros activos en esta empresa.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Conciliar Mercantil USD')).not.toBeInTheDocument();
+    expect(qcCompartido.getQueryData(['tareas', 'e1', 'proyectos', false])).toBeDefined();
+    expect(qcCompartido.getQueryData(['tareas', 'e2', 'proyectos', false])).toEqual([]);
   });
 });

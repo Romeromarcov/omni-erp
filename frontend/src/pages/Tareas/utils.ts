@@ -63,10 +63,10 @@ const FRECUENCIA_LABELS = new Map<string, string>([
 const ORIGEN_LABELS = new Map<string, string>([
   ['WEB', 'Web'],
   ['BOT', 'Bot Telegram'],
-  ['RECURRENTE', 'Recurrente'],
   ['MINUTA_IA', 'Minuta IA'],
-  ['AGENTE_IA', 'Agente IA'],
-  ['SISTEMA', 'Sistema'],
+  ['RECURRENCIA', 'Recurrente'],
+  ['AGENTE', 'Agente IA'],
+  ['ERP_EVENTO', 'Evento ERP'],
 ]);
 
 export const DIAS_SEMANA_OPCIONES: readonly { valor: number; etiqueta: string }[] = [
@@ -133,24 +133,39 @@ export function parsearLineasMinuta(textoLineas: string): ItemBorradorMinuta[] {
   return resultado;
 }
 
+function extraerHojasTexto(nodo: unknown, profundidad = 0): string[] {
+  if (profundidad > 5 || nodo === null || nodo === undefined) return [];
+  if (typeof nodo === 'string') return nodo.trim() ? [nodo.trim()] : [];
+  if (typeof nodo === 'number' || typeof nodo === 'boolean') return [String(nodo)];
+  if (Array.isArray(nodo)) {
+    return nodo.flatMap((item) => extraerHojasTexto(item, profundidad + 1));
+  }
+  if (typeof nodo === 'object') {
+    const salidas: string[] = [];
+    for (const [clave, valor] of Object.entries(nodo)) {
+      const hojas = extraerHojasTexto(valor, profundidad + 1);
+      if (hojas.length === 0) continue;
+      if (clave === 'error' || clave === 'detail' || clave === 'non_field_errors' || /^\d+$/.test(clave)) {
+        salidas.push(...hojas);
+      } else {
+        salidas.push(`${clave}: ${hojas.join(', ')}`);
+      }
+    }
+    return salidas;
+  }
+  return [];
+}
+
 /**
- * Extrae mensajes legibles en español desde respuestas JSON `{error}` o `{detail}`
- * del backend sin exponer objetos crudos.
+ * Extrae mensajes legibles en español desde respuestas JSON `{error}`, `{detail}` o
+ * validaciones anidadas de DRF (`ListField`, `many=True`) sin exponer `[object Object]`.
  */
 export function mensajeTareas(err: unknown, fallback: string): string {
   if (err instanceof Error && err.message) {
     try {
       const parsed: unknown = JSON.parse(err.message);
-      if (parsed && typeof parsed === 'object') {
-        if ('error' in parsed) {
-          const texto = (parsed as { error: unknown }).error;
-          if (typeof texto === 'string' && texto) return texto;
-        }
-        if ('detail' in parsed) {
-          const det = (parsed as { detail: unknown }).detail;
-          if (typeof det === 'string' && det) return det;
-        }
-      }
+      const hojas = extraerHojasTexto(parsed);
+      if (hojas.length > 0) return hojas.join(' · ');
     } catch {
       /* no era JSON serializado */
     }
