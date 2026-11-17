@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "apps.cxc",
     "apps.bots_ingest",  # Ingesta de borradores desde los bots de Telegram (pedidos/CRM, cobranza, eventos)
     "apps.activaciones",  # Eventos de activación en puntos de venta (calendarios, recursos, capacidad)
+    "apps.tareas",  # Ejecución operativa, proyectos Kanban, recurrencia, minutas IA y escalación (ADR-015)
     "apps.cxc_lubrikca",  # Subproyecto CxC Lubrikca (aislado, perfil cobranza) — ADR-013
     "apps.manufactura",
     "apps.rrhh",

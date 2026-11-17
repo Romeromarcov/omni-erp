@@ -22,6 +22,10 @@
 | `^acuerdos\.(?P<format>[a-z0-9]+)/?$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
 | `^ajustes-caja-banco/crear_ajuste/$` | AjusteCajaBancoViewSet | — | — | — | IsAuthenticated |
 | `^ajustes-caja-banco/crear_ajuste\.(?P<format>[a-z0-9]+)/?$` | AjusteCajaBancoViewSet | — | — | — | IsAuthenticated |
+| `^alertas/$` | RegistroAlertaTareaViewSet | RegistroAlertaTarea | ✅ | ✅ | PermisoTareas |
+| `^alertas/(?P<pk>[0-9a-fA-F-]{36})/$` | RegistroAlertaTareaViewSet | RegistroAlertaTarea | ✅ | ✅ | PermisoTareas |
+| `^alertas/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | RegistroAlertaTareaViewSet | RegistroAlertaTarea | ✅ | ✅ | PermisoTareas |
+| `^alertas\.(?P<format>[a-z0-9]+)/?$` | RegistroAlertaTareaViewSet | RegistroAlertaTarea | ✅ | ✅ | PermisoTareas |
 | `^almacenes/$` | AlmacenViewSet | Almacen | ✅ | ✅ | IsAuthenticated |
 | `^almacenes/(?P<pk>[^/.]+)/$` | AlmacenViewSet | Almacen | ✅ | ✅ | IsAuthenticated |
 | `^almacenes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AlmacenViewSet | Almacen | ✅ | ✅ | IsAuthenticated |
@@ -30,6 +34,12 @@
 | `^analisis-variacion-costo/(?P<pk>[^/.]+)/$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ | IsAuthenticated |
 | `^analisis-variacion-costo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ | IsAuthenticated |
 | `^analisis-variacion-costo\.(?P<format>[a-z0-9]+)/?$` | AnalisisVariacionCostoViewSet | AnalisisVariacionCosto | ✅ | ✅ | IsAuthenticated |
+| `^areas/$` | AreaOperativaViewSet | AreaOperativa | ✅ | ✅ | PermisoTareas |
+| `^areas/(?P<pk>[0-9a-fA-F-]{36})/$` | AreaOperativaViewSet | AreaOperativa | ✅ | ✅ | PermisoTareas |
+| `^areas/(?P<pk>[0-9a-fA-F-]{36})/miembros/$` | AreaOperativaViewSet | AreaOperativa | ✅ | ✅ | PermisoTareas |
+| `^areas/(?P<pk>[0-9a-fA-F-]{36})/miembros\.(?P<format>[a-z0-9]+)/?$` | AreaOperativaViewSet | AreaOperativa | ✅ | ✅ | PermisoTareas |
+| `^areas/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | AreaOperativaViewSet | AreaOperativa | ✅ | ✅ | PermisoTareas |
+| `^areas\.(?P<format>[a-z0-9]+)/?$` | AreaOperativaViewSet | AreaOperativa | ✅ | ✅ | PermisoTareas |
 | `^articulos-conocimiento/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
 | `^articulos-conocimiento/(?P<pk>[^/.]+)/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
 | `^articulos-conocimiento/(?P<pk>[^/.]+)/actualizar_revision/$` | BaseConocimientoArticuloViewSet | BaseConocimientoArticulo | ✅ | ✅ | IsAuthenticated |
@@ -606,6 +616,18 @@
 | `^interacciones-ticket/agregar_comentario/$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
 | `^interacciones-ticket/agregar_comentario\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
 | `^interacciones-ticket\.(?P<format>[a-z0-9]+)/?$` | InteraccionTicketViewSet | InteraccionTicket | — | ✅ | IsAuthenticated |
+| `^items/$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/cambiar-estado/$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/cambiar-estado\.(?P<format>[a-z0-9]+)/?$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/comentarios/$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/comentarios\.(?P<format>[a-z0-9]+)/?$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/dependencias/$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/dependencias\.(?P<format>[a-z0-9]+)/?$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/mover/$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})/mover\.(?P<format>[a-z0-9]+)/?$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
+| `^items\.(?P<format>[a-z0-9]+)/?$` | TareaViewSet | Tarea | ✅ | ✅ | PermisoTareas |
 | `^jobs/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
 | `^jobs/(?P<pk>[^/.]+)/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
 | `^jobs/(?P<pk>[^/.]+)/cancelar/$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
@@ -684,6 +706,12 @@
 | `^metodos-pago/buscar_reutilizar\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | — | IsAuthenticated |
 | `^metodos-pago\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^minutas/$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
+| `^minutas/(?P<pk>[0-9a-fA-F-]{36})/$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
+| `^minutas/(?P<pk>[0-9a-fA-F-]{36})/confirmar/$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
+| `^minutas/(?P<pk>[0-9a-fA-F-]{36})/confirmar\.(?P<format>[a-z0-9]+)/?$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
+| `^minutas/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
+| `^minutas\.(?P<format>[a-z0-9]+)/?$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
 | `^monedas-empresa-activas/$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ | IsAuthenticated |
 | `^monedas-empresa-activas/(?P<pk>[^/.]+)/$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ | IsAuthenticated |
 | `^monedas-empresa-activas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | MonedaEmpresaActivaViewSet | MonedaEmpresaActiva | ✅ | ✅ | IsAuthenticated |
@@ -1006,6 +1034,12 @@
 | `^proveedores/buscar-por-rif\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
 | `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ConectorProveedorViewSet | ConectorProveedor | — | ✅ | IsAuthenticated |
 | `^proveedores\.(?P<format>[a-z0-9]+)/?$` | ProveedorViewSet | Proveedor | ✅ | ✅ | IsAuthenticated |
+| `^proyectos/$` | ProyectoViewSet | Proyecto | ✅ | ✅ | PermisoTareas |
+| `^proyectos/(?P<pk>[0-9a-fA-F-]{36})/$` | ProyectoViewSet | Proyecto | ✅ | ✅ | PermisoTareas |
+| `^proyectos/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | ProyectoViewSet | Proyecto | ✅ | ✅ | PermisoTareas |
+| `^proyectos/mi-tablero/$` | ProyectoViewSet | Proyecto | ✅ | ✅ | PermisoTareas |
+| `^proyectos/mi-tablero\.(?P<format>[a-z0-9]+)/?$` | ProyectoViewSet | Proyecto | ✅ | ✅ | PermisoTareas |
+| `^proyectos\.(?P<format>[a-z0-9]+)/?$` | ProyectoViewSet | Proyecto | ✅ | ✅ | PermisoTareas |
 | `^recepciones-mercancia/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
 | `^recepciones-mercancia/(?P<pk>[^/.]+)/$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
 | `^recepciones-mercancia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
@@ -1018,6 +1052,12 @@
 | `^recepciones/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recurrentes/$` | PlantillaTareaRecurrenteViewSet | PlantillaTareaRecurrente | ✅ | ✅ | PermisoTareas |
+| `^recurrentes/(?P<pk>[0-9a-fA-F-]{36})/$` | PlantillaTareaRecurrenteViewSet | PlantillaTareaRecurrente | ✅ | ✅ | PermisoTareas |
+| `^recurrentes/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | PlantillaTareaRecurrenteViewSet | PlantillaTareaRecurrente | ✅ | ✅ | PermisoTareas |
+| `^recurrentes/materializar/$` | PlantillaTareaRecurrenteViewSet | PlantillaTareaRecurrente | ✅ | ✅ | PermisoTareas |
+| `^recurrentes/materializar\.(?P<format>[a-z0-9]+)/?$` | PlantillaTareaRecurrenteViewSet | PlantillaTareaRecurrente | ✅ | ✅ | PermisoTareas |
+| `^recurrentes\.(?P<format>[a-z0-9]+)/?$` | PlantillaTareaRecurrenteViewSet | PlantillaTareaRecurrente | ✅ | ✅ | PermisoTareas |
 | `^recursos/$` | RecursoActivacionViewSet | RecursoActivacion | ✅ | — | IsAdminOrReadOnly |
 | `^recursos/(?P<pk>[^/.]+)/$` | RecursoActivacionViewSet | RecursoActivacion | ✅ | — | IsAdminOrReadOnly |
 | `^recursos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecursoActivacionViewSet | RecursoActivacion | ✅ | — | IsAdminOrReadOnly |
@@ -1096,6 +1136,10 @@
 | `^rutas-produccion/(?P<pk>[^/.]+)/$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^rutas-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^rutas-produccion\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^secciones/$` | SeccionProyectoViewSet | SeccionProyecto | ✅ | ✅ | PermisoTareas |
+| `^secciones/(?P<pk>[0-9a-fA-F-]{36})/$` | SeccionProyectoViewSet | SeccionProyecto | ✅ | ✅ | PermisoTareas |
+| `^secciones/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | SeccionProyectoViewSet | SeccionProyecto | ✅ | ✅ | PermisoTareas |
+| `^secciones\.(?P<format>[a-z0-9]+)/?$` | SeccionProyectoViewSet | SeccionProyecto | ✅ | ✅ | PermisoTareas |
 | `^sesiones-caja/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^sesiones-caja/(?P<pk>[^/.]+)/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
 | `^sesiones-caja/(?P<pk>[^/.]+)/cerrar/$` | SesionCajaFisicaViewSet | SesionCajaFisica | ✅ | ✅ | IsAuthenticated |
@@ -1247,6 +1291,7 @@
 | `bitacora/` | BotBitacoraView | — | — | — | PuedePanelBots |
 | `cartera/dashboard/` | CarteraDashboardView | — | — | — | IsAuthenticated |
 | `chat/` | AsistenteChatView | — | — | — | IsAuthenticated |
+| `configuracion/` | ConfiguracionSeguimientoView | — | — | — | PermisoTareas |
 | `dashboard/kpis/` | dashboard_kpis_view | — | — | — | IsAuthenticated |
 | `dashboard/stats/` | dashboard_stats_view | — | — | — | IsAuthenticated |
 | `destinos/` | BotDestinosView | — | — | — | PuedePanelBots |
@@ -1261,6 +1306,8 @@
 | `periodos-fiscales/<int:año>/<int:mes>/cerrar/` | CerrarPeriodoFiscalView | — | — | — | IsAuthenticated |
 | `pull/` | SyncPullView | — | — | — | IsAuthenticated |
 | `push/ventas/` | SyncPushVentasView | — | — | — | IsAuthenticated |
+| `resumen/` | ResumenEjecutivoTareasView | — | — | — | PermisoTareas |
+| `seguimiento/ejecutar/` | EjecutarSeguimientoView | — | — | — | PermisoTareas |
 | `signup/` | SignupView | — | — | — | AllowAny |
 | `status/` | IntegrationHubStatusView | — | — | — | IsAuthenticated |
 | `tasa-oficial-bcv/` | TasaCambioOficialBCVView | — | — | — | IsAuthenticated |
@@ -1268,4 +1315,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 229_
+_Total ViewSets: 239_
