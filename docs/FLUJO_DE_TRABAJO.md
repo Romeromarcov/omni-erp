@@ -29,26 +29,26 @@ y elimina la divergencia entre ramas.
 ## 1. Camino único de cualquier cambio (Git manda)
 
 ```
-feature|fix|hotfix/<slug>  (desde develop)
-   │  PR  → develop   → CI verde + gate (DEFINITION_OF_DONE) → merge AUTOAPROBABLE
+feature|fix|hotfix|docs|chore/<slug>  (desde develop)
+   │  PR (draft) → develop → Gate DoD → Revisor QA+Sec APROBADO → ready → CI 100 % verde → merge
    ▼
 develop  ──► Railway despliega STAGING  ──► validar en staging
-   │  PR  → main      → revisión humana del owner (obligatoria)
+   │  PR (draft) → main    → revisión y aprobación humana del owner obligatoria (R-PROC-3)
    ▼
 main     ──► Railway despliega PRODUCCIÓN
 ```
 
 1. Rama `feature/<slug>` (o `fix/`, `hotfix/`, `chore/`, `docs/`) **desde `develop`**.
 2. Implementar + pasar el **Definition of Done** (build, tests, seguridad, gaps, cero deuda).
-3. **PR a `develop`**. CI verde obligatorio.
-4. **Merge a `develop`: autoaprobable.** Con el CI completo en verde y el gate corrido, el
-   PR puede aprobarse y mergearse **sin esperar revisión humana** — incluso si el autor y el
-   aprobador son agentes de IA (un agente revisor distinto del autor revisa el diff antes de
-   aprobar). *Autorizado por el owner (Marco) el 2026-06-11; reemplaza la prohibición
-   anterior de auto-merge **solo para `develop`*.*
+3. **Abrir PR en `draft` hacia `develop`**.
+4. **Loop autónomo hacia `develop` (autorizado por el owner el 2026-06-11 y ampliado el 2026-11-17):**
+   1. Tras pasar el **Gate DoD completo**, un **agente revisor independiente y distinto del autor** (`QA + Seguridad`) revisa el diff y deja dictamen **`APROBADO`** evidenciado en un comentario del PR.
+   2. Con ese dictamen **`APROBADO`**, el agente/orquestador **marca el PR `ready`**.
+   3. Se espera a que todos los checks de **CI estén 100 % verdes** (ningún check obligatorio en rojo o pendiente).
+   4. Con CI 100 % verde y el dictamen **`APROBADO`** en el PR, el agente/orquestador ejecuta el **merge a `develop`**.
+   *(Tras el merge a `develop`, actualizar el grafo local con `graphify update .`.)*
 5. Merge → **staging despliega solo** → **validar ahí** (datos/servicios reales, sin riesgo a prod).
-6. Cuando staging está sano → **PR `develop` → `main`** → **revisión humana del owner** →
-   merge → **producción despliega**.
+6. Cuando staging está sano → **PR `develop` → `main`** (en `draft`) → **revisión y aprobación humana obligatoria del owner (`R-PROC-3`)** → merge → **producción despliega**. **Ningún agente marca `ready` ni mergea a `main` sin aprobación humana.**
 
 > Un cambio **nunca** salta directo a `main`. El control humano vive en la puerta
 > `develop`→`main`, que es la única que toca producción.
@@ -56,8 +56,8 @@ main     ──► Railway despliega PRODUCCIÓN
 ## 2. Hotfix urgente de producción
 
 Un bug en producción **también se corrige sobre `develop`**: rama `hotfix/<slug>` desde
-`develop` → PR a `develop` (autoaprobable con CI verde) → validar en staging → PR
-`develop`→`main` con revisión humana **expedita**. Si `develop` contiene trabajo aún no
+`develop` → PR a `develop` (loop autónomo con Gate DoD + revisor independiente `APROBADO` + CI 100 % verde) → validar en staging → PR
+`develop`→`main` con revisión y aprobación humana **expedita** del owner. Si `develop` contiene trabajo aún no
 validado que no debe llegar a prod, el PR `develop`→`main` se arma con cherry-picks en una
 rama `release/<slug>` desde `main` — pero el fix **siempre** se integra primero a `develop`.
 
@@ -79,7 +79,7 @@ el contenedor**. Acceso **solo lectura** vía Railway CLI. Ver la skill
 
 ## Resumen en una frase
 
-- **Todo cambio** (feature, fix, hotfix) → rama desde `develop` → PR a `develop`
-  (**autoaprobable con CI verde**) → staging → PR `develop`→`main` (**revisión humana**) → prod.
+- **Todo cambio** (feature, fix, hotfix) → rama desde `develop` → PR `draft` a `develop`
+  (Gate DoD + revisor independiente `QA + Seguridad` `APROBADO` → `ready` → CI 100 % verde → merge) → staging → PR `develop`→`main` (**revisión y aprobación humana obligatoria**) → prod.
 - **Diagnóstico** → solo lectura en staging/prod, **cero edición en caliente**; el cambio
   siempre vuelve por Git.

@@ -15,7 +15,7 @@ compra, devoluciones opción D, cierre híbrido y semáforo de conciliación).
 
 Existen tres fuentes de trabajo previo:
 
-- **CxC_Lubrikca** (`C:\Users\PC\Proyectos\CxC_Lubrikca`, ~94% tests): el motor
+- **CxC_Lubrikca** (repositorio previo, ~94% tests): el motor
   determinístico puro + conciliación + auditoría de hora. Lógica portable.
 - **GestionCxC** (FastAPI + Odoo): configuración del motor **desde UI** + flujo de
   aprobación por roles + límites por producto.

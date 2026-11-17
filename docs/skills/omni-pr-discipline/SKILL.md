@@ -11,7 +11,7 @@ Cargá esta skill **antes de abrir cualquier PR**, sin excepción. También cuan
 
 Casos típicos:
 - Terminaste la implementación y vas a hacer push.
-- Vas a marcar un PR como "ready for review" (en este proyecto, casi siempre se queda en draft hasta que el revisor humano lo apruebe — el agente NO marca ready).
+- Vas a abrir un PR (siempre nace en `draft`) o marcarlo como "ready for review": en PRs hacia `develop`, el agente/orquestador solo marca `ready` tras pasar el Gate DoD completo y recibir dictamen `APROBADO` de un revisor independiente (`QA + Seguridad`) distinto del autor en comentario del PR; en PRs hacia `main`, el agente NUNCA marca `ready` sin aprobación humana del owner.
 - Vas a responder comentarios de un revisor y volver a entregar.
 
 ## Por qué importa esta disciplina
@@ -53,7 +53,7 @@ npm run lint
 Contá las líneas del diff (sin tests, sin migrations, sin package locks):
 
 ```bash
-git diff main...HEAD --stat | grep -v "test_\|migrations\|package-lock\|pnpm-lock\|yarn.lock"
+git diff develop...HEAD --stat | grep -v "test_\|migrations\|package-lock\|pnpm-lock\|yarn.lock"
 ```
 
 | Tamaño | Acción |
@@ -258,16 +258,12 @@ Buen resumen:
 
 ## Estado del PR: draft vs ready
 
-Depende de la rama base (política actualizada por el owner el 2026-06-11, ver
-`docs/FLUJO_DE_TRABAJO.md`):
+Depende de la rama base (política autorizada por el owner el 2026-06-11 y ampliada el 2026-11-17, ver [`docs/FLUJO_DE_TRABAJO.md`](../../FLUJO_DE_TRABAJO.md)):
 
-- **PR a `develop`:** se abre en draft; con **CI completo en verde + gate corrido**, un
-  agente revisor **distinto del autor** revisa el diff, lo marca ready, aprueba y mergea.
-- **PR `develop`→`main` (producción):** el agente **NUNCA** lo marca ready ni lo mergea;
-  esa puerta es exclusiva del revisor humano (owner).
+- **PR a `develop` (loop autónomo):** se abre siempre en `draft`. Tras pasar el **Gate DoD completo** y recibir dictamen **`APROBADO`** de un agente revisor **independiente y distinto del autor** (`QA + Seguridad`, evidenciado en un comentario del PR), el agente/orquestador **marca el PR `ready`**, espera a que todos los checks de **CI estén 100 % verdes** y ejecuta el **merge a `develop`**.
+- **PR `develop`→`main` (puerta de producción):** exige **revisión y aprobación humana obligatoria del owner (`R-PROC-3`)**. El agente **NUNCA** lo marca `ready` ni lo mergea sin aprobación humana.
 
-Marcar ready/mergear sin CI verde o sin revisión del segundo agente da señal falsa de
-"está listo" y rompe la confianza del flujo.
+Marcar `ready` o mergear sin el dictamen `APROBADO` del revisor independiente o sin CI 100 % verde da señal falsa de "está listo" y rompe la confianza del flujo.
 
 ## Después de abrir el PR
 
@@ -331,13 +327,12 @@ Listo para nueva revisión.
 
 ### Cuando aprueban
 
-Cuando el revisor aprueba:
-- **NO mergeás vos.** El revisor humano hace el merge.
-- Esperás confirmación.
-- Limpiás tu branch local cuando confirmen merge.
+- **PR hacia `develop`:** cuando el revisor independiente (`QA + Seguridad`, distinto del autor) emite **`APROBADO`** en comentario del PR tras el Gate DoD completo, el agente/orquestador marca el PR `ready`, espera a que el **100 % de los checks de CI estén verdes**, ejecuta el **merge a `develop`** y actualiza el grafo local (`graphify update .`).
+- **PR `develop`→`main`:** **NO mergeás vos.** El revisor humano (owner) aprueba y realiza el merge.
+- Limpiás tu branch local cuando se confirme el merge:
 
 ```bash
-git checkout main
+git checkout develop
 git pull
 git branch -d feature/tarea-completada
 ```
@@ -382,11 +377,9 @@ git branch -d feature/tarea-completada
 
 ### Anti-patrón 7: Marcar ready / mergear sin cumplir la política
 
-**Síntoma:** marcás ready o mergeás un PR a `develop` sin CI verde o sin revisión de un
-segundo agente; o tocás la puerta `develop`→`main` que es exclusiva del humano.
-**Por qué falla:** salta la fase de revisión, riesgo de merge prematuro a staging o prod.
-**Antídoto:** PR a `develop` solo se autoaprueba con CI verde + revisión de otro agente;
-`develop`→`main` lo decide únicamente el revisor humano.
+**Síntoma:** marcás `ready` o mergeás un PR a `develop` sin Gate DoD, sin dictamen `APROBADO` en comentario de un agente revisor independiente (`QA + Seguridad`) distinto del autor o sin el 100 % del CI en verde; o marcás `ready`/mergeás en la puerta `develop`→`main` que es exclusiva del humano.
+**Por qué falla:** salta la fase de revisión o la puerta de producción, riesgo de merge prematuro a staging o prod.
+**Antídoto:** PR a `develop` pasa de `draft` a `ready` y a merge únicamente tras Gate DoD + dictamen `APROBADO` del revisor independiente (`QA + Seguridad`) + 100 % CI verde; `develop`→`main` lo decide y aprueba únicamente el revisor humano (`R-PROC-3`).
 
 ### Anti-patrón 8: Responder review con resistencia
 
@@ -403,7 +396,7 @@ segundo agente; o tocás la puerta `develop`→`main` que es exclusiva del human
 - [ ] No hay secretos en el código.
 - [ ] Diff sin tests/migrations < 800 líneas (o justificado si más).
 - [ ] Mensajes de commit en español, imperativo, descriptivos.
-- [ ] PR en estado draft (no ready).
+- [ ] PR abierto inicialmente en estado `draft` (en `develop`, pasa a `ready` solo tras Gate DoD + dictamen `APROBADO` de revisor independiente `QA + Seguridad`; en `main`, nunca sin aprobación humana).
 - [ ] Plantilla de descripción completa con TODOS los items.
 - [ ] Auto-checklist marcado con honestidad.
 - [ ] Decisiones tomadas documentadas.

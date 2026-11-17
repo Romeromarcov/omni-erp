@@ -91,8 +91,9 @@ Marcá el auto-checklist de `omni-pr-discipline` sin mentir. Un check marcado si
 
 ## Después del gate
 
-- **PR en draft.** El agente **nunca** marca "ready"; lo hace el revisor humano (R-PROC-3).
-- **Code review humano obligatorio**, aunque el código lo escriba un agente. Auto-merge de PR de agente está prohibido.
+- **Toda rama nace de `develop` y abre PR en `draft` hacia `develop`.**
+- **PRs a `develop` (loop autónomo autorizado por el owner, 2026-11-17):** tras pasar este Gate DoD completo y recibir dictamen **`APROBADO`** de un agente revisor **independiente y distinto del autor** (`QA + Seguridad`, publicado en comentario del PR), el agente/orquestador **marca el PR `ready`**, espera a que el **100 % de los checks de CI estén verdes** y ejecuta el **merge a `develop`**.
+- **PRs `develop`→`main` (puerta de producción):** la revisión y aprobación humana del owner es **obligatoria (`R-PROC-3`)**. Ningún agente marca `ready` ni mergea a `main` sin aprobación humana.
 - CI verde es no-negociable (R-PROC-4); el gate local existe para que CI **nunca** sea la primera vez que se ve un fallo.
 
 ## Cómo aplicarla en la práctica
@@ -115,8 +116,8 @@ Marcá el auto-checklist de `omni-pr-discipline` sin mentir. Un check marcado si
 ### Anti-patrón 3: diferir un fallo "para el próximo PR"
 **Antídoto:** R-PROC-7. Se arregla ahora o se registra como CTF fechado; no se pospone informalmente.
 
-### Anti-patrón 4: marcar el PR como ready
-**Antídoto:** el agente abre en draft; el humano decide ready (R-PROC-3, ver `omni-pr-discipline`).
+### Anti-patrón 4: marcar `ready` o mergear sin cumplir la política
+**Antídoto:** el agente abre en `draft`. Hacia `develop`, solo marca `ready` y mergea tras pasar el Gate DoD completo + dictamen `APROBADO` publicado por un revisor independiente distinto del autor + CI 100 % verde; hacia `main`, únicamente aprueba y decide el owner (`R-PROC-3`, ver `omni-pr-discipline`).
 
 ## Checklist final (resumen del gate)
 
@@ -127,7 +128,7 @@ Marcá el auto-checklist de `omni-pr-discipline` sin mentir. Un check marcado si
 - [ ] 5. Gaps cerrados (flujos, API/MCP, migraciones, TODOs, docs).
 - [ ] 6. Cero deuda nueva (o CTF fechado); sin código de debug.
 - [ ] 7. Auto-checklist R-CODE/R-PROC marcado con honestidad.
-- [ ] PR en draft; nunca ready.
+- [ ] PR abierto inicialmente en `draft` hacia `develop` (solo pasa a `ready` tras Gate DoD + dictamen `APROBADO` de revisor independiente distinto del autor + CI 100 % verde; en `develop`→`main`, nunca sin aprobación humana del owner).
 
 ## Referencias
 

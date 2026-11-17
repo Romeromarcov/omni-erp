@@ -7,8 +7,8 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — P0-1 (RLS) infra hecha, activación bloqueada por [CTF-012](../ctf/CTF-012.md); P1–P3 pendientes |
-| **Fecha**    | 2026-06-07 (estado actualizado 2026-06-10) |
+| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-4/P2-1/P2-5 ✅, P1-7/P2-3/P2-4 parciales; P1-5/P1-6/P2-2/P2-6/P3 abiertos |
+| **Fecha**    | 2026-06-07 (estado actualizado 2026-11-17 contra `develop @ ff2bdb6`) |
 | **Esfuerzo** | ~3–4 semanas (repartibles en paralelo) |
 | **Owner**    | equipo-backend / equipo-agentes / devops |
 
@@ -28,21 +28,21 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 
 | # | Medida | Estado | Evidencia |
 |---|--------|--------|-----------|
-| 1 | Row Level Security (PostgreSQL) | ❌ | Aislamiento solo a nivel de app (`get_empresas_visible()`, filtros en `get_queryset()`); sin `CREATE POLICY` |
-| 2 | CORS | ✅ | `django-cors-headers`; prod fail-closed (`settings_prod.py:48-61`) |
-| 3 | Security headers | ✅ | Django prod (`settings_prod.py:64-77`) + nginx con CSP (`infra/nginx/nginx.prod.conf:39-47`) |
-| 4 | Arquitectura desacoplada / gateway LLM / agnóstica | ❌ | `anthropic.Anthropic()` directo en 5 sitios, modelos hardcodeados |
-| 4b | Fallback a otros modelos si el principal falla | ⚠️ | Hay fallback **a reglas deterministas**, no a otro LLM ni a otro proveedor |
-| 5 | Arquitectura orientada a eventos / IA en background | ⚠️ | Celery+Redis+Kafka existen; sugerencias diarias en Beat. Pero agentes en vistas corren **síncronos** (sin `.delay()`) |
-| 5b | WebSockets para streaming | ⚠️ | Hay **SSE** en chat (`StreamingHttpResponse`); no hay Django Channels (full-duplex) |
-| 6 | RAG | ❌ | Sin pgvector / embeddings / vector store / retrieval |
+| 1 | Row Level Security (PostgreSQL) | ⚠️ | Infra y 124/124 tablas + Connect/Tareas/CxC_Lubrikca con `FORCE ROW LEVEL SECURITY`; activación real pendiente ([CTF-012](../ctf/CTF-012.md) / Plan 06 Fase 2: rol `omni_app` no-dueño) |
+| 2 | CORS | ✅ | `django-cors-headers`; prod fail-closed (`settings_prod.py`) |
+| 3 | Security headers | ✅ | Django prod (`settings_prod.py`) + nginx con CSP + `django-csp==4.0` enforce (P2-5, #106) |
+| 4 | Arquitectura desacoplada / gateway LLM / agnóstica | ✅ | `apps/core/llm_gateway.py` (P2-1, #99): punto único configurable por env; sin `anthropic.Anthropic()` directo fuera del gateway |
+| 4b | Fallback a otros modelos si el principal falla | ✅ | Cascada `LLM_MODEL` → `LLM_MODEL_FALLBACK` → reglas deterministas + circuit breaker (P2-1, #99) |
+| 5 | Arquitectura orientada a eventos / IA en background | ⚠️ | Celery+Redis+Kafka existen; sugerencias diarias en Beat. Agentes en `apps/agentes/views.py` aún corren síncronos (**P2-2 abierto**) |
+| 5b | WebSockets para streaming | ⚠️ | Hay **SSE** en chat (`StreamingHttpResponse`); no hay Django Channels (full-duplex, **P3-3**) |
+| 6 | RAG | ❌ | Sin pgvector / embeddings / vector store / retrieval (**P3-2 abierto**) |
 | 7 | Frontend comprimido sin source maps | ✅ | Vite sin `build.sourcemap`, bundle minificado, gzip nginx |
-| 8 | Rate limiting | ✅ | Nginx (`login 5/m`, `api 60/m`) + `django-ratelimit` en login + tests |
-| 9 | Cache | ⚠️ | Redis/Celery, WhiteNoise, nginx `expires 1y`, PWA Workbox. `CACHES` de Django con Redis ✅ (P2-4, `config/caches.py`). **Falta** cachear consultas calientes |
+| 8 | Rate limiting | ✅ | Nginx (`login 5/m`, `api 60/m`) + `django-ratelimit` en login + DRF throttling global y `EscrituraRateThrottle` (P1-1, #84) |
+| 9 | Cache | ⚠️ | `CACHES["default"]` con Redis DB 1 separado de Celery DB 0, fail-closed (`config/caches.py`, P2-4 #106). **Falta** cachear consultas calientes y barrido N+1 |
 | 10 | Escalabilidad | ✅ | uvicorn workers, Celery `concurrency=4`, stateless, Docker |
 | 11 | Monitoreo | ✅ | Sentry (`send_default_pii=False`), logging estructurado, healthchecks, `RegistroAuditoria` |
 | 12 | Sin API keys/secretos en código | ✅ | `SECRET_KEY` obligatorio desde env; todo desde env; `.env` en `.gitignore` |
-| 13 | Validación de inputs / anti-inyección | ✅ | ORM parametrizado, Serializers DRF, `RunSQL` literales; frontend Zod + react-hook-form (35+ forms) |
+| 13 | Validación de inputs / anti-inyección | ✅ | ORM parametrizado, Serializers DRF, `RunSQL` literales; frontend Zod + react-hook-form |
 
 ### Recomendaciones adicionales (no estaban en la checklist)
 
@@ -50,18 +50,18 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 |---|---------------|--------|
 | R1 | `pip-audit` + `npm audit` en CI (escaneo de dependencias) | ✅ ya en `develop` (CI job "Security scan") |
 | R2 | Secret scanning (gitleaks/trufflehog) pre-commit + CI | ✅ ya en `develop` (gitleaks en CI) |
-| R3 | Throttling DRF global (más allá del login) | ❌ |
-| R4 | Rotación/revocación de JWT (blacklist al logout) | ⚠️ verificar |
-| R5 | 2FA/MFA para admin/superusuario Omni | ❌ |
-| R6 | Política de contraseñas + bloqueo de cuenta (django-axes) | ❌ |
-| R7 | Permisos a nivel objeto auditados (no solo filtro de queryset) | ⚠️ |
-| R8 | Backups automáticos + prueba de restore de PostgreSQL | ⚠️ verificar |
-| R9 | Idempotencia en endpoints de pago/creación (claves idempotentes) | ✅ (`feature/p1-2-idempotencia-pagos`) |
-| R10 | Circuit breaker / timeouts en llamadas LLM | ❌ |
-| R11 | Observabilidad de costos LLM (tokens por tenant) | ❌ |
-| R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ |
-| R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ⚠️ verificar |
-| R14 | CSP a nivel Django (`django-csp`, nonce por request) | ✅ (P2-5: `django-csp==4.0` enforce; sin nonce porque no hay inline que autorizar) |
+| R3 | Throttling DRF global (más allá del login) | ✅ **P1-1 (#84)** — `THROTTLE_RATE_*` + `EscrituraRateThrottle` en endpoints de pago/abono |
+| R4 | Rotación/revocación de JWT (blacklist al logout) | ✅ **P1-4 (#84)** — blacklist + rotación verificadas (`tests/api/test_s1_seguridad.py`) |
+| R5 | 2FA/MFA para admin/superusuario Omni | ❌ (**P3-1 abierto**) |
+| R6 | Política de contraseñas + bloqueo de cuenta (django-axes) | ✅ **P1-3 (#84)** — `django-axes 8.3.1` (10 intentos, 15 min) + `PASSWORD_MIN_LENGTH=12` |
+| R7 | Permisos a nivel objeto auditados (no solo filtro de queryset) | ⚠️ (**P1-6 abierto** — pasada IDOR crítica pendiente) |
+| R8 | Backups automáticos + prueba de restore de PostgreSQL | ⚠️✅ **P1-7 (#96)** — `backup.yml` + `restore-test.yml` + `RUNBOOK_BACKUPS.md` listos; **falta secret/bucket del owner** |
+| R9 | Idempotencia en endpoints de pago/creación (claves idempotentes) | ✅ **P1-2 (#86)** (`apps/core/idempotency.py`, `ClaveIdempotencia`) |
+| R10 | Circuit breaker / timeouts en llamadas LLM | ✅ **P2-1 (#99)** (`LLM_TIMEOUT`, `LLM_MAX_RETRIES`, `LLM_CB_UMBRAL`/`VENTANA` en `llm_gateway.py`) |
+| R11 | Observabilidad de costos LLM (tokens por tenant) | 🟡 **P2-3 parcial (#99)** — log estructurado `llm_consumo` + hook `registrar_consumo_hook`; **falta persistencia dedicada** |
+| R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ (**P2-6 abierto**) |
+| R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ⚠️ (**P1-5 abierto** — revocar UPDATE/DELETE al rol de aplicación) |
+| R14 | CSP a nivel Django (`django-csp`, nonce por request) | ✅ **P2-5 (#106)** (`django-csp==4.0` enforce; `tests/api/test_p25_csp.py`) |
 
 ---
 
@@ -160,14 +160,10 @@ también como **hook pre-commit** (defensa antes del push). Esfuerzo ~0.25 día.
 
 ## FASE P1 — Alto (semana 1–2)
 
-### P1-1 · Throttling DRF global (R3, #4) — `❌`
-**Por qué:** el rate limit fino solo cubre login. El resto de la API (incluida escritura) no
-tiene techo de abuso a nivel aplicación.
+### P1-1 · Throttling DRF global (R3, #4) — `✅` (PR #84)
+**Por qué:** el rate limit fino solo cubría login. El resto de la API (incluida escritura) necesitaba techo de abuso a nivel aplicación.
 
-**Tareas:** `DEFAULT_THROTTLE_CLASSES` + `DEFAULT_THROTTLE_RATES` en `settings_base.py`
-(anon/user) y throttle más estricto en endpoints de escritura/pago.
-**DoD:** throttling activo con tests; documentado.
-**Esfuerzo:** ~1 día. **Owner:** equipo-backend.
+**Estado — `🟢 HECHO` (PR #84):** tasas configurables por entorno (`THROTTLE_RATE_*` en `config/settings_base.py`) y `EscrituraRateThrottle` (`apps/core/throttling.py`, `60/min` en métodos no seguros) aplicado a `PagoViewSet`, `AbonoCxCViewSet` y `AbonoCxPViewSet`. Tests en `tests/api/test_s1_seguridad.py`.
 
 ### P1-2 · Idempotencia en pagos/creación (R9) — `✅`
 **Por qué:** ERP financiero; un doble-submit o reintento de red no puede duplicar un pago o
@@ -188,21 +184,15 @@ confirmar pedido y conversión nota de venta → factura. Tests en
 `tests/api/test_idempotencia.py` + race test con hilos en
 `tests/integration/test_idempotencia_concurrencia.py`.
 
-### P1-3 · Bloqueo de cuenta + política de contraseñas (R6) — `❌`
+### P1-3 · Bloqueo de cuenta + política de contraseñas (R6) — `✅` (PR #84)
 **Por qué:** rate-limit por IP no frena fuerza bruta distribuida ni credential stuffing.
 
-**Tareas:** `django-axes` (bloqueo por usuario+IP tras N fallos) + validadores de contraseña
-de Django reforzados.
-**DoD:** cuenta se bloquea tras N intentos; tests; mensajes que no filtran si el usuario existe.
-**Esfuerzo:** ~1 día. **Owner:** equipo-backend.
+**Estado — `🟢 HECHO` (PR #84):** `django-axes 8.3.1` (`AxesStandaloneBackend`, `AXES_FAILURE_LIMIT=10`, cooloff 15 min configurables por env) con respuesta JSON 429 genérica sin filtrar existencia de usuario en `login_view`/`CustomTokenObtainPairView`, y política de contraseñas reforzada (`PASSWORD_MIN_LENGTH=12` + validadores estándar). Tests en `tests/api/test_s1_seguridad.py`.
 
-### P1-4 · Revocación de JWT al logout (R4) — `⚠️ verificar`
+### P1-4 · Revocación de JWT al logout (R4) — `✅` (PR #84)
 **Por qué:** un token robado debe poder invalidarse; el logout debe revocar de verdad.
 
-**Tareas:** confirmar blacklist de refresh tokens (SimpleJWT) activa; logout que la use;
-TTL de access corto.
-**DoD:** refresh revocado no renueva; test de logout→reuse falla.
-**Esfuerzo:** ~0.5 día. **Owner:** equipo-backend.
+**Estado — `🟢 HECHO` (PR #84):** `rest_framework_simplejwt.token_blacklist` + rotación activas (access TTL 15 min), verificadas con test de flujo real logout vía cookie httpOnly → reuso del refresh falla con 401 (`tests/api/test_s1_seguridad.py`).
 
 ### P1-5 · Auditoría inmutable (R13) — `⚠️ verificar`
 **Por qué:** `RegistroAuditoria` solo sirve si no puede ser editado/borrado por la propia app.
@@ -221,35 +211,30 @@ cruzado por PK; complementa P0-1.
 **DoD:** test IDOR cross-tenant verde en endpoints críticos.
 **Esfuerzo:** ~1.5 días. **Owner:** equipo-backend.
 
-### P1-7 · Backups + prueba de restore de PostgreSQL (R8) — `⚠️ verificar`
+### P1-7 · Backups + prueba de restore de PostgreSQL (R8) — `⚠️✅` (PR #96, falta secret owner)
 **Por qué:** no asumir que Railway lo cubre; un backup sin restore probado no es un backup.
 
-**Tareas:** verificar/configurar backup automático; runbook de restore en
-`docs/skills/diagnostico-railway/`; **prueba real de restore** documentada.
-**DoD:** restore probado y fechado; runbook escrito.
-**Esfuerzo:** ~1 día. **Owner:** devops.
+**Estado — `🟡 INFRA/WORKFLOW HECHOS (PR #96); FALTA OPERATIVO DEL OWNER`:**
+- `.github/workflows/backup.yml` (dump diario 06:00 UTC → S3, retención 30 días).
+- `.github/workflows/restore-test.yml` (restore semanal automatizado los lunes 07:00 UTC sobre Postgres efímero + validación de ≥50 tablas y antigüedad <48h).
+- [`docs/runbooks/RUNBOOK_BACKUPS.md`](../runbooks/RUNBOOK_BACKUPS.md) documentando pasos de configuración y recuperación ante desastres.
+- **Pendiente (acción exclusiva del owner):** crear el bucket S3/R2 y cargar los secrets `BACKUP_DB_HOST`, `BACKUP_DB_*`, `BACKUP_S3_*` y `BACKUP_AWS_*` en GitHub Actions para ejecutar la primera corrida real.
 
 ---
 
 ## FASE P2 — Medio (semana 2–3)
 
-### P2-1 · Gateway LLM agnóstico + fallback multi-modelo + timeouts/circuit breaker (#4, #4b, R10) — `❌`
+### P2-1 · Gateway LLM agnóstico + fallback multi-modelo + timeouts/circuit breaker (#4, #4b, R10) — `✅` (PR #99)
 **Por qué:** unifica agnosticidad de proveedor, failover real entre modelos, timeouts y
-control de fallos en un solo componente. Hoy `anthropic.Anthropic()` está en 5 sitios con
-modelos hardcodeados (`apps/agentes/clasificador.py:154`, `cobranza.py:178`, `reorden.py:195`,
-`apps/agentes/api/chat.py:330`, `apps/cxc/agents/cobranza_agent.py:44`).
+control de fallos en un solo componente. Antes `anthropic.Anthropic()` estaba en 6 sitios con
+modelos hardcodeados.
 
-**Tareas:**
-1. `backend/libs/llm_gateway.py`: cliente unificado (proveedor/modelo configurable por env).
-2. Fallback en cascada: modelo principal → modelo alterno → (último recurso) reglas deterministas.
-3. Timeouts + reintentos con backoff + circuit breaker por proveedor.
-4. Migrar los 5 call sites al gateway; quitar modelos hardcodeados.
+**Estado — `🟢 HECHO` (PR #99):**
+- `apps/core/llm_gateway.py`: punto único de entrada (`generate()`, `stream()`, `disponible()`), modelos configurables por env (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_MODEL_CHAT`, `LLM_MODEL_ANALISIS`, `LLM_MODEL_FALLBACK`), timeouts/reintentos (`LLM_TIMEOUT`, `LLM_MAX_RETRIES`), cascada principal → alterno → `LLMUnavailable` (con fallback determinista en call sites) y circuit breaker atómico (`LLM_CB_UMBRAL`, `LLM_CB_VENTANA`) sobre `CACHES` compartido.
+- Migrados los 6 sitios (`clasificador.py`, `cobranza.py`, `reorden.py`, `personalizacion_agente.py`, `chat.py`, `cxc/agents/cobranza_agent.py`).
+- Guard de superficie + 43 tests en `tests/unit/test_llm_gateway.py` (antes `tests_api/test_llm_gateway.py`).
 
-**DoD:** un solo punto de entrada a LLMs; test que simula caída del principal y verifica
-failover; sin SDK de proveedor instanciado fuera del gateway.
-**Esfuerzo:** ~3 días. **Owner:** equipo-agentes. **→ CTF si se difiere.**
-
-### P2-2 · Mover agentes de las vistas a Celery (#5) — `⚠️`
+### P2-2 · Mover agentes de las vistas a Celery (#5) — `⚠️` (ABIERTO)
 **Por qué:** ya existe la infra (Celery+Redis+Beat); las vistas que llaman agentes en
 `apps/agentes/views.py` corren síncronas y bloquean el request.
 
@@ -258,23 +243,23 @@ exponer estado (poll o vía SSE existente).
 **DoD:** análisis de agentes fuera del request HTTP; test de encolado.
 **Esfuerzo:** ~2 días. **Owner:** equipo-agentes.
 
-### P2-3 · Observabilidad de costos LLM por tenant (R11) — `❌`
+### P2-3 · Observabilidad de costos LLM por tenant (R11) — `🟡 PARCIAL` (hook + logs en PR #99; falta persistencia)
 **Por qué:** control de gasto y detección de abuso; encaja con el billing futuro del Plan C.
 
-**Tareas:** registrar tokens in/out + costo estimado por llamada y por empresa (en el gateway
-P2-1); dashboard/contador en `RegistroAuditoria` o tabla dedicada.
-**DoD:** consumo por tenant consultable; test de registro.
-**Esfuerzo:** ~1.5 días. **Owner:** equipo-agentes.
+**Estado actual (PR #99):** `apps/core/llm_gateway.py` emite un log estructurado `llm_consumo` (proveedor, uso, modelo real, empresa, tokens in/out) en cada llamada y expone el punto de extensión `registrar_consumo_hook`.
+**Pendiente:** crear tabla dedicada (o extender `RegistroAuditoria` / `saas`) para persistir tokens y costo estimado por tenant + vista/consulta agregada + tests.
+**DoD:** consumo histórico por tenant consultable vía API/admin; test de registro persistido.
+**Esfuerzo restante:** ~1 día. **Owner:** equipo-agentes.
 
-### P2-4 · `CACHES` de Django con Redis (#9) — `⚠️`
-**Por qué:** Redis ya está para Celery; falta cachear queries ORM caras y sesiones.
+### P2-4 · `CACHES` de Django con Redis (#9) — `🟡 PARCIAL` (PR #106; falta cacheo consultas/N+1)
+**Por qué:** Redis ya está para Celery; falta cachear queries ORM caras y reducir N+1.
 
-**Tareas:** `CACHES` con `django-redis`; cachear catálogos/consultas frecuentes; revisar
+**Tareas pendientes:** cachear catálogos/consultas frecuentes usando `CACHES["default"]`; revisar
 N+1 con `select_related`/`prefetch_related` en ViewSets de mayor tráfico.
-**DoD:** `CACHES` configurado; invalidación correcta; sin N+1 en endpoints calientes.
-**Esfuerzo:** ~1.5 días. **Owner:** equipo-backend.
+**DoD:** invalidación correcta; sin N+1 en endpoints calientes.
+**Esfuerzo restante:** ~1 día. **Owner:** equipo-backend.
 
-#### Estado — `🟡 PARCIAL: CACHES hecho` (PR `feature/p2-4-redis-p2-5-csp`)
+#### Estado — `🟡 PARCIAL: CACHES hecho` (PR #106, `feature/p2-4-redis-p2-5-csp`)
 `CACHES["default"]` configurado con el backend **nativo** de Django
 (`django.core.cache.backends.redis.RedisCache`, sin necesidad del paquete
 `django-redis`) vía `config/caches.py`: con `REDIS_URL` usa Redis en una **DB
@@ -286,20 +271,15 @@ colisión → `ImproperlyConfigured` fail-closed, porque `cache.clear()` hace
 Redis en los jobs de pytest; determinismo de throttle/SEC-07/idempotencia).
 Los jobs CI con servidor vivo (e2e, contract) ahora levantan un service
 `redis:7-alpine` y ejercitan el path real. Con esto, rate-limiting SEC-07,
-throttling DRF (P1-1) y el futuro circuit breaker del gateway LLM (P2-1)
+throttling DRF (P1-1) y el circuit breaker del gateway LLM (P2-1)
 comparten estado entre workers en producción. Tests:
-`tests_api/test_p24_caches_redis.py`. **Pendiente de P2-4:** cachear
-catálogos/consultas frecuentes + barrido N+1 (no entra en este PR focal).
+`tests/integration/test_p24_caches_redis.py`. **Pendiente de P2-4:** cachear
+catálogos/consultas frecuentes + barrido N+1.
 
-### P2-5 · CSP a nivel Django (R14, #3) — `❌ (existe en nginx)`
-**Por qué:** defensa en profundidad si alguna vez se sirve HTML fuera de nginx, y para
-`nonce` por request.
+### P2-5 · CSP a nivel Django (R14, #3) — `✅` (PR #106)
+**Por qué:** defensa en profundidad si alguna vez se sirve HTML fuera de nginx.
 
-**Tareas:** `django-csp`; política equivalente a la de nginx; alinear ambas capas.
-**DoD:** header CSP emitido por Django en prod; sin romper assets.
-**Esfuerzo:** ~0.5 día. **Owner:** equipo-backend.
-
-#### Estado — `🟢 HECHO` (PR `feature/p2-4-redis-p2-5-csp`)
+#### Estado — `🟢 HECHO` (PR #106, `feature/p2-4-redis-p2-5-csp`)
 `django-csp==4.0` + `CSPMiddleware` (tras WhiteNoise: los estáticos no llevan
 header) con política **enforce** en todos los entornos —no report-only: la capa
 nginx equivalente ya es enforce y en Railway el backend sirve el admin sin
@@ -313,7 +293,7 @@ el admin de Django 5.2 no tiene inline ejecutable (solo bloques
 llevan su relajación mínima **por vista** (`csp_update`: `style-src
 'unsafe-inline'` —estilos inyectados por JS—, `img-src data:` —iconos del CSS
 de swagger-ui—, `worker-src blob:` —worker de búsqueda de redoc—). Tests:
-`tests_api/test_p25_csp.py`.
+`tests/api/test_p25_csp.py`.
 
 ### P2-6 · Tracing distribuido — OpenTelemetry (R12) — `❌`
 **Por qué:** hay Celery + Kafka + agentes; sin trace correlacionado es difícil diagnosticar.
@@ -361,6 +341,9 @@ P2-1 (gateway LLM), P2-6 (OTel), P3-1 (2FA), P3-2 (RAG), P3-3 (WebSockets).
 
 Cada tarea pasa el gate completo de [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md):
 build verde, tests verdes, `/security-review`, `/code-review`, revisión de gaps, cero deuda
-nueva (o CTF), auto-checklist R-CODE/R-PROC. PRs pequeños y focales (R-PROC-2), en draft,
-por la rama correcta según [`FLUJO_DE_TRABAJO.md`](../FLUJO_DE_TRABAJO.md) (fix/hotfix desde
-`main` para lo P0; feature desde `develop` para el resto).
+nueva (o CTF), auto-checklist R-CODE/R-PROC. PRs pequeños y focales (`R-PROC-2`), abiertos en
+`draft` desde `develop` hacia `develop` conforme a [`FLUJO_DE_TRABAJO.md`](../FLUJO_DE_TRABAJO.md)
+(*toda rama —feature, fix, hotfix, chore, docs— nace de `develop` y hace PR a `develop`*);
+en PRs a `develop`, tras Gate DoD + dictamen `APROBADO` en comentario de revisor independiente
+distinto del autor, el agente/orquestador marca `ready`, espera CI 100 % verde y mergea a
+`develop`. La puerta `develop`→`main` requiere siempre aprobación humana obligatoria del owner (`R-PROC-3`).

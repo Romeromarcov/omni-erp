@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 |
+| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 (Tareas 1.3, 3.5 y 3.6 cerradas) |
 | **Fecha**    | 2026-11-14                                |
 | **Esfuerzo** | ~3–4 semanas, repartibles en PRs pequeños (R-PROC-2) |
 | **Owner**    | equipo-backend / devops (acciones del propietario marcadas con 👤) |
@@ -32,6 +32,12 @@
 | D5 | **Se empieza por la fase 0** | |
 
 ## 2. Hallazgos (con evidencia)
+
+> **Nota de actualización (`2026-11-17`):** los valores mostrados en esta tabla (`H5`, `H12`)
+> corresponden a la foto base del `2026-11-14`. Los conteos remedidos sobre código real (`origin/develop @ ff2bdb6`)
+> viven en [`docs/tech-debt/INVENTORY.md`](../tech-debt/INVENTORY.md): `38` `Response({...str(e|exc|err)...})`
+> en 15 archivos, `201` `# noqa` (51 archivos de `apps/`+`config/`), `40` `eslint-disable` en `.ts`/`.tsx`
+> (`38` en producción + `2` en tests) y `0` `TODO`/`FIXME` reales en código de `apps/`/`config/`/`src/`.
 
 | # | Hallazgo | Evidencia | Certeza |
 |---|----------|-----------|---------|
@@ -90,8 +96,8 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 | 3.2 | ✅ Revisar `frontend/test-import.js`; ignorar carpetas locales basura (`backend/%SystemDrive%`, `backend/sqlite-tools`, `.venv*`) | H12 |
 | 3.3 | ⬜ D2: migrar a `ruff` (config en `setup.cfg`/`pyproject`), quitar `black`/`isort`, PR mecánico de reformateo | H12 |
 | 3.4 | ⬜ Barrido: justificar o quitar `# noqa`/`eslint-disable`, imports sin usar, TODOs | H12 |
-| 3.5 | ⬜ Actualizar `docs/tech-debt/INVENTORY.md`; unificar `docs/archive` y `docs/_archive`. **No** se modifican fechas de CTF (D3) | H12 |
-| 3.6 | ✅ Actions con aviso de Node 20: subir versiones | — |
+| 3.5 | ✅ Actualizar `docs/tech-debt/INVENTORY.md`; unificar `docs/archive` y `docs/_archive`. **No** se modifican fechas de CTF (D3) *(cerrado en PR `#288` `docs/gobernanza-graphify-y-planes-v13`)* | H12 |
+| 3.6 | ✅ Actions con aviso de Node 20: subir versiones *(cerrado en PR `#289`)* | — |
 
 ### Fase 4 — Producto
 

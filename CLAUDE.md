@@ -11,7 +11,8 @@ entrar al repo. Léelo completo antes de tocar código.
 2. **Reglas que no se violan:** multi-tenant siempre (R-CODE-1), PostgreSQL nunca SQLite
    (R-CODE-2), Decimal para dinero (R-CODE-4), sin secretos en código/logs (R-CODE-8),
    PRs pequeños y focales (R-PROC-2), revisión humana obligatoria en la puerta
-   `develop`→`main` (R-PROC-3; los PRs a `develop` son autoaprobables con CI verde).
+   `develop`→`main` (R-PROC-3; los PRs a `develop` siguen el loop autónomo con Gate DoD +
+   dictamen `APROBADO` de revisor independiente + CI 100 % verde).
 3. **Skills del proyecto:** revisa `docs/skills/` (módulos Django, aislamiento multi-tenant,
    dinero Decimal, fiscal Venezuela, disciplina de PR).
 
@@ -38,16 +39,26 @@ Si un paso falla, **se arregla antes de continuar** — nunca "para el próximo 
 ## Convenciones rápidas
 
 - **Commits:** español, imperativo, descriptivos (`agrega…`, `corrige…`, `refactoriza…`).
-- **PRs a `develop`:** con **CI verde + gate completo**, son **autoaprobables** — un agente
-  revisor distinto del autor revisa el diff, aprueba y mergea (autorizado por el owner,
-  2026-06-11). **PRs `develop`→`main`:** siempre revisión humana del owner.
+- **PRs a `develop` (loop autónomo autorizado por el owner, 2026-11-17):** se abren en `draft`. Tras pasar el **Gate DoD completo** y recibir dictamen **`APROBADO`** de un agente revisor **independiente y distinto del autor** (`QA + Seguridad`, evidenciado en comentario del PR), el agente/orquestador **marca el PR `ready`**, espera a que todos los checks de **CI estén 100 % verdes** y ejecuta el **merge a `develop`**.
+- **PRs `develop`→`main` (puerta de producción):** siempre **revisión y aprobación humana obligatoria del owner (`R-PROC-3`)**. Ningún agente marca `ready` ni mergea a `main` sin aprobación humana.
 - **Plantilla de PR y auto-checklist:** [`docs/skills/omni-pr-discipline/SKILL.md`](docs/skills/omni-pr-discipline/SKILL.md).
 - **Auditorías:** planificación y logs en [`docs/auditorias/`](docs/auditorias/); finalizadas en `docs/auditorias/archivo/`.
+
+## Grafo de conocimiento (Graphify)
+
+Cuando exista `graphify-out/graph.json` (generado localmente e ignorado por Git junto a `.graphify*`), úsalo para reducir lectura innecesaria de archivos sin alterar ninguna regla `R-CODE-*`, `R-PROC-*` o `R-PROD-*`:
+
+- **Antes de editar código:** consulta arquitectura, dependencias e impacto con:
+  - `graphify query "<pregunta>"` — navegación BFS sobre entidades y relaciones relevantes.
+  - `graphify explain "<concepto|módulo>"` — explicación de un nodo y sus conexiones.
+  - `graphify affected "<archivo|símbolo>"` — trazado inverso de nodos impactados por un cambio.
+- **Tras cada merge a `develop`:** ejecuta `graphify update .` (solo AST, sin costo LLM; los hooks locales instalados con `graphify hook install` también lo automatizan tras `commit`/`merge`/`checkout`).
+- Las reglas y workflow para Antigravity viven en [`.agents/rules/graphify.md`](.agents/rules/graphify.md) y [`.agents/workflows/graphify.md`](.agents/workflows/graphify.md).
 
 ## 🌳 Flujo de trabajo y entornos (Git manda)
 
 Detalle completo en **[`docs/FLUJO_DE_TRABAJO.md`](docs/FLUJO_DE_TRABAJO.md)**. Lo esencial:
 
 - `main` = **producción** · `develop` = **staging** (ambos despliegan solos en Railway al merge).
-- **Todo cambio (feature, fix, hotfix):** rama desde `develop` → PR a `develop` (**autoaprobable con CI verde**) → valida en staging → PR `develop`→`main` (**revisión humana del owner**) → prod. Nada salta directo a `main`.
+- **Todo cambio (feature, fix, hotfix):** rama desde `develop` → PR `draft` a `develop` (Gate DoD + dictamen `APROBADO` de revisor independiente `QA + Seguridad` → `ready` → CI 100 % verde → merge a `develop`) → valida en staging → PR `develop`→`main` (**revisión y aprobación humana obligatoria del owner**) → prod. Nada salta directo a `main`.
 - **Diagnóstico en staging/prod:** **solo lectura** (logs, datos) vía Railway CLI — skill [`docs/skills/diagnostico-railway/`](docs/skills/diagnostico-railway/SKILL.md). **Nunca** editar código ni datos en el contenedor (efímero); todo cambio vuelve por Git.

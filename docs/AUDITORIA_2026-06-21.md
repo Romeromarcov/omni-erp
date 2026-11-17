@@ -70,7 +70,7 @@
 > Deuda fechada vigente: **CTF-008** (offline), **CTF-010** (firma apps), **CTF-011** (push Odoo),
 > **CTF-012** (RLS prod). 11 CTFs cerrados.
 
-## Docs archivados (movidos a `docs/archive/2026-06-21/`)
+## Docs archivados (unificados en `docs/_archive/2026-06-21/`)
 
 | Documento | Razón |
 |---|---|

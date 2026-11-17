@@ -107,10 +107,13 @@ mentir. Un check marcado sin verificar rompe la confianza del revisor (anti-patr
 
 ## Después del gate
 
-- **PR a `develop`:** con CI completo en verde y este gate corrido, el PR es
-  **autoaprobable** — un agente revisor distinto del autor revisa el diff, aprueba y mergea
-  (autorizado por el owner, 2026-06-11; ver [`FLUJO_DE_TRABAJO.md`](FLUJO_DE_TRABAJO.md)).
-- **PR `develop`→`main` (producción): revisión humana del owner obligatoria** (R-PROC-3).
+- **PR a `develop` (loop autónomo autorizado por el owner, 2026-11-17):** nace en `draft`.
+  Tras pasar este gate completo y recibir dictamen **`APROBADO`** de un agente revisor
+  **independiente y distinto del autor** (`QA + Seguridad`, evidenciado en comentario del PR),
+  el agente/orquestador **marca el PR `ready`**, espera a que el **100 % de los checks de CI
+  estén verdes** y ejecuta el **merge a `develop`** (ver [`FLUJO_DE_TRABAJO.md`](FLUJO_DE_TRABAJO.md)).
+- **PR `develop`→`main` (producción): revisión y aprobación humana del owner obligatoria** (R-PROC-3).
+  Ningún agente marca `ready` ni mergea a `main` sin aprobación humana.
 - CI verde es no-negociable (R-PROC-4); el gate local existe para que CI **nunca** sea la
   primera vez que se ve un fallo.
 
