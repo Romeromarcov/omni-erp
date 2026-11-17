@@ -51,12 +51,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # diff-cover necesita el historial para comparar con main
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -107,10 +107,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -119,14 +119,6 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
-
-      - name: npm audit (high+) — BLOQUEANTE (gate activado al cerrar CTF-007)
-        working-directory: frontend
-        # Sin --omit=dev a propósito: el único HIGH que existió (picomatch,
-        # CTF-007) venía de devDependencies, y omitirlas habría ocultado justo
-        # el hallazgo que el CTF rastreaba. El toolchain de build/lint corre en
-        # CI y en máquinas de desarrollo: también es superficie de supply-chain.
-        run: npm audit --audit-level=high
 
       - name: TypeScript check (build mode — coincide con el build de producción)
         working-directory: frontend
@@ -206,10 +198,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -240,7 +232,7 @@ jobs:
           for i in $(seq 1 30); do curl -sf http://localhost:8000/api/health/ >/dev/null && break || sleep 2; done
 
       - name: Setup Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -275,7 +267,7 @@ jobs:
       # son valores ficticios de CI (E2E_ADMIN_PASSWORD, SECRET_KEY de arriba), no secretos reales.
       - name: Subir evidencia de Playwright (solo si falla)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-evidencia
           path: |
@@ -311,10 +303,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -344,41 +336,62 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # gitleaks necesita el historial completo
 
       - name: Secret scanning (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
-      - name: Dependency audit (Python — pip-audit) — BLOQUEANTE
+      # Plan 06 §1.3 (H8): pip-audit / npm audit bloquean solo en main y en PRs hacia main.
+      # En otras ramas/PRs informan con ::warning:: y continue-on-error: true; el reporte
+      # diario con apertura automática de issue vive en nightly.yml (job dependency-audit).
+      - name: Dependency audit (Python — pip-audit) — BLOQUEANTE (main)
+        if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')
         working-directory: backend
-        # BLOQUEANTE (Fase 5): requirements.txt quedó sin CVEs conocidos (deps de test
-        # movidas a requirements-dev; cryptography/lxml/mcp/httpx actualizados). Un CVE
-        # nuevo rompe el job a propósito → se remedia o se difiere con CTF fechado.
         run: |
           pip install pip-audit
           pip-audit -r requirements.txt
 
+      - name: Dependency audit (Python — pip-audit) — informativo (ramas no-release)
+        if: github.ref != 'refs/heads/main' && !(github.event_name == 'pull_request' && github.base_ref == 'main')
+        continue-on-error: true
+        working-directory: backend
+        run: |
+          pip install pip-audit
+          if ! pip-audit -r requirements.txt; then
+            echo "::warning title=pip-audit::pip-audit detectó vulnerabilidades en backend/requirements.txt (no bloqueante fuera de main)."
+            exit 1
+          fi
+
       - name: Setup Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
-      - name: Dependency audit (Node — npm audit) — BLOQUEANTE (high+)
+      - name: Dependency audit (Node — npm audit) — BLOQUEANTE (high+, main)
+        if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')
         working-directory: frontend
-        # BLOQUEANTE en HIGH (CTF-007 cerrado 2026-06-12): typescript-eslint
-        # 8.61 eliminó la cadena fast-glob→micromatch→picomatch@2 y el árbol
-        # quedó en 0 vulnerabilidades. Incluye devDependencies a propósito
-        # (ver justificación en el job frontend).
+        # Incluye devDependencies a propósito: el toolchain de build/lint corre en
+        # CI y en máquinas de desarrollo y también es superficie de supply-chain.
         run: npm audit --audit-level=high
+
+      - name: Dependency audit (Node — npm audit) — informativo (high+, ramas no-release)
+        if: github.ref != 'refs/heads/main' && !(github.event_name == 'pull_request' && github.base_ref == 'main')
+        continue-on-error: true
+        working-directory: frontend
+        run: |
+          if ! npm audit --audit-level=high; then
+            echo "::warning title=npm audit::npm audit detectó vulnerabilidades HIGH+ en frontend/ (no bloqueante fuera de main)."
+            exit 1
+          fi
 
       - name: Trivy — CVEs de dependencias e imágenes (fs scan)
         # Instalación vía script oficial (evita depender de tags de la action).
@@ -409,10 +422,10 @@ jobs:
       REDIS_URL: "redis://localhost:6379/0"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -497,9 +510,9 @@ jobs:
       SECRET_KEY: "ci-only-dummy-key-not-used-in-prod-xK9mPqR2nL8vJ4wY"
       REDIS_URL: "redis://localhost:6379/0"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip

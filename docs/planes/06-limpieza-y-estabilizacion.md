@@ -69,7 +69,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 |---|-------|----------|------------|
 | 1.1 | ⬜ Auditar los 32 `str(e)`: clasificar (mensaje de dominio seguro vs excepción genérica), helper común y reemplazo por app | H5 | Ninguna respuesta expone una excepción no controlada; test por app |
 | 1.2 | ✅ `uuid7` monótono (D1) y desempate por `created_at` + pk en `_config_de`; corregir `test_tolerancia_custom_cambia_resultado` | H6 | Los tests dejan de variar; tests de monotonicidad (mismo ms, hilos) |
-| 1.3 | ⬜ Fijar versión exacta de las 4 dependencias; Dependabot semanal; mover `pip-audit`/`npm audit` a un job nocturno que abra un aviso y bloquee solo en la rama de release | H7, H8 | Un aviso nuevo no bloquea un PR no relacionado |
+| 1.3 | ✅ Fijar versión exacta de las 4 dependencias; Dependabot semanal; mover `pip-audit`/`npm audit` a un job nocturno que abra un aviso y bloquee solo en la rama de release | H7, H8 | Un aviso nuevo no bloquea un PR no relacionado |
 
 ### Fase 2 — RLS real (CTF-012)
 
@@ -91,7 +91,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 | 3.3 | ⬜ D2: migrar a `ruff` (config en `setup.cfg`/`pyproject`), quitar `black`/`isort`, PR mecánico de reformateo | H12 |
 | 3.4 | ⬜ Barrido: justificar o quitar `# noqa`/`eslint-disable`, imports sin usar, TODOs | H12 |
 | 3.5 | ⬜ Actualizar `docs/tech-debt/INVENTORY.md`; unificar `docs/archive` y `docs/_archive`. **No** se modifican fechas de CTF (D3) | H12 |
-| 3.6 | ⬜ Actions con aviso de Node 20: subir versiones | — |
+| 3.6 | ✅ Actions con aviso de Node 20: subir versiones | — |
 
 ### Fase 4 — Producto
 

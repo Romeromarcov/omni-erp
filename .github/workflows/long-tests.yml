@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Crear venv e instalar dependencias
         working-directory: backend
@@ -85,7 +85,7 @@ jobs:
 
       - name: Subir artefactos
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: long-tests-${{ github.run_id }}
           path: artifacts/
