@@ -49,7 +49,7 @@ def _config_de(empresa) -> ReconciliationConfig:
         ConfiguracionConciliacion.objects.filter(
             empresa=empresa, deleted_at__isnull=True
         )
-        .order_by("-created_at")
+        .order_by("-created_at", "-pk")
         .first()
     )
     if fila is None:
@@ -70,7 +70,7 @@ def conciliar_pedido(pedido: PedidoLubrikca) -> ConciliacionLubrikca:
         BandejaFacturacion.objects.filter(
             pedido=pedido, deleted_at__isnull=True
         )
-        .order_by("-calculado_en")
+        .order_by("-calculado_en", "-pk")
         .first()
     )
     if bandeja is None:

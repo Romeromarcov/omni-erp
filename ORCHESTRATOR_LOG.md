@@ -488,3 +488,12 @@ feature/cxc-lubrikca (base 22a9696 + plan 4e4b9eb). App nueva aislada apps/cxc_l
   (sección) y router.tsx (rutas, evita acceso por URL). Tests appProfile (+4). Documentado enlace standalone
   en CHECKLIST_GO_LIVE.md §6c. Gate: tsc + lint + appProfile tests OK (OperacionesCambio flaky local por carga;
   el job Frontend de CI pasa).
+
+[2026-06-28] ✅ Railway — servicio standalone cobranza (Lubrikca) provisionado vía API GraphQL.
+  #258 mergeado a develop (auto-merge, ae51c46) tras sincronizar la rama y traer el fix de E2E de #257.
+  Servicio omni-erp-cobranza (id eb4c29e7-5c8e-4690-9a53-3837ccf7183a) creado por GraphQL (accessToken del
+  CLI ~/.railway/config.json; el `railway add` del CLI fallaba por sesión). Repo-root Dockerfile.cobranza
+  (dockerfilePath en la instancia, rootDirectory=''), VITE_API_URL por entorno.
+  STAGING: deploy SUCCESS, https://omni-erp-cobranza-staging.up.railway.app (HTTP 200, build develop).
+  PROD: infra lista (https://omni-erp-cobranza-production.up.railway.app), deploy pendiente de promover
+  develop→main (R-PROC-3, owner) — main aún no tiene Dockerfile.cobranza ni cxc-lubrikca.

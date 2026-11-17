@@ -73,3 +73,12 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/**
+ * Plan 06 D4 (H13): tras rehidratar el caché persistido desde IndexedDB,
+ * invalida las consultas activas para que la UI pinte de inmediato lo guardado
+ * y refresque en segundo plano sin esperar el staleTime de 30 s.
+ */
+export function handlePersistRestoreSuccess(): Promise<void> {
+  return queryClient.invalidateQueries({ refetchType: 'active' });
+}
