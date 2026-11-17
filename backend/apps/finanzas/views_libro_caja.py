@@ -20,6 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import get_empresas_visible
 
 from .services_libro_caja import generar_libro_maestro_caja
@@ -65,7 +66,7 @@ def _resolver_rango(request):
             inicio, fin = _periodo_a_rango(periodo)
             return inicio, fin, None
         except ValueError as exc:
-            return None, None, Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return None, None, domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
 
     desde_str = request.query_params.get("desde")
     hasta_str = request.query_params.get("hasta")
@@ -115,7 +116,7 @@ class LibroMaestroCajaView(APIView):
                 tipo=tipo,
             )
         except ValueError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {

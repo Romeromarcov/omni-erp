@@ -12,6 +12,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.viewsets import ActiveFilterMixin, BaseModelViewSet, get_empresas_visible
 
@@ -101,7 +102,7 @@ class OperacionCambioDivisaViewSet(BaseModelViewSet):
             # CTF-013 / R-CODE-11: contabilidad activa sin mapeo CAMBIO_DIVISA —
             # el @transaction.atomic del serializer ya revirtió el doble registro
             # al propagar la excepción; aquí solo se traduce a 422.
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     def perform_create(self, serializer):
         serializer.save()
@@ -231,7 +232,7 @@ class ExtractoBancarioArchivoViewSet(
                 usuario=request.user,
             )
         except ExtractoBancarioError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
 
         codigo_http = (
             status.HTTP_200_OK if res.ya_existia_archivo else status.HTTP_201_CREATED
@@ -764,7 +765,7 @@ class PropuestaConciliacionBancariaViewSet(
                 incluir_odoo=datos.get("incluir_odoo"),
             )
         except PreconciliacionError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
 
         return Response(resumen, status=status.HTTP_200_OK)
 
@@ -803,9 +804,9 @@ class PropuestaConciliacionBancariaViewSet(
                 comentario=datos.get("comentario") or "",
             )
         except DecisionPreconciliacionInvalida as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         except PreconciliacionError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+            return domain_error_response(exc, status_code=status.HTTP_404_NOT_FOUND)
 
         actualizada_full = self.get_queryset().get(pk=actualizada.pk)
         return Response(

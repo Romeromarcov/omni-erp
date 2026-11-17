@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
+from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import IdempotentCreateMixin
 from apps.core.viewsets import BaseModelViewSet
 from apps.tesoreria.serializers import CajaSerializer
@@ -144,7 +145,7 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         except ValueError as exc:
             # Mensajes de negocio controlados (sesión cerrada, caja ajena,
             # saldo inválido); no se expone ningún detalle interno.
-            return Response({"error": str(exc)}, status=400)
+            return domain_error_response(exc, status_code=400)
         except Exception:
             logger.exception("Error al cerrar sesión de caja")
             return Response({"error": "No se pudo cerrar la sesión. Intente de nuevo."}, status=400)
@@ -203,7 +204,7 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         except ValueError as exc:
             # Mensajes de negocio controlados (monto, saldo, moneda); no se
             # expone ningún detalle interno.
-            return Response({"error": str(exc)}, status=400)
+            return domain_error_response(exc, status_code=400)
         return Response(
             {
                 "movimiento_salida_id": mov_salida.id_movimiento,
@@ -625,7 +626,7 @@ class CajaViewSet(BaseModelViewSet):
         except ValueError as exc:
             # Mensajes de negocio controlados (límite anterior al último
             # cierre); no se expone ningún detalle interno.
-            return Response({"error": str(exc)}, status=400)
+            return domain_error_response(exc, status_code=400)
         except Exception:
             logger.exception("Error al realizar cierre de caja")
             return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
@@ -826,7 +827,7 @@ class CajaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         except ValueError as exc:
             # Mensajes de negocio controlados (nombre/moneda/método); el de
             # moneda/método es neutro — no filtra existencia ajena (R-CODE-1).
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         return Response(
             {
                 "mensaje": f"Caja virtual '{caja_virtual.nombre}' creada exitosamente",
@@ -1180,7 +1181,7 @@ class CajaFisicaViewSet(BaseModelViewSet):
         except ValueError as exc:
             # Mensajes de negocio controlados (límite anterior al último
             # cierre); no se expone ningún detalle interno.
-            return Response({"error": str(exc)}, status=400)
+            return domain_error_response(exc, status_code=400)
         except Exception:
             logger.exception("Error al realizar cierre de caja física")
             return Response({"error": "No se pudo realizar el cierre. Intente de nuevo."}, status=400)
@@ -1208,7 +1209,7 @@ class CajaFisicaViewSet(BaseModelViewSet):
             )
         except ValueError as exc:
             # Carrera de doble apertura (bugs lote 4): 400 de negocio, no 500.
-            return Response({"error": str(exc)}, status=400)
+            return domain_error_response(exc, status_code=400)
         return Response(
             {
                 "mensaje": f"Sesión abierta para la caja {caja.nombre}.",
@@ -1257,7 +1258,7 @@ class CajaFisicaViewSet(BaseModelViewSet):
             )
         except ValueError as exc:
             # Mensajes de negocio controlados; sin detalles internos.
-            return Response({"error": str(exc)}, status=400)
+            return domain_error_response(exc, status_code=400)
         except Exception:
             logger.exception("Error al cerrar sesión de caja física")
             return Response({"error": "No se pudo cerrar la sesión. Intente de nuevo."}, status=400)

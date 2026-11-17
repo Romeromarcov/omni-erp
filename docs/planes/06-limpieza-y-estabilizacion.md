@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 (Tareas 1.3, 3.5 y 3.6 cerradas) |
+| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 (Tareas 1.1, 1.2, 1.3, 3.5 y 3.6 cerradas) |
 | **Fecha**    | 2026-11-14                                |
 | **Esfuerzo** | ~3–4 semanas, repartibles en PRs pequeños (R-PROC-2) |
 | **Owner**    | equipo-backend / devops (acciones del propietario marcadas con 👤) |
@@ -73,7 +73,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 
 | # | Tarea | Resuelve | Aceptación |
 |---|-------|----------|------------|
-| 1.1 | ⬜ Auditar los 32 `str(e)`: clasificar (mensaje de dominio seguro vs excepción genérica), helper común y reemplazo por app | H5 | Ninguna respuesta expone una excepción no controlada; test por app |
+| 1.1 | ✅ Auditar y sanear respuestas `str(e)` (`apps/core/exceptions.py`, 44 ocurrencias base en 17 archivos + fugas `except Exception` en `mcp_server.py`, CSV import de `ventas` y `cxc/health/`) | H5 | Ninguna respuesta expone una excepción no controlada; guardia AST + tests en `tests/unit/test_http_error_sanitization.py` |
 | 1.2 | ✅ `uuid7` monótono (D1) y desempate por `created_at` + pk en `_config_de`; corregir `test_tolerancia_custom_cambia_resultado` | H6 | Los tests dejan de variar; tests de monotonicidad (mismo ms, hilos) |
 | 1.3 | ✅ Fijar versión exacta de las 4 dependencias; Dependabot semanal; mover `pip-audit`/`npm audit` a un job nocturno que abra un aviso y bloquee solo en la rama de release | H7, H8 | Un aviso nuevo no bloquea un PR no relacionado |
 

@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 from apps.almacenes.models import Almacen
 
@@ -366,10 +367,10 @@ class _OperacionInventarioBaseViewSet(BaseModelViewSet):
 
         try:
             confirmar_paso(operacion=operacion, paso=paso, usuario=request.user)
-        except PasoFueraDeOrdenError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        except OperacionError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except (PasoFueraDeOrdenError, OperacionError) as exc:
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
+            )
 
         operacion.refresh_from_db()
         return Response(OperacionInventarioSerializer(operacion).data)

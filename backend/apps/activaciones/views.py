@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     BaseModelViewSet,
     EmpresaInjectMixin,
@@ -124,7 +125,7 @@ class EventoActivacionViewSet(_TenantViewSet):
         except CalendarioActivacion.DoesNotExist:
             return Response({"error": "Calendario no encontrado."}, status=404)
         except services.ActivacionError as e:
-            return Response({"error": str(e)}, status=400)
+            return domain_error_response(e, status_code=400)
         cliente = (
             Cliente.objects.filter(pk=d["cliente"], id_empresa=empresa).first()
             if d.get("cliente")
@@ -146,11 +147,11 @@ class EventoActivacionViewSet(_TenantViewSet):
                 notas=d["notas"],
             )
         except services.CapacidadExcedida as e:
-            return Response(
-                {"error": str(e), "detalle": e.detalle}, status=status.HTTP_409_CONFLICT
+            return domain_error_response(
+                e, status_code=status.HTTP_409_CONFLICT, extra={"detalle": e.detalle}
             )
         except services.ActivacionError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(e, status_code=status.HTTP_400_BAD_REQUEST)
         return Response(
             EventoActivacionSerializer(evento).data, status=status.HTTP_201_CREATED
         )
@@ -160,5 +161,5 @@ class EventoActivacionViewSet(_TenantViewSet):
         try:
             evento = services.cancelar_evento(self.get_object())
         except services.ActivacionError as e:
-            return Response({"error": str(e)}, status=400)
+            return domain_error_response(e, status_code=400)
         return Response(EventoActivacionSerializer(evento).data)

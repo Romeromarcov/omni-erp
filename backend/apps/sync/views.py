@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import idempotent
 from apps.core.viewsets import get_empresa_primaria, get_empresas_visible
 
@@ -147,6 +148,6 @@ class SyncPushVentasView(APIView):
         except VentaPosError as exc:
             # 4xx de validación → la clave de idempotencia NO se consume; el cajero
             # corrige y reenvía (ADR-012 §5: no es transitorio, no se reintenta en bucle).
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         return Response(resultado, status=status.HTTP_201_CREATED)

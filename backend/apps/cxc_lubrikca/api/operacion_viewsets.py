@@ -13,6 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     BaseModelViewSet,
     SoftDeleteModelMixin,
@@ -81,8 +82,8 @@ class PedidoLubrikcaViewSet(_CxcLubrikcaTenantViewSet):
         try:
             bandeja = recalcular_bandeja(pedido)
         except BridgeError as exc:
-            return Response(
-                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
             )
         return Response(BandejaFacturacionSerializer(bandeja).data)
 
@@ -93,8 +94,8 @@ class PedidoLubrikcaViewSet(_CxcLubrikcaTenantViewSet):
         try:
             counts = sincronizar_empresa(empresa, desde=request.data.get("desde"))
         except SyncError as exc:
-            return Response(
-                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
             )
         return Response(counts)
 
@@ -190,8 +191,8 @@ class VinculacionViewSet(
                 es_tasa_heredada=data["es_tasa_heredada"],
             )
         except (VinculacionError, BridgeError) as exc:
-            return Response(
-                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
             )
 
         return Response(
@@ -224,8 +225,8 @@ class BandejaFacturacionViewSet(
         try:
             solicitud = proponer_cierre(bandeja, request.user)
         except VinculacionError as exc:
-            return Response(
-                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
             )
         if solicitud is None:
             return Response(
@@ -251,8 +252,8 @@ class BandejaFacturacionViewSet(
                 comentarios=body.validated_data["comentarios"],
             )
         except (VinculacionError, AprobacionError) as exc:
-            return Response(
-                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
             )
         bandeja.refresh_from_db()
         return Response(BandejaFacturacionSerializer(bandeja).data)
