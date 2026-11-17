@@ -395,14 +395,14 @@ def test_cobertura_completa_endpoints_proyectos_errores_mcp_y_tasks(
     fake_uuid = str(uuid.uuid4())
     area = services.crear_area_operativa(empresa=empresa_a, nombre="Calidad", lider=user_a)
 
-    # POST /proyectos/ (éxito y área inexistente 404)
+    # POST /proyectos/ (éxito y área inexistente 400 por PrimaryKeyRelatedField)
     assert (
         client_a.post(
             f"{BASE}/proyectos/",
             {"nombre": "P1", "area": fake_uuid},
             format="json",
         ).status_code
-        == 404
+        == 400
     )
     r_proy = client_a.post(
         f"{BASE}/proyectos/",
@@ -452,13 +452,13 @@ def test_cobertura_completa_endpoints_proyectos_errores_mcp_y_tasks(
         client_a.post(
             f"{BASE}/items/", {"titulo": "X", "area": fake_uuid}, format="json"
         ).status_code
-        == 404
+        == 400
     )
     assert (
         client_a.post(
             f"{BASE}/items/", {"titulo": "X", "tarea_padre": fake_uuid}, format="json"
         ).status_code
-        == 404
+        == 400
     )
     t_ok = client_a.post(
         f"{BASE}/items/",
@@ -491,7 +491,7 @@ def test_cobertura_completa_endpoints_proyectos_errores_mcp_y_tasks(
             {"titulo": "Minuta doc malo", "documento_adjunto": fake_uuid},
             format="json",
         ).status_code
-        == 404
+        == 400
     )
     min_b = services.crear_minuta_borrador(
         empresa=empresa_a,

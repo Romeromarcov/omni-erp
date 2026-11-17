@@ -68,14 +68,14 @@ def test_aislamiento_multitenant_estricto_en_todos_los_endpoints(
     )
     assert client_a.get(f"{BASE}/minutas/{min_b.id_minuta}/").status_code == 404
 
-    # Intentos de referencia cross-tenant al crear en empresa_a se rechazan con 404/403
+    # Intentos de referencia cross-tenant al crear en empresa_a se rechazan por TenantFKScopeMixin (400 SEC-M1)
     assert (
         client_a.post(
             f"{BASE}/items/",
             {"titulo": "Intento fuga", "proyecto": str(proy_b.id_proyecto)},
             format="json",
         ).status_code
-        == 404
+        == 400
     )
     assert (
         client_a.post(
@@ -83,7 +83,7 @@ def test_aislamiento_multitenant_estricto_en_todos_los_endpoints(
             {"titulo": "Intento fuga seccion", "seccion": str(sec_b.id_seccion)},
             format="json",
         ).status_code
-        == 404
+        == 400
     )
     assert (
         client_a.post(
@@ -91,7 +91,7 @@ def test_aislamiento_multitenant_estricto_en_todos_los_endpoints(
             {"titulo": "Intento fuga usuario", "asignado_a": str(user_b.pk)},
             format="json",
         ).status_code
-        == 404
+        == 400
     )
     assert (
         client_a.post(

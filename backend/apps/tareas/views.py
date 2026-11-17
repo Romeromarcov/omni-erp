@@ -18,14 +18,13 @@ from apps.core.capability_auth import (
     CapabilityTokenAuthentication,
     tiene_scope_capacidad,
 )
-from apps.core.models import Departamento, Usuarios
+from apps.core.models import Usuarios
 from apps.core.viewsets import (
     BaseModelViewSet,
     EmpresaInjectMixin,
     get_empresa_primaria,
     get_empresas_visible,
 )
-from apps.gestion_documental.models import Documento
 
 from . import services
 from .models import (
@@ -38,7 +37,6 @@ from .models import (
     Tarea,
 )
 from .serializers import (
-    AreaCrearActualizarSerializer,
     AreaOperativaSerializer,
     ComentarioInputSerializer,
     ComentarioTareaSerializer,
@@ -46,14 +44,11 @@ from .serializers import (
     DependenciaInputSerializer,
     DependenciaTareaSerializer,
     MinutaConfirmarInputSerializer,
-    MinutaCrearInputSerializer,
     MinutaReunionSerializer,
     PlantillaTareaRecurrenteSerializer,
-    ProyectoCrearSerializer,
     ProyectoSerializer,
     RegistroAlertaTareaSerializer,
     SeccionProyectoSerializer,
-    TareaCrearSerializer,
     TareaEstadoInputSerializer,
     TareaMoverInputSerializer,
     TareaSerializer,
@@ -140,30 +135,37 @@ class AreaOperativaViewSet(_BaseTareasViewSet):
         )
 
     def create(self, request, *args, **kwargs):
-        ser = AreaCrearActualizarSerializer(data=request.data)
+        ser = self.get_serializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
         empresa = _empresa_activa_o_403(request)
-        depto = None
-        if d.get("departamento"):
-            depto = Departamento.objects.filter(
-                pk=d["departamento"], id_empresa=empresa, activo=True
-            ).first()
-            if depto is None:
-                raise NotFound("Departamento no encontrado en la empresa.")
-        lider = _resolver_usuario_tenant(empresa, d.get("lider"))
-        miembros = [
-            _resolver_usuario_tenant(empresa, uid) for uid in (d.get("miembros") or [])
-        ]
+        raw_miembros = request.data.get("miembros") or []
+        if not isinstance(raw_miembros, list):
+            return Response(
+                {"miembros": ["Debe ser una lista de UUIDs."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        miembros: list[Usuarios] = []
+        for raw_uid in raw_miembros:
+            try:
+                uid = uuid.UUID(str(raw_uid))
+            except (ValueError, TypeError):
+                return Response(
+                    {"miembros": ["UUID de usuario inválido."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            u = _resolver_usuario_tenant(empresa, uid)
+            if u is not None:
+                miembros.append(u)
         try:
             area = services.crear_area_operativa(
                 empresa=empresa,
                 nombre=d["nombre"],
-                color=d["color"],
-                departamento=depto,
-                lider=lider,
-                palabras_clave=d["palabras_clave"],
-                miembros=[m for m in miembros if m is not None],
+                color=d.get("color", "#378ADD"),
+                departamento=d.get("departamento"),
+                lider=d.get("lider"),
+                palabras_clave=d.get("palabras_clave") or [],
+                miembros=miembros,
             )
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
@@ -221,30 +223,21 @@ class ProyectoViewSet(_BaseTareasViewSet):
         return qs
 
     def create(self, request, *args, **kwargs):
-        ser = ProyectoCrearSerializer(data=request.data)
+        ser = self.get_serializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
         empresa = _empresa_activa_o_403(request)
-        area = None
-        if d.get("area"):
-            area = AreaOperativa.objects.filter(
-                pk=d["area"], id_empresa=empresa, activo=True
-            ).first()
-            if area is None:
-                raise NotFound("Área no encontrada en la empresa.")
-        propietario = (
-            _resolver_usuario_tenant(empresa, d["propietario"])
-            if d.get("propietario")
-            else _actor_humano(request)
-        )
+        propietario = d.get("propietario") or _actor_humano(request)
         try:
             proyecto = services.crear_proyecto_con_secciones(
                 empresa=empresa,
                 nombre=d["nombre"],
-                descripcion=d["descripcion"],
-                color=d["color"],
-                vista_predeterminada=d["vista_predeterminada"],
-                area=area,
+                descripcion=d.get("descripcion", ""),
+                color=d.get("color", "#1D9E75"),
+                vista_predeterminada=d.get(
+                    "vista_predeterminada", Proyecto.VistaPredeterminada.TABLERO
+                ),
+                area=d.get("area"),
                 propietario=propietario,
             )
         except services.TareaError as exc:
@@ -346,58 +339,24 @@ class TareaViewSet(_BaseTareasViewSet):
         return qs
 
     def create(self, request, *args, **kwargs):
-        ser = TareaCrearSerializer(data=request.data)
+        ser = self.get_serializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
         empresa = _empresa_activa_o_403(request)
-
-        proyecto = None
-        if d.get("proyecto"):
-            proyecto = Proyecto.objects.filter(
-                pk=d["proyecto"], id_empresa=empresa, activo=True
-            ).first()
-            if proyecto is None:
-                raise NotFound("Proyecto no encontrado en la empresa.")
-
-        seccion = None
-        if d.get("seccion"):
-            seccion = SeccionProyecto.objects.filter(
-                pk=d["seccion"], id_empresa=empresa, activo=True
-            ).first()
-            if seccion is None:
-                raise NotFound("Sección no encontrada en la empresa.")
-
-        area = None
-        if d.get("area"):
-            area = AreaOperativa.objects.filter(
-                pk=d["area"], id_empresa=empresa, activo=True
-            ).first()
-            if area is None:
-                raise NotFound("Área no encontrada en la empresa.")
-
-        tarea_padre = None
-        if d.get("tarea_padre"):
-            tarea_padre = Tarea.objects.filter(
-                pk=d["tarea_padre"], id_empresa=empresa, activo=True
-            ).first()
-            if tarea_padre is None:
-                raise NotFound("Tarea padre no encontrada en la empresa.")
-
-        asignado = _resolver_usuario_tenant(empresa, d.get("asignado_a"))
 
         try:
             tarea, creada = services.crear_tarea(
                 empresa=empresa,
                 titulo=d["titulo"],
-                descripcion=d["descripcion"],
-                estado=d["estado"],
-                prioridad=d["prioridad"],
-                origen=d["origen"],
-                proyecto=proyecto,
-                seccion=seccion,
-                area=area,
-                tarea_padre=tarea_padre,
-                asignado_a=asignado,
+                descripcion=d.get("descripcion", ""),
+                estado=d.get("estado", "PENDIENTE"),
+                prioridad=d.get("prioridad", "MEDIA"),
+                origen=d.get("origen", Tarea.Origen.WEB),
+                proyecto=d.get("proyecto"),
+                seccion=d.get("seccion"),
+                area=d.get("area"),
+                tarea_padre=d.get("tarea_padre"),
+                asignado_a=d.get("asignado_a"),
                 creado_por=_actor_humano(request),
                 fecha_inicio=d.get("fecha_inicio"),
                 fecha_vencimiento=d.get("fecha_vencimiento"),
@@ -405,7 +364,9 @@ class TareaViewSet(_BaseTareasViewSet):
                 entidad_tipo=d.get("entidad_tipo") or "",
                 entidad_id=d.get("entidad_id"),
                 idempotency_key=d.get("idempotency_key") or "",
-                usar_tablero_personal_si_falta=d["usar_tablero_personal_si_falta"],
+                usar_tablero_personal_si_falta=d.get(
+                    "usar_tablero_personal_si_falta", True
+                ),
             )
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
@@ -550,24 +511,17 @@ class MinutaReunionViewSet(_BaseTareasViewSet):
     ordering_fields = ["fecha_reunion", "fecha_creacion"]
 
     def create(self, request, *args, **kwargs):
-        ser = MinutaCrearInputSerializer(data=request.data)
+        ser = self.get_serializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
         empresa = _empresa_activa_o_403(request)
-        doc = None
-        if d.get("documento_adjunto"):
-            doc = Documento.objects.filter(
-                pk=d["documento_adjunto"], id_empresa=empresa, activo=True
-            ).first()
-            if doc is None:
-                raise NotFound("Documento adjunto no encontrado en la empresa.")
         try:
             minuta = services.crear_minuta_borrador(
                 empresa=empresa,
                 titulo=d["titulo"],
                 fecha_reunion=d.get("fecha_reunion"),
                 texto_fuente=d.get("texto_fuente") or "",
-                documento_adjunto=doc,
+                documento_adjunto=d.get("documento_adjunto"),
                 items_propuestos=d.get("items_propuestos") or [],
                 creado_por=_actor_humano(request),
             )

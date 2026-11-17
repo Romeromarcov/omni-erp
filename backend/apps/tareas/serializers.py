@@ -87,23 +87,6 @@ class AreaOperativaSerializer(BaseModelSerializer):
         return MiembroAreaOperativaSerializer(qs, many=True).data
 
 
-class AreaCrearActualizarSerializer(serializers.Serializer):
-    nombre = serializers.CharField(max_length=120)
-    color = serializers.CharField(max_length=16, required=False, default="#378ADD")
-    departamento = serializers.UUIDField(required=False, allow_null=True)
-    lider = serializers.UUIDField(required=False, allow_null=True)
-    palabras_clave = serializers.ListField(
-        child=serializers.CharField(max_length=50),
-        required=False,
-        default=list,
-    )
-    miembros = serializers.ListField(
-        child=serializers.UUIDField(),
-        required=False,
-        allow_null=True,
-    )
-
-
 class SeccionProyectoSerializer(BaseModelSerializer):
     class Meta:
         model = SeccionProyecto
@@ -162,19 +145,6 @@ class ProyectoSerializer(BaseModelSerializer):
         return obj.propietario.get_full_name().strip() or obj.propietario.username
 
 
-class ProyectoCrearSerializer(serializers.Serializer):
-    nombre = serializers.CharField(max_length=160)
-    descripcion = serializers.CharField(required=False, allow_blank=True, default="")
-    color = serializers.CharField(max_length=16, required=False, default="#1D9E75")
-    vista_predeterminada = serializers.ChoiceField(
-        choices=Proyecto.VistaPredeterminada.choices,
-        required=False,
-        default=Proyecto.VistaPredeterminada.TABLERO,
-    )
-    area = serializers.UUIDField(required=False, allow_null=True)
-    propietario = serializers.UUIDField(required=False, allow_null=True)
-
-
 class ComentarioTareaSerializer(BaseModelSerializer):
     class Meta:
         model = ComentarioTarea
@@ -228,6 +198,9 @@ class TareaSerializer(BaseModelSerializer):
     proyecto_nombre = serializers.CharField(source="proyecto.nombre", read_only=True, default="")
     seccion_nombre = serializers.CharField(source="seccion.nombre", read_only=True, default="")
     area_nombre = serializers.CharField(source="area.nombre", read_only=True, default="")
+    usar_tablero_personal_si_falta = serializers.BooleanField(
+        write_only=True, required=False, default=True
+    )
 
     class Meta:
         model = Tarea
@@ -261,6 +234,7 @@ class TareaSerializer(BaseModelSerializer):
             "minuta_origen",
             "idempotency_key",
             "orden_tablero",
+            "usar_tablero_personal_si_falta",
             "activo",
             "fecha_creacion",
             "fecha_actualizacion",
@@ -271,6 +245,8 @@ class TareaSerializer(BaseModelSerializer):
             "creado_por",
             "completada_en",
             "bloqueada_por_escalacion",
+            "plantilla_recurrente",
+            "minuta_origen",
             "activo",
             "fecha_creacion",
             "fecha_actualizacion",
@@ -280,34 +256,6 @@ class TareaSerializer(BaseModelSerializer):
         if not obj.asignado_a_id or not obj.asignado_a:
             return ""
         return obj.asignado_a.get_full_name().strip() or obj.asignado_a.username
-
-
-class TareaCrearSerializer(serializers.Serializer):
-    titulo = serializers.CharField(max_length=240)
-    descripcion = serializers.CharField(required=False, allow_blank=True, default="")
-    estado = serializers.ChoiceField(
-        choices=EstadoTarea.choices, required=False, default=EstadoTarea.PENDIENTE
-    )
-    prioridad = serializers.ChoiceField(
-        choices=PrioridadTarea.choices, required=False, default=PrioridadTarea.MEDIA
-    )
-    origen = serializers.ChoiceField(
-        choices=Tarea.Origen.choices, required=False, default=Tarea.Origen.WEB
-    )
-    proyecto = serializers.UUIDField(required=False, allow_null=True)
-    seccion = serializers.UUIDField(required=False, allow_null=True)
-    area = serializers.UUIDField(required=False, allow_null=True)
-    tarea_padre = serializers.UUIDField(required=False, allow_null=True)
-    asignado_a = serializers.UUIDField(required=False, allow_null=True)
-    fecha_inicio = serializers.DateField(required=False, allow_null=True)
-    fecha_vencimiento = serializers.DateField(required=False, allow_null=True)
-    hora_vencimiento = serializers.TimeField(required=False, allow_null=True)
-    entidad_tipo = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
-    entidad_id = serializers.UUIDField(required=False, allow_null=True)
-    idempotency_key = serializers.CharField(
-        max_length=120, required=False, allow_blank=True, default=""
-    )
-    usar_tablero_personal_si_falta = serializers.BooleanField(required=False, default=True)
 
 
 class TareaEstadoInputSerializer(serializers.Serializer):
@@ -399,6 +347,11 @@ class MinutaItemPropuestoSerializer(serializers.Serializer):
 
 
 class MinutaReunionSerializer(BaseModelSerializer):
+    fecha_reunion = serializers.DateField(required=False, allow_null=True)
+    items_propuestos = MinutaItemPropuestoSerializer(
+        many=True, write_only=True, required=False, default=list
+    )
+
     class Meta:
         model = MinutaReunion
         fields = [
@@ -408,6 +361,7 @@ class MinutaReunionSerializer(BaseModelSerializer):
             "fecha_reunion",
             "texto_fuente",
             "documento_adjunto",
+            "items_propuestos",
             "borrador_tareas",
             "estado",
             "creado_por",
@@ -419,6 +373,7 @@ class MinutaReunionSerializer(BaseModelSerializer):
         read_only_fields = [
             "id_minuta",
             "id_empresa",
+            "borrador_tareas",
             "estado",
             "creado_por",
             "confirmada_en",
@@ -426,14 +381,6 @@ class MinutaReunionSerializer(BaseModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
         ]
-
-
-class MinutaCrearInputSerializer(serializers.Serializer):
-    titulo = serializers.CharField(max_length=200)
-    fecha_reunion = serializers.DateField(required=False, allow_null=True)
-    texto_fuente = serializers.CharField(required=False, allow_blank=True, default="")
-    documento_adjunto = serializers.UUIDField(required=False, allow_null=True)
-    items_propuestos = MinutaItemPropuestoSerializer(many=True, required=False, default=list)
 
 
 class MinutaConfirmarInputSerializer(serializers.Serializer):
