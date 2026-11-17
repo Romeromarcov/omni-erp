@@ -48,8 +48,10 @@ _Total tools MCP: 17_
 | `integration_hub.sync_cartera_odoo_todos` | apps.integration_hub.tasks |
 | `integration_hub.sync_tasas_ve` | apps.integration_hub.tasks |
 | `notificaciones.enviar_notificacion_email` | apps.notificaciones.tasks |
+| `tareas.ejecutar_ciclo_empresa` | apps.tareas.tasks |
+| `tareas.ejecutar_ciclo_todos` | apps.tareas.tasks |
 
-_Total tareas Celery: 20_
+_Total tareas Celery: 22_
 
 ## Management commands
 

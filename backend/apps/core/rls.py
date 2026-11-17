@@ -368,6 +368,18 @@ RLS_TABLES = {
     "servicio_cliente_categoriaticket": "id_empresa_id",
     "servicio_cliente_feedbackcliente": "id_empresa_id",
     "servicio_cliente_ticket_soporte": "id_empresa_id",
+    # tareas (ejecución operativa y proyectos — ADR-015)
+    "tareas_area_operativa": "id_empresa_id",
+    "tareas_miembro_area": "id_empresa_id",
+    "tareas_proyecto": "id_empresa_id",
+    "tareas_seccion_proyecto": "id_empresa_id",
+    "tareas_plantilla_recurrente": "id_empresa_id",
+    "tareas_minuta_reunion": "id_empresa_id",
+    "tareas_tarea": "id_empresa_id",
+    "tareas_dependencia": "id_empresa_id",
+    "tareas_comentario": "id_empresa_id",
+    "tareas_configuracion_seguimiento": "id_empresa_id",
+    "tareas_registro_alerta": "id_empresa_id",
     # tesoreria
     "tesoreria_conciliacion_bancaria": "id_empresa_id",
     "tesoreria_configuracion_conciliacion_cuenta": "id_empresa_id",

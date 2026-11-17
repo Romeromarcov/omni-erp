@@ -107,6 +107,7 @@ urlpatterns = [
     path("api/sync/", include("apps.sync.urls")),
     path("api/activaciones/", include("apps.activaciones.urls")),
     path("api/bots/", include("apps.bots_ingest.urls")),
+    path("api/tareas/", include("apps.tareas.urls")),
 ]
 
 if settings.DEBUG:
