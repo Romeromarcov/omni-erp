@@ -93,3 +93,7 @@ backend/.mutmut-cache
 backend/mutants/
 backend/html/
 instalables/
+
+# Graphify (grafo de conocimiento local)
+graphify-out/
+.graphify*

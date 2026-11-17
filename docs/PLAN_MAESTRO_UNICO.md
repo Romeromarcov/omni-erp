@@ -1,8 +1,8 @@
 # Omni ERP — Plan Maestro Único
 
-**Versión:** 1.2 — Documento consolidado y única fuente de verdad
-**Fecha de consolidación:** 2026-05-28 · **Última actualización integral:** 2026-06-21
-(auditoría integral verificada contra el código: ver [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md);
+**Versión:** 1.3 — Documento consolidado y única fuente de verdad
+**Fecha de consolidación:** 2026-05-28 · **Última actualización integral:** 2026-11-17 (estado real verificado sobre `origin/develop @ ff2bdb6`;
+auditoría base [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md);
 auditoría previa archivada en [`docs/auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md))
 **Autor del proyecto:** Marco · Caracas, Venezuela
 **Mantenido por:** founder + agentes de IA co-desarrolladores
@@ -118,7 +118,7 @@ El MVP no se diseña en abstracto: se construye para **dos negocios familiares r
 |---|---|---|
 | **R-PROC-1** | Una sola fuente de verdad por dominio | Este documento es la fuente de verdad de lo que se construye desde ahora. No se duplica documentación; se enlaza. |
 | **R-PROC-2** | PRs pequeños, focales | Un PR hace una cosa. >800 líneas (sin tests/migraciones/locks) → se divide. Excepción: refactors mecánicos marcados como tales. |
-| **R-PROC-3** | Review humano en la puerta a producción | Todo PR `develop`→`main` requiere revisión humana del owner. **PRs a `develop` son autoaprobables con CI verde + gate completo** (un agente revisor distinto del autor revisa el diff antes de aprobar; autorizado por el owner 2026-06-11, ver `docs/FLUJO_DE_TRABAJO.md`). |
+| **R-PROC-3** | Review humano en la puerta a producción | Todo PR `develop`→`main` requiere **revisión y aprobación humana obligatoria del owner**. **PRs hacia `develop` (loop autónomo):** nacen en `draft`, pasan el Gate DoD completo, reciben dictamen **`APROBADO`** de un agente revisor independiente y distinto del autor (`QA + Seguridad` en comentario del PR), el agente/orquestador marca `ready`, espera CI 100 % verde y ejecuta el merge a `develop` (autorizado por el owner 2026-06-11 y ampliado el 2026-11-17, ver [`docs/FLUJO_DE_TRABAJO.md`](FLUJO_DE_TRABAJO.md)). |
 | **R-PROC-4** | CI verde es no-negociable | Tests + lint + type-check + build. Flaky = bug que se arregla, no se ignora. |
 | **R-PROC-5** | Migraciones reversibles | Toda migración Django se prueba en reverse, o se documenta explícitamente por qué no lo es. |
 | **R-PROC-6** | Los compromisos técnicos se vencen | Toda excepción a una regla es un "Compromiso técnico fechado" con `vence_en` y `dueño`. Se rastrean en `docs/ctf/`. |
@@ -314,121 +314,69 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 | ADR-010 | Extensibilidad y marketplace de extensiones | ✅ Aceptado 2026-06-12 |
 | ADR-011 | Servicios hermanos / fábricas | ✅ Aceptado 2026-06-12 |
 | ADR-012 | Modelo transaccional de venta POS offline | ✅ Aceptado 2026-06-19 (backend implementado) |
+| ADR-013 | Subproyecto `cxc_lubrikca` como app dedicada y aislada (motor determinístico + Odoo solo lectura) | ✅ Aceptado 2026-06-27 (Fases 0–6 + staging standalone) |
 | ADR-014 | Omni Connect (tarjetas NFC + CRM ligero) como módulo dentro de Omni | ✅ Aceptado 2026-11-13 (S1 esquema) |
+| ADR-015 | Omni Tareas (`apps/tareas`) — ejecución operativa, minutas IA y proyectos nativos | ✅ Aceptado 2026-11-16 (PRs #286–#287) |
 
 ---
 
 # 4 — Estado actual real del proyecto
 
-> **Foto verificada contra el código el 2026-06-21** (rama `main`, auditoría integral con
-> CODE_READERs por cluster + gate corrido localmente). Reemplaza la foto del 2026-06-10, que
-> había quedado **pesimista**: varias capacidades marcadas "pendiente/parcial" estaban en
-> realidad implementadas y testeadas. Detalle por feature: [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md).
+> **Foto verificada contra `origin/develop @ ff2bdb6` el 2026-11-17** (sobre la base auditada
+> el 2026-06-21 en [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md), incorporando el
+> barrido completo de UI/E2E PRs #215–#247, el módulo aislado `cxc_lubrikca`, Omni Connect S1,
+> `bots_ingest`, `activaciones`, `tesoreria` extractos/pre-conciliación, `tareas` PRs #286–#287
+> y Plan 06 Fase 0 + PR #285).
 
 ## 4.1 Estado actual
 
-- **Build:** `manage.py check` sin issues · `makemigrations --check` sin cambios pendientes.
-- **Tests backend:** suite real en `backend/tests/` (capas unit/api/integration/tenant/e2e, ~188
-  archivos). Corrida completa local 2026-06-21: **5224 passed, 19 skipped** (exit 0). Ratchet de cobertura
-  `--cov-fail-under=92` (~92.97–94 %). *Nota:* `tests_api/` quedó casi vacío tras CTF-014 (migración por
-  capas) — el comando canónico es `python -m pytest` (usa `testpaths`), no `tests_api/`.
-- **Tests frontend:** Vitest + Testing Library, gate de cobertura de servicios; `decimal.js` en
-  todos los flujos de pago/vuelto, totales de documentos y libros fiscales (FE-HIGH-7 cerrado).
-- **Apps Django instaladas:** ~38 (+ `localizacion_ve` como paquete de adapters, no app instalada).
+- **Build:** `manage.py check` sin issues · `makemigrations --check --dry-run` sin drift · `mapa_superficie --check` bloqueante en CI + hook `pre-push`.
+- **Tests backend:** suite por capas en `backend/tests/` (`unit`, `api`, `integration`, `tenant`, `e2e`, `bots_ingest`, `cxc_lubrikca`, `tareas`). Ratchet de cobertura `--cov-fail-under=92` + `diff-cover ≥95%` vs `origin/main` bloqueante en CI.
+- **Tests frontend:** Vitest + Testing Library (`vite.config.ts` ratchet global `statements: 83`, `lines: 85`, `services >= 91%`) + `decimal.js` en flujos monetarios + Playwright E2E bloqueante en CI (`ubuntu-24.04`, con subida de evidencia en fallo, PR #275).
+- **Apps Django instaladas:** **42 apps** bajo `apps.*` (`config/settings_base.py`) + `localizacion_ve` como paquete de adapters (43 paquetes en `backend/apps/`).
 - **Fase 0 (Fundación AI-nativa): CERRADA.** Tag `v0.1.0-phase0-complete`.
-- **Núcleo transaccional COMPLETO y endurecido:** ventas, compras, inventario, finanzas, fiscal VE,
-  contabilidad, CxC/CxP, tesorería — con multi-tenant, Decimal, idempotencia en escrituras financieras.
-- **Auditoría 2026-06-10 (workstream P0): CÓDIGO CERRADO** (PRs #64–#73). Verificado en disco que los
-  fixes están presentes: fuga cross-tenant de métodos de pago tapada, `AbonoCxCViewSet` ya no es CRUD
-  libre, pagos por API mueven saldos (service atómico + `select_for_update`), acuerdos acumulan
-  `monto_pagado` con lock, conciliación con lock.
-- **Planes C (consola SaaS C1–C3) y D (Cobranza standalone D1/D2/D4): completados.** Diferidos C4
-  (billing) y D3 (push Odoo, CTF-011). Conector Google Sheets en el Hub.
-- **Offline-first del POS (ADR-012 / CTF-008): base completa** — pull de catálogo, outbox idempotente
-  del cliente y **endpoint atómico `POST /api/sync/push/ventas/`** (#171). Falta cerrar el ciclo en el
-  frontend (encolar + flush al reconectar).
+- **Núcleo transaccional COMPLETO y endurecido:** ventas, compras, inventario (incl. motor valoración FIFO/Promedio, COGS y stepper configurable PRs #204–#209), finanzas, fiscal VE (cierre de período en ventas y compras PR #182), contabilidad (`id_usuario_registro` FK en 7 flujos PR #185/#193–#199), CxC/CxP (`AbonoCxPViewSet` write-guard PR #183, re-vínculo CxP↔`FacturaCompra` PR #184), tesorería (ingesta de extractos VE + motor determinístico de pre-conciliación bancaria y cola de revisión humana PRs #283–#284).
+- **Barrido completo de UI + E2E cerrado (PRs #215–#247):** las 15 apps que eran API-only y los 9 sub-módulos con brecha de UI ya cuentan con páginas React/MUI, `toList()`, servicios tipados, tests Vitest y specs E2E cross-módulo (P2P, P2C, H2P, cambio divisa/conciliación, libro de ventas SENIAT, gasto completo).
+- **Nuevas capacidades incorporadas (ADR-013, ADR-014, ADR-015 y operación):**
+  - **`apps/cxc_lubrikca` (ADR-013):** Fases 0–6 completas (motor determinístico, captura/equivalentes congelados, bandeja de aprobación, conciliación semáforo, sync Odoo read-only + Beat PRs #256/#258) y servicio standalone `omni-erp-cobranza-staging` desplegado en Railway (`Dockerfile.cobranza`). Pendiente go-live prod con validación contra Odoo real.
+  - **`apps/connect` + CRM ligero (ADR-014, S1 PR #261):** esquema `Perfil`, `Tarjeta`, `Toque`, `Pipeline`, `Etapa`, `Lead` con RLS (`S2`–`S12` en [`docs/planes/07-omni-connect.md`](planes/07-omni-connect.md)).
+  - **`apps/tareas` (ADR-015, PRs #286–#287):** áreas operativas, proyectos Kanban, plantillas recurrentes, minutas con IA, escalación gradual, `CapabilityToken` (`tareas:read`/`tareas:write`), tools MCP e interfaz frontend completa.
+  - **`apps/activaciones` (PRs #266–#267):** calendarios, recursos con control de capacidad solapada, eventos de activación + sincronización Google Calendar vía Celery.
+  - **`apps/bots_ingest` (PRs #266, #271, #277, #280–#282):** ingesta multi-tenant de bots Telegram con `CapabilityToken`, panel de flota/bitácora y push **opt-in** en borrador a Odoo para **7 tipos** (`contacto`, `pedido`, `pago`, `pago_proveedor`, `proveedor`, `factura_proveedor`, `gasto`).
+- **Hardening y estabilización (Plan 05 + Plan 06):**
+  - **Cerrados en Plan 05:** `P1-1` throttling DRF global (`#84`), `P1-2` idempotencia pagos (`#86`), `P1-3` `django-axes` + política contraseñas (`#84`), `P1-4` revocación JWT verificada (`#84`), `P2-1` gateway LLM agnóstico con fallback y circuit breaker (`#99`), `P2-5` CSP enforce con `django-csp==4.0` (`#106`). **Parciales:** `P1-7` workflows backup/restore + runbook (`#96`, falta secret owner), `P2-3` hook+logs de consumo LLM (`#99`, falta persistencia), `P2-4` `CACHES` Redis DB 1 (`#106`, falta cacheo de consultas/N+1).
+  - **Cerrados en Plan 06:** Fase 0 completa (runner `2.338.2` `#273`, `seed_catalogo_monedas` `#274`, evidencia Playwright `#275`, hook `mapa-superficie` `#276`) + `uuid7` monótono, caché persistida con refresh al restaurar e higiene base (`PR #285`) + Tarea 3.5 documental (PR-1).
+- **Offline-first del POS (ADR-012 / CTF-008): base backend + outbox listos** (`POST /api/sync/push/ventas/` `#171`, `salesOutbox` `#156`, `useOutboxFlush` `#161`); falta cerrar el flujo integrado en `PosPage`.
 
-## 4.2 Módulos — estado verificado (CODE_READER 2026-06-21)
+## 4.2 Módulos — estado verificado (`develop @ ff2bdb6`)
 
-**✅ REAL_DONE (código + tests verificados en disco)**
+**✅ REAL_DONE (código + tests + UI verificados en disco)**
 
-- **Núcleo/plataforma:** `core` (Empresa/Sucursal/Usuario/Rol/Permiso/Contacto/CapabilityToken/
-  Notificacion/base_models/MCP server/event store/`uuid7`), `configuracion_motor`, `saas` (middleware
-  fail-open + planes), `integration_hub` (Odoo XML-RPC + **Google Sheets** + SyncEngine + checksum +
-  Celery + MCP), `personalizacion` (DSL runtime), `agentes` (OmniAgente, niveles, PrediccionAgente,
-  eval suite, clasificador de gastos, sugerencias diarias), `notificaciones`, `gestion_documental`.
-- **Ciclo comercial:** `ventas` (Cotización→Pedido→NotaVenta→FacturaFiscal→NC/devoluciones, integrado
-  stock+IVA/IGTF+asiento+CxC; **CxC única al facturar**, P0 verificado), `inventario` (kardex, tipos de
-  movimiento, stock), `compras` (OC→Recepción→Factura + asientos), `crm`/`proveedores` (RIF), `finanzas`
-  (Moneda/MetodoPago/Pago/PagoTercero/Cajas/TasaCambio/conversión/MCP), `fiscal` (IVA/IGTF config-driven,
-  Libros SENIAT TXT+PDF), `contabilidad` (`generar_asiento()` en `@transaction.atomic`, R-CODE-11).
-- **Cobranza/tesorería:** `cuentas_por_cobrar` (abono atómico con lock+tope, aging 5 tramos, scoring,
-  PDF), `cuentas_por_pagar` (abonos, aging), `cxc` (GestionCobranza, AcuerdoPago/CuotaAcuerdo,
-  fraccionamiento flag, agente IA SSE), `tesoreria` (conciliación con lock, import CSV, `OperacionCambioDivisa`).
-- **RRHH/nómina — RECLASIFICADO ✅:** `nomina` **cálculo LOTTT completo** (`calculo_lottt.py`: ISLR por
-  tramos, SSO/FAOV/RPE, provisiones utilidades/vacaciones/prestaciones art.142, aportes patronales),
-  integrado en `procesar_proceso_nomina` con asiento contable y expuesto por MCP; `rrhh` (Empleado/Cargo/
-  Beneficio/Licencia); `control_asistencia` (FK a Empleado, marcajes). *El plan anterior los marcaba
-  parciales — es incorrecto.*
-- **Manufactura/despacho — RECLASIFICADO ✅:** `manufactura` (13 modelos: BOM, rutas, OF con etapas,
-  costeo; services 454 ln; 6 archivos de test) — **MRP/OF NO está pendiente**; `despacho` (services + PDF
-  nota de entrega + tests). El plan anterior los marcaba 🔲.
-- **Localización (framework):** `localizacion` instalada, con los 6 puertos ABC (`MotorImpuestos`,
-  `GeneradorDocumentoLegal`, `CalculadoraNomina`, `LibroLegal`, `ProveedorTasas`, `MetodosPagoLocales`) +
-  registry funcional que auto-registra VE. `eventos` (subsistema sin `models.py`, por diseño).
+- **Núcleo/plataforma:** `core` (Empresa/Sucursal/Usuario/Rol/Permiso/Contacto/CapabilityToken/Notificacion/llm_gateway/idempotency/rls/MCP server/event store/`uuid7` monótono), `configuracion_motor`, `auditoria`, `saas`, `integration_hub` (Odoo XML-RPC + Google Sheets + GenericRestConnector + SyncEngine + Celery + MCP), `personalizacion` (DSL runtime + UI), `agentes` (OmniAgente, niveles, PrediccionAgente, eval suite, clasificador, sugerencias + UI), `notificaciones` (+ UI), `gestion_documental` (+ UI), `integracion_b2b` (CRUD + UI), `migracion_datos` (importadores + UI).
+- **Ciclo comercial:** `ventas` (Cotización→Pedido→NotaVenta→FacturaFiscal→NC/devoluciones, listas de precio + comisiones, integrado stock+IVA/IGTF+asiento+CxC), `inventario` (kardex, valoración FIFO/Promedio, COGS, stepper de operaciones, datos maestros + UI), `compras` (OC→Recepción→FacturaCompra + asientos; UI aprovisionamiento), `crm` (Cliente/Contacto/Dirección + UI; esquema `Pipeline`/`Etapa`/`Lead` S1), `proveedores` (RIF + UI), `finanzas` (Moneda/MetodoPago/Pago/PagoTercero/Cajas/TasaCambio/FX/MCP + UI), `fiscal` (IVA/IGTF config-driven, Libros SENIAT TXT+PDF, cierre período, pagos parafiscales + UI), `contabilidad` (`generar_asiento()` en `@transaction.atomic`, R-CODE-11, FK usuario).
+- **Cobranza, tesorería y operación:** `cuentas_por_cobrar` (abono atómico con lock+tope, aging 5 tramos, scoring, PDF), `cuentas_por_pagar` (abonos con write-guard, aging, diferencia cambiaria), `cxc` (GestionCobranza, AcuerdoPago/CuotaAcuerdo, agente IA SSE), `cxc_lubrikca` (Fases 0–6 + standalone staging), `tesoreria` (conciliación con lock, `OperacionCambioDivisa`, ingesta extractos VE + pre-conciliación humana PRs #283–#284), `tareas` (Kanban/minutas/recurrencia/escalación/MCP PRs #286–#287), `activaciones` (+ Google Calendar), `bots_ingest` (flota + CapabilityToken + push borrador Odoo 7 tipos).
+- **RRHH, nómina, manufactura y despacho:** `nomina` (cálculo LOTTT + extrasalarial + UI), `rrhh` (Empleado/Cargo/Beneficio/Licencia + UI), `control_asistencia` (+ UI), `manufactura` (BOM, rutas, centros, OF con etapas, costeo real, MRP + UI), `despacho` (máquina de estados, PDF + UI), `gastos` (flujo aprobación + reembolsos + UI), `costos` (+ UI), `servicio_cliente` (tickets/SLA/base conocimiento + UI).
+- **Localización (framework):** `localizacion` instalada (6 puertos ABC + registry). `eventos` (subsistema sin `models.py`). `sync` (pull deltas + `POST /api/sync/push/ventas/`).
 
-**🔶 PARCIAL (modelos/CRUD, sin capa de servicios completa o cobertura mínima)**
-- `almacenes`, `costos`, `gastos` (con aislamiento), `servicio_cliente`, `migracion_datos` (4 importadores
-  reales: clientes/productos/inventario/saldos CxC).
-- `localizacion_ve` — solo **2 de 6 puertos** implementados (`MotorImpuestosVE`, `CalculadoraNominaVE`,
-  como strangler-fig que delegan en `fiscal`/`nomina`). Faltan adapters de documento legal, libro legal,
-  proveedor de tasas y métodos de pago.
+**🔶 PARCIAL / BRECHA DE PARIDAD FUNCIONAL (tienen UI/CRUD o base parcial, requieren cierre técnico)**
 
-**🔲 SCAFFOLD (estructura CRUD sin lógica de negocio ni tests propios)**
-- `banca_electronica`, `integracion_b2b`, `gestion_aprobaciones`.
+- `connect` (`S1` esquema completo; faltan historias `S2`–`S12` — ver [`07-omni-connect.md`](planes/07-omni-connect.md)).
+- `localizacion_ve` — **2 de 6 puertos** implementados (`MotorImpuestosVE`, `CalculadoraNominaVE`); faltan `GeneradorDocumentoLegalVE`, `LibroLegalVE`, `ProveedorTasasVE`, `MetodosPagoLocalesVE` + flags por capa.
+- `almacenes` (CRUD `Almacen`/`UbicacionAlmacen` + UI; faltan reservas/transferencias entre ubicaciones y reglas de reabastecimiento), `compras` + `gestion_aprobaciones` (`gestion_aprobaciones` ya cuenta con motor de etapas por monto/rol/usuario y UI, pero falta capa transaccional `RequisicionCompra`→`SolicitudCotizacion`→`OfertaProveedor`→`OrdenCompra` y reglas por departamento/SLA — ver [`08-conciliacion-pagos-y-paridad-odoo.md`](planes/08-conciliacion-pagos-y-paridad-odoo.md)), `contabilidad` (faltan diarios contables, reversión atómica por contra-asiento, cierre de período/ejercicio y estados financieros canónicos — Plan 08).
+- `banca_electronica` (tiene CRUD + UI de cuentas, pero duplica el modelo `CuentaBancariaEmpresa` respecto a `finanzas` y requiere consolidación de servicios con `tesoreria` — Plan 08).
 
 ## 4.3 Deuda técnica activa (verificada en código)
 
-> Solo deuda **real** que bloquea o degrada features. La deuda fechada vive en `docs/ctf/`
-> (4 abiertos: **CTF-008** offline, **CTF-010** firma de apps, **CTF-011** push Odoo, **CTF-012** RLS;
-> 11 cerrados). Inventario de baja/media en `docs/tech-debt/INVENTORY.md`.
+> Inventario estático actualizado el **2026-11-17** en [`docs/tech-debt/INVENTORY.md`](tech-debt/INVENTORY.md).
+> CTFs abiertos en [`docs/ctf/`](ctf/) (**fechas `Vence` intocadas por Plan 06 D3**): **CTF-008** (offline),
+> **CTF-010** (firma de apps), **CTF-011** (push Odoo), **CTF-012** (RLS en entornos reales; 11 CTFs cerrados).
 
-**Hallazgos nuevos de esta auditoría — todos CERRADOS (loop autónomo 2026-06-22):**
-- **✅ Cierre de período fiscal — RESUELTO.** `validar_periodo_abierto(empresa, fecha)` en
-  `apps/fiscal/services.py` bloquea la emisión en un período cerrado (multi-tenant por `id_empresa`).
-  Cubre **ventas** (factura fiscal, NC, devolución POS) y **compras** (`registrar_recepcion` y
-  `registrar_factura_compra`, que postean asientos — PR #182). Antes `PeriodoFiscal.esta_cerrado()` era cosmético.
-- **✅ `AbonoCxPViewSet`/`CuentaPorPagarViewSet` CRUD libre — RESUELTO (PR #183).** `http_method_names`
-  limita a GET/POST → PUT/PATCH/DELETE devuelven 405; el saldo solo se mueve por la acción atómica
-  `abonar` (`registrar_abono_cxp`). Espejo del fix P0 de CxC.
-- **✅ CxP de compras re-vinculada a `FacturaCompra` — RESUELTO (PR #184).** Nuevo FK `CuentaPorPagar.id_recepcion`
-  (ancla); `registrar_factura_compra` enlaza `id_factura_compra` al registrar la factura (idempotente, multi-tenant).
-- **✅ `AsientoContable` con FK de usuario real — RESUELTO infra+compras (PR #185).** FK
-  `id_usuario_registro → core.Usuarios` (reemplaza el UUID temporal); `generar_asiento[_o_fallar]` acepta
-  `usuario` y el flujo de compras lo registra. *Pendiente incremental:* enhebrar `usuario` en los ~7 callers
-  restantes (ventas/cxc/finanzas/fiscal/inventario/nómina/tesorería), 1 app por PR — sin regresión (hoy quedan `NULL`).
-- **✅ `registrar_efectos_pago` con conversión FX — RESUELTO (PR #186).** Convierte el `monto_base_empresa`
-  a la moneda base de la empresa vía `convertir_monto` (tasa BCV); sin tasa entre monedas distintas se rechaza
-  (nunca 1:1). *Pendiente incremental:* mapear `TasaCambioError → 400` en `PagoViewSet`/POS y la misma
-  simplificación en `apps/finanzas/models.py:595`.
-- **🟢 `apps/cxc/mcp/__init__.py` vacío** — las tools MCP de cobranza viven en `core/mcp_server.py` (la
-  descripción "MCP server propio de cxc" es imprecisa). `uuid7` sin test dedicado (cubierto transitivamente).
-
-**Integration Hub — Fase 2 (inbound) y Fase 3 completadas (loop autónomo 2026-06-22):**
-- **✅ Fase 2 inbound COMPLETA:** persistencia en Omni de las 7 entidades — contactos, productos,
-  pedidos_venta, pedidos_compra, **facturas_venta** (`FacturaFiscal` + líneas, PR #187) y **pagos**
-  (`finanzas.Pago`, cobros de cliente reconciliados a factura, *history-only* sin side-effects, PR #188),
-  inventario. Detalle y límites en [`docs/integracion-hub/ESTADO.md`](integracion-hub/ESTADO.md).
-- **✅ Fase 3:** registry **dinámico** (`ConectorProveedor.clase_conector` cargada vía `import_string`,
-  sin re-desplegar; PR #189) + **conector genérico REST** config-driven (`GenericRestConnector`, PR #190).
-
-**Deuda estructural ya conocida (vigente):**
-- **Nómina:** el *cálculo* LOTTT está hecho; falta cestaticket multimoneda y casos LOTTT de borde + UI.
-- **Backup automático PostgreSQL con restore probado** (P0-9, owner) · **SSL self-hosted** (diferido, GAP-5)
-  · **Prometheus/Grafana** (Sentry ya está) · **Service Workers / offline real** en portales.
-- **Acoplamiento a Venezuela en el núcleo:** lógica VE dispersa (`fiscal`, IGTF en `ventas`, libros SENIAT);
-  migrar a `localizacion_ve` vía strangler-fig (4/6 puertos pendientes).
+- **Plan 06 (Fases 1–4 restantes):** auditar 38 respuestas `Response({...str(e|exc|err)...})` en 15 archivos (Tarea 1.1), fijar 4 dependencias + Dependabot + audits nocturnos (Tarea 1.3), activar rol no-dueño `omni_app` con `bypass='off'` (Fase 2 / CTF-012), migrar a `ruff` y limpiar 201 `# noqa` / 40 `eslint-disable` (Tareas 3.3–3.4), segunda pasada Decimal FE (Tarea 4.2) y ajustes Railway del owner (Tarea 4.3).
+- **Seguridad residual (Plan 05):** `P1-5` (auditoría inmutable BD), `P1-6` (pasada IDOR), `P1-7` (cargar secrets backup owner), `P2-2` (agentes síncronos en vistas → Celery), `P2-3` (persistencia dedicada de costos LLM), `P2-4` (cacheo consultas calientes + N+1), `P2-6` (OpenTelemetry).
+- **Conciliación N:M + Paridad ERP Odoo (`Plan 08`):** `finanzas.Pago` hoy apunta a un único `id_documento`; falta `finanzas.AsignacionPago` anclada en `core.Contacto` (para dividir un pago entre N facturas, aplicar anticipos/saldos a favor, y desbloquear inbound de `facturas_compra` y pagos multi-factura desde Odoo en [`docs/integracion-hub/ESTADO.md`](integracion-hub/ESTADO.md) §4.1).
+- **Acoplamiento a Venezuela en el núcleo:** lógica VE dispersa (`fiscal`, IGTF en `ventas`, libros SENIAT); completar los 4 puertos pendientes en `localizacion_ve`.
 - **`saas` middleware fail-open** — revisar a fail-closed al activar `SAAS_VERIFICAR_SUSCRIPCION`.
+- **Operativo del owner:** probar en producción `cxc_lubrikca` vs Odoo real, activar branch protection en GitHub, cargar secrets de backup (`BACKUP_DB_HOST`) y configurar rol `omni_app` en Railway (`CTF-012`).
 
 ---
 
@@ -457,20 +405,16 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 │        listas precios, reportes/PDF) ........ ✅ COMPLETO
 ├── 1.E Personalización + agentes (DSL,
 │        agentes en modo sugerir) ............. ✅ COMPLETO (sombra/sugerencia)
-│        + Cobranza Inteligente (apps/cxc) ..... ✅ COMPLETO (backend + frontend shippeado en 84f7ab4)
+│        + Cobranza Inteligente (apps/cxc) ..... ✅ COMPLETO (backend + frontend shippeado)
 ├── 1.F Distribuidora en producción .......... ⬜ SIGUIENTE HITO (software listo; falta datos+operación)
 ├── 1.G Específicos distribuidora (POS,
-│        comisiones, devoluciones, despacho) ... 🔶 backend hecho (despacho, NC, POS mostrador); falta UI táctil POS + offline
-├── 1.H Onboarding fábrica + BOM ............. 🔶 BOM/modelos de manufactura hechos; falta carga de datos + UI
-├── 1.I OF y costeo (manufactura) ............ 🔶 modelos OF/etapas/costeo hechos; falta services costeo real/MRP + UI etapas
-└── 1.J Estabilización ....................... ⬜ pendiente
+│        comisiones, devoluciones, despacho) ... 🔶 backend + UI comisiones/listas/despacho hechos; falta POS táctil + offline FE
+├── 1.H Onboarding fábrica + BOM ............. 🔶 BOM/modelos/UI maestros hechos (`#244`); falta carga de datos reales
+├── 1.I OF y costeo (manufactura) ............ ✅ software hecho (`costeo_real_orden`, `calcular_mrp`, `CostoProduccion`, UI `#235`/`#244`); falta operación
+└── 1.J Estabilización ....................... 🔄 EN CURSO (Plan 06 + Plan 05)
 ```
 
-**Conclusión:** El núcleo común del MVP (1.A–1.E) está construido y endurecido, y **el backend de las
-sub-fases 1.G–1.I también** (manufactura, despacho, POS, costeo — verificado 2026-06-21). **El trabajo
-ya no es "construir más módulos en abstracto" — es poner la distribuidora a operar (1.F): carga de datos
-reales + UI faltante + 30 días de operación.** Eso es lo que cumple R-PROC-8 y cierra el riesgo de
-"60 módulos a medias".
+**Conclusión:** El núcleo común del MVP (1.A–1.E), las capacidades de manufactura/costeo/MRP (1.I) y todo el barrido de UI/E2E de módulos (`#215–#247`) están construidos en `develop`. **El trabajo ya no es "construir pantallas básicas" — es operar pilotos reales (1.F y go-live `cxc_lubrikca`), cerrar la estabilización (Plan 06 + seguridad residual), completar Omni Connect (Plan 07) y llevar contabilidad/compras/inventario/conciliación N:M a paridad ERP estilo Odoo (Plan 08).**
 
 ## 5.1-bis Reglas de implementación autónoma
 
@@ -478,18 +422,15 @@ reales + UI faltante + 30 días de operación.** Eso es lo que cumple R-PROC-8 y
 
 1. **Unidad de trabajo = un feature** con criterio de done objetivo (un comando o test que pasa),
    no una fecha ni un sprint. Solo se marca DONE lo que un test/comando confirma en verde.
-2. **Rama `feature/<slug>` desde `develop`** (feature nuevo) o `fix/<slug>` desde `main` (corrección/hotfix).
-   Un feature **nunca** salta directo a `main`.
-3. **PR en draft a `develop`** con el gate completo verde ([`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md)):
+2. **Rama `feature/<slug>` / `fix/<slug>` / `docs/<slug>` desde `develop`**. Un cambio **nunca** salta directo a `main`.
+3. **Antes de editar código:** consultar impacto y relaciones en el grafo local (`graphify query`, `graphify explain`, `graphify affected` cuando exista `graphify-out/graph.json`).
+4. **PR en `draft` hacia `develop`** con el gate completo verde ([`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md)):
    build + tests + `/security-review` + `/code-review` + revisión de gaps + cero deuda nueva (o CTF fechado).
-4. **Revisores:** `QA_AGENT` (correctness, casos borde, Decimal, atomicidad, N+1, tests) y `SEC_AGENT`
-   (secretos, multi-tenant, authz, `str(e)`, inyección). Un agente revisor **distinto del autor** revisa
-   el diff antes de aprobar (autorizado por el owner, R-PROC-3).
-5. **Automerge a `develop` cuando CI está verde** y ambos revisores aprueban. El merge `develop`→`main`
-   (producción) **siempre** requiere revisión humana del owner.
-6. **Escalación a humano** solo tras **3 fallos** del mismo feature en CI/revisión, o si toca una acción
+5. **Loop autónomo hacia `develop` (autorizado por el owner, 2026-11-17):** un agente revisor **independiente y distinto del autor** (`QA + Seguridad`) revisa el diff y emite dictamen **`APROBADO`** evidenciado en comentario del PR; con ese dictamen, el agente/orquestador **marca el PR `ready`**, espera que **100 % de los checks de CI estén verdes** y ejecuta el **merge a `develop`** (luego actualiza el grafo con `graphify update .`).
+6. **Puerta de producción (`develop` → `main`):** exige **revisión y aprobación humana obligatoria del owner (`R-PROC-3`)**. Ningún agente marca `ready` ni mergea a `main` sin aprobación humana.
+7. **Escalación a humano** solo tras **3 fallos** del mismo feature en CI/revisión, o si toca una acción
    exclusiva del owner (branch protection, secrets, RLS en prod, firma de apps, billing real).
-7. **R-CODE/R-PROC son bloqueantes:** multi-tenant + test de aislamiento, Decimal, UUIDv7, soft delete,
+8. **R-CODE/R-PROC son bloqueantes:** multi-tenant + test de aislamiento, Decimal, UUIDv7, soft delete,
    asiento automático, API-first (REST+MCP), sin secretos/`print`/`any`. Sin esto no hay merge.
 
 ## 5.2 Próximos pasos — roadmap consolidado hasta producto vendible
@@ -529,69 +470,50 @@ Hallazgos verificados línea por línea — detalle y explotabilidad en
 aislamiento + los tests nuevos de FK-injection en verde; los ~30 bugs del backfill Fase 3 que
 solapan con P0 quedan cubiertos y el resto triagéado en `docs/tech-debt/INVENTORY.md`.
 
-### Orden maestro desde P0 (cada flecha = el anterior cierra su DoD)
+### Orden maestro de Olas pendientes (actualizado 2026-11-17)
 
 ```
-P0 (auditoría, ~1-2 sem) ──→ 1.F Distribuidora en producción (30 días operando)
-   ├─ en paralelo: S1 (Plan 05 P0/P1: RLS+CTF-012, throttling, idempotencia, axes, backups)
-   ├─ en paralelo: Q1 (cero-dudas Fase 4: frontend 80% + E2E 5 flujos; Fase 5: gates bloqueantes + branch protection)
-   └─ en paralelo: CTF-013 (cambio divisa + nómina procesar — solapa con P0-8/BUG-A3)
-1.F cerrado ──→ 1.G POS distribuidora · 1.H BOM fábrica · 1.I OF+costeo · 1.J estabilización
-   └─ transversales: l10n (§5.2-bis) · monorepo/shells (§5.2-ter, Plan B/CTF-010) · Plan A offline (CTF-008)
-Bloque 1 cerrado (DoD: distribuidora 90d + fábrica 60d) ──→ BLOQUE 2: vender (5+ clientes, Plan C4 billing, S2/S3 hardening P2-P3)
+P0 (✅ cerrado #64–#73) + UI/E2E sweep (✅ cerrado #215–#247) + Plan 06 Fase 0 (✅)
+   ├─ Ola 1 — Cierre Plan 06 + Seguridad residual:
+   │    • Plan 06 Fases 1–4 (str(e), pines/Dependabot, RLS rol omni_app CTF-012, ruff, Decimal FE)
+   │    • Plan 05 residuales: P1-5 (auditoría inmutable), P1-6 (IDOR), P1-7 (secret owner), P2-2/P2-3/P2-4/P2-6
+   ├─ Ola 2 — Pilotos y Offline POS:
+   │    • 1.F Distribuidora en producción (datos reales + 30d operación)
+   │    • Go-live cxc_lubrikca (validación Odoo real + promote develop→main)
+   │    • Offline POS frontend (cerrar ciclo en PosPage — CTF-008)
+   ├─ Ola 3 — Conciliación N:M + Paridad ERP estilo Odoo (Plan 08):
+   │    • Bloque A: finanzas.AsignacionPago N:M anclado en core.Contacto + saldo a favor + MCP/UI
+   │    • Bloque B: contabilidad (DiarioContable, contra-asiento, cierre ejercicio, P&L/Balance/Mayor),
+   │      compras + gestion_aprobaciones (Requisicion→RFQ→Oferta→OC + reglas depto/SLA),
+   │      inventario + almacenes (ReglaReabastecimiento, LoteProducto opt-in, transferencias ubicación),
+   │      banca_electronica consolidada + Integration Hub (facturas_compra, pagos multi-factura, CTF-011)
+   ├─ Ola 4 — Omni Connect S2–S12 (Plan 07):
+   │    • Perfil público NFC (S2) → lead con consentimiento (S3) → crm.Actividad + Kanban (S4) →
+   │      dedup core.Contacto (S5) → conversión Cliente (S6) → outbox + push Odoo crm.lead (S7–S9) →
+   │      analíticas Toque (S10) → tarjetas físicas + Agentes IA con aprobación (S11–S12)
+   └─ Ola 5 — Localización desacoplada + Multiplataforma:
+        • localizacion_ve: 4 adaptadores faltantes + flags por capa en Empresa
+        • Plan B (CTF-010, shells firmados) + Plan A (offline niveles 2–3)
 ```
 
-### S1 — Seguridad para producción real (Plan 05, fases P0–P1) — detalle en [`planes/05-seguridad-hardening.md`](planes/05-seguridad-hardening.md)
-- [ ] **CTF-012** (vence 2026-08-01): rol de BD no-dueño → `RLS_ENABLED=True` en staging→prod; extender RLS de 15 a ~92 tablas. **DoD:** RLS activo en prod, suite RLS verde, paths sin middleware fail-closed.
-- [ ] P1: throttling DRF global · idempotencia de pagos · django-axes · revocación JWT · auditoría inmutable · pasada IDOR · backups con restore probado. **DoD:** cada ítem con test/verificación según el plan 05.
+### S1 — Seguridad residual (Plan 05) — detalle en [`planes/05-seguridad-hardening.md`](planes/05-seguridad-hardening.md)
+- **✅ Cerrados:** `P1-1` throttling DRF global (`#84`), `P1-2` idempotencia pagos (`#86`), `P1-3` `django-axes` + política contraseñas (`#84`), `P1-4` revocación JWT (`#84`), `P2-1` gateway LLM (`#99`), `P2-5` CSP Django (`#106`).
+- [ ] **CTF-012** (vence 2026-08-01 — no modificada, Plan 06 D3): rol de BD `omni_app` no-dueño + `bypass='off'` + `RLS_ENABLED=True` en staging→prod (124+ tablas con RLS ya en esquema).
+- [ ] Pendientes P1/P2: `P1-5` (auditoría inmutable BD) · `P1-6` (pasada IDOR por objeto) · `P1-7` (secrets `BACKUP_*` del owner; workflows `#96` listos) · `P2-2` (agentes Celery async) · `P2-3` (persistencia costos LLM) · `P2-4` (cacheo consultas + N+1) · `P2-6` (OpenTelemetry).
 
-### Q1 — Calidad "cero dudas" Fases 4–5 — detalle en [`audit/ESTADO_PLAN_CERO_DUDAS.md`](audit/ESTADO_PLAN_CERO_DUDAS.md)
-- [ ] Frontend 55%→80% (ratchet por escalones) + `eslint-plugin-security` (CTF-006, vence 2026-08-01) + decimal.js en flujo pago/vuelto (BUG-M6 / FE-HIGH-7).
-- [ ] E2E Playwright de los 5 flujos críticos (hoy solo login smoke) → job bloqueante.
-- [ ] Gates finales: trivy y schemathesis bloqueantes; `npm audit --audit-level=high` al cerrar CTF-007.
+### Q1 — Calidad "cero dudas" — detalle en [`audit/ESTADO_PLAN_CERO_DUDAS.md`](audit/ESTADO_PLAN_CERO_DUDAS.md)
+- **✅ Cerrado:** backend ≥92 % + `diff-cover ≥95 %`, frontend >80 % (`statements: 83`, `lines: 85`), `eslint-plugin-security` (CTF-006), `decimal.js` en flujos monetarios (FE-HIGH-7), E2E Playwright bloqueante en CI (`ubuntu-24.04`), `trivy` CRITICAL + `schemathesis` + `npm audit --audit-level=high` (CTF-007).
 - [ ] **Branch protection en GitHub — acción exclusiva del owner (Marco).**
-- **DoD Q1:** los 8 criterios de cierre del plan cero-dudas en 🟢.
 
-### F — Workstream frontend (migrado de la auditoría 2026-06-01 §11, coordinar con Q1 para no duplicar)
-- [ ] FE-CRIT-1: react-hook-form+zod en los 14 formularios restantes · FE-HIGH-13: JWT fuera de `localStorage` · FE-HIGH-11: interceptor 401+refresh · FE-HIGH-3/4/15: TanStack en páginas que aún usan `useEffect`+fetch · cola FE-MED/LOW (ver el plan archivado en [`auditorias/archivo/`](auditorias/archivo/PLAN_TRABAJO_AUDITORIA_2026-06-01.md) §11 como referencia de detalle).
-- [ ] UI faltante para módulos API-only cuando un piloto la exija: compras, CxP, contabilidad, tesorería, RRHH/nómina (gap detectado 2026-06-10).
+### F — Workstream frontend (completado en barrido #215–#247; residual en Plan 06 / 07 / 08)
+- **✅ Cerrado:** 16/16 FormPages en `react-hook-form` + `zod` (FE-CRIT-1), 15 apps + 9 sub-módulos con UI + `toList()` + E2E cross-módulo.
+- [ ] Pendiente: ciclo offline en `PosPage` (`CTF-008`), segunda pasada `Decimal` (Plan 06 Tarea 4.2), Kanban/UI de `Omni Connect` (`Plan 07`) y UI de conciliación N:M / reportes contables (`Plan 08`).
 
-### Sub-fase 1.F — Distribuidora en producción (PRÓXIMO, métrica que cierra Bloque 1 parcial)
-**Objetivo único:** la distribuidora opera diariamente con Omni durante **30 días continuos** sin volver a su sistema anterior.
-- [ ] **Migración de datos reales** de la distribuidora (clientes, productos, inventario inicial, saldos CxC). Usar `apps/migracion_datos` / management commands; validación fila por fila.
-- [ ] **Caja diaria operativa**: apertura/cierre rápido, pagos mixtos VES+USD en <30s, cuadre con sobrante/faltante.
-- [ ] **Datos fiscales reales**: configuración fiscal de la empresa, correlativos, primera factura fiscal real válida + libro de ventas SENIAT del mes.
-- [ ] **Capacitación + arranque controlado** (operación en paralelo con el sistema viejo unos días).
-- [ ] **Acompañamiento intensivo**: bugfixing en caliente, ajustes de UX según uso real.
-- [ ] **Agente de cobranza en modo sugerencia** activo sobre la cartera real (CxC ya está).
-
-**DoD 1.F:** distribuidora factura, cobra, controla stock y consulta cartera con Omni, 30 días sin recaída.
-
-### Sub-fase 1.G — Específicos de la distribuidora
-- [ ] POS de mostrador (táctil, código de barras USB, recibo térmico 80mm).
-- [ ] Comisiones de vendedores.
-- [ ] Devoluciones y notas de crédito en flujo POS.
-- [ ] Despacho/entrega (`apps/despacho`).
-- [ ] Offline nivel 2 (Service Workers) si el punto de venta lo requiere.
-
-### Sub-fase 1.H — Onboarding fábrica + BOM
-- [ ] La fábrica usa el núcleo común (ventas, compras, inventario, fiscal).
-- [ ] **BOM (Lista de Materiales)** cargado en `apps/manufactura`.
-- [ ] Cotización de mueble a medida que estalla materiales + mano de obra + margen.
-
-### Sub-fase 1.I — Órdenes de fabricación y costeo
-- [ ] **OF con etapas** (corte → ensamble → lijado → pintura → tapizado → control final).
-- [ ] Consumo de materiales y producto terminado integrado con inventario.
-- [ ] **Costeo real** por OF; pago a destajo.
-- [ ] MRP básico (materiales necesarios para producir X).
-
-### Sub-fase 1.J — Estabilización (cierre de Bloque 1)
-- [ ] Bugfixing y documentación del producto al día.
-- [ ] Backlog de feedback de pilotos categorizado.
-- [ ] Demo grabada de ambos negocios operando + caso de éxito con métricas reales.
-- [ ] Backup automático PostgreSQL + SSL en producción.
-
-**DoD Bloque 1:** distribuidora 90 días continuos + fábrica 60 días con OF y costeo.
+### Sub-fases 1.F–1.J (pilotos distribuidora y fábrica)
+- **1.F Distribuidora en producción:** software listo; resta carga de datos reales de la distribuidora, configuración fiscal real y 30 días continuos de operación.
+- **1.G Específicos distribuidora:** despacho, NC y comisiones listos; falta UI POS táctil de mostrador + ciclo offline FE (`CTF-008`).
+- **1.H–1.I Fábrica + BOM + OF/Costeo/MRP:** modelos, services (`costeo_real_orden`, `calcular_mrp`), `CostoProduccion`, UI maestros (`#244`), UI crear OF/consumir (`#235`) y E2E completos; resta carga de BOM reales y operación en fábrica.
+- **1.J Estabilización:** en curso vía Plan 06 + Plan 05 + backups reales en S3/R2 (owner).
 
 ### 5.2-quater Desglose por capa de 1.F–1.I (GAP-3)
 
@@ -603,9 +525,9 @@ Bloque 1 cerrado (DoD: distribuidora 90d + fábrica 60d) ──→ BLOQUE 2: ven
 | Sub-fase | Datos (carga) | Lógica / software | UI | Operación |
 |---|---|---|---|---|
 | **1.F** Caja + migración | ⬜ cargar reales | ✅ caja, fiscal, CxC + **commands TRACK-1F-1..5** (`apps/migracion_datos`) | ✅ (caja/factura) | ⬜ 30 días |
-| **1.G** Devoluciones/POS | n/a | ✅ modelos devolución/NC; ✅ `apps/despacho` | ⬜ flujo POS táctil | ⬜ |
-| **1.H** BOM | ⬜ cargar BOM | ✅ modelos `apps/manufactura` (ListaMateriales) | ⬜ UI + carga | ⬜ |
-| **1.I** OF + costeo | ⬜ | ✅ modelos OF/costos; ⬜ services costeo real/MRP | ⬜ UI etapas | ⬜ |
+| **1.G** Devoluciones/POS | n/a | ✅ modelos/servicios devolución/NC, comisiones, despacho | 🔶 comisiones/listas/despacho ✅; falta POS táctil + offline | ⬜ |
+| **1.H** BOM | ⬜ cargar BOM | ✅ modelos/services `apps/manufactura` (`ListaMateriales`) | ✅ UI maestros (`#244`) | ⬜ |
+| **1.I** OF + costeo | ⬜ | ✅ `costeo_real_orden`, `calcular_mrp`, `CostoProduccion` | ✅ UI etapas/crear OF/consumir (`#235`) | ⬜ |
 
 Implicación: 1.F ya no requiere "construir software"; el trabajo es **carga de
 datos reales + operación 30 días** (los importadores ya están, ver
@@ -833,7 +755,7 @@ Modelos con `id_empresa`+UUIDv7 · unique_together correcto · ViewSet `BaseMode
 6. **Cerrar:** commit con Conventional Commits; **append** al `backend/PROJECT_LOG.md` (nunca editar/borrar entradas previas).
 7. **Ritual del lunes:** responder en 5 min — ¿qué se construyó la semana pasada y sirve a un piloto? ¿qué se construye esta semana? ¿qué regla podría romperse y cómo se evita?
 
-**Lo que un agente NO hace jamás:** mergear a `main` sin revisión humana, mergear a `develop` sin CI verde + revisión de otro agente, borrar datos sin proceso, saltarse el test de aislamiento, introducir SQLite, exponer secretos, llamar APIs externas fuera del Integration Hub, ampliar alcance sin cerrar un flujo.
+**Lo que un agente NO hace jamás:** mergear a `main` sin revisión humana del owner, marcar `ready` o mergear a `develop` sin Gate DoD + dictamen `APROBADO` en comentario de revisor independiente (`QA + Seguridad`) + CI 100 % verde, borrar datos sin proceso, saltarse el test de aislamiento, introducir SQLite, exponer secretos, llamar APIs externas fuera del Integration Hub, ampliar alcance sin cerrar un flujo.
 
 ---
 
@@ -886,9 +808,9 @@ omni-erp/
 ```
 
 ## 9.5 Áreas de trabajo abiertas hoy
-- **Backend:** nómina LOTTT completa, manufactura (OF + costeo + MRP), promover agentes a modo sugerencia/autónomo sobre datos reales.
-- **Frontend:** terminar UI de `cxc`, POS de mostrador, Service Workers offline, dashboard de analítica.
-- **DevOps:** backup automático PostgreSQL, SSL Let's Encrypt, Prometheus/Grafana.
+- **Backend:** Plan 06 (Fases 1–4), seguridad residual Plan 05 (`P1-5`/`P1-6`/`P2-2`/`P2-3`/`P2-4`/`P2-6`), conciliación N:M `AsignacionPago` + paridad ERP Odoo (`Plan 08`), Omni Connect S2–S12 (`Plan 07`), 4 adapters faltantes en `localizacion_ve` y nómina LOTTT de borde (cestaticket).
+- **Frontend:** ciclo offline POS (`CTF-008`), segunda pasada Decimal (Plan 06 Tarea 4.2), UI Kanban/pública de Omni Connect (`Plan 07`) y UI de conciliación N:M / reportes contables (`Plan 08`).
+- **DevOps / Owner:** secrets `BACKUP_*` en GitHub (`P1-7`), rol `omni_app` + `RLS_ENABLED=True` (`CTF-012`), branch protection en GitHub, validación `cxc_lubrikca` contra Odoo real, SSL self-hosted (diferido) y Prometheus/Grafana.
 - **Datos:** migración de la distribuidora real (sub-fase 1.F).
 
 ---
@@ -907,9 +829,9 @@ omni-erp/
 | **`docs/FLUJO_DE_TRABAJO.md`** | Branching + despliegue (feature→develop→main; fix→main) |
 | `docs/DESPLIEGUE_RAILWAY.md` | Topología y despliegue en Railway (prod + staging) |
 | `backend/PROJECT_LOG.md` | Registro cronológico de sesiones (append-only, inmutable) |
-| **`docs/planes/*`** | Planes de ejecución que aterrizan este roadmap (0/A/B/C/D/05 + runbook piloto) |
+| **`docs/planes/*`** | Planes de ejecución que aterrizan este roadmap (`00`–`06`, [`07-omni-connect.md`](planes/07-omni-connect.md), [`08-conciliacion-pagos-y-paridad-odoo.md`](planes/08-conciliacion-pagos-y-paridad-odoo.md) + runbook piloto) |
 | `docs/PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md` | Plan de calidad "cero dudas"; su estado vive en `docs/audit/ESTADO_PLAN_CERO_DUDAS.md` |
-| `docs/decisions/ADR-*.md` (001–009, todos aceptados) | Decisiones arquitectónicas |
+| `docs/decisions/ADR-*.md` (001–015, todos aceptados) | Decisiones arquitectónicas |
 | `docs/ctf/*` | Compromisos técnicos fechados (R-PROC-6) — único registro de deuda con fecha |
 | `docs/skills/*` | Skills del proyecto (incl. `diagnostico-railway` — diagnóstico read-only) |
 | `docs/auditorias/*` | Auditoría **activa** en la raíz (hoy: ninguna — P0 cerrado 2026-06-11); cerradas en `archivo/` |
@@ -961,4 +883,4 @@ Planes históricos, conservados solo como referencia de origen. **No se actualiz
 ---
 
 *Documento consolidado a partir de: OMNI_ERP_MASTER_PLAN, OMNI_AI_NATIVE_EXECUTION_PLAN, 02_PLAN_EJECUCION_FOUNDER_SOLO, 01_MVP_SCOPE_NEGOCIOS_PILOTO, AGENTE_IA_PROTOCOLO_EJECUCION, PLAN_FASE1_DETALLADO, PLAN_TRABAJO_POST_AUDIT, PLAN_TRABAJO_COMPLETO, CXC-PLAN-IMPLEMENTACION, ADR-001…006, DIAGNOSTICO_INICIAL y ambos PROJECT_LOG. Verificado contra el estado real del código (37 apps, tag v0.1.0-phase0-complete, commit 463c502).*
-*Revisión integral 2026-06-21 (auditoría verificada contra el código, CODE_READERs por cluster; ver [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md)). Próxima revisión: al cerrar la sub-fase 1.F (distribuidora en producción) o al cerrar un CTF abierto.*
+*Revisión integral 2026-06-21 (auditoría verificada contra el código; ver [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md)). Actualización v1.3 el **2026-11-17** contra `origin/develop @ ff2bdb6` (42 apps instaladas + `localizacion_ve`; ADR-013/014/015; planes 06/07/08; loop autónomo `develop` + Graphify).*

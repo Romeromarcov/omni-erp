@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 |
+| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 (Tarea 3.5 cerrada) |
 | **Fecha**    | 2026-11-14                                |
 | **Esfuerzo** | ~3–4 semanas, repartibles en PRs pequeños (R-PROC-2) |
 | **Owner**    | equipo-backend / devops (acciones del propietario marcadas con 👤) |
@@ -90,7 +90,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 | 3.2 | ✅ Revisar `frontend/test-import.js`; ignorar carpetas locales basura (`backend/%SystemDrive%`, `backend/sqlite-tools`, `.venv*`) | H12 |
 | 3.3 | ⬜ D2: migrar a `ruff` (config en `setup.cfg`/`pyproject`), quitar `black`/`isort`, PR mecánico de reformateo | H12 |
 | 3.4 | ⬜ Barrido: justificar o quitar `# noqa`/`eslint-disable`, imports sin usar, TODOs | H12 |
-| 3.5 | ⬜ Actualizar `docs/tech-debt/INVENTORY.md`; unificar `docs/archive` y `docs/_archive`. **No** se modifican fechas de CTF (D3) | H12 |
+| 3.5 | ✅ Actualizar `docs/tech-debt/INVENTORY.md`; unificar `docs/archive` y `docs/_archive`. **No** se modifican fechas de CTF (D3) *(cerrado en PR-1 `docs/gobernanza-graphify-y-planes-v13`)* | H12 |
 | 3.6 | ⬜ Actions con aviso de Node 20: subir versiones | — |
 
 ### Fase 4 — Producto

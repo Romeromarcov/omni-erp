@@ -14,6 +14,6 @@ histórica; **no se actualizan ni se usan para planificar**.
 | `R-CODE_CHECKLIST_A3.md` | Checklist R-CODE verificado (03-jun) | Snapshot puntual ya consumado |
 | `REGISTRO_SESION_2026-06-12.md` | Registro anti-pérdida de una sesión | Contenido consumado en `PROJECT_LOG.md`/`ORCHESTRATOR_LOG.md` y ADRs/CTFs |
 
-> Otros archivos históricos del repo viven en `docs/_archive/` (planes) y
-> `docs/auditorias/archivo/` (auditorías cerradas). Esta carpeta agrupa lo
-> archivado en la pasada del 2026-06-21.
+> Otros archivos históricos del repo viven en [`docs/_archive/`](../README.md) (planes) y
+> `docs/auditorias/archivo/` (auditorías cerradas). Esta carpeta (unificada desde la antigua
+> ruta `docs/archive/2026-06-21/` en Plan 06 — Tarea 3.5) agrupa lo archivado en la pasada del 2026-06-21.
