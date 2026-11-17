@@ -147,10 +147,10 @@ def test_recurrencia_semanal_quincenal_errores_de_hora_y_frecuencia(empresa_a):
         horas_dia=["25:99"],
         proxima_ejecucion=date(2026, 11, 16),
     )
-    with pytest.raises(services.TareaError):
-        services.generar_tareas_recurrentes_pendientes(
-            empresa_a, fecha_hoy=date(2026, 11, 16)
-        )
+    res_mala = services.generar_tareas_recurrentes_pendientes(
+        empresa_a, fecha_hoy=date(2026, 11, 16)
+    )
+    assert res_mala["errores"] == 1
 
 
 def test_escalacion_recurrentes_y_tramos_intermedios_24h_48h(empresa_a, user_a):
@@ -655,5 +655,263 @@ def test_validaciones_cruzadas_en_servicios_proyectos(empresa_a, empresa_b, user
     t_b, _ = services.crear_tarea(empresa=empresa_b, titulo="Ajena")
     with pytest.raises(services.TareaError):
         services.agregar_dependencia(empresa=empresa_a, tarea=t_fallback, depende_de=t_b)
+
+
+def test_regresiones_review_patch_validadores_minuta_area_y_mcp(
+    empresa_a, user_a, client_a
+):
+    from datetime import datetime
+
+    area = services.crear_area_operativa(empresa=empresa_a, nombre="Tesorería")
+    proy = services.crear_proyecto_con_secciones(
+        empresa=empresa_a, nombre="Tablero Review", propietario=user_a
+    )
+    t_padre, _ = services.crear_tarea(
+        empresa=empresa_a,
+        titulo="Padre",
+        proyecto=proy,
+        idempotency_key="idem-fijo-1",
+    )
+    t_hija, _ = services.crear_tarea(
+        empresa=empresa_a,
+        titulo="Hija",
+        proyecto=proy,
+        tarea_padre=t_padre,
+    )
+
+    # 1) PATCH impide ciclo transitivo de subtarea, cambio de idempotency_key y fechas invertidas
+    assert (
+        client_a.patch(
+            f"{BASE}/items/{t_padre.id_tarea}/",
+            {"tarea_padre": str(t_hija.id_tarea)},
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        client_a.patch(
+            f"{BASE}/items/{t_padre.id_tarea}/",
+            {"idempotency_key": "otro-idem"},
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        client_a.patch(
+            f"{BASE}/items/{t_padre.id_tarea}/",
+            {"fecha_inicio": "2026-12-20", "fecha_vencimiento": "2026-12-01"},
+            format="json",
+        ).status_code
+        == 400
+    )
+
+    # PATCH de estado pasa por cambiar_estado_tarea (fija completada_en y mueve sección)
+    r_patch_estado = client_a.patch(
+        f"{BASE}/items/{t_hija.id_tarea}/",
+        {"estado": EstadoTarea.COMPLETADA},
+        format="json",
+    )
+    assert r_patch_estado.status_code == 200
+    assert r_patch_estado.data["completada_en"] is not None
+    assert r_patch_estado.data["seccion_nombre"] == "Completada"
+
+    # 2) Validadores de recurrentes y unicidad parcial de secciones sin 500
+    assert (
+        client_a.post(
+            f"{BASE}/recurrentes/",
+            {
+                "titulo": "Dia mes 0",
+                "frecuencia": "MENSUAL",
+                "dia_mes": 0,
+                "proxima_ejecucion": "2026-11-20",
+            },
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        client_a.post(
+            f"{BASE}/recurrentes/",
+            {
+                "titulo": "Hora mala",
+                "frecuencia": "INTRADIA",
+                "horas_dia": ["99:99"],
+                "proxima_ejecucion": "2026-11-20",
+            },
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        client_a.post(
+            f"{BASE}/secciones/",
+            {"proyecto": str(proy.id_proyecto), "nombre": "Pendiente"},
+            format="json",
+        ).status_code
+        == 400
+    )
+
+    # 3) Minuta preserva area_id explícito al confirmar
+    minuta = services.crear_minuta_borrador(
+        empresa=empresa_a,
+        titulo="Minuta con área explícita",
+        items_propuestos=[{"titulo": "Conciliar banco", "area_id": str(area.id_area)}],
+    )
+    assert minuta.borrador_tareas[0]["area_id"] == str(area.id_area)
+    creadas = services.confirmar_minuta(
+        minuta=minuta,
+        items_confirmados=[
+            {
+                "titulo": "Conciliar banco editado",
+                "area_id": str(area.id_area),
+                "fecha_vencimiento": "2026-11-25",
+            }
+        ],
+    )
+    assert creadas[0].area_id == area.id_area
+
+    # 4) Bloqueo automático a 72h mueve la tarjeta a la columna 'Bloqueada'
+    t_venc, _ = services.crear_tarea(
+        empresa=empresa_a,
+        titulo="Vencida para bloqueo Kanban",
+        proyecto=proy,
+        fecha_vencimiento=date(2026, 11, 1),
+    )
+    services.ejecutar_seguimiento_empresa(
+        empresa_a,
+        ahora=datetime(2026, 11, 6, 16, 0, tzinfo=CARACAS),
+        momento="TARDE",
+    )
+    t_venc.refresh_from_db()
+    assert t_venc.seccion is not None
+    assert t_venc.seccion.estado_destino == EstadoTarea.BLOQUEADA
+
+    # 5) MCP maneja UUIDs inválidos sin lanzar ValueError crudo
+    tok = CapabilityToken.objects.create(
+        empresa=empresa_a, creado_por=user_a, scopes=["tareas:read", "tareas:write"]
+    )
+    assert (
+        tareas_mcp.tareas_listar(
+            str(tok.token), str(empresa_a.id_empresa), asignado_a_id="bad-uuid"
+        )
+        == []
+    )
+    assert "error" in tareas_mcp.tareas_crear(
+        str(tok.token),
+        str(empresa_a.id_empresa),
+        titulo="Bad UUID",
+        asignado_a_id="bad-uuid",
+    )
+    assert "error" in tareas_mcp.tareas_cambiar_estado(
+        str(tok.token),
+        str(empresa_a.id_empresa),
+        tarea_id="bad-uuid",
+        nuevo_estado="COMPLETADA",
+    )
+    assert "error" in tareas_mcp.tareas_confirmar_minuta(
+        str(tok.token), str(empresa_a.id_empresa), minuta_id="bad-uuid"
+    )
+    res_mcp_eq = tareas_mcp.tareas_resumen_equipo(
+        str(tok.token), str(empresa_a.id_empresa), fecha="2026-11-20"
+    )
+    assert "totales" in res_mcp_eq
+
+    # Minuta descartada vía MCP devuelve error controlado
+    minuta_desc = services.crear_minuta_borrador(
+        empresa=empresa_a, titulo="Minuta descartada MCP", items_propuestos=[]
+    )
+    minuta_desc.estado = MinutaReunion.Estado.DESCARTADA
+    minuta_desc.save(update_fields=["estado"])
+    assert "error" in tareas_mcp.tareas_confirmar_minuta(
+        str(tok.token), str(empresa_a.id_empresa), minuta_id=str(minuta_desc.id_minuta)
+    )
+
+    # Cobertura de endpoints de secciones, PATCH de área, duplicado de proyecto y comentario vacío
+    assert (
+        client_a.get(f"{BASE}/secciones/?proyecto={proy.id_proyecto}").status_code == 200
+    )
+    assert (
+        client_a.patch(
+            f"{BASE}/areas/{area.id_area}/", {"nombre": "Operaciones v2"}, format="json"
+        ).status_code
+        == 200
+    )
+    assert (
+        client_a.post(
+            f"{BASE}/proyectos/", {"nombre": "   "}, format="json"
+        ).status_code
+        == 400
+    )
+    assert (
+        client_a.post(
+            f"{BASE}/minutas/", {"titulo": "   "}, format="json"
+        ).status_code
+        == 400
+    )
+    assert (
+        client_a.post(
+            f"{BASE}/minutas/{minuta_desc.id_minuta}/confirmar/", {}, format="json"
+        ).status_code
+        == 409
+    )
+    assert (
+        client_a.post(
+            f"{BASE}/items/{t_padre.id_tarea}/comentarios/",
+            {"cuerpo": "   "},
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        client_a.post(
+            f"{BASE}/items/{t_padre.id_tarea}/dependencias/",
+            {"depende_de": str(t_padre.id_tarea)},
+            format="json",
+        ).status_code
+        == 400
+    )
+    with pytest.raises(services.TareaError):
+        services.agregar_comentario(tarea=t_padre, cuerpo="   ")
+    assert services.cambiar_estado_tarea(tarea=t_padre, nuevo_estado=t_padre.estado) == t_padre
+
+    # Aislamiento de errores por plantilla en recurrencia + parseo defensivo
+    from apps.tareas.services import recurrencia as rec_mod
+
+    assert rec_mod.calcular_siguiente_fecha(
+        frecuencia="SEMANAL", actual=date(2026, 11, 17), dias_semana=["x", 99]
+    ) == date(2026, 11, 24)
+    with pytest.raises(services.TareaError):
+        rec_mod._parsear_hora("0900")
+
+    PlantillaTareaRecurrente.objects.create(
+        id_empresa=empresa_a,
+        titulo="Plantilla corrupta",
+        frecuencia="INTRADIA",
+        horas_dia=["hora-invalida"],
+        proxima_ejecucion=date(2026, 11, 20),
+    )
+    PlantillaTareaRecurrente.objects.create(
+        id_empresa=empresa_a,
+        titulo="Plantilla sana",
+        frecuencia="DIARIA",
+        proxima_ejecucion=date(2026, 11, 20),
+    )
+    res_rec = services.generar_tareas_recurrentes_pendientes(
+        empresa_a, fecha_hoy=date(2026, 11, 20)
+    )
+    assert res_rec["errores"] >= 1
+    assert res_rec["tareas_creadas"] >= 1
+
+    # Usuario anónimo y usuario sin empresa activa
+    from rest_framework.test import APIClient
+    from apps.core.models import Usuarios
+
+    assert APIClient().get(f"{BASE}/items/").status_code in (401, 403)
+    u_sin_emp = Usuarios.objects.create_user(username="sin_emp_tareas", password="x")
+    cli_sin = APIClient()
+    cli_sin.force_authenticate(user=u_sin_emp)
+    assert cli_sin.get(f"{BASE}/resumen/").status_code == 403
+
+
 
 

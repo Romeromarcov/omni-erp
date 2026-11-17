@@ -645,6 +645,17 @@ CELERY_BEAT_SCHEDULE = {
         "task": "integration_hub.sync_cartera_odoo_todos",
         "schedule": _crontab(minute="*/30"),
     },
+    # Ciclo operativo de Tareas (recurrencias + recordatorios/escalación) — 9:00 AM y 3:00 PM VET (ADR-015)
+    "tareas-ciclo-manana": {
+        "task": "tareas.ejecutar_ciclo_todos",
+        "schedule": _crontab(hour=13, minute=0),
+        "kwargs": {"momento": "MANANA"},
+    },
+    "tareas-ciclo-tarde": {
+        "task": "tareas.ejecutar_ciclo_todos",
+        "schedule": _crontab(hour=19, minute=0),
+        "kwargs": {"momento": "TARDE"},
+    },
 }
 
 # ─────────────────────────────────────────────────────────────────
@@ -714,6 +725,7 @@ MCP_AGENT_CAPABILITIES: dict = {
         "apps.despacho.mcp",
         "apps.bots_ingest.mcp",
         "apps.tesoreria.mcp",
+        "apps.tareas.mcp",
     ],
     "scopes": {
         "core:read": "Lectura de empresas y clientes",
@@ -728,6 +740,8 @@ MCP_AGENT_CAPABILITIES: dict = {
         "tesoreria:write": "Importación de extractos y conciliación bancaria",
         "bots:read": "Consulta de salud y bitácora de flota de bots",
         "bots:write": "Pausa, reanudación y configuración de bots",
+        "tareas:read": "Consulta de proyectos, tareas operativas y resumen ejecutivo",
+        "tareas:write": "Creación, transición de tareas y confirmación de minutas",
         "fiscal:read": "Consulta de correlativos fiscales",
         "fiscal:write": "Emisión de documentos fiscales",
         "manufactura:read": "Consulta de OF, costeo real y MRP",

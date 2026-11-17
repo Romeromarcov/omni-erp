@@ -50,6 +50,11 @@ class MiembroAreaOperativaSerializer(BaseModelSerializer):
 class AreaOperativaSerializer(BaseModelSerializer):
     lider_nombre = serializers.SerializerMethodField()
     miembros = serializers.SerializerMethodField()
+    palabras_clave = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        required=False,
+        default=list,
+    )
 
     class Meta:
         model = AreaOperativa
@@ -130,6 +135,7 @@ class ProyectoSerializer(BaseModelSerializer):
         read_only_fields = [
             "id_proyecto",
             "id_empresa",
+            "es_personal",
             "activo",
             "fecha_creacion",
             "fecha_actualizacion",
@@ -281,6 +287,19 @@ class DependenciaInputSerializer(serializers.Serializer):
 
 class PlantillaTareaRecurrenteSerializer(BaseModelSerializer):
     asignado_nombre = serializers.SerializerMethodField()
+    dia_mes = serializers.IntegerField(
+        min_value=1, max_value=31, required=False, allow_null=True
+    )
+    dias_semana = serializers.ListField(
+        child=serializers.IntegerField(min_value=0, max_value=6),
+        required=False,
+        default=list,
+    )
+    horas_dia = serializers.ListField(
+        child=serializers.RegexField(r"^(?:[01]\d|2[0-3]):[0-5]\d$"),
+        required=False,
+        default=list,
+    )
 
     class Meta:
         model = PlantillaTareaRecurrente

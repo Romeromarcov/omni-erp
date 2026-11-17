@@ -28,6 +28,7 @@ from ..models import (
     EstadoTarea,
     PlantillaTareaRecurrente,
     RegistroAlertaTarea,
+    SeccionProyecto,
     Tarea,
 )
 from .proyectos import obtener_o_crear_configuracion_seguimiento
@@ -300,14 +301,27 @@ def ejecutar_seguimiento_empresa(
                 tarea.estado = EstadoTarea.BLOQUEADA
                 tarea.bloqueada_por_escalacion = True
                 tarea.motivo_bloqueo = acc.mensaje[:280]
-                tarea.save(
-                    update_fields=[
-                        "estado",
-                        "bloqueada_por_escalacion",
-                        "motivo_bloqueo",
-                        "fecha_actualizacion",
-                    ]
-                )
+                campos_actualizar = [
+                    "estado",
+                    "bloqueada_por_escalacion",
+                    "motivo_bloqueo",
+                    "fecha_actualizacion",
+                ]
+                if tarea.proyecto_id is not None:
+                    sec_bloq = (
+                        SeccionProyecto.objects.filter(
+                            id_empresa=empresa,
+                            proyecto_id=tarea.proyecto_id,
+                            estado_destino=EstadoTarea.BLOQUEADA,
+                            activo=True,
+                        )
+                        .order_by("orden", "pk")
+                        .first()
+                    )
+                    if sec_bloq is not None:
+                        tarea.seccion = sec_bloq
+                        campos_actualizar.append("seccion")
+                tarea.save(update_fields=campos_actualizar)
                 ComentarioTarea.objects.create(
                     id_empresa=empresa,
                     tarea=tarea,

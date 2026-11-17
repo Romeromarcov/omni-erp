@@ -88,6 +88,7 @@ def _resolver_usuario_y_area(
     areas: list[AreaOperativa],
     asignado_a_id: str | None,
     asignado_nombre: str,
+    area_id: str | None,
     area_slug_o_nombre: str,
     contexto_texto: str,
 ) -> tuple[Usuarios | None, AreaOperativa | None]:
@@ -100,6 +101,13 @@ def _resolver_usuario_y_area(
             usuario_resuelto = next((u for u in usuarios if u.pk == uid), None)
         except (ValueError, TypeError):
             usuario_resuelto = None
+
+    if area_id:
+        try:
+            aid = uuid.UUID(str(area_id))
+            area_resuelta = next((a for a in areas if a.pk == aid), None)
+        except (ValueError, TypeError):
+            area_resuelta = None
 
     if usuario_resuelto is None and asignado_nombre:
         buscado = _norm(asignado_nombre)
@@ -120,7 +128,7 @@ def _resolver_usuario_y_area(
                     break
 
     texto_pistas = f"{_norm(area_slug_o_nombre)} {_norm(contexto_texto)}".strip()
-    if area_slug_o_nombre:
+    if area_resuelta is None and area_slug_o_nombre:
         objetivo_area = _norm(area_slug_o_nombre)
         for a in areas:
             if objetivo_area in {_norm(a.slug), _norm(a.nombre)}:
@@ -130,7 +138,8 @@ def _resolver_usuario_y_area(
     if area_resuelta is None and texto_pistas:
         tokens = set(re.findall(r"[a-z0-9]+", texto_pistas))
         for a in areas:
-            claves_area = {_norm(k) for k in (a.palabras_clave or []) if k}
+            claves_raw = a.palabras_clave if isinstance(a.palabras_clave, list) else []
+            claves_area = {_norm(str(k)) for k in claves_raw if k}
             slug_base = _norm(a.slug).replace("-", "")
             for clave_def, sinonimos in _PISTAS_AREA_POR_DEFECTO.items():
                 if clave_def in slug_base or clave_def in _norm(a.nombre):
@@ -200,6 +209,7 @@ def enriquecer_borrador_minuta(
             areas=areas,
             asignado_a_id=raw.get("asignado_a_id"),
             asignado_nombre=asignado_nombre,
+            area_id=raw.get("area_id"),
             area_slug_o_nombre=area_hint,
             contexto_texto=f"{titulo} {descripcion}",
         )
@@ -277,22 +287,29 @@ def confirmar_minuta(
     proyecto=None,
 ) -> list[Tarea]:
     """Materializa el borrador de ``minuta`` en instancias reales de ``Tarea``."""
-    empresa = minuta.id_empresa
-    if minuta.estado == MinutaReunion.Estado.DESCARTADA:
+    minuta_bloqueada = (
+        MinutaReunion.objects.select_for_update(of=("self",))
+        .select_related("id_empresa", "creado_por")
+        .get(pk=minuta.pk)
+    )
+    empresa = minuta_bloqueada.id_empresa
+    if minuta_bloqueada.estado == MinutaReunion.Estado.DESCARTADA:
         raise TareaError("No se puede confirmar una minuta descartada.", status=409)
-    if minuta.estado == MinutaReunion.Estado.CONFIRMADA:
+    if minuta_bloqueada.estado == MinutaReunion.Estado.CONFIRMADA:
+        minuta.estado = minuta_bloqueada.estado
+        minuta.confirmada_en = minuta_bloqueada.confirmada_en
         return list(
             Tarea.objects.filter(
-                id_empresa=empresa, minuta_origen=minuta, activo=True
+                id_empresa=empresa, minuta_origen=minuta_bloqueada, activo=True
             ).order_by("fecha_creacion", "pk")
         )
 
     fuente_items = (
         enriquecer_borrador_minuta(
-            empresa, items_confirmados, fecha_referencia=minuta.fecha_reunion
+            empresa, items_confirmados, fecha_referencia=minuta_bloqueada.fecha_reunion
         )
         if items_confirmados is not None
-        else list(minuta.borrador_tareas or [])
+        else list(minuta_bloqueada.borrador_tareas or [])
     )
     if not fuente_items:
         raise TareaError("La minuta no contiene tareas para confirmar.")
@@ -331,20 +348,24 @@ def confirmar_minuta(
             proyecto=proyecto,
             area=area,
             asignado_a=usuario,
-            creado_por=actor or minuta.creado_por,
+            creado_por=actor or minuta_bloqueada.creado_por,
             fecha_vencimiento=fecha_venc,
-            minuta_origen=minuta,
-            idempotency_key=f"minuta:{minuta.pk}:{idx}",
+            minuta_origen=minuta_bloqueada,
+            idempotency_key=f"minuta:{minuta_bloqueada.pk}:{idx}",
         )
         creadas.append(tarea)
 
     if not creadas:
         raise TareaError("Ningún ítem del borrador tenía título válido.")
 
-    minuta.borrador_tareas = fuente_items
-    minuta.estado = MinutaReunion.Estado.CONFIRMADA
-    minuta.confirmada_en = timezone.now()
-    minuta.save(
+    minuta_bloqueada.borrador_tareas = fuente_items
+    minuta_bloqueada.estado = MinutaReunion.Estado.CONFIRMADA
+    minuta_bloqueada.confirmada_en = timezone.now()
+    minuta_bloqueada.save(
         update_fields=["borrador_tareas", "estado", "confirmada_en", "fecha_actualizacion"]
     )
+    minuta.borrador_tareas = minuta_bloqueada.borrador_tareas
+    minuta.estado = minuta_bloqueada.estado
+    minuta.confirmada_en = minuta_bloqueada.confirmada_en
+    minuta.fecha_actualizacion = minuta_bloqueada.fecha_actualizacion
     return creadas

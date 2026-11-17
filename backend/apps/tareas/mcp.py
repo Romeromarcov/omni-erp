@@ -62,16 +62,16 @@ def tareas_listar(
     )
     if estado:
         qs = qs.filter(estado=estado)
-    if asignado_a_id:
-        uuid.UUID(str(asignado_a_id))
-        qs = qs.filter(asignado_a_id=asignado_a_id)
-    if entidad_tipo:
-        qs = qs.filter(entidad_tipo=entidad_tipo)
-    if entidad_id:
-        uuid.UUID(str(entidad_id))
-        qs = qs.filter(entidad_id=entidad_id)
-
-    tope = max(1, min(int(limite), 200))
+    try:
+        if asignado_a_id:
+            qs = qs.filter(asignado_a_id=uuid.UUID(str(asignado_a_id)))
+        if entidad_tipo:
+            qs = qs.filter(entidad_tipo=entidad_tipo)
+        if entidad_id:
+            qs = qs.filter(entidad_id=uuid.UUID(str(entidad_id)))
+        tope = max(1, min(int(limite), 200))
+    except (ValueError, TypeError):
+        return []
     filas = list(qs[:tope])
     logger.info(
         "tareas_listar | actor=%s | tenant=%s | devueltas=%d",
@@ -149,31 +149,34 @@ def tareas_crear(
     ctx = _ctx(capability_token, f"{_SCOPE}:write")
     empresa = _empresa_activa(empresa_id, ctx)
 
-    asignado = None
-    if asignado_a_id:
-        asignado = Usuarios.objects.filter(
-            pk=uuid.UUID(str(asignado_a_id)), empresas=empresa, is_active=True
-        ).first()
-        if asignado is None:
-            return {"error": "Usuario asignado no pertenece a la empresa."}
+    try:
+        asignado = None
+        if asignado_a_id:
+            asignado = Usuarios.objects.filter(
+                pk=uuid.UUID(str(asignado_a_id)), empresas=empresa, is_active=True
+            ).first()
+            if asignado is None:
+                return {"error": "Usuario asignado no pertenece a la empresa."}
 
-    area = None
-    if area_id:
-        area = AreaOperativa.objects.filter(
-            pk=uuid.UUID(str(area_id)), id_empresa=empresa, activo=True
-        ).first()
-        if area is None:
-            return {"error": "Área no encontrada en la empresa."}
+        area = None
+        if area_id:
+            area = AreaOperativa.objects.filter(
+                pk=uuid.UUID(str(area_id)), id_empresa=empresa, activo=True
+            ).first()
+            if area is None:
+                return {"error": "Área no encontrada en la empresa."}
 
-    proyecto = None
-    if proyecto_id:
-        proyecto = Proyecto.objects.filter(
-            pk=uuid.UUID(str(proyecto_id)), id_empresa=empresa, activo=True
-        ).first()
-        if proyecto is None:
-            return {"error": "Proyecto no encontrado en la empresa."}
+        proyecto = None
+        if proyecto_id:
+            proyecto = Proyecto.objects.filter(
+                pk=uuid.UUID(str(proyecto_id)), id_empresa=empresa, activo=True
+            ).first()
+            if proyecto is None:
+                return {"error": "Proyecto no encontrado en la empresa."}
 
-    entidad_uuid = uuid.UUID(str(entidad_id)) if entidad_id else None
+        entidad_uuid = uuid.UUID(str(entidad_id)) if entidad_id else None
+    except (ValueError, TypeError):
+        return {"error": "Identificador UUID inválido en los parámetros."}
     venc = parse_date(fecha_vencimiento) if fecha_vencimiento else None
 
     try:
@@ -226,8 +229,12 @@ def tareas_cambiar_estado(
     ctx = _ctx(capability_token, f"{_SCOPE}:write")
     empresa = _empresa_activa(empresa_id, ctx)
 
+    try:
+        tarea_uuid = uuid.UUID(str(tarea_id))
+    except (ValueError, TypeError):
+        return {"error": "tarea_id inválido."}
     tarea = Tarea.objects.filter(
-        pk=uuid.UUID(str(tarea_id)), id_empresa=empresa, activo=True
+        pk=tarea_uuid, id_empresa=empresa, activo=True
     ).first()
     if tarea is None:
         return {"error": "Tarea no encontrada en la empresa."}
@@ -313,8 +320,12 @@ def tareas_confirmar_minuta(
 
     ctx = _ctx(capability_token, f"{_SCOPE}:write")
     empresa = _empresa_activa(empresa_id, ctx)
+    try:
+        minuta_uuid = uuid.UUID(str(minuta_id))
+    except (ValueError, TypeError):
+        return {"error": "minuta_id inválido."}
     minuta = MinutaReunion.objects.filter(
-        pk=uuid.UUID(str(minuta_id)), id_empresa=empresa, activo=True
+        pk=minuta_uuid, id_empresa=empresa, activo=True
     ).first()
     if minuta is None:
         return {"error": "Minuta no encontrada en la empresa."}

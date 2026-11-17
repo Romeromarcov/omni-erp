@@ -188,8 +188,9 @@ def crear_proyecto_con_secciones(
         propietario=propietario,
     )
     try:
-        proyecto.full_clean()
-        proyecto.save()
+        with transaction.atomic():
+            proyecto.full_clean()
+            proyecto.save()
     except ValidationError as exc:
         raise _traducir_validacion(exc) from exc
     except IntegrityError as exc:
@@ -229,12 +230,28 @@ def asegurar_proyecto_personal(*, empresa, usuario: Usuarios) -> Proyecto:
         return existente
 
     nombre = f"Tareas - {_nombre_corto_usuario(usuario)}"
-    return crear_proyecto_con_secciones(
-        empresa=empresa,
-        nombre=nombre,
-        es_personal=True,
-        propietario=usuario,
-    )
+    try:
+        return crear_proyecto_con_secciones(
+            empresa=empresa,
+            nombre=nombre,
+            es_personal=True,
+            propietario=usuario,
+        )
+    except TareaError as exc:
+        if exc.status == 409:
+            ganador = (
+                Proyecto.objects.filter(
+                    id_empresa=empresa,
+                    propietario=usuario,
+                    es_personal=True,
+                    activo=True,
+                )
+                .prefetch_related("secciones")
+                .first()
+            )
+            if ganador is not None:
+                return ganador
+        raise
 
 
 def _resolver_seccion_inicial(
@@ -341,8 +358,9 @@ def crear_tarea(
         idempotency_key=idem,
     )
     try:
-        tarea.full_clean()
-        tarea.save()
+        with transaction.atomic():
+            tarea.full_clean()
+            tarea.save()
     except ValidationError as exc:
         raise _traducir_validacion(exc) from exc
     except IntegrityError:
@@ -556,7 +574,18 @@ def obtener_o_crear_configuracion_seguimiento(empresa) -> ConfiguracionSeguimien
     )
     if cfg is not None:
         return cfg
-    return ConfiguracionSeguimientoTareas.objects.create(id_empresa=empresa)
+    try:
+        with transaction.atomic():
+            return ConfiguracionSeguimientoTareas.objects.create(id_empresa=empresa)
+    except IntegrityError:
+        existente = (
+            ConfiguracionSeguimientoTareas.objects.filter(id_empresa=empresa, activo=True)
+            .order_by("-fecha_creacion", "-pk")
+            .first()
+        )
+        if existente is not None:
+            return existente
+        raise
 
 
 def resumen_ejecutivo_equipo(empresa, *, hoy: date | None = None) -> dict[str, Any]:

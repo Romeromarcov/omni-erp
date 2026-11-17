@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import uuid
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 from django.utils.dateparse import parse_date
 from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -101,6 +103,38 @@ def _resolver_usuario_tenant(empresa, usuario_id) -> Usuarios | None:
     return usuario
 
 
+def _guardar_validando_modelo(construir_instancia):
+    """Persiste y ejecuta ``full_clean()`` en un savepoint, traduciendo errores de modelo/BD a 400."""
+    try:
+        with transaction.atomic():
+            instancia = construir_instancia()
+            instancia.full_clean()
+            instancia.save()
+            return instancia
+    except DjangoValidationError as exc:
+        detalle = exc.message_dict if hasattr(exc, "message_dict") else {"detail": exc.messages}
+        raise ValidationError(detalle) from exc
+    except IntegrityError as exc:
+        raise ValidationError({"detail": "Conflicto de unicidad con un registro existente."}) from exc
+
+
+def _genera_ciclo_subtarea(empresa_id, tarea_id, nuevo_padre: Tarea | None) -> bool:
+    actual = nuevo_padre
+    vistos = set()
+    while actual is not None:
+        if actual.pk == tarea_id:
+            return True
+        if actual.pk in vistos:
+            break
+        vistos.add(actual.pk)
+        if actual.tarea_padre_id is None:
+            break
+        actual = Tarea.objects.filter(
+            pk=actual.tarea_padre_id, id_empresa_id=empresa_id
+        ).first()
+    return False
+
+
 class _BaseTareasViewSet(EmpresaInjectMixin, BaseModelViewSet):
     authentication_classes = _AUTH_HUMANO_Y_CAPACIDAD
     permission_classes = [PermisoTareas]
@@ -115,6 +149,9 @@ class _BaseTareasViewSet(EmpresaInjectMixin, BaseModelViewSet):
             id_empresa__in=get_empresas_visible(self.request.user),
             activo=True,
         )
+
+    def perform_update(self, serializer):
+        _guardar_validando_modelo(lambda: serializer.save())
 
     def perform_destroy(self, instance):
         instance.soft_delete()
@@ -287,7 +324,7 @@ class SeccionProyectoViewSet(_BaseTareasViewSet):
         proyecto = serializer.validated_data["proyecto"]
         if proyecto.id_empresa_id != empresa.pk or not proyecto.activo:
             raise PermissionDenied("El proyecto no pertenece a tu empresa.")
-        serializer.save(id_empresa=empresa)
+        _guardar_validando_modelo(lambda: serializer.save(id_empresa=empresa))
 
 
 class TareaViewSet(_BaseTareasViewSet):
@@ -373,6 +410,34 @@ class TareaViewSet(_BaseTareasViewSet):
 
         codigo_http = status.HTTP_201_CREATED if creada else status.HTTP_200_OK
         return Response(TareaSerializer(tarea).data, status=codigo_http)
+
+    def perform_update(self, serializer):
+        instancia: Tarea = self.get_object()
+        serializer.validated_data.pop("usar_tablero_personal_si_falta", None)
+        if (
+            instancia.idempotency_key
+            and "idempotency_key" in serializer.validated_data
+            and serializer.validated_data["idempotency_key"] != instancia.idempotency_key
+        ):
+            raise ValidationError(
+                {"idempotency_key": "No se puede modificar idempotency_key una vez fijado."}
+            )
+        nuevo_padre = serializer.validated_data.get("tarea_padre")
+        if nuevo_padre is not None and _genera_ciclo_subtarea(
+            instancia.id_empresa_id, instancia.pk, nuevo_padre
+        ):
+            raise ValidationError(
+                {"tarea_padre": "La relación de subtarea genera un ciclo."}
+            )
+        nuevo_estado = serializer.validated_data.pop("estado", None)
+        actualizada = _guardar_validando_modelo(lambda: serializer.save())
+        if nuevo_estado is not None and nuevo_estado != actualizada.estado:
+            services.cambiar_estado_tarea(
+                tarea=actualizada,
+                nuevo_estado=nuevo_estado,
+                actor=_actor_humano(self.request),
+                motivo=actualizada.motivo_bloqueo,
+            )
 
     @action(detail=True, methods=["post"], url_path="cambiar-estado")
     def cambiar_estado(self, request, pk=None):
@@ -488,7 +553,11 @@ class PlantillaTareaRecurrenteViewSet(_BaseTareasViewSet):
         asignado = serializer.validated_data.get("asignado_a")
         if asignado is not None:
             _resolver_usuario_tenant(empresa, asignado.pk)
-        serializer.save(id_empresa=empresa, creado_por=_actor_humano(self.request))
+        _guardar_validando_modelo(
+            lambda: serializer.save(
+                id_empresa=empresa, creado_por=_actor_humano(self.request)
+            )
+        )
 
     @action(detail=False, methods=["post"], url_path="materializar")
     def materializar(self, request):

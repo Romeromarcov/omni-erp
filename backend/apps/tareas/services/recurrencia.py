@@ -38,7 +38,16 @@ def calcular_siguiente_fecha(
         return actual + timedelta(days=1)
 
     if frecuencia == Frec.SEMANAL:
-        dias_validos = sorted({int(d) for d in (dias_semana or []) if 0 <= int(d) <= 6})
+        dias_validos: list[int] = []
+        if isinstance(dias_semana, list):
+            for raw_d in dias_semana:
+                try:
+                    d_int = int(raw_d)
+                except (ValueError, TypeError):
+                    continue
+                if 0 <= d_int <= 6 and d_int not in dias_validos:
+                    dias_validos.append(d_int)
+        dias_validos.sort()
         if not dias_validos:
             return actual + timedelta(days=7)
         for delta in range(1, 8):
@@ -77,79 +86,92 @@ def generar_tareas_recurrentes_pendientes(
 
     creadas: list[str] = []
     omitidas_idempotencia = 0
+    errores = 0
     ahora = timezone.now()
 
     for plantilla in plantillas:
-        fecha_obj = plantilla.proxima_ejecucion
-        if (
-            plantilla.frecuencia == PlantillaTareaRecurrente.Frecuencia.INTRADIA
-            and plantilla.horas_dia
-        ):
-            for raw_hora in plantilla.horas_dia:
-                hora_obj = _parsear_hora(str(raw_hora))
-                idem = f"rec:{plantilla.pk}:{fecha_obj.isoformat()}:{hora_obj.strftime('%H%M')}"
-                tarea, nueva = crear_tarea(
-                    empresa=empresa,
-                    titulo=plantilla.titulo,
-                    descripcion=plantilla.descripcion,
-                    prioridad=plantilla.prioridad,
-                    origen=Tarea.Origen.RECURRENCIA,
-                    proyecto=plantilla.proyecto,
-                    area=plantilla.area,
-                    asignado_a=plantilla.asignado_a,
-                    creado_por=plantilla.creado_por,
-                    fecha_inicio=fecha_obj,
-                    fecha_vencimiento=fecha_obj,
-                    hora_vencimiento=hora_obj,
-                    plantilla_recurrente=plantilla,
-                    idempotency_key=idem,
-                )
-                if nueva:
-                    creadas.append(str(tarea.id_tarea))
+        try:
+            with transaction.atomic():
+                fecha_obj = plantilla.proxima_ejecucion
+                if (
+                    plantilla.frecuencia == PlantillaTareaRecurrente.Frecuencia.INTRADIA
+                    and isinstance(plantilla.horas_dia, list)
+                    and plantilla.horas_dia
+                ):
+                    for raw_hora in plantilla.horas_dia:
+                        hora_obj = _parsear_hora(str(raw_hora))
+                        idem = f"rec:{plantilla.pk}:{fecha_obj.isoformat()}:{hora_obj.strftime('%H%M')}"
+                        tarea, nueva = crear_tarea(
+                            empresa=empresa,
+                            titulo=plantilla.titulo,
+                            descripcion=plantilla.descripcion,
+                            prioridad=plantilla.prioridad,
+                            origen=Tarea.Origen.RECURRENCIA,
+                            proyecto=plantilla.proyecto,
+                            area=plantilla.area,
+                            asignado_a=plantilla.asignado_a,
+                            creado_por=plantilla.creado_por,
+                            fecha_inicio=fecha_obj,
+                            fecha_vencimiento=fecha_obj,
+                            hora_vencimiento=hora_obj,
+                            plantilla_recurrente=plantilla,
+                            idempotency_key=idem,
+                        )
+                        if nueva:
+                            creadas.append(str(tarea.id_tarea))
+                        else:
+                            omitidas_idempotencia += 1
                 else:
-                    omitidas_idempotencia += 1
-        else:
-            idem = f"rec:{plantilla.pk}:{fecha_obj.isoformat()}"
-            tarea, nueva = crear_tarea(
-                empresa=empresa,
-                titulo=plantilla.titulo,
-                descripcion=plantilla.descripcion,
-                prioridad=plantilla.prioridad,
-                origen=Tarea.Origen.RECURRENCIA,
-                proyecto=plantilla.proyecto,
-                area=plantilla.area,
-                asignado_a=plantilla.asignado_a,
-                creado_por=plantilla.creado_por,
-                fecha_inicio=fecha_obj,
-                fecha_vencimiento=fecha_obj,
-                plantilla_recurrente=plantilla,
-                idempotency_key=idem,
-            )
-            if nueva:
-                creadas.append(str(tarea.id_tarea))
-            else:
-                omitidas_idempotencia += 1
+                    idem = f"rec:{plantilla.pk}:{fecha_obj.isoformat()}"
+                    tarea, nueva = crear_tarea(
+                        empresa=empresa,
+                        titulo=plantilla.titulo,
+                        descripcion=plantilla.descripcion,
+                        prioridad=plantilla.prioridad,
+                        origen=Tarea.Origen.RECURRENCIA,
+                        proyecto=plantilla.proyecto,
+                        area=plantilla.area,
+                        asignado_a=plantilla.asignado_a,
+                        creado_por=plantilla.creado_por,
+                        fecha_inicio=fecha_obj,
+                        fecha_vencimiento=fecha_obj,
+                        plantilla_recurrente=plantilla,
+                        idempotency_key=idem,
+                    )
+                    if nueva:
+                        creadas.append(str(tarea.id_tarea))
+                    else:
+                        omitidas_idempotencia += 1
 
-        siguiente = calcular_siguiente_fecha(
-            frecuencia=plantilla.frecuencia,
-            actual=fecha_obj,
-            dias_semana=plantilla.dias_semana,
-            dia_mes=plantilla.dia_mes,
-        )
-        while siguiente <= hoy:
-            siguiente = calcular_siguiente_fecha(
-                frecuencia=plantilla.frecuencia,
-                actual=siguiente,
-                dias_semana=plantilla.dias_semana,
-                dia_mes=plantilla.dia_mes,
-            )
-        plantilla.proxima_ejecucion = siguiente
-        plantilla.ultima_generacion_en = ahora
-        plantilla.save(update_fields=["proxima_ejecucion", "ultima_generacion_en", "fecha_actualizacion"])
+                siguiente = calcular_siguiente_fecha(
+                    frecuencia=plantilla.frecuencia,
+                    actual=fecha_obj,
+                    dias_semana=plantilla.dias_semana,
+                    dia_mes=plantilla.dia_mes,
+                )
+                while siguiente <= hoy:
+                    siguiente = calcular_siguiente_fecha(
+                        frecuencia=plantilla.frecuencia,
+                        actual=siguiente,
+                        dias_semana=plantilla.dias_semana,
+                        dia_mes=plantilla.dia_mes,
+                    )
+                plantilla.proxima_ejecucion = siguiente
+                plantilla.ultima_generacion_en = ahora
+                plantilla.save(
+                    update_fields=[
+                        "proxima_ejecucion",
+                        "ultima_generacion_en",
+                        "fecha_actualizacion",
+                    ]
+                )
+        except (TareaError, ValueError, TypeError):
+            errores += 1
 
     return {
         "fecha": hoy.isoformat(),
         "tareas_creadas": len(creadas),
         "ids_creadas": creadas,
         "omitidas_idempotencia": omitidas_idempotencia,
+        "errores": errores,
     }
