@@ -1,4 +1,5 @@
 """ViewSet para GestionCobranza y PlantillaCobranza."""
+
 import logging
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from datetime import date, timedelta
@@ -77,7 +78,8 @@ class GestionCobranzaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             # M-BUG-7: no silenciar; el score degrada a defaults pero queda rastro.
             logger.warning(
                 "cobranza: no se pudo obtener cartera para score (cliente=%s): %s",
-                cliente_id, exc,
+                cliente_id,
+                exc,
             )
 
         intentos = GestionCobranza.objects.filter(
@@ -97,6 +99,7 @@ class GestionCobranzaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         # Invalidar cache de aging
         from django.core.cache import cache
+
         cache.delete(f"cxc:aging:{empresa.pk}")
 
         gestion = serializer.save(
@@ -150,10 +153,14 @@ class GestionCobranzaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         hoy = date.today()
         limite = hoy + timedelta(days=dias)
 
-        qs = self.get_queryset().filter(
-            proxima_accion__gte=hoy,
-            proxima_accion__lte=limite,
-        ).order_by("proxima_accion")
+        qs = (
+            self.get_queryset()
+            .filter(
+                proxima_accion__gte=hoy,
+                proxima_accion__lte=limite,
+            )
+            .order_by("proxima_accion")
+        )
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)

@@ -9,8 +9,20 @@ from django.core.validators import validate_email
 # pública corta (omni.link/<slug>). Se aplican también como CheckConstraint.
 SLUGS_RESERVADOS = frozenset(
     {
-        "admin", "api", "static", "media", "login", "logout", "registro",
-        "soporte", "ayuda", "omni", "connect", "perfil", "tarjeta", "www",
+        "admin",
+        "api",
+        "static",
+        "media",
+        "login",
+        "logout",
+        "registro",
+        "soporte",
+        "ayuda",
+        "omni",
+        "connect",
+        "perfil",
+        "tarjeta",
+        "www",
     }
 )
 
@@ -38,8 +50,7 @@ def validar_slug_perfil(value: str) -> None:
     """3–60 caracteres, minúsculas/dígitos/guiones, sin extremos con guion."""
     if not _SLUG_RE.match(value or ""):
         raise ValidationError(
-            "El slug debe tener 3–60 caracteres: minúsculas, números y guiones "
-            "(sin guion al inicio ni al final)."
+            "El slug debe tener 3–60 caracteres: minúsculas, números y guiones " "(sin guion al inicio ni al final)."
         )
     if "--" in value:
         raise ValidationError("El slug no puede contener guiones consecutivos.")

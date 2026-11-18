@@ -153,9 +153,7 @@ class Usuarios(AbstractUser):
     documento_json = models.JSONField(null=True, blank=True)
     # Hereda campos como username, email, first_name, last_name, is_staff, is_active, date_joined, etc.
     # Sobreescribimos el campo id para usar UUIDField como PK
-    id = models.UUIDField(
-        primary_key=True, default=uuid7, editable=False
-    )  # Usamos 'id' como PK para AbstractUser
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # Usamos 'id' como PK para AbstractUser
     empresas = models.ManyToManyField(Empresa, related_name="usuarios")
     # Eliminamos el campo 'id_rol' directo aquí, ya que se maneja con la tabla intermedia UsuarioRoles
     sucursales = models.ManyToManyField(Sucursal, related_name="usuarios")
@@ -1086,6 +1084,7 @@ class Notificacion(models.Model):
 
     def marcar_leida(self):
         from django.utils import timezone
+
         self.leida = True
         self.fecha_lectura = timezone.now()
         self.save(update_fields=["leida", "fecha_lectura"])

@@ -16,15 +16,9 @@ from .models import ContribucionParafiscal, PagoContribucionParafiscal
 
 
 class PagoContribucionParafiscalSerializer(serializers.ModelSerializer):
-    contribucion_codigo = serializers.CharField(
-        source="contribucion.codigo", read_only=True, default=None
-    )
-    contribucion_nombre = serializers.CharField(
-        source="contribucion.nombre", read_only=True, default=None
-    )
-    moneda_codigo = serializers.CharField(
-        source="id_moneda.codigo_iso", read_only=True, default=None
-    )
+    contribucion_codigo = serializers.CharField(source="contribucion.codigo", read_only=True, default=None)
+    contribucion_nombre = serializers.CharField(source="contribucion.nombre", read_only=True, default=None)
+    moneda_codigo = serializers.CharField(source="id_moneda.codigo_iso", read_only=True, default=None)
     periodo = serializers.CharField(read_only=True)
 
     class Meta:
@@ -98,18 +92,20 @@ class PagoContribucionParafiscalSerializer(serializers.ModelSerializer):
 
         empresa = attrs.get("id_empresa") or getattr(self.instance, "id_empresa", None)
         contribucion = attrs.get("contribucion") or getattr(self.instance, "contribucion", None)
-        proceso = attrs.get("id_proceso_nomina") or getattr(
-            self.instance, "id_proceso_nomina", None
-        )
+        proceso = attrs.get("id_proceso_nomina") or getattr(self.instance, "id_proceso_nomina", None)
 
         # R-CODE-1: la contribución debe ser de la MISMA empresa, global
         # (empresa=None) o pública — espejo de Pago._validar_documento.
         # (TenantFKScopeMixin ya acota a empresas visibles + filas globales;
         # esto cierra el caso de un usuario con varias empresas visibles.)
         if empresa is not None and contribucion is not None:
-            accesible = ContribucionParafiscal.objects.filter(
-                Q(empresa_id=empresa.pk) | Q(empresa__isnull=True) | Q(es_publico=True)
-            ).filter(pk=contribucion.pk).exists()
+            accesible = (
+                ContribucionParafiscal.objects.filter(
+                    Q(empresa_id=empresa.pk) | Q(empresa__isnull=True) | Q(es_publico=True)
+                )
+                .filter(pk=contribucion.pk)
+                .exists()
+            )
             if not accesible:
                 raise serializers.ValidationError(
                     {"contribucion": "La contribución no está disponible para la empresa indicada."}

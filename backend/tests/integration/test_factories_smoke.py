@@ -1,4 +1,5 @@
 """Valida que las factories del harness (Fase 0) construyen objetos válidos."""
+
 import pytest
 
 from tests.factories import (

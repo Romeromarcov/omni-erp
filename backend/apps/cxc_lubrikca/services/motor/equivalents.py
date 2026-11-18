@@ -93,8 +93,7 @@ def valor_pagado_usd(vinculaciones: list[Vinculacion]) -> Decimal:
             eq = v.equiv_usd_binance
         if eq is None:
             raise ValueError(
-                f"Vinculación {v.vinc_id} sin equivalentes congelados; "
-                "llamar congelar_en_vinculacion primero"
+                f"Vinculación {v.vinc_id} sin equivalentes congelados; " "llamar congelar_en_vinculacion primero"
             )
         total += eq
     return total

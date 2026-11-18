@@ -18,6 +18,7 @@ Aserciones sobre valores/efectos exactos (cookie presente, campo persistido) par
 sirvan también de runner de mutación. Fixtures (``user_a``, ``empresa_a``,
 ``moneda_usd``) vienen del conftest de ``tests/``.
 """
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -44,6 +45,7 @@ def client_a(user_a):
 
 # ── login_view (/api/auth/login/) ─────────────────────────────────────────────
 
+
 class TestLoginView:
     def test_login_exitoso_200_y_cookie_refresh(self, user_a):
         resp = APIClient().post(
@@ -64,9 +66,7 @@ class TestLoginView:
 
     def test_login_actualiza_last_login(self, user_a):
         assert user_a.last_login is None
-        APIClient().post(
-            LOGIN_URL, {"username": user_a.username, "password": PASSWORD}, format="json"
-        )
+        APIClient().post(LOGIN_URL, {"username": user_a.username, "password": PASSWORD}, format="json")
         user_a.refresh_from_db()
         assert user_a.last_login is not None
 
@@ -75,17 +75,13 @@ class TestLoginView:
         assert resp.status_code == 400
 
     def test_login_credenciales_invalidas_401(self, user_a):
-        resp = APIClient().post(
-            LOGIN_URL, {"username": user_a.username, "password": "mala"}, format="json"
-        )
+        resp = APIClient().post(LOGIN_URL, {"username": user_a.username, "password": "mala"}, format="json")
         assert resp.status_code == 401
 
     def test_login_usuario_inactivo_401(self, user_a):
         user_a.is_active = False
         user_a.save(update_fields=["is_active"])
-        resp = APIClient().post(
-            LOGIN_URL, {"username": user_a.username, "password": PASSWORD}, format="json"
-        )
+        resp = APIClient().post(LOGIN_URL, {"username": user_a.username, "password": PASSWORD}, format="json")
         # authenticate() devuelve None para inactivos → 401 credenciales inválidas.
         assert resp.status_code == 401
 
@@ -106,15 +102,14 @@ class TestLoginView:
 
         client = APIClient()
         codigos = [
-            client.post(
-                LOGIN_URL, {"username": user_a.username, "password": "x"}, format="json"
-            ).status_code
+            client.post(LOGIN_URL, {"username": user_a.username, "password": "x"}, format="json").status_code
             for _ in range(7)
         ]
         assert 429 in codigos
 
 
 # ── verify_token_view ─────────────────────────────────────────────────────────
+
 
 class TestVerifyToken:
     def test_verify_autenticado_200(self, client_a, user_a):
@@ -130,6 +125,7 @@ class TestVerifyToken:
 
 # ── user_profile_view ─────────────────────────────────────────────────────────
 
+
 class TestUserProfile:
     def test_profile_autenticado_200(self, client_a, user_a):
         resp = client_a.get(PROFILE_URL)
@@ -141,6 +137,7 @@ class TestUserProfile:
 
 
 # ── update_profile_view ───────────────────────────────────────────────────────
+
 
 class TestUpdateProfile:
     def test_update_campos_permitidos_200(self, client_a, user_a):
@@ -181,6 +178,7 @@ class TestUpdateProfile:
 
 # ── refresh_token_view ────────────────────────────────────────────────────────
 
+
 class TestRefreshRotation:
     def test_refresh_con_rotacion_emite_nueva_cookie(self, settings, user_a):
         """Con ROTATE_REFRESH_TOKENS, el refresh entrega un nuevo refresh en cookie
@@ -208,15 +206,9 @@ class TestRefreshRotation:
         import django_ratelimit.core as rl_core
 
         ts_fijo = rl_core.time.time()
-        monkeypatch.setattr(
-            rl_core, "time", type("_T", (), {"time": staticmethod(lambda: ts_fijo)})
-        )
+        monkeypatch.setattr(rl_core, "time", type("_T", (), {"time": staticmethod(lambda: ts_fijo)}))
 
         client = APIClient()
         refresh = str(RefreshToken.for_user(user_a))
-        codigos = [
-            client.post(REFRESH_URL, {"refresh": refresh}, format="json").status_code
-            for _ in range(22)
-        ]
+        codigos = [client.post(REFRESH_URL, {"refresh": refresh}, format="json").status_code for _ in range(22)]
         assert 429 in codigos
-

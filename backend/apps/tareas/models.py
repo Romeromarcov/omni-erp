@@ -262,9 +262,7 @@ class PlantillaTareaRecurrente(OmniBaseModel):
         QUINCENAL = "QUINCENAL", "Quincenal"
         MENSUAL = "MENSUAL", "Mensual"
 
-    id_plantilla_recurrente = models.UUIDField(
-        primary_key=True, default=uuid7, editable=False
-    )
+    id_plantilla_recurrente = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa",
         on_delete=models.CASCADE,
@@ -538,39 +536,21 @@ class Tarea(OmniBaseModel):
         _validar_misma_empresa(self.id_empresa_id, self.seccion, "seccion")
         _validar_misma_empresa(self.id_empresa_id, self.area, "area")
         _validar_misma_empresa(self.id_empresa_id, self.tarea_padre, "tarea_padre")
-        _validar_misma_empresa(
-            self.id_empresa_id, self.plantilla_recurrente, "plantilla_recurrente"
-        )
+        _validar_misma_empresa(self.id_empresa_id, self.plantilla_recurrente, "plantilla_recurrente")
         _validar_misma_empresa(self.id_empresa_id, self.minuta_origen, "minuta_origen")
         _validar_usuario_en_empresa(self.id_empresa_id, self.asignado_a, "asignado_a")
         _validar_usuario_en_empresa(self.id_empresa_id, self.creado_por, "creado_por")
-        if (
-            self.seccion is not None
-            and self.proyecto_id is not None
-            and self.seccion.proyecto_id != self.proyecto_id
-        ):
-            raise ValidationError(
-                {"seccion": "La sección no pertenece al proyecto de la tarea."}
-            )
+        if self.seccion is not None and self.proyecto_id is not None and self.seccion.proyecto_id != self.proyecto_id:
+            raise ValidationError({"seccion": "La sección no pertenece al proyecto de la tarea."})
         if self.tarea_padre_id and self.tarea_padre_id == self.id_tarea:
-            raise ValidationError(
-                {"tarea_padre": "Una tarea no puede ser subtarea de sí misma."}
-            )
+            raise ValidationError({"tarea_padre": "Una tarea no puede ser subtarea de sí misma."})
         if bool(self.entidad_tipo) != (self.entidad_id is not None):
             raise ValidationError(
-                {
-                    "entidad_tipo": "entidad_tipo y entidad_id deben indicarse juntos o dejarse vacíos."
-                }
+                {"entidad_tipo": "entidad_tipo y entidad_id deben indicarse juntos o dejarse vacíos."}
             )
-        if (
-            self.fecha_inicio
-            and self.fecha_vencimiento
-            and self.fecha_vencimiento < self.fecha_inicio
-        ):
+        if self.fecha_inicio and self.fecha_vencimiento and self.fecha_vencimiento < self.fecha_inicio:
             raise ValidationError(
-                {
-                    "fecha_vencimiento": "La fecha de vencimiento no puede ser anterior a la fecha de inicio."
-                }
+                {"fecha_vencimiento": "La fecha de vencimiento no puede ser anterior a la fecha de inicio."}
             )
 
     def __str__(self) -> str:
@@ -612,9 +592,7 @@ class DependenciaTarea(OmniBaseModel):
         _validar_misma_empresa(self.id_empresa_id, self.tarea, "tarea")
         _validar_misma_empresa(self.id_empresa_id, self.depende_de, "depende_de")
         if self.tarea_id and self.tarea_id == self.depende_de_id:
-            raise ValidationError(
-                {"depende_de": "Una tarea no puede depender de sí misma."}
-            )
+            raise ValidationError({"depende_de": "Una tarea no puede depender de sí misma."})
 
     def __str__(self) -> str:
         return f"{self.tarea_id} <- {self.depende_de_id}"
@@ -664,9 +642,7 @@ class ComentarioTarea(OmniBaseModel):
 class ConfiguracionSeguimientoTareas(OmniBaseModel):
     """Parámetros de horarios de recordatorio, reporte diario y escalación por empresa."""
 
-    id_config_seguimiento = models.UUIDField(
-        primary_key=True, default=uuid7, editable=False
-    )
+    id_config_seguimiento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa",
         on_delete=models.CASCADE,

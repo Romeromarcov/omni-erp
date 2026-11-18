@@ -59,12 +59,8 @@ def cliente_conv(db, empresa_a):
 def producto_conv(db, empresa_a, moneda_usd):
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CONV", tipo="CANTIDAD"
-    )
-    categoria = CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Cat Conversiones"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CONV", tipo="CANTIDAD")
+    categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat Conversiones")
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto Conversiones",
@@ -155,9 +151,7 @@ class TestConvertirPedidoANotaVenta:
     def _url(self, pedido):
         return f"/api/ventas/pedidos/{pedido.id_pedido}/convertir-nota-venta/"
 
-    def test_pedido_aprobado_crea_nota_borrador_con_detalles(
-        self, client_a, empresa_a, cliente_conv, producto_conv
-    ):
+    def test_pedido_aprobado_crea_nota_borrador_con_detalles(self, client_a, empresa_a, cliente_conv, producto_conv):
         from apps.ventas.models import NotaVenta
 
         pedido = _pedido(empresa_a, cliente_conv, producto_conv)
@@ -188,17 +182,13 @@ class TestConvertirPedidoANotaVenta:
         assert NotaVenta.objects.filter(id_pedido_origen=pedido).count() == 1
 
     def test_pedido_pendiente_rechazado(self, client_a, empresa_a, cliente_conv, producto_conv):
-        pedido = _pedido(
-            empresa_a, cliente_conv, producto_conv, estado="PENDIENTE", numero="PED-CONV-003"
-        )
+        pedido = _pedido(empresa_a, cliente_conv, producto_conv, estado="PENDIENTE", numero="PED-CONV-003")
         resp = client_a.post(self._url(pedido), {}, format="json")
         assert resp.status_code == 400
         assert "APROBADOS" in str(resp.data)
 
     def test_pedido_sin_detalles_rechazado(self, client_a, empresa_a, cliente_conv, producto_conv):
-        pedido = _pedido(
-            empresa_a, cliente_conv, producto_conv, numero="PED-CONV-004", con_detalle=False
-        )
+        pedido = _pedido(empresa_a, cliente_conv, producto_conv, numero="PED-CONV-004", con_detalle=False)
         resp = client_a.post(self._url(pedido), {}, format="json")
         assert resp.status_code == 400
 

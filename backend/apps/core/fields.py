@@ -7,6 +7,7 @@ credenciales en claro, sin requerir un cambio de tipo de columna (la columna
 sigue siendo jsonb; solo cambia lo que contiene). A nivel ORM el campo se lee y
 escribe como un dict/list normal.
 """
+
 import base64
 import hashlib
 import json

@@ -65,13 +65,9 @@ class GoogleSheetsConnector(BaseConnector):
             return self._client
         sa = self._config.get("service_account")
         if not sa:
-            raise ConnectorConnectionError(
-                "Falta 'service_account' en la configuración del conector Google Sheets."
-            )
+            raise ConnectorConnectionError("Falta 'service_account' en la configuración del conector Google Sheets.")
         try:
-            self._client = GoogleSheetsClient(
-                sa, drive_folder_id=self._config.get("drive_folder_id", "")
-            )
+            self._client = GoogleSheetsClient(sa, drive_folder_id=self._config.get("drive_folder_id", ""))
         except GoogleSheetsAuthError as exc:
             raise ConnectorConnectionError(str(exc)) from exc
         return self._client
@@ -103,9 +99,7 @@ class GoogleSheetsConnector(BaseConnector):
         except (ConnectorConnectionError, GoogleSheetsError) as exc:
             return TestConnectionResult(success=False, message=str(exc))
         except Exception as exc:
-            return TestConnectionResult(
-                success=False, message=f"Error inesperado: {type(exc).__name__}"
-            )
+            return TestConnectionResult(success=False, message=f"Error inesperado: {type(exc).__name__}")
 
     def get_version_info(self) -> dict:
         return {"api": "google-sheets-v4", "auth": "service_account"}
@@ -115,9 +109,7 @@ class GoogleSheetsConnector(BaseConnector):
     def push_entidades(self, tipo_entidad: str, registros: list[dict]) -> SyncResult:
         """Exporta un lote de registros canónicos a la pestaña de su entidad."""
         if tipo_entidad not in self.SUPPORTED_ENTITIES:
-            raise ConnectorNotSupportedError(
-                f"Google Sheets no soporta exportar la entidad '{tipo_entidad}'."
-            )
+            raise ConnectorNotSupportedError(f"Google Sheets no soporta exportar la entidad '{tipo_entidad}'.")
 
         resultado = SyncResult(tipo_entidad=tipo_entidad, total=len(registros))
         if not registros:
@@ -126,13 +118,9 @@ class GoogleSheetsConnector(BaseConnector):
         header, rows = columns.build_rows(tipo_entidad, registros)
         key_index = columns.indice_clave(tipo_entidad)
         sh = self._get_spreadsheet()
-        ws = self._get_client().obtener_o_crear_worksheet(
-            sh, columns.hoja_de(tipo_entidad), cols=len(header)
-        )
+        ws = self._get_client().obtener_o_crear_worksheet(sh, columns.hoja_de(tipo_entidad), cols=len(header))
         try:
-            creados, actualizados, omitidos = self._get_client().upsert(
-                ws, header, rows, key_index=key_index
-            )
+            creados, actualizados, omitidos = self._get_client().upsert(ws, header, rows, key_index=key_index)
         except GoogleSheetsError as exc:
             raise ConnectorDataError(str(exc)) from exc
 

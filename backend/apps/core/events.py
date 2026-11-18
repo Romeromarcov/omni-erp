@@ -172,6 +172,7 @@ def publish(
 # ── Constantes de tipos de evento por módulo ─────────────────────────────────
 # Centralizar los nombres evita typos y facilita búsqueda.
 
+
 class CoreEvents:
     EMPRESA_CREADA = "omni.core.empresa.creada"
     EMPRESA_ACTUALIZADA = "omni.core.empresa.actualizada"

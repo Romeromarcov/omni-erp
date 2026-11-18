@@ -46,9 +46,7 @@ def _config_de(empresa) -> ReconciliationConfig:
     pasos previos. La fila más reciente (``-created_at``) es la activa.
     """
     fila = (
-        ConfiguracionConciliacion.objects.filter(
-            empresa=empresa, deleted_at__isnull=True
-        )
+        ConfiguracionConciliacion.objects.filter(empresa=empresa, deleted_at__isnull=True)
         .order_by("-created_at", "-pk")
         .first()
     )
@@ -67,9 +65,7 @@ def conciliar_pedido(pedido: PedidoLubrikca) -> ConciliacionLubrikca:
         raise ConciliacionError("el pedido no está facturado en Odoo")
 
     bandeja = (
-        BandejaFacturacion.objects.filter(
-            pedido=pedido, deleted_at__isnull=True
-        )
+        BandejaFacturacion.objects.filter(pedido=pedido, deleted_at__isnull=True)
         .order_by("-calculado_en", "-pk")
         .first()
     )
@@ -112,12 +108,8 @@ def resumen_cartera(empresa) -> dict:
     cuya entrega completa es vieja, y bandejas candidatas a cierre aún sin
     aprobar). Los ``Decimal`` se devuelven como ``str`` para serialización exacta.
     """
-    pedidos = PedidoLubrikca.objects.filter(
-        empresa=empresa, deleted_at__isnull=True
-    )
-    conciliaciones = ConciliacionLubrikca.objects.filter(
-        empresa=empresa, deleted_at__isnull=True
-    )
+    pedidos = PedidoLubrikca.objects.filter(empresa=empresa, deleted_at__isnull=True)
+    conciliaciones = ConciliacionLubrikca.objects.filter(empresa=empresa, deleted_at__isnull=True)
 
     por_resultado = {
         ResultadoConciliacion.VERDE.value: 0,
@@ -131,11 +123,7 @@ def resumen_cartera(empresa) -> dict:
 
     facturados = pedidos.filter(facturada=True).count()
     conciliados_ids = set(conciliaciones.values_list("pedido_id", flat=True))
-    facturados_sin_conciliar = (
-        pedidos.filter(facturada=True)
-        .exclude(id__in=conciliados_ids)
-        .count()
-    )
+    facturados_sin_conciliar = pedidos.filter(facturada=True).exclude(id__in=conciliados_ids).count()
 
     con_devolucion = pedidos.filter(tiene_devolucion=True).count()
 
@@ -146,11 +134,15 @@ def resumen_cartera(empresa) -> dict:
         fecha_entrega__lt=limite,
     ).count()
 
-    bandejas_pendientes = BandejaFacturacion.objects.filter(
-        empresa=empresa,
-        deleted_at__isnull=True,
-        candidata_a_cierre=True,
-    ).exclude(estado=EstadoBandeja.APROBADO).count()
+    bandejas_pendientes = (
+        BandejaFacturacion.objects.filter(
+            empresa=empresa,
+            deleted_at__isnull=True,
+            candidata_a_cierre=True,
+        )
+        .exclude(estado=EstadoBandeja.APROBADO)
+        .count()
+    )
 
     return {
         "por_resultado": por_resultado,

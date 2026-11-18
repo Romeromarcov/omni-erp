@@ -87,9 +87,7 @@ class TestConfigurarConectorOdoo:
             "60",
             stdout=out,
         )
-        inst = ConectorInstancia.objects.get(
-            id_empresa=empresa_a, nombre="Odoo Lubrikca"
-        )
+        inst = ConectorInstancia.objects.get(id_empresa=empresa_a, nombre="Odoo Lubrikca")
         cfg = inst.get_config()
         assert cfg["host"] == "https://lubrikca.odoo.com"
         assert cfg["api_key"] == "secreto-123"
@@ -115,9 +113,7 @@ class TestConfigurarConectorOdoo:
             "--datasource-odoo",
             stdout=StringIO(),
         )
-        param = ParametroSistema.objects.get(
-            id_empresa=empresa_a, codigo_parametro="cxc.datasource"
-        )
+        param = ParametroSistema.objects.get(id_empresa=empresa_a, codigo_parametro="cxc.datasource")
         assert param.valor_parametro == "odoo"
         assert param.activo is True
 
@@ -145,12 +141,8 @@ class TestConfigurarConectorOdoo:
             "Odoo Lubrikca",
         ]
         call_command("configurar_conector_odoo", *args, stdout=StringIO())
-        call_command(
-            "configurar_conector_odoo", *args, "--intervalo", "30", stdout=StringIO()
-        )
-        insts = ConectorInstancia.objects.filter(
-            id_empresa=empresa_a, nombre="Odoo Lubrikca"
-        )
+        call_command("configurar_conector_odoo", *args, "--intervalo", "30", stdout=StringIO())
+        insts = ConectorInstancia.objects.filter(id_empresa=empresa_a, nombre="Odoo Lubrikca")
         assert insts.count() == 1
         assert insts.first().intervalo_sync_minutos == 30
 
@@ -217,9 +209,7 @@ class TestConfigurarConectorOdoo:
     def test_test_connection_falla_marca_error(self, empresa_a):
         """Con --test y conexión fallida, la instancia queda en estado 'error'."""
         fake = MagicMock()
-        fake.test_connection.return_value = ConnResult(
-            success=False, message="auth error"
-        )
+        fake.test_connection.return_value = ConnResult(success=False, message="auth error")
         with patch(
             "apps.integration_hub.connectors.registry.registry.get_connector",
             return_value=fake,
@@ -297,9 +287,7 @@ class TestValidarConectorOdoo:
     def test_falla_si_conexion_falla(self, empresa_a):
         self._crear_instancia(empresa_a)
         fake = MagicMock()
-        fake.test_connection.return_value = ConnResult(
-            success=False, message="auth error"
-        )
+        fake.test_connection.return_value = ConnResult(success=False, message="auth error")
         with patch(
             "apps.integration_hub.connectors.registry.registry.get_connector",
             return_value=fake,
@@ -326,18 +314,14 @@ class TestValidarConectorOdoo:
         self._crear_instancia(empresa_a)
         inst = ConectorInstancia.objects.get(id_empresa=empresa_a)
         fake = MagicMock()
-        fake.test_connection.return_value = ConnResult(
-            success=True, message="ok", version="17.0"
-        )
+        fake.test_connection.return_value = ConnResult(success=True, message="ok", version="17.0")
         fake.pull_cartera_vencida.return_value = []
         out = StringIO()
         with patch(
             "apps.integration_hub.connectors.registry.registry.get_connector",
             return_value=fake,
         ):
-            call_command(
-                "validar_conector_odoo", "--instancia", str(inst.pk), stdout=out
-            )
+            call_command("validar_conector_odoo", "--instancia", str(inst.pk), stdout=out)
         assert "Sin cartera vencida" in out.getvalue()
 
     def test_instancia_inexistente(self):
@@ -356,9 +340,7 @@ class TestValidarConectorOdoo:
     def test_resuelve_empresa_por_rif(self, empresa_a):
         self._crear_instancia(empresa_a)
         fake = MagicMock()
-        fake.test_connection.return_value = ConnResult(
-            success=True, message="ok", version="17.0"
-        )
+        fake.test_connection.return_value = ConnResult(success=True, message="ok", version="17.0")
         fake.pull_cartera_vencida.return_value = []
         with patch(
             "apps.integration_hub.connectors.registry.registry.get_connector",
@@ -373,17 +355,13 @@ class TestValidarConectorOdoo:
 
     def test_empresa_rif_inexistente(self):
         with pytest.raises(CommandError):
-            call_command(
-                "validar_conector_odoo", "--empresa", "J-99999999-9", stdout=StringIO()
-            )
+            call_command("validar_conector_odoo", "--empresa", "J-99999999-9", stdout=StringIO())
 
     def test_pull_cartera_falla(self, empresa_a):
         """Si pull_cartera_vencida lanza, el comando aborta con CommandError."""
         self._crear_instancia(empresa_a)
         fake = MagicMock()
-        fake.test_connection.return_value = ConnResult(
-            success=True, message="ok", version="17.0"
-        )
+        fake.test_connection.return_value = ConnResult(success=True, message="ok", version="17.0")
         fake.pull_cartera_vencida.side_effect = RuntimeError("boom")
         with patch(
             "apps.integration_hub.connectors.registry.registry.get_connector",

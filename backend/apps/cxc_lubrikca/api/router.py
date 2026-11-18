@@ -3,6 +3,7 @@
 App aislada montada en ``/api/cxc-lubrikca/`` y gated en frontend por el perfil
 ``cobranza`` (``appProfile.ts``). Los ViewSets se registran por fase.
 """
+
 from django.http import JsonResponse
 from django.urls import path
 from rest_framework.routers import DefaultRouter
@@ -35,15 +36,9 @@ def _health_check_view(request):
 
 
 router = DefaultRouter()
-router.register(
-    "descuentos-marca-categoria", DescuentoMarcaCategoriaViewSet, basename="cxcl-descuentos"
-)
-router.register(
-    "descuentos-bcv-completo", DescuentoBCVCompletoViewSet, basename="cxcl-descuentos-bcv"
-)
-router.register(
-    "promociones-primera-compra", PromocionPrimeraCompraViewSet, basename="cxcl-promociones"
-)
+router.register("descuentos-marca-categoria", DescuentoMarcaCategoriaViewSet, basename="cxcl-descuentos")
+router.register("descuentos-bcv-completo", DescuentoBCVCompletoViewSet, basename="cxcl-descuentos-bcv")
+router.register("promociones-primera-compra", PromocionPrimeraCompraViewSet, basename="cxcl-promociones")
 router.register("reglas-recurrencia", ReglaRecurrenciaViewSet, basename="cxcl-recurrencia")
 router.register("feriados", FeriadoViewSet, basename="cxcl-feriados")
 router.register("metodos-pago", MetodoPagoViewSet, basename="cxcl-metodos-pago")
@@ -62,9 +57,7 @@ router.register(
     ConfiguracionConciliacionViewSet,
     basename="cxcl-config-conciliacion",
 )
-router.register(
-    "conciliaciones", ConciliacionLubrikcaViewSet, basename="cxcl-conciliaciones"
-)
+router.register("conciliaciones", ConciliacionLubrikcaViewSet, basename="cxcl-conciliaciones")
 
 urlpatterns = [
     *router.urls,

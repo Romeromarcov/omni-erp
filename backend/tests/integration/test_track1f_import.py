@@ -49,8 +49,7 @@ def test_importar_clientes_crea_y_es_idempotente(tmp_path, empresa_a):
     csv_update = _escribir_csv(
         tmp_path,
         "clientes2.csv",
-        "razon_social,rif,tipo_cliente\n"
-        "Distribuidora Uno (Actualizada) C.A.,J-111111111,CONTADO\n",
+        "razon_social,rif,tipo_cliente\n" "Distribuidora Uno (Actualizada) C.A.,J-111111111,CONTADO\n",
     )
     call_command(
         "importar_clientes",
@@ -101,8 +100,7 @@ def test_importar_inventario_inicial_crea(tmp_path, empresa_a, moneda_usd):
     csv_productos = _escribir_csv(
         tmp_path,
         "productos.csv",
-        "sku,nombre_producto,categoria,unidad_medida,moneda\n"
-        "SKU-001,Producto Uno,General,UND,USD\n",
+        "sku,nombre_producto,categoria,unidad_medida,moneda\n" "SKU-001,Producto Uno,General,UND,USD\n",
     )
     call_command(
         "importar_productos",
@@ -112,15 +110,12 @@ def test_importar_inventario_inicial_crea(tmp_path, empresa_a, moneda_usd):
     )
 
     # Almacén destino
-    Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Principal", codigo_almacen="ALM-01"
-    )
+    Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Principal", codigo_almacen="ALM-01")
 
     csv_stock = _escribir_csv(
         tmp_path,
         "stock.csv",
-        "sku,almacen,cantidad_disponible,cantidad_minima\n"
-        "SKU-001,ALM-01,150,10\n",
+        "sku,almacen,cantidad_disponible,cantidad_minima\n" "SKU-001,ALM-01,150,10\n",
     )
     call_command(
         "importar_inventario_inicial",

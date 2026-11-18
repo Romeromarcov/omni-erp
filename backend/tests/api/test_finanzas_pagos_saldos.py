@@ -48,9 +48,7 @@ def client_a(user_a):
 
 @pytest.fixture
 def metodo_pago(db):
-    return MetodoPago.objects.create(
-        nombre_metodo="Efectivo Test", tipo_metodo="EFECTIVO", es_generico=True
-    )
+    return MetodoPago.objects.create(nombre_metodo="Efectivo Test", tipo_metodo="EFECTIVO", es_generico=True)
 
 
 @pytest.fixture
@@ -113,14 +111,16 @@ class TestPagoSideEffects:
         caja_virtual_a.refresh_from_db()
         assert caja_virtual_a.saldo_actual == Decimal("150.00")
 
-    def test_post_pago_egreso_descuenta_saldo(
-        self, client_a, empresa_a, moneda_usd, metodo_pago, caja_virtual_a
-    ):
+    def test_post_pago_egreso_descuenta_saldo(self, client_a, empresa_a, moneda_usd, metodo_pago, caja_virtual_a):
         resp = client_a.post(
             "/api/finanzas/pagos/",
             _payload_pago(
-                empresa_a, moneda_usd, metodo_pago, caja_virtual_a,
-                tipo_operacion="EGRESO", monto="30.00",
+                empresa_a,
+                moneda_usd,
+                metodo_pago,
+                caja_virtual_a,
+                tipo_operacion="EGRESO",
+                monto="30.00",
             ),
             format="json",
         )
@@ -134,9 +134,7 @@ class TestPagoSideEffects:
         caja_virtual_a.refresh_from_db()
         assert caja_virtual_a.saldo_actual == Decimal("70.00")
 
-    def test_post_pago_sin_caja_ni_cuenta_solo_crea_transaccion(
-        self, client_a, empresa_a, moneda_usd, metodo_pago
-    ):
+    def test_post_pago_sin_caja_ni_cuenta_solo_crea_transaccion(self, client_a, empresa_a, moneda_usd, metodo_pago):
         resp = client_a.post(
             "/api/finanzas/pagos/",
             _payload_pago(empresa_a, moneda_usd, metodo_pago),
@@ -148,14 +146,15 @@ class TestPagoSideEffects:
         assert pago.id_transaccion_financiera is not None
         assert MovimientoCajaBanco.objects.count() == 0
 
-    def test_post_pago_en_divisa_sin_tasa_retorna_400_sin_persistir(
-        self, client_a, empresa_a, metodo_pago
-    ):
+    def test_post_pago_en_divisa_sin_tasa_retorna_400_sin_persistir(self, client_a, empresa_a, metodo_pago):
         # empresa_a base = USD. Pago en VES sin TasaCambio VES→USD → 400 limpio
         # (antes: 500 por TasaCambioError sin mapear). Nada se persiste.
         ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         resp = client_a.post(
             "/api/finanzas/pagos/",
@@ -175,9 +174,7 @@ class TestPagoSideEffects:
         def _boom(*args, **kwargs):
             raise RuntimeError("fallo simulado a mitad del proceso")
 
-        monkeypatch.setattr(
-            "apps.finanzas.models.MovimientoCajaBanco.objects.create", _boom
-        )
+        monkeypatch.setattr("apps.finanzas.models.MovimientoCajaBanco.objects.create", _boom)
 
         client = APIClient(raise_request_exception=False)
         client.force_authenticate(user=user_a)
@@ -226,12 +223,18 @@ class TestTransferenciaValidaciones:
     @pytest.fixture
     def cajas(self, empresa_a, moneda_usd):
         origen = Caja.objects.create(
-            empresa=empresa_a, nombre="Origen", tipo_caja="REGISTRADORA",
-            moneda=moneda_usd, saldo_actual=Decimal("100.00"),
+            empresa=empresa_a,
+            nombre="Origen",
+            tipo_caja="REGISTRADORA",
+            moneda=moneda_usd,
+            saldo_actual=Decimal("100.00"),
         )
         destino = Caja.objects.create(
-            empresa=empresa_a, nombre="Destino", tipo_caja="GERENCIA",
-            moneda=moneda_usd, saldo_actual=Decimal("20.00"),
+            empresa=empresa_a,
+            nombre="Destino",
+            tipo_caja="GERENCIA",
+            moneda=moneda_usd,
+            saldo_actual=Decimal("20.00"),
         )
         return origen, destino
 
@@ -263,12 +266,18 @@ class TestTransferenciaValidaciones:
 
         origen, _ = cajas
         moneda_ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         destino_ves = Caja.objects.create(
-            empresa=empresa_a, nombre="Destino VES", tipo_caja="GERENCIA",
-            moneda=moneda_ves, saldo_actual=Decimal("0.00"),
+            empresa=empresa_a,
+            nombre="Destino VES",
+            tipo_caja="GERENCIA",
+            moneda=moneda_ves,
+            saldo_actual=Decimal("0.00"),
         )
         with pytest.raises(ValueError, match="misma moneda"):
             transferencia_entre_cajas(origen, destino_ves, Decimal("10.00"))
@@ -321,8 +330,11 @@ class TestTransferenciaConcurrencia:
             username="user_concurrencia", password="testpass123", is_active=True
         )
         moneda = Moneda.objects.create(
-            nombre="Dólar", codigo_iso="USD", simbolo="$",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Dólar",
+            codigo_iso="USD",
+            simbolo="$",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         empresa = Empresa.objects.create(
             nombre_legal="Empresa Concurrencia C.A.",
@@ -330,12 +342,18 @@ class TestTransferenciaConcurrencia:
             id_moneda_base=moneda,
         )
         origen = Caja.objects.create(
-            empresa=empresa, nombre="Origen Conc", tipo_caja="REGISTRADORA",
-            moneda=moneda, saldo_actual=Decimal("100.00"),
+            empresa=empresa,
+            nombre="Origen Conc",
+            tipo_caja="REGISTRADORA",
+            moneda=moneda,
+            saldo_actual=Decimal("100.00"),
         )
         destino = Caja.objects.create(
-            empresa=empresa, nombre="Destino Conc", tipo_caja="GERENCIA",
-            moneda=moneda, saldo_actual=Decimal("0.00"),
+            empresa=empresa,
+            nombre="Destino Conc",
+            tipo_caja="GERENCIA",
+            moneda=moneda,
+            saldo_actual=Decimal("0.00"),
         )
 
         N_HILOS = 5
@@ -383,9 +401,5 @@ class TestTransferenciaConcurrencia:
         assert origen.saldo_actual == Decimal("10.00")
         assert destino.saldo_actual == Decimal("90.00")
         # Cada éxito dejó su par de movimientos (salida + entrada).
-        assert MovimientoCajaBanco.objects.filter(
-            tipo_movimiento="TRANSFERENCIA_SALIDA"
-        ).count() == 3
-        assert MovimientoCajaBanco.objects.filter(
-            tipo_movimiento="TRANSFERENCIA_ENTRADA"
-        ).count() == 3
+        assert MovimientoCajaBanco.objects.filter(tipo_movimiento="TRANSFERENCIA_SALIDA").count() == 3
+        assert MovimientoCajaBanco.objects.filter(tipo_movimiento="TRANSFERENCIA_ENTRADA").count() == 3

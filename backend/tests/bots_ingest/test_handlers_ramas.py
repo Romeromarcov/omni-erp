@@ -50,9 +50,7 @@ def test_una_ubicacion_incompleta_o_no_numerica_se_rechaza(ubicacion):
 
 
 def test_buscar_cliente_por_rif_tolera_un_rif_que_no_se_puede_normalizar(empresa_a):
-    cli = Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Taller Uno", rif="J-123456789"
-    )
+    cli = Cliente.objects.create(id_empresa=empresa_a, razon_social="Taller Uno", rif="J-123456789")
     assert handlers._buscar_cliente(empresa_a, rif="j-123456789").pk == cli.pk
     # Un RIF basura no debe lanzar: simplemente no encuentra a nadie.
     assert handlers._buscar_cliente(empresa_a, rif="???") is None
@@ -62,9 +60,7 @@ def test_buscar_cliente_por_rif_tolera_un_rif_que_no_se_puede_normalizar(empresa
 
 
 def test_contacto_con_telefono_invalido_pide_el_telefono(api, bot_usuario):
-    r = enviar(
-        api, "contacto", {"nombre": "Pedro", "telefono": "123", "ubicacion": UBIC}
-    )
+    r = enviar(api, "contacto", {"nombre": "Pedro", "telefono": "123", "ubicacion": UBIC})
     assert r.status_code == 422
     assert "telefono" in r.data["faltan"]
 
@@ -93,21 +89,14 @@ def test_pedido_con_fecha_de_entrega_invalida_pide_la_fecha(api, bot_usuario, ca
     assert Pedido.objects.count() == 0
 
 
-def test_pedido_con_fecha_de_entrega_valida_la_guarda(
-    api, bot_usuario, catalogo, empresa_a
-):
+def test_pedido_con_fecha_de_entrega_valida_la_guarda(api, bot_usuario, catalogo, empresa_a):
     r = enviar(api, "pedido", pedido_draft(fecha_entrega="2026-12-31"))
     assert r.status_code == 201, r.data
-    assert (
-        Pedido.objects.get(id_empresa=empresa_a).fecha_cierre_estimada.isoformat()
-        == "2026-12-31"
-    )
+    assert Pedido.objects.get(id_empresa=empresa_a).fecha_cierre_estimada.isoformat() == "2026-12-31"
 
 
 def test_pedido_con_cantidad_cero_se_rechaza(api, bot_usuario, catalogo):
-    r = enviar(
-        api, "pedido", pedido_draft(lineas=[{"producto": "AC-20W50", "cantidad": "0"}])
-    )
+    r = enviar(api, "pedido", pedido_draft(lineas=[{"producto": "AC-20W50", "cantidad": "0"}]))
     assert r.status_code == 422
     assert "cantidad" in r.data["error"].lower()
     assert Pedido.objects.count() == 0
@@ -123,29 +112,19 @@ def test_pedido_con_cantidad_no_numerica_se_rechaza(api, bot_usuario, catalogo):
     assert "inválid" in r.data["error"].lower()
 
 
-def test_pedido_de_un_producto_sin_precio_en_la_lista_se_rechaza(
-    api, bot_usuario, catalogo, empresa_a
-):
+def test_pedido_de_un_producto_sin_precio_en_la_lista_se_rechaza(api, bot_usuario, catalogo, empresa_a):
     ProductoFactory(id_empresa=empresa_a, nombre_producto="Sin precio", sku="SP-1")
-    r = enviar(
-        api, "pedido", pedido_draft(lineas=[{"producto": "SP-1", "cantidad": "1"}])
-    )
+    r = enviar(api, "pedido", pedido_draft(lineas=[{"producto": "SP-1", "cantidad": "1"}]))
     assert r.status_code == 422
     assert "no está en la lista del cliente" in r.data["error"]
     assert Pedido.objects.count() == 0
 
 
-def test_el_pedido_usa_la_lista_de_precios_del_contacto_del_cliente(
-    api, bot_usuario, catalogo, empresa_a, moneda_usd
-):
+def test_el_pedido_usa_la_lista_de_precios_del_contacto_del_cliente(api, bot_usuario, catalogo, empresa_a, moneda_usd):
     """Si el cliente tiene una lista propia, manda sobre la lista de referencia."""
     _, producto = catalogo
-    lista_vip = ListaPrecio.objects.create(
-        id_empresa=empresa_a, nombre="VIP", codigo="VIP", id_moneda=moneda_usd
-    )
-    DetallePrecio.objects.create(
-        id_lista=lista_vip, id_producto=producto, precio=Decimal("20.00")
-    )
+    lista_vip = ListaPrecio.objects.create(id_empresa=empresa_a, nombre="VIP", codigo="VIP", id_moneda=moneda_usd)
+    DetallePrecio.objects.create(id_lista=lista_vip, id_producto=producto, precio=Decimal("20.00"))
     contacto = Contacto.objects.create(
         id_empresa=empresa_a,
         nombre="Taller VIP",
@@ -162,18 +141,14 @@ def test_el_pedido_usa_la_lista_de_precios_del_contacto_del_cliente(
     r = enviar(api, "pedido", pedido_draft(cliente="Taller VIP", rif="J-111111111"))
     assert r.status_code == 201, r.data
     # 2 unidades a 20.00 (lista VIP), no a 12.50 (lista de referencia).
-    assert Pedido.objects.get(id_empresa=empresa_a).detalles.get().subtotal == Decimal(
-        "40.0000"
-    )
+    assert Pedido.objects.get(id_empresa=empresa_a).detalles.get().subtotal == Decimal("40.0000")
 
 
 # ── Pago a proveedor ─────────────────────────────────────────────────────────
 
 
 def test_pago_a_un_proveedor_conocido_guarda_su_referencia(api, bot_usuario, empresa_a):
-    prov = Proveedor.objects.create(
-        id_empresa=empresa_a, razon_social="Lubricantes SA", rif="J-404040401"
-    )
+    prov = Proveedor.objects.create(id_empresa=empresa_a, razon_social="Lubricantes SA", rif="J-404040401")
     r = enviar(
         api,
         "pago_proveedor",

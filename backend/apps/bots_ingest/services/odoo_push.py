@@ -48,9 +48,7 @@ from ..models import IngestaBot
 logger = logging.getLogger(__name__)
 
 NOTA_BORRADOR = "[Borrador Telegram] pendiente de completar"
-NOTA_PROVEEDOR_DE_DOCUMENTO = (
-    "[Borrador Telegram] proveedor creado desde un documento; revisar"
-)
+NOTA_PROVEEDOR_DE_DOCUMENTO = "[Borrador Telegram] proveedor creado desde un documento; revisar"
 
 KINDS_SINCRONIZABLES = (
     IngestaBot.Kind.CONTACTO,
@@ -95,9 +93,7 @@ class _InstanciaEscritura:
             cfg["user"] = write_user
             cfg["api_key"] = write_key
         elif write_user or write_key:
-            raise NoSincronizable(
-                "Configura tanto «write_user» como «write_api_key» en el conector Odoo."
-            )
+            raise NoSincronizable("Configura tanto «write_user» como «write_api_key» en el conector Odoo.")
         return cfg
 
 
@@ -181,11 +177,7 @@ def _variantes_rif(rif: str) -> list[str]:
 
 
 def _sin_acentos(texto: str) -> str:
-    return "".join(
-        c
-        for c in unicodedata.normalize("NFD", (texto or "").lower())
-        if unicodedata.category(c) != "Mn"
-    )
+    return "".join(c for c in unicodedata.normalize("NFD", (texto or "").lower()) if unicodedata.category(c) != "Mn")
 
 
 def _slug(texto: str) -> str:
@@ -194,13 +186,7 @@ def _slug(texto: str) -> str:
 
 def _ilike_exacto(texto: str) -> str:
     """Escapa comodines SQL para que ``=ilike`` actúe como igualdad insensible a mayúsculas."""
-    return (
-        (texto or "")
-        .strip()
-        .replace("\\", "\\\\")
-        .replace("%", "\\%")
-        .replace("_", "\\_")
-    )
+    return (texto or "").strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def _vals(**kw: Any) -> dict[str, Any]:
@@ -230,9 +216,7 @@ def _bloqueo_partner_tx(empresa_id: Any, clave: str):
             cur.execute("SELECT pg_try_advisory_xact_lock(hashtext(%s))", [llave])
             fila = cur.fetchone()
         if not fila or not fila[0]:
-            raise ErrorTransitorio(
-                "Hay otro envío del mismo contacto/proveedor en curso; se reintentará."
-            )
+            raise ErrorTransitorio("Hay otro envío del mismo contacto/proveedor en curso; se reintentará.")
         yield
 
 
@@ -240,13 +224,9 @@ def _partner_por_rif(cli, rif: str | None) -> int | None:
     variantes = _variantes_rif(rif or "")
     if not variantes:
         return None
-    ids = cli.call(
-        "res.partner", "search", [[["vat", "in", variantes]]], {"limit": 3}
-    )
+    ids = cli.call("res.partner", "search", [[["vat", "in", variantes]]], {"limit": 3})
     if len(ids) > 1:
-        raise NoSincronizable(
-            f"El RIF {rif} está en {len(ids)} contactos de Odoo: vincúlalo manualmente."
-        )
+        raise NoSincronizable(f"El RIF {rif} está en {len(ids)} contactos de Odoo: vincúlalo manualmente.")
     return int(ids[0]) if ids else None
 
 
@@ -255,9 +235,7 @@ def _partner_por_marca(cli, marca: str) -> int | None:
     return int(ids[0]) if ids else None
 
 
-def _buscar_partner_exacto(
-    cli, nombre: str, *, solo_proveedores: bool = False
-) -> list[int]:
+def _buscar_partner_exacto(cli, nombre: str, *, solo_proveedores: bool = False) -> list[int]:
     dom: list[Any] = [["name", "=ilike", _ilike_exacto(nombre)]]
     if solo_proveedores:
         dom.append(["supplier_rank", ">", 0])
@@ -274,9 +252,7 @@ def _campos_modelo_opcional(cli, modelo: str) -> set[str] | None:
     return set(info or {})
 
 
-def _crear_partner_borrador(
-    cli, vals: dict[str, Any], *, lat: Any = None, lon: Any = None
-) -> int:
+def _crear_partner_borrador(cli, vals: dict[str, Any], *, lat: Any = None, lon: Any = None) -> int:
     """Crea ``res.partner`` en borrador; si Odoo no tiene ``base_geolocalize`` reintenta sin GPS."""
     if lat is None or lon is None:
         return _id_creado(cli.call("res.partner", "create", [vals]))
@@ -291,9 +267,7 @@ def _crear_partner_borrador(
     except OdooCallError as exc:
         if "partner_latitude" not in str(exc) and "partner_longitude" not in str(exc):
             raise
-        logger.warning(
-            "Odoo sin campos de geolocalización: se crea res.partner sin GPS"
-        )
+        logger.warning("Odoo sin campos de geolocalización: se crea res.partner sin GPS")
         return _id_creado(cli.call("res.partner", "create", [vals]))
 
 
@@ -301,17 +275,9 @@ def _datos_contacto(cliente: Cliente) -> dict[str, Any]:
     """Ficha del cliente para crear el contacto en Odoo, con el GPS de su entrega/fiscal o de su contacto."""
     dirs = cliente.direcciones.filter(activo=True, latitud__isnull=False)
     fuente = dirs.filter(tipo_direccion="ENTREGA").first() or dirs.first()
-    if (
-        fuente is None
-        and cliente.contacto is not None
-        and cliente.contacto.latitud is not None
-    ):
+    if fuente is None and cliente.contacto is not None and cliente.contacto.latitud is not None:
         fuente = cliente.contacto
-    gps = (
-        {"latitud": fuente.latitud, "longitud": fuente.longitud}
-        if fuente is not None
-        else {}
-    )
+    gps = {"latitud": fuente.latitud, "longitud": fuente.longitud} if fuente is not None else {}
     return {
         "nombre": cliente.razon_social,
         "email": cliente.email,
@@ -323,9 +289,7 @@ def _datos_contacto(cliente: Cliente) -> dict[str, Any]:
     }
 
 
-def _partner_cliente(
-    conn: OdooConnector, cli, cliente: Cliente, *, crear: bool
-) -> int | None:
+def _partner_cliente(conn: OdooConnector, cli, cliente: Cliente, *, crear: bool) -> int | None:
     if _es_id(cliente.referencia_externa):
         return int(cliente.referencia_externa)
     if not crear:
@@ -353,9 +317,7 @@ def _partner_cliente_pago(conn: OdooConnector, cli, ing: IngestaBot) -> int:
     """Resuelve el ``res.partner`` de un pago de cliente sin crear nunca socios nuevos."""
     p = ing.payload
     cliente = (
-        Cliente.objects.filter(
-            pk=ing.resultado.get("cliente_id"), id_empresa=ing.id_empresa
-        ).first()
+        Cliente.objects.filter(pk=ing.resultado.get("cliente_id"), id_empresa=ing.id_empresa).first()
         if ing.resultado.get("cliente_id")
         else None
     )
@@ -372,33 +334,23 @@ def _partner_cliente_pago(conn: OdooConnector, cli, ing: IngestaBot) -> int:
             [[["name", "=ilike", _ilike_exacto(str(p["pedido_ref"]))]]],
             {"fields": ["partner_id"], "limit": 2},
         )
-        if (
-            len(ordenes) == 1
-            and isinstance(ordenes[0].get("partner_id"), (list, tuple))
-            and ordenes[0]["partner_id"]
-        ):
+        if len(ordenes) == 1 and isinstance(ordenes[0].get("partner_id"), (list, tuple)) and ordenes[0]["partner_id"]:
             return int(ordenes[0]["partner_id"][0])
 
     pid_rif = _partner_por_rif(cli, p.get("rif"))
     if pid_rif is not None:
         return pid_rif
 
-    nombre = str(
-        p.get("cliente") or (cliente.razon_social if cliente is not None else "")
-    ).strip()
+    nombre = str(p.get("cliente") or (cliente.razon_social if cliente is not None else "")).strip()
     if nombre:
         ids = _buscar_partner_exacto(cli, nombre, solo_proveedores=False)
         if len(ids) > 1:
-            raise NoSincronizable(
-                f"Hay varios clientes llamados «{nombre}» en Odoo: vincula el pago allí."
-            )
+            raise NoSincronizable(f"Hay varios clientes llamados «{nombre}» en Odoo: vincula el pago allí.")
         if len(ids) == 1:
             return ids[0]
 
     etiqueta = f"«{nombre}» " if nombre else ""
-    raise NoSincronizable(
-        f"El cliente {etiqueta}no existe en Odoo: vincula el pago allí."
-    )
+    raise NoSincronizable(f"El cliente {etiqueta}no existe en Odoo: vincula el pago allí.")
 
 
 def _guardar_ref_proveedor(prov, pid: int) -> None:
@@ -411,24 +363,16 @@ def _partner_proveedor_pago(cli, ing: IngestaBot) -> int:
     from apps.proveedores.models import Proveedor
 
     prov_id = ing.resultado.get("proveedor_id")
-    prov = (
-        Proveedor.objects.filter(pk=prov_id, id_empresa=ing.id_empresa).first()
-        if prov_id
-        else None
-    )
+    prov = Proveedor.objects.filter(pk=prov_id, id_empresa=ing.id_empresa).first() if prov_id else None
     if prov is not None and _es_id(prov.referencia_externa):
         return int(prov.referencia_externa)
-    rif = _canon_rif(ing.payload.get("rif")) or (
-        _canon_rif(prov.rif) if prov is not None else None
-    )
+    rif = _canon_rif(ing.payload.get("rif")) or (_canon_rif(prov.rif) if prov is not None else None)
     if rif:
         pid = _partner_por_rif(cli, rif)
         if pid:
             _guardar_ref_proveedor(prov, pid)
             return pid
-    nombre = str(
-        ing.payload.get("proveedor") or (prov.razon_social if prov is not None else "")
-    ).strip()
+    nombre = str(ing.payload.get("proveedor") or (prov.razon_social if prov is not None else "")).strip()
     if not nombre:
         raise NoSincronizable("El pago no indica proveedor.")
     ids = _buscar_partner_exacto(cli, nombre, solo_proveedores=True)
@@ -494,15 +438,11 @@ def _moneda_odoo(cli, codigo: str) -> int | None:
     if c in ("USD", "$"):
         return next((m["id"] for m in monedas if m["name"].upper() == "USD"), None)
     if c in _FAMILIA_VES:
-        return next(
-            (m["id"] for m in monedas if m["name"].upper() in _FAMILIA_VES), None
-        )
+        return next((m["id"] for m in monedas if m["name"].upper() in _FAMILIA_VES), None)
     return next((m["id"] for m in monedas if m["name"].upper() == c), None)
 
 
-def _diario_odoo(
-    cli, cfg: dict[str, Any], metodo: str, moneda: str, banco: str = ""
-) -> int:
+def _diario_odoo(cli, cfg: dict[str, Any], metodo: str, moneda: str, banco: str = "") -> int:
     norm_banco = _slug(banco)
     norm_metodo = _slug(metodo)
     mon = _clase_moneda(moneda).lower()
@@ -536,9 +476,7 @@ def _diario_odoo(
 # ── contacto (borrador CRM) ──────────────────────────────────────────────────
 
 
-def _push_contacto(
-    ing: IngestaBot, conn: OdooConnector, cli, inst
-) -> tuple[str, str]:
+def _push_contacto(ing: IngestaBot, conn: OdooConnector, cli, inst) -> tuple[str, str]:
     marca = _marca(ing)
     previo = _partner_por_marca(cli, marca)
     if previo is not None:
@@ -554,9 +492,7 @@ def _push_contacto(
         customer_rank=0,
         ref=marca,
     )
-    pid = _crear_partner_borrador(
-        cli, vals, lat=ub.get("latitud"), lon=ub.get("longitud")
-    )
+    pid = _crear_partner_borrador(cli, vals, lat=ub.get("latitud"), lon=ub.get("longitud"))
     return "res.partner", str(pid)
 
 
@@ -579,12 +515,8 @@ def _push_pedido(ing: IngestaBot, conn: OdooConnector, cli, inst) -> tuple[str, 
     for d in ped.detalles.all():
         pid = _producto_odoo(cli, inst, d.id_producto)
         if pid is None:
-            raise NoSincronizable(
-                f"El producto «{d.id_producto.nombre_producto}» no existe en Odoo."
-            )
-        lineas.append(
-            {"product_id": pid, "cantidad": d.cantidad, "precio": d.precio_unitario}
-        )
+            raise NoSincronizable(f"El producto «{d.id_producto.nombre_producto}» no existe en Odoo.")
+        lineas.append({"product_id": pid, "cantidad": d.cantidad, "precio": d.precio_unitario})
     partner = _partner_cliente(conn, cli, ped.id_cliente, crear=True)
 
     ref = ped.numero_pedido
@@ -620,15 +552,9 @@ def _push_pedido(ing: IngestaBot, conn: OdooConnector, cli, inst) -> tuple[str, 
             "numero_bot": ref,
             "odoo_name": nombre,
         }
-        if (
-            not Pedido.objects.filter(id_empresa=ped.id_empresa, numero_pedido=nombre)
-            .exclude(pk=ped.pk)
-            .exists()
-        ):
+        if not Pedido.objects.filter(id_empresa=ped.id_empresa, numero_pedido=nombre).exclude(pk=ped.pk).exists():
             ped.numero_pedido = nombre
-        ped.save(
-            update_fields=["referencia_externa", "documento_json", "numero_pedido"]
-        )
+        ped.save(update_fields=["referencia_externa", "documento_json", "numero_pedido"])
     return "sale.order", str(oid)
 
 
@@ -659,18 +585,12 @@ def _campo_memo_pago(cli) -> str:
     for c in ("memo", "payment_reference", "ref"):
         if c in campos:
             return c
-    raise NoSincronizable(
-        "No encuentro el campo de referencia en account.payment: revisa la versión de Odoo."
-    )
+    raise NoSincronizable("No encuentro el campo de referencia en account.payment: revisa la versión de Odoo.")
 
 
 def _push_pago(ing: IngestaBot, conn: OdooConnector, cli, inst) -> tuple[str, str]:
     p, es_cliente = ing.payload, ing.kind == IngestaBot.Kind.PAGO
-    partner = (
-        _partner_cliente_pago(conn, cli, ing)
-        if es_cliente
-        else _partner_proveedor_pago(cli, ing)
-    )
+    partner = _partner_cliente_pago(conn, cli, ing) if es_cliente else _partner_proveedor_pago(cli, ing)
 
     monto = _decimal_seguro(p.get("monto"), "monto")
     moneda_id = _moneda_odoo(cli, p.get("moneda", ""))
@@ -700,9 +620,7 @@ def _push_pago(ing: IngestaBot, conn: OdooConnector, cli, inst) -> tuple[str, st
     ]
     memo = " · ".join(x for x in partes if x)
     campo_memo = _campo_memo_pago(cli)
-    previos = cli.call(
-        "account.payment", "search", [[[campo_memo, "ilike", marca]]], {"limit": 1}
-    )
+    previos = cli.call("account.payment", "search", [[[campo_memo, "ilike", marca]]], {"limit": 1})
     if previos:
         return "account.payment", str(previos[0])
 
@@ -748,37 +666,25 @@ def _crear_proveedor_odoo(cli, datos: dict[str, Any], marca: str) -> int:
     vals = _vals(
         name=str(datos["nombre"]).strip(),
         vat=rif,
-        phone=str(datos["telefono"]).strip()
-        if not _vacio(datos.get("telefono"))
-        else None,
+        phone=str(datos["telefono"]).strip() if not _vacio(datos.get("telefono")) else None,
         email=str(datos["email"]).strip() if not _vacio(datos.get("email")) else None,
-        street=str(datos["direccion"]).strip()
-        if not _vacio(datos.get("direccion"))
-        else None,
-        company_type=(
-            ("company" if rif[0] in ("J", "G") else "person") if rif else None
-        ),
+        street=str(datos["direccion"]).strip() if not _vacio(datos.get("direccion")) else None,
+        company_type=(("company" if rif[0] in ("J", "G") else "person") if rif else None),
         supplier_rank=1,
         customer_rank=0,
         comment="\n".join(notas),
         ref=marca,
     )
-    return _crear_partner_borrador(
-        cli, vals, lat=datos.get("lat"), lon=datos.get("lon")
-    )
+    return _crear_partner_borrador(cli, vals, lat=datos.get("lat"), lon=datos.get("lon"))
 
 
-def _push_proveedor(
-    ing: IngestaBot, conn: OdooConnector, cli, inst
-) -> tuple[str, str]:
+def _push_proveedor(ing: IngestaBot, conn: OdooConnector, cli, inst) -> tuple[str, str]:
     from apps.proveedores.models import Proveedor
 
     p = ing.payload
     prov_id = ing.resultado.get("proveedor_id")
     prov = (
-        Proveedor.objects.select_related("contacto")
-        .filter(pk=prov_id, id_empresa=ing.id_empresa)
-        .first()
+        Proveedor.objects.select_related("contacto").filter(pk=prov_id, id_empresa=ing.id_empresa).first()
         if prov_id
         else None
     )
@@ -805,9 +711,7 @@ def _push_proveedor(
         if pid is None:
             ids = _buscar_partner_exacto(cli, nombre, solo_proveedores=False)
             if len(ids) > 1:
-                raise NoSincronizable(
-                    f"Hay {len(ids)} contactos llamados «{nombre}» en Odoo: vincúlalo manualmente."
-                )
+                raise NoSincronizable(f"Hay {len(ids)} contactos llamados «{nombre}» en Odoo: vincúlalo manualmente.")
             pid = ids[0] if ids else None
         if pid is not None:
             _guardar_ref_proveedor(prov, pid)
@@ -838,28 +742,20 @@ def _push_proveedor(
         return "res.partner", str(pid)
 
 
-def _resolver_o_crear_proveedor_documento(
-    ing: IngestaBot, cli, marca: str
-) -> tuple[int, bool]:
+def _resolver_o_crear_proveedor_documento(ing: IngestaBot, cli, marca: str) -> tuple[int, bool]:
     """Resuelve o crea el proveedor en Odoo para ``factura_proveedor`` o ``gasto`` sin duplicar."""
     from apps.proveedores.models import Proveedor
 
     p = ing.payload
     prov_id = ing.resultado.get("proveedor_id")
-    prov = (
-        Proveedor.objects.filter(pk=prov_id, id_empresa=ing.id_empresa).first()
-        if prov_id
-        else None
-    )
+    prov = Proveedor.objects.filter(pk=prov_id, id_empresa=ing.id_empresa).first() if prov_id else None
     if prov is not None and _es_id(prov.referencia_externa):
         return int(prov.referencia_externa), False
 
     rif = _canon_rif(p.get("rif")) or (_canon_rif(prov.rif) if prov else None)
     nombre = str(p.get("proveedor") or (prov.razon_social if prov else "")).strip() or None
     if rif is None and nombre is None:
-        raise NoSincronizable(
-            "Indica el nombre o el RIF del proveedor para enviarlo a Odoo."
-        )
+        raise NoSincronizable("Indica el nombre o el RIF del proveedor para enviarlo a Odoo.")
 
     marca_prov = f"{marca}-PROV"
     clave_lock = f"rif:{rif}" if rif else f"nom:{_slug(nombre or '')}"
@@ -887,19 +783,15 @@ def _resolver_o_crear_proveedor_documento(
             _guardar_ref_proveedor(prov, pid)
             return pid, False
         if nombre is None:
-            raise NoSincronizable(
-                f"El RIF {rif} no existe en Odoo; indica el nombre del proveedor para crearlo."
-            )
+            raise NoSincronizable(f"El RIF {rif} no existe en Odoo; indica el nombre del proveedor para crearlo.")
         creado = _crear_proveedor_odoo(
             cli,
             {
                 "nombre": nombre,
                 "rif": rif,
-                "telefono": p.get("proveedor_telefono")
-                or (prov.telefono if prov else None),
+                "telefono": p.get("proveedor_telefono") or (prov.telefono if prov else None),
                 "email": p.get("proveedor_email") or (prov.email if prov else None),
-                "direccion": p.get("proveedor_direccion")
-                or (prov.direccion if prov else None),
+                "direccion": p.get("proveedor_direccion") or (prov.direccion if prov else None),
                 "nota_cabecera": NOTA_PROVEEDOR_DE_DOCUMENTO,
             },
             marca_prov,
@@ -908,25 +800,19 @@ def _resolver_o_crear_proveedor_documento(
         return creado, True
 
 
-def _push_documento_compra(
-    ing: IngestaBot, conn: OdooConnector, cli, inst
-) -> tuple[str, str]:
+def _push_documento_compra(ing: IngestaBot, conn: OdooConnector, cli, inst) -> tuple[str, str]:
     """Empuja ``factura_proveedor`` o ``gasto`` como ``account.move`` ``in_invoice`` en borrador."""
     from apps.cuentas_por_pagar.models import CuentaPorPagar
 
     es_gasto = ing.kind == IngestaBot.Kind.GASTO
     cxp = None
     if not es_gasto and ing.resultado.get("cxp_id"):
-        cxp = CuentaPorPagar.objects.filter(
-            pk=ing.resultado["cxp_id"], id_empresa=ing.id_empresa
-        ).first()
+        cxp = CuentaPorPagar.objects.filter(pk=ing.resultado["cxp_id"], id_empresa=ing.id_empresa).first()
         if cxp is not None and _es_id(cxp.referencia_externa):
             return "account.move", str(cxp.referencia_externa)
 
     marca = _marca(ing)
-    partner_id, prov_creado_odoo = _resolver_o_crear_proveedor_documento(
-        ing, cli, marca
-    )
+    partner_id, prov_creado_odoo = _resolver_o_crear_proveedor_documento(ing, cli, marca)
 
     previos = cli.call(
         "account.move",
@@ -942,17 +828,11 @@ def _push_documento_compra(
         return "account.move", str(mid)
 
     p = ing.payload
-    numero = (
-        str(p["numero_factura"]).strip()
-        if not _vacio(p.get("numero_factura"))
-        else None
-    )
+    numero = str(p["numero_factura"]).strip() if not _vacio(p.get("numero_factura")) else None
     if numero and not prov_creado_odoo:
         ajena = _factura_proveedor_por_ref(cli, partner_id, numero)
         if ajena is not None:
-            raise NoSincronizable(
-                f"La factura {numero} ya existe en Odoo para ese proveedor (account.move {ajena})."
-            )
+            raise NoSincronizable(f"La factura {numero} ya existe en Odoo para ese proveedor (account.move {ajena}).")
 
     moneda_id = _moneda_odoo(cli, str(p.get("moneda") or ""))
     if moneda_id is None:
@@ -971,11 +851,7 @@ def _push_documento_compra(
         }
         faltan = requeridos - campos_move
         if faltan:
-            raise NoSincronizable(
-                "Odoo no tiene los campos de factura esperados ("
-                + ", ".join(sorted(faltan))
-                + ")."
-            )
+            raise NoSincronizable("Odoo no tiene los campos de factura esperados (" + ", ".join(sorted(faltan)) + ").")
     campos_linea = _campos_modelo_opcional(cli, "account.move.line")
     con_impuestos = campos_linea is None or "tax_ids" in campos_linea
     admite_vencimiento = campos_move is None or "invoice_date_due" in campos_move
@@ -989,17 +865,13 @@ def _push_documento_compra(
             monto = base_dec
 
     etiqueta = numero or f"S/N-{str(ing.pk)[-8:]}"
-    proveedor_txt = (
-        str(p["proveedor"]).strip() if not _vacio(p.get("proveedor")) else "proveedor"
-    )
+    proveedor_txt = str(p["proveedor"]).strip() if not _vacio(p.get("proveedor")) else "proveedor"
     notas = [
         "Gasto de consumo pagado al contado (sin pago asociado: contabilidad lo concilia)"
         if es_gasto
         else f"Factura proveedor {etiqueta}",
         f"Documento {numero}" if es_gasto and numero else "",
-        f"Categoría {p['categoria']}"
-        if es_gasto and not _vacio(p.get("categoria"))
-        else "",
+        f"Categoría {p['categoria']}" if es_gasto and not _vacio(p.get("categoria")) else "",
         f"Control {p['numero_control']}" if not _vacio(p.get("numero_control")) else "",
         f"IVA {p['iva']}" if not _vacio(p.get("iva")) else "",
         f"Monto total {p['monto_total']} {p['moneda']}",
@@ -1009,11 +881,7 @@ def _push_documento_compra(
     if not _vacio(p.get("concepto")):
         concepto = str(p["concepto"]).strip()
     else:
-        concepto = (
-            f"Compra en {proveedor_txt}"
-            if es_gasto
-            else f"Factura proveedor {etiqueta}"
-        )
+        concepto = f"Compra en {proveedor_txt}" if es_gasto else f"Factura proveedor {etiqueta}"
 
     # Conversión intencional en la frontera XML-RPC hacia Odoo (quantity/price_unit son Float).
     linea: dict[str, Any] = {
@@ -1024,11 +892,7 @@ def _push_documento_compra(
     if con_impuestos:
         linea["tax_ids"] = [(6, 0, [])]
 
-    fecha_vence = (
-        None
-        if es_gasto or not admite_vencimiento
-        else _fecha_iso(p.get("fecha_vencimiento"))
-    )
+    fecha_vence = None if es_gasto or not admite_vencimiento else _fecha_iso(p.get("fecha_vencimiento"))
     vals = _vals(
         move_type="in_invoice",
         partner_id=partner_id,
@@ -1072,10 +936,7 @@ def _anotar(ing: IngestaBot, error: str) -> None:
 
 def sincronizar(ing: IngestaBot) -> IngestaBot:
     """Empuja la ingesta a Odoo. Lanza ``ErrorTransitorio`` solo si conviene reintentar."""
-    if (
-        ing.estado == IngestaBot.Estado.SINCRONIZADO
-        or ing.kind not in KINDS_SINCRONIZABLES
-    ):
+    if ing.estado == IngestaBot.Estado.SINCRONIZADO or ing.kind not in KINDS_SINCRONIZABLES:
         return ing
     inst = instancia_odoo(ing.id_empresa)
     if inst is None or inst.get_config().get("empujar_bots") is not True:

@@ -28,9 +28,9 @@ def ejecutar_job_sincronizacion(self, job_id: str):
     from apps.integration_hub.services.sync_engine import SyncEngine
 
     try:
-        job = JobSincronizacion.objects.select_related(
-            "id_instancia__id_proveedor", "id_instancia__id_empresa"
-        ).get(pk=job_id)
+        job = JobSincronizacion.objects.select_related("id_instancia__id_proveedor", "id_instancia__id_empresa").get(
+            pk=job_id
+        )
     except JobSincronizacion.DoesNotExist:
         logger.error("Job no encontrado: %s", job_id)
         return {"error": f"Job {job_id} no encontrado"}
@@ -81,9 +81,7 @@ def sync_automatico_todos():
     for instancia in conectores:
         # Calcular si ya es hora del próximo sync
         if instancia.ultimo_sync:
-            proximo = instancia.ultimo_sync + timedelta(
-                minutes=instancia.intervalo_sync_minutos
-            )
+            proximo = instancia.ultimo_sync + timedelta(minutes=instancia.intervalo_sync_minutos)
             if ahora < proximo:
                 continue  # No es hora todavía
 
@@ -134,9 +132,9 @@ def ejecutar_export_instancia(instancia_id: str, tipos=None, incremental: bool =
     from apps.integration_hub.services.export_engine import ExportEngine
 
     try:
-        instancia = ConectorInstancia.objects.select_related(
-            "id_proveedor", "id_empresa"
-        ).get(pk=instancia_id, activo=True)
+        instancia = ConectorInstancia.objects.select_related("id_proveedor", "id_empresa").get(
+            pk=instancia_id, activo=True
+        )
     except ConectorInstancia.DoesNotExist:
         logger.error("Export: instancia no encontrada o inactiva: %s", instancia_id)
         return {"error": f"Instancia {instancia_id} no encontrada o inactiva"}
@@ -197,9 +195,7 @@ def export_automatico_todos():
     for instancia in instancias:
         # ¿Ya venció el próximo export?
         if instancia.ultimo_sync:
-            proximo = instancia.ultimo_sync + timedelta(
-                minutes=instancia.intervalo_sync_minutos
-            )
+            proximo = instancia.ultimo_sync + timedelta(minutes=instancia.intervalo_sync_minutos)
             if ahora < proximo:
                 continue  # Aún no toca
 
@@ -235,13 +231,9 @@ def limpiar_logs_antiguos(dias: int = 30):
     from apps.integration_hub.models import LogDetalleSincronizacion
 
     corte = timezone.now() - timedelta(days=dias)
-    eliminados, _ = LogDetalleSincronizacion.objects.filter(
-        creado_en__lt=corte
-    ).delete()
+    eliminados, _ = LogDetalleSincronizacion.objects.filter(creado_en__lt=corte).delete()
 
-    logger.info(
-        "limpiar_logs_antiguos: %d registros eliminados (>%d días)", eliminados, dias
-    )
+    logger.info("limpiar_logs_antiguos: %d registros eliminados (>%d días)", eliminados, dias)
     return {"eliminados": eliminados}
 
 
@@ -329,9 +321,7 @@ def sync_tasas_ve(self):
                 "tasa": str(tasa_binance),
                 "created": created_b,
             }
-            logger.info(
-                "sync_tasas_ve Binance: tasa=%s created=%s", tasa_binance, created_b
-            )
+            logger.info("sync_tasas_ve Binance: tasa=%s created=%s", tasa_binance, created_b)
 
         return resultados
 

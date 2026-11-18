@@ -52,15 +52,11 @@ def crear_linea(empresa, pedido, **kwargs):
         precio_unitario=Decimal("100"),
     )
     defaults.update(kwargs)
-    return LineaPedidoLubrikca.objects.create(
-        empresa=empresa, pedido=pedido, **defaults
-    )
+    return LineaPedidoLubrikca.objects.create(empresa=empresa, pedido=pedido, **defaults)
 
 
 def crear_precio(empresa, producto="P1", lista=LISTA_USD_DEFAULT, precio="100"):
-    return PrecioListaLubrikca.objects.create(
-        empresa=empresa, producto=producto, lista=lista, precio=Decimal(precio)
-    )
+    return PrecioListaLubrikca.objects.create(empresa=empresa, producto=producto, lista=lista, precio=Decimal(precio))
 
 
 def crear_pago(empresa, **kwargs):
@@ -85,9 +81,7 @@ def crear_bandeja(empresa, pedido, total_motor="100", **kwargs):
         total_motor=Decimal(total_motor),
     )
     defaults.update(kwargs)
-    return BandejaFacturacion.objects.create(
-        empresa=empresa, pedido=pedido, **defaults
-    )
+    return BandejaFacturacion.objects.create(empresa=empresa, pedido=pedido, **defaults)
 
 
 def crear_metodo(empresa, codigo="ZELLE", moneda="USD", tipo_tasa="N_A", es_contado=True):
@@ -123,12 +117,8 @@ def crear_recompra(empresa, valor="0.03"):
 
 def cargar_tasas(empresa, fecha=date(2026, 6, 5), bcv="36.0", binance="40.0"):
     """Carga las tasas USD→VES (BCV global y Binance específica) para la fecha."""
-    usd, _ = FinMoneda.objects.get_or_create(
-        codigo_iso="USD", defaults={"nombre": "Dólar", "simbolo": "$"}
-    )
-    ves, _ = FinMoneda.objects.get_or_create(
-        codigo_iso="VES", defaults={"nombre": "Bolívar", "simbolo": "Bs"}
-    )
+    usd, _ = FinMoneda.objects.get_or_create(codigo_iso="USD", defaults={"nombre": "Dólar", "simbolo": "$"})
+    ves, _ = FinMoneda.objects.get_or_create(codigo_iso="VES", defaults={"nombre": "Bolívar", "simbolo": "Bs"})
     TasaCambio.objects.create(
         id_empresa=None,
         id_moneda_origen=usd,

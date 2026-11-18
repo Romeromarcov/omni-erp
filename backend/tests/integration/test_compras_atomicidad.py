@@ -144,21 +144,21 @@ class TestRecepcionAtomica:
             registrar_recepcion(orden_aprobada, almacen, user_a, _items(producto))
 
         empresa = empresa_contable
-        assert not RecepcionMercancia.objects.filter(id_empresa=empresa).exists(), (
-            "ATOMICIDAD: quedó una RecepcionMercancia tras fallar el asiento."
-        )
-        assert not DetalleRecepcionMercancia.objects.filter(id_recepcion__id_empresa=empresa).exists(), (
-            "ATOMICIDAD: quedó un DetalleRecepcionMercancia huérfano."
-        )
-        assert not MovimientoInventario.objects.filter(id_empresa=empresa).exists(), (
-            "ATOMICIDAD: quedó un MovimientoInventario tras el rollback."
-        )
+        assert not RecepcionMercancia.objects.filter(
+            id_empresa=empresa
+        ).exists(), "ATOMICIDAD: quedó una RecepcionMercancia tras fallar el asiento."
+        assert not DetalleRecepcionMercancia.objects.filter(
+            id_recepcion__id_empresa=empresa
+        ).exists(), "ATOMICIDAD: quedó un DetalleRecepcionMercancia huérfano."
+        assert not MovimientoInventario.objects.filter(
+            id_empresa=empresa
+        ).exists(), "ATOMICIDAD: quedó un MovimientoInventario tras el rollback."
         assert not StockActual.objects.filter(
             id_empresa=empresa, id_producto=producto, id_almacen=almacen
         ).exists(), "ATOMICIDAD: el stock se incrementó pese al rollback."
-        assert not CuentaPorPagar.objects.filter(id_empresa=empresa).exists(), (
-            "ATOMICIDAD: quedó una CuentaPorPagar tras el rollback."
-        )
+        assert not CuentaPorPagar.objects.filter(
+            id_empresa=empresa
+        ).exists(), "ATOMICIDAD: quedó una CuentaPorPagar tras el rollback."
 
     def test_recepcion_persiste_todo_con_contabilidad_activa_y_mapeo(
         self, empresa_contable, orden_aprobada, almacen, producto, user_a
@@ -174,9 +174,7 @@ class TestRecepcionAtomica:
 
         assert resultado["asiento"] is not None
         assert resultado["cxp"].monto_total == Decimal("250.00")
-        stock = StockActual.objects.get(
-            id_empresa=empresa_contable, id_producto=producto, id_almacen=almacen
-        )
+        stock = StockActual.objects.get(id_empresa=empresa_contable, id_producto=producto, id_almacen=almacen)
         assert stock.cantidad_disponible == Decimal("10")
 
 
@@ -205,9 +203,9 @@ class TestFacturaCompraAtomica:
         with pytest.raises(CompraError, match="asiento"):
             registrar_factura_compra(recepcion, "FAC-AT-001")
 
-        assert not FacturaCompra.objects.filter(id_empresa=empresa_contable).exists(), (
-            "ATOMICIDAD: quedó una FacturaCompra pese a fallar el asiento."
-        )
+        assert not FacturaCompra.objects.filter(
+            id_empresa=empresa_contable
+        ).exists(), "ATOMICIDAD: quedó una FacturaCompra pese a fallar el asiento."
         # La recepción y la CxP previas siguen intactas (no las arrastró el rollback de la factura).
         assert RecepcionMercancia.objects.filter(pk=recepcion.pk).exists()
         assert CuentaPorPagar.objects.filter(id_empresa=empresa_contable).count() == 1

@@ -4,6 +4,7 @@ Algoritmo de generación de cuotas para AcuerdoPago.
 Portado de GestionCxC/backend/routers/acuerdos_pago.py → _generar_cuotas().
 Sin efectos secundarios — el caller hace bulk_create en @transaction.atomic.
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,6 +27,7 @@ def _proxima_fecha(fecha_base: date, periodicidad: str, n: int) -> date:
         anio = fecha_base.year + (mes - 1) // 12
         mes = ((mes - 1) % 12) + 1
         import calendar
+
         ultimo_dia = calendar.monthrange(anio, mes)[1]
         dia = min(fecha_base.day, ultimo_dia)
         return date(anio, mes, dia)
@@ -70,13 +72,15 @@ def generar_cuotas(
         raise ValueError("monto_total debe ser mayor que cero.")
 
     if periodicidad == "unico":
-        return [{
-            "acuerdo": acuerdo,
-            "numero_cuota": 1,
-            "fecha_vencimiento": fecha_inicio,
-            "monto": monto_total.quantize(CENTAVOS, rounding=ROUND_HALF_UP),
-            "estado": "pendiente",
-        }]
+        return [
+            {
+                "acuerdo": acuerdo,
+                "numero_cuota": 1,
+                "fecha_vencimiento": fecha_inicio,
+                "monto": monto_total.quantize(CENTAVOS, rounding=ROUND_HALF_UP),
+                "estado": "pendiente",
+            }
+        ]
 
     # Calcular número de cuotas
     if periodicidad == "semanal":
@@ -92,13 +96,9 @@ def generar_cuotas(
     if monto_cuota:
         monto_unit = monto_cuota.quantize(CENTAVOS, rounding=ROUND_HALF_UP)
     elif porcentaje_abono:
-        monto_unit = (monto_total * porcentaje_abono / Decimal("100")).quantize(
-            CENTAVOS, rounding=ROUND_HALF_UP
-        )
+        monto_unit = (monto_total * porcentaje_abono / Decimal("100")).quantize(CENTAVOS, rounding=ROUND_HALF_UP)
     else:
-        monto_unit = (monto_total / Decimal(num_cuotas)).quantize(
-            CENTAVOS, rounding=ROUND_HALF_UP
-        )
+        monto_unit = (monto_total / Decimal(num_cuotas)).quantize(CENTAVOS, rounding=ROUND_HALF_UP)
 
     cuotas = []
     acumulado = Decimal("0")
@@ -122,13 +122,15 @@ def generar_cuotas(
         if monto_esta <= 0:
             continue
 
-        cuotas.append({
-            "acuerdo": acuerdo,
-            "numero_cuota": i,
-            "fecha_vencimiento": fecha_vcto,
-            "monto": monto_esta,
-            "estado": "pendiente",
-        })
+        cuotas.append(
+            {
+                "acuerdo": acuerdo,
+                "numero_cuota": i,
+                "fecha_vencimiento": fecha_vcto,
+                "monto": monto_esta,
+                "estado": "pendiente",
+            }
+        )
         acumulado += monto_esta
 
     return cuotas

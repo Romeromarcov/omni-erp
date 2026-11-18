@@ -5,6 +5,7 @@ Sirve como respaldo operativo del proveedor: gestionar planes y suscripciones
 desde el admin cuando la consola `/admin-saas` no esté disponible. El acceso al
 admin ya está restringido a `is_staff`; aquí no se relaja ningún permiso.
 """
+
 from django.contrib import admin
 
 from .models import Plan, Suscripcion
@@ -13,8 +14,15 @@ from .models import Plan, Suscripcion
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
     list_display = (
-        "nombre", "nivel", "precio_mensual", "precio_anual",
-        "max_usuarios", "max_empresas", "permite_ia", "permite_api", "activo",
+        "nombre",
+        "nivel",
+        "precio_mensual",
+        "precio_anual",
+        "max_usuarios",
+        "max_empresas",
+        "permite_ia",
+        "permite_api",
+        "activo",
     )
     list_filter = ("nivel", "activo", "permite_ia", "permite_api", "soporte")
     search_fields = ("nombre", "nivel")
@@ -24,8 +32,14 @@ class PlanAdmin(admin.ModelAdmin):
 @admin.register(Suscripcion)
 class SuscripcionAdmin(admin.ModelAdmin):
     list_display = (
-        "id_suscripcion", "id_empresa", "id_plan", "estado", "periodo",
-        "fecha_inicio", "fecha_fin", "renovacion_automatica",
+        "id_suscripcion",
+        "id_empresa",
+        "id_plan",
+        "estado",
+        "periodo",
+        "fecha_inicio",
+        "fecha_fin",
+        "renovacion_automatica",
     )
     list_filter = ("estado", "periodo", "renovacion_automatica")
     search_fields = ("id_empresa__nombre_legal", "id_empresa__nombre_comercial", "referencia_pago")

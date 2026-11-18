@@ -81,8 +81,8 @@ logger = logging.getLogger("omni.llm_gateway")
 PROVEEDOR_ANTHROPIC = "anthropic"
 
 #: Usos conocidos: cada uno resuelve su modelo principal desde una env distinta.
-USO_AGENTE = "agente"      # agentes shadow (clasificador, cobranza, reorden…)
-USO_CHAT = "chat"          # asistente conversacional (SSE)
+USO_AGENTE = "agente"  # agentes shadow (clasificador, cobranza, reorden…)
+USO_CHAT = "chat"  # asistente conversacional (SSE)
 USO_ANALISIS = "analisis"  # análisis profundos (agente CxC)
 
 _MODELOS_DEFAULT = {
@@ -157,7 +157,9 @@ class LLMUnavailable(Exception):
     ``causa`` conserva la excepción original (la última de la cascada).
     """
 
-    def __init__(self, mensaje: str, *, proveedor: str = "", modelos: tuple | list = (), causa: Exception | None = None):
+    def __init__(
+        self, mensaje: str, *, proveedor: str = "", modelos: tuple | list = (), causa: Exception | None = None
+    ):
         super().__init__(mensaje)
         self.proveedor = proveedor
         self.modelos = list(modelos)
@@ -266,6 +268,7 @@ class _CircuitBreaker:
             return None
         try:
             from django.core.cache import cache  # noqa: PLC0415 — perezoso: no exigir settings al importar
+
             return cache
         except Exception:  # noqa: BLE001 — sin cache utilizable → memoria local
             return None
@@ -334,7 +337,9 @@ class _CircuitBreaker:
             estado["abierto_hasta"] = self._reloj() + self._ventana()
             logger.warning(
                 "Circuito LLM ABIERTO | proveedor=%s | fallos_consecutivos=%d | reintento_en=%.0fs",
-                clave, fallos, self._ventana(),
+                clave,
+                fallos,
+                self._ventana(),
             )
             self._guardar(clave, estado)
 
@@ -465,9 +470,7 @@ class LLMGateway:
         if self._client is not None:
             return self._client
         if self.proveedor != PROVEEDOR_ANTHROPIC:
-            raise LLMUnavailable(
-                f"Proveedor LLM no soportado: {self.proveedor}", proveedor=self.proveedor
-            )
+            raise LLMUnavailable(f"Proveedor LLM no soportado: {self.proveedor}", proveedor=self.proveedor)
         sdk = _sdk()
         if sdk is None:
             raise LLMUnavailable("SDK de anthropic no instalado", proveedor=self.proveedor)
@@ -521,7 +524,9 @@ class LLMGateway:
         # Solo el tipo del error: el mensaje puede arrastrar payload (R-CODE-8).
         logger.warning(
             "llm_fallo | proveedor=%s | modelo=%s | error=%s",
-            self.proveedor, modelo, type(exc).__name__,
+            self.proveedor,
+            modelo,
+            type(exc).__name__,
         )
 
     # ── API pública ───────────────────────────────────────────────────────────
@@ -579,15 +584,12 @@ class LLMGateway:
                 content=_contenido_de(respuesta),
             )
             if indice > 0:
-                logger.warning(
-                    "llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo
-                )
+                logger.warning("llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo)
             self._registrar_consumo(resultado, empresa=empresa, uso=uso)
             return resultado
 
         raise LLMUnavailable(
-            f"Proveedor LLM no disponible ({self.proveedor}); "
-            f"modelos intentados: {', '.join(modelos)}",
+            f"Proveedor LLM no disponible ({self.proveedor}); " f"modelos intentados: {', '.join(modelos)}",
             proveedor=self.proveedor,
             modelos=modelos,
             causa=ultima_exc,
@@ -636,9 +638,7 @@ class LLMGateway:
 
             envuelto = _LLMStream(interno, model=modelo, provider=self.proveedor)
             if indice > 0:
-                logger.warning(
-                    "llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo
-                )
+                logger.warning("llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo)
             try:
                 yield envuelto
             except BaseException:
@@ -652,8 +652,7 @@ class LLMGateway:
             return
 
         raise LLMUnavailable(
-            f"Proveedor LLM no disponible ({self.proveedor}); "
-            f"modelos intentados: {', '.join(modelos)}",
+            f"Proveedor LLM no disponible ({self.proveedor}); " f"modelos intentados: {', '.join(modelos)}",
             proveedor=self.proveedor,
             modelos=modelos,
             causa=ultima_exc,
@@ -681,8 +680,7 @@ class LLMGateway:
     def _registrar_consumo(self, resultado: LLMResult, *, empresa: Any, uso: str) -> None:
         empresa_pk = _empresa_pk(empresa)
         logger.info(
-            "llm_consumo | proveedor=%s | uso=%s | modelo=%s | empresa=%s | "
-            "tokens_in=%d | tokens_out=%d | ms=%d",
+            "llm_consumo | proveedor=%s | uso=%s | modelo=%s | empresa=%s | " "tokens_in=%d | tokens_out=%d | ms=%d",
             resultado.provider,
             uso,
             resultado.model,

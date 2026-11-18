@@ -12,7 +12,6 @@ Herramientas expuestas:
   ventas_get_facturas     — lista facturas fiscales de una empresa
 """
 
-
 import logging
 from typing import Any, Dict, List
 
@@ -25,6 +24,7 @@ _SCOPE = "ventas"
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers internos
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _ctx(capability_token: str, scope: str) -> dict:
     """Resuelve y valida token + scope. Lanza PermissionError si falla."""
@@ -75,7 +75,9 @@ def ventas_get_cotizacion(
 
     logger.info(
         "ventas_get_cotizacion | actor=%s | tenant=%s | cotizacion=%s",
-        ctx["actor_id"], ctx["tenant_id"], cotizacion_id,
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        cotizacion_id,
     )
 
     return {
@@ -131,7 +133,9 @@ def ventas_get_notas_venta(
     notas = qs.order_by("-fecha_nota")[:limit]
     logger.info(
         "ventas_get_notas_venta | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(notas),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(notas),
     )
     return [
         {
@@ -179,7 +183,9 @@ def ventas_get_facturas(
     facturas = qs.order_by("-fecha_emision")[:limit]
     logger.info(
         "ventas_get_facturas | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(facturas),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(facturas),
     )
     return [
         {

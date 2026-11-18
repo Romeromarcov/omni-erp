@@ -101,12 +101,15 @@ def test_apilamiento_sinoco_recompra_contado_6pct() -> None:
 def test_apilamiento_global_oil_sintetico_recompra_contado_11pct() -> None:
     orden = b.orden(primera=False)
     linea = b.linea(
-        marca="Global Oil", categoria="Comercial sintéticos",
-        precio="100", cantidad="1",
+        marca="Global Oil",
+        categoria="Comercial sintéticos",
+        precio="100",
+        cantidad="1",
     )
     metodo = b.metodo(moneda=Moneda.USD, es_contado=True)
     vinc = b.vinculacion(
-        monto_aplicado="89", moneda_abono=Moneda.USD,
+        monto_aplicado="89",
+        moneda_abono=Moneda.USD,
         hora=datetime(2026, 6, 5, 10, 0),
     )
     inp = _inputs(
@@ -115,7 +118,8 @@ def test_apilamiento_global_oil_sintetico_recompra_contado_11pct() -> None:
         abonos=[(vinc, metodo)],
         descuentos=[
             b.descuento(
-                marca="Global Oil", categoria="Comercial sintéticos",
+                marca="Global Oil",
+                categoria="Comercial sintéticos",
                 porcentaje="0.08",
             )
         ],
@@ -134,7 +138,8 @@ def test_contado_vencido_pasa_a_credito_pierde_contado() -> None:
     metodo = b.metodo(moneda=Moneda.USD, es_contado=True)
     # Abono tardío (2026-06-15) y suficiente para el neto SIN contado (97).
     vinc = b.vinculacion(
-        monto_aplicado="97", moneda_abono=Moneda.USD,
+        monto_aplicado="97",
+        moneda_abono=Moneda.USD,
         hora=datetime(2026, 6, 15, 10, 0),
     )
     inp = _inputs(
@@ -158,17 +163,23 @@ def test_contado_vencido_pasa_a_credito_pierde_contado() -> None:
 def test_mezcla_de_rutas_migra_a_binance_y_pierde_bcv_completo() -> None:
     orden = b.orden(primera=False, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
-    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV,
-                          es_contado=False)
-    metodo_bin = b.metodo("MN", moneda=Moneda.VES, tipo_tasa=TipoTasa.BINANCE,
-                          es_contado=False)
+    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
+    metodo_bin = b.metodo("MN", moneda=Moneda.VES, tipo_tasa=TipoTasa.BINANCE, es_contado=False)
     v_bcv = b.vinculacion(
-        "V1", monto_aplicado="1800", moneda_abono=Moneda.VES,
-        tipo_tasa_abono=TipoTasa.BCV, tasa_bcv="36.0", tasa_binance="40.0",
+        "V1",
+        monto_aplicado="1800",
+        moneda_abono=Moneda.VES,
+        tipo_tasa_abono=TipoTasa.BCV,
+        tasa_bcv="36.0",
+        tasa_binance="40.0",
     )
     v_bin = b.vinculacion(
-        "V2", monto_aplicado="2000", moneda_abono=Moneda.VES,
-        tipo_tasa_abono=TipoTasa.BINANCE, tasa_bcv="36.0", tasa_binance="40.0",
+        "V2",
+        monto_aplicado="2000",
+        moneda_abono=Moneda.VES,
+        tipo_tasa_abono=TipoTasa.BINANCE,
+        tasa_bcv="36.0",
+        tasa_binance="40.0",
     )
     inp = _inputs(
         orden=orden,
@@ -187,12 +198,14 @@ def test_mezcla_de_rutas_migra_a_binance_y_pierde_bcv_completo() -> None:
 def test_bcv_completo_aplica_en_ruta_bcv_pura() -> None:
     orden = b.orden(primera=False, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
-    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV,
-                          es_contado=False)
+    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
     # VES 3600 a bcv 36 → 100 USD ; binance 40 → diferencial 10%.
     vinc = b.vinculacion(
-        monto_aplicado="3600", moneda_abono=Moneda.VES,
-        tipo_tasa_abono=TipoTasa.BCV, tasa_bcv="36.0", tasa_binance="40.0",
+        monto_aplicado="3600",
+        moneda_abono=Moneda.VES,
+        tipo_tasa_abono=TipoTasa.BCV,
+        tasa_bcv="36.0",
+        tasa_binance="40.0",
     )
     inp = _inputs(
         orden=orden,
@@ -215,14 +228,18 @@ def test_bcv_completo_topado_al_porcentaje_de_gerencia() -> None:
     # Gerencia fija 5% aunque el diferencial real sea 10% -> aplica 5%.
     orden = b.orden(primera=False, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
-    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV,
-                          es_contado=False)
+    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
     vinc = b.vinculacion(
-        monto_aplicado="3600", moneda_abono=Moneda.VES,
-        tipo_tasa_abono=TipoTasa.BCV, tasa_bcv="36.0", tasa_binance="40.0",
+        monto_aplicado="3600",
+        moneda_abono=Moneda.VES,
+        tipo_tasa_abono=TipoTasa.BCV,
+        tasa_bcv="36.0",
+        tasa_binance="40.0",
     )
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo_bcv)],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo_bcv)],
         bcv_diario=[b.regla_bcv_completo("0.05")],
         resolver=_resolver(**{"P1@BCV": "100"}),
     )
@@ -235,14 +252,18 @@ def test_bcv_completo_sin_tasa_diaria_no_se_otorga() -> None:
     # Sin porcentaje configurado para la fecha -> no se regala (conservador).
     orden = b.orden(primera=False, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
-    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV,
-                          es_contado=False)
+    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
     vinc = b.vinculacion(
-        monto_aplicado="3600", moneda_abono=Moneda.VES,
-        tipo_tasa_abono=TipoTasa.BCV, tasa_bcv="36.0", tasa_binance="40.0",
+        monto_aplicado="3600",
+        moneda_abono=Moneda.VES,
+        tipo_tasa_abono=TipoTasa.BCV,
+        tasa_bcv="36.0",
+        tasa_binance="40.0",
     )
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo_bcv)],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo_bcv)],
         resolver=_resolver(**{"P1@BCV": "100"}),  # sin bcv_diario
     )
     res = calcular_factura(inp)
@@ -255,7 +276,8 @@ def test_neto_no_alcanzado_no_es_candidata() -> None:
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
     metodo = b.metodo(moneda=Moneda.USD, es_contado=True)
     vinc = b.vinculacion(
-        monto_aplicado="50", moneda_abono=Moneda.USD,
+        monto_aplicado="50",
+        moneda_abono=Moneda.USD,
         hora=datetime(2026, 6, 5, 10, 0),
     )
     inp = _inputs(
@@ -275,8 +297,7 @@ def test_primera_compra_nc_es_precio_del_producto_promo() -> None:
     orden = b.orden(primera=True, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
     metodo = b.metodo(moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
-    vinc = b.vinculacion(monto_aplicado="3600", moneda_abono=Moneda.VES,
-                         tipo_tasa_abono=TipoTasa.BCV)
+    vinc = b.vinculacion(monto_aplicado="3600", moneda_abono=Moneda.VES, tipo_tasa_abono=TipoTasa.BCV)
     inp = _inputs(
         orden=orden,
         lineas=[linea],
@@ -297,10 +318,11 @@ def test_primera_compra_sin_promo_vigente_no_da_nc() -> None:
     orden = b.orden(primera=True, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
     metodo = b.metodo(moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
-    vinc = b.vinculacion(monto_aplicado="3600", moneda_abono=Moneda.VES,
-                         tipo_tasa_abono=TipoTasa.BCV)
+    vinc = b.vinculacion(monto_aplicado="3600", moneda_abono=Moneda.VES, tipo_tasa_abono=TipoTasa.BCV)
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo)],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo)],
         resolver=_resolver(**{"P1@BCV": "100"}),  # sin promociones
     )
     res = calcular_factura(inp)
@@ -314,7 +336,9 @@ def test_orden_con_devolucion_requiere_revision() -> None:
     metodo = b.metodo(moneda=Moneda.USD, es_contado=True)
     vinc = b.vinculacion(monto_aplicado="94", moneda_abono=Moneda.USD)
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo)],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo)],
         reglas=[b.regla_recompra("0.03")],
         resolver=_resolver(**{"P1@USD": "100"}),
     )
@@ -332,7 +356,9 @@ def test_devolucion_factura_sobre_cantidad_entregada() -> None:
     metodo = b.metodo(moneda=Moneda.USD, es_contado=True)
     vinc = b.vinculacion(monto_aplicado="100", moneda_abono=Moneda.USD)
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo)],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo)],
         resolver=_resolver(**{"P1@USD": "10"}),
     )
     res = calcular_factura(inp)
@@ -349,7 +375,9 @@ def test_sin_devolucion_factura_sobre_cantidad_pedida() -> None:
     metodo = b.metodo(moneda=Moneda.USD, es_contado=True)
     vinc = b.vinculacion(monto_aplicado="100", moneda_abono=Moneda.USD)
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo)],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo)],
         resolver=_resolver(**{"P1@USD": "10"}),
     )
     res = calcular_factura(inp)
@@ -361,7 +389,9 @@ def test_sin_abonos_usa_lista_de_nacimiento() -> None:
     orden = b.orden(primera=False, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[],
+        orden=orden,
+        lineas=[linea],
+        abonos=[],
         resolver=_resolver(**{"P1@BCV": "100"}),
     )
     res = calcular_factura(inp)
@@ -378,19 +408,26 @@ def test_formula_bcv_completo_desconocida_falla() -> None:
     )
     orden = b.orden(primera=False, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
-    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV,
-                          es_contado=False)
+    metodo_bcv = b.metodo("MB", moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
     vinc = b.vinculacion(
-        monto_aplicado="3600", moneda_abono=Moneda.VES,
-        tipo_tasa_abono=TipoTasa.BCV, tasa_bcv="36.0", tasa_binance="40.0",
+        monto_aplicado="3600",
+        moneda_abono=Moneda.VES,
+        tipo_tasa_abono=TipoTasa.BCV,
+        tasa_bcv="36.0",
+        tasa_binance="40.0",
     )
     inp = EngineInputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo_bcv)],
-        descuentos=[], reglas_recurrencia=[],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo_bcv)],
+        descuentos=[],
+        reglas_recurrencia=[],
         descuento_bcv_diario=[b.regla_bcv_completo("0.15")],
-        promociones_primera_compra=[], feriados_tabla=[],
+        promociones_primera_compra=[],
+        feriados_tabla=[],
         price_resolver=_resolver(**{"P1@BCV": "100"}),
-        engine_config=cfg, fecha_calculo=date(2026, 6, 8),
+        engine_config=cfg,
+        fecha_calculo=date(2026, 6, 8),
     )
     with pytest.raises(ValueError, match="Fórmula BCV-completo desconocida"):
         calcular_factura(inp)
@@ -402,10 +439,11 @@ def test_primera_compra_promo_sin_precio_marca_revision() -> None:
     orden = b.orden(primera=True, lista="BCV")
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
     metodo = b.metodo(moneda=Moneda.VES, tipo_tasa=TipoTasa.BCV, es_contado=False)
-    vinc = b.vinculacion(monto_aplicado="3600", moneda_abono=Moneda.VES,
-                         tipo_tasa_abono=TipoTasa.BCV)
+    vinc = b.vinculacion(monto_aplicado="3600", moneda_abono=Moneda.VES, tipo_tasa_abono=TipoTasa.BCV)
     inp = _inputs(
-        orden=orden, lineas=[linea], abonos=[(vinc, metodo)],
+        orden=orden,
+        lineas=[linea],
+        abonos=[(vinc, metodo)],
         promociones=[b.promo_primera("LIGA")],
         resolver=_resolver(**{"P1@BCV": "100"}),  # falta LIGA@BCV
     )
@@ -422,7 +460,8 @@ def test_dia_habil_con_feriado_mantiene_contado_dentro_de_ventana() -> None:
     linea = b.linea(marca="Sinoco", categoria="*", precio="100")
     metodo = b.metodo(moneda=Moneda.USD, es_contado=True)
     vinc = b.vinculacion(
-        monto_aplicado="94", moneda_abono=Moneda.USD,
+        monto_aplicado="94",
+        moneda_abono=Moneda.USD,
         hora=datetime(2026, 6, 11, 10, 0),
     )
     inp = _inputs(

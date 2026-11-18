@@ -115,16 +115,19 @@ class MapeoContable(models.Model):
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="mapeos_contables")
     tipo_asiento = models.CharField(max_length=30, choices=TIPOS_ASIENTO)
     cuenta_debe = models.ForeignKey(
-        "PlanCuentas", on_delete=models.PROTECT, related_name="mapeos_debe",
-        help_text="Cuenta que va al Debe en este tipo de asiento."
+        "PlanCuentas",
+        on_delete=models.PROTECT,
+        related_name="mapeos_debe",
+        help_text="Cuenta que va al Debe en este tipo de asiento.",
     )
     cuenta_haber = models.ForeignKey(
-        "PlanCuentas", on_delete=models.PROTECT, related_name="mapeos_haber",
-        help_text="Cuenta que va al Haber en este tipo de asiento."
+        "PlanCuentas",
+        on_delete=models.PROTECT,
+        related_name="mapeos_haber",
+        help_text="Cuenta que va al Haber en este tipo de asiento.",
     )
     descripcion_plantilla = models.CharField(
-        max_length=255, default="{tipo} - {numero}",
-        help_text="Plantilla de descripción. Use {tipo}, {numero}."
+        max_length=255, default="{tipo} - {numero}", help_text="Plantilla de descripción. Use {tipo}, {numero}."
     )
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)

@@ -6,6 +6,8 @@ admin.site.register(BotUsuario)
 admin.site.register(IngestaBot)
 admin.site.register(BotRegistro)
 admin.site.register(BotLatidoDiario)
+
+
 @admin.register(BotBitacora)
 class BotBitacoraAdmin(admin.ModelAdmin):
     list_display = ("id_empresa", "entidad", "accion", "actor", "fecha_creacion")

@@ -69,9 +69,7 @@ def _construir_reglas_cuenta(
 
     com_id, com_cod = _resolver(cfg.id_cuenta_comisiones, cfg.codigo_cuenta_comisiones)
     igtf_id, igtf_cod = _resolver(cfg.id_cuenta_igtf, cfg.codigo_cuenta_igtf)
-    tran_id, tran_cod = _resolver(
-        cfg.id_cuenta_transito_pendientes, cfg.codigo_cuenta_transito_pendientes
-    )
+    tran_id, tran_cod = _resolver(cfg.id_cuenta_transito_pendientes, cfg.codigo_cuenta_transito_pendientes)
     ventana = max(0, min(int(cfg.ventana_dias), 30))
     return ReglasCuentaConciliacion(
         cuenta_comisiones_id=com_id,
@@ -148,10 +146,7 @@ def cargar_pagos_nativos_candidatos(
             fecha_pago__date__gte=fecha_min,
             fecha_pago__date__lte=fecha_max,
         )
-        .filter(
-            models.Q(id_cuenta_bancaria=cuenta_bancaria)
-            | models.Q(banco_destino=cuenta_bancaria)
-        )
+        .filter(models.Q(id_cuenta_bancaria=cuenta_bancaria) | models.Q(banco_destino=cuenta_bancaria))
         .select_related(
             "id_moneda",
             "id_pedido__id_cliente",
@@ -185,9 +180,7 @@ def cargar_pagos_nativos_candidatos(
         if moneda_cuenta_id and p.id_moneda_id and p.id_moneda_id != moneda_cuenta_id:
             continue
         fecha_local = (
-            timezone.localtime(p.fecha_pago).date()
-            if timezone.is_aware(p.fecha_pago)
-            else p.fecha_pago.date()
+            timezone.localtime(p.fecha_pago).date() if timezone.is_aware(p.fecha_pago) else p.fecha_pago.date()
         )
         socio, rifs_socio = _extraer_socio_y_rifs_pago(p, rifs_propios)
         memo_partes = [x.strip() for x in (p.referencia or "", p.observaciones or "") if x and x.strip()]
@@ -235,9 +228,7 @@ def _cargar_pagos_odoo_fuera_de_lock(
             "La cuenta requiere un conector Odoo activo de la misma empresa para consultar pagos externos."
         )
     if not cfg.odoo_journal_id:
-        raise PreconciliacionError(
-            "Configure odoo_journal_id en la cuenta bancaria antes de consultar pagos de Odoo."
-        )
+        raise PreconciliacionError("Configure odoo_journal_id en la cuenta bancaria antes de consultar pagos de Odoo.")
 
     try:
         odoo_conn = OdooConnector(conector)
@@ -456,13 +447,9 @@ def generar_propuestas_conciliacion(
                 )
             )
         if usar_odoo:
-            candidatos_totales.extend(
-                p for p in pagos_odoo if p.pago_id not in externos_comprometidos_tx
-            )
+            candidatos_totales.extend(p for p in pagos_odoo if p.pago_id not in externos_comprometidos_tx)
 
-        calculadas: list[PropuestaCalculada] = proponer_conciliacion(
-            movs_evaluables, candidatos_totales, reglas
-        )
+        calculadas: list[PropuestaCalculada] = proponer_conciliacion(movs_evaluables, candidatos_totales, reglas)
 
         for calc in calculadas:
             valores_campos: dict[str, Any] = {
@@ -581,20 +568,14 @@ def _validar_compatibilidad_pago_nativo(
             "La moneda del pago nativo no coincide con la moneda de la cuenta bancaria."
         )
 
-    cuentas_pago = {
-        str(cid)
-        for cid in (pago_obj.id_cuenta_bancaria_id, pago_obj.banco_destino_id)
-        if cid is not None
-    }
+    cuentas_pago = {str(cid) for cid in (pago_obj.id_cuenta_bancaria_id, pago_obj.banco_destino_id) if cid is not None}
     if cuentas_pago and str(mov.id_cuenta_bancaria_id) not in cuentas_pago:
         raise DecisionPreconciliacionInvalida(
             "El pago nativo pertenece a otra cuenta bancaria distinta a la del movimiento."
         )
 
     if (
-        MovimientoBancario.objects.filter(
-            id_empresa=empresa, id_pago_conciliado=pago_obj, activo=True
-        )
+        MovimientoBancario.objects.filter(id_empresa=empresa, id_pago_conciliado=pago_obj, activo=True)
         .exclude(pk=mov.pk)
         .exists()
     ):
@@ -637,9 +618,7 @@ def decidir_propuesta_conciliacion(
     cuenta_cod_limpio = _limpiar_texto(cuenta_contable_codigo)
 
     if accion_norm in ("RECHAZAR", "REABRIR") and not comentario_limpio:
-        raise DecisionPreconciliacionInvalida(
-            f"La acción {accion_norm} exige indicar un comentario de auditoría."
-        )
+        raise DecisionPreconciliacionInvalida(f"La acción {accion_norm} exige indicar un comentario de auditoría.")
 
     tiene_pago_nativo = bool(pago_nativo_id)
     tiene_pago_externo = bool(pago_ext_limpio)
@@ -664,9 +643,7 @@ def decidir_propuesta_conciliacion(
     )
 
     ref_ids = (
-        PropuestaConciliacionBancaria.objects.filter(
-            pk=propuesta_id, id_empresa=empresa, activo=True
-        )
+        PropuestaConciliacionBancaria.objects.filter(pk=propuesta_id, id_empresa=empresa, activo=True)
         .values_list(
             "id_movimiento_bancario_id",
             "id_movimiento_bancario__id_cuenta_bancaria_id",
@@ -690,9 +667,7 @@ def decidir_propuesta_conciliacion(
             raise PreconciliacionError("Propuesta de conciliación no encontrada.")
 
         if not mov.activo or mov.estado == "DESCARTADO":
-            raise DecisionPreconciliacionInvalida(
-                "El movimiento bancario asociado está inactivo o descartado."
-            )
+            raise DecisionPreconciliacionInvalida("El movimiento bancario asociado está inactivo o descartado.")
 
         _verificar_periodo_abierto(empresa, mov.id_cuenta_bancaria_id, mov.fecha_mov)
         estado_anterior = _snapshot_propuesta(prop)
@@ -735,9 +710,7 @@ def decidir_propuesta_conciliacion(
                 pago_conciliar = None
                 if prop.tipo == TIPO_PAGO and prop.id_pago_nativo_id:
                     pago_conciliar = (
-                        Pago.objects.select_for_update()
-                        .filter(pk=prop.id_pago_nativo_id, id_empresa=empresa)
-                        .first()
+                        Pago.objects.select_for_update().filter(pk=prop.id_pago_nativo_id, id_empresa=empresa).first()
                     )
                     if pago_conciliar is None:
                         raise DecisionPreconciliacionInvalida(
@@ -835,9 +808,7 @@ def decidir_propuesta_conciliacion(
                                 "La cuenta contable indicada no existe, está inactiva o pertenece a otra empresa."
                             )
                         if not etiqueta_cuenta:
-                            etiqueta_cuenta = (
-                                f"{cuenta_obj.codigo_cuenta} {cuenta_obj.nombre_cuenta}".strip()
-                            )
+                            etiqueta_cuenta = f"{cuenta_obj.codigo_cuenta} {cuenta_obj.nombre_cuenta}".strip()
                     prop.tipo = TIPO_CUENTA
                     prop.fuente_pago = ""
                     prop.id_pago_nativo = None
@@ -907,18 +878,14 @@ def contactos_por_rif_nativos(
             q_contacto |= models.Q(rif__icontains=frag) | models.Q(cedula__icontains=frag)
 
         for rif_txt, razon in (
-            Cliente.objects.filter(id_empresa=empresa, activo=True)
-            .filter(q_rif)
-            .values_list("rif", "razon_social")
+            Cliente.objects.filter(id_empresa=empresa, activo=True).filter(q_rif).values_list("rif", "razon_social")
         ):
             for r_norm in rifs(rif_txt) & set(objetivo):
                 if razon:
                     hallados.setdefault(r_norm, set()).add(str(razon).strip())
 
         for rif_txt, razon in (
-            Proveedor.objects.filter(id_empresa=empresa, activo=True)
-            .filter(q_rif)
-            .values_list("rif", "razon_social")
+            Proveedor.objects.filter(id_empresa=empresa, activo=True).filter(q_rif).values_list("rif", "razon_social")
         ):
             for r_norm in rifs(rif_txt) & set(objetivo):
                 if razon:

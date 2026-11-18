@@ -5,6 +5,7 @@ restantes del OdooConnector (connectors/odoo/connector.py).
 TODO xmlrpc está mockeado con unittest.mock.patch — CERO red real.
 Complementa apps/integration_hub/tests/test_odoo_connector.py (no duplica).
 """
+
 import pytest
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -55,6 +56,7 @@ def _kwargs_de(mock_models):
 
 
 # ── Cliente: construcción y autenticación ────────────────────────────────────
+
 
 class TestClienteConstruccion:
     def test_host_sin_esquema_recibe_https(self):
@@ -119,17 +121,20 @@ class TestClienteCall:
 
 # ── Cliente: métodos de lectura (domains exactos) ─────────────────────────────
 
+
 class TestClienteLectura:
     def test_get_socios_filtros_combinados(self):
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_socios(cliente=True, proveedor=True, desde="2024-01-01", limite=99)
-        assert _domain_de(mock_models) == [[
-            ["active", "=", True],
-            ["customer_rank", ">", 0],
-            ["supplier_rank", ">", 0],
-            ["write_date", ">=", "2024-01-01"],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["active", "=", True],
+                ["customer_rank", ">", 0],
+                ["supplier_rank", ">", 0],
+                ["write_date", ">=", "2024-01-01"],
+            ]
+        ]
         assert _kwargs_de(mock_models)["limit"] == 99
 
     def test_get_socios_sin_filtros(self):
@@ -144,26 +149,35 @@ class TestClienteLectura:
         mock_models.execute_kw.return_value = [{"id": 1, "name": "ACME"}]
         result = client.buscar_socio("ACM", limite=5)
         assert result == [{"id": 1, "name": "ACME"}]
-        assert _domain_de(mock_models) == [[
-            ["name", "ilike", "ACM"], ["active", "=", True],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["name", "ilike", "ACM"],
+                ["active", "=", True],
+            ]
+        ]
         assert _kwargs_de(mock_models)["limit"] == 5
 
     def test_get_productos_con_desde(self):
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_productos(desde="2024-02-01")
-        assert _domain_de(mock_models) == [[
-            ["active", "=", True], ["write_date", ">=", "2024-02-01"],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["active", "=", True],
+                ["write_date", ">=", "2024-02-01"],
+            ]
+        ]
 
     def test_get_variantes_producto(self):
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_variantes_producto(42)
-        assert _domain_de(mock_models) == [[
-            ["product_tmpl_id", "=", 42], ["active", "=", True],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["product_tmpl_id", "=", 42],
+                ["active", "=", True],
+            ]
+        ]
 
     def test_get_pedidos_venta_solo_confirmadas(self):
         client, mock_models = _make_client()
@@ -175,10 +189,12 @@ class TestClienteLectura:
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_pedidos_venta(solo_confirmadas=False, desde="2024-03-01")
-        assert _domain_de(mock_models) == [[
-            ["state", "in", ["draft", "sent", "sale", "done"]],
-            ["write_date", ">=", "2024-03-01"],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["state", "in", ["draft", "sent", "sale", "done"]],
+                ["write_date", ">=", "2024-03-01"],
+            ]
+        ]
 
     def test_get_lineas_pedido_venta(self):
         client, mock_models = _make_client()
@@ -190,10 +206,12 @@ class TestClienteLectura:
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_pedidos_compra(desde="2024-01-01")
-        assert _domain_de(mock_models) == [[
-            ["state", "in", ["purchase", "done"]],
-            ["write_date", ">=", "2024-01-01"],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["state", "in", ["purchase", "done"]],
+                ["write_date", ">=", "2024-01-01"],
+            ]
+        ]
 
     def test_get_lineas_pedido_compra(self):
         client, mock_models = _make_client()
@@ -205,21 +223,25 @@ class TestClienteLectura:
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_facturas(tipo="in_invoice", desde="2024-05-01")
-        assert _domain_de(mock_models) == [[
-            ["move_type", "=", "in_invoice"],
-            ["state", "=", "posted"],
-            ["write_date", ">=", "2024-05-01"],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["move_type", "=", "in_invoice"],
+                ["state", "=", "posted"],
+                ["write_date", ">=", "2024-05-01"],
+            ]
+        ]
 
     def test_get_pagos_con_tipo(self):
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_pagos(tipo="inbound", desde="2024-04-01")
-        assert _domain_de(mock_models) == [[
-            ["state", "in", ["in_process", "paid", "posted"]],
-            ["payment_type", "=", "inbound"],
-            ["date", ">=", "2024-04-01"],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["state", "in", ["in_process", "paid", "posted"]],
+                ["payment_type", "=", "inbound"],
+                ["date", ">=", "2024-04-01"],
+            ]
+        ]
 
     def test_get_stock_actual_solo_ubicaciones_internas(self):
         client, mock_models = _make_client()
@@ -232,9 +254,12 @@ class TestClienteLectura:
         client, mock_models = _make_client()
         mock_models.execute_kw.return_value = []
         client.get_movimientos_stock(desde="2024-06-01")
-        assert _domain_de(mock_models) == [[
-            ["state", "=", "done"], ["date", ">=", "2024-06-01"],
-        ]]
+        assert _domain_de(mock_models) == [
+            [
+                ["state", "=", "done"],
+                ["date", ">=", "2024-06-01"],
+            ]
+        ]
 
     def test_get_diarios_con_tipos(self):
         client, mock_models = _make_client()
@@ -258,6 +283,7 @@ class TestClienteLectura:
 
 
 # ── Cliente: escritura ────────────────────────────────────────────────────────
+
 
 class TestClienteEscritura:
     def test_crear_socio_limpia_nones_y_retorna_id(self):
@@ -293,6 +319,7 @@ class TestClienteEscritura:
 
 
 # ── Conector: _get_client y pulls ─────────────────────────────────────────────
+
 
 def _connector(config=None):
     instancia = MagicMock()
@@ -370,15 +397,18 @@ class TestConnectorGetClient:
 
 
 class TestConnectorPullErrores:
-    @pytest.mark.parametrize("metodo,cliente_attr", [
-        ("pull_contactos", "get_socios"),
-        ("pull_productos", "get_productos"),
-        ("pull_pedidos_venta", "get_pedidos_venta"),
-        ("pull_pedidos_compra", "get_pedidos_compra"),
-        ("pull_facturas_venta", "get_facturas"),
-        ("pull_pagos", "get_pagos"),
-        ("pull_inventario", "get_stock_actual"),
-    ])
+    @pytest.mark.parametrize(
+        "metodo,cliente_attr",
+        [
+            ("pull_contactos", "get_socios"),
+            ("pull_productos", "get_productos"),
+            ("pull_pedidos_venta", "get_pedidos_venta"),
+            ("pull_pedidos_compra", "get_pedidos_compra"),
+            ("pull_facturas_venta", "get_facturas"),
+            ("pull_pagos", "get_pagos"),
+            ("pull_inventario", "get_stock_actual"),
+        ],
+    )
     def test_odoocallerror_se_convierte_en_dataerror(self, metodo, cliente_attr):
         connector, mock_client = _connector_con_cliente_mock()
         getattr(mock_client, cliente_attr).side_effect = OdooCallError("falla rpc")
@@ -390,9 +420,7 @@ class TestConnectorPullErrores:
         connector, mock_client = _connector_con_cliente_mock()
         mock_client.get_socios.return_value = []
         connector.pull_contactos(desde=datetime(2024, 3, 1, 12, 30, 45), limite=10)
-        mock_client.get_socios.assert_called_once_with(
-            desde="2024-03-01 12:30:45", limite=10
-        )
+        mock_client.get_socios.assert_called_once_with(desde="2024-03-01 12:30:45", limite=10)
 
     def test_pull_pagos_usa_solo_fecha(self):
         connector, mock_client = _connector_con_cliente_mock()
@@ -404,22 +432,24 @@ class TestConnectorPullErrores:
 class TestConnectorPedidosYNormalizacion:
     def test_pull_pedidos_venta_incluye_lineas(self):
         connector, mock_client = _connector_con_cliente_mock()
-        mock_client.get_pedidos_venta.return_value = [{
-            "id": 5,
-            "name": "SO005",
-            "partner_id": [3, "Cliente Uno"],
-            "user_id": [2, "Vendedor"],
-            "date_order": "2024-03-01 10:00:00",
-            "state": "sale",
-            "invoice_status": "to invoice",
-            "amount_untaxed": 100.0,
-            "amount_tax": 16.0,
-            "amount_total": 116.0,
-            "currency_id": [2, "USD"],
-            "pricelist_id": [1, "Lista Pública"],
-            "payment_term_id": [4, "30 días"],
-            "write_date": "2024-03-01 11:00:00",
-        }]
+        mock_client.get_pedidos_venta.return_value = [
+            {
+                "id": 5,
+                "name": "SO005",
+                "partner_id": [3, "Cliente Uno"],
+                "user_id": [2, "Vendedor"],
+                "date_order": "2024-03-01 10:00:00",
+                "state": "sale",
+                "invoice_status": "to invoice",
+                "amount_untaxed": 100.0,
+                "amount_tax": 16.0,
+                "amount_total": 116.0,
+                "currency_id": [2, "USD"],
+                "pricelist_id": [1, "Lista Pública"],
+                "payment_term_id": [4, "30 días"],
+                "write_date": "2024-03-01 11:00:00",
+            }
+        ]
         mock_client.get_lineas_pedido_venta.return_value = [{"id": 50}]
 
         result = connector.pull_pedidos_venta()
@@ -449,19 +479,21 @@ class TestConnectorPedidosYNormalizacion:
 
     def test_pull_pedidos_compra_normaliza(self):
         connector, mock_client = _connector_con_cliente_mock()
-        mock_client.get_pedidos_compra.return_value = [{
-            "id": 9,
-            "name": "PO009",
-            "partner_id": [7, "Proveedor XYZ"],
-            "date_order": "2024-02-10 08:00:00",
-            "date_approve": "2024-02-11 09:00:00",
-            "state": "purchase",
-            "invoice_status": "invoiced",
-            "amount_untaxed": 200.0,
-            "amount_tax": 32.0,
-            "amount_total": 232.0,
-            "currency_id": [2, "USD"],
-        }]
+        mock_client.get_pedidos_compra.return_value = [
+            {
+                "id": 9,
+                "name": "PO009",
+                "partner_id": [7, "Proveedor XYZ"],
+                "date_order": "2024-02-10 08:00:00",
+                "date_approve": "2024-02-11 09:00:00",
+                "state": "purchase",
+                "invoice_status": "invoiced",
+                "amount_untaxed": 200.0,
+                "amount_tax": 32.0,
+                "amount_total": 232.0,
+                "currency_id": [2, "USD"],
+            }
+        ]
         mock_client.get_lineas_pedido_compra.return_value = []
 
         result = connector.pull_pedidos_compra()
@@ -474,21 +506,23 @@ class TestConnectorPedidosYNormalizacion:
 
     def test_pull_facturas_venta_normaliza(self):
         connector, mock_client = _connector_con_cliente_mock()
-        mock_client.get_facturas.return_value = [{
-            "id": 30,
-            "name": "INV/2024/0001",
-            "ref": "REF-1",
-            "invoice_origin": "SO005",
-            "partner_id": [3, "Cliente Uno"],
-            "invoice_date": "2024-03-05",
-            "invoice_date_due": "2024-04-04",
-            "amount_untaxed": 100.0,
-            "amount_tax": 16.0,
-            "amount_total": 116.0,
-            "amount_residual": 50.0,
-            "currency_id": [2, "USD"],
-            "payment_state": "partial",
-        }]
+        mock_client.get_facturas.return_value = [
+            {
+                "id": 30,
+                "name": "INV/2024/0001",
+                "ref": "REF-1",
+                "invoice_origin": "SO005",
+                "partner_id": [3, "Cliente Uno"],
+                "invoice_date": "2024-03-05",
+                "invoice_date_due": "2024-04-04",
+                "amount_untaxed": 100.0,
+                "amount_tax": 16.0,
+                "amount_total": 116.0,
+                "amount_residual": 50.0,
+                "currency_id": [2, "USD"],
+                "payment_state": "partial",
+            }
+        ]
         result = connector.pull_facturas_venta()
         factura = result[0]
         assert factura["numero"] == "INV/2024/0001"
@@ -496,20 +530,20 @@ class TestConnectorPedidosYNormalizacion:
         assert factura["fecha_vencimiento"] == "2024-04-04"
         assert factura["saldo_pendiente"] == Decimal("50.0")
         assert factura["estado_pago"] == "parcial"
-        mock_client.get_facturas.assert_called_once_with(
-            tipo="out_invoice", desde=None, limite=200
-        )
+        mock_client.get_facturas.assert_called_once_with(tipo="out_invoice", desde=None, limite=200)
 
     def test_pull_inventario_normaliza_quants(self):
         connector, mock_client = _connector_con_cliente_mock()
-        mock_client.get_stock_actual.return_value = [{
-            "id": 70,
-            "product_id": [10, "Silla"],
-            "location_id": [4, "WH/Stock"],
-            "quantity": 20.0,
-            "reserved_quantity": 5.0,
-            "lot_id": [2, "LOTE-A"],
-        }]
+        mock_client.get_stock_actual.return_value = [
+            {
+                "id": 70,
+                "product_id": [10, "Silla"],
+                "location_id": [4, "WH/Stock"],
+                "quantity": 20.0,
+                "reserved_quantity": 5.0,
+                "lot_id": [2, "LOTE-A"],
+            }
+        ]
         result = connector.pull_inventario()
         quant = result[0]
         assert quant["id_externo"] == "70"
@@ -523,9 +557,7 @@ class TestConnectorPedidosYNormalizacion:
 
     def test_cantidad_disponible_nunca_negativa(self):
         connector, _ = _connector_con_cliente_mock()
-        quant = connector._normalizar_stock_quant(
-            {"id": 1, "quantity": 2.0, "reserved_quantity": 5.0}
-        )
+        quant = connector._normalizar_stock_quant({"id": 1, "quantity": 2.0, "reserved_quantity": 5.0})
         assert quant["cantidad_disponible"] == 0.0
 
 
@@ -533,33 +565,45 @@ class TestConnectorPush:
     def test_push_contacto_nuevo_crea(self):
         connector, mock_client = _connector_con_cliente_mock()
         mock_client.crear_socio.return_value = 101
-        result = connector.push_contacto({
-            "nombre": "ACME", "email": "a@b.com", "ciudad": "Caracas",
-        })
+        result = connector.push_contacto(
+            {
+                "nombre": "ACME",
+                "email": "a@b.com",
+                "ciudad": "Caracas",
+            }
+        )
         assert result == "101"
-        mock_client.crear_socio.assert_called_once_with({
-            "name": "ACME", "email": "a@b.com", "city": "Caracas",
-        })
+        mock_client.crear_socio.assert_called_once_with(
+            {
+                "name": "ACME",
+                "email": "a@b.com",
+                "city": "Caracas",
+            }
+        )
 
     def test_push_contacto_existente_actualiza(self):
         connector, mock_client = _connector_con_cliente_mock()
-        result = connector.push_contacto({
-            "id_externo": "42", "telefono": "0212", "identificador_fiscal": "J-1",
-        })
-        assert result == "42"
-        mock_client.actualizar_socio.assert_called_once_with(
-            42, {"phone": "0212", "vat": "J-1"}
+        result = connector.push_contacto(
+            {
+                "id_externo": "42",
+                "telefono": "0212",
+                "identificador_fiscal": "J-1",
+            }
         )
+        assert result == "42"
+        mock_client.actualizar_socio.assert_called_once_with(42, {"phone": "0212", "vat": "J-1"})
 
     def test_push_producto_nuevo_convierte_decimal_a_float(self):
         connector, mock_client = _connector_con_cliente_mock()
         mock_client.crear_producto.return_value = 55
-        result = connector.push_producto({
-            "nombre": "Silla",
-            "codigo_interno": "S-1",
-            "precio_venta": Decimal("12.50"),
-            "costo": Decimal("8.25"),
-        })
+        result = connector.push_producto(
+            {
+                "nombre": "Silla",
+                "codigo_interno": "S-1",
+                "precio_venta": Decimal("12.50"),
+                "costo": Decimal("8.25"),
+            }
+        )
         assert result == "55"
         vals = mock_client.crear_producto.call_args[0][0]
         assert vals["list_price"] == 12.5
@@ -568,13 +612,14 @@ class TestConnectorPush:
 
     def test_push_producto_existente_actualiza(self):
         connector, mock_client = _connector_con_cliente_mock()
-        result = connector.push_producto({
-            "id_externo": "7", "descripcion_venta": "Desc",
-        })
-        assert result == "7"
-        mock_client.actualizar_producto.assert_called_once_with(
-            7, {"description_sale": "Desc"}
+        result = connector.push_producto(
+            {
+                "id_externo": "7",
+                "descripcion_venta": "Desc",
+            }
         )
+        assert result == "7"
+        mock_client.actualizar_producto.assert_called_once_with(7, {"description_sale": "Desc"})
 
 
 class TestConnectorCartera:
@@ -597,9 +642,14 @@ class TestConnectorCartera:
 
     def test_pull_cartera_vencida_clasifica_buckets(self, settings):
         settings.DEBUG = True
-        connector = _connector(config={
-            "host": "http://localhost:8069", "db": "db", "uid": 2, "password": "p",
-        })
+        connector = _connector(
+            config={
+                "host": "http://localhost:8069",
+                "db": "db",
+                "uid": 2,
+                "password": "p",
+            }
+        )
         hoy = date.today()
         records = [
             {  # vencida 45 días → bucket 31_60
@@ -666,27 +716,31 @@ class TestConnectorCartera:
         settings.DEBUG = True
         connector = _connector(config={"host": "http://l:8069", "db": "d", "uid": 2})
         mock_proxy_instance = MagicMock()
-        mock_proxy_instance.execute_kw.return_value = [{
-            "id": 9,
-            "name": "PAGO-9",
-            "date": "2024-03-20",
-            "amount": 150.0,
-            "currency_id": [2, "USD"],
-            "payment_type": "inbound",
-            "ref": "abono",
-        }]
+        mock_proxy_instance.execute_kw.return_value = [
+            {
+                "id": 9,
+                "name": "PAGO-9",
+                "date": "2024-03-20",
+                "amount": 150.0,
+                "currency_id": [2, "USD"],
+                "payment_type": "inbound",
+                "ref": "abono",
+            }
+        ]
         with patch("xmlrpc.client.ServerProxy", return_value=mock_proxy_instance):
             pagos = connector.pull_pagos_cliente("3")
 
-        assert pagos == [{
-            "pago_id": "9",
-            "referencia": "PAGO-9",
-            "fecha": "2024-03-20",
-            "monto": Decimal("150.0"),
-            "moneda": "USD",
-            "tipo": "inbound",
-            "nota": "abono",
-        }]
+        assert pagos == [
+            {
+                "pago_id": "9",
+                "referencia": "PAGO-9",
+                "fecha": "2024-03-20",
+                "monto": Decimal("150.0"),
+                "moneda": "USD",
+                "tipo": "inbound",
+                "nota": "abono",
+            }
+        ]
 
     def test_pull_pagos_cliente_error_lanza_connectionerror(self, settings):
         settings.DEBUG = True
@@ -697,28 +751,34 @@ class TestConnectorCartera:
 
 
 class TestConnectorUtilidades:
-    @pytest.mark.parametrize("dias,bucket", [
-        (-5, "al_dia"),
-        (0, "al_dia"),
-        (1, "1_30"),
-        (30, "1_30"),
-        (31, "31_60"),
-        (60, "31_60"),
-        (61, "61_90"),
-        (90, "61_90"),
-        (91, "mas_90"),
-        (365, "mas_90"),
-    ])
+    @pytest.mark.parametrize(
+        "dias,bucket",
+        [
+            (-5, "al_dia"),
+            (0, "al_dia"),
+            (1, "1_30"),
+            (30, "1_30"),
+            (31, "31_60"),
+            (60, "31_60"),
+            (61, "61_90"),
+            (90, "61_90"),
+            (91, "mas_90"),
+            (365, "mas_90"),
+        ],
+    )
     def test_aging_bucket(self, dias, bucket):
         assert OdooConnector._aging_bucket(dias) == bucket
 
-    @pytest.mark.parametrize("nombre,dias", [
-        ("30 días", 30),
-        ("Net 15", 15),
-        ("Inmediato", 0),
-        ("", 0),
-        (None, 0),
-    ])
+    @pytest.mark.parametrize(
+        "nombre,dias",
+        [
+            ("30 días", 30),
+            ("Net 15", 15),
+            ("Inmediato", 0),
+            ("", 0),
+            (None, 0),
+        ],
+    )
     def test_term_days_map(self, nombre, dias):
         assert OdooConnector._term_days_map(nombre) == dias
 
@@ -730,23 +790,26 @@ class TestNormalizeOdooHost:
     cobertura del gate diff-cover; complementa los tests in-app.
     """
 
-    @pytest.mark.parametrize("raw,esperado", [
-        # Bug real: el usuario pega la URL de login del navegador.
-        (
-            "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com/en/web/login",
-            "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com",
-        ),
-        ("miempresa.odoo.com", "https://miempresa.odoo.com"),  # sin esquema → https
-        ("miempresa.odoo.com/en/web/login", "https://miempresa.odoo.com"),
-        ("https://x.odoo.com/web/login?db=foo#bar", "https://x.odoo.com"),
-        ("http://localhost:8069/web", "http://localhost:8069"),  # conserva puerto/http
-        ("https://x.odoo.com/", "https://x.odoo.com"),
-        ("https://x.odoo.com", "https://x.odoo.com"),  # idempotente
-        ("  https://x.odoo.com/web  ", "https://x.odoo.com"),  # espacios
-        ("", ""),  # vacío → rama return ""
-        ("   ", ""),  # solo espacios → vacío
-        ("https:///ruta/", "https:///ruta"),  # sin netloc → fallback rstrip
-    ])
+    @pytest.mark.parametrize(
+        "raw,esperado",
+        [
+            # Bug real: el usuario pega la URL de login del navegador.
+            (
+                "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com/en/web/login",
+                "https://lixie-dev-lubrika-qa-33433878.dev.odoo.com",
+            ),
+            ("miempresa.odoo.com", "https://miempresa.odoo.com"),  # sin esquema → https
+            ("miempresa.odoo.com/en/web/login", "https://miempresa.odoo.com"),
+            ("https://x.odoo.com/web/login?db=foo#bar", "https://x.odoo.com"),
+            ("http://localhost:8069/web", "http://localhost:8069"),  # conserva puerto/http
+            ("https://x.odoo.com/", "https://x.odoo.com"),
+            ("https://x.odoo.com", "https://x.odoo.com"),  # idempotente
+            ("  https://x.odoo.com/web  ", "https://x.odoo.com"),  # espacios
+            ("", ""),  # vacío → rama return ""
+            ("   ", ""),  # solo espacios → vacío
+            ("https:///ruta/", "https:///ruta"),  # sin netloc → fallback rstrip
+        ],
+    )
     def test_normaliza(self, raw, esperado):
         from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
 

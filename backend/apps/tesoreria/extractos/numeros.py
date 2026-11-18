@@ -131,4 +131,3 @@ def limpiar_ref(valor: Any) -> str:
     if re.fullmatch(r"\d+\.0+", texto):
         return texto.split(".", 1)[0]
     return texto
-

@@ -74,9 +74,7 @@ class AsignacionHorarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrado via empresa del empleado y via HorarioTrabajo → id_empresa
-        return AsignacionHorario.objects.filter(
-            id_horario__id_empresa__in=_empresas(self.request)
-        )
+        return AsignacionHorario.objects.filter(id_horario__id_empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["get"])
     def activas(self, request):
@@ -132,9 +130,7 @@ class RegistroAsistenciaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1 — filtrado via empleado__empresa
-        return RegistroAsistencia.objects.filter(
-            id_empleado__empresa__in=_empresas(self.request)
-        )
+        return RegistroAsistencia.objects.filter(id_empleado__empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["post"])
     def marcar_asistencia(self, request):
@@ -213,9 +209,7 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1 — filtrado via empleado__empresa
-        return ResumenAsistenciaDiario.objects.filter(
-            id_empleado__empresa__in=_empresas(self.request)
-        )
+        return ResumenAsistenciaDiario.objects.filter(id_empleado__empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["post"])
     def generar_resumen_diario(self, request):
@@ -241,9 +235,7 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         for emp_id in empleados_ids:
             # Verificar si ya existe resumen para esta fecha y empleado
-            resumen_existente = ResumenAsistenciaDiario.objects.filter(
-                id_empleado_id=emp_id, fecha=fecha
-            ).first()
+            resumen_existente = ResumenAsistenciaDiario.objects.filter(id_empleado_id=emp_id, fecha=fecha).first()
 
             if resumen_existente:
                 continue
@@ -335,9 +327,7 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         if not empleado_id:
             return Response({"error": "Debe especificar el ID del empleado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        resumenes = self.get_queryset().filter(
-            id_empleado_id=empleado_id, fecha__year=año, fecha__month=mes
-        )
+        resumenes = self.get_queryset().filter(id_empleado_id=empleado_id, fecha__year=año, fecha__month=mes)
 
         # Calcular estadísticas
         total_dias = resumenes.count()

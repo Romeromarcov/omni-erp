@@ -88,14 +88,8 @@ def tareas_listar(
             "proyecto": t.proyecto.nombre if t.proyecto else None,
             "seccion": t.seccion.nombre if t.seccion else None,
             "area": t.area.nombre if t.area else None,
-            "asignado_a": (
-                t.asignado_a.get_full_name().strip() or t.asignado_a.username
-                if t.asignado_a
-                else None
-            ),
-            "fecha_vencimiento": (
-                t.fecha_vencimiento.isoformat() if t.fecha_vencimiento else None
-            ),
+            "asignado_a": (t.asignado_a.get_full_name().strip() or t.asignado_a.username if t.asignado_a else None),
+            "fecha_vencimiento": (t.fecha_vencimiento.isoformat() if t.fecha_vencimiento else None),
             "bloqueada_por_escalacion": t.bloqueada_por_escalacion,
             "entidad_tipo": t.entidad_tipo or None,
             "entidad_id": str(t.entidad_id) if t.entidad_id else None,
@@ -118,9 +112,7 @@ def tareas_resumen_equipo(
     ctx = _ctx(capability_token, f"{_SCOPE}:read")
     empresa = _empresa_activa(empresa_id, ctx)
     fecha_corte = parse_date(fecha) if fecha else None
-    logger.info(
-        "tareas_resumen_equipo | actor=%s | tenant=%s", ctx["actor_id"], ctx["tenant_id"]
-    )
+    logger.info("tareas_resumen_equipo | actor=%s | tenant=%s", ctx["actor_id"], ctx["tenant_id"])
     return resumen_ejecutivo_equipo(empresa, hoy=fecha_corte)
 
 
@@ -160,17 +152,13 @@ def tareas_crear(
 
         area = None
         if area_id:
-            area = AreaOperativa.objects.filter(
-                pk=uuid.UUID(str(area_id)), id_empresa=empresa, activo=True
-            ).first()
+            area = AreaOperativa.objects.filter(pk=uuid.UUID(str(area_id)), id_empresa=empresa, activo=True).first()
             if area is None:
                 return {"error": "Área no encontrada en la empresa."}
 
         proyecto = None
         if proyecto_id:
-            proyecto = Proyecto.objects.filter(
-                pk=uuid.UUID(str(proyecto_id)), id_empresa=empresa, activo=True
-            ).first()
+            proyecto = Proyecto.objects.filter(pk=uuid.UUID(str(proyecto_id)), id_empresa=empresa, activo=True).first()
             if proyecto is None:
                 return {"error": "Proyecto no encontrado en la empresa."}
 
@@ -233,16 +221,12 @@ def tareas_cambiar_estado(
         tarea_uuid = uuid.UUID(str(tarea_id))
     except (ValueError, TypeError):
         return {"error": "tarea_id inválido."}
-    tarea = Tarea.objects.filter(
-        pk=tarea_uuid, id_empresa=empresa, activo=True
-    ).first()
+    tarea = Tarea.objects.filter(pk=tarea_uuid, id_empresa=empresa, activo=True).first()
     if tarea is None:
         return {"error": "Tarea no encontrada en la empresa."}
 
     try:
-        actualizada = cambiar_estado_tarea(
-            tarea=tarea, nuevo_estado=nuevo_estado, motivo=motivo
-        )
+        actualizada = cambiar_estado_tarea(tarea=tarea, nuevo_estado=nuevo_estado, motivo=motivo)
     except TareaError as exc:
         return {"error": exc.args[0]}
 
@@ -256,9 +240,7 @@ def tareas_cambiar_estado(
     return {
         "id_tarea": str(actualizada.id_tarea),
         "estado": actualizada.estado,
-        "completada_en": (
-            actualizada.completada_en.isoformat() if actualizada.completada_en else None
-        ),
+        "completada_en": (actualizada.completada_en.isoformat() if actualizada.completada_en else None),
     }
 
 
@@ -324,9 +306,7 @@ def tareas_confirmar_minuta(
         minuta_uuid = uuid.UUID(str(minuta_id))
     except (ValueError, TypeError):
         return {"error": "minuta_id inválido."}
-    minuta = MinutaReunion.objects.filter(
-        pk=minuta_uuid, id_empresa=empresa, activo=True
-    ).first()
+    minuta = MinutaReunion.objects.filter(pk=minuta_uuid, id_empresa=empresa, activo=True).first()
     if minuta is None:
         return {"error": "Minuta no encontrada en la empresa."}
 

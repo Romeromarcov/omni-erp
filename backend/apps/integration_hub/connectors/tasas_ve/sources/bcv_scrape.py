@@ -11,6 +11,7 @@ verificación (se loguea una advertencia ruidosa en cada llamada).
 
 BeautifulSoup → div#dolar > strong, con regex de fallback.
 """
+
 import logging
 import os
 import re

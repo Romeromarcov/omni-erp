@@ -138,6 +138,7 @@ class TestCorrelativoConcurrencia:
             finally:
                 # Cada hilo cierra su propia conexión (thread-local) antes de salir
                 from django.db import connection as _conn
+
                 _conn.close()
 
         hilos = [threading.Thread(target=obtener_numero) for _ in range(N_HILOS)]
@@ -176,6 +177,7 @@ class TestCorrelativoConcurrencia:
             finally:
                 # Cada hilo cierra su propia conexión (thread-local) antes de salir
                 from django.db import connection as _conn
+
                 _conn.close()
 
         hilos = [threading.Thread(target=obtener_numero) for _ in range(N_HILOS)]
@@ -187,6 +189,6 @@ class TestCorrelativoConcurrencia:
 
         # Verificar que son N únicos en el rango 1..N
         nums_int = sorted(int(r) for r in resultados)
-        assert nums_int == list(range(1, N_HILOS + 1)), (
-            f"Rango incorrecto: {nums_int}, esperado: {list(range(1, N_HILOS + 1))}"
-        )
+        assert nums_int == list(
+            range(1, N_HILOS + 1)
+        ), f"Rango incorrecto: {nums_int}, esperado: {list(range(1, N_HILOS + 1))}"

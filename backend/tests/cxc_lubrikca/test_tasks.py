@@ -1,4 +1,5 @@
 """Tests de las tareas Celery de sincronización periódica (Fase 5 — sync programado)."""
+
 from __future__ import annotations
 
 from unittest.mock import patch

@@ -45,11 +45,7 @@ def obtener_sesion_activa_usuario(usuario):
     """
     from .models import SesionCajaFisica
 
-    return (
-        SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA")
-        .select_related("caja_fisica")
-        .first()
-    )
+    return SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA").select_related("caja_fisica").first()
 
 
 def validar_acceso_caja_usuario(usuario, caja):

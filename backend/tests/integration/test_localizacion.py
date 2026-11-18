@@ -32,8 +32,11 @@ def test_empresa_sin_localizacion_no_aplica_igtf(moneda_usd):
 def test_empresa_ve_con_localizacion_si_aplica_igtf(moneda_usd):
     """Control: empresa VE con capa legal activa SÍ recibe IGTF (la regla solo apaga, no rompe)."""
     empresa_ve = Empresa.objects.create(
-        nombre_legal="Bodega Caracas C.A.", identificador_fiscal="J-555", id_moneda_base=moneda_usd,
-        pais_codigo_iso="VE", localizacion_legal_activa=True,
+        nombre_legal="Bodega Caracas C.A.",
+        identificador_fiscal="J-555",
+        id_moneda_base=moneda_usd,
+        pais_codigo_iso="VE",
+        localizacion_legal_activa=True,
     )
     resultado = calcular_igtf(Decimal("100"), "DIVISA_EFECTIVO", empresa=empresa_ve)
     assert resultado["aplica"] is True
@@ -43,8 +46,11 @@ def test_empresa_ve_con_localizacion_si_aplica_igtf(moneda_usd):
 @pytest.mark.django_db
 def test_localizacion_resuelve_noop_para_capa_legal_desactivada(moneda_usd):
     empresa_co = Empresa.objects.create(
-        nombre_legal="X", identificador_fiscal="CO-1", id_moneda_base=moneda_usd,
-        pais_codigo_iso="CO", localizacion_legal_activa=False,
+        nombre_legal="X",
+        identificador_fiscal="CO-1",
+        id_moneda_base=moneda_usd,
+        pais_codigo_iso="CO",
+        localizacion_legal_activa=False,
     )
     loc = services.get_localizacion(empresa_co)
     assert isinstance(loc["MotorImpuestos"], ports.MotorImpuestosNoOp)

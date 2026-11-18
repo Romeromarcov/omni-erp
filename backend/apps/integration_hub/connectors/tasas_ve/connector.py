@@ -5,6 +5,7 @@ No requiere ConectorInstancia (APIs públicas).
 Cascade BCV: dolarapi → exchangedynamic → bcv_scrape.
 Binance P2P: promedio 5 BUY + 5 SELL.
 """
+
 from __future__ import annotations
 
 import logging
@@ -67,6 +68,7 @@ class TasasVeConnector(BaseConnector):
     def pull_tasa_binance_p2p(self) -> Decimal | None:
         """Promedio 5 BUY + 5 SELL de Binance P2P."""
         from .sources.binance_p2p import fetch_tasa_binance_p2p
+
         tasa = fetch_tasa_binance_p2p()
         if tasa is not None:
             self.logger.info("Tasa Binance P2P: %s", tasa)

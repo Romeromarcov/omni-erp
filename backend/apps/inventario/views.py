@@ -59,9 +59,7 @@ class CategoriaProductoViewSet(BaseModelViewSet):
     serializer_class = CategoriaProductoSerializer
 
     def get_queryset(self):
-        return CategoriaProducto.objects.filter(id_empresa__in=_empresas(self.request)).order_by(
-            "nombre_categoria"
-        )
+        return CategoriaProducto.objects.filter(id_empresa__in=_empresas(self.request)).order_by("nombre_categoria")
 
 
 class ProductoViewSet(BaseModelViewSet):
@@ -94,13 +92,10 @@ class ProductoViewSet(BaseModelViewSet):
         fecha_desde = request.query_params.get("fecha_desde")
         fecha_hasta = request.query_params.get("fecha_hasta")
 
-        qs = (
-            MovimientoInventario.objects.filter(
-                id_empresa__in=_empresas(request),
-                id_producto=producto,
-            )
-            .select_related("id_almacen_origen", "id_almacen_destino", "id_usuario_registro")
-        )
+        qs = MovimientoInventario.objects.filter(
+            id_empresa__in=_empresas(request),
+            id_producto=producto,
+        ).select_related("id_almacen_origen", "id_almacen_destino", "id_usuario_registro")
 
         if almacen_id:
             qs = qs.filter(Q(id_almacen_origen=almacen_id) | Q(id_almacen_destino=almacen_id))
@@ -116,14 +111,11 @@ class ProductoViewSet(BaseModelViewSet):
         # Calcular saldo inicial si hay filtro de fecha y almacén
         saldo = Decimal("0")
         if almacen_id and fecha_desde:
-            prior_qs = (
-                MovimientoInventario.objects.filter(
-                    id_empresa__in=_empresas(request),
-                    id_producto=producto,
-                    fecha_hora_movimiento__date__lt=fecha_desde,
-                )
-                .filter(Q(id_almacen_origen=almacen_id) | Q(id_almacen_destino=almacen_id))
-            )
+            prior_qs = MovimientoInventario.objects.filter(
+                id_empresa__in=_empresas(request),
+                id_producto=producto,
+                fecha_hora_movimiento__date__lt=fecha_desde,
+            ).filter(Q(id_almacen_origen=almacen_id) | Q(id_almacen_destino=almacen_id))
             for mov in prior_qs:
                 saldo += delta_para_almacen(mov, almacen_id)
 
@@ -140,16 +132,10 @@ class ProductoViewSet(BaseModelViewSet):
                     "tipo_movimiento": mov.tipo_movimiento,
                     "cantidad": str(mov.cantidad),
                     "delta": str(delta),
-                    "almacen_origen": (
-                        mov.id_almacen_origen.nombre_almacen if mov.id_almacen_origen else None
-                    ),
-                    "almacen_destino": (
-                        mov.id_almacen_destino.nombre_almacen if mov.id_almacen_destino else None
-                    ),
+                    "almacen_origen": (mov.id_almacen_origen.nombre_almacen if mov.id_almacen_origen else None),
+                    "almacen_destino": (mov.id_almacen_destino.nombre_almacen if mov.id_almacen_destino else None),
                     "costo_unitario": (
-                        str(mov.costo_unitario_movimiento)
-                        if mov.costo_unitario_movimiento is not None
-                        else None
+                        str(mov.costo_unitario_movimiento) if mov.costo_unitario_movimiento is not None else None
                     ),
                     "saldo_anterior": str(saldo_anterior),
                     "saldo_posterior": str(saldo),
@@ -317,9 +303,7 @@ class _OperacionInventarioBaseViewSet(BaseModelViewSet):
 
         contraparte = None
         if data.get("almacen_contraparte"):
-            contraparte = Almacen.objects.filter(
-                id_almacen=data["almacen_contraparte"], id_empresa=empresa
-            ).first()
+            contraparte = Almacen.objects.filter(id_almacen=data["almacen_contraparte"], id_empresa=empresa).first()
             if contraparte is None:
                 raise ValidationError({"almacen_contraparte": "Almacén inexistente o de otra empresa."})
 
@@ -330,21 +314,28 @@ class _OperacionInventarioBaseViewSet(BaseModelViewSet):
                 raise ValidationError({"lineas": f"Producto {ln['producto']} inexistente o de otra empresa."})
             variante = None
             if ln.get("variante"):
-                variante = VarianteProducto.objects.filter(
-                    id_variante=ln["variante"], id_producto=producto
-                ).first()
+                variante = VarianteProducto.objects.filter(id_variante=ln["variante"], id_producto=producto).first()
                 if variante is None:
                     raise ValidationError({"lineas": "Variante inexistente para el producto."})
-            lineas.append({
-                "producto": producto, "variante": variante,
-                "cantidad": ln["cantidad"], "costo_unitario": ln.get("costo_unitario"),
-            })
+            lineas.append(
+                {
+                    "producto": producto,
+                    "variante": variante,
+                    "cantidad": ln["cantidad"],
+                    "costo_unitario": ln.get("costo_unitario"),
+                }
+            )
 
         try:
             operacion = crear_operacion(
-                empresa=empresa, almacen=almacen, tipo_operacion=self.tipo_operacion,
-                origen_tipo=data["origen_tipo"], lineas=lineas, usuario=request.user,
-                origen_id=data.get("origen_id"), almacen_contraparte=contraparte,
+                empresa=empresa,
+                almacen=almacen,
+                tipo_operacion=self.tipo_operacion,
+                origen_tipo=data["origen_tipo"],
+                lineas=lineas,
+                usuario=request.user,
+                origen_id=data.get("origen_id"),
+                almacen_contraparte=contraparte,
                 motivo=data.get("motivo", ""),
             )
         except OperacionError as exc:
@@ -359,18 +350,14 @@ class _OperacionInventarioBaseViewSet(BaseModelViewSet):
         from .operaciones import OperacionError, PasoFueraDeOrdenError, confirmar_paso
 
         operacion = self.get_object()
-        paso = OperacionInventarioPaso.objects.filter(
-            id_operacion_paso=step_id, id_operacion=operacion
-        ).first()
+        paso = OperacionInventarioPaso.objects.filter(id_operacion_paso=step_id, id_operacion=operacion).first()
         if paso is None:
             raise ValidationError({"step_id": "El paso no existe en esta operación."})
 
         try:
             confirmar_paso(operacion=operacion, paso=paso, usuario=request.user)
         except (PasoFueraDeOrdenError, OperacionError) as exc:
-            return domain_error_response(
-                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
 
         operacion.refresh_from_db()
         return Response(OperacionInventarioSerializer(operacion).data)
@@ -393,9 +380,7 @@ class ReportesInventarioViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"], url_path="existencias")
     def existencias(self, request):
         """Existencias por producto/almacén. Filtros: ?producto=&almacen=."""
-        qs = StockActual.objects.filter(id_empresa__in=self._empresas()).select_related(
-            "id_producto", "id_almacen"
-        )
+        qs = StockActual.objects.filter(id_empresa__in=self._empresas()).select_related("id_producto", "id_almacen")
         producto = request.query_params.get("producto")
         almacen = request.query_params.get("almacen")
         if producto:
@@ -443,7 +428,9 @@ class ReportesInventarioViewSet(viewsets.ViewSet):
                 "tipo": m.tipo_movimiento,
                 "producto": m.id_producto.nombre_producto,
                 "cantidad": str(m.cantidad),
-                "costo_unitario": str(m.costo_unitario_movimiento) if m.costo_unitario_movimiento is not None else None,
+                "costo_unitario": str(m.costo_unitario_movimiento)
+                if m.costo_unitario_movimiento is not None
+                else None,
                 "almacen_origen": m.id_almacen_origen.nombre_almacen if m.id_almacen_origen else None,
                 "almacen_destino": m.id_almacen_destino.nombre_almacen if m.id_almacen_destino else None,
             }
@@ -483,8 +470,7 @@ class ReportesInventarioViewSet(viewsets.ViewSet):
 
         prod_ids = {a["id_producto"] for a in agregado}
         nombres = {
-            p.pk: (p.nombre_producto, p.metodo_valoracion)
-            for p in Producto.objects.filter(id_producto__in=prod_ids)
+            p.pk: (p.nombre_producto, p.metodo_valoracion) for p in Producto.objects.filter(id_producto__in=prod_ids)
         }
         alm_ids = {a["id_almacen"] for a in agregado}
         almacenes = {a.pk: a.nombre_almacen for a in Almacen.objects.filter(id_almacen__in=alm_ids)}
@@ -495,15 +481,17 @@ class ReportesInventarioViewSet(viewsets.ViewSet):
             valor = (a["ent_val"] or _D("0")) - (a["sal_val"] or _D("0"))
             nombre, metodo = nombres.get(a["id_producto"], ("", ""))
             costo_prom = (valor / qty).quantize(_D("0.0001")) if qty > 0 else _D("0")
-            data.append({
-                "producto_id": str(a["id_producto"]),
-                "producto": nombre,
-                "almacen_id": str(a["id_almacen"]),
-                "almacen": almacenes.get(a["id_almacen"], ""),
-                "metodo": metodo,
-                "cantidad": str(qty),
-                "valor_total": str(valor),
-                "costo_promedio": str(costo_prom),
-            })
+            data.append(
+                {
+                    "producto_id": str(a["id_producto"]),
+                    "producto": nombre,
+                    "almacen_id": str(a["id_almacen"]),
+                    "almacen": almacenes.get(a["id_almacen"], ""),
+                    "metodo": metodo,
+                    "cantidad": str(qty),
+                    "valor_total": str(valor),
+                    "costo_promedio": str(costo_prom),
+                }
+            )
         data.sort(key=lambda d: (d["producto"], d["almacen"]))
         return Response({"valoracion": data})

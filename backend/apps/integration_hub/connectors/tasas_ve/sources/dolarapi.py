@@ -3,11 +3,13 @@ Fuente 1: ve.dolarapi.com
 GET https://ve.dolarapi.com/v1/dolares → filtra fuente='oficial' o 'bcv'
 Retorna Decimal o None si falla.
 """
+
 import logging
 from decimal import Decimal
 import httpx
 
 logger = logging.getLogger(__name__)
+
 
 def fetch_tasa_bcv() -> Decimal | None:
     try:

@@ -10,6 +10,7 @@ paso no tiene riesgo de pérdida de datos.
 Reglas: autenticado, aislado por empresa (R-CODE-1), Decimal serializado como
 string para no perder precisión (R-CODE-4).
 """
+
 from __future__ import annotations
 
 import datetime
@@ -56,8 +57,7 @@ class SyncPullView(APIView):
         entidad = SYNC_ENTITIES.get(nombre)
         if entidad is None:
             return Response(
-                {"error": f"Entidad no sincronizable: {nombre!r}.",
-                 "entidades": sorted(SYNC_ENTITIES)},
+                {"error": f"Entidad no sincronizable: {nombre!r}.", "entidades": sorted(SYNC_ENTITIES)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -103,14 +103,16 @@ class SyncPullView(APIView):
         filas = filas[:limite]
         resultados = [{k: _jsonificar(v) for k, v in fila.items()} for fila in filas]
 
-        return Response({
-            "entity": nombre,
-            # Cursor autoritativo para el próximo pull (reloj del servidor).
-            "server_time": timezone.now().isoformat(),
-            "count": len(resultados),
-            "has_more": hay_mas,
-            "results": resultados,
-        })
+        return Response(
+            {
+                "entity": nombre,
+                # Cursor autoritativo para el próximo pull (reloj del servidor).
+                "server_time": timezone.now().isoformat(),
+                "count": len(resultados),
+                "has_more": hay_mas,
+                "results": resultados,
+            }
+        )
 
 
 class SyncPushVentasView(APIView):
@@ -131,8 +133,10 @@ class SyncPushVentasView(APIView):
         clave = request.META.get("HTTP_IDEMPOTENCY_KEY") or request.headers.get("Idempotency-Key")
         if not clave:
             return Response(
-                {"error": "Esta operación requiere la cabecera 'Idempotency-Key' "
-                          "(client_uuid de la venta) para no duplicar dinero."},
+                {
+                    "error": "Esta operación requiere la cabecera 'Idempotency-Key' "
+                    "(client_uuid de la venta) para no duplicar dinero."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

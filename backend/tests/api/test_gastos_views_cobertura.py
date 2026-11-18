@@ -14,6 +14,7 @@ los @action que estaban sin tests:
 
 Dinero como Decimal con aserciones exactas.
 """
+
 import datetime
 from decimal import Decimal
 
@@ -50,9 +51,7 @@ def client_b(user_b):
 
 @pytest.fixture
 def categoria_a(empresa_a):
-    return CategoriaGasto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Transporte", activo=True
-    )
+    return CategoriaGasto.objects.create(id_empresa=empresa_a, nombre_categoria="Transporte", activo=True)
 
 
 @pytest.fixture
@@ -72,9 +71,7 @@ def gasto_pendiente_a(empresa_a, categoria_a, moneda_usd):
 def metodo_pago(empresa_a):
     from apps.finanzas.models import MetodoPago
 
-    return MetodoPago.objects.create(
-        empresa=empresa_a, nombre_metodo="Transferencia", tipo_metodo="ELECTRONICO"
-    )
+    return MetodoPago.objects.create(empresa=empresa_a, nombre_metodo="Transferencia", tipo_metodo="ELECTRONICO")
 
 
 @pytest.fixture
@@ -92,9 +89,7 @@ def reembolso_pendiente_a(empresa_a, gasto_pendiente_a, moneda_usd, metodo_pago)
 
 class TestCategoriaGastoActions:
     def test_activas_filtra_inactivas(self, client_a, empresa_a, categoria_a):
-        inactiva = CategoriaGasto.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Obsoleta", activo=False
-        )
+        inactiva = CategoriaGasto.objects.create(id_empresa=empresa_a, nombre_categoria="Obsoleta", activo=False)
         resp = client_a.get(f"{BASE}categorias-gasto/activas/")
         assert resp.status_code == 200
         ids = [r["id_categoria_gasto"] for r in resp.json()]
@@ -137,12 +132,8 @@ class TestGastoActions:
         resp = client_a.post(f"{BASE}gastos/{gasto_pendiente_a.id_gasto}/rechazar/")
         assert resp.status_code == 400
 
-    def test_resumen_por_categoria_exacto(
-        self, client_a, empresa_a, categoria_a, moneda_usd
-    ):
-        otra = CategoriaGasto.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Alimentación", activo=True
-        )
+    def test_resumen_por_categoria_exacto(self, client_a, empresa_a, categoria_a, moneda_usd):
+        otra = CategoriaGasto.objects.create(id_empresa=empresa_a, nombre_categoria="Alimentación", activo=True)
         Gasto.objects.create(
             id_empresa=empresa_a,
             fecha_gasto=datetime.date(2026, 6, 1),
@@ -197,8 +188,7 @@ class TestGastoActions:
         assert data["resumen_por_categoria"] == []
         assert data["total_general"] == 0
 
-    def test_pendientes_aprobacion(self, client_a, gasto_pendiente_a, empresa_a,
-                                    categoria_a, moneda_usd):
+    def test_pendientes_aprobacion(self, client_a, gasto_pendiente_a, empresa_a, categoria_a, moneda_usd):
         aprobado = Gasto.objects.create(
             id_empresa=empresa_a,
             fecha_gasto=datetime.date(2026, 6, 5),
@@ -275,28 +265,20 @@ class TestGastoSerializerCampos:
 
 
 class TestReembolsoGastoActions:
-    def test_procesar_pago_actualiza_gasto_aprobado(
-        self, client_a, reembolso_pendiente_a, gasto_pendiente_a
-    ):
+    def test_procesar_pago_actualiza_gasto_aprobado(self, client_a, reembolso_pendiente_a, gasto_pendiente_a):
         gasto_pendiente_a.estado_gasto = "APROBADO"
         gasto_pendiente_a.save()
-        resp = client_a.post(
-            f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/"
-        )
+        resp = client_a.post(f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/")
         assert resp.status_code == 200
         reembolso_pendiente_a.refresh_from_db()
         gasto_pendiente_a.refresh_from_db()
         assert reembolso_pendiente_a.estado_reembolso == "PAGADO"
         assert gasto_pendiente_a.estado_gasto == "REEMBOLSADO"
 
-    def test_procesar_pago_gasto_no_aprobado_no_lo_toca(
-        self, client_a, reembolso_pendiente_a, gasto_pendiente_a
-    ):
+    def test_procesar_pago_gasto_no_aprobado_no_lo_toca(self, client_a, reembolso_pendiente_a, gasto_pendiente_a):
         # El gasto sigue PENDIENTE_APROBACION: el reembolso se paga pero el
         # estado del gasto no cambia (rama else de la vista).
-        resp = client_a.post(
-            f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/"
-        )
+        resp = client_a.post(f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/")
         assert resp.status_code == 200
         gasto_pendiente_a.refresh_from_db()
         assert gasto_pendiente_a.estado_gasto == "PENDIENTE_APROBACION"
@@ -304,21 +286,15 @@ class TestReembolsoGastoActions:
     def test_procesar_pago_no_pendiente_400(self, client_a, reembolso_pendiente_a):
         reembolso_pendiente_a.estado_reembolso = "PAGADO"
         reembolso_pendiente_a.save()
-        resp = client_a.post(
-            f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/"
-        )
+        resp = client_a.post(f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/")
         assert resp.status_code == 400
 
     def test_procesar_pago_cross_tenant_404(self, client_b, reembolso_pendiente_a):
-        resp = client_b.post(
-            f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/"
-        )
+        resp = client_b.post(f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/procesar_pago/")
         assert resp.status_code == 404
 
     def test_anular_ok(self, client_a, reembolso_pendiente_a):
-        resp = client_a.post(
-            f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/anular/"
-        )
+        resp = client_a.post(f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/anular/")
         assert resp.status_code == 200
         reembolso_pendiente_a.refresh_from_db()
         assert reembolso_pendiente_a.estado_reembolso == "ANULADO"
@@ -326,13 +302,12 @@ class TestReembolsoGastoActions:
     def test_anular_pagado_400(self, client_a, reembolso_pendiente_a):
         reembolso_pendiente_a.estado_reembolso = "PAGADO"
         reembolso_pendiente_a.save()
-        resp = client_a.post(
-            f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/anular/"
-        )
+        resp = client_a.post(f"{BASE}reembolsos-gasto/{reembolso_pendiente_a.id_reembolso}/anular/")
         assert resp.status_code == 400
 
-    def test_pendientes_pago(self, client_a, reembolso_pendiente_a, empresa_a,
-                              gasto_pendiente_a, moneda_usd, metodo_pago):
+    def test_pendientes_pago(
+        self, client_a, reembolso_pendiente_a, empresa_a, gasto_pendiente_a, moneda_usd, metodo_pago
+    ):
         pagado = ReembolsoGasto.objects.create(
             id_empresa=empresa_a,
             id_gasto=gasto_pendiente_a,

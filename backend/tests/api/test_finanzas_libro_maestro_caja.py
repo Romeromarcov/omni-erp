@@ -34,23 +34,17 @@ HASTA = date(2026, 6, 11)
 
 @pytest.fixture
 def moneda_ves(db):
-    return Moneda.objects.create(
-        nombre="Bolívar Digital", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-    )
+    return Moneda.objects.create(nombre="Bolívar Digital", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
 
 
 @pytest.fixture
 def caja_usd(db, empresa_a, moneda_usd):
-    return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja USD", tipo_caja="MATRIZ", moneda=moneda_usd
-    )
+    return Caja.objects.create(empresa=empresa_a, nombre="Caja USD", tipo_caja="MATRIZ", moneda=moneda_usd)
 
 
 @pytest.fixture
 def caja_ves(db, empresa_a, moneda_ves):
-    return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja VES", tipo_caja="REGISTRADORA", moneda=moneda_ves
-    )
+    return Caja.objects.create(empresa=empresa_a, nombre="Caja VES", tipo_caja="REGISTRADORA", moneda=moneda_ves)
 
 
 @pytest.fixture
@@ -154,9 +148,7 @@ def _get_libro(client, empresa, **params):
 
 
 def _fila(data, caja_id, moneda=None):
-    return next(
-        f for f in data["cajas"] if f["id_caja"] == str(caja_id) and f["moneda"] == moneda
-    )
+    return next(f for f in data["cajas"] if f["id_caja"] == str(caja_id) and f["moneda"] == moneda)
 
 
 def _total(data, moneda):
@@ -202,9 +194,7 @@ class TestMontosExactos:
         assert fisica_ves["entradas"] == "200.00"
         assert fisica_ves["saldo_final"] == "200.00"
 
-    def test_caja_virtual_sin_movimientos_aparece_en_cero(
-        self, client_a, empresa_a, moneda_usd, escenario
-    ):
+    def test_caja_virtual_sin_movimientos_aparece_en_cero(self, client_a, empresa_a, moneda_usd, escenario):
         vacia = Caja.objects.create(empresa=empresa_a, nombre="Caja Nueva", moneda=moneda_usd)
         resp = _get_libro(client_a, empresa_a)
         fila = _fila(resp.data, vacia.pk, "USD")
@@ -275,12 +265,8 @@ class TestFiltros:
         resp = _get_libro(client_a, empresa_a, tipo="OTRA")
         assert resp.status_code == 400
 
-    def test_cajas_inactivas_excluidas_por_defecto(
-        self, client_a, empresa_a, user_a, moneda_usd, escenario
-    ):
-        inactiva = Caja.objects.create(
-            empresa=empresa_a, nombre="Caja Cerrada", moneda=moneda_usd, activa=False
-        )
+    def test_cajas_inactivas_excluidas_por_defecto(self, client_a, empresa_a, user_a, moneda_usd, escenario):
+        inactiva = Caja.objects.create(empresa=empresa_a, nombre="Caja Cerrada", moneda=moneda_usd, activa=False)
         _mov(empresa_a, user_a, tipo="INGRESO", monto="500.00", fecha=DESDE, caja=inactiva, moneda=moneda_usd)
 
         resp = _get_libro(client_a, empresa_a)
@@ -295,9 +281,7 @@ class TestFiltros:
         assert _total(resp.data, "USD")["entradas"] == "555.25"
 
     def test_periodo_mensual(self, client_a, empresa_a, escenario):
-        resp = client_a.get(
-            BASE_URL, {"empresa": str(empresa_a.id_empresa), "periodo": "2026-06"}
-        )
+        resp = client_a.get(BASE_URL, {"empresa": str(empresa_a.id_empresa), "periodo": "2026-06"})
         assert resp.status_code == 200, resp.data
         assert resp.data["fecha_desde"] == "2026-06-01"
         assert resp.data["fecha_hasta"] == "2026-06-30"
@@ -332,9 +316,7 @@ class TestValidacionParametros:
         assert resp.status_code == 400
 
     def test_periodo_malformado_retorna_400(self, client_a, empresa_a, escenario):
-        resp = client_a.get(
-            BASE_URL, {"empresa": str(empresa_a.id_empresa), "periodo": "junio-2026"}
-        )
+        resp = client_a.get(BASE_URL, {"empresa": str(empresa_a.id_empresa), "periodo": "junio-2026"})
         assert resp.status_code == 400
 
     def test_desde_mayor_que_hasta_retorna_400(self, client_a, empresa_a, escenario):

@@ -39,16 +39,10 @@ class Command(BaseCommand):
                 email_contacto="admin@innovasystems.com",
                 activo=True,
             )
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Empresa '{empresa.nombre_legal}' creada con éxito."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Empresa '{empresa.nombre_legal}' creada con éxito."))
         else:
             empresa = Empresa.objects.get(nombre_legal=empresa_nombre)
-            self.stdout.write(
-                self.style.WARNING(f"La empresa '{empresa.nombre_legal}' ya existe.")
-            )
+            self.stdout.write(self.style.WARNING(f"La empresa '{empresa.nombre_legal}' ya existe."))
 
         # 2. Crear el superusuario si no existe
         username = "admin"
@@ -62,12 +56,6 @@ class Command(BaseCommand):
             )
             # Usuarios.empresas es ManyToMany (no FK id_empresa): se asocia tras crear.
             admin_user.empresas.add(empresa)
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Superusuario '{admin_user.username}' creado con éxito."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Superusuario '{admin_user.username}' creado con éxito."))
         else:
-            self.stdout.write(
-                self.style.WARNING(f"El superusuario '{username}' ya existe.")
-            )
+            self.stdout.write(self.style.WARNING(f"El superusuario '{username}' ya existe."))

@@ -30,9 +30,7 @@ class Command(ImportadorBaseCommand):
 
         tipo_cliente = self.opcional(fila, "tipo_cliente", "CONTADO").upper()
         if tipo_cliente not in self.TIPOS_VALIDOS:
-            raise FilaError(
-                f"tipo_cliente inválido '{tipo_cliente}'; use CONTADO o CREDITO."
-            )
+            raise FilaError(f"tipo_cliente inválido '{tipo_cliente}'; use CONTADO o CREDITO.")
 
         datos = {
             "razon_social": razon_social,

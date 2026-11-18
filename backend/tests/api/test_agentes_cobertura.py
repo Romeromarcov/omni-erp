@@ -18,6 +18,7 @@ responder) ni test_chat_empresa_sec1.py (SEC-1 de empresa de trabajo):
 
 Toda llamada LLM externa está mockeada — cero red.
 """
+
 import json
 from datetime import date, timedelta
 from decimal import Decimal
@@ -108,8 +109,10 @@ class TestOmniAgenteBase:
 
     def test_config_inactiva_omite_procesamiento(self, empresa_a):
         ConfigAgente.objects.create(
-            id_empresa=empresa_a, agente="clasificador_gastos",
-            nivel_autonomia="AUTONOMO", activo=False,
+            id_empresa=empresa_a,
+            agente="clasificador_gastos",
+            nivel_autonomia="AUTONOMO",
+            activo=False,
         )
         res = _AgenteDummy().procesar(str(empresa_a.id_empresa), {})
         assert res == {"nivel": "AUTONOMO", "activo": False, "ejecutado": False}
@@ -117,7 +120,8 @@ class TestOmniAgenteBase:
 
     def test_sugerencia_marca_flag(self, empresa_a):
         ConfigAgente.objects.create(
-            id_empresa=empresa_a, agente="clasificador_gastos",
+            id_empresa=empresa_a,
+            agente="clasificador_gastos",
             nivel_autonomia="SUGERENCIA",
         )
         res = _AgenteDummy().procesar(str(empresa_a.id_empresa), {})
@@ -126,8 +130,10 @@ class TestOmniAgenteBase:
 
     def test_autonomo_ejecuta_si_confianza_supera_umbral(self, empresa_a):
         ConfigAgente.objects.create(
-            id_empresa=empresa_a, agente="clasificador_gastos",
-            nivel_autonomia="AUTONOMO", umbral_confianza_minimo=0.8,
+            id_empresa=empresa_a,
+            agente="clasificador_gastos",
+            nivel_autonomia="AUTONOMO",
+            umbral_confianza_minimo=0.8,
         )
         agente = _AgenteDummy(confianza=0.95)
         res = agente.procesar(str(empresa_a.id_empresa), {}, input_monto=Decimal("10.00"))
@@ -138,8 +144,10 @@ class TestOmniAgenteBase:
 
     def test_autonomo_no_ejecuta_bajo_umbral(self, empresa_a):
         ConfigAgente.objects.create(
-            id_empresa=empresa_a, agente="clasificador_gastos",
-            nivel_autonomia="AUTONOMO", umbral_confianza_minimo=0.8,
+            id_empresa=empresa_a,
+            agente="clasificador_gastos",
+            nivel_autonomia="AUTONOMO",
+            umbral_confianza_minimo=0.8,
         )
         agente = _AgenteDummy(confianza=0.5)
         res = agente.procesar(str(empresa_a.id_empresa), {})
@@ -148,8 +156,10 @@ class TestOmniAgenteBase:
 
     def test_autonomo_error_en_ejecutar_no_tumba(self, empresa_a):
         ConfigAgente.objects.create(
-            id_empresa=empresa_a, agente="clasificador_gastos",
-            nivel_autonomia="AUTONOMO", umbral_confianza_minimo=0.5,
+            id_empresa=empresa_a,
+            agente="clasificador_gastos",
+            nivel_autonomia="AUTONOMO",
+            umbral_confianza_minimo=0.5,
         )
         res = _AgenteDummy(fallar_ejecucion=True).procesar(str(empresa_a.id_empresa), {})
         assert res["ejecutado"] is False
@@ -158,9 +168,7 @@ class TestOmniAgenteBase:
 
     def test_persistir_falla_devuelve_id_none(self, empresa_a):
         """Si la BD falla al persistir, procesar() no revienta: id_prediccion=None."""
-        with patch.object(
-            PrediccionAgente.objects, "create", side_effect=RuntimeError("db down")
-        ):
+        with patch.object(PrediccionAgente.objects, "create", side_effect=RuntimeError("db down")):
             res = _AgenteDummy().procesar(str(empresa_a.id_empresa), {})
         assert res["id_prediccion"] is None
         assert res["prediccion"]["categoria"] == "alimentacion"
@@ -180,8 +188,11 @@ def stock_bajo(empresa_a, user_a):
     producto = ProductoFactory(id_empresa=empresa_a, nombre_producto="Aceite 1L")
     almacen = AlmacenFactory(id_empresa=empresa_a, nombre_almacen="Central")
     stock = StockActual.objects.create(
-        id_empresa=empresa_a, id_producto=producto, id_almacen=almacen,
-        cantidad_disponible=Decimal("5"), cantidad_minima=Decimal("10"),
+        id_empresa=empresa_a,
+        id_producto=producto,
+        id_almacen=almacen,
+        cantidad_disponible=Decimal("5"),
+        cantidad_minima=Decimal("10"),
     )
     MovimientoInventario.objects.create(
         id_empresa=empresa_a,
@@ -206,8 +217,8 @@ class TestReordenAnalizar:
         s = sugerencias[0]
         assert s.producto_nombre == "Aceite 1L"
         assert s.estado == "REORDENAR"
-        assert s.consumo_diario == Decimal("1")        # 30 uds / 30 días
-        assert s.dias_restantes == 5.0                 # 5 / 1
+        assert s.consumo_diario == Decimal("1")  # 30 uds / 30 días
+        assert s.dias_restantes == 5.0  # 5 / 1
         assert s.cantidad_sugerida_reorden == Decimal("25.00")  # 1×30 − 5
         assert s.modelo_llm == "fallback-reglas"
 
@@ -224,9 +235,11 @@ class TestReordenAnalizar:
         # Stock holgado sin consumo → OK
         prod_ok = ProductoFactory(id_empresa=empresa_a, nombre_producto="Sal 1kg")
         StockActual.objects.create(
-            id_empresa=empresa_a, id_producto=prod_ok,
+            id_empresa=empresa_a,
+            id_producto=prod_ok,
             id_almacen=AlmacenFactory(id_empresa=empresa_a),
-            cantidad_disponible=Decimal("1000"), cantidad_minima=Decimal("10"),
+            cantidad_disponible=Decimal("1000"),
+            cantidad_minima=Decimal("10"),
         )
 
         agente = ReordenSugeridorAgent(empresa=empresa_a)
@@ -241,11 +254,17 @@ class TestReordenAnalizar:
 
         llm = MagicMock()
         llm.messages.create.return_value = SimpleNamespace(
-            content=[SimpleNamespace(text=json.dumps({
-                "estado": "REVISAR",
-                "cantidad_sugerida_reorden": 12,
-                "razonamiento": "Consumo estable, revisar la próxima semana.",
-            }))]
+            content=[
+                SimpleNamespace(
+                    text=json.dumps(
+                        {
+                            "estado": "REVISAR",
+                            "cantidad_sugerida_reorden": 12,
+                            "razonamiento": "Consumo estable, revisar la próxima semana.",
+                        }
+                    )
+                )
+            ]
         )
         agente = ReordenSugeridorAgent(empresa=empresa_a, llm_client=llm)
         sugerencias = agente.analizar(persistir=False)
@@ -357,9 +376,7 @@ class TestAnalizarPersonalizacionView:
         assert set(body.keys()) == {"flujo_documentos", "listas_precios", "credito_clientes"}
 
     def test_sin_empresa_403(self, client_sin_empresa):
-        resp = client_sin_empresa.post(
-            URL_BASE + "analizar-personalizacion/", {}, format="json"
-        )
+        resp = client_sin_empresa.post(URL_BASE + "analizar-personalizacion/", {}, format="json")
         assert resp.status_code == 403
 
     def test_error_de_agente_500(self, client_a):
@@ -376,9 +393,7 @@ class TestClasificarGastoView:
     def gasto(self, empresa_a, moneda_usd):
         from apps.gastos.models import CategoriaGasto, Gasto
 
-        cat = CategoriaGasto.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Sin Clasificar"
-        )
+        cat = CategoriaGasto.objects.create(id_empresa=empresa_a, nombre_categoria="Sin Clasificar")
         return Gasto.objects.create(
             id_empresa=empresa_a,
             fecha_gasto=date.today(),
@@ -396,18 +411,14 @@ class TestClasificarGastoView:
     def test_gasto_inexistente_404(self, client_a):
         import uuid
 
-        resp = client_a.post(
-            URL_BASE + "clasificar-gasto/", {"gasto_id": str(uuid.uuid4())}, format="json"
-        )
+        resp = client_a.post(URL_BASE + "clasificar-gasto/", {"gasto_id": str(uuid.uuid4())}, format="json")
         assert resp.status_code == 404
 
     def test_gasto_de_otra_empresa_404(self, user_b, gasto):
         """R-CODE-1: usuario de B no puede clasificar gastos de A."""
         c = APIClient()
         c.force_authenticate(user=user_b)
-        resp = c.post(
-            URL_BASE + "clasificar-gasto/", {"gasto_id": str(gasto.id_gasto)}, format="json"
-        )
+        resp = c.post(URL_BASE + "clasificar-gasto/", {"gasto_id": str(gasto.id_gasto)}, format="json")
         assert resp.status_code == 404
 
     def test_clasifica_sin_aplicar(self, client_a, gasto):
@@ -448,9 +459,7 @@ class TestClasificarGastoView:
             "apps.agentes.clasificador.ClasificadorGastos.clasificar",
             side_effect=RuntimeError("x"),
         ):
-            resp = client_a.post(
-                URL_BASE + "clasificar-gasto/", {"gasto_id": str(gasto.id_gasto)}, format="json"
-            )
+            resp = client_a.post(URL_BASE + "clasificar-gasto/", {"gasto_id": str(gasto.id_gasto)}, format="json")
         assert resp.status_code == 500
 
 
@@ -497,8 +506,11 @@ class TestMetricasYEvaluar:
 class TestHelpersSugerencias:
     def _pred(self, **kw):
         defaults = dict(
-            agente="cobranza_estratega", input_metadata={}, input_monto=None,
-            categoria_predicha="contactar", input_texto="",
+            agente="cobranza_estratega",
+            input_metadata={},
+            input_monto=None,
+            categoria_predicha="contactar",
+            input_texto="",
         )
         defaults.update(kw)
         return PrediccionAgente(**defaults)
@@ -507,7 +519,8 @@ class TestHelpersSugerencias:
         from apps.agentes.views import _titulo_sugerencia
 
         p = self._pred(
-            input_metadata={"cliente_nombre": "ACME"}, input_monto=Decimal("100"),
+            input_metadata={"cliente_nombre": "ACME"},
+            input_monto=Decimal("100"),
         )
         assert _titulo_sugerencia(p) == "Contactar a ACME — $100"
 
@@ -520,7 +533,8 @@ class TestHelpersSugerencias:
         from apps.agentes.views import _titulo_sugerencia
 
         p = self._pred(
-            agente="reorden_sugeridor", input_metadata={"nombre_producto": "Harina"},
+            agente="reorden_sugeridor",
+            input_metadata={"nombre_producto": "Harina"},
         )
         assert _titulo_sugerencia(p) == "Reponer: Harina"
 
@@ -560,9 +574,7 @@ from apps.agentes.api import chat as chatmod  # noqa: E402
 
 class TestChatHelpers:
     def test_jsonable_convierte_decimal_recursivo(self):
-        out = chatmod._jsonable(
-            {"a": Decimal("1.50"), "b": [Decimal("2"), {"c": Decimal("3")}], "d": "x"}
-        )
+        out = chatmod._jsonable({"a": Decimal("1.50"), "b": [Decimal("2"), {"c": Decimal("3")}], "d": "x"})
         assert out == {"a": "1.50", "b": ["2", {"c": "3"}], "d": "x"}
 
     def test_sanitize_messages_filtra_y_recorta(self):
@@ -603,12 +615,12 @@ class TestChatTools:
     def test_tasa_bcv_con_tasa(self, user_a, empresa_a, moneda_usd):
         from apps.finanzas.models import Moneda, TasaCambio
 
-        ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         TasaCambio.objects.create(
-            id_moneda_origen=moneda_usd, id_moneda_destino=ves,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("40.00000000"),
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("40.00000000"),
             fecha_tasa=date.today(),
         )
         res = chatmod._tool_tasa_bcv_hoy(self._ctx(user_a, empresa_a))
@@ -636,14 +648,14 @@ class TestChatTools:
 
         cliente = ClienteFactory(id_empresa=empresa_a, razon_social="Deudor C.A.")
         CuentaPorCobrar.objects.create(
-            cliente=cliente, empresa=empresa_a, monto=Decimal("200.00"),
+            cliente=cliente,
+            empresa=empresa_a,
+            monto=Decimal("200.00"),
             fecha_emision=date.today() - timedelta(days=20),
             fecha_vencimiento=date.today() - timedelta(days=5),
             estado="pendiente",
         )
-        res = chatmod._tool_saldo_cliente(
-            self._ctx(user_a, empresa_a), cliente_id=str(cliente.id_cliente)
-        )
+        res = chatmod._tool_saldo_cliente(self._ctx(user_a, empresa_a), cliente_id=str(cliente.id_cliente))
         assert res["total_pendiente"] == "200.00"
         assert res["dias_max_vencido"] == 5
         assert res["facturas_pendientes"] == 1
@@ -678,9 +690,7 @@ class TestChatView:
 
     def test_sin_api_key_devuelve_aviso_sse(self, client_a, monkeypatch):
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        resp = client_a.post(
-            self.URL, {"messages": [{"role": "user", "content": "hola"}]}, format="json"
-        )
+        resp = client_a.post(self.URL, {"messages": [{"role": "user", "content": "hola"}]}, format="json")
         assert resp.status_code == 200
         assert resp["Content-Type"] == "text/event-stream"
         cuerpo = _leer_sse(resp)
@@ -697,9 +707,7 @@ class TestChatView:
 
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-falso")
 
-        bloque_tool = SimpleNamespace(
-            type="tool_use", name="listar_empresas", input={}, id="toolu_1"
-        )
+        bloque_tool = SimpleNamespace(type="tool_use", name="listar_empresas", input={}, id="toolu_1")
         final_1 = SimpleNamespace(stop_reason="tool_use", content=[bloque_tool])
         final_2 = SimpleNamespace(stop_reason="end_turn", content=[])
 
@@ -722,7 +730,8 @@ class TestChatView:
         monkeypatch.setattr(llm_gateway, "anthropic", anthropic_falso)
 
         resp = client_a.post(
-            self.URL, {"messages": [{"role": "user", "content": "mis empresas?"}]},
+            self.URL,
+            {"messages": [{"role": "user", "content": "mis empresas?"}]},
             format="json",
         )
         cuerpo = _leer_sse(resp)

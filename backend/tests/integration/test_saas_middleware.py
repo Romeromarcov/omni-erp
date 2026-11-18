@@ -29,6 +29,7 @@ User = get_user_model()
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def empresa(db):
     return Empresa.objects.create(nombre_legal="Test SaaS Corp", identificador_fiscal="J-99999999-9")
@@ -60,11 +61,13 @@ def _make_request(user=None, path="/api/inventario/"):
         request.user = user
     else:
         from django.contrib.auth.models import AnonymousUser
+
         request.user = AnonymousUser()
     return request
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
+
 
 class TestSuscripcionActivaMiddlewareDisabled:
     """When SAAS_VERIFICAR_SUSCRIPCION=False (default), middleware is a no-op."""
@@ -117,6 +120,7 @@ class TestSuscripcionActivaMiddlewareEnabled:
     def test_402_response_has_correct_body(self, settings, usuario, empresa, db):
         """402 response contains expected JSON fields."""
         import json
+
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         middleware, _, _ = _make_middleware()
@@ -199,6 +203,7 @@ class TestSuscripcionActivaIntegration:
     @pytest.fixture
     def plan(self, db):
         from apps.saas.models import Plan
+
         return Plan.objects.create(
             nombre="Plan Básico",
             precio_mensual="29.99",
@@ -209,6 +214,7 @@ class TestSuscripcionActivaIntegration:
     def test_active_subscription_integration(self, settings, usuario, empresa, plan, db):
         """Real active subscription allows access."""
         from apps.saas.models import Suscripcion
+
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         today = datetime.date.today()
@@ -229,6 +235,7 @@ class TestSuscripcionActivaIntegration:
     def test_expired_subscription_returns_402(self, settings, usuario, empresa, plan, db):
         """Real expired subscription blocks access with 402."""
         from apps.saas.models import Suscripcion
+
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         today = datetime.date.today()
@@ -250,6 +257,7 @@ class TestSuscripcionActivaIntegration:
     def test_suspended_subscription_returns_402(self, settings, usuario, empresa, plan, db):
         """Suspended subscription blocks access with 402."""
         from apps.saas.models import Suscripcion
+
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         today = datetime.date.today()
@@ -271,6 +279,7 @@ class TestSuscripcionActivaIntegration:
     def test_trial_subscription_passes(self, settings, usuario, empresa, plan, db):
         """TRIAL subscription is treated as active."""
         from apps.saas.models import Suscripcion
+
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         today = datetime.date.today()

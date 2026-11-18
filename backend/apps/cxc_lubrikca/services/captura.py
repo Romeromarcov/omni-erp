@@ -58,9 +58,7 @@ def _buscar_tasa(empresa, tipo_tasa: str, fecha) -> Decimal | None:
 
 
 def _monto_ya_vinculado(pago) -> Decimal:
-    total = pago.vinculaciones.filter(deleted_at__isnull=True).aggregate(
-        s=Sum("monto_aplicado")
-    )["s"]
+    total = pago.vinculaciones.filter(deleted_at__isnull=True).aggregate(s=Sum("monto_aplicado"))["s"]
     return total or Decimal("0")
 
 
@@ -91,16 +89,13 @@ def registrar_vinculacion(
         raise VinculacionError("El pago y el pedido deben ser de la misma empresa.")
 
     if pago.cliente_externo_id != pedido.cliente_externo_id:
-        raise VinculacionError(
-            "El pago y el pedido deben pertenecer al mismo cliente."
-        )
+        raise VinculacionError("El pago y el pedido deben pertenecer al mismo cliente.")
 
     ya_vinculado = _monto_ya_vinculado(pago)
     disponible = pago.monto - ya_vinculado
     if monto_aplicado > disponible:
         raise VinculacionError(
-            f"Sobre-vinculación: monto disponible del pago = {disponible}, "
-            f"se intentó aplicar {monto_aplicado}."
+            f"Sobre-vinculación: monto disponible del pago = {disponible}, " f"se intentó aplicar {monto_aplicado}."
         )
 
     # La tasa se indexa por fecha local de Caracas (igual que el resto de finanzas,

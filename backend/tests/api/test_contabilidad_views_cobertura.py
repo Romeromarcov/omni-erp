@@ -10,6 +10,7 @@ Cubre por la API real (`/api/contabilidad/`):
   agregación por cuenta con saldos exactos en Decimal).
 - DetalleAsientoViewSet: list aislado vía empresa del asiento padre.
 """
+
 import datetime
 from decimal import Decimal
 
@@ -42,36 +43,52 @@ def client_b(user_b):
 @pytest.fixture
 def cuenta_caja(empresa_a):
     return PlanCuentas.objects.create(
-        id_empresa=empresa_a, codigo_cuenta="1.1.01", nombre_cuenta="Caja",
-        tipo_cuenta="ACTIVO", naturaleza="DEUDORA", nivel=3,
+        id_empresa=empresa_a,
+        codigo_cuenta="1.1.01",
+        nombre_cuenta="Caja",
+        tipo_cuenta="ACTIVO",
+        naturaleza="DEUDORA",
+        nivel=3,
     )
 
 
 @pytest.fixture
 def cuenta_ventas(empresa_a):
     return PlanCuentas.objects.create(
-        id_empresa=empresa_a, codigo_cuenta="4.1.01", nombre_cuenta="Ventas",
-        tipo_cuenta="INGRESO", naturaleza="ACREEDORA", nivel=3,
+        id_empresa=empresa_a,
+        codigo_cuenta="4.1.01",
+        nombre_cuenta="Ventas",
+        tipo_cuenta="INGRESO",
+        naturaleza="ACREEDORA",
+        nivel=3,
     )
 
 
 @pytest.fixture
 def cuenta_inactiva(empresa_a):
     return PlanCuentas.objects.create(
-        id_empresa=empresa_a, codigo_cuenta="9.9.99", nombre_cuenta="Obsoleta",
-        tipo_cuenta="ACTIVO", naturaleza="DEUDORA", nivel=3, activo=False,
+        id_empresa=empresa_a,
+        codigo_cuenta="9.9.99",
+        nombre_cuenta="Obsoleta",
+        tipo_cuenta="ACTIVO",
+        naturaleza="DEUDORA",
+        nivel=3,
+        activo=False,
     )
 
 
 def _asiento(empresa, numero="AS-001", estado="BORRADOR"):
     return AsientoContable.objects.create(
-        id_empresa=empresa, fecha_asiento=datetime.date(2026, 6, 1),
-        numero_asiento=numero, descripcion="Asiento de prueba",
+        id_empresa=empresa,
+        fecha_asiento=datetime.date(2026, 6, 1),
+        numero_asiento=numero,
+        descripcion="Asiento de prueba",
         estado_asiento=estado,
     )
 
 
 # ── PlanCuentasViewSet ────────────────────────────────────────────────────────
+
 
 class TestPlanCuentas:
     def test_list_aislado_por_tenant(self, client_a, client_b, cuenta_caja):
@@ -92,9 +109,7 @@ class TestPlanCuentas:
         codigos = {c["codigo_cuenta"] for c in resp.json()}
         assert codigos == {"4.1.01"}
 
-    def test_por_tipo_sin_filtro_devuelve_activas(
-        self, client_a, cuenta_caja, cuenta_ventas, cuenta_inactiva
-    ):
+    def test_por_tipo_sin_filtro_devuelve_activas(self, client_a, cuenta_caja, cuenta_ventas, cuenta_inactiva):
         resp = client_a.get(f"{URL_PLAN}por_tipo/")
         codigos = {c["codigo_cuenta"] for c in resp.json()}
         assert codigos == {"1.1.01", "4.1.01"}
@@ -105,6 +120,7 @@ class TestPlanCuentas:
 
 # ── AsientoContableViewSet: aprobar / anular ─────────────────────────────────
 
+
 class TestAsientoAprobar:
     def test_aprobar_no_borrador_400(self, client_a, empresa_a):
         asiento = _asiento(empresa_a, estado="APROBADO")
@@ -114,12 +130,8 @@ class TestAsientoAprobar:
 
     def test_aprobar_descuadrado_400(self, client_a, empresa_a, cuenta_caja, cuenta_ventas):
         asiento = _asiento(empresa_a)
-        DetalleAsiento.objects.create(
-            id_asiento=asiento, id_cuenta_contable=cuenta_caja, debe=Decimal("100.00")
-        )
-        DetalleAsiento.objects.create(
-            id_asiento=asiento, id_cuenta_contable=cuenta_ventas, haber=Decimal("90.00")
-        )
+        DetalleAsiento.objects.create(id_asiento=asiento, id_cuenta_contable=cuenta_caja, debe=Decimal("100.00"))
+        DetalleAsiento.objects.create(id_asiento=asiento, id_cuenta_contable=cuenta_ventas, haber=Decimal("90.00"))
         resp = client_a.post(f"{URL_ASIENTOS}{asiento.id_asiento}/aprobar/", {})
         assert resp.status_code == 400
         assert "no cuadra" in resp.json()["error"]
@@ -128,12 +140,8 @@ class TestAsientoAprobar:
 
     def test_aprobar_cuadrado_ok(self, client_a, empresa_a, cuenta_caja, cuenta_ventas):
         asiento = _asiento(empresa_a)
-        DetalleAsiento.objects.create(
-            id_asiento=asiento, id_cuenta_contable=cuenta_caja, debe=Decimal("100.00")
-        )
-        DetalleAsiento.objects.create(
-            id_asiento=asiento, id_cuenta_contable=cuenta_ventas, haber=Decimal("100.00")
-        )
+        DetalleAsiento.objects.create(id_asiento=asiento, id_cuenta_contable=cuenta_caja, debe=Decimal("100.00"))
+        DetalleAsiento.objects.create(id_asiento=asiento, id_cuenta_contable=cuenta_ventas, haber=Decimal("100.00"))
         resp = client_a.post(f"{URL_ASIENTOS}{asiento.id_asiento}/aprobar/", {})
         assert resp.status_code == 200, resp.content
         assert resp.json()["estado_asiento"] == "APROBADO"
@@ -162,6 +170,7 @@ class TestAsientoAnular:
 
 # ── balance_comprobacion ──────────────────────────────────────────────────────
 
+
 class TestBalanceComprobacion:
     URL = f"{URL_ASIENTOS}balance_comprobacion/"
 
@@ -176,21 +185,13 @@ class TestBalanceComprobacion:
         assert resp.status_code == 404
         assert resp.json() == {"error": "Empresa no encontrada."}
 
-    def test_agrega_por_cuenta_con_saldos_exactos(
-        self, client_a, empresa_a, cuenta_caja, cuenta_ventas
-    ):
+    def test_agrega_por_cuenta_con_saldos_exactos(self, client_a, empresa_a, cuenta_caja, cuenta_ventas):
         # Asiento APROBADO con dos líneas + un BORRADOR que NO debe contar
         aprobado = _asiento(empresa_a, numero="AS-OK", estado="APROBADO")
-        DetalleAsiento.objects.create(
-            id_asiento=aprobado, id_cuenta_contable=cuenta_caja, debe=Decimal("150.00")
-        )
-        DetalleAsiento.objects.create(
-            id_asiento=aprobado, id_cuenta_contable=cuenta_ventas, haber=Decimal("150.00")
-        )
+        DetalleAsiento.objects.create(id_asiento=aprobado, id_cuenta_contable=cuenta_caja, debe=Decimal("150.00"))
+        DetalleAsiento.objects.create(id_asiento=aprobado, id_cuenta_contable=cuenta_ventas, haber=Decimal("150.00"))
         borrador = _asiento(empresa_a, numero="AS-DRAFT", estado="BORRADOR")
-        DetalleAsiento.objects.create(
-            id_asiento=borrador, id_cuenta_contable=cuenta_caja, debe=Decimal("999.00")
-        )
+        DetalleAsiento.objects.create(id_asiento=borrador, id_cuenta_contable=cuenta_caja, debe=Decimal("999.00"))
 
         resp = client_a.get(self.URL, {"empresa_id": str(empresa_a.id_empresa)})
         assert resp.status_code == 200, resp.content
@@ -210,14 +211,11 @@ class TestBalanceComprobacion:
 
 # ── DetalleAsientoViewSet ─────────────────────────────────────────────────────
 
+
 class TestDetalleAsiento:
-    def test_list_aislado_por_empresa_del_asiento(
-        self, client_a, client_b, empresa_a, cuenta_caja
-    ):
+    def test_list_aislado_por_empresa_del_asiento(self, client_a, client_b, empresa_a, cuenta_caja):
         asiento = _asiento(empresa_a)
-        DetalleAsiento.objects.create(
-            id_asiento=asiento, id_cuenta_contable=cuenta_caja, debe=Decimal("10.00")
-        )
+        DetalleAsiento.objects.create(id_asiento=asiento, id_cuenta_contable=cuenta_caja, debe=Decimal("10.00"))
         data_a = client_a.get(URL_DETALLES).json()
         assert data_a["count"] == 1
         data_b = client_b.get(URL_DETALLES).json()

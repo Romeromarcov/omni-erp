@@ -38,6 +38,7 @@ from .libros_seniat import (
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
+
 def _resolver_empresa(request):
     """
     Devuelve (empresa, error_response).
@@ -77,20 +78,29 @@ def _resolver_rango(request):
     desde_str = request.query_params.get("desde")
     hasta_str = request.query_params.get("hasta")
     if not desde_str or not hasta_str:
-        return None, None, Response(
-            {"error": "Requerido: 'periodo' (YYYY-MM) ó 'desde'+'hasta' (YYYY-MM-DD)."},
-            status=status.HTTP_400_BAD_REQUEST,
+        return (
+            None,
+            None,
+            Response(
+                {"error": "Requerido: 'periodo' (YYYY-MM) ó 'desde'+'hasta' (YYYY-MM-DD)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            ),
         )
     try:
         return date.fromisoformat(desde_str), date.fromisoformat(hasta_str), None
     except ValueError:
-        return None, None, Response(
-            {"error": "Formato de fecha inválido. Use YYYY-MM-DD."},
-            status=status.HTTP_400_BAD_REQUEST,
+        return (
+            None,
+            None,
+            Response(
+                {"error": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            ),
         )
 
 
 # ── TXT views ──────────────────────────────────────────────────────────────────
+
 
 class LibroVentasView(APIView):
     permission_classes = [IsAuthenticated]
@@ -130,6 +140,7 @@ class LibroComprasView(APIView):
 
 # ── PDF views ──────────────────────────────────────────────────────────────────
 
+
 class LibroVentasPDFView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -167,6 +178,7 @@ class LibroComprasPDFView(APIView):
 
 
 # ── Períodos fiscales ──────────────────────────────────────────────────────────
+
 
 class PeriodoFiscalView(APIView):
     """
@@ -214,9 +226,7 @@ class CerrarPeriodoFiscalView(APIView):
 
         from .models import PeriodoFiscal
 
-        periodo, _ = PeriodoFiscal.objects.get_or_create(
-            id_empresa=empresa, año=año, mes=mes
-        )
+        periodo, _ = PeriodoFiscal.objects.get_or_create(id_empresa=empresa, año=año, mes=mes)
         if periodo.cerrado:
             return Response(
                 {"detalle": "El período ya estaba cerrado.", "cerrado": True},

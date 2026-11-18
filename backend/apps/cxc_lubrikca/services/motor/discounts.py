@@ -109,12 +109,8 @@ def _bcv_completo_monto(
         )
     total = Decimal("0")
     for v in vinculaciones:
-        diferencial = _diferencial_binance(
-            v.tasa_bcv_aplicada, v.tasa_binance_aplicada
-        )
-        tasa_gerencia = tasa_bcv_completo_vigente(
-            reglas_bcv, fecha=v.hora_pago_confirmada.date()
-        )
+        diferencial = _diferencial_binance(v.tasa_bcv_aplicada, v.tasa_binance_aplicada)
+        tasa_gerencia = tasa_bcv_completo_vigente(reglas_bcv, fecha=v.hora_pago_confirmada.date())
         if tasa_gerencia is None:
             rate = Decimal("0")
         else:
@@ -154,16 +150,12 @@ def _cantidad_efectiva(inp: EngineInputs, linea: LineaOrden) -> Decimal:
 
 
 def _precio_linea(inp: EngineInputs, linea: LineaOrden, lista: str) -> Decimal:
-    return inp.price_resolver.precio(linea.producto, lista) * _cantidad_efectiva(
-        inp, linea
-    )
+    return inp.price_resolver.precio(linea.producto, lista) * _cantidad_efectiva(inp, linea)
 
 
 def _calcular_componentes(inp: EngineInputs, lista: str, pura_bcv: bool) -> _Componentes:
     fecha_orden = inp.orden.fecha
-    precio_base = sum(
-        (_precio_linea(inp, ln, lista) for ln in inp.lineas), Decimal("0")
-    )
+    precio_base = sum((_precio_linea(inp, ln, lista) for ln in inp.lineas), Decimal("0"))
 
     # (a) Recurrencia — vigente a la fecha de la orden (sección 4.3a)
     pct_recompra = Decimal("0")
@@ -173,14 +165,10 @@ def _calcular_componentes(inp: EngineInputs, lista: str, pura_bcv: bool) -> _Com
     detalle_nc: DescuentoAplicado | None = None
     if inp.orden.es_primera_compra:
         # NC = precio del producto-promo en la lista de NACIMIENTO de la orden.
-        promo = promocion_primera_compra_vigente(
-            inp.promociones_primera_compra, fecha=fecha_orden
-        )
+        promo = promocion_primera_compra_vigente(inp.promociones_primera_compra, fecha=fecha_orden)
         if promo is not None:
             try:
-                nc = inp.price_resolver.precio(
-                    promo.producto, inp.orden.lista_precios
-                )
+                nc = inp.price_resolver.precio(promo.producto, inp.orden.lista_precios)
                 detalle_nc = DescuentoAplicado(
                     origen="primera_compra",
                     descripcion=f"NC producto promo {promo.producto}",
@@ -190,9 +178,7 @@ def _calcular_componentes(inp: EngineInputs, lista: str, pura_bcv: bool) -> _Com
                 # Sin precio del producto-promo → no inventar NC; marcar revisión.
                 promo_sin_precio = True
     else:
-        regla = regla_recurrencia_vigente(
-            inp.reglas_recurrencia, condicion=Condicion.RECOMPRA, fecha=fecha_orden
-        )
+        regla = regla_recurrencia_vigente(inp.reglas_recurrencia, condicion=Condicion.RECOMPRA, fecha=fecha_orden)
         if regla is not None and regla.tipo_beneficio == TipoBeneficio.PORCENTAJE:
             pct_recompra = precio_base * regla.valor
             detalle_recompra = DescuentoAplicado(
@@ -223,9 +209,7 @@ def _calcular_componentes(inp: EngineInputs, lista: str, pura_bcv: bool) -> _Com
     bcv_completo = Decimal("0")
     if pura_bcv:
         vincs = [v for v, _ in inp.abonos]
-        bcv_completo = _bcv_completo_monto(
-            vincs, inp.descuento_bcv_diario, inp.engine_config.bcv_complete_formula
-        )
+        bcv_completo = _bcv_completo_monto(vincs, inp.descuento_bcv_diario, inp.engine_config.bcv_complete_formula)
 
     return _Componentes(
         precio_base=precio_base,
@@ -260,9 +244,7 @@ def calcular_factura(inp: EngineInputs) -> BandejaFacturacion:
     fin_ventana: date | None = None
     within_window = False
     if inp.orden.fecha_entrega is not None:
-        fin_ventana = fin_ventana_contado(
-            inp.orden.fecha_entrega, cfg.cash_window_business_days, inp.feriados
-        )
+        fin_ventana = fin_ventana_contado(inp.orden.fecha_entrega, cfg.cash_window_business_days, inp.feriados)
         fechas_abono = [v.hora_pago_confirmada.date() for v in vincs]
         if fechas_abono:
             within_window = max(fechas_abono) <= fin_ventana
@@ -279,9 +261,7 @@ def calcular_factura(inp: EngineInputs) -> BandejaFacturacion:
     if contado_evaluable:
         if liquidado_optimista and within_window:
             contado_confirmado = True
-        elif (liquidado_optimista and not within_window) or (
-            window_expired and not liquidado_optimista
-        ):
+        elif (liquidado_optimista and not within_window) or (window_expired and not liquidado_optimista):
             # Liquidó tarde, o venció la ventana sin liquidar → pasó a crédito.
             contado_denied = True
         # else: provisional dentro de ventana, sigue proyectando contado.
@@ -301,8 +281,7 @@ def calcular_factura(inp: EngineInputs) -> BandejaFacturacion:
             DescuentoAplicado(
                 origen="contado",
                 descripcion=(
-                    "contado por marca/categoría"
-                    + (" (confirmado)" if contado_confirmado else " (proyectado)")
+                    "contado por marca/categoría" + (" (confirmado)" if contado_confirmado else " (proyectado)")
                 ),
                 monto=q2(comp.contado_proy),
             )

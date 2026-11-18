@@ -21,6 +21,7 @@ User = get_user_model()
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def api_client():
     return APIClient()
@@ -73,6 +74,7 @@ def plan():
 # perform_update — solo superusuarios Omni pueden hacer PATCH
 # ---------------------------------------------------------------------------
 
+
 class TestPlanUpdate:
     def test_usuario_normal_no_puede_patchear_plan(self, api_client, usuario_normal, plan):
         """Un usuario regular recibe 403 al intentar PATCH sobre un plan."""
@@ -116,6 +118,7 @@ class TestPlanUpdate:
 # ---------------------------------------------------------------------------
 # perform_create y perform_destroy — regresión (ya existían, verificamos paridad)
 # ---------------------------------------------------------------------------
+
 
 class TestPlanCreateDestroy:
     def test_usuario_normal_no_puede_crear_plan(self, api_client, usuario_normal):

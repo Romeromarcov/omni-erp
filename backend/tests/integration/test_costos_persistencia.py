@@ -5,6 +5,7 @@ Verifica que al cerrar una orden de fabricación se materialicen los registros
 overhead), de forma idempotente, en la moneda base de la empresa y aislada por
 tenant (R-CODE-1/4/11).
 """
+
 from decimal import Decimal
 
 import pytest
@@ -32,13 +33,9 @@ def escenario(db, empresa_a, moneda_usd):
     )
     from apps.manufactura.models import ListaMateriales, ListaMaterialesDetalle
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad C", abreviatura="UN-C", tipo="CANTIDAD"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad C", abreviatura="UN-C", tipo="CANTIDAD")
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="MFG-C")
-    almacen = Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén C", codigo_almacen="ALM-C"
-    )
+    almacen = Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén C", codigo_almacen="ALM-C")
 
     def _producto(nombre, costo):
         return Producto.objects.create(
@@ -54,8 +51,11 @@ def escenario(db, empresa_a, moneda_usd):
     silla = _producto("Silla C", "0")
     madera = _producto("Madera C", "10.00")
     StockActual.objects.create(
-        id_empresa=empresa_a, id_producto=madera, id_almacen=almacen,
-        cantidad_disponible=D("1000"), cantidad_comprometida=D("0"),
+        id_empresa=empresa_a,
+        id_producto=madera,
+        id_almacen=almacen,
+        cantidad_disponible=D("1000"),
+        cantidad_comprometida=D("0"),
     )
     bom = ListaMateriales.objects.create(empresa=empresa_a, producto_final=silla, nombre="BOM Silla C")
     ListaMaterialesDetalle.objects.create(
@@ -66,7 +66,9 @@ def escenario(db, empresa_a, moneda_usd):
 
 def _crear_consumir(empresa, escenario, user, cantidad="10"):
     orden = mfg.crear_orden_produccion(
-        empresa=empresa, producto=escenario["silla"], cantidad=D(cantidad),
+        empresa=empresa,
+        producto=escenario["silla"],
+        cantidad=D(cantidad),
         lista_materiales=escenario["bom"],
     )
     mfg.consumir_materiales_orden(orden, almacen=escenario["almacen"], usuario=user)
@@ -77,9 +79,7 @@ def test_persiste_tres_costos_al_finalizar(escenario, empresa_a, user_a, moneda_
     """Cerrar la OF crea 3 CostoProduccion; el material directo = 2×10×10 = 200,
     mano de obra y overhead en 0 (sin etapas ni config), en la moneda base."""
     orden = _crear_consumir(empresa_a, escenario, user_a)
-    res = mfg.registrar_produccion_terminada(
-        orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a
-    )
+    res = mfg.registrar_produccion_terminada(orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a)
 
     orden.refresh_from_db()
     assert orden.estado == "finalizada"
@@ -105,7 +105,9 @@ def test_incluye_mano_obra_y_overhead(escenario, empresa_a, user_a):
     ConfiguracionManufactura.objects.create(empresa=empresa_a, porcentaje_overhead=D("10"))
 
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("10"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("10"),
         lista_materiales=escenario["bom"],
     )
     mfg.consumir_materiales_orden(orden, almacen=escenario["almacen"], usuario=user_a)
@@ -113,16 +115,15 @@ def test_incluye_mano_obra_y_overhead(escenario, empresa_a, user_a):
     primera = True
     while orden.etapas.filter(estado="pendiente").exists():
         mfg.avanzar_etapa_orden(
-            orden, usuario=user_a,
+            orden,
+            usuario=user_a,
             horas_trabajadas=D("5") if primera else D("0"),
             tarifa_hora=D("4") if primera else D("0"),
         )
         primera = False
 
     esperado = mfg.costeo_real_orden(orden, cantidad_producida=D("10"))
-    res = mfg.registrar_produccion_terminada(
-        orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a
-    )
+    res = mfg.registrar_produccion_terminada(orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a)
     assert len(res["costos_persistidos"]) == 3
     costos = {c.tipo_costo: c for c in CostoProduccion.objects.filter(id_orden_produccion=orden)}
     assert costos["MANO_OBRA_DIRECTA"].costo_total == esperado["mano_obra"] == D("20.0000")
@@ -134,9 +135,7 @@ def test_incluye_mano_obra_y_overhead(escenario, empresa_a, user_a):
 def test_idempotente_no_duplica(escenario, empresa_a, user_a):
     """Re-invocar la persistencia sobre una OF ya costeada no crea duplicados."""
     orden = _crear_consumir(empresa_a, escenario, user_a)
-    mfg.registrar_produccion_terminada(
-        orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a
-    )
+    mfg.registrar_produccion_terminada(orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a)
     assert CostoProduccion.objects.filter(id_orden_produccion=orden, activo=True).count() == 3
 
     creados = persistir_costos_orden(orden)
@@ -147,9 +146,7 @@ def test_idempotente_no_duplica(escenario, empresa_a, user_a):
 def test_forzar_recostea(escenario, empresa_a, user_a):
     """forzar=True desactiva los previos y recostea (3 activos nuevos)."""
     orden = _crear_consumir(empresa_a, escenario, user_a)
-    mfg.registrar_produccion_terminada(
-        orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a
-    )
+    mfg.registrar_produccion_terminada(orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a)
     creados = persistir_costos_orden(orden, forzar=True)
     assert len(creados) == 3
     assert CostoProduccion.objects.filter(id_orden_produccion=orden, activo=True).count() == 3
@@ -179,9 +176,7 @@ def test_empresa_sin_moneda_base_falla(escenario, empresa_a, user_a):
 def test_produccion_parcial_no_persiste(escenario, empresa_a, user_a):
     """Una producción parcial (OF no finalizada) no materializa costos todavía."""
     orden = _crear_consumir(empresa_a, escenario, user_a, cantidad="10")
-    res = mfg.registrar_produccion_terminada(
-        orden, cantidad=D("4"), almacen=escenario["almacen"], usuario=user_a
-    )
+    res = mfg.registrar_produccion_terminada(orden, cantidad=D("4"), almacen=escenario["almacen"], usuario=user_a)
     orden.refresh_from_db()
     assert orden.estado == "parcial"
     assert res["costos_persistidos"] == []

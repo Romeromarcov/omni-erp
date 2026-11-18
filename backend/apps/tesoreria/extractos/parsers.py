@@ -86,9 +86,7 @@ def _idx_opcional(header: list[Any], *nombres: str) -> int | None:
 def _idx(header: list[Any], *nombres: str) -> int:
     pos = _idx_opcional(header, *nombres)
     if pos is None:
-        raise ExtractoBancarioError(
-            f"No se encontró la columna {nombres} en el encabezado {header}."
-        )
+        raise ExtractoBancarioError(f"No se encontró la columna {nombres} en el encabezado {header}.")
     return pos
 
 
@@ -114,9 +112,7 @@ def _construir_linea(
     deb = debito if debito is not None else CERO
     cre = credito if credito is not None else CERO
     if deb < CERO or cre < CERO:
-        raise ExtractoBancarioError(
-            f"Fila #{orden}: débito/crédito negativo inválido ({deb}/{cre})."
-        )
+        raise ExtractoBancarioError(f"Fila #{orden}: débito/crédito negativo inválido ({deb}/{cre}).")
     return LineaExtractoCanonica(
         formato_banco=formato_banco,
         cuenta_clave=cuenta_clave,
@@ -202,11 +198,7 @@ def _parse_deb_cred(
             i_deb = _idx(header, "débito", "debito")
             i_cre = _idx(header, "crédito", "credito")
 
-    i_s = (
-        _idx_opcional(header, "saldo", "balance")
-        if permitir_flexible
-        else _idx(header, "saldo", "balance")
-    )
+    i_s = _idx_opcional(header, "saldo", "balance") if permitir_flexible else _idx(header, "saldo", "balance")
     i_c = _idx_opcional(header, "código", "codigo", "tipo") if con_codigo else None
 
     est = EstadoCuentaCanonico(
@@ -242,8 +234,7 @@ def _parse_deb_cred(
                 previo = est.movimientos[-1].saldo
                 if saldo is not None and previo is not None and saldo != previo:
                     est.avisos.append(
-                        f"SALDO INICIAL {saldo} a mitad de archivo no coincide con el "
-                        f"saldo previo {previo}"
+                        f"SALDO INICIAL {saldo} a mitad de archivo no coincide con el " f"saldo previo {previo}"
                     )
             continue
 
@@ -256,9 +247,7 @@ def _parse_deb_cred(
             if i_imp is not None:
                 imp = parse_monto(_celda(fila, i_imp))
                 if imp is None:
-                    raise ExtractoBancarioError(
-                        f"{nombre_archivo}: fila sin monto/importe en fecha {fecha_mov}."
-                    )
+                    raise ExtractoBancarioError(f"{nombre_archivo}: fila sin monto/importe en fecha {fecha_mov}.")
                 deb_val = -imp if imp < CERO else CERO
                 cre_val = imp if imp > CERO else CERO
             else:
@@ -370,10 +359,7 @@ def _parse_binance(
         h = next(
             i
             for i, f in enumerate(filas)
-            if any(
-                str(c if c is not None else "").strip().lower() in ("operación", "operacion")
-                for c in f
-            )
+            if any(str(c if c is not None else "").strip().lower() in ("operación", "operacion") for c in f)
         )
     except StopIteration:
         raise ExtractoBancarioError(
@@ -405,9 +391,7 @@ def _parse_binance(
             try:
                 hora = datetime.strptime(str(celda_hora).strip(), "%Y-%m-%d %H:%M:%S")
             except ValueError as exc:
-                raise ExtractoBancarioError(
-                    f"{nombre_archivo}: hora inválida en Binance ({celda_hora!r})."
-                ) from exc
+                raise ExtractoBancarioError(f"{nombre_archivo}: hora inválida en Binance ({celda_hora!r}).") from exc
         crudo.append((hora, pos, fila))
 
     crudo.sort(key=lambda t: (t[0], t[1]))
@@ -428,9 +412,7 @@ def _parse_binance(
             )
         comentario = str(_celda(fila, i_com) or "").strip()
         m_id = _ID_BINANCE_RE.search(comentario)
-        desc = f"{_celda(fila, i_op)} {mon_fila} ({_celda(fila, i_cta)})" + (
-            f" - {comentario}" if comentario else ""
-        )
+        desc = f"{_celda(fila, i_op)} {mon_fila} ({_celda(fila, i_cta)})" + (f" - {comentario}" if comentario else "")
         est.movimientos.append(
             _construir_linea(
                 formato_banco="BINANCE",
@@ -476,13 +458,9 @@ def parsear_extracto(
         )
 
     if clave == "PROVINCIAL":
-        return _parse_provincial(
-            contenido, nombre_archivo, cuenta_clave=cuenta_clave, moneda=moneda
-        )
+        return _parse_provincial(contenido, nombre_archivo, cuenta_clave=cuenta_clave, moneda=moneda)
     if clave == "BINANCE":
-        return _parse_binance(
-            contenido, nombre_archivo, cuenta_clave=cuenta_clave, moneda=moneda
-        )
+        return _parse_binance(contenido, nombre_archivo, cuenta_clave=cuenta_clave, moneda=moneda)
     if clave == "BDT":
         return _parse_deb_cred(
             contenido,

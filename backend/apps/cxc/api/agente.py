@@ -3,6 +3,7 @@ Endpoint de streaming para el Agente IA de Cobranza.
 Usa Server-Sent Events (SSE) via StreamingHttpResponse.
 Rate limit: 10 llamadas/hora por tenant.
 """
+
 import asyncio
 import json
 import logging
@@ -50,6 +51,7 @@ class CobranzaAgenteView(APIView):
         top_n = int(request.data.get("top_n", 10))
 
         from apps.cxc.agents.cobranza_agent import CobranzaAgent
+
         agente = CobranzaAgent(empresa_id=empresa_id)
 
         async def _alist(agen):

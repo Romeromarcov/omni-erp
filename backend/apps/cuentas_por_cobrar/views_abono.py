@@ -40,9 +40,9 @@ class AbonoCxCViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         empresas = get_empresas_visible(self.request.user)
-        return AbonoCxC.objects.filter(
-            cuenta_por_cobrar__empresa__in=empresas
-        ).select_related("cuenta_por_cobrar", "usuario")
+        return AbonoCxC.objects.filter(cuenta_por_cobrar__empresa__in=empresas).select_related(
+            "cuenta_por_cobrar", "usuario"
+        )
 
     @idempotent("cxc:abono-create")
     def create(self, request, *args, **kwargs):

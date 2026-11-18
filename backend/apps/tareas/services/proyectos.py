@@ -51,9 +51,7 @@ def limpiar_texto(valor: str | None) -> str:
 
 def slugificar_area(nombre: str) -> str:
     normalizado = (
-        unicodedata.normalize("NFKD", limpiar_texto(nombre).lower())
-        .encode("ascii", "ignore")
-        .decode("ascii")
+        unicodedata.normalize("NFKD", limpiar_texto(nombre).lower()).encode("ascii", "ignore").decode("ascii")
     )
     slug = re.sub(r"[^a-z0-9]+", "-", normalizado).strip("-")
     if not slug:
@@ -63,9 +61,7 @@ def slugificar_area(nombre: str) -> str:
 
 def _traducir_validacion(exc: ValidationError) -> TareaError:
     if hasattr(exc, "message_dict"):
-        mensajes = "; ".join(
-            f"{campo}: {', '.join(lista)}" for campo, lista in exc.message_dict.items()
-        )
+        mensajes = "; ".join(f"{campo}: {', '.join(lista)}" for campo, lista in exc.message_dict.items())
     else:
         mensajes = "; ".join(exc.messages)
     return TareaError(mensajes or "Datos inválidos.", status=400)
@@ -98,11 +94,7 @@ def crear_area_operativa(
     if AreaOperativa.objects.filter(id_empresa=empresa, slug=slug, activo=True).exists():
         raise TareaError(f"Ya existe un área activa con identificador '{slug}'.", status=409)
 
-    claves = [
-        limpiar_texto(k).lower()
-        for k in (palabras_clave or [])
-        if isinstance(k, str) and limpiar_texto(k)
-    ]
+    claves = [limpiar_texto(k).lower() for k in (palabras_clave or []) if isinstance(k, str) and limpiar_texto(k)]
     area = AreaOperativa(
         id_empresa=empresa,
         nombre=nombre_limpio,
@@ -134,17 +126,13 @@ def sincronizar_miembros_area(
         raise TareaError("El área no pertenece a la empresa.", status=403)
 
     ids_objetivo = {u.pk for u in usuarios}
-    for miembro in MiembroAreaOperativa.objects.filter(
-        id_empresa=empresa, area=area, activo=True
-    ):
+    for miembro in MiembroAreaOperativa.objects.filter(id_empresa=empresa, area=area, activo=True):
         if miembro.usuario_id not in ids_objetivo:
             miembro.soft_delete()
 
     activos: list[MiembroAreaOperativa] = []
     for usuario in usuarios:
-        existente = MiembroAreaOperativa.objects.filter(
-            id_empresa=empresa, area=area, usuario=usuario
-        ).first()
+        existente = MiembroAreaOperativa.objects.filter(id_empresa=empresa, area=area, usuario=usuario).first()
         if existente is not None:
             if not existente.activo:
                 existente.restore()
@@ -264,19 +252,13 @@ def _resolver_seccion_inicial(
     if proyecto is None:
         return None
     por_estado = (
-        SeccionProyecto.objects.filter(
-            proyecto=proyecto, estado_destino=estado, activo=True
-        )
+        SeccionProyecto.objects.filter(proyecto=proyecto, estado_destino=estado, activo=True)
         .order_by("orden", "pk")
         .first()
     )
     if por_estado is not None:
         return por_estado
-    return (
-        SeccionProyecto.objects.filter(proyecto=proyecto, activo=True)
-        .order_by("orden", "pk")
-        .first()
-    )
+    return SeccionProyecto.objects.filter(proyecto=proyecto, activo=True).order_by("orden", "pk").first()
 
 
 @transaction.atomic
@@ -320,12 +302,7 @@ def crear_tarea(
 
     if seccion is not None and proyecto is None:
         proyecto = seccion.proyecto
-    elif (
-        proyecto is None
-        and tarea_padre is None
-        and asignado_a is not None
-        and usar_tablero_personal_si_falta
-    ):
+    elif proyecto is None and tarea_padre is None and asignado_a is not None and usar_tablero_personal_si_falta:
         proyecto = asegurar_proyecto_personal(empresa=empresa, usuario=asignado_a)
 
     if area is None and proyecto is not None and proyecto.area_id is not None:
@@ -501,8 +478,7 @@ def agregar_comentario(
         id_empresa_id=tarea.id_empresa_id,
         tarea=tarea,
         autor=autor,
-        autor_nombre=limpiar_texto(autor_nombre)
-        or (_nombre_corto_usuario(autor) if autor else "Sistema"),
+        autor_nombre=limpiar_texto(autor_nombre) or (_nombre_corto_usuario(autor) if autor else "Sistema"),
         cuerpo=texto,
         es_sistema=es_sistema,
     )
@@ -549,9 +525,7 @@ def agregar_dependencia(
             status=409,
         )
 
-    existente = DependenciaTarea.objects.filter(
-        id_empresa=empresa, tarea=tarea, depende_de=depende_de
-    ).first()
+    existente = DependenciaTarea.objects.filter(id_empresa=empresa, tarea=tarea, depende_de=depende_de).first()
     if existente is not None:
         if not existente.activo:
             existente.restore()
@@ -592,20 +566,13 @@ def resumen_ejecutivo_equipo(empresa, *, hoy: date | None = None) -> dict[str, A
     """Resumen consolidado de ejecución operativa para panel web, reporte gerencial y MCP."""
     fecha_ref = hoy or timezone.localdate()
     base = Tarea.objects.filter(id_empresa=empresa, activo=True)
-    abiertas = base.exclude(
-        estado__in=[EstadoTarea.COMPLETADA, EstadoTarea.CANCELADA]
-    )
+    abiertas = base.exclude(estado__in=[EstadoTarea.COMPLETADA, EstadoTarea.CANCELADA])
 
-    por_estado = {
-        fila["estado"]: fila["total"]
-        for fila in base.values("estado").annotate(total=Count("id_tarea"))
-    }
+    por_estado = {fila["estado"]: fila["total"] for fila in base.values("estado").annotate(total=Count("id_tarea"))}
     vencidas = abiertas.filter(fecha_vencimiento__lt=fecha_ref).count()
     vencen_hoy = abiertas.filter(fecha_vencimiento=fecha_ref).count()
     bloqueadas_escalacion = abiertas.filter(bloqueada_por_escalacion=True).count()
-    completadas_hoy = base.filter(
-        estado=EstadoTarea.COMPLETADA, completada_en__date=fecha_ref
-    ).count()
+    completadas_hoy = base.filter(estado=EstadoTarea.COMPLETADA, completada_en__date=fecha_ref).count()
 
     por_area = list(
         abiertas.values("area__id_area", "area__nombre")
@@ -658,9 +625,7 @@ def resumen_ejecutivo_equipo(empresa, *, hoy: date | None = None) -> dict[str, A
         ],
         "por_responsable": [
             {
-                "usuario_id": (
-                    str(item["asignado_a__id"]) if item["asignado_a__id"] else None
-                ),
+                "usuario_id": (str(item["asignado_a__id"]) if item["asignado_a__id"] else None),
                 "username": item["asignado_a__username"] or "sin_asignar",
                 "nombre": (
                     f"{item['asignado_a__first_name'] or ''} {item['asignado_a__last_name'] or ''}".strip()

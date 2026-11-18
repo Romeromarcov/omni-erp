@@ -15,6 +15,7 @@ Las fixtures `empresa_a/b`, `user_a/b`, `moneda_usd`, `caja_fisica_a` vienen del
 conftest de `tests/`. Todas las aserciones usan valores exactos para que el
 test sirva también de runner de mutación (convención del plan).
 """
+
 import datetime
 from decimal import Decimal
 
@@ -35,6 +36,7 @@ pytestmark = pytest.mark.django_db
 
 # ── Clients ───────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def client_a(user_a):
     c = APIClient()
@@ -51,11 +53,15 @@ def client_b(user_b):
 
 # ── Fixtures de dominio ───────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def moneda_ves(db):
     """Moneda genérica VES (visible para todos)."""
     return Moneda.objects.create(
-        nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat",
+        nombre="Bolívar",
+        codigo_iso="VES",
+        simbolo="Bs",
+        tipo_moneda="fiat",
         es_generica=True,
     )
 
@@ -64,8 +70,13 @@ def moneda_ves(db):
 def moneda_privada_a(db, empresa_a):
     """Moneda privada de la empresa A (no genérica ni pública)."""
     return Moneda.objects.create(
-        nombre="Token Interno A", codigo_iso="TKA", simbolo="T", tipo_moneda="otro",
-        es_generica=False, es_publica=False, empresa=empresa_a,
+        nombre="Token Interno A",
+        codigo_iso="TKA",
+        simbolo="T",
+        tipo_moneda="otro",
+        es_generica=False,
+        es_publica=False,
+        empresa=empresa_a,
     )
 
 
@@ -98,21 +109,27 @@ def tasa_privada_a(db, empresa_a, moneda_usd, moneda_ves):
 @pytest.fixture
 def metodo_generico(db):
     return MetodoPago.objects.create(
-        nombre_metodo="Efectivo Global", tipo_metodo="EFECTIVO", es_generico=True,
+        nombre_metodo="Efectivo Global",
+        tipo_metodo="EFECTIVO",
+        es_generico=True,
     )
 
 
 @pytest.fixture
 def metodo_privado_a(db, empresa_a):
     return MetodoPago.objects.create(
-        nombre_metodo="Zelle Empresa A", tipo_metodo="ELECTRONICO", empresa=empresa_a,
+        nombre_metodo="Zelle Empresa A",
+        tipo_metodo="ELECTRONICO",
+        empresa=empresa_a,
     )
 
 
 @pytest.fixture
 def caja_virtual_a(db, empresa_a, moneda_usd):
     return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja Virtual A", moneda=moneda_usd,
+        empresa=empresa_a,
+        nombre="Caja Virtual A",
+        moneda=moneda_usd,
         tipo_caja="REGISTRADORA",
     )
 
@@ -120,12 +137,17 @@ def caja_virtual_a(db, empresa_a, moneda_usd):
 @pytest.fixture
 def cuenta_bancaria_a(db, empresa_a, moneda_usd):
     return CuentaBancariaEmpresa.objects.create(
-        id_empresa=empresa_a, nombre_banco="Banco A", numero_cuenta="0102-1",
-        tipo_cuenta="CORRIENTE", id_moneda=moneda_usd, saldo_actual=Decimal("100.00"),
+        id_empresa=empresa_a,
+        nombre_banco="Banco A",
+        numero_cuenta="0102-1",
+        tipo_cuenta="CORRIENTE",
+        id_moneda=moneda_usd,
+        saldo_actual=Decimal("100.00"),
     )
 
 
 # ── MonedaViewSet ─────────────────────────────────────────────────────────────
+
 
 class TestMonedaViewSet:
     URL = "/api/finanzas/monedas/"
@@ -148,13 +170,9 @@ class TestMonedaViewSet:
         codigos = {m["codigo_iso"] for m in resp.json()["results"]}
         assert "TKA" in codigos
 
-    def test_activas_filtra_por_monedaempresaactiva(
-        self, client_a, empresa_a, moneda_privada_a
-    ):
+    def test_activas_filtra_por_monedaempresaactiva(self, client_a, empresa_a, moneda_privada_a):
         """`activas` devuelve solo las monedas marcadas activas para la empresa."""
-        MonedaEmpresaActiva.objects.filter(empresa=empresa_a).exclude(
-            moneda=moneda_privada_a
-        ).update(activa=False)
+        MonedaEmpresaActiva.objects.filter(empresa=empresa_a).exclude(moneda=moneda_privada_a).update(activa=False)
         MonedaEmpresaActiva.objects.update_or_create(
             empresa=empresa_a, moneda=moneda_privada_a, defaults={"activa": True}
         )
@@ -170,6 +188,7 @@ class TestMonedaViewSet:
 
 # ── TasaCambioViewSet ─────────────────────────────────────────────────────────
 
+
 class TestTasaCambioViewSet:
     URL = "/api/finanzas/tasas-cambio/"
 
@@ -180,9 +199,7 @@ class TestTasaCambioViewSet:
             ids = {t["id_tasa_cambio"] for t in resp.json()["results"]}
             assert str(tasa_bcv.id_tasa_cambio) in ids
 
-    def test_tasa_privada_no_visible_para_otra_empresa(
-        self, client_b, tasa_privada_a
-    ):
+    def test_tasa_privada_no_visible_para_otra_empresa(self, client_b, tasa_privada_a):
         resp = client_b.get(self.URL)
         ids = {t["id_tasa_cambio"] for t in resp.json()["results"]}
         assert str(tasa_privada_a.id_tasa_cambio) not in ids
@@ -195,12 +212,11 @@ class TestTasaCambioViewSet:
 
 # ── MetodoPagoViewSet ─────────────────────────────────────────────────────────
 
+
 class TestMetodoPagoViewSet:
     URL = "/api/finanzas/metodos-pago/"
 
-    def test_list_incluye_generico_y_propio(
-        self, client_a, metodo_generico, metodo_privado_a
-    ):
+    def test_list_incluye_generico_y_propio(self, client_a, metodo_generico, metodo_privado_a):
         resp = client_a.get(self.URL)
         assert resp.status_code == 200
         nombres = {m["nombre_metodo"] for m in resp.json()["results"]}
@@ -222,6 +238,7 @@ class TestMetodoPagoViewSet:
 
 
 # ── CajaViewSet ───────────────────────────────────────────────────────────────
+
 
 class TestCajaViewSet:
     URL = "/api/finanzas/cajas/"
@@ -255,6 +272,7 @@ class TestCajaViewSet:
 
 # ── CuentaBancariaEmpresaViewSet ──────────────────────────────────────────────
 
+
 class TestCuentaBancariaViewSet:
     URL = "/api/finanzas/cuentas-bancarias-empresa/"
 
@@ -275,6 +293,7 @@ class TestCuentaBancariaViewSet:
 
 
 # ── SesionCajaFisicaViewSet ───────────────────────────────────────────────────
+
 
 class TestSesionCajaFisicaViewSet:
     URL = "/api/finanzas/sesiones-caja/"

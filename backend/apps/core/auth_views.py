@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 # P1-3: mensaje genérico de lockout — NO debe filtrar si el usuario existe.
 LOCKOUT_MESSAGE = (
-    "Demasiados intentos fallidos. La cuenta está temporalmente bloqueada; "
-    "intente de nuevo más tarde."
+    "Demasiados intentos fallidos. La cuenta está temporalmente bloqueada; " "intente de nuevo más tarde."
 )
 
 
@@ -50,9 +49,7 @@ def _esta_bloqueado_por_axes(request, username) -> bool:
     from axes.handlers.proxy import AxesProxyHandler
 
     django_request = getattr(request, "_request", request)
-    return AxesProxyHandler.is_locked(
-        django_request, credentials={"username": username}
-    )
+    return AxesProxyHandler.is_locked(django_request, credentials={"username": username})
 
 
 def _uref(username) -> str:
@@ -342,10 +339,14 @@ def login_view(request):
             # SEC-03: Almacenar refresh token como httpOnly cookie (nunca en el body).
             # Esto elimina la exposición a XSS que tendría si se devolviera en JSON.
             from django.conf import settings as django_settings
+
             cookie_secure = not django_settings.DEBUG  # secure=True solo en producción (HTTPS)
             cookie_samesite = getattr(django_settings, "REFRESH_TOKEN_COOKIE_SAMESITE", "Lax")
-            cookie_max_age = int(django_settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME",
-                                 __import__("datetime").timedelta(days=7)).total_seconds())
+            cookie_max_age = int(
+                django_settings.SIMPLE_JWT.get(
+                    "REFRESH_TOKEN_LIFETIME", __import__("datetime").timedelta(days=7)
+                ).total_seconds()
+            )
             response.set_cookie(
                 key="refresh_token",
                 value=str(refresh),
@@ -534,10 +535,11 @@ def refresh_token_view(request):
             # SEC-03: new refresh token goes to httpOnly cookie, NOT in body
             cookie_secure = not django_settings.DEBUG
             cookie_samesite = getattr(django_settings, "REFRESH_TOKEN_COOKIE_SAMESITE", "Lax")
-            cookie_max_age = int(django_settings.SIMPLE_JWT.get(
-                "REFRESH_TOKEN_LIFETIME",
-                __import__("datetime").timedelta(days=7)
-            ).total_seconds())
+            cookie_max_age = int(
+                django_settings.SIMPLE_JWT.get(
+                    "REFRESH_TOKEN_LIFETIME", __import__("datetime").timedelta(days=7)
+                ).total_seconds()
+            )
             response.set_cookie(
                 key="refresh_token",
                 value=new_refresh_str,

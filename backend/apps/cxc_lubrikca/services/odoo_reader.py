@@ -99,9 +99,7 @@ class LubrikcaOdooReader:
         self._execute = execute
 
     # --- primitivas (solo lectura) -----------------------------------------
-    def _search_read(
-        self, model: str, domain: list, fields: list[str], **kwargs: Any
-    ) -> list[dict]:
+    def _search_read(self, model: str, domain: list, fields: list[str], **kwargs: Any) -> list[dict]:
         opts: dict[str, Any] = {"fields": fields}
         opts.update(kwargs)
         result = self._execute(model, "search_read", [domain], opts)
@@ -135,8 +133,15 @@ class LubrikcaOdooReader:
             MODEL_ORDEN,
             domain,
             [
-                "id", "name", "partner_id", "date_order", "amount_total",
-                "pricelist_id", "user_id", "delivery_status", "invoice_status",
+                "id",
+                "name",
+                "partner_id",
+                "date_order",
+                "amount_total",
+                "pricelist_id",
+                "user_id",
+                "delivery_status",
+                "invoice_status",
                 "state",
             ],
             limit=limite,
@@ -153,9 +158,7 @@ class LubrikcaOdooReader:
             partner_id = _m2o_id(r.get("partner_id"))
             es_primera = False
             if partner_id:
-                cnt = self._search_count(
-                    MODEL_ORDEN, [["partner_id", "=", int(partner_id)]]
-                )
+                cnt = self._search_count(MODEL_ORDEN, [["partner_id", "=", int(partner_id)]])
                 es_primera = cnt == 1
             out.append(
                 {
@@ -187,26 +190,30 @@ class LubrikcaOdooReader:
             MODEL_LINEA,
             domain,
             [
-                "id", "order_id", "product_id", "product_uom_qty", "price_unit",
+                "id",
+                "order_id",
+                "product_id",
+                "product_uom_qty",
+                "price_unit",
                 "qty_delivered",
             ],
         )
         if not recs:
             return []
 
-        prod_ids = {
-            int(_m2o_id(r.get("product_id")))
-            for r in recs
-            if _m2o_id(r.get("product_id"))
-        }
+        prod_ids = {int(_m2o_id(r.get("product_id"))) for r in recs if _m2o_id(r.get("product_id"))}
         productos = self._productos(prod_ids)
 
         out: list[dict] = []
         for r in recs:
             pid = _m2o_id(r.get("product_id"))
-            marca, categoria = productos.get(int(pid), (MARCA_FALLBACK, "*")) if pid else (
-                MARCA_FALLBACK,
-                "*",
+            marca, categoria = (
+                productos.get(int(pid), (MARCA_FALLBACK, "*"))
+                if pid
+                else (
+                    MARCA_FALLBACK,
+                    "*",
+                )
             )
             out.append(
                 {
@@ -299,11 +306,7 @@ class LubrikcaOdooReader:
             return []
 
         # vendedor_email vía partner.user_id.login (2 saltos).
-        partner_ids = {
-            int(_m2o_id(r.get("partner_id")))
-            for r in recs
-            if _m2o_id(r.get("partner_id"))
-        }
+        partner_ids = {int(_m2o_id(r.get("partner_id"))) for r in recs if _m2o_id(r.get("partner_id"))}
         vendedores = self._vendedor_por_partner(partner_ids)
 
         out: list[dict] = []
@@ -327,11 +330,7 @@ class LubrikcaOdooReader:
         if not partner_ids:
             return {}
         partners = self._read("res.partner", sorted(partner_ids), ["id", "user_id"])
-        uids = {
-            int(_m2o_id(p.get("user_id")))
-            for p in partners
-            if _m2o_id(p.get("user_id"))
-        }
+        uids = {int(_m2o_id(p.get("user_id"))) for p in partners if _m2o_id(p.get("user_id"))}
         logins = self._user_logins(uids)
         out: dict[int, str] = {}
         for p in partners:

@@ -34,9 +34,7 @@ TIPO_CUENTA = "CUENTA"
 TIPO_AMBIGUO = "AMBIGUO"
 TIPO_SIN_PROPUESTA = "SIN_PROPUESTA"
 
-METODOS_LECTURA_ODOO = frozenset(
-    {"search_read", "read", "search_count", "search", "fields_get"}
-)
+METODOS_LECTURA_ODOO = frozenset({"search_read", "read", "search_count", "search", "fields_get"})
 ESTADOS_PAGO_ODOO = ["posted", "in_process", "paid"]
 
 _RIF_RE = re.compile(r"\b([VJEGBP])-?0*(\d{6,10})(?:-(\d))?\b")
@@ -51,9 +49,7 @@ def rifs(texto: str | None) -> frozenset[str]:
     if not texto:
         return frozenset()
     mayus = texto.upper()
-    hallados = {
-        f"{letra}{int(num)}{dv}" for letra, num, dv in _RIF_RE.findall(mayus)
-    }
+    hallados = {f"{letra}{int(num)}{dv}" for letra, num, dv in _RIF_RE.findall(mayus)}
     compacto = _SOLO_ALNUM_RE.sub("", mayus)
     if compacto and len(compacto) >= 7 and compacto[0] in "VJEGBP" and compacto[1:].isdigit():
         hallados.add(f"{compacto[0]}{int(compacto[1:])}")
@@ -159,13 +155,8 @@ def calcular_puntaje(
 
     ref = digitos_referencia(m_ref)
     if len(ref) >= 4:
-        grupos_memo = [
-            g.lstrip("0") for g in _NO_DIGITOS_RE.sub(" ", pago.memo).split() if g.lstrip("0")
-        ]
-        if any(
-            len(g) >= 4 and (ref.endswith(g) or g.endswith(ref))
-            for g in grupos_memo
-        ):
+        grupos_memo = [g.lstrip("0") for g in _NO_DIGITOS_RE.sub(" ", pago.memo).split() if g.lstrip("0")]
+        if any(len(g) >= 4 and (ref.endswith(g) or g.endswith(ref)) for g in grupos_memo):
             puntaje += 3
 
     if m_rifs and (m_rifs & pago.partner_rifs):
@@ -200,9 +191,7 @@ def proponer_conciliacion(
         etiqueta_regla = m.regla_clasificacion or m.categoria or "extracto"
 
         # Regla R1: comisiones bancarias e IGTF
-        if m.categoria in CATEGORIAS_COMISION and (
-            cfg.cuenta_comisiones_id or cfg.cuenta_comisiones_codigo
-        ):
+        if m.categoria in CATEGORIAS_COMISION and (cfg.cuenta_comisiones_id or cfg.cuenta_comisiones_codigo):
             salida.append(
                 PropuestaCalculada(
                     movimiento_id=m.movimiento_id,
@@ -246,9 +235,7 @@ def proponer_conciliacion(
         if puntuados and (len(puntuados) == 1 or puntuados[0][0] > puntuados[1][0]):
             mejor_puntaje, mejor_pago = puntuados[0]
             usados.add(mejor_pago.clave)
-            sufijo_conciliado = (
-                f" (ya conciliado en {mejor_pago.fuente})" if mejor_pago.ya_conciliado else ""
-            )
+            sufijo_conciliado = f" (ya conciliado en {mejor_pago.fuente})" if mejor_pago.ya_conciliado else ""
             salida.append(
                 PropuestaCalculada(
                     movimiento_id=m.movimiento_id,
@@ -285,9 +272,7 @@ def proponer_conciliacion(
             continue
 
         # Regla R3: POS / compra con tarjeta / nómina sin pago candidato -> cuenta tránsito
-        if m.categoria in CATEGORIAS_PENDIENTES and (
-            cfg.cuenta_transito_id or cfg.cuenta_transito_codigo
-        ):
+        if m.categoria in CATEGORIAS_PENDIENTES and (cfg.cuenta_transito_id or cfg.cuenta_transito_codigo):
             salida.append(
                 PropuestaCalculada(
                     movimiento_id=m.movimiento_id,
@@ -377,9 +362,7 @@ def pagos_candidatos_odoo(
         {
             int(r["partner_id"][0])
             for r in registros
-            if isinstance(r, dict)
-            and isinstance(r.get("partner_id"), (list, tuple))
-            and len(r["partner_id"]) >= 1
+            if isinstance(r, dict) and isinstance(r.get("partner_id"), (list, tuple)) and len(r["partner_id"]) >= 1
         }
     )
     vats_por_socio: dict[int, frozenset[str]] = {}
@@ -420,11 +403,7 @@ def pagos_candidatos_odoo(
         memo_raw = r.get(campo_memo) if campo_memo else ""
         memo_val = str(memo_raw) if memo_raw and not isinstance(memo_raw, bool) else ""
         nombre_raw = r.get("name")
-        nombre_val = (
-            str(nombre_raw)
-            if nombre_raw and not isinstance(nombre_raw, bool)
-            else f"ODOO-{pid_str}"
-        )
+        nombre_val = str(nombre_raw) if nombre_raw and not isinstance(nombre_raw, bool) else f"ODOO-{pid_str}"
         candidatos.append(
             PagoCandidato(
                 fuente="ODOO",
@@ -458,9 +437,7 @@ def contactos_por_rif_odoo(
     propios_ids = {
         int(c["partner_id"][0])
         for c in cias_raw
-        if isinstance(c, dict)
-        and isinstance(c.get("partner_id"), (list, tuple))
-        and len(c["partner_id"]) >= 1
+        if isinstance(c, dict) and isinstance(c.get("partner_id"), (list, tuple)) and len(c["partner_id"]) >= 1
     }
 
     por_rif: dict[str, dict[int, str]] = {}

@@ -99,6 +99,7 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
             )
 
         resultado = calcular_aging(empresa_id)
+
         # Serializar Decimals
         def fmt(d):
             return {k: str(v) if isinstance(v, Decimal) else v for k, v in d.items()}
@@ -142,6 +143,7 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
         # Resolver cliente
         try:
             from apps.crm.models import Cliente
+
             cliente = Cliente.objects.get(
                 pk=cliente_id,
                 id_empresa__in=[e.id_empresa for e in empresas],
@@ -154,14 +156,10 @@ class CuentaPorCobrarViewSet(BaseModelViewSet):
         except ImportError:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
             logger.exception("Generación de PDF de estado de cuenta no disponible")
-            return Response(
-                {"error": "Generación de PDF no disponible en este servidor."}, status=503
-            )
+            return Response({"error": "Generación de PDF no disponible en este servidor."}, status=503)
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            f'inline; filename="estado_cuenta_{cliente.rif}.pdf"'
-        )
+        response["Content-Disposition"] = f'inline; filename="estado_cuenta_{cliente.rif}.pdf"'
         return response
 
     @idempotent("cxc:abonar")

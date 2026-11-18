@@ -102,15 +102,11 @@ def _upsert_pedidos(empresa, pedidos, entregas, facturas) -> int:
         estado_entrega = p.get("estado_entrega", "") or ""
         entregada_completa = estado_entrega == "full"
         # El plazo de contado solo arranca con la entrega completa.
-        fecha_entrega = (
-            _parse_fecha(entrega.get("fecha_entrega")) if entregada_completa else None
-        )
+        fecha_entrega = _parse_fecha(entrega.get("fecha_entrega")) if entregada_completa else None
         monto_facturado = factura.get("monto_facturado_usd")
         ncs = factura.get("ncs", Decimal("0"))
         invoice_status = p.get("invoice_status", "")
-        facturada = invoice_status == "invoiced" or bool(
-            monto_facturado and monto_facturado > 0
-        )
+        facturada = invoice_status == "invoiced" or bool(monto_facturado and monto_facturado > 0)
 
         PedidoLubrikca.objects.update_or_create(
             empresa=empresa,
@@ -139,10 +135,7 @@ def _upsert_pedidos(empresa, pedidos, entregas, facturas) -> int:
 def _upsert_lineas_y_precios(empresa, lineas) -> tuple[int, int]:
     # Mapa so_id → pedido (solo de esta empresa) para vincular las líneas.
     so_ids = {ln.get("so_id") for ln in lineas if ln.get("so_id")}
-    pedidos_por_so = {
-        ped.so_id: ped
-        for ped in PedidoLubrikca.objects.filter(empresa=empresa, so_id__in=so_ids)
-    }
+    pedidos_por_so = {ped.so_id: ped for ped in PedidoLubrikca.objects.filter(empresa=empresa, so_id__in=so_ids)}
 
     n_lineas = 0
     n_precios = 0

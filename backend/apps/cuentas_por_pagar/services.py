@@ -25,8 +25,13 @@ class AbonoCxPError(Exception):
 
 @transaction.atomic
 def registrar_abono_cxp(
-    cxp, monto: Decimal, usuario, descripcion: str = "", generar_asiento: bool = True,
-    tasa_original: Decimal | None = None, tasa_pago: Decimal | None = None,
+    cxp,
+    monto: Decimal,
+    usuario,
+    descripcion: str = "",
+    generar_asiento: bool = True,
+    tasa_original: Decimal | None = None,
+    tasa_pago: Decimal | None = None,
 ) -> "AbonoCxP":
     """
     Aplica un abono a una CxP y actualiza su estado.
@@ -61,9 +66,7 @@ def registrar_abono_cxp(
         raise AbonoCxPError("No se puede abonar a una CxP anulada.")
 
     if monto > cxp.monto_pendiente:
-        raise AbonoCxPError(
-            f"El abono ({monto}) excede el saldo pendiente ({cxp.monto_pendiente})."
-        )
+        raise AbonoCxPError(f"El abono ({monto}) excede el saldo pendiente ({cxp.monto_pendiente}).")
 
     abono = AbonoCxP.objects.create(
         cuenta_por_pagar=cxp,
@@ -103,17 +106,14 @@ def registrar_abono_cxp(
             cxp.pk,
         )
         raise AbonoCxPError(
-            "No se pudo generar el asiento contable obligatorio. "
-            "Configure el Mapeo Contable de la empresa."
+            "No se pudo generar el asiento contable obligatorio. " "Configure el Mapeo Contable de la empresa."
         ) from exc
 
     # Diferencia en cambio realizada (multi-tasa): si el pago se hace a una tasa
     # distinta de aquella a la que se reconoció la CxP, el valor en moneda base
     # del mismo monto en divisa cambia → ganancia/pérdida cambiaria.
     if tasa_original is not None and tasa_pago is not None:
-        registrar_diferencia_cambiaria_cxp(
-            abono, monto, tasa_original, tasa_pago, usuario=usuario
-        )
+        registrar_diferencia_cambiaria_cxp(abono, monto, tasa_original, tasa_pago, usuario=usuario)
 
     return abono
 
@@ -163,13 +163,13 @@ def registrar_diferencia_cambiaria_cxp(
 
     tipo_asiento = "PERDIDA_CAMBIARIA" if tipo == "PERDIDA" else "GANANCIA_CAMBIARIA"
     try:
-        generar_asiento_o_fallar(
-            tipo_asiento, diferencia, empresa, monto_diferencia, usuario=usuario
-        )
+        generar_asiento_o_fallar(tipo_asiento, diferencia, empresa, monto_diferencia, usuario=usuario)
     except AsientoError as exc:
         logger.exception(
             "registrar_diferencia_cambiaria_cxp: asiento %s falló | empresa=%s | abono=%s",
-            tipo_asiento, empresa.pk, abono.pk,
+            tipo_asiento,
+            empresa.pk,
+            abono.pk,
         )
         raise AbonoCxPError(
             "No se pudo generar el asiento de diferencia cambiaria obligatorio. "
@@ -209,10 +209,10 @@ def calcular_aging_cxp(empresa_id) -> dict:
     # Tipado explícito: sin la anotación, mypy infiere dict[str, object] y marca
     # las acumulaciones (+=) y el sum() final como errores [operator]/[misc].
     buckets: dict[str, dict[str, Any]] = {
-        "corriente":   {"count": 0, "total": Decimal("0")},
-        "dias_1_30":   {"count": 0, "total": Decimal("0")},
-        "dias_31_60":  {"count": 0, "total": Decimal("0")},
-        "dias_61_90":  {"count": 0, "total": Decimal("0")},
+        "corriente": {"count": 0, "total": Decimal("0")},
+        "dias_1_30": {"count": 0, "total": Decimal("0")},
+        "dias_31_60": {"count": 0, "total": Decimal("0")},
+        "dias_61_90": {"count": 0, "total": Decimal("0")},
         "dias_90_mas": {"count": 0, "total": Decimal("0")},
     }
 

@@ -89,9 +89,7 @@ class DespachoViewSet(BaseModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         # Documento operativo: no se borra (trazabilidad); se cancela o devuelve.
-        raise MethodNotAllowed(
-            "DELETE", detail="Los despachos no se eliminan; use /cancelar/ o /devolver/."
-        )
+        raise MethodNotAllowed("DELETE", detail="Los despachos no se eliminan; use /cancelar/ o /devolver/.")
 
     # ── Crear desde la venta ──────────────────────────────────────────────────
 
@@ -117,9 +115,7 @@ class DespachoViewSet(BaseModelViewSet):
         empresas = _empresas(request)
 
         try:
-            nota = NotaVenta.objects.get(
-                pk=datos["id_nota_venta"], id_empresa__in=empresas
-            )
+            nota = NotaVenta.objects.get(pk=datos["id_nota_venta"], id_empresa__in=empresas)
         except NotaVenta.DoesNotExist:
             raise ValidationError({"id_nota_venta": "Nota de venta no encontrada en sus empresas."})
         try:
@@ -130,20 +126,13 @@ class DespachoViewSet(BaseModelViewSet):
         transportista = None
         if datos.get("id_transportista"):
             try:
-                transportista = Empleado.objects.get(
-                    pk=datos["id_transportista"], empresa__in=empresas
-                )
+                transportista = Empleado.objects.get(pk=datos["id_transportista"], empresa__in=empresas)
             except Empleado.DoesNotExist:
-                raise ValidationError(
-                    {"id_transportista": "Transportista no encontrado en sus empresas."}
-                )
+                raise ValidationError({"id_transportista": "Transportista no encontrado en sus empresas."})
 
         lineas = datos.get("lineas")
         if lineas is not None:
-            lineas = [
-                {"id_producto": linea["id_producto"], "cantidad": linea["cantidad"]}
-                for linea in lineas
-            ]
+            lineas = [{"id_producto": linea["id_producto"], "cantidad": linea["cantidad"]} for linea in lineas]
 
         try:
             despacho = crear_despacho_desde_nota_venta(
@@ -187,12 +176,8 @@ class DespachoViewSet(BaseModelViewSet):
                     empresa__in=_empresas(request),
                 )
             except Empleado.DoesNotExist:
-                raise ValidationError(
-                    {"id_transportista": "Transportista no encontrado en sus empresas."}
-                )
-        return self._transicionar(
-            request, models.Despacho.ESTADO_EN_RUTA, transportista=transportista
-        )
+                raise ValidationError({"id_transportista": "Transportista no encontrado en sus empresas."})
+        return self._transicionar(request, models.Despacho.ESTADO_EN_RUTA, transportista=transportista)
 
     @action(detail=True, methods=["post"], url_path="entregar")
     def entregar(self, request, pk=None):
@@ -212,18 +197,14 @@ class DespachoViewSet(BaseModelViewSet):
         """EN_RUTA → DEVUELTO. Body: {motivo}. No reingresa stock (DevolucionVenta)."""
         payload = serializers.MotivoDespachoSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        return self._transicionar(
-            request, models.Despacho.ESTADO_DEVUELTO, motivo=payload.validated_data["motivo"]
-        )
+        return self._transicionar(request, models.Despacho.ESTADO_DEVUELTO, motivo=payload.validated_data["motivo"])
 
     @action(detail=True, methods=["post"], url_path="cancelar")
     def cancelar(self, request, pk=None):
         """PENDIENTE → CANCELADO. Body: {motivo}."""
         payload = serializers.MotivoDespachoSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        return self._transicionar(
-            request, models.Despacho.ESTADO_CANCELADO, motivo=payload.validated_data["motivo"]
-        )
+        return self._transicionar(request, models.Despacho.ESTADO_CANCELADO, motivo=payload.validated_data["motivo"])
 
     # ── Documento ────────────────────────────────────────────────────────────
 
@@ -240,13 +221,9 @@ class DespachoViewSet(BaseModelViewSet):
         except ImportError:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
             logger.exception("Generación de PDF de nota de entrega no disponible")
-            return Response(
-                {"error": "Generación de PDF no disponible en este servidor."}, status=503
-            )
+            return Response({"error": "Generación de PDF no disponible en este servidor."}, status=503)
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            f'inline; filename="nota_entrega_{despacho.numero_despacho}.pdf"'
-        )
+        response["Content-Disposition"] = f'inline; filename="nota_entrega_{despacho.numero_despacho}.pdf"'
         return response
 
 

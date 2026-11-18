@@ -28,27 +28,17 @@ class CalendarioActivacionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         inst = self.instance
         nombre = attrs.get("nombre", getattr(inst, "nombre", None))
-        empresa = getattr(inst, "id_empresa", None) or get_empresa_primaria(
-            self.context["request"].user
-        )
-        dup = CalendarioActivacion.objects.filter(
-            id_empresa=empresa, nombre=nombre, activo=True
-        )
+        empresa = getattr(inst, "id_empresa", None) or get_empresa_primaria(self.context["request"].user)
+        dup = CalendarioActivacion.objects.filter(id_empresa=empresa, nombre=nombre, activo=True)
         if inst:
             dup = dup.exclude(pk=inst.pk)
         if dup.exists():
-            raise serializers.ValidationError(
-                {"nombre": "Ya existe un calendario activo con ese nombre."}
-            )
+            raise serializers.ValidationError({"nombre": "Ya existe un calendario activo con ese nombre."})
         if attrs.get("es_predeterminado"):
-            otros = CalendarioActivacion.objects.filter(
-                id_empresa=empresa, es_predeterminado=True, activo=True
-            )
+            otros = CalendarioActivacion.objects.filter(id_empresa=empresa, es_predeterminado=True, activo=True)
             if inst:
                 otros = otros.exclude(pk=inst.pk)
-            otros.update(
-                es_predeterminado=False
-            )  # el nuevo predeterminado reemplaza al anterior
+            otros.update(es_predeterminado=False)  # el nuevo predeterminado reemplaza al anterior
         return attrs
 
 
@@ -71,15 +61,11 @@ class RecursoActivacionSerializer(serializers.ModelSerializer):
         inst = self.instance
         cal = attrs.get("calendario", getattr(inst, "calendario", None))
         codigo = attrs.get("codigo", getattr(inst, "codigo", None))
-        dup = RecursoActivacion.objects.filter(
-            calendario=cal, codigo=codigo, activo=True
-        )
+        dup = RecursoActivacion.objects.filter(calendario=cal, codigo=codigo, activo=True)
         if inst:
             dup = dup.exclude(pk=inst.pk)
         if dup.exists():
-            raise serializers.ValidationError(
-                {"codigo": "Ya existe ese recurso en el calendario."}
-            )
+            raise serializers.ValidationError({"codigo": "Ya existe ese recurso en el calendario."})
         return attrs
 
 
@@ -124,16 +110,10 @@ class EventoCrearSerializer(serializers.Serializer):
     calendario = serializers.UUIDField(required=False)
     cliente = serializers.UUIDField(required=False, allow_null=True)
     cliente_nombre = serializers.CharField(max_length=255)
-    vendedor_nombre = serializers.CharField(
-        max_length=150, required=False, allow_blank=True, default=""
-    )
+    vendedor_nombre = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     ubicacion = serializers.CharField(max_length=500)
     inicio = serializers.DateTimeField()
     fin = serializers.DateTimeField()
-    materiales = serializers.ListField(
-        child=serializers.CharField(max_length=120), required=False, default=list
-    )
+    materiales = serializers.ListField(child=serializers.CharField(max_length=120), required=False, default=list)
     notas = serializers.CharField(required=False, allow_blank=True, default="")
-    usos = serializers.DictField(
-        child=serializers.IntegerField(min_value=0), required=False, default=dict
-    )
+    usos = serializers.DictField(child=serializers.IntegerField(min_value=0), required=False, default=dict)

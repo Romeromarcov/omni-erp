@@ -28,6 +28,7 @@ suites no ejercitan:
 Dinero siempre con Decimal exacto. Los bugs encontrados se prueban con
 pytest.raises + comentario BUG (convención del plan, sin enmascarar).
 """
+
 import datetime
 import uuid
 from decimal import Decimal
@@ -67,6 +68,7 @@ pytestmark = pytest.mark.django_db
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def client_a(user_a):
     c = APIClient()
@@ -86,9 +88,7 @@ def client_super(user_a):
 
 @pytest.fixture
 def metodo_a(empresa_a, moneda_usd):
-    metodo = MetodoPago.objects.create(
-        nombre_metodo="Zelle Gaps", tipo_metodo="ELECTRONICO", empresa=empresa_a
-    )
+    metodo = MetodoPago.objects.create(nombre_metodo="Zelle Gaps", tipo_metodo="ELECTRONICO", empresa=empresa_a)
     metodo.monedas.add(moneda_usd)
     return metodo
 
@@ -96,16 +96,23 @@ def metodo_a(empresa_a, moneda_usd):
 @pytest.fixture
 def caja_virtual_a(empresa_a, moneda_usd):
     return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja Gaps", moneda=moneda_usd,
-        tipo_caja="REGISTRADORA", saldo_actual=Decimal("50.00"),
+        empresa=empresa_a,
+        nombre="Caja Gaps",
+        moneda=moneda_usd,
+        tipo_caja="REGISTRADORA",
+        saldo_actual=Decimal("50.00"),
     )
 
 
 @pytest.fixture
 def cuenta_a(empresa_a, moneda_usd):
     return CuentaBancariaEmpresa.objects.create(
-        id_empresa=empresa_a, nombre_banco="Banco Gaps", numero_cuenta="0102-GAP",
-        tipo_cuenta="CORRIENTE", id_moneda=moneda_usd, saldo_actual=Decimal("200.00"),
+        id_empresa=empresa_a,
+        nombre_banco="Banco Gaps",
+        numero_cuenta="0102-GAP",
+        tipo_cuenta="CORRIENTE",
+        id_moneda=moneda_usd,
+        saldo_actual=Decimal("200.00"),
     )
 
 
@@ -118,10 +125,14 @@ def _stub_request(user, **query):
 # apps/finanzas/utils.py
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAsignarPermisosCajaFisica:
     def test_crea_asignacion_nueva(self, user_a, caja_fisica_a):
         asignacion, created = finanzas_utils.asignar_permisos_caja_fisica(
-            user_a, caja_fisica_a, puede_abrir=True, puede_cerrar=False,
+            user_a,
+            caja_fisica_a,
+            puede_abrir=True,
+            puede_cerrar=False,
             es_predeterminada=True,
         )
         assert created is True
@@ -132,7 +143,10 @@ class TestAsignarPermisosCajaFisica:
     def test_actualiza_asignacion_existente(self, user_a, caja_fisica_a):
         finanzas_utils.asignar_permisos_caja_fisica(user_a, caja_fisica_a)
         asignacion, created = finanzas_utils.asignar_permisos_caja_fisica(
-            user_a, caja_fisica_a, puede_abrir=False, puede_cerrar=False,
+            user_a,
+            caja_fisica_a,
+            puede_abrir=False,
+            puede_cerrar=False,
             es_predeterminada=False,
         )
         assert created is False
@@ -150,12 +164,8 @@ class TestHelpersSesion:
     def test_obtener_sesion_activa_usuario_sin_sesion_retorna_none(self, user_a):
         assert finanzas_utils.obtener_sesion_activa_usuario(user_a) is None
 
-    def test_obtener_sesion_activa_usuario_con_sesion_abierta(
-        self, user_a, empresa_a, caja_fisica_a
-    ):
-        sesion = SesionCajaFisica.objects.create(
-            caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a
-        )
+    def test_obtener_sesion_activa_usuario_con_sesion_abierta(self, user_a, empresa_a, caja_fisica_a):
+        sesion = SesionCajaFisica.objects.create(caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a)
         encontrada = finanzas_utils.obtener_sesion_activa_usuario(user_a)
         assert encontrada is not None
         assert encontrada.pk == sesion.pk
@@ -163,16 +173,14 @@ class TestHelpersSesion:
 
     def test_obtener_caja_activa_sesion(self, user_a, empresa_a, caja_fisica_a):
         assert finanzas_utils.obtener_caja_activa_sesion(user_a) is None
-        SesionCajaFisica.objects.create(
-            caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a
-        )
+        SesionCajaFisica.objects.create(caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a)
         assert finanzas_utils.obtener_caja_activa_sesion(user_a) == caja_fisica_a
 
-    def test_sesion_cerrada_no_cuenta_como_activa(
-        self, user_a, empresa_a, caja_fisica_a
-    ):
+    def test_sesion_cerrada_no_cuenta_como_activa(self, user_a, empresa_a, caja_fisica_a):
         SesionCajaFisica.objects.create(
-            caja_fisica=caja_fisica_a, usuario=user_a, empresa=empresa_a,
+            caja_fisica=caja_fisica_a,
+            usuario=user_a,
+            empresa=empresa_a,
             estado="CERRADA",
         )
         assert finanzas_utils.obtener_sesion_activa_usuario(user_a) is None
@@ -197,16 +205,20 @@ class TestCrearConfiguracionInicialVenezolana:
         aquí asociadas a la empresa."""
         from apps.core.models import Empresa
 
-        empresa = Empresa.objects.create(
-            nombre_legal="Empresa VE C.A.", identificador_fiscal="J-00000001-0"
+        empresa = Empresa.objects.create(nombre_legal="Empresa VE C.A.", identificador_fiscal="J-00000001-0")
+        Moneda.objects.create(
+            nombre="Bolívar VE",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            empresa=empresa,
         )
         Moneda.objects.create(
-            nombre="Bolívar VE", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", empresa=empresa,
-        )
-        Moneda.objects.create(
-            nombre="Dólar VE", codigo_iso="USD", simbolo="$",
-            tipo_moneda="fiat", empresa=empresa,
+            nombre="Dólar VE",
+            codigo_iso="USD",
+            simbolo="$",
+            tipo_moneda="fiat",
+            empresa=empresa,
         )
         return empresa
 
@@ -237,21 +249,28 @@ class TestCrearConfiguracionInicialVenezolana:
 # apps/finanzas/views_extra/tasa_oficial_bcv.py  (solo BD — CERO red)
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestTasaOficialBCVView:
     URL = "/api/finanzas/tasa-oficial-bcv/"
 
     @pytest.fixture
     def moneda_ves(self, db):
         return Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
 
     @pytest.fixture
     def tasa_bcv_hoy(self, moneda_usd, moneda_ves):
         return TasaCambio.objects.create(
-            id_empresa=None, id_moneda_origen=moneda_usd, id_moneda_destino=moneda_ves,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("36.50000000"),
+            id_empresa=None,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("36.50000000"),
             # fecha local (Caracas), coherente con el default del endpoint
             # (timezone.localdate()); con date.today() (UTC) el seed y la
             # búsqueda se desalineaban tras las 20:00 Caracas.
@@ -269,10 +288,14 @@ class TestTasaOficialBCVView:
         assert Decimal(resp.json()["valor_tasa"]) == Decimal("36.50000000")
 
     def test_tasa_por_fecha_explicita_200(self, client_a, tasa_bcv_hoy):
-        resp = client_a.get(self.URL, {
-            "moneda_origen": "USD", "moneda_destino": "VES",
-            "fecha": datetime.date.today().isoformat(),
-        })
+        resp = client_a.get(
+            self.URL,
+            {
+                "moneda_origen": "USD",
+                "moneda_destino": "VES",
+                "fecha": datetime.date.today().isoformat(),
+            },
+        )
         assert resp.status_code == 200
 
     def test_moneda_inexistente_404(self, client_a, tasa_bcv_hoy):
@@ -289,10 +312,13 @@ class TestTasaOficialBCVView:
         # FIX (lote 2): la vista usaba `empresa.moneda_base` (el campo real es
         # `id_moneda_base`) y el AttributeError silenciado devolvía 404 siempre.
         # empresa_a tiene id_moneda_base=USD → origen USD, destino VES → 200.
-        resp = client_a.get(self.URL, {
-            "id_empresa": str(empresa_a.id_empresa),
-            "id_moneda_transaccion": str(moneda_ves.id_moneda),
-        })
+        resp = client_a.get(
+            self.URL,
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "id_moneda_transaccion": str(moneda_ves.id_moneda),
+            },
+        )
         assert resp.status_code == 200, resp.content
         assert Decimal(resp.json()["valor_tasa"]) == Decimal("36.50000000")
 
@@ -307,13 +333,19 @@ class TestTasaOficialBCVView:
         caracas_hoy = datetime.date(2026, 6, 14)
         utc_hoy = datetime.date(2026, 6, 15)
         TasaCambio.objects.create(
-            id_empresa=None, id_moneda_origen=moneda_usd, id_moneda_destino=moneda_ves,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("40.00000000"),
+            id_empresa=None,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("40.00000000"),
             fecha_tasa=caracas_hoy,
         )
         TasaCambio.objects.create(
-            id_empresa=None, id_moneda_origen=moneda_usd, id_moneda_destino=moneda_ves,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("41.00000000"),
+            id_empresa=None,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("41.00000000"),
             fecha_tasa=utc_hoy,
         )
         with mock.patch("django.utils.timezone.now", return_value=now_utc):
@@ -324,13 +356,14 @@ class TestTasaOficialBCVView:
     def test_flujo_por_empresa_sin_moneda_base_404(self, client_a, moneda_usd, tasa_bcv_hoy):
         from apps.core.models import Empresa
 
-        empresa = Empresa.objects.create(
-            nombre_legal="Sin Base C.A.", identificador_fiscal="J-00000002-0"
+        empresa = Empresa.objects.create(nombre_legal="Sin Base C.A.", identificador_fiscal="J-00000002-0")
+        resp = client_a.get(
+            self.URL,
+            {
+                "id_empresa": str(empresa.id_empresa),
+                "id_moneda_transaccion": str(moneda_usd.id_moneda),
+            },
         )
-        resp = client_a.get(self.URL, {
-            "id_empresa": str(empresa.id_empresa),
-            "id_moneda_transaccion": str(moneda_usd.id_moneda),
-        })
         assert resp.status_code == 404
         assert resp.json() == {"detail": "Empresa o moneda base no encontrada."}
 
@@ -344,6 +377,7 @@ class TestTasaOficialBCVView:
 # apps/finanzas/views.py — ramas restantes
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestSesionCajaFisicaRamasRotas:
     URL = "/api/finanzas/sesiones-caja/"
 
@@ -354,9 +388,13 @@ class TestSesionCajaFisicaRamasRotas:
         # VIRTUAL responde 400 controlado y no se crea ninguna sesión.
         # Creación feliz y aislamiento: TestSesionCajaFisicaCreacion
         # (test_diffcov_finanzas_tesoreria.py).
-        resp = client_a.post(self.URL, {
-            "caja_fisica_principal": str(caja_virtual_a.id_caja),
-        }, format="json")
+        resp = client_a.post(
+            self.URL,
+            {
+                "caja_fisica_principal": str(caja_virtual_a.id_caja),
+            },
+            format="json",
+        )
         assert resp.status_code == 400
         assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
         assert SesionCajaFisica.objects.count() == 0
@@ -399,8 +437,13 @@ class TestMetodoPagoEmpresaActivaViewSet:
 class TestMonedaSuperusuario:
     def test_superusuario_ve_todas_las_monedas(self, client_super, moneda_usd, empresa_b):
         Moneda.objects.create(
-            nombre="Token B", codigo_iso="TKB", simbolo="T", tipo_moneda="otro",
-            es_generica=False, es_publica=False, empresa=empresa_b,
+            nombre="Token B",
+            codigo_iso="TKB",
+            simbolo="T",
+            tipo_moneda="otro",
+            es_generica=False,
+            es_publica=False,
+            empresa=empresa_b,
         )
         resp = client_super.get("/api/finanzas/monedas/")
         codigos = {m["codigo_iso"] for m in resp.json()["results"]}
@@ -434,9 +477,7 @@ class TestMetodoPagoRamas:
         assert resp.json()["nombre_metodo"] == "Zelle Gaps"
 
     def test_superusuario_lista_todos(self, client_super, empresa_b):
-        MetodoPago.objects.create(
-            nombre_metodo="Privado B", tipo_metodo="EFECTIVO", empresa=empresa_b
-        )
+        MetodoPago.objects.create(nombre_metodo="Privado B", tipo_metodo="EFECTIVO", empresa=empresa_b)
         nombres = {m["nombre_metodo"] for m in client_super.get(self.URL).json()["results"]}
         assert "Privado B" in nombres
 
@@ -447,15 +488,20 @@ class TestMetodoPagoRamas:
         # debe ser público para listarse; el caso "privado ajeno NO se lista"
         # se cubre en tests/tenant/test_metodos_pago_aislamiento.py.
         MetodoPago.objects.create(
-            nombre_metodo="Pago Móvil B", tipo_metodo="ELECTRONICO",
-            empresa=empresa_b, es_publico=True,
+            nombre_metodo="Pago Móvil B",
+            tipo_metodo="ELECTRONICO",
+            empresa=empresa_b,
+            es_publico=True,
         )
         # Sin id_empresa_actual los filtros nombre/tipo aplican y la
         # serialización es segura (get_aplicado retorna False sin contexto).
-        resp = client_a.get(f"{self.URL}buscar_reutilizar/", {
-            "nombre_metodo": "Móvil",
-            "tipo_metodo": "ELECTRONICO",
-        })
+        resp = client_a.get(
+            f"{self.URL}buscar_reutilizar/",
+            {
+                "nombre_metodo": "Móvil",
+                "tipo_metodo": "ELECTRONICO",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         results = data["results"] if isinstance(data, dict) else data
@@ -463,11 +509,14 @@ class TestMetodoPagoRamas:
         # Con id_empresa_actual + filtro sin resultados se cubren las ramas de
         # exclusión sin disparar get_aplicado (que requiere rapidfuzz, no
         # disponible en este entorno — limitación ya documentada en cobertura2).
-        resp_vacio = client_a.get(f"{self.URL}buscar_reutilizar/", {
-            "id_empresa_actual": str(empresa_a.id_empresa),
-            "nombre_metodo": "NoExisteEsteNombre",
-            "tipo_metodo": "ELECTRONICO",
-        })
+        resp_vacio = client_a.get(
+            f"{self.URL}buscar_reutilizar/",
+            {
+                "id_empresa_actual": str(empresa_a.id_empresa),
+                "nombre_metodo": "NoExisteEsteNombre",
+                "tipo_metodo": "ELECTRONICO",
+            },
+        )
         assert resp_vacio.status_code == 200
         data_v = resp_vacio.json()
         results_v = data_v["results"] if isinstance(data_v, dict) else data_v
@@ -480,13 +529,14 @@ class TestMetodoPagoRamas:
         from apps.finanzas.views import MetodoPagoViewSet
 
         publica_fiat = Moneda.objects.create(
-            nombre="Euro", codigo_iso="EUR", simbolo="€", tipo_moneda="fiat",
+            nombre="Euro",
+            codigo_iso="EUR",
+            simbolo="€",
+            tipo_moneda="fiat",
             es_publica=True,
         )
         MonedaEmpresaActiva.objects.get_or_create(empresa=empresa_a, moneda=publica_fiat)
-        metodo = MetodoPago.objects.create(
-            nombre_metodo="Efectivo Gaps", tipo_metodo="EFECTIVO", empresa=empresa_a
-        )
+        metodo = MetodoPago.objects.create(nombre_metodo="Efectivo Gaps", tipo_metodo="EFECTIVO", empresa=empresa_a)
         metodo.monedas.add(publica_fiat)
 
         vs = MetodoPagoViewSet()
@@ -502,7 +552,10 @@ class TestMetodoPagoRamas:
         from apps.finanzas.views import MetodoPagoViewSet
 
         fiat_publica = Moneda.objects.create(
-            nombre="Peso", codigo_iso="COP", simbolo="$", tipo_moneda="fiat",
+            nombre="Peso",
+            codigo_iso="COP",
+            simbolo="$",
+            tipo_moneda="fiat",
             es_publica=True,
         )
         metodo = MetodoPago.objects.create(nombre_metodo="Cheque Gaps", tipo_metodo="CHEQUE")
@@ -516,14 +569,16 @@ class TestMetodoPagoRamas:
 class TestTransaccionFinancieraFiltros:
     def test_filtro_id_empresa_solo_estrecha(self, client_a, empresa_a, moneda_usd, metodo_a, user_a):
         TransaccionFinanciera.objects.create(
-            id_empresa=empresa_a, fecha_hora_transaccion=timezone.now(),
-            tipo_transaccion="INGRESO", monto_transaccion=Decimal("10.00"),
-            id_moneda_transaccion=moneda_usd, monto_base_empresa=Decimal("10.00"),
-            id_metodo_pago=metodo_a, id_usuario_registro=user_a,
+            id_empresa=empresa_a,
+            fecha_hora_transaccion=timezone.now(),
+            tipo_transaccion="INGRESO",
+            monto_transaccion=Decimal("10.00"),
+            id_moneda_transaccion=moneda_usd,
+            monto_base_empresa=Decimal("10.00"),
+            id_metodo_pago=metodo_a,
+            id_usuario_registro=user_a,
         )
-        resp = client_a.get("/api/finanzas/transacciones-financieras/", {
-            "id_empresa": str(empresa_a.id_empresa)
-        })
+        resp = client_a.get("/api/finanzas/transacciones-financieras/", {"id_empresa": str(empresa_a.id_empresa)})
         assert resp.status_code == 200
         data = resp.json()
         results = data["results"] if isinstance(data, dict) else data
@@ -534,9 +589,15 @@ class TestMovimientoCajaBancoList:
     def test_list_aislado(self, client_a, empresa_a, moneda_usd, user_a):
         ahora = timezone.now()
         MovimientoCajaBanco.objects.create(
-            id_empresa=empresa_a, fecha_movimiento=ahora.date(), hora_movimiento=ahora.time(),
-            tipo_movimiento="INGRESO", monto=Decimal("5.00"), id_moneda=moneda_usd,
-            concepto="gap", saldo_anterior=Decimal("0.00"), saldo_nuevo=Decimal("5.00"),
+            id_empresa=empresa_a,
+            fecha_movimiento=ahora.date(),
+            hora_movimiento=ahora.time(),
+            tipo_movimiento="INGRESO",
+            monto=Decimal("5.00"),
+            id_moneda=moneda_usd,
+            concepto="gap",
+            saldo_anterior=Decimal("0.00"),
+            saldo_nuevo=Decimal("5.00"),
             id_usuario_registro=user_a,
         )
         resp = client_a.get("/api/finanzas/movimientos-caja-banco/")
@@ -551,7 +612,8 @@ class TestCierreCajaExitoso:
         # una implementación mínima.
         resultado = {"saldo_real": "100.00", "descuadre": "0.00"}
         monkeypatch.setattr(
-            Caja, "realizar_cierre",
+            Caja,
+            "realizar_cierre",
             lambda self, saldo_real=None, usuario=None, hasta=None: resultado,
             raising=False,
         )
@@ -569,17 +631,29 @@ class TestFiltrosCompletosMovimientos:
     def movimiento(self, empresa_a, moneda_usd, user_a, caja_virtual_a, cuenta_a):
         ahora = timezone.now()
         return MovimientoCajaBanco.objects.create(
-            id_empresa=empresa_a, fecha_movimiento=ahora.date(), hora_movimiento=ahora.time(),
-            tipo_movimiento="INGRESO", monto=Decimal("25.00"), id_moneda=moneda_usd,
-            concepto="venta mostrador", referencia="REF-F1", id_caja=caja_virtual_a,
-            id_cuenta_bancaria=cuenta_a, saldo_anterior=Decimal("0.00"),
-            saldo_nuevo=Decimal("25.00"), id_usuario_registro=user_a,
+            id_empresa=empresa_a,
+            fecha_movimiento=ahora.date(),
+            hora_movimiento=ahora.time(),
+            tipo_movimiento="INGRESO",
+            monto=Decimal("25.00"),
+            id_moneda=moneda_usd,
+            concepto="venta mostrador",
+            referencia="REF-F1",
+            id_caja=caja_virtual_a,
+            id_cuenta_bancaria=cuenta_a,
+            saldo_anterior=Decimal("0.00"),
+            saldo_nuevo=Decimal("25.00"),
+            id_usuario_registro=user_a,
         )
 
     FILTROS = {
-        "fecha_inicio": "2020-01-01", "fecha_fin": "2030-12-31",
-        "tipo": "INGRESO", "moneda": "USD", "concepto": "mostrador",
-        "referencia": "REF-F1", "usuario": "user_empresa_a",
+        "fecha_inicio": "2020-01-01",
+        "fecha_fin": "2030-12-31",
+        "tipo": "INGRESO",
+        "moneda": "USD",
+        "concepto": "mostrador",
+        "referencia": "REF-F1",
+        "usuario": "user_empresa_a",
     }
 
     def test_movimientos_caja_todos_los_filtros(self, client_a, caja_virtual_a, movimiento):
@@ -665,42 +739,52 @@ class TestDatafonoFiltroEmpresa:
     def test_filtro_id_empresa(self, client_a, empresa_a, moneda_usd):
         from apps.core.models import Sucursal
 
-        sucursal = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Suc Gap", codigo_sucursal="SG1"
-        )
+        sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Suc Gap", codigo_sucursal="SG1")
         cuenta = CuentaBancariaEmpresa.objects.create(
-            id_empresa=empresa_a, nombre_banco="B", numero_cuenta="1",
-            tipo_cuenta="CORRIENTE", id_moneda=moneda_usd,
+            id_empresa=empresa_a,
+            nombre_banco="B",
+            numero_cuenta="1",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=moneda_usd,
         )
         Datafono.objects.create(
-            id_empresa=empresa_a, id_sucursal=sucursal, nombre="POS Gap",
-            serial="PG-1", id_cuenta_bancaria_asociada=cuenta,
+            id_empresa=empresa_a,
+            id_sucursal=sucursal,
+            nombre="POS Gap",
+            serial="PG-1",
+            id_cuenta_bancaria_asociada=cuenta,
         )
         resp = client_a.get("/api/finanzas/datafonos/", {"id_empresa": str(empresa_a.id_empresa)})
         assert resp.json()["count"] == 1
 
-    def test_registrar_pago_valueerror_400(
-        self, client_a, empresa_a, moneda_usd, metodo_a, user_a, monkeypatch
-    ):
+    def test_registrar_pago_valueerror_400(self, client_a, empresa_a, moneda_usd, metodo_a, user_a, monkeypatch):
         from apps.core.models import Sucursal
         import apps.finanzas.models as finanzas_models
 
-        sucursal = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Suc Gap2", codigo_sucursal="SG2"
-        )
+        sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Suc Gap2", codigo_sucursal="SG2")
         cuenta = CuentaBancariaEmpresa.objects.create(
-            id_empresa=empresa_a, nombre_banco="B2", numero_cuenta="2",
-            tipo_cuenta="CORRIENTE", id_moneda=moneda_usd,
+            id_empresa=empresa_a,
+            nombre_banco="B2",
+            numero_cuenta="2",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=moneda_usd,
         )
         datafono = Datafono.objects.create(
-            id_empresa=empresa_a, id_sucursal=sucursal, nombre="POS Err",
-            serial="PE-1", id_cuenta_bancaria_asociada=cuenta,
+            id_empresa=empresa_a,
+            id_sucursal=sucursal,
+            nombre="POS Err",
+            serial="PE-1",
+            id_cuenta_bancaria_asociada=cuenta,
         )
         tf = TransaccionFinanciera.objects.create(
-            id_empresa=empresa_a, fecha_hora_transaccion=timezone.now(),
-            tipo_transaccion="INGRESO", monto_transaccion=Decimal("10.00"),
-            id_moneda_transaccion=moneda_usd, monto_base_empresa=Decimal("10.00"),
-            id_metodo_pago=metodo_a, id_usuario_registro=user_a,
+            id_empresa=empresa_a,
+            fecha_hora_transaccion=timezone.now(),
+            tipo_transaccion="INGRESO",
+            monto_transaccion=Decimal("10.00"),
+            id_moneda_transaccion=moneda_usd,
+            monto_base_empresa=Decimal("10.00"),
+            id_metodo_pago=metodo_a,
+            id_usuario_registro=user_a,
         )
 
         def _raise(**kwargs):
@@ -729,27 +813,36 @@ class TestPerformCreatePagoDobleRegistro:
         pago.refresh_from_db()
         return pago
 
-    def test_pago_con_caja_virtual_y_datafono(
-        self, empresa_a, moneda_usd, metodo_a, user_a, caja_virtual_a
-    ):
+    def test_pago_con_caja_virtual_y_datafono(self, empresa_a, moneda_usd, metodo_a, user_a, caja_virtual_a):
         from apps.core.models import Sucursal
 
-        sucursal = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Suc PC", codigo_sucursal="SPC"
-        )
+        sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Suc PC", codigo_sucursal="SPC")
         cuenta = CuentaBancariaEmpresa.objects.create(
-            id_empresa=empresa_a, nombre_banco="BPC", numero_cuenta="3",
-            tipo_cuenta="CORRIENTE", id_moneda=moneda_usd,
+            id_empresa=empresa_a,
+            nombre_banco="BPC",
+            numero_cuenta="3",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=moneda_usd,
         )
         datafono = Datafono.objects.create(
-            id_empresa=empresa_a, id_sucursal=sucursal, nombre="POS PC",
-            serial="PC-1", id_cuenta_bancaria_asociada=cuenta,
+            id_empresa=empresa_a,
+            id_sucursal=sucursal,
+            nombre="POS PC",
+            serial="PC-1",
+            id_cuenta_bancaria_asociada=cuenta,
         )
         pago = Pago.objects.create(
-            id_empresa=empresa_a, tipo_operacion="INGRESO", tipo_documento="AJUSTE",
-            id_documento=uuid.uuid4(), fecha_pago=timezone.now(),
-            monto=Decimal("80.0000"), id_moneda=moneda_usd, id_metodo_pago=metodo_a,
-            referencia="REF-PC", id_caja_virtual=caja_virtual_a, id_datafono=datafono,
+            id_empresa=empresa_a,
+            tipo_operacion="INGRESO",
+            tipo_documento="AJUSTE",
+            id_documento=uuid.uuid4(),
+            fecha_pago=timezone.now(),
+            monto=Decimal("80.0000"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_a,
+            referencia="REF-PC",
+            id_caja_virtual=caja_virtual_a,
+            id_datafono=datafono,
             id_usuario_registro=user_a,
         )
         pago = self._perform(pago)
@@ -767,10 +860,16 @@ class TestPerformCreatePagoDobleRegistro:
 
     def test_pago_egreso_con_cuenta_bancaria(self, empresa_a, moneda_usd, metodo_a, user_a, cuenta_a):
         pago = Pago.objects.create(
-            id_empresa=empresa_a, tipo_operacion="EGRESO", tipo_documento="AJUSTE",
-            id_documento=uuid.uuid4(), fecha_pago=timezone.now(),
-            monto=Decimal("30.0000"), id_moneda=moneda_usd, id_metodo_pago=metodo_a,
-            id_cuenta_bancaria=cuenta_a, id_usuario_registro=user_a,
+            id_empresa=empresa_a,
+            tipo_operacion="EGRESO",
+            tipo_documento="AJUSTE",
+            id_documento=uuid.uuid4(),
+            fecha_pago=timezone.now(),
+            monto=Decimal("30.0000"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_a,
+            id_cuenta_bancaria=cuenta_a,
+            id_usuario_registro=user_a,
         )
         self._perform(pago)
         mov = MovimientoCajaBanco.objects.get(tipo_movimiento="EGRESO")
@@ -781,25 +880,26 @@ class TestPerformCreatePagoDobleRegistro:
 
 
 class TestPagoNotificacionBestEffort:
-    def test_notificacion_rota_no_impide_el_pago(
-        self, client_a, empresa_a, moneda_usd, metodo_a, monkeypatch
-    ):
+    def test_notificacion_rota_no_impide_el_pago(self, client_a, empresa_a, moneda_usd, metodo_a, monkeypatch):
         import apps.notificaciones.services as notif
 
         def _boom(*args, **kwargs):
             raise RuntimeError("canal caído")
 
         monkeypatch.setattr(notif, "emitir_notificacion", _boom)
-        resp = client_a.post("/api/finanzas/pagos/", {
-            "id_empresa": str(empresa_a.id_empresa),
-            "tipo_operacion": "INGRESO",
-            "tipo_documento": "AJUSTE",
-            "id_documento": str(uuid.uuid4()),
-            "fecha_pago": timezone.now().isoformat(),
-            "monto": "15.0000",
-            "id_moneda": str(moneda_usd.id_moneda),
-            "id_metodo_pago": str(metodo_a.id_metodo_pago),
-        })
+        resp = client_a.post(
+            "/api/finanzas/pagos/",
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "INGRESO",
+                "tipo_documento": "AJUSTE",
+                "id_documento": str(uuid.uuid4()),
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "15.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_a.id_metodo_pago),
+            },
+        )
         assert resp.status_code == 201, resp.content
         assert Pago.objects.get().monto == Decimal("15.0000")
 
@@ -808,6 +908,7 @@ class TestPagoNotificacionBestEffort:
 # apps/finanzas/serializers.py — creates/updates restantes
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestMetodoPagoEmpresaActivaSerializer:
     def test_create_asigna_empresa_del_usuario_y_resuelve_uuid(self, user_a, empresa_a):
         from apps.finanzas.serializers import MetodoPagoEmpresaActivaSerializer
@@ -815,10 +916,12 @@ class TestMetodoPagoEmpresaActivaSerializer:
         # método sin empresa ni genérico → la señal de sync no crea fila previa
         metodo = MetodoPago.objects.create(nombre_metodo="Suelto", tipo_metodo="OTRO")
         ser = MetodoPagoEmpresaActivaSerializer(context={"request": SimpleNamespace(user=user_a)})
-        obj = ser.create({
-            "metodo_pago": {"id_metodo_pago": str(metodo.id_metodo_pago)},
-            "activa": True,
-        })
+        obj = ser.create(
+            {
+                "metodo_pago": {"id_metodo_pago": str(metodo.id_metodo_pago)},
+                "activa": True,
+            }
+        )
         assert obj.empresa == empresa_a
         assert obj.metodo_pago == metodo
         assert obj.activa is True
@@ -856,7 +959,10 @@ class TestMonedaEmpresaActivaSerializerMetodos:
         from apps.finanzas.serializers import MonedaEmpresaActivaSerializer
 
         nueva = Moneda.objects.create(
-            nombre="Yen", codigo_iso="JPY", simbolo="¥", tipo_moneda="fiat",
+            nombre="Yen",
+            codigo_iso="JPY",
+            simbolo="¥",
+            tipo_moneda="fiat",
         )
         # la señal de sync no crea fila (no genérica/pública/sin empresa)
         ser = MonedaEmpresaActivaSerializer(context={"request": SimpleNamespace(user=user_a)})
@@ -879,19 +985,21 @@ class TestTransaccionFinancieraSerializerCreate:
         from apps.finanzas.serializers import TransaccionFinancieraSerializer
 
         ser = TransaccionFinancieraSerializer(context={"request": SimpleNamespace(user=user_a)})
-        tf = ser.create({
-            "fecha_hora_transaccion": timezone.now(),
-            "tipo_transaccion": "INGRESO",
-            "monto_transaccion": Decimal("60.00"),
-            "id_moneda_transaccion": str(moneda_usd.id_moneda),  # como string → se resuelve
-            "id_metodo_pago": str(metodo_a.id_metodo_pago),      # como string → se resuelve
-            "monto_base": Decimal("60.00"),                       # mapea a monto_base_empresa
-            "tasa_cambio": Decimal("1.00"),                       # se descarta (no es campo)
-            "descripcion": "TF gaps",
-            "referencia_pago": "REF-TF",
-        })
-        assert tf.id_empresa == empresa_a            # asignada desde el usuario
-        assert tf.id_usuario_registro == user_a      # asignado desde el request
+        tf = ser.create(
+            {
+                "fecha_hora_transaccion": timezone.now(),
+                "tipo_transaccion": "INGRESO",
+                "monto_transaccion": Decimal("60.00"),
+                "id_moneda_transaccion": str(moneda_usd.id_moneda),  # como string → se resuelve
+                "id_metodo_pago": str(metodo_a.id_metodo_pago),  # como string → se resuelve
+                "monto_base": Decimal("60.00"),  # mapea a monto_base_empresa
+                "tasa_cambio": Decimal("1.00"),  # se descarta (no es campo)
+                "descripcion": "TF gaps",
+                "referencia_pago": "REF-TF",
+            }
+        )
+        assert tf.id_empresa == empresa_a  # asignada desde el usuario
+        assert tf.id_usuario_registro == user_a  # asignado desde el request
         assert tf.monto_base_empresa == Decimal("60.00")
         assert tf.id_moneda_transaccion == moneda_usd
         assert tf.id_metodo_pago == metodo_a
@@ -906,39 +1014,37 @@ class TestTransaccionFinancieraSerializerCreate:
         from apps.finanzas.serializers import TransaccionFinancieraSerializer
 
         ser = TransaccionFinancieraSerializer(context={"request": SimpleNamespace(user=user_a)})
-        tf = ser.create({
-            "fecha_hora_transaccion": timezone.now(),
-            "tipo_transaccion": "EGRESO",
-            "monto_transaccion": Decimal("5.00"),
-            "id_moneda_transaccion": moneda_usd,
-            "id_moneda_base": str(uuid.uuid4()),  # inexistente → None (rama DoesNotExist)
-            "id_metodo_pago": metodo_a,
-            "monto_base_empresa": Decimal("5.00"),
-        })
+        tf = ser.create(
+            {
+                "fecha_hora_transaccion": timezone.now(),
+                "tipo_transaccion": "EGRESO",
+                "monto_transaccion": Decimal("5.00"),
+                "id_moneda_transaccion": moneda_usd,
+                "id_moneda_base": str(uuid.uuid4()),  # inexistente → None (rama DoesNotExist)
+                "id_metodo_pago": metodo_a,
+                "monto_base_empresa": Decimal("5.00"),
+            }
+        )
         assert tf.id_moneda_base is None
-        assert MovimientoCajaBanco.objects.filter(
-            id_transaccion_financiera=tf, tipo_movimiento="EGRESO"
-        ).exists()
+        assert MovimientoCajaBanco.objects.filter(id_transaccion_financiera=tf, tipo_movimiento="EGRESO").exists()
 
 
 class TestPlantillaMaestroSerializerCreateUpdate:
     def _ser(self, user):
         from apps.finanzas.serializers import PlantillaMaestroCajasVirtualesSerializer
 
-        return PlantillaMaestroCajasVirtualesSerializer(
-            context={"request": SimpleNamespace(user=user)}
-        )
+        return PlantillaMaestroCajasVirtualesSerializer(context={"request": SimpleNamespace(user=user)})
 
-    def test_create_asigna_empresa_creador_monedas_y_metodos(
-        self, user_a, empresa_a, moneda_usd, metodo_a
-    ):
+    def test_create_asigna_empresa_creador_monedas_y_metodos(self, user_a, empresa_a, moneda_usd, metodo_a):
         ser = self._ser(user_a)
-        instancia = ser.create({
-            "nombre": "Plantilla Gaps",
-            "moneda_base": moneda_usd,  # requerido por el modelo (NOT NULL)
-            "monedas": [str(moneda_usd.id_moneda)],
-            "metodos_pago": [str(metodo_a.id_metodo_pago)],
-        })
+        instancia = ser.create(
+            {
+                "nombre": "Plantilla Gaps",
+                "moneda_base": moneda_usd,  # requerido por el modelo (NOT NULL)
+                "monedas": [str(moneda_usd.id_moneda)],
+                "metodos_pago": [str(metodo_a.id_metodo_pago)],
+            }
+        )
         assert instancia.empresa == empresa_a
         assert instancia.creada_por == user_a
         assert instancia.moneda_base == moneda_usd
@@ -946,27 +1052,35 @@ class TestPlantillaMaestroSerializerCreateUpdate:
 
     def test_create_moneda_inexistente_se_ignora(self, user_a, empresa_a, moneda_usd):
         ser = self._ser(user_a)
-        instancia = ser.create({
-            "nombre": "Plantilla Gaps 2",
-            "moneda_base": moneda_usd,
-            "monedas": [str(uuid.uuid4())],  # rama DoesNotExist → pass
-            "metodos_pago": [],
-        })
+        instancia = ser.create(
+            {
+                "nombre": "Plantilla Gaps 2",
+                "moneda_base": moneda_usd,
+                "monedas": [str(uuid.uuid4())],  # rama DoesNotExist → pass
+                "metodos_pago": [],
+            }
+        )
         assert instancia.moneda_base == moneda_usd
 
     def test_update_cambia_moneda_y_metodos(self, user_a, empresa_a, moneda_usd, metodo_a):
         otra_moneda = Moneda.objects.create(
-            nombre="Real", codigo_iso="BRL", simbolo="R$", tipo_moneda="fiat",
+            nombre="Real",
+            codigo_iso="BRL",
+            simbolo="R$",
+            tipo_moneda="fiat",
         )
         plantilla = PlantillaMaestroCajasVirtuales.objects.create(
             empresa=empresa_a, nombre="Para Update", moneda_base=moneda_usd
         )
         ser = self._ser(user_a)
-        actualizada = ser.update(plantilla, {
-            "nombre": "Actualizada",
-            "monedas": [str(otra_moneda.id_moneda)],
-            "metodos_pago": [str(metodo_a.id_metodo_pago)],
-        })
+        actualizada = ser.update(
+            plantilla,
+            {
+                "nombre": "Actualizada",
+                "monedas": [str(otra_moneda.id_moneda)],
+                "metodos_pago": [str(metodo_a.id_metodo_pago)],
+            },
+        )
         assert actualizada.nombre == "Actualizada"
         assert actualizada.moneda_base == otra_moneda
         assert list(actualizada.metodos_pago_base.all()) == [metodo_a]
@@ -989,21 +1103,25 @@ class TestCajaVirtualDisponibleSerializer:
     def test_get_usuario_autenticado(self, user_a, caja_virtual_a):
         assert self._ser(user_a).get_usuario(caja_virtual_a) == str(user_a.id)
 
-    def test_get_es_predeterminada_primera_registradora(
-        self, user_a, empresa_a, moneda_usd, caja_fisica_a
-    ):
+    def test_get_es_predeterminada_primera_registradora(self, user_a, empresa_a, moneda_usd, caja_fisica_a):
         # Las cajas virtuales "disponibles" salen de la jerarquía física:
         # CajaFisicaUsuario → cajas virtuales con esa caja_fisica.
         CajaFisicaUsuario.objects.create(usuario=user_a, caja_fisica=caja_fisica_a)
         caja = Caja.objects.create(
-            empresa=empresa_a, nombre="Registradora F", moneda=moneda_usd,
-            tipo_caja="REGISTRADORA", caja_fisica=caja_fisica_a,
+            empresa=empresa_a,
+            nombre="Registradora F",
+            moneda=moneda_usd,
+            tipo_caja="REGISTRADORA",
+            caja_fisica=caja_fisica_a,
         )
         ser = self._ser(user_a)
         assert ser.get_es_predeterminada(caja) is True
         otra = Caja.objects.create(
-            empresa=empresa_a, nombre="Registradora G", moneda=moneda_usd,
-            tipo_caja="REGISTRADORA", caja_fisica=caja_fisica_a,
+            empresa=empresa_a,
+            nombre="Registradora G",
+            moneda=moneda_usd,
+            tipo_caja="REGISTRADORA",
+            caja_fisica=caja_fisica_a,
         )
         assert ser.get_es_predeterminada(otra) is False
 
@@ -1020,11 +1138,10 @@ class TestCajaVirtualDisponibleSerializer:
 # apps/finanzas/models.py — ramas restantes
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestStrRestantes:
     def test_strs(self, empresa_a, moneda_usd, user_a, caja_virtual_a, cuenta_a, caja_fisica_a):
-        tf = TransaccionFinanciera(
-            tipo_transaccion="INGRESO", monto_transaccion=Decimal("9.99")
-        )
+        tf = TransaccionFinanciera(tipo_transaccion="INGRESO", monto_transaccion=Decimal("9.99"))
         assert str(tf) == "INGRESO - 9.99"
         assert "Caja Gaps" in str(caja_virtual_a)
         assert str(cuenta_a) == "Banco Gaps - 0102-GAP"
@@ -1036,7 +1153,8 @@ class TestStrRestantes:
         assert str(cu) == "user_empresa_a - Caja Gaps"
         ahora = timezone.now()
         mov = MovimientoCajaBanco(
-            tipo_movimiento="INGRESO", monto=Decimal("3.00"),
+            tipo_movimiento="INGRESO",
+            monto=Decimal("3.00"),
             fecha_movimiento=ahora.date(),
         )
         assert str(mov) == f"INGRESO - 3.00 ({ahora.date()})"
@@ -1044,25 +1162,27 @@ class TestStrRestantes:
     def test_strs_datafono(self, empresa_a, moneda_usd, user_a):
         from apps.core.models import Sucursal
 
-        sucursal = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Suc Str", codigo_sucursal="SS1"
-        )
+        sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Suc Str", codigo_sucursal="SS1")
         cuenta = CuentaBancariaEmpresa.objects.create(
-            id_empresa=empresa_a, nombre_banco="BS", numero_cuenta="9",
-            tipo_cuenta="CORRIENTE", id_moneda=moneda_usd,
+            id_empresa=empresa_a,
+            nombre_banco="BS",
+            numero_cuenta="9",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=moneda_usd,
         )
         datafono = Datafono.objects.create(
-            id_empresa=empresa_a, id_sucursal=sucursal, nombre="POS Str",
-            serial="ST-1", id_cuenta_bancaria_asociada=cuenta,
+            id_empresa=empresa_a,
+            id_sucursal=sucursal,
+            nombre="POS Str",
+            serial="ST-1",
+            id_cuenta_bancaria_asociada=cuenta,
         )
         assert str(datafono) == "POS Str - ST-1"
         sesion = SesionDatafono.objects.create(datafono=datafono, usuario_apertura=user_a)
         assert "POS Str" in str(sesion)
         trans = TransaccionDatafono(id_datafono=datafono, monto=Decimal("7.00"), estado="PENDIENTE")
         assert str(trans) == "Transacción en POS Str - 7.00 (Pendiente)"
-        deposito = DepositoDatafono(
-            datafono=datafono, lote_bancario="L-1", total_neto=Decimal("6.86")
-        )
+        deposito = DepositoDatafono(datafono=datafono, lote_bancario="L-1", total_neto=Decimal("6.86"))
         assert str(deposito) == "Depósito L-1 - POS Str - 6.86"
 
 
@@ -1087,25 +1207,25 @@ class TestPlantillaYCajasVirtualesAuto:
         # Idempotente: una segunda llamada no duplica
         assert plantilla.crear_cajas_para_caja_fisica(caja_fisica_a) == []
 
-    def test_crear_cajas_respeta_override_deshabilitado(
-        self, plantilla, caja_fisica_a, metodo_a, empresa_a
-    ):
+    def test_crear_cajas_respeta_override_deshabilitado(self, plantilla, caja_fisica_a, metodo_a, empresa_a):
         from apps.core.models import Sucursal
         from apps.finanzas.models import CajaMetodoPagoOverride
 
-        sucursal = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Suc Override", codigo_sucursal="SOV"
-        )
+        sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Suc Override", codigo_sucursal="SOV")
         CajaMetodoPagoOverride.objects.create(
-            caja_fisica=caja_fisica_a, metodo_pago=metodo_a,
-            sucursal=sucursal, deshabilitado=True,
+            caja_fisica=caja_fisica_a,
+            metodo_pago=metodo_a,
+            sucursal=sucursal,
+            deshabilitado=True,
         )
         assert plantilla.crear_cajas_para_caja_fisica(caja_fisica_a) == []
 
     def test_sincronizar_con_plantilla_empleado(self, plantilla, user_a, moneda_usd, metodo_a):
         auto = CajaVirtualAuto.objects.create(
-            empleado=user_a, plantilla_maestro=plantilla,
-            moneda=moneda_usd, metodo_pago=metodo_a,
+            empleado=user_a,
+            plantilla_maestro=plantilla,
+            moneda=moneda_usd,
+            metodo_pago=metodo_a,
         )
         # __str__ rama "Empleado"
         assert "Plantilla Auto" in str(auto)
@@ -1123,8 +1243,10 @@ class TestPlantillaYCajasVirtualesAuto:
         # (virtual) — ahora apunta a CajaFisica (migración 0039) — y
         # metodo_pago_deshabilitado ya existe en CajaFisica.
         auto = CajaVirtualAuto.objects.create(
-            caja_fisica=caja_fisica_a, plantilla_maestro=plantilla,
-            moneda=moneda_usd, metodo_pago=metodo_a,
+            caja_fisica=caja_fisica_a,
+            plantilla_maestro=plantilla,
+            moneda=moneda_usd,
+            metodo_pago=metodo_a,
         )
         assert "Plantilla Auto" in str(auto)  # __str__ rama "Física"
         auto.sincronizar_con_plantilla()
@@ -1138,8 +1260,10 @@ class TestPlantillaYCajasVirtualesAuto:
 
     def test_crear_caja_virtual_en_sesion_delegacion(self, plantilla, user_a, moneda_usd, metodo_a):
         auto = CajaVirtualAuto.objects.create(
-            empleado=user_a, plantilla_maestro=plantilla,
-            moneda=moneda_usd, metodo_pago=metodo_a,
+            empleado=user_a,
+            plantilla_maestro=plantilla,
+            moneda=moneda_usd,
+            metodo_pago=metodo_a,
         )
         capturado = {}
 
@@ -1161,7 +1285,8 @@ class TestPlantillaYCajasVirtualesAuto:
 
     def test_senal_caja_fisica_crea_caja_virtual(self, plantilla, empresa_a, moneda_usd, metodo_a):
         nueva_fisica = CajaFisica.objects.create(
-            empresa=empresa_a, nombre="Física Señal",
+            empresa=empresa_a,
+            nombre="Física Señal",
             identificador_dispositivo="disp-señal",
         )
         caja = Caja.objects.get(caja_fisica=nueva_fisica)

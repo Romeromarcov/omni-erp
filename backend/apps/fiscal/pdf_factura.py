@@ -41,9 +41,7 @@ def generar_pdf_factura(factura) -> bytes:
             TableStyle,
         )
     except ImportError as exc:
-        raise ImportError(
-            "reportlab no está instalado. Instálelo con: pip install reportlab"
-        ) from exc
+        raise ImportError("reportlab no está instalado. Instálelo con: pip install reportlab") from exc
 
     import io
     from decimal import Decimal
@@ -75,9 +73,7 @@ def generar_pdf_factura(factura) -> bytes:
     estilo_subtitulo = ParagraphStyle(
         "subtitulo", parent=styles["Normal"], fontSize=10, textColor=AZUL_OSCURO, spaceAfter=2
     )
-    estilo_pie = ParagraphStyle(
-        "pie", parent=styles["Normal"], fontSize=7, textColor=colors.grey, alignment=TA_CENTER
-    )
+    estilo_pie = ParagraphStyle("pie", parent=styles["Normal"], fontSize=7, textColor=colors.grey, alignment=TA_CENTER)
 
     elements = []
 
@@ -103,22 +99,36 @@ def generar_pdf_factura(factura) -> bytes:
     # BLOQUE 1: Encabezado empresa + número de factura (layout 2 columnas)
     # ══════════════════════════════════════════════════════════════════════════
     encabezado_empresa = [
-        [Paragraph(f"<b>{nombre_empresa}</b>", estilo_titulo),
-         Paragraph("<b>FACTURA</b>", ParagraphStyle("fac", parent=styles["Title"], fontSize=16, alignment=TA_CENTER, textColor=AZUL_OSCURO))],
-        [Paragraph(f"RIF: <b>{rif_empresa}</b>", styles["Normal"]),
-         Paragraph(f"N° Control: <b>{factura.numero_control}</b>", estilo_centro)],
-        [Paragraph(direccion_empresa, ParagraphStyle("dir", parent=styles["Normal"], fontSize=8, textColor=colors.grey)),
-         Paragraph(f"N° Factura: <b>{factura.numero_factura}</b>", estilo_centro)],
-        ["",
-         Paragraph(f"Fecha: <b>{factura.fecha_emision}</b>", estilo_centro)],
+        [
+            Paragraph(f"<b>{nombre_empresa}</b>", estilo_titulo),
+            Paragraph(
+                "<b>FACTURA</b>",
+                ParagraphStyle("fac", parent=styles["Title"], fontSize=16, alignment=TA_CENTER, textColor=AZUL_OSCURO),
+            ),
+        ],
+        [
+            Paragraph(f"RIF: <b>{rif_empresa}</b>", styles["Normal"]),
+            Paragraph(f"N° Control: <b>{factura.numero_control}</b>", estilo_centro),
+        ],
+        [
+            Paragraph(
+                direccion_empresa, ParagraphStyle("dir", parent=styles["Normal"], fontSize=8, textColor=colors.grey)
+            ),
+            Paragraph(f"N° Factura: <b>{factura.numero_factura}</b>", estilo_centro),
+        ],
+        ["", Paragraph(f"Fecha: <b>{factura.fecha_emision}</b>", estilo_centro)],
     ]
 
     t_enc = Table(encabezado_empresa, colWidths=[10 * cm, 7 * cm])
-    t_enc.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("LINEBELOW", (1, 0), (1, 0), 2, AZUL_OSCURO),
-    ]))
+    t_enc.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("LINEBELOW", (1, 0), (1, 0), 2, AZUL_OSCURO),
+            ]
+        )
+    )
     elements.append(t_enc)
     elements.append(Spacer(1, 0.3 * cm))
     elements.append(HRFlowable(width="100%", thickness=2, color=AZUL_OSCURO))
@@ -133,13 +143,17 @@ def generar_pdf_factura(factura) -> bytes:
         ["Dirección:", direccion_cliente or "—"],
     ]
     t_receptor = Table(receptor_data, colWidths=[3.5 * cm, 13.5 * cm])
-    t_receptor.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("BACKGROUND", (0, 0), (-1, -1), GRIS_CLARO),
-        ("BOX", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-    ]))
+    t_receptor.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                ("BACKGROUND", (0, 0), (-1, -1), GRIS_CLARO),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+            ]
+        )
+    )
     elements.append(t_receptor)
     elements.append(Spacer(1, 0.4 * cm))
 
@@ -158,30 +172,36 @@ def generar_pdf_factura(factura) -> bytes:
     for i, det in enumerate(detalles, 1):
         producto = getattr(det, "id_producto", None)
         nombre_prod = getattr(producto, "nombre_producto", "—") if producto else "—"
-        filas_det.append([
-            str(i),
-            nombre_prod,
-            f"{getattr(det, 'cantidad', 0):,.2f}",
-            f"{getattr(det, 'precio_unitario', 0):,.4f}",
-            f"{getattr(det, 'subtotal', 0):,.2f}",
-        ])
+        filas_det.append(
+            [
+                str(i),
+                nombre_prod,
+                f"{getattr(det, 'cantidad', 0):,.2f}",
+                f"{getattr(det, 'precio_unitario', 0):,.4f}",
+                f"{getattr(det, 'subtotal', 0):,.2f}",
+            ]
+        )
 
     if not detalles:
         filas_det.append(["—", "Sin líneas de detalle registradas", "—", "—", "—"])
 
     t_det = Table(filas_det, colWidths=[0.8 * cm, 9.7 * cm, 2 * cm, 2.5 * cm, 2 * cm])
-    t_det.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), AZUL_OSCURO),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
-        ("ALIGN", (0, 0), (0, -1), "CENTER"),
-        ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRIS_CLARO]),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-    ]))
+    t_det.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), AZUL_OSCURO),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+                ("GRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
+                ("ALIGN", (0, 0), (0, -1), "CENTER"),
+                ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRIS_CLARO]),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     elements.append(t_det)
     elements.append(Spacer(1, 0.4 * cm))
 
@@ -205,18 +225,22 @@ def generar_pdf_factura(factura) -> bytes:
         ["TOTAL:", f"{monto_total:,.2f} {moneda}"],
     ]
     t_totales = Table(totales_data, colWidths=[13 * cm, 4 * cm])
-    t_totales.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -2), 9),
-        ("FONTSIZE", (0, -1), (-1, -1), 11),
-        ("ALIGN", (0, 0), (0, -1), "RIGHT"),
-        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("LINEABOVE", (0, -1), (-1, -1), 1.5, AZUL_OSCURO),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, -1), (-1, -1), 6),
-        ("BACKGROUND", (0, -1), (-1, -1), GRIS_CLARO),
-    ]))
+    t_totales.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -2), 9),
+                ("FONTSIZE", (0, -1), (-1, -1), 11),
+                ("ALIGN", (0, 0), (0, -1), "RIGHT"),
+                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                ("LINEABOVE", (0, -1), (-1, -1), 1.5, AZUL_OSCURO),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, -1), (-1, -1), 6),
+                ("BACKGROUND", (0, -1), (-1, -1), GRIS_CLARO),
+            ]
+        )
+    )
     elements.append(t_totales)
     elements.append(Spacer(1, 0.5 * cm))
 

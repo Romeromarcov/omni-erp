@@ -1,4 +1,5 @@
 """Router principal de CxC API."""
+
 import logging
 from datetime import date
 
@@ -14,6 +15,7 @@ def _health_check_view(request):
     checks = {}
     try:
         from apps.cxc.models import GestionCobranza
+
         GestionCobranza.objects.exists()
         checks["db"] = "ok"
     except Exception:
@@ -21,6 +23,7 @@ def _health_check_view(request):
         checks["db"] = "error"
     try:
         from django.core.cache import cache
+
         cache.set("cxc:health", "ok", timeout=5)
         checks["cache"] = "ok"
     except Exception:
@@ -28,6 +31,7 @@ def _health_check_view(request):
         checks["cache"] = "error"
     try:
         from apps.finanzas.models import TasaCambio
+
         tasa = TasaCambio.objects.filter(fecha_tasa=date.today()).exists()
         checks["tasa_hoy"] = "ok" if tasa else "sin_tasa"
     except Exception:

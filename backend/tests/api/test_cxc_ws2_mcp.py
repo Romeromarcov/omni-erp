@@ -11,9 +11,11 @@ from unittest.mock import patch
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def cliente_a(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Cliente CxC Test S.A.",
@@ -27,6 +29,7 @@ def cliente_a(db, empresa_a):
 @pytest.fixture
 def cxc_pendiente(db, empresa_a, cliente_a):
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
     return CuentaPorCobrar.objects.create(
         cliente=cliente_a,
         empresa=empresa_a,
@@ -42,6 +45,7 @@ def cxc_pendiente(db, empresa_a, cliente_a):
 def cxc_vencida(db, empresa_a, cliente_a):
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
     from datetime import timedelta
+
     return CuentaPorCobrar.objects.create(
         cliente=cliente_a,
         empresa=empresa_a,
@@ -56,6 +60,7 @@ def cxc_vencida(db, empresa_a, cliente_a):
 @pytest.fixture
 def almacen_a(db, empresa_a):
     from apps.almacenes.models import Almacen
+
     return Almacen.objects.create(
         id_empresa=empresa_a,
         nombre_almacen="Almacén CxC Test",
@@ -66,22 +71,21 @@ def almacen_a(db, empresa_a):
 @pytest.fixture
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CXC", tipo="CANTIDAD"
-    )
+
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CXC", tipo="CANTIDAD")
 
 
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
-    return CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Cat CxC"
-    )
+
+    return CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat CxC")
 
 
 @pytest.fixture
 def producto(db, empresa_a, unidad, categoria, moneda_usd):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto CxC Test",
@@ -94,6 +98,7 @@ def producto(db, empresa_a, unidad, categoria, moneda_usd):
 @pytest.fixture
 def stock_100(db, empresa_a, producto, almacen_a, user_a):
     from apps.inventario.services import registrar_movimiento
+
     registrar_movimiento(
         empresa=empresa_a,
         fecha_hora_movimiento=timezone.now(),
@@ -106,6 +111,7 @@ def stock_100(db, empresa_a, producto, almacen_a, user_a):
 
 
 # ── CxC: aging ───────────────────────────────────────────────────────────────
+
 
 @pytest.mark.django_db
 class TestAging:
@@ -147,6 +153,7 @@ class TestAging:
 
 
 # ── CxC: abonos ──────────────────────────────────────────────────────────────
+
 
 @pytest.mark.django_db
 class TestAbonos:
@@ -191,6 +198,7 @@ class TestAbonos:
 
     def test_abono_a_cxc_pagada_falla(self, cxc_pendiente, user_a):
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
         CuentaPorCobrar.objects.filter(pk=cxc_pendiente.pk).update(estado="pagada")
 
         client = APIClient()
@@ -221,11 +229,10 @@ class TestAbonos:
 
 # ── WS-2: evento PEDIDO_CONFIRMADO ───────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestWS2PedidoConfirmadoEvento:
-    def test_confirmar_emite_evento(
-        self, empresa_a, cliente_a, almacen_a, producto, user_a, stock_100
-    ):
+    def test_confirmar_emite_evento(self, empresa_a, cliente_a, almacen_a, producto, user_a, stock_100):
         from apps.ventas.models import DetallePedido, Pedido
 
         pedido = Pedido.objects.create(
@@ -245,6 +252,7 @@ class TestWS2PedidoConfirmadoEvento:
 
         with patch("apps.core.events.publish") as mock_publish:
             from apps.ventas.services import confirmar_pedido
+
             confirmar_pedido(pedido=pedido, almacen=almacen_a, usuario=user_a)
 
         mock_publish.assert_called_once()
@@ -275,6 +283,7 @@ class TestWS2PedidoConfirmadoEvento:
 
 # ── MCP tools (WS-3) ─────────────────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestMCPTools:
     @pytest.fixture
@@ -282,6 +291,7 @@ class TestMCPTools:
         from apps.core.models import CapabilityToken
         from django.utils import timezone
         from datetime import timedelta
+
         return CapabilityToken.objects.create(
             empresa=empresa_a,
             nombre="Token test MCP",
@@ -291,6 +301,7 @@ class TestMCPTools:
 
     def test_mcp_get_cxc_aging(self, token, cxc_pendiente, empresa_a):
         from apps.core.mcp_server import omni_get_cxc_aging
+
         resultado = omni_get_cxc_aging(
             capability_token=str(token.token),
             empresa_id=str(empresa_a.id_empresa),
@@ -301,6 +312,7 @@ class TestMCPTools:
 
     def test_mcp_get_stock_producto(self, token, empresa_a, producto, almacen_a, stock_100):
         from apps.core.mcp_server import omni_get_stock_producto
+
         resultado = omni_get_stock_producto(
             capability_token=str(token.token),
             empresa_id=str(empresa_a.id_empresa),
@@ -330,6 +342,7 @@ class TestMCPTools:
         confirmar_pedido(pedido=pedido, almacen=almacen_a, usuario=user_a)
 
         from apps.core.mcp_server import omni_get_ventas_resumen
+
         resultado = omni_get_ventas_resumen(
             capability_token=str(token.token),
             empresa_id=str(empresa_a.id_empresa),
@@ -349,6 +362,7 @@ class TestMCPTools:
             expires_at=timezone.now() + timedelta(hours=1),
         )
         from apps.core.mcp_server import omni_get_cxc_aging
+
         with pytest.raises(PermissionError):
             omni_get_cxc_aging(
                 capability_token=str(token_limitado.token),

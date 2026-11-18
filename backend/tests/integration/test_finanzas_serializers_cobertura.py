@@ -19,6 +19,7 @@ mínimo en el contexto, cubriendo:
   CajaFisica, SesionCajaFisica, CajaVirtualAsociada, DatafonoAsociado,
   CajaUsuario/CajaVirtualUsuario, PlantillaMaestro, CajaVirtualDisponible.
 """
+
 import uuid
 from decimal import Decimal
 from types import SimpleNamespace
@@ -88,9 +89,7 @@ def superuser(db, empresa_a):
     from django.contrib.auth import get_user_model
 
     User = get_user_model()
-    user = User.objects.create_user(
-        username="super_omni", password="x", email="super@omni.com", is_active=True
-    )
+    user = User.objects.create_user(username="super_omni", password="x", email="super@omni.com", is_active=True)
     user.es_superusuario_omni = True
     user.save()
     return user
@@ -100,47 +99,37 @@ def superuser(db, empresa_a):
 def sucursal_a(empresa_a):
     from apps.core.models import Sucursal
 
-    return Sucursal.objects.create(
-        id_empresa=empresa_a, nombre="Sucursal Centro", codigo_sucursal="SC01"
-    )
+    return Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal Centro", codigo_sucursal="SC01")
 
 
 @pytest.fixture
 def metodo_a(empresa_a):
-    return MetodoPago.objects.create(
-        nombre_metodo="Zelle Empresa A", tipo_metodo="ELECTRONICO", empresa=empresa_a
-    )
+    return MetodoPago.objects.create(nombre_metodo="Zelle Empresa A", tipo_metodo="ELECTRONICO", empresa=empresa_a)
 
 
 # ── MonedaSerializer ─────────────────────────────────────────────────────────
 
+
 class TestMonedaSerializer:
     def test_crypto_codigo_iso_corto_invalido(self, user_a):
         s = MonedaSerializer(
-            data={"nombre": "Bitcoin", "codigo_iso": "BTC", "simbolo": "₿",
-                  "tipo_moneda": "crypto"},
+            data={"nombre": "Bitcoin", "codigo_iso": "BTC", "simbolo": "₿", "tipo_moneda": "crypto"},
             context=ctx(user_a),
         )
         assert not s.is_valid()
-        assert s.errors["codigo_iso"] == [
-            "Para monedas cripto, el código ISO debe tener 4 o 5 caracteres."
-        ]
+        assert s.errors["codigo_iso"] == ["Para monedas cripto, el código ISO debe tener 4 o 5 caracteres."]
 
     def test_fiat_codigo_iso_largo_invalido(self, user_a):
         s = MonedaSerializer(
-            data={"nombre": "Dólar Largo", "codigo_iso": "USDX", "simbolo": "$",
-                  "tipo_moneda": "fiat"},
+            data={"nombre": "Dólar Largo", "codigo_iso": "USDX", "simbolo": "$", "tipo_moneda": "fiat"},
             context=ctx(user_a),
         )
         assert not s.is_valid()
-        assert s.errors["codigo_iso"] == [
-            "Para monedas fiat u otro, el código ISO debe tener máximo 3 caracteres."
-        ]
+        assert s.errors["codigo_iso"] == ["Para monedas fiat u otro, el código ISO debe tener máximo 3 caracteres."]
 
     def test_usuario_normal_no_puede_marcar_publica(self, user_a):
         s = MonedaSerializer(
-            data={"nombre": "Euro", "codigo_iso": "EUR", "simbolo": "€",
-                  "tipo_moneda": "fiat", "es_publica": True},
+            data={"nombre": "Euro", "codigo_iso": "EUR", "simbolo": "€", "tipo_moneda": "fiat", "es_publica": True},
             context=ctx(user_a),
         )
         assert not s.is_valid()
@@ -150,34 +139,33 @@ class TestMonedaSerializer:
 
     def test_usuario_normal_no_modifica_moneda_generica(self, user_a, moneda_usd):
         s = MonedaSerializer(
-            instance=moneda_usd, data={"nombre": "Dólar Hackeado"}, partial=True,
+            instance=moneda_usd,
+            data={"nombre": "Dólar Hackeado"},
+            partial=True,
             context=ctx(user_a),
         )
         assert not s.is_valid()
-        assert s.errors["non_field_errors"] == [
-            "No puede modificar una moneda genérica del sistema."
-        ]
+        assert s.errors["non_field_errors"] == ["No puede modificar una moneda genérica del sistema."]
 
     def test_codigo_iso_duplicado_misma_empresa(self, superuser, empresa_a):
         # El UniqueValidator de campo (codigo_iso unique=True en el modelo)
         # corta antes que validate() vía is_valid(); se invoca validate()
         # directo para cubrir la regla de unicidad por empresa.
         Moneda.objects.create(
-            nombre="Peso A", codigo_iso="PSA", simbolo="P", tipo_moneda="fiat",
+            nombre="Peso A",
+            codigo_iso="PSA",
+            simbolo="P",
+            tipo_moneda="fiat",
             empresa=empresa_a,
         )
         s = MonedaSerializer(context=ctx(superuser))
         with pytest.raises(drf_serializers.ValidationError) as exc:
-            s.validate({"nombre": "Peso A bis", "codigo_iso": "PSA",
-                        "tipo_moneda": "fiat", "empresa": empresa_a})
-        assert exc.value.detail == {
-            "codigo_iso": "Ya existe una moneda con este código ISO para esta empresa."
-        }
+            s.validate({"nombre": "Peso A bis", "codigo_iso": "PSA", "tipo_moneda": "fiat", "empresa": empresa_a})
+        assert exc.value.detail == {"codigo_iso": "Ya existe una moneda con este código ISO para esta empresa."}
 
     def test_create_usuario_normal_fuerza_empresa_y_flags(self, user_a, empresa_a):
         s = MonedaSerializer(
-            data={"nombre": "Peso Local", "codigo_iso": "PSL", "simbolo": "P",
-                  "tipo_moneda": "fiat"},
+            data={"nombre": "Peso Local", "codigo_iso": "PSL", "simbolo": "P", "tipo_moneda": "fiat"},
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -197,16 +185,16 @@ class TestMonedaSerializer:
         assert rep["es_generica"] is True
         assert rep["empresa"] is None
 
-    def test_update_usuario_normal_no_puede_cambiar_empresa(
-        self, user_a, empresa_a, empresa_b
-    ):
+    def test_update_usuario_normal_no_puede_cambiar_empresa(self, user_a, empresa_a, empresa_b):
         moneda = Moneda.objects.create(
-            nombre="Privada", codigo_iso="PRV", simbolo="P", tipo_moneda="fiat",
+            nombre="Privada",
+            codigo_iso="PRV",
+            simbolo="P",
+            tipo_moneda="fiat",
             empresa=empresa_a,
         )
         s = MonedaSerializer(context=ctx(user_a))
-        actualizada = s.update(moneda, {"empresa": empresa_b, "es_publica": True,
-                                        "nombre": "Privada v2"})
+        actualizada = s.update(moneda, {"empresa": empresa_b, "es_publica": True, "nombre": "Privada v2"})
         assert actualizada.nombre == "Privada v2"
         assert actualizada.empresa == empresa_a
         assert actualizada.es_publica is False
@@ -214,19 +202,18 @@ class TestMonedaSerializer:
 
 # ── MetodoPagoSerializer ─────────────────────────────────────────────────────
 
+
 class TestMetodoPagoSerializer:
     def test_usuario_normal_no_modifica_generico(self, user_a):
-        generico = MetodoPago.objects.create(
-            nombre_metodo="Efectivo Global", tipo_metodo="EFECTIVO", es_generico=True
-        )
+        generico = MetodoPago.objects.create(nombre_metodo="Efectivo Global", tipo_metodo="EFECTIVO", es_generico=True)
         s = MetodoPagoSerializer(
-            instance=generico, data={"nombre_metodo": "Hack"}, partial=True,
+            instance=generico,
+            data={"nombre_metodo": "Hack"},
+            partial=True,
             context=ctx(user_a),
         )
         assert not s.is_valid()
-        assert s.errors["non_field_errors"] == [
-            "No puede modificar un método de pago genérico del sistema."
-        ]
+        assert s.errors["non_field_errors"] == ["No puede modificar un método de pago genérico del sistema."]
 
     def test_usuario_normal_no_puede_marcar_publico(self, user_a):
         s = MetodoPagoSerializer(
@@ -240,22 +227,20 @@ class TestMetodoPagoSerializer:
 
     def test_nombre_duplicado_misma_empresa_y_tipo(self, superuser, empresa_a, metodo_a):
         s = MetodoPagoSerializer(
-            data={"nombre_metodo": "Zelle Empresa A", "tipo_metodo": "ELECTRONICO",
-                  "empresa": str(empresa_a.id_empresa)},
+            data={
+                "nombre_metodo": "Zelle Empresa A",
+                "tipo_metodo": "ELECTRONICO",
+                "empresa": str(empresa_a.id_empresa),
+            },
             context=ctx(superuser),
         )
         assert not s.is_valid()
-        assert s.errors["nombre_metodo"] == [
-            "Ya existe un método de pago con este nombre para esta empresa y tipo."
-        ]
+        assert s.errors["nombre_metodo"] == ["Ya existe un método de pago con este nombre para esta empresa y tipo."]
 
     def test_efectivo_no_acepta_crypto(self, user_a):
-        crypto = Moneda.objects.create(
-            nombre="Tether", codigo_iso="USDT", simbolo="₮", tipo_moneda="crypto"
-        )
+        crypto = Moneda.objects.create(nombre="Tether", codigo_iso="USDT", simbolo="₮", tipo_moneda="crypto")
         s = MetodoPagoSerializer(
-            data={"nombre_metodo": "Efectivo X", "tipo_metodo": "EFECTIVO",
-                  "monedas": [str(crypto.id_moneda)]},
+            data={"nombre_metodo": "Efectivo X", "tipo_metodo": "EFECTIVO", "monedas": [str(crypto.id_moneda)]},
             context=ctx(user_a),
         )
         assert not s.is_valid()
@@ -265,15 +250,15 @@ class TestMetodoPagoSerializer:
 
     def test_efectivo_debe_incluir_todas_las_fiat_publicas(self, user_a, moneda_usd):
         fiat_publica = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat",
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
             es_publica=True,
         )
-        otra_fiat = Moneda.objects.create(
-            nombre="Peso", codigo_iso="COP", simbolo="$", tipo_moneda="fiat"
-        )
+        otra_fiat = Moneda.objects.create(nombre="Peso", codigo_iso="COP", simbolo="$", tipo_moneda="fiat")
         s = MetodoPagoSerializer(
-            data={"nombre_metodo": "Efectivo Y", "tipo_metodo": "EFECTIVO",
-                  "monedas": [str(otra_fiat.id_moneda)]},
+            data={"nombre_metodo": "Efectivo Y", "tipo_metodo": "EFECTIVO", "monedas": [str(otra_fiat.id_moneda)]},
             context=ctx(user_a),
         )
         assert not s.is_valid()
@@ -282,12 +267,9 @@ class TestMetodoPagoSerializer:
         ]
 
     def test_cheque_solo_fiat(self, user_a):
-        otra = Moneda.objects.create(
-            nombre="Token Raro", codigo_iso="TKR", simbolo="T", tipo_moneda="otro"
-        )
+        otra = Moneda.objects.create(nombre="Token Raro", codigo_iso="TKR", simbolo="T", tipo_moneda="otro")
         s = MetodoPagoSerializer(
-            data={"nombre_metodo": "Cheque X", "tipo_metodo": "CHEQUE",
-                  "monedas": [str(otra.id_moneda)]},
+            data={"nombre_metodo": "Cheque X", "tipo_metodo": "CHEQUE", "monedas": [str(otra.id_moneda)]},
             context=ctx(user_a),
         )
         assert not s.is_valid()
@@ -312,15 +294,15 @@ class TestMetodoPagoSerializer:
         # validate() itera el ManyRelatedManager y revienta con TypeError
         # (bug documentado en el reporte).
         s = MetodoPagoSerializer(
-            instance=metodo_a, data={"nombre_metodo": "Zelle A v2", "monedas": []},
-            partial=True, context=ctx(user_a),
+            instance=metodo_a,
+            data={"nombre_metodo": "Zelle A v2", "monedas": []},
+            partial=True,
+            context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
         metodo = s.save()
         assert metodo.nombre_metodo == "Zelle A v2"
-        assert MetodoPagoEmpresaActiva.objects.filter(
-            empresa=empresa_a, metodo_pago=metodo
-        ).exists()
+        assert MetodoPagoEmpresaActiva.objects.filter(empresa=empresa_a, metodo_pago=metodo).exists()
 
     def test_get_aplicado_sin_contexto_devuelve_false(self, user_a, metodo_a):
         rep = MetodoPagoSerializer(metodo_a, context=ctx(user_a)).data
@@ -336,19 +318,20 @@ class TestMetodoPagoSerializer:
         # "Zelle Empresa B" ~ "Zelle Empresa A" → fuzzy match → aplicado True
         rep = MetodoPagoSerializer(metodo_b, context=context).data
         assert rep["aplicado"] is True
-        distinto = MetodoPago.objects.create(
-            nombre_metodo="Criptopago XYZ", tipo_metodo="OTRO", empresa=empresa_b
-        )
+        distinto = MetodoPago.objects.create(nombre_metodo="Criptopago XYZ", tipo_metodo="OTRO", empresa=empresa_b)
         rep2 = MetodoPagoSerializer(distinto, context=context).data
         assert rep2["aplicado"] is False
 
 
 # ── TransaccionFinancieraSerializer ──────────────────────────────────────────
 
+
 @pytest.fixture
 def caja_virtual_a(empresa_a, moneda_usd):
     return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja Virtual A", moneda=moneda_usd,
+        empresa=empresa_a,
+        nombre="Caja Virtual A",
+        moneda=moneda_usd,
         tipo_caja="REGISTRADORA",
     )
 
@@ -356,8 +339,11 @@ def caja_virtual_a(empresa_a, moneda_usd):
 @pytest.fixture
 def cuenta_a(empresa_a, moneda_usd):
     return CuentaBancariaEmpresa.objects.create(
-        id_empresa=empresa_a, nombre_banco="Banco A", numero_cuenta="0102-99",
-        tipo_cuenta="CORRIENTE", id_moneda=moneda_usd,
+        id_empresa=empresa_a,
+        nombre_banco="Banco A",
+        numero_cuenta="0102-99",
+        tipo_cuenta="CORRIENTE",
+        id_moneda=moneda_usd,
     )
 
 
@@ -377,47 +363,35 @@ def _tf_data(empresa, moneda, metodo, user, **extra):
 
 
 class TestTransaccionFinancieraSerializer:
-    def test_metodo_no_permitido_en_caja(self, user_a, empresa_a, moneda_usd,
-                                          metodo_a, caja_virtual_a):
-        otro_metodo = MetodoPago.objects.create(
-            nombre_metodo="Solo Caja", tipo_metodo="EFECTIVO", empresa=empresa_a
-        )
+    def test_metodo_no_permitido_en_caja(self, user_a, empresa_a, moneda_usd, metodo_a, caja_virtual_a):
+        otro_metodo = MetodoPago.objects.create(nombre_metodo="Solo Caja", tipo_metodo="EFECTIVO", empresa=empresa_a)
         caja_virtual_a.metodos_pago.add(otro_metodo)
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
-                          id_caja=str(caja_virtual_a.id_caja)),
+            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a, id_caja=str(caja_virtual_a.id_caja)),
             context=ctx(user_a),
         )
         assert not s.is_valid()
-        assert s.errors["id_metodo_pago"] == [
-            "El método de pago no está permitido para la caja seleccionada."
-        ]
+        assert s.errors["id_metodo_pago"] == ["El método de pago no está permitido para la caja seleccionada."]
 
-    def test_moneda_distinta_a_la_caja(self, user_a, empresa_a, moneda_usd,
-                                        metodo_a, caja_virtual_a):
-        otra_moneda = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+    def test_moneda_distinta_a_la_caja(self, user_a, empresa_a, moneda_usd, metodo_a, caja_virtual_a):
+        otra_moneda = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         caja_virtual_a.metodos_pago.add(metodo_a)  # pasa el check de método
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, otra_moneda, metodo_a, user_a,
-                          id_caja=str(caja_virtual_a.id_caja)),
+            data=_tf_data(empresa_a, otra_moneda, metodo_a, user_a, id_caja=str(caja_virtual_a.id_caja)),
             context=ctx(user_a),
         )
         assert not s.is_valid()
-        assert s.errors["id_moneda_transaccion"] == [
-            "La moneda no coincide con la moneda de la caja."
-        ]
+        assert s.errors["id_moneda_transaccion"] == ["La moneda no coincide con la moneda de la caja."]
 
-    def test_metodo_no_permitido_en_cuenta_bancaria(self, user_a, empresa_a, moneda_usd,
-                                                     metodo_a, cuenta_a):
+    def test_metodo_no_permitido_en_cuenta_bancaria(self, user_a, empresa_a, moneda_usd, metodo_a, cuenta_a):
         otro_metodo = MetodoPago.objects.create(
             nombre_metodo="Solo Banco", tipo_metodo="ELECTRONICO", empresa=empresa_a
         )
         cuenta_a.metodos_pago.add(otro_metodo)
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
-                          id_cuenta_bancaria=str(cuenta_a.id_cuenta_bancaria)),
+            data=_tf_data(
+                empresa_a, moneda_usd, metodo_a, user_a, id_cuenta_bancaria=str(cuenta_a.id_cuenta_bancaria)
+            ),
             context=ctx(user_a),
         )
         assert not s.is_valid()
@@ -426,24 +400,19 @@ class TestTransaccionFinancieraSerializer:
         ]
 
     def test_moneda_distinta_a_la_cuenta_bancaria(self, user_a, empresa_a, metodo_a, cuenta_a):
-        otra_moneda = Moneda.objects.create(
-            nombre="Euro", codigo_iso="EUR", simbolo="€", tipo_moneda="fiat"
-        )
+        otra_moneda = Moneda.objects.create(nombre="Euro", codigo_iso="EUR", simbolo="€", tipo_moneda="fiat")
         cuenta_a.metodos_pago.add(metodo_a)  # pasa el check de método
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, otra_moneda, metodo_a, user_a,
-                          id_cuenta_bancaria=str(cuenta_a.id_cuenta_bancaria)),
+            data=_tf_data(
+                empresa_a, otra_moneda, metodo_a, user_a, id_cuenta_bancaria=str(cuenta_a.id_cuenta_bancaria)
+            ),
             context=ctx(user_a),
         )
         assert not s.is_valid()
-        assert s.errors["id_moneda_transaccion"] == [
-            "La moneda no coincide con la moneda de la cuenta bancaria."
-        ]
+        assert s.errors["id_moneda_transaccion"] == ["La moneda no coincide con la moneda de la cuenta bancaria."]
 
     def test_moneda_no_permitida_para_el_metodo(self, user_a, empresa_a, moneda_usd, metodo_a):
-        otra_moneda = Moneda.objects.create(
-            nombre="Euro", codigo_iso="EUR", simbolo="€", tipo_moneda="fiat"
-        )
+        otra_moneda = Moneda.objects.create(nombre="Euro", codigo_iso="EUR", simbolo="€", tipo_moneda="fiat")
         metodo_a.monedas.add(otra_moneda)
         s = TransaccionFinancieraSerializer(
             data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a),
@@ -454,25 +423,23 @@ class TestTransaccionFinancieraSerializer:
             "La moneda no está permitida para el método de pago seleccionado."
         ]
 
-    def test_create_calcula_monto_moneda_pais_con_tasa_del_dia(
-        self, user_a, empresa_a, moneda_usd, metodo_a
-    ):
+    def test_create_calcula_monto_moneda_pais_con_tasa_del_dia(self, user_a, empresa_a, moneda_usd, metodo_a):
         metodo_a.monedas.add(moneda_usd)  # el método debe aceptar la moneda
-        moneda_ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        moneda_ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         empresa_a.id_moneda_pais = moneda_ves
         empresa_a.save()
         TasaCambio.objects.create(
-            id_empresa=empresa_a, id_moneda_origen=moneda_usd,
-            id_moneda_destino=moneda_ves, tipo_tasa="OFICIAL_BCV",
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
             # fecha local (Caracas), coherente con la búsqueda del serializer
             # (timezone.localdate()); evita el desalineo UTC tras las 20:00.
-            valor_tasa=Decimal("36.50000000"), fecha_tasa=timezone.localdate(),
+            valor_tasa=Decimal("36.50000000"),
+            fecha_tasa=timezone.localdate(),
         )
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
-                          monto_base="99.00", descripcion="venta del día"),
+            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a, monto_base="99.00", descripcion="venta del día"),
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -489,9 +456,7 @@ class TestTransaccionFinancieraSerializer:
         assert mov.concepto == "venta del día"
         assert mov.id_usuario_registro == user_a
 
-    def test_create_monto_moneda_pais_usa_fecha_local_caracas(
-        self, user_a, empresa_a, moneda_usd, metodo_a
-    ):
+    def test_create_monto_moneda_pais_usa_fecha_local_caracas(self, user_a, empresa_a, moneda_usd, metodo_a):
         # Cierre del #124: bajo now()=02:00 UTC (= 22:00 Caracas del 14), el
         # cálculo de monto_moneda_pais debe tomar la tasa del día LOCAL (Caracas).
         # La tasa se siembra SOLO para el día local; con la fecha UTC (06-15) no
@@ -502,19 +467,19 @@ class TestTransaccionFinancieraSerializer:
         now_utc = datetime.datetime(2026, 6, 15, 2, 0, 0, tzinfo=datetime.timezone.utc)
         caracas_hoy = datetime.date(2026, 6, 14)
         metodo_a.monedas.add(moneda_usd)
-        moneda_ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        moneda_ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         empresa_a.id_moneda_pais = moneda_ves
         empresa_a.save()
         TasaCambio.objects.create(
-            id_empresa=empresa_a, id_moneda_origen=moneda_usd,
-            id_moneda_destino=moneda_ves, tipo_tasa="OFICIAL_BCV",
-            valor_tasa=Decimal("36.50000000"), fecha_tasa=caracas_hoy,  # solo día local
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("36.50000000"),
+            fecha_tasa=caracas_hoy,  # solo día local
         )
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
-                          monto_base="99.00", descripcion="venta ventana"),
+            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a, monto_base="99.00", descripcion="venta ventana"),
             context=ctx(user_a),
         )
         with mock.patch("django.utils.timezone.now", return_value=now_utc):
@@ -525,14 +490,11 @@ class TestTransaccionFinancieraSerializer:
 
     def test_create_sin_tasa_deja_monto_pais_none(self, user_a, empresa_a, moneda_usd, metodo_a):
         metodo_a.monedas.add(moneda_usd)
-        moneda_ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        moneda_ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         empresa_a.id_moneda_pais = moneda_ves
         empresa_a.save()
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
-                          tipo_transaccion="EGRESO"),
+            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a, tipo_transaccion="EGRESO"),
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -541,13 +503,10 @@ class TestTransaccionFinancieraSerializer:
         mov = MovimientoCajaBanco.objects.get(id_transaccion_financiera=tf)
         assert mov.tipo_movimiento == "EGRESO"
 
-    def test_create_respeta_monto_moneda_pais_del_frontend(
-        self, user_a, empresa_a, moneda_usd, metodo_a
-    ):
+    def test_create_respeta_monto_moneda_pais_del_frontend(self, user_a, empresa_a, moneda_usd, metodo_a):
         metodo_a.monedas.add(moneda_usd)
         s = TransaccionFinancieraSerializer(
-            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a,
-                          monto_moneda_pais="777.77"),
+            data=_tf_data(empresa_a, moneda_usd, metodo_a, user_a, monto_moneda_pais="777.77"),
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -559,12 +518,12 @@ class TestTransaccionFinancieraSerializer:
 
 # ── MonedaEmpresaActiva / MetodoPagoEmpresaActiva ────────────────────────────
 
+
 class TestMonedaEmpresaActivaSerializer:
     def test_create_por_uuid_y_empresa_del_usuario(self, user_a, empresa_a, moneda_usd):
         MonedaEmpresaActiva.objects.all().delete()
         s = MonedaEmpresaActivaSerializer(
-            data={"empresa": str(empresa_a.id_empresa),
-                  "moneda": str(moneda_usd.id_moneda), "activa": True},
+            data={"empresa": str(empresa_a.id_empresa), "moneda": str(moneda_usd.id_moneda), "activa": True},
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -574,8 +533,7 @@ class TestMonedaEmpresaActivaSerializer:
 
     def test_create_moneda_inexistente(self, user_a, empresa_a):
         s = MonedaEmpresaActivaSerializer(
-            data={"empresa": str(empresa_a.id_empresa),
-                  "moneda": str(uuid.uuid4()), "activa": True},
+            data={"empresa": str(empresa_a.id_empresa), "moneda": str(uuid.uuid4()), "activa": True},
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -584,14 +542,14 @@ class TestMonedaEmpresaActivaSerializer:
         assert exc.value.detail == {"moneda": "Moneda no encontrada"}
 
     def test_es_base_y_es_pais(self, empresa_a, moneda_usd):
-        moneda_ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        moneda_ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         empresa_a.id_moneda_pais = moneda_ves
         empresa_a.save()
-        activa_ves = MonedaEmpresaActiva.objects.get(empresa=empresa_a, moneda=moneda_ves) \
-            if MonedaEmpresaActiva.objects.filter(empresa=empresa_a, moneda=moneda_ves).exists() \
+        activa_ves = (
+            MonedaEmpresaActiva.objects.get(empresa=empresa_a, moneda=moneda_ves)
+            if MonedaEmpresaActiva.objects.filter(empresa=empresa_a, moneda=moneda_ves).exists()
             else MonedaEmpresaActiva.objects.create(empresa=empresa_a, moneda=moneda_ves)
+        )
         rep = MonedaEmpresaActivaSerializer(activa_ves).data
         assert rep["es_pais"] is True
         assert rep["moneda_codigo_iso"] == "VES"
@@ -600,9 +558,7 @@ class TestMonedaEmpresaActivaSerializer:
         assert rep["es_base"] is False
 
     def test_es_pais_false_para_otra_moneda(self, empresa_a, moneda_usd):
-        activa = MonedaEmpresaActiva.objects.get_or_create(
-            empresa=empresa_a, moneda=moneda_usd
-        )[0]
+        activa = MonedaEmpresaActiva.objects.get_or_create(empresa=empresa_a, moneda=moneda_usd)[0]
         rep = MonedaEmpresaActivaSerializer(activa).data
         assert rep["es_pais"] is False
 
@@ -611,8 +567,7 @@ class TestMetodoPagoEmpresaActivaSerializer:
     def test_create_por_uuid(self, user_a, empresa_a, metodo_a):
         MetodoPagoEmpresaActiva.objects.all().delete()
         s = MetodoPagoEmpresaActivaSerializer(
-            data={"empresa": str(empresa_a.id_empresa),
-                  "metodo_pago": str(metodo_a.id_metodo_pago), "activa": False},
+            data={"empresa": str(empresa_a.id_empresa), "metodo_pago": str(metodo_a.id_metodo_pago), "activa": False},
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -626,11 +581,16 @@ class TestMetodoPagoEmpresaActivaSerializer:
 
 # ── Serializers de lectura: cajas, sesiones, datafonos ───────────────────────
 
+
 @pytest.fixture
 def datafono_a(empresa_a, sucursal_a, cuenta_a):
     return Datafono.objects.create(
-        id_empresa=empresa_a, id_sucursal=sucursal_a, nombre="POS 1", serial="POS-S1",
-        id_cuenta_bancaria_asociada=cuenta_a, comision_porcentaje=Decimal("2.00"),
+        id_empresa=empresa_a,
+        id_sucursal=sucursal_a,
+        nombre="POS 1",
+        serial="POS-S1",
+        id_cuenta_bancaria_asociada=cuenta_a,
+        comision_porcentaje=Decimal("2.00"),
         saldo_temporal=Decimal("55.00"),
     )
 
@@ -651,9 +611,7 @@ class TestSerializersDeLectura:
         assert rep["tipo_caja_display"] == "Caja Registradora Virtual"
         assert rep["caja_fisica_nombre"] == "Caja Principal Test"
 
-    def test_caja_fisica_serializer_campos_calculados(
-        self, caja_fisica_a, caja_virtual_a, datafono_a, user_a
-    ):
+    def test_caja_fisica_serializer_campos_calculados(self, caja_fisica_a, caja_virtual_a, datafono_a, user_a):
         caja_virtual_a.caja_fisica = caja_fisica_a
         caja_virtual_a.save()
         datafono_a.id_caja_fisica = caja_fisica_a
@@ -679,9 +637,7 @@ class TestSerializersDeLectura:
         principal = rep["caja_fisica_principal"]
         assert principal["nombre"] == "Caja Principal Test"
         assert principal["sucursal"]["nombre"] == "Sucursal Centro"
-        assert principal["sucursal"]["empresa"]["id_empresa"] == str(
-            caja_fisica_a.empresa.id_empresa
-        )
+        assert principal["sucursal"]["empresa"]["id_empresa"] == str(caja_fisica_a.empresa.id_empresa)
 
     def test_sesion_caja_fisica_serializer_sin_sucursal(self, caja_fisica_a, user_a):
         sesion = SesionCajaFisica.abrir_sesion(caja_fisica_a, user_a)
@@ -696,9 +652,7 @@ class TestSerializersDeLectura:
         assert rep["sesion_datafono_info"]["estado"] == "ABIERTA"
         assert rep["datafono_nombre"] == "POS 1"
         assert rep["estado_display"] == "Pendiente"
-        sin_sesion = TransaccionDatafono.objects.create(
-            id_datafono=datafono_a, monto=Decimal("5.00")
-        )
+        sin_sesion = TransaccionDatafono.objects.create(id_datafono=datafono_a, monto=Decimal("5.00"))
         assert TransaccionDatafonoSerializer(sin_sesion).data["sesion_datafono_info"] is None
 
     def test_sesion_datafono_serializer_cuenta_transacciones(self, datafono_a, user_a):
@@ -712,23 +666,24 @@ class TestSerializersDeLectura:
         assert rep["usuario_apertura_nombre"] == "user_empresa_a"
         assert rep["estado_display"] == "Abierta"
 
-    def test_deposito_datafono_serializer_infos(
-        self, datafono_a, user_a, empresa_a, moneda_usd
-    ):
+    def test_deposito_datafono_serializer_infos(self, datafono_a, user_a, empresa_a, moneda_usd):
         _abrir_sesion_datafono(datafono_a, user_a)
         registrar_pago_tarjeta(datafono_a, Decimal("100.00"), "R1", None, user_a)
         deposito = cerrar_sesion_datafono(datafono_a, user_a)
         rep = DepositoDatafonoSerializer(deposito).data
         assert rep["movimiento_banco_info"] is None
-        assert rep["sesion_datafono_info"]["id_sesion"] == str(
-            deposito.sesion_datafono.id_sesion
-        )
+        assert rep["sesion_datafono_info"]["id_sesion"] == str(deposito.sesion_datafono.id_sesion)
         ahora = timezone.now()
         mov = MovimientoCajaBanco.objects.create(
-            id_empresa=empresa_a, fecha_movimiento=ahora.date(),
-            hora_movimiento=ahora.time(), tipo_movimiento="INGRESO",
-            monto=Decimal("196.00"), id_moneda=moneda_usd, concepto="dep",
-            saldo_anterior=Decimal("0.00"), saldo_nuevo=Decimal("196.00"),
+            id_empresa=empresa_a,
+            fecha_movimiento=ahora.date(),
+            hora_movimiento=ahora.time(),
+            tipo_movimiento="INGRESO",
+            monto=Decimal("196.00"),
+            id_moneda=moneda_usd,
+            concepto="dep",
+            saldo_anterior=Decimal("0.00"),
+            saldo_nuevo=Decimal("196.00"),
             id_usuario_registro=user_a,
         )
         deposito.conciliar(mov, user_a)
@@ -767,9 +722,7 @@ class TestSerializersDeLectura:
         assert rep_v["caja_virtual_nombre"] == "Caja Virtual A"
         assert rep_v["es_predeterminada"] is True
 
-    def test_caja_virtual_disponible_serializer_sin_request(
-        self, caja_virtual_a, caja_fisica_a
-    ):
+    def test_caja_virtual_disponible_serializer_sin_request(self, caja_virtual_a, caja_fisica_a):
         caja_virtual_a.caja_fisica = caja_fisica_a
         caja_virtual_a.save()
         rep = CajaVirtualDisponibleSerializer(caja_virtual_a, context={}).data
@@ -782,6 +735,7 @@ class TestSerializersDeLectura:
 
 
 # ── PlantillaMaestroCajasVirtualesSerializer ─────────────────────────────────
+
 
 class TestPlantillaMaestroSerializer:
     def test_representacion_monedas_y_metodos(self, empresa_a, moneda_usd, metodo_a):
@@ -799,7 +753,9 @@ class TestPlantillaMaestroSerializer:
             empresa=empresa_a, nombre="P2", moneda_base=moneda_usd
         )
         s = PlantillaMaestroCajasVirtualesSerializer(
-            instance=plantilla, data={"nombre": "P2 actualizada"}, partial=True,
+            instance=plantilla,
+            data={"nombre": "P2 actualizada"},
+            partial=True,
             context=ctx(user_a),
         )
         assert s.is_valid(), s.errors
@@ -810,6 +766,7 @@ class TestPlantillaMaestroSerializer:
 
 
 # ── PagoSerializer ───────────────────────────────────────────────────────────
+
 
 class TestPagoSerializer:
     def test_create_asigna_usuario_registro(self, user_a, empresa_a, moneda_usd, metodo_a):
@@ -839,15 +796,24 @@ class TestPagoSerializer:
 
     def test_transaccion_financiera_info(self, user_a, empresa_a, moneda_usd, metodo_a):
         tf = TransaccionFinanciera.objects.create(
-            id_empresa=empresa_a, fecha_hora_transaccion=timezone.now(),
-            tipo_transaccion="INGRESO", monto_transaccion=Decimal("99.00"),
-            id_moneda_transaccion=moneda_usd, monto_base_empresa=Decimal("99.00"),
-            id_metodo_pago=metodo_a, id_usuario_registro=user_a,
+            id_empresa=empresa_a,
+            fecha_hora_transaccion=timezone.now(),
+            tipo_transaccion="INGRESO",
+            monto_transaccion=Decimal("99.00"),
+            id_moneda_transaccion=moneda_usd,
+            monto_base_empresa=Decimal("99.00"),
+            id_metodo_pago=metodo_a,
+            id_usuario_registro=user_a,
         )
         pago = Pago.objects.create(
-            id_empresa=empresa_a, tipo_operacion="INGRESO", tipo_documento="AJUSTE",
-            id_documento=uuid.uuid4(), fecha_pago=timezone.now(),
-            monto=Decimal("99.0000"), id_moneda=moneda_usd, id_metodo_pago=metodo_a,
+            id_empresa=empresa_a,
+            tipo_operacion="INGRESO",
+            tipo_documento="AJUSTE",
+            id_documento=uuid.uuid4(),
+            fecha_pago=timezone.now(),
+            monto=Decimal("99.0000"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_a,
             id_transaccion_financiera=tf,
         )
         info = PagoSerializer(pago).data["transaccion_financiera_info"]
@@ -857,6 +823,7 @@ class TestPagoSerializer:
 
 
 # ── DatafonoSerializer ───────────────────────────────────────────────────────
+
 
 class TestDatafonoSerializer:
     def test_campos_relacionados(self, datafono_a, caja_fisica_a):

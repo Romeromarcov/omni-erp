@@ -38,12 +38,8 @@ class Perfil(OmniBaseModel):
     """Perfil digital público de un usuario del tenant (``omni.link/<slug>``)."""
 
     id_perfil = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="connect_perfiles"
-    )
-    usuario = models.ForeignKey(
-        "core.Usuarios", on_delete=models.PROTECT, related_name="connect_perfiles"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="connect_perfiles")
+    usuario = models.ForeignKey("core.Usuarios", on_delete=models.PROTECT, related_name="connect_perfiles")
     # Global (no por empresa): la URL pública corta no lleva tenant.
     slug = models.CharField(max_length=60, unique=True, validators=[validar_slug_perfil])
     nombre_publico = models.CharField(max_length=150)
@@ -63,9 +59,7 @@ class Perfil(OmniBaseModel):
         verbose_name_plural = "Perfiles Connect"
         ordering = ["nombre_publico"]
         constraints = [
-            models.UniqueConstraint(
-                fields=["id_empresa", "usuario"], name="connect_perfil_unico_por_usuario"
-            ),
+            models.UniqueConstraint(fields=["id_empresa", "usuario"], name="connect_perfil_unico_por_usuario"),
             # Garantía en BD (también para objects.create/update): slug en minúsculas
             # y no reservado. El formato completo lo valida validar_slug_perfil.
             models.CheckConstraint(
@@ -90,9 +84,7 @@ class Perfil(OmniBaseModel):
 
     def clean(self):
         super().clean()
-        if self.usuario_id and not self.usuario.empresas.filter(
-            pk=self.id_empresa_id
-        ).exists():
+        if self.usuario_id and not self.usuario.empresas.filter(pk=self.id_empresa_id).exists():
             raise ValidationError({"usuario": "El usuario no pertenece a esta empresa."})
 
 
@@ -111,9 +103,7 @@ class Tarjeta(OmniBaseModel):
         PERDIDA = "PERDIDA", "Perdida"
 
     id_tarjeta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="connect_tarjetas"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="connect_tarjetas")
     # Una tarjeta en inventario aún no tiene perfil; se puede reasignar después.
     perfil = models.ForeignKey(
         Perfil,
@@ -125,9 +115,7 @@ class Tarjeta(OmniBaseModel):
     # Global: el UID es físico y único; evita que dos tenants reclamen el mismo chip.
     uid_chip = models.CharField(max_length=20, unique=True, validators=[validar_uid_chip])
     tipo = models.CharField(max_length=10, choices=Tipo.choices, default=Tipo.PVC)
-    estado = models.CharField(
-        max_length=12, choices=Estado.choices, default=Estado.INVENTARIO
-    )
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.INVENTARIO)
     fecha_activacion = models.DateTimeField(null=True, blank=True)
     notas = models.CharField(max_length=255, blank=True, default="")
 
@@ -182,18 +170,12 @@ class Toque(OmniBaseModel):
         OTRO = "OTRO", "Otro / desconocido"
 
     id_toque = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="connect_toques"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="connect_toques")
     perfil = models.ForeignKey(Perfil, on_delete=models.PROTECT, related_name="toques")
     # Nulo cuando la visita no viene de una tarjeta (QR o enlace).
-    tarjeta = models.ForeignKey(
-        Tarjeta, on_delete=models.PROTECT, null=True, blank=True, related_name="toques"
-    )
+    tarjeta = models.ForeignKey(Tarjeta, on_delete=models.PROTECT, null=True, blank=True, related_name="toques")
     origen = models.CharField(max_length=10, choices=Origen.choices, default=Origen.NFC)
-    dispositivo = models.CharField(
-        max_length=12, choices=Dispositivo.choices, default=Dispositivo.OTRO
-    )
+    dispositivo = models.CharField(max_length=12, choices=Dispositivo.choices, default=Dispositivo.OTRO)
     # Sin db_index propio: las consultas siempre filtran por empresa, así que sirven
     # los índices compuestos de Meta. Tabla de alto volumen: definir retención/particionado
     # cuando S10 (analíticas) fije los periodos de consulta.

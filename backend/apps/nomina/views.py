@@ -154,9 +154,7 @@ class ProcesoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             )
 
         try:
-            proceso, asiento, advertencia = procesar_proceso_nomina(
-                proceso, datos_empleados, usuario=request.user
-            )
+            proceso, asiento, advertencia = procesar_proceso_nomina(proceso, datos_empleados, usuario=request.user)
         except NominaProcesoError as exc:
             return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         except AsientoError as exc:
@@ -264,9 +262,7 @@ class DetalleNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1: filtrar via FK chain DetalleNomina → Nomina → ProcesoNomina → empresa
         empresas = _empresas(self.request)
-        return DetalleNomina.objects.filter(
-            id_nomina__id_proceso_nomina__id_empresa__in=empresas
-        )
+        return DetalleNomina.objects.filter(id_nomina__id_proceso_nomina__id_empresa__in=empresas)
 
 
 class ProcesoNominaExtrasalarialViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
@@ -330,9 +326,7 @@ class NominaExtrasalarialViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1: filtrar via FK chain → ProcesoNominaExtrasalarial → empresa
         empresas = _empresas(self.request)
-        return NominaExtrasalarial.objects.filter(
-            id_proceso_extrasalarial__id_empresa__in=empresas
-        )
+        return NominaExtrasalarial.objects.filter(id_proceso_extrasalarial__id_empresa__in=empresas)
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):

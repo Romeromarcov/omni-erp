@@ -6,6 +6,7 @@ Uso:
     python manage.py consumir_eventos --topics omni.ventas omni.inventario
     python manage.py consumir_eventos --topics omni.ventas --group mi-grupo
 """
+
 from django.core.management.base import BaseCommand
 
 
@@ -37,11 +38,7 @@ class Command(BaseCommand):
         group = options["group"]
         poll_timeout = options["poll_timeout"]
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Iniciando OmniEventConsumer — topics={topics} group={group}"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Iniciando OmniEventConsumer — topics={topics} group={group}"))
 
         from apps.eventos.consumers import run_consumer
 

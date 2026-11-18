@@ -60,14 +60,8 @@ def rls_test_role(django_db_setup, django_db_blocker):
             )
             cur.execute(f"CREATE ROLE {role} NOSUPERUSER NOBYPASSRLS")
             cur.execute(f"GRANT USAGE ON SCHEMA public TO {role}")
-            cur.execute(
-                "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES "
-                f"IN SCHEMA public TO {role}"
-            )
-            cur.execute(
-                "GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES "
-                f"IN SCHEMA public TO {role}"
-            )
+            cur.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES " f"IN SCHEMA public TO {role}")
+            cur.execute("GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES " f"IN SCHEMA public TO {role}")
     return role
 
 

@@ -2,6 +2,7 @@
 Tests para TasasVeConnector y fuentes individuales.
 Usa unittest.mock para aislar llamadas HTTP reales.
 """
+
 from __future__ import annotations
 
 import json
@@ -12,6 +13,7 @@ import pytest
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _mock_response(json_data, status_code=200):
     """Crea un mock de httpx.Response."""
@@ -30,6 +32,7 @@ def _mock_error_response():
 
 # ── Tests dolarapi ────────────────────────────────────────────────────────────
 
+
 class TestDolarapi:
     def test_fetch_ok_fuente_oficial(self):
         data = [
@@ -38,8 +41,10 @@ class TestDolarapi:
         ]
         with patch("httpx.get", return_value=_mock_response(data)):
             from apps.integration_hub.connectors.tasas_ve.sources import dolarapi
+
             # Reload to avoid cached import
             import importlib
+
             importlib.reload(dolarapi)
             result = dolarapi.fetch_tasa_bcv()
         assert result == Decimal("36.50")
@@ -48,6 +53,7 @@ class TestDolarapi:
         data = [{"fuente": "bcv", "promedio": "36.75"}]
         with patch("httpx.get", return_value=_mock_response(data)):
             from apps.integration_hub.connectors.tasas_ve.sources import dolarapi
+
             result = dolarapi.fetch_tasa_bcv()
         assert result == Decimal("36.75")
 
@@ -55,23 +61,27 @@ class TestDolarapi:
         data = [{"fuente": "paralelo", "promedio": "40.00"}]
         with patch("httpx.get", return_value=_mock_response(data)):
             from apps.integration_hub.connectors.tasas_ve.sources import dolarapi
+
             result = dolarapi.fetch_tasa_bcv()
         assert result is None
 
     def test_fetch_exception_returns_none(self):
         with patch("httpx.get", side_effect=Exception("timeout")):
             from apps.integration_hub.connectors.tasas_ve.sources import dolarapi
+
             result = dolarapi.fetch_tasa_bcv()
         assert result is None
 
 
 # ── Tests exchangedynamic ─────────────────────────────────────────────────────
 
+
 class TestExchangeDynamic:
     def test_fetch_ok_rates_key(self):
         data = {"rates": {"VES": "36.80"}}
         with patch("httpx.get", return_value=_mock_response(data)):
             from apps.integration_hub.connectors.tasas_ve.sources import exchangedynamic
+
             result = exchangedynamic.fetch_tasa_bcv()
         assert result == Decimal("36.80")
 
@@ -79,17 +89,20 @@ class TestExchangeDynamic:
         data = {"rate": "36.90"}
         with patch("httpx.get", return_value=_mock_response(data)):
             from apps.integration_hub.connectors.tasas_ve.sources import exchangedynamic
+
             result = exchangedynamic.fetch_tasa_bcv()
         assert result == Decimal("36.90")
 
     def test_fetch_exception_returns_none(self):
         with patch("httpx.get", side_effect=Exception("timeout")):
             from apps.integration_hub.connectors.tasas_ve.sources import exchangedynamic
+
             result = exchangedynamic.fetch_tasa_bcv()
         assert result is None
 
 
 # ── Tests bcv_scrape ──────────────────────────────────────────────────────────
+
 
 class TestBcvScrape:
     def test_fetch_ok_strong_element(self):
@@ -99,17 +112,20 @@ class TestBcvScrape:
         resp.raise_for_status = MagicMock()
         with patch("httpx.get", return_value=resp):
             from apps.integration_hub.connectors.tasas_ve.sources import bcv_scrape
+
             result = bcv_scrape.fetch_tasa_bcv()
         assert result == Decimal("36.50")
 
     def test_fetch_exception_returns_none(self):
         with patch("httpx.get", side_effect=Exception("SSL error")):
             from apps.integration_hub.connectors.tasas_ve.sources import bcv_scrape
+
             result = bcv_scrape.fetch_tasa_bcv()
         assert result is None
 
 
 # ── Tests Cascade BCV ─────────────────────────────────────────────────────────
+
 
 class TestCascadeBCV:
     def test_cascade_bcv_fuente1_ok(self):
@@ -121,6 +137,7 @@ class TestCascadeBCV:
             return_value=_mock_response(data_dolarapi),
         ) as mock_get:
             from apps.integration_hub.connectors.tasas_ve.connector import TasasVeConnector
+
             connector = TasasVeConnector()
             result = connector.pull_tasa_bcv()
 
@@ -141,6 +158,7 @@ class TestCascadeBCV:
             ),
         ):
             from apps.integration_hub.connectors.tasas_ve.connector import TasasVeConnector
+
             connector = TasasVeConnector()
             result = connector.pull_tasa_bcv()
 
@@ -163,6 +181,7 @@ class TestCascadeBCV:
             ),
         ):
             from apps.integration_hub.connectors.tasas_ve.connector import TasasVeConnector
+
             connector = TasasVeConnector()
             result = connector.pull_tasa_bcv()
 
@@ -170,6 +189,7 @@ class TestCascadeBCV:
 
 
 # ── Tests Binance P2P ─────────────────────────────────────────────────────────
+
 
 class TestBinanceP2P:
     def _make_binance_response(self, prices: list[str]):
@@ -190,6 +210,7 @@ class TestBinanceP2P:
             side_effect=[buy_resp, sell_resp],
         ):
             from apps.integration_hub.connectors.tasas_ve.sources.binance_p2p import fetch_tasa_binance_p2p
+
             result = fetch_tasa_binance_p2p()
 
         assert result == expected
@@ -201,11 +222,13 @@ class TestBinanceP2P:
             side_effect=Exception("connection error"),
         ):
             from apps.integration_hub.connectors.tasas_ve.sources.binance_p2p import fetch_tasa_binance_p2p
+
             result = fetch_tasa_binance_p2p()
         assert result is None
 
 
 # ── Tests Aging Bucket ────────────────────────────────────────────────────────
+
 
 class TestAgingBucket:
     def test_aging_bucket_limites(self):

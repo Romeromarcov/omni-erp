@@ -49,9 +49,7 @@ def test_cell_valor_numerico_no_decimal_se_devuelve_tal_cual():
 
 def test_indice_clave_fallback_cero_si_no_hay_columna_clave(monkeypatch):
     # Entidad cuyo primer campo no es la columna clave → fallback a 0.
-    monkeypatch.setitem(
-        columns.COLUMNAS, "_fake", [("otro", "Otro"), ("mas", "Más")]
-    )
+    monkeypatch.setitem(columns.COLUMNAS, "_fake", [("otro", "Otro"), ("mas", "Más")])
     assert columns.indice_clave("_fake") == 0
 
 
@@ -60,9 +58,7 @@ def test_upsert_reescribe_encabezado_si_cambio():
     ws = MagicMock()
     # Encabezado existente distinto del nuevo → se reescribe A1.
     ws.get_all_values.return_value = [["ID", "Viejo"], ["1", "A"]]
-    creados, act, omit = client.upsert(
-        ws, ["ID Externo", "Nombre"], [["1", "A2"]], key_index=0
-    )
+    creados, act, omit = client.upsert(ws, ["ID Externo", "Nombre"], [["1", "A2"]], key_index=0)
     ws.batch_update.assert_called_once()
     args, _ = ws.batch_update.call_args
     rangos = [u["range"] for u in args[0]]
@@ -85,8 +81,6 @@ def test_exportar_origen_inexistente_lanza(monkeypatch, empresa_a):
         },
         entidades_activas=["contactos"],
     )
-    monkeypatch.setattr(
-        export_engine_mod.registry, "get_connector", lambda inst: MagicMock()
-    )
+    monkeypatch.setattr(export_engine_mod.registry, "get_connector", lambda inst: MagicMock())
     with pytest.raises(ConnectorError, match="no existe"):
         ExportEngine().exportar(destino, tipos=["contactos"])

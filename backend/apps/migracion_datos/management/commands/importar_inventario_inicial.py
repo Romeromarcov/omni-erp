@@ -33,27 +33,17 @@ class Command(ImportadorBaseCommand):
 
         producto = Producto.objects.filter(id_empresa=empresa, sku=sku).first()
         if producto is None:
-            raise FilaError(
-                f"no existe un producto con sku '{sku}' en la empresa."
-            )
+            raise FilaError(f"no existe un producto con sku '{sku}' en la empresa.")
 
-        almacen = Almacen.objects.filter(
-            id_empresa=empresa, codigo_almacen=codigo_almacen
-        ).first()
+        almacen = Almacen.objects.filter(id_empresa=empresa, codigo_almacen=codigo_almacen).first()
         if almacen is None:
-            raise FilaError(
-                f"no existe un almacén con codigo_almacen '{codigo_almacen}' en la empresa."
-            )
+            raise FilaError(f"no existe un almacén con codigo_almacen '{codigo_almacen}' en la empresa.")
 
-        cantidad_disponible = self.a_decimal(
-            self.requerido(fila, "cantidad_disponible"), "cantidad_disponible"
-        )
+        cantidad_disponible = self.a_decimal(self.requerido(fila, "cantidad_disponible"), "cantidad_disponible")
         cantidad_minima = self.a_decimal(fila.get("cantidad_minima"), "cantidad_minima")
         cantidad_maxima = self.a_decimal(fila.get("cantidad_maxima"), "cantidad_maxima")
 
-        stock = StockActual.objects.filter(
-            id_producto=producto, id_variante__isnull=True, id_almacen=almacen
-        ).first()
+        stock = StockActual.objects.filter(id_producto=producto, id_variante__isnull=True, id_almacen=almacen).first()
         if stock is not None:
             stock.id_empresa = empresa
             stock.cantidad_disponible = cantidad_disponible

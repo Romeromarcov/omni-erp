@@ -9,6 +9,7 @@ calcula la nómina LOTTT de cada empleado activo, persiste `Nomina` +
 `DetalleNomina`, totaliza el `ProcesoNomina` y genera el asiento contable
 `NOMINA` (R-CODE-11) — todo dentro de UNA transacción atómica.
 """
+
 from __future__ import annotations
 
 import logging
@@ -265,8 +266,8 @@ def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None, usuari
     from .models import DetalleNomina, Nomina, ProcesoNomina  # noqa: PLC0415
 
     # Lock del proceso: evita doble procesamiento concurrente del mismo proceso.
-    proceso = ProcesoNomina.objects.select_for_update().select_related("id_empresa", "id_periodo_nomina").get(
-        pk=proceso.pk
+    proceso = (
+        ProcesoNomina.objects.select_for_update().select_related("id_empresa", "id_periodo_nomina").get(pk=proceso.pk)
     )
     if proceso.estado != "EN_PROCESO":
         raise NominaProcesoError(
@@ -346,13 +347,14 @@ def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None, usuari
 
     # R-CODE-11: asiento contable en la MISMA transacción. Si la empresa exige
     # contabilidad y falta el mapeo NOMINA, AsientoError revienta y revierte todo.
-    asiento, advertencia = generar_asiento_o_fallar(
-        "NOMINA", proceso, empresa, monto=total_neto, usuario=usuario
-    )
+    asiento, advertencia = generar_asiento_o_fallar("NOMINA", proceso, empresa, monto=total_neto, usuario=usuario)
 
     logger.info(
         "nomina.procesar | proceso=%s | empresa=%s | empleados=%d | neto=%s | asiento=%s",
-        proceso.numero_proceso, empresa.pk, len(empleados), total_neto,
+        proceso.numero_proceso,
+        empresa.pk,
+        len(empleados),
+        total_neto,
         getattr(asiento, "numero_asiento", None),
     )
     return proceso, asiento, advertencia

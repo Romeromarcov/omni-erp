@@ -41,7 +41,9 @@ def generar_sugerencias_diarias(self):
         total_sugerencias += _generar_cobranza(empresa)
         total_sugerencias += _generar_reorden(empresa)
 
-    logger.info("generar_sugerencias_diarias: %d sugerencias creadas para %d empresas.", total_sugerencias, empresas.count())
+    logger.info(
+        "generar_sugerencias_diarias: %d sugerencias creadas para %d empresas.", total_sugerencias, empresas.count()
+    )
     return {"total_sugerencias": total_sugerencias, "empresas": empresas.count()}
 
 

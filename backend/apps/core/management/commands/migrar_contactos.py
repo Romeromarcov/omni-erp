@@ -58,8 +58,7 @@ class Command(BaseCommand):
             self._migrar_entre_empresas(options["origen"], options["destino"], dry_run)
         else:
             raise CommandError(
-                "Debe especificar --fusionar-duplicados --empresa <id>  "
-                "o  --origen <id> --destino <id>"
+                "Debe especificar --fusionar-duplicados --empresa <id>  " "o  --origen <id> --destino <id>"
             )
 
     @transaction.atomic
@@ -75,9 +74,7 @@ class Command(BaseCommand):
         except Empresa.DoesNotExist:
             raise CommandError(f"Empresa destino '{destino_id}' no encontrada.")
 
-        self.stdout.write(
-            f"Migrando contactos de '{empresa_origen}' → '{empresa_destino}'"
-        )
+        self.stdout.write(f"Migrando contactos de '{empresa_origen}' → '{empresa_destino}'")
 
         # Importar dinámicamente para no crear dependencias circulares
         from apps.crm.models import Cliente
@@ -93,15 +90,12 @@ class Command(BaseCommand):
             clientes_migrados = clientes.update(id_empresa=empresa_destino)
             proveedores_migrados = proveedores.update(id_empresa=empresa_destino)
             self.stdout.write(
-                self.style.SUCCESS(
-                    f"Migrados: {clientes_migrados} clientes, {proveedores_migrados} proveedores."
-                )
+                self.style.SUCCESS(f"Migrados: {clientes_migrados} clientes, {proveedores_migrados} proveedores.")
             )
         else:
             self.stdout.write(
                 self.style.WARNING(
-                    f"[DRY-RUN] Se migrarían {clientes.count()} clientes y "
-                    f"{proveedores.count()} proveedores."
+                    f"[DRY-RUN] Se migrarían {clientes.count()} clientes y " f"{proveedores.count()} proveedores."
                 )
             )
 
@@ -143,9 +137,9 @@ class Command(BaseCommand):
         fusionados = 0
         for grupo in duplicados:
             rif = grupo["identificador_fiscal"]
-            clientes_dup = Cliente.objects.filter(
-                id_empresa=empresa, identificador_fiscal=rif
-            ).order_by("fecha_creacion")
+            clientes_dup = Cliente.objects.filter(id_empresa=empresa, identificador_fiscal=rif).order_by(
+                "fecha_creacion"
+            )
 
             principal = clientes_dup.first()
             duplicados_a_eliminar = clientes_dup.exclude(pk=principal.pk)

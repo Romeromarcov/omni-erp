@@ -45,18 +45,14 @@ class Command(BaseCommand):
     help = "Crea (idempotente) Empresa + admin + sucursal + caja para arranque de producción."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--nombre-legal", required=True, help="Razón social de la empresa."
-        )
+        parser.add_argument("--nombre-legal", required=True, help="Razón social de la empresa.")
         parser.add_argument(
             "--rif",
             required=True,
             help="Identificador fiscal (RIF). Clave de idempotencia de la empresa.",
         )
         parser.add_argument("--nombre-comercial", default=None)
-        parser.add_argument(
-            "--email", default=None, help="Email de contacto de la empresa."
-        )
+        parser.add_argument("--email", default=None, help="Email de contacto de la empresa.")
         parser.add_argument("--admin-username", required=True)
         parser.add_argument("--admin-email", required=True)
         parser.add_argument(
@@ -101,8 +97,7 @@ class Command(BaseCommand):
             validate_password(password)
         except ValidationError as exc:
             raise CommandError(
-                "La contraseña del admin no cumple AUTH_PASSWORD_VALIDATORS: "
-                + "; ".join(exc.messages)
+                "La contraseña del admin no cumple AUTH_PASSWORD_VALIDATORS: " + "; ".join(exc.messages)
             )
         return password, generada
 
@@ -145,9 +140,7 @@ class Command(BaseCommand):
             empresa.save(update_fields=["id_moneda_base"])
 
         # 3. Sucursal (idempotente por empresa + código).
-        codigo_sucursal = (options["codigo_sucursal"] or self._codigo_desde_rif(rif))[
-            :10
-        ]
+        codigo_sucursal = (options["codigo_sucursal"] or self._codigo_desde_rif(rif))[:10]
         sucursal, _ = Sucursal.objects.get_or_create(
             id_empresa=empresa,
             codigo_sucursal=codigo_sucursal,
@@ -161,9 +154,7 @@ class Command(BaseCommand):
             defaults={
                 "sucursal": sucursal,
                 "tipo_caja": "REGISTRADORA",
-                "identificador_dispositivo": f"SEED-{rif}-{options['caja_nombre']}"[
-                    :100
-                ],
+                "identificador_dispositivo": f"SEED-{rif}-{options['caja_nombre']}"[:100],
             },
         )
         caja_virtual, _ = Caja.objects.get_or_create(
@@ -202,12 +193,8 @@ class Command(BaseCommand):
                 f"Empresa : {empresa.nombre_legal} ({rif}) [{'creada' if creada_empresa else 'existente'}]"
             )
         )
-        self.stdout.write(
-            self.style.SUCCESS(f"Sucursal: {sucursal.nombre} / {codigo_sucursal}")
-        )
-        self.stdout.write(
-            self.style.SUCCESS(f"Caja    : {caja_virtual.nombre} ({moneda.codigo_iso})")
-        )
+        self.stdout.write(self.style.SUCCESS(f"Sucursal: {sucursal.nombre} / {codigo_sucursal}"))
+        self.stdout.write(self.style.SUCCESS(f"Caja    : {caja_virtual.nombre} ({moneda.codigo_iso})"))
         self.stdout.write(
             self.style.SUCCESS(
                 f"Admin   : {usuario.username} [{'creado' if creado_usuario else 'existente'}]"
@@ -222,8 +209,4 @@ class Command(BaseCommand):
                 )
             )
         elif not creado_usuario:
-            self.stdout.write(
-                self.style.WARNING(
-                    "El admin ya existía: su contraseña NO fue modificada."
-                )
-            )
+            self.stdout.write(self.style.WARNING("El admin ya existía: su contraseña NO fue modificada."))

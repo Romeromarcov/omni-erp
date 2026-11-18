@@ -23,9 +23,7 @@ class UsuarioBotDesconocido(Exception):
     pass
 
 
-def resolver_bot_usuario(
-    servicio, telegram_user_id, *, bot_codigo: str | None = None
-) -> BotUsuario:
+def resolver_bot_usuario(servicio, telegram_user_id, *, bot_codigo: str | None = None) -> BotUsuario:
     from .control import usuario_autorizado_en_bot
 
     if isinstance(telegram_user_id, bool):
@@ -50,20 +48,14 @@ def resolver_bot_usuario(
         raise UsuarioBotDesconocido("Usuario de Telegram no autorizado.")
     if bot_codigo and isinstance(bot_codigo, str) and bot_codigo.strip():
         if not usuario_autorizado_en_bot(bu.bots, bot_codigo.strip().lower()):
-            raise UsuarioBotDesconocido(
-                "Usuario de Telegram no autorizado para este bot."
-            )
+            raise UsuarioBotDesconocido("Usuario de Telegram no autorizado para este bot.")
     return bu
 
 
 def ingerir(*, servicio, kind: str, draft: dict, fuente: dict, idempotency_key: str):
     """→ (IngestaBot, creada: bool). Lanza UsuarioBotDesconocido / HandlerError."""
-    bu = resolver_bot_usuario(
-        servicio, fuente.get("telegram_user_id"), bot_codigo=fuente.get("bot")
-    )
-    existente = IngestaBot.objects.filter(
-        id_empresa=bu.id_empresa, idempotency_key=idempotency_key
-    ).first()
+    bu = resolver_bot_usuario(servicio, fuente.get("telegram_user_id"), bot_codigo=fuente.get("bot"))
+    existente = IngestaBot.objects.filter(id_empresa=bu.id_empresa, idempotency_key=idempotency_key).first()
     if existente:
         return existente, False
     handler = handlers.HANDLERS[kind]
@@ -93,9 +85,7 @@ def ingerir(*, servicio, kind: str, draft: dict, fuente: dict, idempotency_key: 
     except IntegrityError:
         # Carrera: otra petición con la misma clave ganó. Si no existe esa ingesta, el conflicto
         # es de otra restricción (dato real duplicado): no se enmascara.
-        ganadora = IngestaBot.objects.filter(
-            id_empresa=bu.id_empresa, idempotency_key=idempotency_key
-        ).first()
+        ganadora = IngestaBot.objects.filter(id_empresa=bu.id_empresa, idempotency_key=idempotency_key).first()
         if ganadora is None:
             raise
         return ganadora, False
@@ -108,16 +98,10 @@ def completar(ingesta: IngestaBot, cambios: dict) -> IngestaBot:
     if ingesta.kind not in COMPLETABLES:
         raise HandlerError("Solo se pueden completar pagos.")
     if ingesta.estado not in (IngestaBot.Estado.INCOMPLETO, IngestaBot.Estado.BORRADOR):
-        raise HandlerError(
-            "Esta ingesta ya fue sincronizada o cerrada; edítala en Odoo.", status=409
-        )
+        raise HandlerError("Esta ingesta ya fue sincronizada o cerrada; edítala en Odoo.", status=409)
     payload = {
         **ingesta.payload,
-        **{
-            k: v
-            for k, v in cambios.items()
-            if k in ingesta.payload or k in _CAMPOS_PAGO
-        },
+        **{k: v for k, v in cambios.items() if k in ingesta.payload or k in _CAMPOS_PAGO},
     }
     r = handlers.HANDLERS[ingesta.kind](
         Ctx(

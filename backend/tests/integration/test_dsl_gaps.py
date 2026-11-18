@@ -13,6 +13,7 @@ cubriendo las ramas que faltaban según term-missing:
 - ``disparar_conectores`` con y sin mapeo de campos (threads falsos, síncronos).
 - Runtime de entidades/estados/vistas personalizadas (ramas vacías/DoesNotExist).
 """
+
 import socket
 from types import SimpleNamespace
 from unittest import mock
@@ -48,15 +49,11 @@ class TestValidarCampos:
     def test_agregar_sin_tipo_y_tipo_invalido(self):
         errores = dsl._validar_campos([{"entidad": "Cliente", "campo": "x", "accion": "agregar"}])
         assert any("requiere 'tipo'" in e for e in errores)
-        errores = dsl._validar_campos(
-            [{"entidad": "Cliente", "campo": "x", "accion": "agregar", "tipo": "blob"}]
-        )
+        errores = dsl._validar_campos([{"entidad": "Cliente", "campo": "x", "accion": "agregar", "tipo": "blob"}])
         assert any("tipo 'blob' inválido" in e for e in errores)
 
     def test_select_sin_opciones(self):
-        errores = dsl._validar_campos(
-            [{"entidad": "Cliente", "campo": "x", "accion": "agregar", "tipo": "select"}]
-        )
+        errores = dsl._validar_campos([{"entidad": "Cliente", "campo": "x", "accion": "agregar", "tipo": "select"}])
         assert any("requiere 'opciones'" in e for e in errores)
 
 
@@ -89,9 +86,7 @@ class TestValidarEstados:
         assert any("falta 'etiqueta'" in e for e in errores)
 
     def test_estado_valido_sin_errores(self):
-        errores = dsl._validar_estados(
-            [{"modelo": "Pedido", "nombre": "EN_RUTA", "etiqueta": "En ruta"}]
-        )
+        errores = dsl._validar_estados([{"modelo": "Pedido", "nombre": "EN_RUTA", "etiqueta": "En ruta"}])
         assert errores == []
 
 
@@ -104,10 +99,17 @@ class TestValidarReglas:
         assert any("falta 'mensaje_error'" in e for e in errores)
 
     def test_regla_valida(self):
-        errores = dsl._validar_reglas([{
-            "entidad": "Pedido", "campo": "total", "operador": "mayor_que",
-            "valor": 0, "mensaje_error": "El total debe ser positivo",
-        }])
+        errores = dsl._validar_reglas(
+            [
+                {
+                    "entidad": "Pedido",
+                    "campo": "total",
+                    "operador": "mayor_que",
+                    "valor": 0,
+                    "mensaje_error": "El total debe ser positivo",
+                }
+            ]
+        )
         assert errores == []
 
 
@@ -131,9 +133,15 @@ class TestValidarConectores:
         assert any("falta 'evento_origen'" in e for e in errores)
 
     def test_metodo_default_post_es_valido(self):
-        errores = dsl._validar_conectores([{
-            "nombre": "hook", "url": "https://example.com", "evento_origen": "x.y.z",
-        }])
+        errores = dsl._validar_conectores(
+            [
+                {
+                    "nombre": "hook",
+                    "url": "https://example.com",
+                    "evento_origen": "x.y.z",
+                }
+            ]
+        )
         assert errores == []
 
 
@@ -169,13 +177,21 @@ class TestAplicarConfig:
                 {"entidad": "Cliente", "campo": "rif", "accion": "renombrar", "nuevo_nombre": "RIF/Cédula"},
                 {"entidad": "Cliente", "campo": "email", "accion": "ocultar"},
                 {"entidad": "Cliente", "campo": "telefono", "accion": "requerir"},
-                {"entidad": "Producto", "campo": "color", "accion": "agregar",
-                 "tipo": "select", "opciones": ["rojo", "azul"]},
+                {
+                    "entidad": "Producto",
+                    "campo": "color",
+                    "accion": "agregar",
+                    "tipo": "select",
+                    "opciones": ["rojo", "azul"],
+                },
             ],
             "conectores": [
-                {"nombre": "crm-hook", "url": "https://hooks.example.com/x",
-                 "evento_origen": "ventas.pedido.confirmado",
-                 "mapeo_campos": {"total": "amount"}},
+                {
+                    "nombre": "crm-hook",
+                    "url": "https://hooks.example.com/x",
+                    "evento_origen": "ventas.pedido.confirmado",
+                    "mapeo_campos": {"total": "amount"},
+                },
             ],
         }
         res = dsl.aplicar_config(config, empresa_a)
@@ -187,6 +203,7 @@ class TestAplicarConfig:
         assert "conector:crm-hook → ventas.pedido.confirmado" in res["aplicadas"]
 
         from apps.personalizacion.models import PersonalizacionConfig
+
         cfg = PersonalizacionConfig.objects.get(id_empresa=empresa_a, activo=True)
         metadatos = cfg.resultado_aplicacion["metadatos_campos"]
         assert metadatos["Cliente.rif"]["alias"] == "RIF/Cédula"
@@ -200,10 +217,15 @@ class TestAplicarConfig:
 
     def test_reglas_se_registran_en_resultado(self, empresa_a):
         config = {
-            "reglas": [{
-                "entidad": "Pedido", "campo": "total", "operador": "mayor_que",
-                "valor": 0, "mensaje_error": "total > 0",
-            }],
+            "reglas": [
+                {
+                    "entidad": "Pedido",
+                    "campo": "total",
+                    "operador": "mayor_que",
+                    "valor": 0,
+                    "mensaje_error": "total > 0",
+                }
+            ],
         }
         assert dsl.validar_config(config) == []  # rama 'reglas' lista válida
         res = dsl.aplicar_config(config, empresa_a)
@@ -211,6 +233,7 @@ class TestAplicarConfig:
 
     def test_nueva_version_desactiva_anterior(self, empresa_a):
         from apps.personalizacion.models import PersonalizacionConfig
+
         config = {"vistas": [{"entidad": "Cliente", "columnas": ["rif"]}]}
         r1 = dsl.aplicar_config(config, empresa_a)
         r2 = dsl.aplicar_config(config, empresa_a)
@@ -246,70 +269,121 @@ def _config_reglas(monkeypatch, reglas):
 
 class TestEjecutarReglas:
     def test_sin_reglas_para_entidad(self, monkeypatch):
-        _config_reglas(monkeypatch, [{"entidad": "Cliente", "campo": "x",
-                                      "operador": "igual_a", "valor": 1,
-                                      "mensaje_error": "err"}])
+        _config_reglas(
+            monkeypatch,
+            [{"entidad": "Cliente", "campo": "x", "operador": "igual_a", "valor": 1, "mensaje_error": "err"}],
+        )
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(), None) == []
 
     def test_mayor_que(self, monkeypatch):
-        _config_reglas(monkeypatch, [{"entidad": "Pedido", "campo": "total",
-                                      "operador": "mayor_que", "valor": 0,
-                                      "mensaje_error": "total debe ser > 0"}])
+        _config_reglas(
+            monkeypatch,
+            [
+                {
+                    "entidad": "Pedido",
+                    "campo": "total",
+                    "operador": "mayor_que",
+                    "valor": 0,
+                    "mensaje_error": "total debe ser > 0",
+                }
+            ],
+        )
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(total=10), None) == []
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(total=0), None) == ["total debe ser > 0"]
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(total=None), None) == ["total debe ser > 0"]
 
     def test_menor_que(self, monkeypatch):
-        _config_reglas(monkeypatch, [{"entidad": "Pedido", "campo": "descuento",
-                                      "operador": "menor_que", "valor": 50,
-                                      "mensaje_error": "descuento < 50"}])
+        _config_reglas(
+            monkeypatch,
+            [
+                {
+                    "entidad": "Pedido",
+                    "campo": "descuento",
+                    "operador": "menor_que",
+                    "valor": 50,
+                    "mensaje_error": "descuento < 50",
+                }
+            ],
+        )
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(descuento=10), None) == []
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(descuento=60), None) == ["descuento < 50"]
 
     def test_igual_a_y_distinto_de(self, monkeypatch):
-        _config_reglas(monkeypatch, [
-            {"entidad": "Pedido", "campo": "estado", "operador": "igual_a",
-             "valor": "BORRADOR", "mensaje_error": "debe ser borrador"},
-            {"entidad": "Pedido", "campo": "tipo", "operador": "distinto_de",
-             "valor": "PROHIBIDO", "mensaje_error": "tipo prohibido"},
-        ])
+        _config_reglas(
+            monkeypatch,
+            [
+                {
+                    "entidad": "Pedido",
+                    "campo": "estado",
+                    "operador": "igual_a",
+                    "valor": "BORRADOR",
+                    "mensaje_error": "debe ser borrador",
+                },
+                {
+                    "entidad": "Pedido",
+                    "campo": "tipo",
+                    "operador": "distinto_de",
+                    "valor": "PROHIBIDO",
+                    "mensaje_error": "tipo prohibido",
+                },
+            ],
+        )
         ok = SimpleNamespace(estado="BORRADOR", tipo="NORMAL")
         assert dsl.ejecutar_reglas("Pedido", ok, None) == []
         mal = SimpleNamespace(estado="APROBADO", tipo="PROHIBIDO")
         assert dsl.ejecutar_reglas("Pedido", mal, None) == ["debe ser borrador", "tipo prohibido"]
 
     def test_requerido_si(self, monkeypatch):
-        _config_reglas(monkeypatch, [{
-            "entidad": "Pedido", "campo": "motivo", "operador": "requerido_si",
-            "campo_condicion": "estado", "valor_condicion": "ANULADO",
-            "mensaje_error": "motivo requerido al anular",
-        }])
+        _config_reglas(
+            monkeypatch,
+            [
+                {
+                    "entidad": "Pedido",
+                    "campo": "motivo",
+                    "operador": "requerido_si",
+                    "campo_condicion": "estado",
+                    "valor_condicion": "ANULADO",
+                    "mensaje_error": "motivo requerido al anular",
+                }
+            ],
+        )
         # Condición cumplida + campo vacío → error
-        assert dsl.ejecutar_reglas(
-            "Pedido", SimpleNamespace(estado="ANULADO", motivo=""), None
-        ) == ["motivo requerido al anular"]
+        assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(estado="ANULADO", motivo=""), None) == [
+            "motivo requerido al anular"
+        ]
         # Condición cumplida + campo lleno → ok
-        assert dsl.ejecutar_reglas(
-            "Pedido", SimpleNamespace(estado="ANULADO", motivo="duplicado"), None
-        ) == []
+        assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(estado="ANULADO", motivo="duplicado"), None) == []
         # Condición no cumplida → ok aunque esté vacío
-        assert dsl.ejecutar_reglas(
-            "Pedido", SimpleNamespace(estado="ACTIVO", motivo=None), None
-        ) == []
+        assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(estado="ACTIVO", motivo=None), None) == []
 
     def test_requerido_si_sin_campo_condicion_no_valida(self, monkeypatch):
-        _config_reglas(monkeypatch, [{
-            "entidad": "Pedido", "campo": "motivo", "operador": "requerido_si",
-            "mensaje_error": "no debería dispararse",
-        }])
+        _config_reglas(
+            monkeypatch,
+            [
+                {
+                    "entidad": "Pedido",
+                    "campo": "motivo",
+                    "operador": "requerido_si",
+                    "mensaje_error": "no debería dispararse",
+                }
+            ],
+        )
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(motivo=None), None) == []
 
     def test_regla_mal_configurada_no_bloquea(self, monkeypatch):
         """TypeError en la comparación → se loguea y no se agrega error."""
-        _config_reglas(monkeypatch, [{
-            "entidad": "Pedido", "campo": "total", "operador": "mayor_que",
-            "valor": 5, "mensaje_error": "no debería dispararse",
-        }])
+        _config_reglas(
+            monkeypatch,
+            [
+                {
+                    "entidad": "Pedido",
+                    "campo": "total",
+                    "operador": "mayor_que",
+                    "valor": 5,
+                    "mensaje_error": "no debería dispararse",
+                }
+            ],
+        )
         assert dsl.ejecutar_reglas("Pedido", SimpleNamespace(total="texto"), None) == []
 
 
@@ -332,6 +406,7 @@ class TestValidarUrlExterna:
     def test_host_no_resoluble(self, monkeypatch):
         def _raise(*a, **k):
             raise socket.gaierror("nx")
+
         monkeypatch.setattr(socket, "getaddrinfo", _raise)
         with pytest.raises(ValueError, match="No se pudo resolver"):
             dsl._validar_url_externa("https://no-existe.example.invalid/hook")
@@ -371,6 +446,7 @@ class TestEnviarWebhook:
 
 class _FakeThread:
     """Reemplazo síncrono de threading.Thread para tests deterministas."""
+
     def __init__(self, target=None, args=(), daemon=None, name=None):
         self._target = target
         self._args = args
@@ -385,39 +461,57 @@ class TestDispararConectores:
         monkeypatch.setattr(dsl.threading, "Thread", _FakeThread)
         enviados = []
         monkeypatch.setattr(
-            dsl, "_enviar_webhook",
+            dsl,
+            "_enviar_webhook",
             lambda url, metodo, payload, headers: enviados.append((url, metodo, payload, headers)),
         )
         return enviados
 
     def test_sin_conectores_para_el_evento(self, monkeypatch):
-        enviados = self._setup(monkeypatch, [
-            {"nombre": "otro", "url": "https://x", "evento_origen": "otro.evento"},
-        ])
+        enviados = self._setup(
+            monkeypatch,
+            [
+                {"nombre": "otro", "url": "https://x", "evento_origen": "otro.evento"},
+            ],
+        )
         dsl.disparar_conectores("ventas.pedido.confirmado", {"total": 1}, None)
         assert enviados == []
 
     def test_dispara_con_mapeo_de_campos(self, monkeypatch):
-        enviados = self._setup(monkeypatch, [{
-            "nombre": "crm", "url": "https://crm.example.com", "metodo": "PUT",
-            "evento_origen": "ventas.pedido.confirmado",
-            "headers": {"X-K": "v"},
-            "mapeo_campos": {"total": "amount", "cliente": "customer"},
-        }])
-        dsl.disparar_conectores(
-            "ventas.pedido.confirmado", {"total": 100, "cliente": "ACME", "extra": 1}, None
+        enviados = self._setup(
+            monkeypatch,
+            [
+                {
+                    "nombre": "crm",
+                    "url": "https://crm.example.com",
+                    "metodo": "PUT",
+                    "evento_origen": "ventas.pedido.confirmado",
+                    "headers": {"X-K": "v"},
+                    "mapeo_campos": {"total": "amount", "cliente": "customer"},
+                }
+            ],
         )
-        assert enviados == [(
-            "https://crm.example.com", "PUT",
-            {"amount": 100, "customer": "ACME"},
-            {"X-K": "v"},
-        )]
+        dsl.disparar_conectores("ventas.pedido.confirmado", {"total": 100, "cliente": "ACME", "extra": 1}, None)
+        assert enviados == [
+            (
+                "https://crm.example.com",
+                "PUT",
+                {"amount": 100, "customer": "ACME"},
+                {"X-K": "v"},
+            )
+        ]
 
     def test_dispara_sin_mapeo_copia_payload(self, monkeypatch):
-        enviados = self._setup(monkeypatch, [{
-            "nombre": "hook", "url": "https://h.example.com",
-            "evento_origen": "ventas.pedido.confirmado",
-        }])
+        enviados = self._setup(
+            monkeypatch,
+            [
+                {
+                    "nombre": "hook",
+                    "url": "https://h.example.com",
+                    "evento_origen": "ventas.pedido.confirmado",
+                }
+            ],
+        )
         payload = {"total": 5}
         dsl.disparar_conectores("ventas.pedido.confirmado", payload, None)
         url, metodo, payload_enviado, headers = enviados[0]
@@ -468,8 +562,7 @@ class TestRuntimeEstadosYVistas:
 
     def test_vistas_columnas_y_filtros(self, empresa_a):
         dsl.aplicar_config(
-            {"vistas": [{"entidad": "Cliente", "columnas": ["rif", "razon_social"],
-                         "filtros": {"activo": True}}]},
+            {"vistas": [{"entidad": "Cliente", "columnas": ["rif", "razon_social"], "filtros": {"activo": True}}]},
             empresa_a,
         )
         assert dsl.get_columnas_vista(empresa_a, "Cliente") == ["rif", "razon_social"]

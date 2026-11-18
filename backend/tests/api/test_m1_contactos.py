@@ -155,12 +155,8 @@ def test_aislamiento_contacto(empresa_a, empresa_b, user_a, user_b):
     """user_a no puede ver los contactos de empresa_b vía la API."""
     from apps.core.models import Contacto
 
-    c_a = Contacto.objects.create(
-        id_empresa=empresa_a, nombre="Contacto A", rif="J-11111111"
-    )
-    c_b = Contacto.objects.create(
-        id_empresa=empresa_b, nombre="Contacto B", rif="J-22222222"
-    )
+    c_a = Contacto.objects.create(id_empresa=empresa_a, nombre="Contacto A", rif="J-11111111")
+    c_b = Contacto.objects.create(id_empresa=empresa_b, nombre="Contacto B", rif="J-22222222")
 
     client = APIClient()
     client.force_authenticate(user=user_a)
@@ -179,13 +175,9 @@ def test_aislamiento_contacto_via_mcp(empresa_a, empresa_b, capability_token):
     from apps.core.models import Contacto
     from apps.core.mcp_server import omni_buscar_contacto
 
-    c_a = Contacto.objects.create(
-        id_empresa=empresa_a, nombre="Contacto Alpha", rif="J-11111111"
-    )
+    c_a = Contacto.objects.create(id_empresa=empresa_a, nombre="Contacto Alpha", rif="J-11111111")
     # Mismo nombre en empresa_b — no debe aparecer en búsqueda de empresa_a
-    Contacto.objects.create(
-        id_empresa=empresa_b, nombre="Contacto Alpha", rif="J-99999999"
-    )
+    Contacto.objects.create(id_empresa=empresa_b, nombre="Contacto Alpha", rif="J-99999999")
 
     resultado = omni_buscar_contacto(
         capability_token=str(capability_token.token),

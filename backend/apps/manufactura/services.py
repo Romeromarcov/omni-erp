@@ -5,6 +5,7 @@ El cálculo (explosión, MRP, costeo) está aislado en funciones PURAS (Decimal,
 I/O) para ser testeable y portable (§5.2-ter); la orquestación lee/escribe el ORM
 y reutiliza `inventario.services.registrar_movimiento` (R-CODE-11 vía inventario).
 """
+
 from __future__ import annotations
 
 import logging
@@ -149,8 +150,9 @@ def explotar_lista_materiales(lista, cantidad, *, incluir_opcionales: bool = Fal
 
 
 @transaction.atomic
-def crear_orden_produccion(*, empresa, producto, cantidad, fecha_inicio=None,
-                           lista_materiales=None, ruta_produccion=None, observaciones=""):
+def crear_orden_produccion(
+    *, empresa, producto, cantidad, fecha_inicio=None, lista_materiales=None, ruta_produccion=None, observaciones=""
+):
     """Crea una OrdenProduccion en estado pendiente."""
     from .models import OrdenProduccion
 
@@ -208,9 +210,15 @@ def crear_etapas_para_orden(orden):
 
 
 @transaction.atomic
-def avanzar_etapa_orden(orden, *, usuario, horas_trabajadas=Decimal("0"),
-                        tarifa_hora=Decimal("0"), cantidad_destajo=Decimal("0"),
-                        observaciones=""):
+def avanzar_etapa_orden(
+    orden,
+    *,
+    usuario,
+    horas_trabajadas=Decimal("0"),
+    tarifa_hora=Decimal("0"),
+    cantidad_destajo=Decimal("0"),
+    observaciones="",
+):
     """Completa la siguiente etapa pendiente de la OF (en secuencia) registrando
     quién/cuándo y la mano de obra de la etapa: horas × tarifa y/o pago a
     destajo (cantidad × tarifa_destajo de la etapa del catálogo)."""
@@ -219,11 +227,7 @@ def avanzar_etapa_orden(orden, *, usuario, horas_trabajadas=Decimal("0"),
 
     # select_for_update: dos avances concurrentes no deben completar la misma etapa.
     etapa_of = (
-        orden.etapas.select_for_update()
-        .filter(estado="pendiente")
-        .order_by("orden")
-        .select_related("etapa")
-        .first()
+        orden.etapas.select_for_update().filter(estado="pendiente").order_by("orden").select_related("etapa").first()
     )
     if etapa_of is None:
         raise ManufacturaError("La orden no tiene etapas pendientes.")
@@ -253,10 +257,9 @@ def avanzar_etapa_orden(orden, *, usuario, horas_trabajadas=Decimal("0"),
 
 def costo_mano_obra_orden(orden) -> Decimal:
     """Mano de obra real acumulada de la OF (etapas completadas)."""
-    return calcular_costo_mano_obra([
-        (e.horas_trabajadas, e.tarifa_hora, e.pago_destajo)
-        for e in orden.etapas.filter(estado="completada")
-    ])
+    return calcular_costo_mano_obra(
+        [(e.horas_trabajadas, e.tarifa_hora, e.pago_destajo) for e in orden.etapas.filter(estado="completada")]
+    )
 
 
 def _overhead_empresa(empresa, base: Decimal) -> Decimal:
@@ -269,8 +272,7 @@ def _overhead_empresa(empresa, base: Decimal) -> Decimal:
     return calcular_overhead(base, config.porcentaje_overhead)
 
 
-def costeo_real_orden(orden, *, mano_obra=None, costos_indirectos=None,
-                      cantidad_producida=None) -> dict:
+def costeo_real_orden(orden, *, mano_obra=None, costos_indirectos=None, cantidad_producida=None) -> dict:
     """Costeo real de la OF: materiales consumidos (al costo del movimiento de
     inventario) + mano de obra (etapas: horas × tarifa + destajo, salvo monto
     explícito) + overhead configurable (salvo monto explícito).
@@ -283,13 +285,14 @@ def costeo_real_orden(orden, *, mano_obra=None, costos_indirectos=None,
     # costo_unitario es el snapshot del movimiento; los consumos legados (0)
     # caen al costo_promedio vigente del producto.
     pares = [
-        (c.costo_unitario if _d(c.costo_unitario) > 0 else c.producto.costo_promedio, c.cantidad)
-        for c in consumos
+        (c.costo_unitario if _d(c.costo_unitario) > 0 else c.producto.costo_promedio, c.cantidad) for c in consumos
     ]
     mo = _d(mano_obra) if mano_obra is not None else costo_mano_obra_orden(orden)
     costo_materiales = sum((_d(cu) * _d(q) for cu, q in pares), Decimal("0"))
-    oh = _d(costos_indirectos) if costos_indirectos is not None else _overhead_empresa(
-        orden.empresa, costo_materiales + mo
+    oh = (
+        _d(costos_indirectos)
+        if costos_indirectos is not None
+        else _overhead_empresa(orden.empresa, costo_materiales + mo)
     )
     cant = _d(cantidad_producida) if cantidad_producida is not None else _d(orden.cantidad)
     return calcular_costo_produccion(pares, mano_obra=mo, costos_indirectos=oh, cantidad_producida=cant)
@@ -322,9 +325,7 @@ def calcular_mrp_lista(lista, cantidad, *, almacen=None, incluir_opcionales=Fals
         neto = _d(s.cantidad_disponible) - _d(s.cantidad_comprometida)
         disponible[str(s.id_producto_id)] = disponible.get(str(s.id_producto_id), Decimal("0")) + neto
 
-    nombres = dict(
-        Producto.objects.filter(pk__in=producto_ids).values_list("id_producto", "nombre_producto")
-    )
+    nombres = dict(Producto.objects.filter(pk__in=producto_ids).values_list("id_producto", "nombre_producto"))
     faltantes = calcular_mrp(requerimientos, disponible)
     return [
         {
@@ -393,8 +394,9 @@ def consumir_materiales_orden(orden, *, almacen, usuario, fecha_hora=None, inclu
 
 
 @transaction.atomic
-def registrar_produccion_terminada(orden, *, cantidad, almacen, usuario, fecha_hora=None,
-                                   mano_obra=None, costos_indirectos=None):
+def registrar_produccion_terminada(
+    orden, *, cantidad, almacen, usuario, fecha_hora=None, mano_obra=None, costos_indirectos=None
+):
     """Ingresa el producto terminado al inventario al costo real calculado y crea
     el registro ProduccionTerminada. Cierra la orden si se completó la cantidad.
 
@@ -413,14 +415,10 @@ def registrar_produccion_terminada(orden, *, cantidad, almacen, usuario, fecha_h
         raise ManufacturaError(f"La orden está {orden.estado}; no admite más producción.")
     pendientes = orden.etapas.filter(estado="pendiente").count()
     if pendientes:
-        raise ManufacturaError(
-            f"La orden tiene {pendientes} etapa(s) pendiente(s); complétalas antes de cerrar."
-        )
+        raise ManufacturaError(f"La orden tiene {pendientes} etapa(s) pendiente(s); complétalas antes de cerrar.")
     fecha = fecha_hora or timezone.now()
 
-    costo = costeo_real_orden(
-        orden, mano_obra=mano_obra, costos_indirectos=costos_indirectos, cantidad_producida=cant
-    )
+    costo = costeo_real_orden(orden, mano_obra=mano_obra, costos_indirectos=costos_indirectos, cantidad_producida=cant)
 
     registrar_movimiento(
         empresa=orden.empresa,

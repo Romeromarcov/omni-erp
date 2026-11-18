@@ -15,6 +15,7 @@ Backfill de cobertura — apps/tesoreria/views.py + serializers.py
   cuenta inexistente 404 / éxito 200) y conciliar-auto cuenta inexistente 404.
 - ConciliacionBancariaViewSet.perform_create vía POST (iniciar_conciliacion).
 """
+
 import datetime
 from decimal import Decimal
 
@@ -50,27 +51,28 @@ def client_b(user_b):
 
 @pytest.fixture
 def caja_origen(empresa_a, moneda_usd):
-    return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja Origen", moneda=moneda_usd, tipo_caja="REGISTRADORA"
-    )
+    return Caja.objects.create(empresa=empresa_a, nombre="Caja Origen", moneda=moneda_usd, tipo_caja="REGISTRADORA")
 
 
 @pytest.fixture
 def caja_destino(empresa_a, moneda_usd):
-    return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja Destino", moneda=moneda_usd, tipo_caja="GERENCIA"
-    )
+    return Caja.objects.create(empresa=empresa_a, nombre="Caja Destino", moneda=moneda_usd, tipo_caja="GERENCIA")
 
 
 @pytest.fixture
 def cuenta_a(empresa_a, moneda_usd):
     return CuentaBancariaEmpresa.objects.create(
-        id_empresa=empresa_a, nombre_banco="Banco Gap", numero_cuenta="0102-G1",
-        tipo_cuenta="CORRIENTE", id_moneda=moneda_usd, saldo_actual=Decimal("1000.00"),
+        id_empresa=empresa_a,
+        nombre_banco="Banco Gap",
+        numero_cuenta="0102-G1",
+        tipo_cuenta="CORRIENTE",
+        id_moneda=moneda_usd,
+        saldo_actual=Decimal("1000.00"),
     )
 
 
 # ── CajaViewSet (tesorería) ───────────────────────────────────────────────────
+
 
 class TestCajaTesoreria:
     def test_list_aislado_por_empresa(self, client_a, client_b, caja_origen):
@@ -85,18 +87,21 @@ class TestCajaTesoreria:
 
 # ── MovimientoInternoFondo ────────────────────────────────────────────────────
 
+
 class TestMovimientoInternoFondo:
-    def test_create_genera_doble_movimiento_caja_banco(
-        self, client_a, caja_origen, caja_destino, moneda_usd, user_a
-    ):
-        resp = client_a.post(URL_MOV_INT, {
-            "caja_origen": caja_origen.id_caja,
-            "caja_destino": caja_destino.id_caja,
-            "id_moneda": str(moneda_usd.id_moneda),
-            "monto": "120.50",
-            "descripcion": "Traslado a gerencia",
-            "usuario": user_a.pk,
-        }, format="json")
+    def test_create_genera_doble_movimiento_caja_banco(self, client_a, caja_origen, caja_destino, moneda_usd, user_a):
+        resp = client_a.post(
+            URL_MOV_INT,
+            {
+                "caja_origen": caja_origen.id_caja,
+                "caja_destino": caja_destino.id_caja,
+                "id_moneda": str(moneda_usd.id_moneda),
+                "monto": "120.50",
+                "descripcion": "Traslado a gerencia",
+                "usuario": user_a.pk,
+            },
+            format="json",
+        )
         assert resp.status_code == 201, resp.content
         mov = MovimientoInternoFondo.objects.get()
         assert mov.monto == Decimal("120.50")
@@ -110,12 +115,12 @@ class TestMovimientoInternoFondo:
         assert salida.concepto == "Traslado a gerencia"
         assert salida.id_empresa == caja_origen.empresa
 
-    def test_list_aislado_por_empresa_de_caja_origen(
-        self, client_a, client_b, caja_origen, caja_destino, moneda_usd
-    ):
+    def test_list_aislado_por_empresa_de_caja_origen(self, client_a, client_b, caja_origen, caja_destino, moneda_usd):
         MovimientoInternoFondo.objects.create(
-            caja_origen=caja_origen, caja_destino=caja_destino,
-            id_moneda=moneda_usd, monto=Decimal("10.00"),
+            caja_origen=caja_origen,
+            caja_destino=caja_destino,
+            id_moneda=moneda_usd,
+            monto=Decimal("10.00"),
         )
         assert client_a.get(URL_MOV_INT).json()["count"] == 1
         assert client_b.get(URL_MOV_INT).json()["count"] == 0
@@ -125,10 +130,9 @@ class TestMovimientoInternoFondo:
 # El detalle (camino feliz con montos verificados a mano, rollback 422,
 # aislamiento) vive en tests/integration/test_cambio_divisa_atomicidad.py.
 
+
 class TestOperacionCambioDivisa:
-    def test_create_registra_doble_transaccion(
-        self, client_a, empresa_a, moneda_usd, caja_origen, caja_destino
-    ):
+    def test_create_registra_doble_transaccion(self, client_a, empresa_a, moneda_usd, caja_origen, caja_destino):
         """
         CTF-013 cerrado: el create ya no revienta (antes: ImportError por
         `DocumentoGasto` inexistente e IntegrityError por `monto_base_empresa`).
@@ -137,8 +141,11 @@ class TestOperacionCambioDivisa:
         from apps.finanzas.models import MetodoPago, Moneda, TransaccionFinanciera
 
         ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         metodo = MetodoPago.objects.create(nombre_metodo="Efectivo Gap", tipo_metodo="EFECTIVO")
         payload = {
@@ -175,14 +182,21 @@ class TestOperacionCambioDivisa:
         from apps.tesoreria.models import OperacionCambioDivisa
 
         ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         OperacionCambioDivisa.objects.create(
-            empresa=empresa_a, numero_operacion="OP-LIST",
+            empresa=empresa_a,
+            numero_operacion="OP-LIST",
             fecha_operacion=datetime.datetime(2026, 6, 9, 10, 0, tzinfo=datetime.timezone.utc),
-            tipo_operacion="COMPRA", moneda_origen=moneda_usd, moneda_destino=ves,
-            monto_origen=Decimal("50.0000"), tasa_cambio=Decimal("36.500000"),
+            tipo_operacion="COMPRA",
+            moneda_origen=moneda_usd,
+            moneda_destino=ves,
+            monto_origen=Decimal("50.0000"),
+            tasa_cambio=Decimal("36.500000"),
             monto_destino=Decimal("1825.0000"),
         )
         assert client_a.get(URL_CAMBIO).json()["count"] == 1
@@ -190,6 +204,7 @@ class TestOperacionCambioDivisa:
 
 
 # ── MovimientoBancarioViewSet ─────────────────────────────────────────────────
+
 
 class TestMovimientoBancarioCreate:
     def _payload(self, empresa, cuenta):
@@ -219,13 +234,19 @@ class TestMovimientoBancarioCreate:
 
     def test_filtro_por_cuenta(self, client_a, empresa_a, cuenta_a, moneda_usd):
         otra = CuentaBancariaEmpresa.objects.create(
-            id_empresa=empresa_a, nombre_banco="Banco 2", numero_cuenta="0102-G2",
-            tipo_cuenta="AHORRO", id_moneda=moneda_usd,
+            id_empresa=empresa_a,
+            nombre_banco="Banco 2",
+            numero_cuenta="0102-G2",
+            tipo_cuenta="AHORRO",
+            id_moneda=moneda_usd,
         )
         MovimientoBancario.objects.create(
-            id_empresa=empresa_a, id_cuenta_bancaria=cuenta_a,
-            fecha_mov=datetime.date(2026, 6, 1), descripcion="En cuenta A",
-            tipo="CREDITO", monto=Decimal("10.00"),
+            id_empresa=empresa_a,
+            id_cuenta_bancaria=cuenta_a,
+            fecha_mov=datetime.date(2026, 6, 1),
+            descripcion="En cuenta A",
+            tipo="CREDITO",
+            monto=Decimal("10.00"),
         )
         resp = client_a.get(URL_MOV_BANC, {"cuenta": str(otra.id_cuenta_bancaria)})
         assert resp.json()["count"] == 0
@@ -250,30 +271,42 @@ class TestImportarCSV:
         assert resp.json() == {"error": "Se requieren: cuenta_bancaria y archivo."}
 
     def test_empresa_no_accesible_403(self, client_a, empresa_b, cuenta_a):
-        resp = client_a.post(self.URL, {
-            "empresa": str(empresa_b.id_empresa),
-            "cuenta_bancaria": str(cuenta_a.id_cuenta_bancaria),
-            "archivo": self._archivo(),
-        }, format="multipart")
+        resp = client_a.post(
+            self.URL,
+            {
+                "empresa": str(empresa_b.id_empresa),
+                "cuenta_bancaria": str(cuenta_a.id_cuenta_bancaria),
+                "archivo": self._archivo(),
+            },
+            format="multipart",
+        )
         assert resp.status_code == 403
         assert resp.json() == {"error": "Sin empresa accesible."}
 
     def test_cuenta_inexistente_404(self, client_a, empresa_a):
         import uuid
 
-        resp = client_a.post(self.URL, {
-            "cuenta_bancaria": str(uuid.uuid4()),
-            "archivo": self._archivo(),
-        }, format="multipart")
+        resp = client_a.post(
+            self.URL,
+            {
+                "cuenta_bancaria": str(uuid.uuid4()),
+                "archivo": self._archivo(),
+            },
+            format="multipart",
+        )
         assert resp.status_code == 404
         assert resp.json() == {"error": "Cuenta bancaria no encontrada."}
 
     def test_importa_ok_200(self, client_a, empresa_a, cuenta_a):
-        resp = client_a.post(self.URL, {
-            "empresa": str(empresa_a.id_empresa),
-            "cuenta_bancaria": str(cuenta_a.id_cuenta_bancaria),
-            "archivo": self._archivo(),
-        }, format="multipart")
+        resp = client_a.post(
+            self.URL,
+            {
+                "empresa": str(empresa_a.id_empresa),
+                "cuenta_bancaria": str(cuenta_a.id_cuenta_bancaria),
+                "archivo": self._archivo(),
+            },
+            format="multipart",
+        )
         assert resp.status_code == 200, resp.content
         body = resp.json()
         assert body["importados"] == 2
@@ -299,16 +332,21 @@ class TestConciliarAutoCuentaInexistente:
 
 # ── ConciliacionBancariaViewSet.perform_create ───────────────────────────────
 
+
 class TestCrearConciliacionPorAPI:
     def test_post_inicia_conciliacion(self, client_a, empresa_a, cuenta_a, user_a):
-        resp = client_a.post(URL_CONC, {
-            "id_empresa": str(empresa_a.id_empresa),
-            "id_cuenta_bancaria": str(cuenta_a.id_cuenta_bancaria),
-            "periodo_inicio": "2026-05-01",
-            "periodo_fin": "2026-05-31",
-            "saldo_banco": "1500.00",
-            "saldo_libro": "1000.00",
-        }, format="json")
+        resp = client_a.post(
+            URL_CONC,
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "id_cuenta_bancaria": str(cuenta_a.id_cuenta_bancaria),
+                "periodo_inicio": "2026-05-01",
+                "periodo_fin": "2026-05-31",
+                "saldo_banco": "1500.00",
+                "saldo_libro": "1000.00",
+            },
+            format="json",
+        )
         assert resp.status_code == 201, resp.content
         conc = ConciliacionBancaria.objects.get()
         assert conc.estado == "ABIERTA"

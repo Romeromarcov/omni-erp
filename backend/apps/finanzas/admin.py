@@ -173,7 +173,6 @@ class MovimientoCajaBancoAdmin(admin.ModelAdmin):
     actions = ["crear_ajuste"]
 
     def crear_ajuste(self, request, queryset):
-
         from apps.core.models import Empresa, Usuarios
         from apps.finanzas.ajustes import crear_ajuste_caja_banco
         from apps.finanzas.models import Caja, CuentaBancariaEmpresa, Moneda

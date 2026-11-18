@@ -42,9 +42,7 @@ def aprobar_orden_compra(orden_compra, usuario) -> None:
     la misma atomic, el raise la revertiría).
     """
     if orden_compra.estado not in ("BORRADOR", "ENVIADA"):
-        raise CompraError(
-            f"Solo se aprueban órdenes en BORRADOR o ENVIADA. Estado actual: {orden_compra.estado}"
-        )
+        raise CompraError(f"Solo se aprueban órdenes en BORRADOR o ENVIADA. Estado actual: {orden_compra.estado}")
 
     from django.db.models import Sum
 
@@ -91,9 +89,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
     from apps.cuentas_por_pagar.models import CuentaPorPagar
 
     if orden_compra.estado != "APROBADA":
-        raise CompraError(
-            f"Solo se puede recepcionar contra una OC APROBADA. Estado: {orden_compra.estado}"
-        )
+        raise CompraError(f"Solo se puede recepcionar contra una OC APROBADA. Estado: {orden_compra.estado}")
     if not items:
         raise CompraError("Debe especificar al menos un ítem para recepcionar.")
 
@@ -109,9 +105,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
     except PeriodoCerradoError as exc:
         raise CompraError(str(exc)) from exc
 
-    monto_total = sum(
-        Decimal(str(it["cantidad"])) * Decimal(str(it["costo_unitario"])) for it in items
-    )
+    monto_total = sum(Decimal(str(it["cantidad"])) * Decimal(str(it["costo_unitario"])) for it in items)
 
     recepcion = RecepcionMercancia.objects.create(
         id_empresa=empresa,

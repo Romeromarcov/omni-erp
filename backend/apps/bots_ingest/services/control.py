@@ -79,9 +79,7 @@ _SECRETOS = (
     re.compile(r"AIza[0-9A-Za-z_-]{25,}"),
     re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
     re.compile(r"\bcxc_live_[A-Za-z0-9_-]{10,}\b"),
-    re.compile(
-        r"(?i)\b(bearer|capabilitytoken|x-bot-key|x-capability-token)\s*[:=]?\s*[A-Za-z0-9._~+/=-]{12,}"
-    ),
+    re.compile(r"(?i)\b(bearer|capabilitytoken|x-bot-key|x-capability-token)\s*[:=]?\s*[A-Za-z0-9._~+/=-]{12,}"),
 )
 
 
@@ -185,9 +183,7 @@ def validar_url_panel(valor: Any) -> str:
         or len(v) > 300
         or any(c.isspace() for c in v)
     ):
-        raise DatoControlInvalido(
-            "url_panel debe ser una dirección http(s) válida sin credenciales embebidas."
-        )
+        raise DatoControlInvalido("url_panel debe ser una dirección http(s) válida sin credenciales embebidas.")
     return v
 
 
@@ -250,14 +246,10 @@ def _nombre_por_defecto(codigo: str) -> str:
 
 
 def _en_linea(ultimo_latido: datetime | None, ahora: datetime) -> bool:
-    return ultimo_latido is not None and (ahora - ultimo_latido) < timedelta(
-        seconds=EN_LINEA_SEGUNDOS
-    )
+    return ultimo_latido is not None and (ahora - ultimo_latido) < timedelta(seconds=EN_LINEA_SEGUNDOS)
 
 
-def _serializar_registro(
-    reg: BotRegistro | None, codigo: str, ahora: datetime
-) -> dict[str, Any]:
+def _serializar_registro(reg: BotRegistro | None, codigo: str, ahora: datetime) -> dict[str, Any]:
     nombre = reg.nombre if reg else _nombre_por_defecto(codigo)
     habilitado = reg.habilitado if reg else True
     parametros = {**PARAMETROS_POR_DEFECTO, **(reg.parametros if reg else {})}
@@ -284,9 +276,7 @@ def _serializar_registro(
 
 def _usuarios_empresa(empresa) -> list[BotUsuario]:
     return list(
-        BotUsuario.objects.filter(
-            id_empresa=empresa, activo=True, usuario__is_active=True
-        )
+        BotUsuario.objects.filter(id_empresa=empresa, activo=True, usuario__is_active=True)
         .select_related("usuario")
         .order_by("nombre", "telegram_user_id")
     )
@@ -410,9 +400,9 @@ def registrar_latido(
 
     # Retención lógica de 30 días (R-CODE-6: soft delete, nunca borrado físico).
     corte = dia - timedelta(days=RETENCION_LATIDOS_DIAS)
-    BotLatidoDiario.objects.filter(
-        id_empresa=empresa, codigo=codigo_ok, activo=True, dia__lt=corte
-    ).update(activo=False)
+    BotLatidoDiario.objects.filter(id_empresa=empresa, codigo=codigo_ok, activo=True, dia__lt=corte).update(
+        activo=False
+    )
 
     usuarios = _usuarios_empresa(empresa)
     return {
@@ -434,29 +424,20 @@ def _codigos_empresa(existentes: dict[str, BotRegistro]) -> list[str]:
 
 def listar_bots(empresa, *, ahora: datetime | None = None) -> list[dict[str, Any]]:
     ts = ahora or timezone.now()
-    existentes = {
-        b.codigo: b
-        for b in BotRegistro.objects.filter(id_empresa=empresa, activo=True)
-    }
+    existentes = {b.codigo: b for b in BotRegistro.objects.filter(id_empresa=empresa, activo=True)}
     usuarios = _usuarios_empresa(empresa)
     salida: list[dict[str, Any]] = []
     for codigo in _codigos_empresa(existentes):
         d = _serializar_registro(existentes.get(codigo), codigo, ts)
-        d["n_usuarios"] = sum(
-            1 for u in usuarios if usuario_autorizado_en_bot(u.bots, codigo)
-        )
+        d["n_usuarios"] = sum(1 for u in usuarios if usuario_autorizado_en_bot(u.bots, codigo))
         salida.append(d)
     return salida
 
 
-def detalle_bot(
-    empresa, codigo: str, *, ahora: datetime | None = None
-) -> dict[str, Any]:
+def detalle_bot(empresa, codigo: str, *, ahora: datetime | None = None) -> dict[str, Any]:
     codigo_ok = validar_codigo_bot(codigo)
     ts = ahora or timezone.now()
-    reg = BotRegistro.objects.filter(
-        id_empresa=empresa, codigo=codigo_ok, activo=True
-    ).first()
+    reg = BotRegistro.objects.filter(id_empresa=empresa, codigo=codigo_ok, activo=True).first()
     d = _serializar_registro(reg, codigo_ok, ts)
     usuarios = _usuarios_empresa(empresa)
     d["usuarios"] = [
@@ -472,9 +453,9 @@ def detalle_bot(
     ]
     kinds = KINDS_POR_BOT.get(codigo_ok, ())
     if kinds:
-        ingestas = IngestaBot.objects.filter(
-            id_empresa=empresa, activo=True, kind__in=kinds
-        ).select_related("bot_usuario__usuario")[:15]
+        ingestas = IngestaBot.objects.filter(id_empresa=empresa, activo=True, kind__in=kinds).select_related(
+            "bot_usuario__usuario"
+        )[:15]
         d["ingestas_recientes"] = [
             {
                 "id_ingesta": str(i.id_ingesta),
@@ -484,8 +465,7 @@ def detalle_bot(
                 "odoo_ref": i.odoo_ref,
                 "error": i.error,
                 "incompleto": i.incompleto,
-                "vendedor": i.bot_usuario.usuario.email
-                or i.bot_usuario.usuario.username,
+                "vendedor": i.bot_usuario.usuario.email or i.bot_usuario.usuario.username,
                 "auto": i.auto,
             }
             for i in ingestas
@@ -612,9 +592,7 @@ def actualizar_bot(
     return detalle_bot(empresa, codigo_ok, ahora=ts)
 
 
-def listar_bitacora(
-    empresa, *, entidad: str | None = None, limite: int = 50
-) -> list[dict[str, Any]]:
+def listar_bitacora(empresa, *, entidad: str | None = None, limite: int = 50) -> list[dict[str, Any]]:
     lim = max(1, min(int(limite), 100))
     qs = BotBitacora.objects.filter(id_empresa=empresa, activo=True)
     if entidad:
@@ -670,12 +648,8 @@ def resumen_destinos(empresa, *, ahora: datetime | None = None) -> dict[str, Any
         .annotate(n=Count("id_ingesta"))
         .values_list("estado", "n")
     )
-    out["outbox_pendientes"] = sum(
-        _contador((b.get("estado") or {}).get("outbox_pendientes")) for b in en_linea
-    )
-    out["ingestas"] = {
-        est: int(conteos_raw.get(est, 0)) for est, _lbl in IngestaBot.Estado.choices
-    }
+    out["outbox_pendientes"] = sum(_contador((b.get("estado") or {}).get("outbox_pendientes")) for b in en_linea)
+    out["ingestas"] = {est: int(conteos_raw.get(est, 0)) for est, _lbl in IngestaBot.Estado.choices}
     out["bots_en_linea"] = len(en_linea)
     out["bots_total"] = len(flota)
     return out

@@ -293,7 +293,6 @@ class Caja(models.Model):
 
 # Modelo para cajas físicas (puestos de trabajo con hardware específico)
 class CajaFisica(models.Model):
-
     def realizar_cierre(self, saldo_real, usuario=None, hasta=None):
         """
         Realiza el cierre de caja física (FIX hallazgo P0-8 / PR #73):
@@ -1071,9 +1070,7 @@ class SesionCajaFisica(models.Model):
                     saldo_decimal = Decimal(str(saldo))
                 except (InvalidOperation, ValueError, TypeError):
                     raise ValueError(f"El saldo_real enviado para la caja {caja_id} no es un número válido.")
-                cierres[str(caja_id)] = realizar_cierre_caja(
-                    caja, saldo_decimal, usuario=usuario, hasta=hasta
-                )
+                cierres[str(caja_id)] = realizar_cierre_caja(caja, saldo_decimal, usuario=usuario, hasta=hasta)
 
             self.estado = "CERRADA"
             self.fecha_cierre = timezone.now()
@@ -1138,9 +1135,7 @@ class SesionCajaFisica(models.Model):
             raise ValueError("Debe especificar un nombre para la caja virtual")
         monedas_ids = list(monedas_ids or [])
         if len(monedas_ids) != 1:
-            raise ValueError(
-                "Debe indicar exactamente una moneda: las cajas virtuales son mono-moneda."
-            )
+            raise ValueError("Debe indicar exactamente una moneda: las cajas virtuales son mono-moneda.")
         visibles_empresa = Q(empresa=self.empresa) | Q(es_generica=True) | Q(es_publica=True)
         try:
             moneda = Moneda.objects.filter(visibles_empresa, activo=True).get(pk=monedas_ids[0])
@@ -1150,9 +1145,7 @@ class SesionCajaFisica(models.Model):
         metodos_visibles = Q(empresa=self.empresa) | Q(es_generico=True) | Q(es_publico=True)
         for metodo_id in metodos_pago_ids or []:
             try:
-                metodos.append(
-                    MetodoPago.objects.filter(metodos_visibles, activo=True).get(pk=metodo_id)
-                )
+                metodos.append(MetodoPago.objects.filter(metodos_visibles, activo=True).get(pk=metodo_id))
             except (MetodoPago.DoesNotExist, ValueError, TypeError, ValidationError):
                 raise ValueError("Método de pago no encontrado o no disponible para la empresa.")
         with transaction.atomic():
@@ -1226,8 +1219,7 @@ class SesionCajaFisica(models.Model):
                 if "unique_sesion_abierta_por_caja" not in str(exc):
                     raise
                 raise ValueError(
-                    "Ya hay una sesión abierta para esta caja física "
-                    "(apertura simultánea). Intente de nuevo."
+                    "Ya hay una sesión abierta para esta caja física " "(apertura simultánea). Intente de nuevo."
                 ) from exc
 
 
@@ -1281,9 +1273,7 @@ def sync_catalogo_empresa_nueva(empresa):
         activo=True,
     )
     for moneda in monedas_globales:
-        MonedaEmpresaActiva.objects.get_or_create(
-            empresa=empresa, moneda=moneda, defaults={"activa": True}
-        )
+        MonedaEmpresaActiva.objects.get_or_create(empresa=empresa, moneda=moneda, defaults={"activa": True})
     if empresa.id_moneda_base_id:
         MonedaEmpresaActiva.objects.get_or_create(
             empresa=empresa,
@@ -1296,9 +1286,7 @@ def sync_catalogo_empresa_nueva(empresa):
         activo=True,
     )
     for metodo in metodos_globales:
-        MetodoPagoEmpresaActiva.objects.get_or_create(
-            empresa=empresa, metodo_pago=metodo, defaults={"activa": True}
-        )
+        MetodoPagoEmpresaActiva.objects.get_or_create(empresa=empresa, metodo_pago=metodo, defaults={"activa": True})
 
 
 @receiver(post_save, sender="core.Empresa")
@@ -1940,9 +1928,7 @@ class Pago(models.Model):
             from apps.ventas.models import Pedido
 
             try:
-                pedido = Pedido.objects.get(
-                    id_pedido=self.id_pedido.id_pedido, id_empresa_id=self.id_empresa_id
-                )
+                pedido = Pedido.objects.get(id_pedido=self.id_pedido.id_pedido, id_empresa_id=self.id_empresa_id)
             except Pedido.DoesNotExist:
                 raise ValueError(f"Pedido {self.id_pedido.id_pedido} no existe")
 
@@ -1973,9 +1959,7 @@ class Pago(models.Model):
             from apps.cuentas_por_pagar.models import CuentaPorPagar
 
             try:
-                cxp = CuentaPorPagar.objects.get(
-                    id_cxp=self.id_cxp.id_cxp, id_empresa_id=self.id_empresa_id
-                )
+                cxp = CuentaPorPagar.objects.get(id_cxp=self.id_cxp.id_cxp, id_empresa_id=self.id_empresa_id)
             except CuentaPorPagar.DoesNotExist:
                 raise ValueError(f"Cuenta por Pagar {self.id_cxp.id_cxp} no existe")
 
@@ -1983,9 +1967,7 @@ class Pago(models.Model):
             from apps.gastos.models import Gasto
 
             try:
-                gasto = Gasto.objects.get(
-                    id_gasto=self.id_gasto.id_gasto, id_empresa_id=self.id_empresa_id
-                )
+                gasto = Gasto.objects.get(id_gasto=self.id_gasto.id_gasto, id_empresa_id=self.id_empresa_id)
             except Gasto.DoesNotExist:
                 raise ValueError(f"Gasto {self.id_gasto.id_gasto} no existe")
 
@@ -2087,9 +2069,7 @@ class PagoTercero(TenantModel, IntegrationFieldsMixin):
     ]
 
     id_pago_tercero = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="pagos_terceros"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="pagos_terceros")
     id_proveedor = models.ForeignKey(
         "proveedores.Proveedor",
         on_delete=models.PROTECT,
@@ -2097,11 +2077,9 @@ class PagoTercero(TenantModel, IntegrationFieldsMixin):
         blank=True,
         related_name="pagos_terceros",
         help_text="Proveedor por cuya cuenta entró el cobro. Opcional al crear "
-                  "(cobro originado en caja); requerido para abonar o reintegrar.",
+        "(cobro originado en caja); requerido para abonar o reintegrar.",
     )
-    id_moneda = models.ForeignKey(
-        "finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_terceros"
-    )
+    id_moneda = models.ForeignKey("finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_terceros")
     monto = models.DecimalField(
         max_digits=18, decimal_places=2, help_text="Monto del cobro recibido en la cuenta del tercero."
     )
@@ -2113,16 +2091,12 @@ class PagoTercero(TenantModel, IntegrationFieldsMixin):
         null=True,
         blank=True,
         help_text="Comisión que cobra el proveedor por el reintegro (opcional). "
-                  "La CxC del reintegro se emite por monto − comisión.",
+        "La CxC del reintegro se emite por monto − comisión.",
     )
-    referencia_zelle = models.CharField(
-        max_length=100, help_text="Referencia/confirmación de la transferencia Zelle."
-    )
+    referencia_zelle = models.CharField(max_length=100, help_text="Referencia/confirmación de la transferencia Zelle.")
     fecha = models.DateField(help_text="Fecha del cobro en la cuenta del tercero.")
     concepto = models.TextField(blank=True, default="")
-    estado = models.CharField(
-        max_length=20, choices=ESTADO_CHOICES, default="pendiente", db_index=True
-    )
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="pendiente", db_index=True)
     # Trazabilidad de los documentos generados por las acciones (SET_NULL: si el
     # documento destino se elimina, el pago conserva su historia en documento_json).
     id_abono_cxp = models.ForeignKey(

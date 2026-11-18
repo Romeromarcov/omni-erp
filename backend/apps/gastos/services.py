@@ -59,15 +59,11 @@ def aprobar_gasto(gasto, usuario=None) -> dict:
     gasto = Gasto.objects.select_related("id_categoria_gasto", "id_empresa").get(pk=gasto.pk)
 
     if gasto.estado_gasto != "PENDIENTE_APROBACION":
-        raise GastoError(
-            f"Solo se aprueban gastos PENDIENTE_APROBACION. Estado: {gasto.estado_gasto}"
-        )
+        raise GastoError(f"Solo se aprueban gastos PENDIENTE_APROBACION. Estado: {gasto.estado_gasto}")
 
     categoria = gasto.id_categoria_gasto
     if getattr(categoria, "requiere_factura", False) and not gasto.tiene_factura:
-        raise GastoError(
-            "La categoría exige factura de respaldo: adjunte la factura antes de aprobar."
-        )
+        raise GastoError("La categoría exige factura de respaldo: adjunte la factura antes de aprobar.")
 
     empresa = gasto.id_empresa
 
@@ -98,13 +94,9 @@ def _contabilizar_gasto(gasto, usuario=None) -> dict:
     from apps.gastos.models import Gasto
 
     # Lock para evitar doble aprobación concurrente; re-valida bajo lock.
-    gasto = Gasto.objects.select_for_update().select_related(
-        "id_categoria_gasto", "id_empresa"
-    ).get(pk=gasto.pk)
+    gasto = Gasto.objects.select_for_update().select_related("id_categoria_gasto", "id_empresa").get(pk=gasto.pk)
     if gasto.estado_gasto != "PENDIENTE_APROBACION":
-        raise GastoError(
-            f"Solo se aprueban gastos PENDIENTE_APROBACION. Estado: {gasto.estado_gasto}"
-        )
+        raise GastoError(f"Solo se aprueban gastos PENDIENTE_APROBACION. Estado: {gasto.estado_gasto}")
     empresa = gasto.id_empresa
 
     # Enforcement de cierre de período fiscal: la aprobación postea un asiento.
@@ -155,9 +147,7 @@ def _contabilizar_gasto(gasto, usuario=None) -> dict:
         if monto_base > 0:
             asiento, _ = generar_asiento_o_fallar("GASTO", gasto, empresa, monto_base, usuario=usuario)
         if monto_iva > 0:
-            asiento_iva, _ = generar_asiento_o_fallar(
-                "GASTO_IVA", gasto, empresa, monto_iva, usuario=usuario
-            )
+            asiento_iva, _ = generar_asiento_o_fallar("GASTO_IVA", gasto, empresa, monto_iva, usuario=usuario)
     except AsientoError as exc:
         raise GastoError(f"Error generando asiento del gasto: {exc}") from exc
 
@@ -169,7 +159,10 @@ def _contabilizar_gasto(gasto, usuario=None) -> dict:
 
     logger.info(
         "Gasto aprobado | empresa=%s | gasto=%s | estado=%s | sin_respaldo=%s",
-        empresa.pk, gasto.pk, gasto.estado_gasto, gasto.sin_respaldo,
+        empresa.pk,
+        gasto.pk,
+        gasto.estado_gasto,
+        gasto.sin_respaldo,
     )
 
     return {"gasto": gasto, "asiento": asiento, "asiento_iva": asiento_iva}
@@ -182,9 +175,7 @@ def rechazar_gasto(gasto, usuario=None, motivo: str = "") -> dict:
 
     gasto = Gasto.objects.select_for_update().get(pk=gasto.pk)
     if gasto.estado_gasto != "PENDIENTE_APROBACION":
-        raise GastoError(
-            f"Solo se rechazan gastos PENDIENTE_APROBACION. Estado: {gasto.estado_gasto}"
-        )
+        raise GastoError(f"Solo se rechazan gastos PENDIENTE_APROBACION. Estado: {gasto.estado_gasto}")
     gasto.estado_gasto = "RECHAZADO"
     gasto.save(update_fields=["estado_gasto"])
     logger.info("Gasto rechazado | gasto=%s | motivo=%s", gasto.pk, motivo or "—")

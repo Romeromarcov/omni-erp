@@ -69,9 +69,7 @@ class BotUsuarioSerializer(serializers.ModelSerializer):
         if self.instance is not None:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
-            raise serializers.ValidationError(
-                "Este usuario de Telegram ya está vinculado a una cuenta activa."
-            )
+            raise serializers.ValidationError("Este usuario de Telegram ya está vinculado a una cuenta activa.")
         return value
 
     def validate_nombre(self, value: str) -> str:

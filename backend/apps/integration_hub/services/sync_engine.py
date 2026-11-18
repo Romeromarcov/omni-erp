@@ -14,6 +14,7 @@ Uso (desde Celery task o view):
     engine = SyncEngine()
     resultado = engine.ejecutar_job(job)
 """
+
 from __future__ import annotations
 
 import logging
@@ -80,10 +81,7 @@ class SyncEngine:
 
         # Verificar que la entidad esté soportada
         if not conector.supports(job.tipo_entidad):
-            msg = (
-                f"El conector {conector.PROVIDER_NAME} no soporta "
-                f"la entidad '{job.tipo_entidad}'."
-            )
+            msg = f"El conector {conector.PROVIDER_NAME} no soporta " f"la entidad '{job.tipo_entidad}'."
             self._marcar_fallido(job, msg, resultado)
             return resultado
 
@@ -168,21 +166,15 @@ class SyncEngine:
                     with transaction.atomic():
                         mapping.id_omni = id_omni
                         mapping.checksum = checksum
-                        mapping.save(
-                            update_fields=["id_omni", "checksum", "ultimo_sync"]
-                        )
+                        mapping.save(update_fields=["id_omni", "checksum", "ultimo_sync"])
                     res["creados" if creado else "actualizados"] += 1
                 else:
                     res["omitidos"] += 1
             except Exception as exc:  # best-effort: no abortar el lote
                 res["fallidos"] += 1
                 if len(res["errores"]) < 50:
-                    res["errores"].append(
-                        {"id_externo": id_externo, "error": str(exc)[:300]}
-                    )
-                logger.warning(
-                    "ingerir_en_omni %s:%s → %s", tipo_entidad, id_externo, exc
-                )
+                    res["errores"].append({"id_externo": id_externo, "error": str(exc)[:300]})
+                logger.warning("ingerir_en_omni %s:%s → %s", tipo_entidad, id_externo, exc)
 
         return res
 
@@ -244,13 +236,15 @@ class SyncEngine:
                 # Detectar cambios vía checksum
                 if not creado_mapping and mapping.checksum == checksum:
                     resultado.omitidos += 1
-                    logs_batch.append(LogDetalleSincronizacion(
-                        id_job=job,
-                        id_externo=id_externo,
-                        id_omni=mapping.id_omni or "",
-                        operacion="omitir",
-                        resumen_externo={"nombre": raw.get("nombre", "")},
-                    ))
+                    logs_batch.append(
+                        LogDetalleSincronizacion(
+                            id_job=job,
+                            id_externo=id_externo,
+                            id_omni=mapping.id_omni or "",
+                            operacion="omitir",
+                            resumen_externo={"nombre": raw.get("nombre", "")},
+                        )
+                    )
                     continue
 
                 # Sincronizar en Omni
@@ -270,25 +264,29 @@ class SyncEngine:
                         resultado.actualizados += 1
                         operacion = "actualizar"
 
-                    logs_batch.append(LogDetalleSincronizacion(
-                        id_job=job,
-                        id_externo=id_externo,
-                        id_omni=id_omni,
-                        operacion=operacion,
-                        resumen_externo={"nombre": raw.get("nombre", "")},
-                    ))
+                    logs_batch.append(
+                        LogDetalleSincronizacion(
+                            id_job=job,
+                            id_externo=id_externo,
+                            id_omni=id_omni,
+                            operacion=operacion,
+                            resumen_externo={"nombre": raw.get("nombre", "")},
+                        )
+                    )
                 else:
                     resultado.omitidos += 1
 
             except Exception as exc:
                 resultado.agregar_error(id_externo, str(exc))
-                logs_batch.append(LogDetalleSincronizacion(
-                    id_job=job,
-                    id_externo=id_externo,
-                    operacion="error",
-                    mensaje_error=str(exc)[:500],
-                    resumen_externo={"nombre": raw.get("nombre", "")},
-                ))
+                logs_batch.append(
+                    LogDetalleSincronizacion(
+                        id_job=job,
+                        id_externo=id_externo,
+                        operacion="error",
+                        mensaje_error=str(exc)[:500],
+                        resumen_externo={"nombre": raw.get("nombre", "")},
+                    )
+                )
                 logger.warning("Error sincronizando %s:%s → %s", job.tipo_entidad, id_externo, exc)
 
         # Bulk create logs (eficiencia)
@@ -407,9 +405,7 @@ class SyncEngine:
             # del tenant, para que re-sincronizar no duplique el producto.
             nombre = datos.get("nombre") or ""
             if nombre:
-                producto = Producto.objects.filter(
-                    id_empresa=empresa, nombre_producto=nombre
-                ).first()
+                producto = Producto.objects.filter(id_empresa=empresa, nombre_producto=nombre).first()
 
         campos = {
             "nombre_producto": datos.get("nombre") or "",
@@ -434,8 +430,7 @@ class SyncEngine:
             )
             if moneda is None:
                 logger.warning(
-                    "Producto externo %s omitido: no hay Moneda configurada para "
-                    "id_moneda_precio (empresa %s).",
+                    "Producto externo %s omitido: no hay Moneda configurada para " "id_moneda_precio (empresa %s).",
                     datos.get("id_externo", ""),
                     empresa.pk,
                 )
@@ -492,9 +487,7 @@ class SyncEngine:
 
         # 1. Idempotencia por referencia externa.
         if ext:
-            existente = Cliente.objects.filter(
-                id_empresa=empresa, referencia_externa=ext
-            ).first()
+            existente = Cliente.objects.filter(id_empresa=empresa, referencia_externa=ext).first()
             if existente:
                 return existente
 
@@ -508,14 +501,10 @@ class SyncEngine:
             if mapping and mapping.id_omni:
                 from apps.core.models import Contacto
 
-                contacto = Contacto.objects.filter(
-                    pk=mapping.id_omni, id_empresa=empresa
-                ).first()
+                contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
                 if contacto:
                     rif = getattr(contacto, "rif", "") or ""
-                    ya = Cliente.objects.filter(
-                        id_empresa=empresa, contacto=contacto
-                    ).first()
+                    ya = Cliente.objects.filter(id_empresa=empresa, contacto=contacto).first()
                     if ya:
                         return ya
 
@@ -604,24 +593,18 @@ class SyncEngine:
         }
 
         with transaction.atomic():
-            pedido = Pedido.objects.filter(
-                id_empresa=empresa, numero_pedido=numero
-            ).first()
+            pedido = Pedido.objects.filter(id_empresa=empresa, numero_pedido=numero).first()
             if pedido:
                 for field, value in campos.items():
                     setattr(pedido, field, value)
                 pedido.save()
             else:
-                pedido = Pedido.objects.create(
-                    id_empresa=empresa, numero_pedido=numero, **campos
-                )
+                pedido = Pedido.objects.create(id_empresa=empresa, numero_pedido=numero, **campos)
 
             # Reemplazar líneas (la fuente externa es la verdad).
             pedido.detalles.all().delete()
             for linea in datos.get("lineas") or []:
-                producto = self._resolver_producto_mapeado(
-                    linea.get("product_id"), instancia
-                )
+                producto = self._resolver_producto_mapeado(linea.get("product_id"), instancia)
                 if producto is None:
                     continue
                 DetallePedido.objects.create(
@@ -651,9 +634,7 @@ class SyncEngine:
         nombre = (datos.get("proveedor_nombre") or "").strip()
 
         if ext:
-            existente = Proveedor.objects.filter(
-                id_empresa=empresa, referencia_externa=ext
-            ).first()
+            existente = Proveedor.objects.filter(id_empresa=empresa, referencia_externa=ext).first()
             if existente:
                 return existente
 
@@ -666,14 +647,10 @@ class SyncEngine:
             if mapping and mapping.id_omni:
                 from apps.core.models import Contacto
 
-                contacto = Contacto.objects.filter(
-                    pk=mapping.id_omni, id_empresa=empresa
-                ).first()
+                contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
                 if contacto:
                     rif = getattr(contacto, "rif", "") or ""
-                    ya = Proveedor.objects.filter(
-                        id_empresa=empresa, contacto=contacto
-                    ).first()
+                    ya = Proveedor.objects.filter(id_empresa=empresa, contacto=contacto).first()
                     if ya:
                         return ya
 
@@ -734,23 +711,17 @@ class SyncEngine:
         }
 
         with transaction.atomic():
-            orden = OrdenCompra.objects.filter(
-                id_empresa=empresa, numero_orden=numero
-            ).first()
+            orden = OrdenCompra.objects.filter(id_empresa=empresa, numero_orden=numero).first()
             if orden:
                 for field, value in campos.items():
                     setattr(orden, field, value)
                 orden.save()
             else:
-                orden = OrdenCompra.objects.create(
-                    id_empresa=empresa, numero_orden=numero, **campos
-                )
+                orden = OrdenCompra.objects.create(id_empresa=empresa, numero_orden=numero, **campos)
 
             orden.detalles.all().delete()
             for linea in datos.get("lineas") or []:
-                producto = self._resolver_producto_mapeado(
-                    linea.get("product_id"), instancia
-                )
+                producto = self._resolver_producto_mapeado(linea.get("product_id"), instancia)
                 if producto is None:
                     continue
                 DetalleOrdenCompra.objects.create(
@@ -813,8 +784,7 @@ class SyncEngine:
         )
         if moneda is None:
             logger.warning(
-                "Factura de venta %s omitida: no hay Moneda configurada para "
-                "id_moneda (empresa %s).",
+                "Factura de venta %s omitida: no hay Moneda configurada para " "id_moneda (empresa %s).",
                 datos.get("id_externo", ""),
                 empresa.pk,
             )
@@ -840,24 +810,18 @@ class SyncEngine:
         }
 
         with transaction.atomic():
-            factura = FacturaFiscal.objects.filter(
-                id_empresa=empresa, numero_factura=numero
-            ).first()
+            factura = FacturaFiscal.objects.filter(id_empresa=empresa, numero_factura=numero).first()
             if factura:
                 for field, value in campos.items():
                     setattr(factura, field, value)
                 factura.save()
             else:
-                factura = FacturaFiscal.objects.create(
-                    id_empresa=empresa, numero_factura=numero, **campos
-                )
+                factura = FacturaFiscal.objects.create(id_empresa=empresa, numero_factura=numero, **campos)
 
             # Reemplazar líneas (la fuente externa es la verdad).
             factura.detalles.all().delete()
             for linea in datos.get("lineas") or []:
-                producto = self._resolver_producto_mapeado(
-                    linea.get("product_id"), instancia
-                )
+                producto = self._resolver_producto_mapeado(linea.get("product_id"), instancia)
                 if producto is None:
                     continue
                 subtotal = self._safe_decimal_money(linea.get("price_subtotal"))
@@ -912,7 +876,9 @@ class SyncEngine:
             logger.warning(
                 "Pago externo %s omitido: solo se importan cobros de cliente "
                 "(inbound/customer); recibido tipo=%s socio=%s.",
-                ext, datos.get("tipo") or "", datos.get("tipo_socio") or "",
+                ext,
+                datos.get("tipo") or "",
+                datos.get("tipo_socio") or "",
             )
             return None
 
@@ -923,9 +889,7 @@ class SyncEngine:
                 id_instancia=instancia, tipo_entidad="facturas_venta", id_externo=str(inv_ext)
             ).first()
             if mapping and mapping.id_omni:
-                fac = FacturaFiscal.objects.filter(
-                    pk=mapping.id_omni, id_empresa=empresa
-                ).first()
+                fac = FacturaFiscal.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
                 if fac:
                     facturas.append(fac)
 
@@ -933,7 +897,8 @@ class SyncEngine:
             logger.warning(
                 "Pago externo %s omitido: se requiere exactamente 1 factura "
                 "sincronizada reconciliada (resueltas %s).",
-                ext, len(facturas),
+                ext,
+                len(facturas),
             )
             return None
         factura = facturas[0]
@@ -992,9 +957,7 @@ class SyncEngine:
 
         empresa = instancia.id_empresa
 
-        producto = self._resolver_producto_mapeado(
-            datos.get("producto_id_externo"), instancia
-        )
+        producto = self._resolver_producto_mapeado(datos.get("producto_id_externo"), instancia)
         if producto is None:
             logger.debug(
                 "Stock externo %s omitido: producto no sincronizado.",
@@ -1037,6 +1000,7 @@ class SyncEngine:
 
         # Buscar el último job completado para esta entidad
         from apps.integration_hub.models import JobSincronizacion as Job
+
         ultimo = (
             Job.objects.filter(
                 id_instancia=job.id_instancia,
@@ -1051,9 +1015,7 @@ class SyncEngine:
 
         return ultimo.completado_en if ultimo else None
 
-    def _marcar_completado(
-        self, job: "JobSincronizacion", resultado: SyncResult
-    ) -> None:
+    def _marcar_completado(self, job: "JobSincronizacion", resultado: SyncResult) -> None:
         """Actualiza el job con los contadores finales."""
         job.estado = "completado" if resultado.exitoso else "completado_con_errores"
         job.completado_en = dj_timezone.now()
@@ -1081,9 +1043,7 @@ class SyncEngine:
             resultado.fallidos,
         )
 
-    def _marcar_fallido(
-        self, job: "JobSincronizacion", mensaje: str, resultado: SyncResult
-    ) -> None:
+    def _marcar_fallido(self, job: "JobSincronizacion", mensaje: str, resultado: SyncResult) -> None:
         """Marca el job como fallido con mensaje de error."""
         job.estado = "fallido"
         job.completado_en = dj_timezone.now()

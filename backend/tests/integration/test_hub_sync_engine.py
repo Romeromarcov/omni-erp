@@ -5,6 +5,7 @@ Usa un conector fake registrado en el registry — CERO red real.
 Cubre: pull happy-path, dedup por checksum, actualización, errores de
 conector, errores por registro, direcciones, _calcular_desde y upserts.
 """
+
 import pytest
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -154,9 +155,7 @@ class TestEjecutarJobPullHappyPath:
             id_instancia=instancia_fake, tipo_entidad="contactos", id_externo="7"
         )
         # El upsert real crea un core.Contacto y el mapping apunta a su pk.
-        contacto = Contacto.objects.get(
-            id_empresa=instancia_fake.id_empresa, email="c7@test.com"
-        )
+        contacto = Contacto.objects.get(id_empresa=instancia_fake.id_empresa, email="c7@test.com")
         assert mapping.id_omni == str(contacto.pk)
         assert mapping.checksum == "abc"
 
@@ -173,9 +172,7 @@ class TestEjecutarJobPullHappyPath:
 
 
 class TestDeduplicacionPorChecksum:
-    def test_segunda_corrida_sin_cambios_completa_con_todo_omitido(
-        self, fake_registry, instancia_fake
-    ):
+    def test_segunda_corrida_sin_cambios_completa_con_todo_omitido(self, fake_registry, instancia_fake):
         """Regresión del BUG 'procesados': cuando TODOS los registros están sin
         cambios (estado estable de un sync incremental), el job completa con
         procesados == omitidos en vez de crashear y quedar 'en_progreso'.
@@ -190,11 +187,7 @@ class TestDeduplicacionPorChecksum:
 
         assert resultado.omitidos == 2
         assert resultado.procesados == 2
-        ops = list(
-            LogDetalleSincronizacion.objects.filter(id_job=job2).values_list(
-                "operacion", flat=True
-            )
-        )
+        ops = list(LogDetalleSincronizacion.objects.filter(id_job=job2).values_list("operacion", flat=True))
         assert ops == ["omitir", "omitir"]
         job2.refresh_from_db()
         assert job2.estado == "completado"
@@ -229,9 +222,7 @@ class TestDeduplicacionPorChecksum:
 
         assert resultado.creados == 0
         assert resultado.actualizados == 1
-        mapping = EntidadSincronizada.objects.get(
-            id_instancia=instancia_fake, id_externo="1"
-        )
+        mapping = EntidadSincronizada.objects.get(id_instancia=instancia_fake, id_externo="1")
         assert mapping.checksum == "chk-v2"
         log = LogDetalleSincronizacion.objects.get(id_job=job2)
         assert log.operacion == "actualizar"
@@ -239,9 +230,7 @@ class TestDeduplicacionPorChecksum:
 
 class TestErroresDeConector:
     def test_proveedor_sin_conector_marca_fallido(self, fake_registry, empresa_a):
-        proveedor = ConectorProveedor.objects.create(
-            codigo="sin_conector", nombre="Sin Conector"
-        )
+        proveedor = ConectorProveedor.objects.create(codigo="sin_conector", nombre="Sin Conector")
         instancia = ConectorInstancia.objects.create(
             id_empresa=empresa_a,
             id_proveedor=proveedor,
@@ -278,9 +267,7 @@ class TestErroresDeConector:
         assert job.estado == "fallido"
         assert "outbound no implementada" in job.resumen_errores[0]["error"]
 
-    def test_entidad_soportada_sin_metodo_pull_marca_fallido(
-        self, fake_registry, instancia_fake
-    ):
+    def test_entidad_soportada_sin_metodo_pull_marca_fallido(self, fake_registry, instancia_fake):
         # "empleados" está en SUPPORTED_ENTITIES del fake pero no en PULL_METHODS.
         # Regresión del BUG 'procesados': el job ya no queda colgado en
         # 'en_progreso' — se marca fallido con el error registrado.
@@ -333,15 +320,11 @@ class TestErroresDeConector:
 
 
 class TestErroresPorRegistro:
-    def test_excepcion_en_upsert_registra_fallido_y_log_error(
-        self, fake_registry, instancia_fake
-    ):
+    def test_excepcion_en_upsert_registra_fallido_y_log_error(self, fake_registry, instancia_fake):
         FakeConnector.registros = [_contacto(1)]
         job = _job(instancia_fake)
 
-        with patch.object(
-            SyncEngine, "_upsert_en_omni", side_effect=RuntimeError("upsert roto")
-        ):
+        with patch.object(SyncEngine, "_upsert_en_omni", side_effect=RuntimeError("upsert roto")):
             resultado = SyncEngine().ejecutar_job(job)
 
         assert resultado.fallidos == 1
@@ -378,9 +361,7 @@ class TestCalcularDesde:
     def test_desde_invalido_cae_a_ultimo_job(self, fake_registry, instancia_fake):
         previo = _job(instancia_fake)
         momento = timezone.now() - timedelta(hours=3)
-        JobSincronizacion.objects.filter(pk=previo.pk).update(
-            estado="completado", completado_en=momento
-        )
+        JobSincronizacion.objects.filter(pk=previo.pk).update(estado="completado", completado_en=momento)
 
         job = _job(instancia_fake, parametros={"desde": "no-es-fecha"})
         desde = SyncEngine()._calcular_desde(job)
@@ -390,9 +371,7 @@ class TestCalcularDesde:
         job = _job(instancia_fake)
         assert SyncEngine()._calcular_desde(job) is None
 
-    def test_pull_incremental_usa_completado_en_del_ultimo_job(
-        self, fake_registry, instancia_fake
-    ):
+    def test_pull_incremental_usa_completado_en_del_ultimo_job(self, fake_registry, instancia_fake):
         FakeConnector.registros = [_contacto(1)]
         job1 = _job(instancia_fake)
         SyncEngine().ejecutar_job(job1)
@@ -406,9 +385,7 @@ class TestCalcularDesde:
 
     def test_jobs_fallidos_no_cuentan_para_incremental(self, fake_registry, instancia_fake):
         previo = _job(instancia_fake)
-        JobSincronizacion.objects.filter(pk=previo.pk).update(
-            estado="fallido", completado_en=timezone.now()
-        )
+        JobSincronizacion.objects.filter(pk=previo.pk).update(estado="fallido", completado_en=timezone.now())
         job = _job(instancia_fake)
         assert SyncEngine()._calcular_desde(job) is None
 
@@ -424,9 +401,7 @@ class TestUpsertEnOmni:
         engine = SyncEngine()
         assert engine._upsert_en_omni("empleados", {}, instancia_fake) == ""
 
-    def test_upsert_contacto_crea_y_actualiza_core_contacto(
-        self, fake_registry, instancia_fake
-    ):
+    def test_upsert_contacto_crea_y_actualiza_core_contacto(self, fake_registry, instancia_fake):
         """Regresión del BUG de upserts: antes importaba apps.crm.models.Contacto
         (inexistente) y degradaba a placeholder; ahora upsertea core.Contacto."""
         from apps.core.models import Contacto
@@ -454,9 +429,7 @@ class TestUpsertEnOmni:
         contacto.refresh_from_db()
         assert contacto.nombre == "Proveedor X Renombrado"
 
-    def test_upsert_producto_crea_con_fks_reales_y_actualiza(
-        self, fake_registry, instancia_fake, moneda_usd
-    ):
+    def test_upsert_producto_crea_con_fks_reales_y_actualiza(self, fake_registry, instancia_fake, moneda_usd):
         """Regresión del BUG de upserts: _upsert_producto usaba campos
         inexistentes (codigo_interno/precio_venta/costo) — ahora mapea al
         modelo real con Decimal y resuelve las FKs obligatorias."""
@@ -490,9 +463,7 @@ class TestUpsertEnOmni:
         assert producto.precio_venta_sugerido == Decimal("15.00")
         assert Producto.objects.filter(id_empresa=instancia_fake.id_empresa).count() == 1
 
-    def test_upsert_producto_sin_sku_es_idempotente_por_nombre(
-        self, fake_registry, instancia_fake, moneda_usd
-    ):
+    def test_upsert_producto_sin_sku_es_idempotente_por_nombre(self, fake_registry, instancia_fake, moneda_usd):
         """Sin SKU externo, la clave de idempotencia cae al nombre dentro del
         tenant: re-sincronizar no duplica el producto (y sku queda None sin
         violar el unique_together, que en Postgres admite múltiples NULL)."""
@@ -517,9 +488,7 @@ class TestUpsertEnOmni:
         producto.refresh_from_db()
         assert producto.precio_venta_sugerido == Decimal("6.00")
         assert (
-            Producto.objects.filter(
-                id_empresa=instancia_fake.id_empresa, nombre_producto="Widget sin SKU"
-            ).count()
+            Producto.objects.filter(id_empresa=instancia_fake.id_empresa, nombre_producto="Widget sin SKU").count()
             == 1
         )
 
@@ -577,9 +546,7 @@ class TestUpsertPedidoVenta:
         ped = Pedido.objects.get(pk=pk)
         assert ped.numero_pedido == "SO0001"
         assert ped.estado == "APROBADO"  # 'confirmado' → APROBADO
-        cli = Cliente.objects.get(
-            id_empresa=instancia_fake.id_empresa, referencia_externa="42"
-        )
+        cli = Cliente.objects.get(id_empresa=instancia_fake.id_empresa, referencia_externa="42")
         assert cli.razon_social == "Cliente Test"
         assert ped.id_cliente_id == cli.pk
 
@@ -591,43 +558,32 @@ class TestUpsertPedidoVenta:
         eng._upsert_pedido_venta(self._pedido(), instancia_fake)
         eng._upsert_pedido_venta(self._pedido(estado="cancelado"), instancia_fake)
 
-        assert (
-            Pedido.objects.filter(
-                id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001"
-            ).count()
-            == 1
-        )
-        assert (
-            Cliente.objects.filter(
-                id_empresa=instancia_fake.id_empresa, referencia_externa="42"
-            ).count()
-            == 1
-        )
-        ped = Pedido.objects.get(
-            id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001"
-        )
+        assert Pedido.objects.filter(id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001").count() == 1
+        assert Cliente.objects.filter(id_empresa=instancia_fake.id_empresa, referencia_externa="42").count() == 1
+        ped = Pedido.objects.get(id_empresa=instancia_fake.id_empresa, numero_pedido="SO0001")
         assert ped.estado == "ANULADO"  # se actualizó
 
     def test_sin_numero_omite(self, instancia_fake):
-        assert SyncEngine()._upsert_pedido_venta(
-            self._pedido(numero=""), instancia_fake
-        ) is None
+        assert SyncEngine()._upsert_pedido_venta(self._pedido(numero=""), instancia_fake) is None
 
     def test_sin_cliente_omite(self, instancia_fake):
-        assert SyncEngine()._upsert_pedido_venta(
-            self._pedido(cliente_id_externo="", cliente_nombre=""), instancia_fake
-        ) is None
+        assert (
+            SyncEngine()._upsert_pedido_venta(self._pedido(cliente_id_externo="", cliente_nombre=""), instancia_fake)
+            is None
+        )
 
     def test_linea_con_producto_no_sincronizado_se_omite(self, instancia_fake):
         from apps.ventas.models import Pedido
 
         datos = self._pedido(
-            lineas=[{
-                "product_id": [10, "X"],
-                "product_uom_qty": 2,
-                "price_unit": "5",
-                "price_subtotal": "10",
-            }]
+            lineas=[
+                {
+                    "product_id": [10, "X"],
+                    "product_uom_qty": 2,
+                    "price_unit": "5",
+                    "price_subtotal": "10",
+                }
+            ]
         )
         pk = SyncEngine()._upsert_pedido_venta(datos, instancia_fake)
         ped = Pedido.objects.get(pk=pk)
@@ -655,12 +611,14 @@ class TestUpsertPedidoVenta:
             [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
         )
         datos = self._pedido(
-            lineas=[{
-                "product_id": [10, "Prod 10"],
-                "product_uom_qty": 2,
-                "price_unit": "5",
-                "price_subtotal": "10",
-            }]
+            lineas=[
+                {
+                    "product_id": [10, "Prod 10"],
+                    "product_uom_qty": 2,
+                    "price_unit": "5",
+                    "price_subtotal": "10",
+                }
+            ]
         )
         pk = eng._upsert_pedido_venta(datos, instancia_fake)
         ped = Pedido.objects.get(pk=pk)
@@ -675,9 +633,13 @@ class TestUpsertPedidoVentaRamas:
 
     def _pedido(self, **over):
         datos = {
-            "id_externo": "55", "numero": "SO0009",
-            "cliente_id_externo": "42", "cliente_nombre": "Cliente Test",
-            "fecha_pedido": "2024-03-15", "estado": "confirmado", "lineas": [],
+            "id_externo": "55",
+            "numero": "SO0009",
+            "cliente_id_externo": "42",
+            "cliente_nombre": "Cliente Test",
+            "fecha_pedido": "2024-03-15",
+            "estado": "confirmado",
+            "lineas": [],
         }
         datos.update(over)
         return datos
@@ -699,19 +661,21 @@ class TestUpsertPedidoVentaRamas:
         eng.ingerir_en_omni(
             instancia_fake,
             "contactos",
-            [{
-                "id_externo": "42",
-                "nombre": "Cliente Test",
-                "identificador_fiscal": "J-12345678-9",
-                "email": "c@x.com",
-                "_checksum": "c",
-            }],
+            [
+                {
+                    "id_externo": "42",
+                    "nombre": "Cliente Test",
+                    "identificador_fiscal": "J-12345678-9",
+                    "email": "c@x.com",
+                    "_checksum": "c",
+                }
+            ],
         )
         pk = eng._upsert_pedido_venta(self._pedido(), instancia_fake)
         ped = Pedido.objects.get(pk=pk)
         cli = Cliente.objects.get(pk=ped.id_cliente_id)
-        assert cli.contacto is not None           # enlazado al contacto
-        assert cli.rif == "J-12345678-9"          # RIF reutilizado del contacto
+        assert cli.contacto is not None  # enlazado al contacto
+        assert cli.rif == "J-12345678-9"  # RIF reutilizado del contacto
 
     def test_reutiliza_cliente_existente_por_contacto(self, instancia_fake):
         """Si ya existe un Cliente enlazado al contacto, se reutiliza (no duplica)."""
@@ -724,17 +688,14 @@ class TestUpsertPedidoVentaRamas:
         eng.ingerir_en_omni(
             instancia_fake,
             "contactos",
-            [{"id_externo": "42", "nombre": "Cliente Test",
-              "identificador_fiscal": "J-1", "_checksum": "c"}],
+            [{"id_externo": "42", "nombre": "Cliente Test", "identificador_fiscal": "J-1", "_checksum": "c"}],
         )
         mapping = EntidadSincronizada.objects.get(
             id_instancia=instancia_fake, tipo_entidad="contactos", id_externo="42"
         )
         contacto = Contacto.objects.get(pk=mapping.id_omni)
         # Cliente pre-existente enlazado al contacto, SIN referencia_externa.
-        pre = Cliente.objects.create(
-            id_empresa=empresa, razon_social="Pre", rif="J-1", contacto=contacto
-        )
+        pre = Cliente.objects.create(id_empresa=empresa, razon_social="Pre", rif="J-1", contacto=contacto)
 
         cli = eng._resolver_o_crear_cliente(self._pedido(), instancia_fake)
         assert cli.pk == pre.pk  # reutilizado por enlace de contacto
@@ -753,9 +714,13 @@ class TestUpsertPedidoCompra:
 
     def _orden(self, **over):
         datos = {
-            "id_externo": "77", "numero": "PO0001",
-            "proveedor_id_externo": "88", "proveedor_nombre": "Prov Test",
-            "fecha_pedido": "2024-04-01", "estado": "purchase", "lineas": [],
+            "id_externo": "77",
+            "numero": "PO0001",
+            "proveedor_id_externo": "88",
+            "proveedor_nombre": "Prov Test",
+            "fecha_pedido": "2024-04-01",
+            "estado": "purchase",
+            "lineas": [],
         }
         datos.update(over)
         return datos
@@ -769,9 +734,7 @@ class TestUpsertPedidoCompra:
         oc = OrdenCompra.objects.get(pk=pk)
         assert oc.numero_orden == "PO0001"
         assert oc.estado == "APROBADA"  # 'purchase' → APROBADA
-        prov = Proveedor.objects.get(
-            id_empresa=instancia_fake.id_empresa, referencia_externa="88"
-        )
+        prov = Proveedor.objects.get(id_empresa=instancia_fake.id_empresa, referencia_externa="88")
         assert prov.razon_social == "Prov Test"
         assert oc.id_proveedor_id == prov.pk
 
@@ -782,33 +745,27 @@ class TestUpsertPedidoCompra:
         eng = SyncEngine()
         eng._upsert_pedido_compra(self._orden(), instancia_fake)
         eng._upsert_pedido_compra(self._orden(estado="cancel"), instancia_fake)
-        assert OrdenCompra.objects.filter(
-            id_empresa=instancia_fake.id_empresa, numero_orden="PO0001"
-        ).count() == 1
-        assert Proveedor.objects.filter(
-            id_empresa=instancia_fake.id_empresa, referencia_externa="88"
-        ).count() == 1
-        oc = OrdenCompra.objects.get(
-            id_empresa=instancia_fake.id_empresa, numero_orden="PO0001"
-        )
+        assert OrdenCompra.objects.filter(id_empresa=instancia_fake.id_empresa, numero_orden="PO0001").count() == 1
+        assert Proveedor.objects.filter(id_empresa=instancia_fake.id_empresa, referencia_externa="88").count() == 1
+        oc = OrdenCompra.objects.get(id_empresa=instancia_fake.id_empresa, numero_orden="PO0001")
         assert oc.estado == "ANULADA"
 
     def test_sin_numero_omite(self, instancia_fake):
-        assert SyncEngine()._upsert_pedido_compra(
-            self._orden(numero=""), instancia_fake
-        ) is None
+        assert SyncEngine()._upsert_pedido_compra(self._orden(numero=""), instancia_fake) is None
 
     def test_sin_proveedor_omite(self, instancia_fake):
-        assert SyncEngine()._upsert_pedido_compra(
-            self._orden(proveedor_id_externo="", proveedor_nombre=""), instancia_fake
-        ) is None
+        assert (
+            SyncEngine()._upsert_pedido_compra(
+                self._orden(proveedor_id_externo="", proveedor_nombre=""), instancia_fake
+            )
+            is None
+        )
 
     def test_linea_producto_no_sincronizado_se_omite(self, instancia_fake):
         from apps.compras.models import OrdenCompra
 
         datos = self._orden(
-            lineas=[{"product_id": [10, "X"], "product_qty": 3,
-                     "price_unit": "4", "price_subtotal": "12"}]
+            lineas=[{"product_id": [10, "X"], "product_qty": 3, "price_unit": "4", "price_subtotal": "12"}]
         )
         pk = SyncEngine()._upsert_pedido_compra(datos, instancia_fake)
         assert OrdenCompra.objects.get(pk=pk).detalles.count() == 0
@@ -821,17 +778,16 @@ class TestUpsertPedidoCompra:
 
         Moneda.objects.get_or_create(
             codigo_iso="USD",
-            defaults={"nombre": "Dólar", "simbolo": "$",
-                      "empresa": instancia_fake.id_empresa},
+            defaults={"nombre": "Dólar", "simbolo": "$", "empresa": instancia_fake.id_empresa},
         )
         eng = SyncEngine()
         eng.ingerir_en_omni(
-            instancia_fake, "productos",
+            instancia_fake,
+            "productos",
             [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
         )
         datos = self._orden(
-            lineas=[{"product_id": [10, "Prod 10"], "product_qty": 3,
-                     "price_unit": "4", "price_subtotal": "12"}]
+            lineas=[{"product_id": [10, "Prod 10"], "product_qty": 3, "price_unit": "4", "price_subtotal": "12"}]
         )
         oc = OrdenCompra.objects.get(pk=eng._upsert_pedido_compra(datos, instancia_fake))
         assert oc.detalles.count() == 1
@@ -845,9 +801,9 @@ class TestUpsertPedidoCompra:
 
         eng = SyncEngine()
         eng.ingerir_en_omni(
-            instancia_fake, "contactos",
-            [{"id_externo": "88", "nombre": "Prov Test",
-              "identificador_fiscal": "J-77777777-7", "_checksum": "c"}],
+            instancia_fake,
+            "contactos",
+            [{"id_externo": "88", "nombre": "Prov Test", "identificador_fiscal": "J-77777777-7", "_checksum": "c"}],
         )
         oc = OrdenCompra.objects.get(pk=eng._upsert_pedido_compra(self._orden(), instancia_fake))
         prov = Proveedor.objects.get(pk=oc.id_proveedor_id)
@@ -862,17 +818,15 @@ class TestUpsertPedidoCompra:
         empresa = instancia_fake.id_empresa
         eng = SyncEngine()
         eng.ingerir_en_omni(
-            instancia_fake, "contactos",
-            [{"id_externo": "88", "nombre": "Prov Test",
-              "identificador_fiscal": "J-7", "_checksum": "c"}],
+            instancia_fake,
+            "contactos",
+            [{"id_externo": "88", "nombre": "Prov Test", "identificador_fiscal": "J-7", "_checksum": "c"}],
         )
         mapping = EntidadSincronizada.objects.get(
             id_instancia=instancia_fake, tipo_entidad="contactos", id_externo="88"
         )
         contacto = Contacto.objects.get(pk=mapping.id_omni)
-        pre = Proveedor.objects.create(
-            id_empresa=empresa, razon_social="Pre", rif="J-7", contacto=contacto
-        )
+        pre = Proveedor.objects.create(id_empresa=empresa, razon_social="Pre", rif="J-7", contacto=contacto)
         prov = eng._resolver_o_crear_proveedor(self._orden(), instancia_fake)
         assert prov.pk == pre.pk
 
@@ -888,14 +842,18 @@ class TestUpsertInventario:
             defaults={"nombre": "Dólar", "simbolo": "$", "empresa": instancia.id_empresa},
         )
         eng.ingerir_en_omni(
-            instancia, "productos",
+            instancia,
+            "productos",
             [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
         )
 
     def _quant(self, **over):
         d = {
-            "id_externo": "q1", "producto_id_externo": "10",
-            "cantidad": 10, "cantidad_reservada": 2, "cantidad_disponible": 8,
+            "id_externo": "q1",
+            "producto_id_externo": "10",
+            "cantidad": 10,
+            "cantidad_reservada": 2,
+            "cantidad_disponible": 8,
         }
         d.update(over)
         return d
@@ -925,9 +883,7 @@ class TestUpsertInventario:
         eng = SyncEngine()
         self._seed_producto(eng, instancia_fake)
         eng._upsert_inventario(self._quant(), instancia_fake)
-        eng._upsert_inventario(
-            self._quant(cantidad_disponible=5, cantidad_reservada=1), instancia_fake
-        )
+        eng._upsert_inventario(self._quant(cantidad_disponible=5, cantidad_reservada=1), instancia_fake)
         empresa = instancia_fake.id_empresa
         assert StockActual.objects.filter(id_empresa=empresa).count() == 1
         stock = StockActual.objects.get(id_empresa=empresa)
@@ -983,18 +939,14 @@ class TestUpsertFacturaVenta:
         assert fac.monto_iva == Decimal("16.00")
         assert fac.monto_total == Decimal("116.00")
         assert fac.referencia_externa == "900"
-        cli = Cliente.objects.get(
-            id_empresa=instancia_fake.id_empresa, referencia_externa="42"
-        )
+        cli = Cliente.objects.get(id_empresa=instancia_fake.id_empresa, referencia_externa="42")
         assert fac.id_cliente_id == cli.pk
 
     def test_estado_pagado_marca_pagada(self, instancia_fake):
         from apps.ventas.models import FacturaFiscal
 
         self._seed_moneda(instancia_fake)
-        pk = SyncEngine()._upsert_factura_venta(
-            self._factura(estado_pago="pagado"), instancia_fake
-        )
+        pk = SyncEngine()._upsert_factura_venta(self._factura(estado_pago="pagado"), instancia_fake)
         assert FacturaFiscal.objects.get(pk=pk).estado == "PAGADA"
 
     def test_idempotente_por_numero(self, instancia_fake):
@@ -1003,45 +955,45 @@ class TestUpsertFacturaVenta:
         self._seed_moneda(instancia_fake)
         eng = SyncEngine()
         eng._upsert_factura_venta(self._factura(), instancia_fake)
-        eng._upsert_factura_venta(
-            self._factura(total="200.00", estado_pago="pagado"), instancia_fake
-        )
+        eng._upsert_factura_venta(self._factura(total="200.00", estado_pago="pagado"), instancia_fake)
 
-        qs = FacturaFiscal.objects.filter(
-            id_empresa=instancia_fake.id_empresa, numero_factura="INV/2024/0001"
-        )
+        qs = FacturaFiscal.objects.filter(id_empresa=instancia_fake.id_empresa, numero_factura="INV/2024/0001")
         assert qs.count() == 1
         assert qs.first().estado == "PAGADA"  # se actualizó
 
     def test_sin_numero_omite(self, instancia_fake):
         self._seed_moneda(instancia_fake)
-        assert SyncEngine()._upsert_factura_venta(
-            self._factura(numero=""), instancia_fake
-        ) is None
+        assert SyncEngine()._upsert_factura_venta(self._factura(numero=""), instancia_fake) is None
 
     def test_sin_cliente_omite(self, instancia_fake):
         self._seed_moneda(instancia_fake)
-        assert SyncEngine()._upsert_factura_venta(
-            self._factura(cliente_id_externo="", cliente_nombre=""), instancia_fake
-        ) is None
+        assert (
+            SyncEngine()._upsert_factura_venta(self._factura(cliente_id_externo="", cliente_nombre=""), instancia_fake)
+            is None
+        )
 
     def test_sin_moneda_omite(self, instancia_fake):
         # Sin ninguna Moneda en el catálogo, la factura se omite (FK obligatoria).
         from apps.finanzas.models import Moneda
 
         Moneda.objects.all().delete()
-        assert SyncEngine()._upsert_factura_venta(
-            self._factura(), instancia_fake
-        ) is None
+        assert SyncEngine()._upsert_factura_venta(self._factura(), instancia_fake) is None
 
     def test_linea_producto_no_sincronizado_se_omite(self, instancia_fake):
         from apps.ventas.models import FacturaFiscal
 
         self._seed_moneda(instancia_fake)
-        datos = self._factura(lineas=[{
-            "product_id": [10, "X"], "quantity": 2,
-            "price_unit": "50", "price_subtotal": "100", "price_total": "116",
-        }])
+        datos = self._factura(
+            lineas=[
+                {
+                    "product_id": [10, "X"],
+                    "quantity": 2,
+                    "price_unit": "50",
+                    "price_subtotal": "100",
+                    "price_total": "116",
+                }
+            ]
+        )
         pk = SyncEngine()._upsert_factura_venta(datos, instancia_fake)
         assert FacturaFiscal.objects.get(pk=pk).detalles.count() == 0
 
@@ -1053,13 +1005,21 @@ class TestUpsertFacturaVenta:
         eng = SyncEngine()
         self._seed_moneda(instancia_fake)
         eng.ingerir_en_omni(
-            instancia_fake, "productos",
+            instancia_fake,
+            "productos",
             [{"id_externo": "10", "nombre": "Prod 10", "codigo_interno": "P10", "_checksum": "p"}],
         )
-        datos = self._factura(lineas=[{
-            "product_id": [10, "Prod 10"], "quantity": 2,
-            "price_unit": "50", "price_subtotal": "100", "price_total": "116",
-        }])
+        datos = self._factura(
+            lineas=[
+                {
+                    "product_id": [10, "Prod 10"],
+                    "quantity": 2,
+                    "price_unit": "50",
+                    "price_subtotal": "100",
+                    "price_total": "116",
+                }
+            ]
+        )
         pk = eng._upsert_factura_venta(datos, instancia_fake)
         fac = FacturaFiscal.objects.get(pk=pk)
         assert fac.detalles.count() == 1
@@ -1128,9 +1088,7 @@ class TestUpsertPago:
 
         eng = SyncEngine()
         self._seed_factura_sincronizada(eng, instancia_fake)
-        factura = FacturaFiscal.objects.get(
-            id_empresa=instancia_fake.id_empresa, referencia_externa="900"
-        )
+        factura = FacturaFiscal.objects.get(id_empresa=instancia_fake.id_empresa, referencia_externa="900")
 
         pk = eng._upsert_pago(self._pago(), instancia_fake)
 
@@ -1163,24 +1121,18 @@ class TestUpsertPago:
     def test_omite_si_no_es_cobro_de_cliente(self, instancia_fake):
         eng = SyncEngine()
         self._seed_factura_sincronizada(eng, instancia_fake)
-        assert eng._upsert_pago(
-            self._pago(tipo="outbound", tipo_socio="supplier"), instancia_fake
-        ) is None
+        assert eng._upsert_pago(self._pago(tipo="outbound", tipo_socio="supplier"), instancia_fake) is None
 
     def test_omite_si_factura_no_sincronizada(self, instancia_fake):
         eng = SyncEngine()
         self._seed_moneda(instancia_fake)  # sin sembrar la factura
-        assert eng._upsert_pago(
-            self._pago(facturas_externas=["999"]), instancia_fake
-        ) is None
+        assert eng._upsert_pago(self._pago(facturas_externas=["999"]), instancia_fake) is None
 
     def test_omite_si_reconciliacion_multiple(self, instancia_fake):
         eng = SyncEngine()
         self._seed_factura_sincronizada(eng, instancia_fake, "900", "INV/2024/0001")
         self._seed_factura_sincronizada(eng, instancia_fake, "901", "INV/2024/0002")
-        assert eng._upsert_pago(
-            self._pago(facturas_externas=["900", "901"]), instancia_fake
-        ) is None
+        assert eng._upsert_pago(self._pago(facturas_externas=["900", "901"]), instancia_fake) is None
 
     def test_omite_sin_id_externo(self, instancia_fake):
         assert SyncEngine()._upsert_pago(self._pago(id_externo=""), instancia_fake) is None

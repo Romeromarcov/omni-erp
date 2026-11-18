@@ -50,9 +50,7 @@ class ExtractoPreparado:
     def observaciones(self) -> str:
         partes = list(self.validacion.saltos)
         if self.validacion.duplicados:
-            partes.append(
-                f"{len(self.validacion.duplicados)} huella(s) repetida(s) en el archivo"
-            )
+            partes.append(f"{len(self.validacion.duplicados)} huella(s) repetida(s) en el archivo")
         if self.estado.saldo_inicial_derivado:
             partes.append("saldo inicial derivado del 1er movimiento")
         partes.extend(self.estado.avisos)
@@ -249,9 +247,7 @@ def importar_extracto_bancario(
                     id_cuenta_bancaria=cuenta_bancaria,
                     id_archivo_extracto=archivo_obj,
                     fecha_mov=lc.linea.fecha,
-                    descripcion=(lc.linea.descripcion or "Sin descripción").replace("\x00", "")[
-                        :300
-                    ],
+                    descripcion=(lc.linea.descripcion or "Sin descripción").replace("\x00", "")[:300],
                     tipo=lc.linea.tipo_movimiento,
                     monto=lc.linea.monto_absoluto,
                     referencia=(lc.linea.referencia or "").replace("\x00", "")[:100],
@@ -425,9 +421,7 @@ def desactivar_extracto_bancario(archivo: "ExtractoBancarioArchivo") -> int:
         archivo_locked = ExtractoBancarioArchivo.objects.select_for_update().get(pk=archivo.pk)
         movimientos_activos = list(archivo_locked.movimientos.select_for_update().filter(activo=True))
         if any(m.estado == "CONCILIADO" for m in movimientos_activos):
-            raise ExtractoBancarioError(
-                "No se puede desactivar un extracto que ya tiene movimientos conciliados."
-            )
+            raise ExtractoBancarioError("No se puede desactivar un extracto que ya tiene movimientos conciliados.")
         fechas_mov = [m.fecha_mov for m in movimientos_activos]
         f_min = min(fechas_mov) if fechas_mov else archivo_locked.fecha_desde
         f_max = max(fechas_mov) if fechas_mov else archivo_locked.fecha_hasta
@@ -457,17 +451,9 @@ def desactivar_extracto_bancario(archivo: "ExtractoBancarioArchivo") -> int:
                     "No se puede desactivar un extracto con decisiones humanas de pre-conciliación registradas."
                 )
             if props_activas:
-                PropuestaConciliacionBancaria.objects.filter(
-                    pk__in=[p.pk for p in props_activas]
-                ).update(activo=False)
-        desactivados = (
-            archivo_locked.movimientos.filter(pk__in=ids_activos).update(activo=False)
-            if ids_activos
-            else 0
-        )
+                PropuestaConciliacionBancaria.objects.filter(pk__in=[p.pk for p in props_activas]).update(activo=False)
+        desactivados = archivo_locked.movimientos.filter(pk__in=ids_activos).update(activo=False) if ids_activos else 0
         archivo_locked.activo = False
         archivo_locked.save(update_fields=["activo"])
         archivo.activo = False
     return int(desactivados)
-
-

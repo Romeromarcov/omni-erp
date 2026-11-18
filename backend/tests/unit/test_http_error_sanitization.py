@@ -57,15 +57,12 @@ class TestCoreExceptionsHelpers:
             )
             == "Saldo insuficiente."
         )
-        assert (
-            _extract_safe_message(DomainError("   \n  "), default_message="Por defecto")
-            == "Por defecto"
-        )
+        assert _extract_safe_message(DomainError("   \n  "), default_message="Por defecto") == "Por defecto"
 
     @pytest.mark.parametrize(
         "mensaje_inseguro",
         [
-            "Traceback (most recent call last):\n  File \"x.py\", line 1",
+            'Traceback (most recent call last):\n  File "x.py", line 1',
             "duplicate key value\nDETAIL:  Key (id)=(1) already exists.",
             "CONTEXT:  PL/pgSQL function foo() line 3",
             'Error en File "/app/apps/core/views.py", line 42',
@@ -75,14 +72,10 @@ class TestCoreExceptionsHelpers:
             "Error conectando con api_key=supersecreta",
         ],
     )
-    def test_extract_safe_message_filtra_trazas_tecnicas_y_sql(
-        self, mensaje_inseguro
-    ):
+    def test_extract_safe_message_filtra_trazas_tecnicas_y_sql(self, mensaje_inseguro):
         from apps.core import exceptions as exc_mod
 
-        with patch.object(
-            exc_mod._logger, "warning", wraps=exc_mod._logger.warning
-        ) as warn_mock:
+        with patch.object(exc_mod._logger, "warning", wraps=exc_mod._logger.warning) as warn_mock:
             res = _extract_safe_message(
                 ValueError(mensaje_inseguro),
                 default_message="Operación inválida.",
@@ -191,16 +184,12 @@ class TestGuardiaEstructuralSinFugas:
                 if isinstance(node, ast.Call):
                     fn = node.func
                     nombre = (
-                        fn.id
-                        if isinstance(fn, ast.Name)
-                        else (fn.attr if isinstance(fn, ast.Attribute) else None)
+                        fn.id if isinstance(fn, ast.Name) else (fn.attr if isinstance(fn, ast.Attribute) else None)
                     )
                     if nombre in ("Response", "JsonResponse", "HttpResponse"):
                         seg = ast.get_source_segment(src, node) or ""
                         if regex_str_exc.search(seg):
-                            violaciones.append(
-                                f"{rel}:{node.lineno} Response con str(e|exc|err): {seg}"
-                            )
+                            violaciones.append(f"{rel}:{node.lineno} Response con str(e|exc|err): {seg}")
 
                 if isinstance(node, ast.ExceptHandler) and node.name:
                     var = node.name
@@ -365,24 +354,17 @@ class TestCierreFugasConductual:
         vs = ListaPrecioViewSet()
         vs.get_object = lambda: _ListaStub()
 
-        csv_ok = (
-            "codigo_producto,precio,precio_minimo\n"
-            "SKU-1,10.00,5.00\n"
-        ).encode("utf-8")
+        csv_ok = ("codigo_producto,precio,precio_minimo\n" "SKU-1,10.00,5.00\n").encode("utf-8")
 
         def _req(raw_bytes: bytes):
             archivo = SimpleUploadedFile("precios.csv", raw_bytes, content_type="text/csv")
             return SimpleNamespace(FILES={"archivo": archivo})
 
         # 1) RuntimeError buscando Producto -> mensaje genérico sin secreto
-        with patch.object(
-            Producto.objects, "get", side_effect=RuntimeError(SECRET_LEAK)
-        ):
+        with patch.object(Producto.objects, "get", side_effect=RuntimeError(SECRET_LEAK)):
             resp = vs.importar_masivo(_req(csv_ok))
         assert resp.status_code == 207
-        assert resp.data["errores"] == [
-            {"fila": 2, "error": "Error inesperado al buscar el producto."}
-        ]
+        assert resp.data["errores"] == [{"fila": 2, "error": "Error inesperado al buscar el producto."}]
         assert "password=abc123" not in json.dumps(resp.data)
 
         # 2) Producto.MultipleObjectsReturned -> mensaje controlado
@@ -443,9 +425,7 @@ class TestCierreFugasConductual:
                 "apps.finanzas.models.TasaCambio.objects.filter",
                 side_effect=RuntimeError(SECRET_LEAK),
             ),
-            patch.object(
-                cxc_router.logger, "warning", wraps=cxc_router.logger.warning
-            ) as warn_mock,
+            patch.object(cxc_router.logger, "warning", wraps=cxc_router.logger.warning) as warn_mock,
         ):
             resp = cxc_router._health_check_view(req)
 
@@ -537,9 +517,7 @@ class TestCierreFugasConductual:
             "apps.gestion_aprobaciones.services.registrar_decision",
             side_effect=AprobacionError("Solicitud ya decidida."),
         ):
-            r_apr = vs_apr.decidir(
-                SimpleNamespace(data={"aprobado": True}, user=SimpleNamespace())
-            )
+            r_apr = vs_apr.decidir(SimpleNamespace(data={"aprobado": True}, user=SimpleNamespace()))
         assert r_apr.status_code == 400
         assert r_apr.data == {"error": "Solicitud ya decidida."}
 
@@ -595,8 +573,6 @@ class TestCierreFugasConductual:
             "apps.tesoreria.preconciliacion.decidir_propuesta_conciliacion",
             side_effect=PreconciliacionError("Propuesta no encontrada."),
         ):
-            r_pre = vs_pre.decidir(
-                SimpleNamespace(data={"accion": "RECHAZAR"}, user=SimpleNamespace())
-            )
+            r_pre = vs_pre.decidir(SimpleNamespace(data={"accion": "RECHAZAR"}, user=SimpleNamespace()))
         assert r_pre.status_code == 404
         assert r_pre.data == {"error": "Propuesta no encontrada."}

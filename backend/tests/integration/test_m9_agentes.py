@@ -26,6 +26,7 @@ class TestCobranzaFallback:
 
     def _agente(self, empresa_a):
         from apps.agentes.cobranza import CobranzaEstrategaAgent
+
         return CobranzaEstrategaAgent(empresa=empresa_a)
 
     def test_prioridad_alta_mas_60_dias(self, empresa_a):
@@ -96,15 +97,20 @@ class TestCobranzaLLMMock:
 
     def _make_mock(self, prioridad="alta", canal="telefono"):
         mc = MagicMock()
-        mc.messages.create.return_value.content = [MagicMock(text=(
-            f'{{"prioridad": "{prioridad}", "canal": "{canal}", '
-            f'"mensaje_whatsapp": "Estimado cliente, contacto urgente.", '
-            f'"razonamiento": "Test reason"}}'
-        ))]
+        mc.messages.create.return_value.content = [
+            MagicMock(
+                text=(
+                    f'{{"prioridad": "{prioridad}", "canal": "{canal}", '
+                    f'"mensaje_whatsapp": "Estimado cliente, contacto urgente.", '
+                    f'"razonamiento": "Test reason"}}'
+                )
+            )
+        ]
         return mc
 
     def test_usa_llm_cuando_se_inyecta(self, empresa_a):
         from apps.agentes.cobranza import CobranzaEstrategaAgent
+
         mc = self._make_mock("alta", "telefono")
         agente = CobranzaEstrategaAgent(empresa=empresa_a, llm_client=mc)
         s = agente.sugerir("id1", "Cliente", Decimal("1000"), 60, 0)
@@ -113,6 +119,7 @@ class TestCobranzaLLMMock:
 
     def test_llm_fallback_en_json_invalido(self, empresa_a):
         from apps.agentes.cobranza import CobranzaEstrategaAgent
+
         mc = MagicMock()
         mc.messages.create.return_value.content = [MagicMock(text="NO JSON")]
         agente = CobranzaEstrategaAgent(empresa=empresa_a, llm_client=mc)
@@ -122,6 +129,7 @@ class TestCobranzaLLMMock:
 
     def test_llm_fallback_en_excepcion(self, empresa_a):
         from apps.agentes.cobranza import CobranzaEstrategaAgent
+
         mc = MagicMock()
         mc.messages.create.side_effect = ConnectionError("timeout")
         agente = CobranzaEstrategaAgent(empresa=empresa_a, llm_client=mc)
@@ -135,6 +143,7 @@ class TestCobranzaAnalizar:
 
     def test_analizar_devuelve_lista(self, empresa_a):
         from apps.agentes.cobranza import CobranzaEstrategaAgent
+
         agente = CobranzaEstrategaAgent(empresa=empresa_a)
         resultado = agente.analizar(persistir=False)
         assert isinstance(resultado, list)
@@ -172,18 +181,26 @@ class TestCobranzaAnalizar:
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
         cliente = Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Test Order", rif="J-11111111-1",
+            id_empresa=empresa_a,
+            razon_social="Test Order",
+            rif="J-11111111-1",
         )
         hoy = date.today()
         CuentaPorCobrar.objects.create(
-            cliente=cliente, empresa=empresa_a,
-            monto=Decimal("200"), fecha_emision=hoy - timedelta(days=10),
-            fecha_vencimiento=hoy - timedelta(days=5), estado="vencida",
+            cliente=cliente,
+            empresa=empresa_a,
+            monto=Decimal("200"),
+            fecha_emision=hoy - timedelta(days=10),
+            fecha_vencimiento=hoy - timedelta(days=5),
+            estado="vencida",
         )
         CuentaPorCobrar.objects.create(
-            cliente=cliente, empresa=empresa_a,
-            monto=Decimal("8000"), fecha_emision=hoy - timedelta(days=90),
-            fecha_vencimiento=hoy - timedelta(days=70), estado="vencida",
+            cliente=cliente,
+            empresa=empresa_a,
+            monto=Decimal("8000"),
+            fecha_emision=hoy - timedelta(days=90),
+            fecha_vencimiento=hoy - timedelta(days=70),
+            estado="vencida",
         )
 
         agente = CobranzaEstrategaAgent(empresa=empresa_a)
@@ -200,13 +217,18 @@ class TestCobranzaAnalizar:
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
         cliente = Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Persist Test", rif="J-22222222-2",
+            id_empresa=empresa_a,
+            razon_social="Persist Test",
+            rif="J-22222222-2",
         )
         hoy = date.today()
         CuentaPorCobrar.objects.create(
-            cliente=cliente, empresa=empresa_a,
-            monto=Decimal("1000"), fecha_emision=hoy - timedelta(days=50),
-            fecha_vencimiento=hoy - timedelta(days=40), estado="vencida",
+            cliente=cliente,
+            empresa=empresa_a,
+            monto=Decimal("1000"),
+            fecha_emision=hoy - timedelta(days=50),
+            fecha_vencimiento=hoy - timedelta(days=40),
+            estado="vencida",
         )
 
         antes = PrediccionAgente.objects.filter(agente="cobranza_estratega").count()
@@ -226,6 +248,7 @@ class TestReordenFallback:
 
     def _agente(self, empresa_a):
         from apps.agentes.reorden import ReordenSugeridorAgent
+
         return ReordenSugeridorAgent(empresa=empresa_a)
 
     def test_reordenar_stock_bajo_minimo(self, empresa_a):
@@ -281,6 +304,7 @@ class TestReordenFallback:
 
     def test_umbral_critico_personalizado(self, empresa_a):
         from apps.agentes.reorden import ReordenSugeridorAgent
+
         agente = ReordenSugeridorAgent(empresa=empresa_a, umbral_critico=5, umbral_alerta=15)
         # 12 días → con umbral_critico=5 debería ser REVISAR (no REORDENAR)
         s = agente.evaluar(Decimal("12"), Decimal("0"), Decimal("1"))
@@ -298,16 +322,18 @@ class TestReordenLLMMock:
 
     def test_usa_llm_cuando_se_inyecta(self, empresa_a):
         from apps.agentes.reorden import ReordenSugeridorAgent
+
         mc = MagicMock()
-        mc.messages.create.return_value.content = [MagicMock(text=(
-            '{"estado": "REVISAR", "cantidad_sugerida_reorden": 50, "razonamiento": "Test"}'
-        ))]
+        mc.messages.create.return_value.content = [
+            MagicMock(text=('{"estado": "REVISAR", "cantidad_sugerida_reorden": 50, "razonamiento": "Test"}'))
+        ]
         # evaluar() no usa LLM; el LLM se usa en analizar() — testeamos que la init funcione
         agente = ReordenSugeridorAgent(empresa=empresa_a, llm_client=mc)
         assert agente._usar_llm is True
 
     def test_analizar_devuelve_lista(self, empresa_a):
         from apps.agentes.reorden import ReordenSugeridorAgent
+
         agente = ReordenSugeridorAgent(empresa=empresa_a)
         resultado = agente.analizar(persistir=False)
         assert isinstance(resultado, list)
@@ -320,9 +346,9 @@ class TestReordenLLMMock:
 
 @pytest.mark.django_db
 class TestPersonalizacionCapa2:
-
     def _agente(self, empresa_a):
         from apps.agentes.personalizacion_agente import PersonalizacionCapa2Agent
+
         return PersonalizacionCapa2Agent(empresa=empresa_a)
 
     def test_analizar_retorna_resultado(self, empresa_a):
@@ -399,12 +425,8 @@ class TestPersonalizacionCapa2:
         from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
         from apps.agentes.personalizacion_agente import PersonalizacionCapa2Agent
 
-        cat = CategoriaProducto.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Test"
-        )
-        und = UnidadMedida.objects.create(
-            id_empresa=empresa_a, nombre="Pieza", abreviatura="PZ", tipo="CANTIDAD"
-        )
+        cat = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Test")
+        und = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Pieza", abreviatura="PZ", tipo="CANTIDAD")
         # Producto con margen < 15%: precio 110, costo 100 → margen 10%
         Producto.objects.create(
             id_empresa=empresa_a,
@@ -433,6 +455,7 @@ class TestCobranzaEvalSuite:
 
     def test_dataset_tiene_minimo_30_casos(self):
         from apps.agentes.eval_cobranza import CASOS_DORADOS_COBRANZA
+
         assert len(CASOS_DORADOS_COBRANZA) >= 30
 
     def test_precision_prioridad_sobre_dataset(self, empresa_a):
@@ -485,6 +508,7 @@ class TestCobranzaEvalSuite:
 
     def test_todas_prioridades_representadas(self):
         from apps.agentes.eval_cobranza import CASOS_DORADOS_COBRANZA
+
         prioridades = {c["prioridad"] for c in CASOS_DORADOS_COBRANZA}
         assert "alta" in prioridades
         assert "media" in prioridades
@@ -492,6 +516,7 @@ class TestCobranzaEvalSuite:
 
     def test_todos_canales_representados(self):
         from apps.agentes.eval_cobranza import CASOS_DORADOS_COBRANZA
+
         canales = {c["canal"] for c in CASOS_DORADOS_COBRANZA}
         assert "whatsapp" in canales
         assert "telefono" in canales
@@ -504,6 +529,7 @@ class TestReordenEvalSuite:
 
     def test_dataset_tiene_minimo_30_casos(self):
         from apps.agentes.eval_reorden import CASOS_DORADOS_REORDEN
+
         assert len(CASOS_DORADOS_REORDEN) >= 30
 
     def test_precision_estado_sobre_dataset(self, empresa_a):
@@ -529,6 +555,7 @@ class TestReordenEvalSuite:
 
     def test_todos_estados_representados(self):
         from apps.agentes.eval_reorden import CASOS_DORADOS_REORDEN
+
         estados = {c["estado"] for c in CASOS_DORADOS_REORDEN}
         assert "REORDENAR" in estados
         assert "REVISAR" in estados
@@ -536,10 +563,12 @@ class TestReordenEvalSuite:
 
     def test_minimo_10_casos_reordenar(self):
         from apps.agentes.eval_reorden import CASOS_DORADOS_REORDEN
+
         reordenar = [c for c in CASOS_DORADOS_REORDEN if c["estado"] == "REORDENAR"]
         assert len(reordenar) >= 10
 
     def test_minimo_5_casos_ok(self):
         from apps.agentes.eval_reorden import CASOS_DORADOS_REORDEN
+
         ok_casos = [c for c in CASOS_DORADOS_REORDEN if c["estado"] == "OK"]
         assert len(ok_casos) >= 5

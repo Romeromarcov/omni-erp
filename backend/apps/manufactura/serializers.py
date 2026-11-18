@@ -241,8 +241,15 @@ class EtapaOrdenProduccionSerializer(serializers.ModelSerializer):
         ]
         # las transiciones pasan por el service (avanzar_etapa_orden) — solo lectura
         read_only_fields = [
-            "orden_produccion", "etapa", "orden", "estado", "horas_trabajadas",
-            "tarifa_hora", "cantidad_destajo", "pago_destajo", "completada_por",
+            "orden_produccion",
+            "etapa",
+            "orden",
+            "estado",
+            "horas_trabajadas",
+            "tarifa_hora",
+            "cantidad_destajo",
+            "pago_destajo",
+            "completada_por",
             "fecha_completada",
         ]
 

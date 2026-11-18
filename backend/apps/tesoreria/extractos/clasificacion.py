@@ -52,24 +52,16 @@ REGLAS_CLASIFICACION: list[ReglaClasificacion] = [
         "operacion_cambiaria",
         r"COMPRA USD|VENTA USD|INTERVENCI[OÓ]N",
     ),
-    ReglaClasificacion(
-        "binance_pay_entra", "cobro_candidato", r"^TRANSFER (USDT|USD).*BINANCE PAY", "credito"
-    ),
-    ReglaClasificacion(
-        "binance_pay_sale", "pago_a_terceros", r"^TRANSFER (USDT|USD).*BINANCE PAY", "debito"
-    ),
+    ReglaClasificacion("binance_pay_entra", "cobro_candidato", r"^TRANSFER (USDT|USD).*BINANCE PAY", "credito"),
+    ReglaClasificacion("binance_pay_sale", "pago_a_terceros", r"^TRANSFER (USDT|USD).*BINANCE PAY", "debito"),
     ReglaClasificacion("binance_deposito", "transferencia_propia_candidata", r"^DEPOSIT USD"),
     ReglaClasificacion("binance_conversion", "conversion_cripto", r"^BUY CRYPTO WITH FIAT"),
     ReglaClasificacion("binance_retiro", "retiro_cripto", r"^WITHDRAW (USDT|USD)", "debito"),
     ReglaClasificacion("zelle_entra", "cobro_candidato", r"\bZELLE\b", "credito"),
     ReglaClasificacion("zelle_sale", "pago_a_terceros", r"\bZELLE\b", "debito"),
-    ReglaClasificacion(
-        "compra_internacional", "compra_tarjeta", r"OP\.? INTERNAC\.? MASTERDEBIT", "debito"
-    ),
+    ReglaClasificacion("compra_internacional", "compra_tarjeta", r"OP\.? INTERNAC\.? MASTERDEBIT", "debito"),
     ReglaClasificacion("transferencia_propia", "transferencia_propia_candidata", r"MISMO CLIENTE"),
-    ReglaClasificacion(
-        "consumo_debito", "compra_tarjeta", r"CONSUMO MASTERDEBIT|CONSUMO MAESTRO", "debito"
-    ),
+    ReglaClasificacion("consumo_debito", "compra_tarjeta", r"CONSUMO MASTERDEBIT|CONSUMO MAESTRO", "debito"),
     ReglaClasificacion("alcaldia", "impuesto", r"ALCALDIA|ALCALD[IÍ]A", "debito"),
     ReglaClasificacion(
         "transf_saliente",
@@ -77,9 +69,7 @@ REGLAS_CLASIFICACION: list[ReglaClasificacion] = [
         r"TRANSF\.?( INTERNET)? TERC|TRANSF EN LINEA|PAGO MOVIL|PAGO M[OÓ]VIL",
         "debito",
     ),
-    ReglaClasificacion(
-        "nc_transferencia", "cobro_candidato", r"^NC (TRANSF|PAGO DE PROVEEDORES)", "credito"
-    ),
+    ReglaClasificacion("nc_transferencia", "cobro_candidato", r"^NC (TRANSF|PAGO DE PROVEEDORES)", "credito"),
     ReglaClasificacion("platco_pos", "operacion_pos", r"INV\.?\s?PLATCO"),
     ReglaClasificacion("cobro_pos", "cobro_pos", r"^(TD|TC) POS\b", "credito"),
     ReglaClasificacion("compra_tarjeta", "compra_tarjeta", r"COMPRAS?\b.*\bPOS\b|COMPRA POS", "debito"),

@@ -24,69 +24,95 @@ def cliente(empresa_a):
     from apps.crm.models import Cliente
 
     return Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Consumidor Final", rif="V-00000000-0",
+        id_empresa=empresa_a,
+        razon_social="Consumidor Final",
+        rif="V-00000000-0",
         tipo_cliente="CONTADO",
     )
 
 
 @pytest.fixture
 def almacen(empresa_a):
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Central", codigo_almacen="ALM-COGS"
-    )
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Central", codigo_almacen="ALM-COGS")
 
 
 @pytest.fixture
 def producto(empresa_a, moneda_usd):
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CG", tipo="CANTIDAD"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CG", tipo="CANTIDAD")
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat COGS")
     return Producto.objects.create(
-        id_empresa=empresa_a, id_categoria=categoria, id_unidad_medida_base=unidad,
-        id_moneda_precio=moneda_usd, nombre_producto="Producto COGS",
+        id_empresa=empresa_a,
+        id_categoria=categoria,
+        id_unidad_medida_base=unidad,
+        id_moneda_precio=moneda_usd,
+        nombre_producto="Producto COGS",
         metodo_valoracion="PROMEDIO",
     )
 
 
 def _cuenta(empresa, codigo, nombre, tipo="ACTIVO", naturaleza="DEUDORA"):
     return PlanCuentas.objects.create(
-        id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta=nombre,
-        tipo_cuenta=tipo, naturaleza=naturaleza, nivel=1,
+        id_empresa=empresa,
+        codigo_cuenta=codigo,
+        nombre_cuenta=nombre,
+        tipo_cuenta=tipo,
+        naturaleza=naturaleza,
+        nivel=1,
     )
 
 
 def _mapeo_costo_venta(empresa):
     costo = _cuenta(empresa, "5.1.01", "Costo de Ventas", tipo="GASTO")
     inventario = _cuenta(empresa, "1.1.05", "Inventario")
-    return MapeoContable.objects.create(
-        id_empresa=empresa, tipo_asiento="COSTO_VENTA",
-        cuenta_debe=costo, cuenta_haber=inventario, activo=True,
-    ), costo, inventario
+    return (
+        MapeoContable.objects.create(
+            id_empresa=empresa,
+            tipo_asiento="COSTO_VENTA",
+            cuenta_debe=costo,
+            cuenta_haber=inventario,
+            activo=True,
+        ),
+        costo,
+        inventario,
+    )
 
 
 def _nota_borrador(empresa, cliente):
     from apps.ventas.models import NotaVenta
 
     return NotaVenta.objects.create(
-        id_empresa=empresa, id_cliente=cliente,
-        numero_nota="NV-COGS-0001", fecha_nota=timezone.now().date(), estado="BORRADOR",
+        id_empresa=empresa,
+        id_cliente=cliente,
+        numero_nota="NV-COGS-0001",
+        fecha_nota=timezone.now().date(),
+        estado="BORRADOR",
     )
 
 
 def _entrada(empresa, producto, almacen, user, cantidad, costo):
     registrar_movimiento(
-        empresa=empresa, fecha_hora_movimiento=timezone.now(), tipo_movimiento="ENTRADA",
-        producto=producto, cantidad=Decimal(str(cantidad)), almacen_destino=almacen,
-        costo_unitario=Decimal(str(costo)), usuario=user,
+        empresa=empresa,
+        fecha_hora_movimiento=timezone.now(),
+        tipo_movimiento="ENTRADA",
+        producto=producto,
+        cantidad=Decimal(str(cantidad)),
+        almacen_destino=almacen,
+        costo_unitario=Decimal(str(costo)),
+        usuario=user,
     )
 
 
 def _despacho(empresa, producto, almacen, user, nota, cantidad):
     return registrar_movimiento(
-        empresa=empresa, fecha_hora_movimiento=timezone.now(), tipo_movimiento="DESPACHO_VENTA",
-        producto=producto, cantidad=Decimal(str(cantidad)), almacen_origen=almacen,
-        documento_origen_id=nota.id_nota_venta, nombre_modelo_origen="NotaVenta", usuario=user,
+        empresa=empresa,
+        fecha_hora_movimiento=timezone.now(),
+        tipo_movimiento="DESPACHO_VENTA",
+        producto=producto,
+        cantidad=Decimal(str(cantidad)),
+        almacen_origen=almacen,
+        documento_origen_id=nota.id_nota_venta,
+        nombre_modelo_origen="NotaVenta",
+        usuario=user,
     )
 
 
@@ -102,11 +128,11 @@ def test_despacho_genera_asiento_cogs(empresa_a, cliente, almacen, producto, use
     detalles = DetalleAsiento.objects.filter(id_asiento=asiento)
     debe = next(d for d in detalles if d.debe > 0)
     haber = next(d for d in detalles if d.haber > 0)
-    assert debe.id_cuenta_contable_id == costo_cta.pk   # DR Costo de Ventas
-    assert haber.id_cuenta_contable_id == inv_cta.pk     # CR Inventario
-    assert debe.debe == Decimal("32.00")                 # 4 × 8.00 = valor_total
+    assert debe.id_cuenta_contable_id == costo_cta.pk  # DR Costo de Ventas
+    assert haber.id_cuenta_contable_id == inv_cta.pk  # CR Inventario
+    assert debe.debe == Decimal("32.00")  # 4 × 8.00 = valor_total
     assert haber.haber == Decimal("32.00")
-    assert debe.debe == haber.haber                      # balanceado
+    assert debe.debe == haber.haber  # balanceado
 
 
 def test_despacho_sin_mapeo_contabilidad_inactiva_no_falla(empresa_a, cliente, almacen, producto, user_a):

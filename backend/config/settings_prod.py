@@ -13,18 +13,22 @@ if os.environ.get("RAILWAY_ENVIRONMENT"):
     # (`curl http://localhost:$PORT/api/health/` → Host: localhost). Sin ellos el
     # healthcheck da DisallowedHost, el contenedor queda "unhealthy" y Railway no
     # promueve el deploy nuevo (sigue sirviendo uno viejo).
-    for _rh in (".up.railway.app", ".railway.app", ".railway.internal",
-                "localhost", "127.0.0.1",
-                os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip(),
-                os.environ.get("RAILWAY_PRIVATE_DOMAIN", "").strip()):
+    for _rh in (
+        ".up.railway.app",
+        ".railway.app",
+        ".railway.internal",
+        "localhost",
+        "127.0.0.1",
+        os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip(),
+        os.environ.get("RAILWAY_PRIVATE_DOMAIN", "").strip(),
+    ):
         if _rh and _rh not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(_rh)
 if not ALLOWED_HOSTS:
     from django.core.exceptions import ImproperlyConfigured
 
     raise ImproperlyConfigured(
-        "DJANGO_ALLOWED_HOSTS debe definir al menos un host en producción "
-        "(ej: 'midominio.com,www.midominio.com')."
+        "DJANGO_ALLOWED_HOSTS debe definir al menos un host en producción " "(ej: 'midominio.com,www.midominio.com')."
     )
 
 # CSRF — el admin de Django usa sesión + CSRF. Desde Django 4.0 todo POST por
@@ -32,9 +36,7 @@ if not ALLOWED_HOSTS:
 # https://). Sin esto, "Guardar" en el admin falla con 403 (Origin checking
 # failed) y el cambio no se persiste. Se permite definir orígenes extra por
 # entorno y, además, se derivan de ALLOWED_HOSTS añadiendo el esquema.
-CSRF_TRUSTED_ORIGINS = [
-    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
-]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 for _host in ALLOWED_HOSTS:
     # localhost/127.0.0.1 (healthcheck) y .railway.internal (red privada) no son
     # orígenes de navegador; no aportan al chequeo de CSRF del admin.
@@ -113,8 +115,8 @@ if _SENTRY_DSN:
             ),
             CeleryIntegration(monitor_beat_tasks=True),
             LoggingIntegration(
-                level=_logging.INFO,        # captura INFO y superiores como breadcrumbs
-                event_level=_logging.ERROR, # envía ERROR y superiores como eventos
+                level=_logging.INFO,  # captura INFO y superiores como breadcrumbs
+                event_level=_logging.ERROR,  # envía ERROR y superiores como eventos
             ),
         ],
         # Porcentaje de transacciones enviadas a Sentry Performance.

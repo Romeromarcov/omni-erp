@@ -13,6 +13,7 @@ Cubre por la API real (router en apps/control_asistencia/urls.py, prefijo
 
 Fixtures multi-tenant (empresa_a/b, user_a/b) del conftest.
 """
+
 import datetime
 from decimal import Decimal
 
@@ -204,26 +205,18 @@ class TestAsignacionHorarioActions:
         assert str(finalizada.id_asignacion_horario) not in ids
 
     def test_activas_filtra_por_empleado(self, client_a, asignacion_a, empleado_a):
-        resp = client_a.get(
-            f"{BASE}asignaciones-horario/activas/", {"empleado_id": str(empleado_a.pk)}
-        )
+        resp = client_a.get(f"{BASE}asignaciones-horario/activas/", {"empleado_id": str(empleado_a.pk)})
         assert resp.status_code == 200
-        assert [r["id_asignacion_horario"] for r in resp.json()] == [
-            str(asignacion_a.id_asignacion_horario)
-        ]
+        assert [r["id_asignacion_horario"] for r in resp.json()] == [str(asignacion_a.id_asignacion_horario)]
 
     def test_por_empleado_400_sin_param(self, client_a):
         resp = client_a.get(f"{BASE}asignaciones-horario/por_empleado/")
         assert resp.status_code == 400
 
     def test_por_empleado_ok(self, client_a, asignacion_a, empleado_a):
-        resp = client_a.get(
-            f"{BASE}asignaciones-horario/por_empleado/", {"empleado_id": str(empleado_a.pk)}
-        )
+        resp = client_a.get(f"{BASE}asignaciones-horario/por_empleado/", {"empleado_id": str(empleado_a.pk)})
         assert resp.status_code == 200
-        assert [r["id_asignacion_horario"] for r in resp.json()] == [
-            str(asignacion_a.id_asignacion_horario)
-        ]
+        assert [r["id_asignacion_horario"] for r in resp.json()] == [str(asignacion_a.id_asignacion_horario)]
 
     def test_finalizar_ok(self, client_a, asignacion_a):
         resp = client_a.post(
@@ -236,9 +229,7 @@ class TestAsignacionHorarioActions:
         assert asignacion_a.fecha_fin == datetime.date(2026, 6, 30)
 
     def test_finalizar_sin_fecha_usa_hoy(self, client_a, asignacion_a):
-        resp = client_a.post(
-            f"{BASE}asignaciones-horario/{asignacion_a.id_asignacion_horario}/finalizar/"
-        )
+        resp = client_a.post(f"{BASE}asignaciones-horario/{asignacion_a.id_asignacion_horario}/finalizar/")
         assert resp.status_code == 200
         asignacion_a.refresh_from_db()
         assert asignacion_a.fecha_fin == timezone.localdate()
@@ -246,9 +237,7 @@ class TestAsignacionHorarioActions:
     def test_finalizar_ya_finalizada_400(self, client_a, asignacion_a):
         asignacion_a.activo = False
         asignacion_a.save()
-        resp = client_a.post(
-            f"{BASE}asignaciones-horario/{asignacion_a.id_asignacion_horario}/finalizar/"
-        )
+        resp = client_a.post(f"{BASE}asignaciones-horario/{asignacion_a.id_asignacion_horario}/finalizar/")
         assert resp.status_code == 400
 
 
@@ -338,13 +327,9 @@ class TestRegistroAsistenciaActions:
                 tipo_marcado="ENTRADA",
                 metodo_marcado="WEB",
             )
-            resp = client_a.get(
-                f"{BASE}registros-asistencia/hoy/", {"empleado_id": str(empleado_a.pk)}
-            )
+            resp = client_a.get(f"{BASE}registros-asistencia/hoy/", {"empleado_id": str(empleado_a.pk)})
         assert resp.status_code == 200
-        assert [r["id_registro_asistencia"] for r in resp.json()] == [
-            str(hoy.id_registro_asistencia)
-        ]
+        assert [r["id_registro_asistencia"] for r in resp.json()] == [str(hoy.id_registro_asistencia)]
 
 
 class TestResumenAsistenciaActions:
@@ -357,17 +342,13 @@ class TestResumenAsistenciaActions:
         utc = datetime.timezone.utc
         RegistroAsistencia.objects.create(
             id_empleado=empleado,
-            fecha_hora_marcado=datetime.datetime(
-                fecha.year, fecha.month, fecha.day, 8, 0, tzinfo=utc
-            ),
+            fecha_hora_marcado=datetime.datetime(fecha.year, fecha.month, fecha.day, 8, 0, tzinfo=utc),
             tipo_marcado="ENTRADA",
             metodo_marcado="WEB",
         )
         RegistroAsistencia.objects.create(
             id_empleado=empleado,
-            fecha_hora_marcado=datetime.datetime(
-                fecha.year, fecha.month, fecha.day, 16, 0, tzinfo=utc
-            ),
+            fecha_hora_marcado=datetime.datetime(fecha.year, fecha.month, fecha.day, 16, 0, tzinfo=utc),
             tipo_marcado="SALIDA",
             metodo_marcado="WEB",
         )
@@ -395,9 +376,7 @@ class TestResumenAsistenciaActions:
         )
         assert resp.status_code == 200
         assert resp.json()["fecha"] == str(timezone.localdate())
-        resumen = ResumenAsistenciaDiario.objects.get(
-            id_empleado=empleado_a, fecha=timezone.localdate()
-        )
+        resumen = ResumenAsistenciaDiario.objects.get(id_empleado=empleado_a, fecha=timezone.localdate())
         assert resumen.es_ausencia is True
 
     def test_generar_resumen_sin_registros_marca_ausencia(self, client_a, empleado_a):
@@ -406,9 +385,7 @@ class TestResumenAsistenciaActions:
             {"fecha": "2026-06-04", "empleado_id": str(empleado_a.pk)},
         )
         assert resp.status_code == 200
-        resumen = ResumenAsistenciaDiario.objects.get(
-            id_empleado=empleado_a, fecha=datetime.date(2026, 6, 4)
-        )
+        resumen = ResumenAsistenciaDiario.objects.get(id_empleado=empleado_a, fecha=datetime.date(2026, 6, 4))
         assert resumen.es_ausencia is True
 
     def test_generar_resumen_existente_no_duplica(self, client_a, empleado_a):
@@ -423,9 +400,10 @@ class TestResumenAsistenciaActions:
         )
         assert resp.status_code == 200
         assert resp.json()["mensaje"] == "Se generaron 0 resúmenes diarios"
-        assert ResumenAsistenciaDiario.objects.filter(
-            id_empleado=empleado_a, fecha=datetime.date(2026, 6, 5)
-        ).count() == 1
+        assert (
+            ResumenAsistenciaDiario.objects.filter(id_empleado=empleado_a, fecha=datetime.date(2026, 6, 5)).count()
+            == 1
+        )
 
     def test_generar_resumen_sin_empleado_toma_los_que_marcaron(self, client_a, empleado_a):
         fecha = datetime.date(2026, 6, 6)
@@ -458,9 +436,7 @@ class TestResumenAsistenciaActions:
             fecha=datetime.date(2026, 6, 8),
             estado_revision="APROBADO",
         )
-        resp = client_a.post(
-            f"{BASE}resumenes-asistencia-diario/{resumen.id_resumen_diario}/aprobar/"
-        )
+        resp = client_a.post(f"{BASE}resumenes-asistencia-diario/{resumen.id_resumen_diario}/aprobar/")
         assert resp.status_code == 400
 
     def test_pendientes_revision_con_filtros(self, client_a, empleado_a):
@@ -483,9 +459,7 @@ class TestResumenAsistenciaActions:
             },
         )
         assert resp.status_code == 200
-        assert [r["id_resumen_diario"] for r in resp.json()] == [
-            str(pendiente.id_resumen_diario)
-        ]
+        assert [r["id_resumen_diario"] for r in resp.json()] == [str(pendiente.id_resumen_diario)]
 
     def test_reporte_mensual_400_sin_empleado(self, client_a):
         resp = client_a.get(f"{BASE}resumenes-asistencia-diario/reporte_mensual/")

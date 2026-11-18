@@ -3,6 +3,7 @@ Fraccionamiento de productos (feature-flagged).
 
 Solo activo si get_config('cxc.fraccionamiento.enabled') == 'true'.
 """
+
 from decimal import Decimal
 
 from django.db import models
@@ -15,6 +16,7 @@ class LoteFraccionado(CxcBaseModel):
     Lote de producto que se vende fraccionado (ej: vender por gramo/unidad
     desde un lote mayor comprado por kg/caja).
     """
+
     producto_id = models.CharField(max_length=100, help_text="ID del producto (Omni o externo Odoo)")
     producto_nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True)
@@ -27,8 +29,7 @@ class LoteFraccionado(CxcBaseModel):
     unidad_base = models.CharField(max_length=20, help_text="Unidad de compra (kg, caja, etc.)")
     unidad_venta = models.CharField(max_length=20, help_text="Unidad de venta (g, unidad, etc.)")
     factor_conversion = models.DecimalField(
-        max_digits=14, decimal_places=6,
-        help_text="Cuántas unidades_venta hay en 1 unidad_base"
+        max_digits=14, decimal_places=6, help_text="Cuántas unidades_venta hay en 1 unidad_base"
     )
 
     precio_venta_unit = models.DecimalField(max_digits=18, decimal_places=4)
@@ -56,6 +57,7 @@ class VentaFraccionada(CxcBaseModel):
     Venta de una fracción de un lote.
     El pago va a finanzas.Pago (no modelo propio).
     """
+
     lote = models.ForeignKey(
         LoteFraccionado,
         on_delete=models.PROTECT,

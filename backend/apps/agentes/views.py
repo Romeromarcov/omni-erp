@@ -17,6 +17,7 @@ Modo de operación:
   - ClasificadorGastos emite una predicción (PrediccionAgente) y acepta
     aplicar=true para escribir en el modelo Gasto (modo producción activado).
 """
+
 import logging
 
 from django.utils import timezone
@@ -321,16 +322,13 @@ class PrediccionAgenteViewSet(BaseModelViewSet):
         if aplicar and resultado.confianza >= 0.5:
             # Buscar o crear la CategoriaGasto (iexact lookup manual)
             categoria_nombre = resultado.categoria.replace("_", " ").title()
-            categoria_obj = (
-                CategoriaGasto.objects.filter(
-                    id_empresa=empresa,
-                    nombre_categoria__iexact=resultado.categoria,
-                ).first()
-                or CategoriaGasto.objects.create(
-                    id_empresa=empresa,
-                    nombre_categoria=categoria_nombre,
-                    activo=True,
-                )
+            categoria_obj = CategoriaGasto.objects.filter(
+                id_empresa=empresa,
+                nombre_categoria__iexact=resultado.categoria,
+            ).first() or CategoriaGasto.objects.create(
+                id_empresa=empresa,
+                nombre_categoria=categoria_nombre,
+                activo=True,
             )
             gasto.id_categoria_gasto = categoria_obj
             gasto.save(update_fields=["id_categoria_gasto"])

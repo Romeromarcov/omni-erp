@@ -121,9 +121,7 @@ class SoftDeleteModelMixin:
         """
         # Obtiene el queryset sin filtro de activo (incluye inactivos)
         queryset = self.filter_queryset(
-            self.get_queryset().model.objects.all()
-            if hasattr(self.get_queryset(), "model")
-            else self.get_queryset()
+            self.get_queryset().model.objects.all() if hasattr(self.get_queryset(), "model") else self.get_queryset()
         )
         # Si el ViewSet tiene get_queryset con filtros de empresa, los aplicamos
         # usando el queryset base del modelo pero con los filtros de empresa del ViewSet
@@ -523,6 +521,7 @@ class ConfiguracionFlujoDocumentosViewSet(ActiveFilterMixin, BaseModelViewSet):
         empresa = get_empresas_visible(self.request.user).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(id_empresa=empresa)
 
@@ -555,6 +554,7 @@ class ContactoViewSet(ActiveFilterMixin, BaseModelViewSet):
         empresa = get_empresas_visible(self.request.user).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(id_empresa=empresa)
 

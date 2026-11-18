@@ -6,6 +6,7 @@ Backfill de cobertura — apps/despacho/pdf_nota_entrega.py (plan "Cero Dudas").
   observaciones presentes.
 - Rama de ImportError cuando reportlab no está disponible.
 """
+
 import sys
 from datetime import timedelta
 from decimal import Decimal
@@ -22,21 +23,25 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
+
     return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Caja", abreviatura="CJ")
 
 
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
+
     return CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat PDF")
 
 
 @pytest.fixture
 def producto(db, empresa_a, unidad, categoria, moneda_usd):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto PDF",
@@ -49,14 +54,14 @@ def producto(db, empresa_a, unidad, categoria, moneda_usd):
 @pytest.fixture
 def almacen(db, empresa_a):
     from apps.almacenes.models import Almacen
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Central PDF", codigo_almacen="ALM-PDF"
-    )
+
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Central PDF", codigo_almacen="ALM-PDF")
 
 
 @pytest.fixture
 def despacho(db, empresa_a, almacen):
     from apps.despacho.models import Despacho
+
     return Despacho.objects.create(
         id_empresa=empresa_a,
         numero_despacho="DESP-PDF-001",
@@ -68,9 +73,11 @@ def despacho(db, empresa_a, almacen):
 
 # ── Tests con modelos reales ──────────────────────────────────────────────────
 
+
 class TestGenerarPdfConModelos:
     def test_pdf_con_detalles(self, despacho, producto, unidad):
         from apps.despacho.models import DetalleDespacho
+
         DetalleDespacho.objects.create(
             id_despacho=despacho,
             id_producto=producto,
@@ -109,6 +116,7 @@ class TestGenerarPdfConModelos:
 
 # ── Ramas vía duck-typing (sin DB) ────────────────────────────────────────────
 
+
 class TestGenerarPdfDuckTyping:
     def test_pedido_vinculado_y_fechas_date(self):
         """Cubre la rama de pedido vinculado y empresa sin nombre_legal."""
@@ -116,13 +124,13 @@ class TestGenerarPdfDuckTyping:
         despacho = SimpleNamespace(
             id_empresa=SimpleNamespace(nombre_legal="Empresa Duck S.A.", identificador_fiscal="J-1"),
             numero_despacho="DESP-DUCK-1",
-            fecha_despacho=ahora,                 # datetime → .date()
+            fecha_despacho=ahora,  # datetime → .date()
             fecha_entrega_real=None,
             fecha_entrega_estimada=ahora.date(),  # date sin .date() → no entra al if
             estado_despacho="EN_TRANSITO",
             id_almacen_origen=SimpleNamespace(nombre_almacen="Duck Origen"),
             direccion_destino="Calle Falsa 123",
-            id_pedido="PED-0001",                 # truthy → rama de pedido de referencia
+            id_pedido="PED-0001",  # truthy → rama de pedido de referencia
             observaciones="Frágil",
             # sin atributo 'detalles' → rama hasattr(...) False → lista vacía
         )

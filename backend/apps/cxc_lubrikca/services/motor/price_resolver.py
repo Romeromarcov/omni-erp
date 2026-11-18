@@ -28,9 +28,7 @@ class DictPriceResolver(PriceResolver):
         try:
             return self._precios[(producto, lista)]
         except KeyError as exc:
-            raise KeyError(
-                f"Sin precio para producto={producto!r} en lista={lista!r}"
-            ) from exc
+            raise KeyError(f"Sin precio para producto={producto!r} en lista={lista!r}") from exc
 
     def set_precio(self, producto: str, lista: str, precio: Decimal) -> None:
         self._precios[(producto, lista)] = precio

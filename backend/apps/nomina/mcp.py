@@ -22,6 +22,7 @@ _SCOPE = "nomina"
 # Helpers internos
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _ctx(capability_token: str, scope: str) -> dict:
     """Resuelve y valida token + scope. Lanza PermissionError si falla."""
     from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
@@ -77,7 +78,9 @@ def nomina_procesar_proceso(
 
     logger.info(
         "nomina_procesar_proceso | actor=%s | tenant=%s | proceso=%s",
-        ctx["actor_id"], ctx["tenant_id"], proceso_id,
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        proceso_id,
     )
     return {
         "id_proceso_nomina": str(proceso.id_proceso_nomina),
@@ -125,7 +128,9 @@ def nomina_resumen_proceso(
 
     logger.info(
         "nomina_resumen_proceso | actor=%s | tenant=%s | proceso=%s",
-        ctx["actor_id"], ctx["tenant_id"], proceso_id,
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        proceso_id,
     )
     return {
         "id_proceso_nomina": str(proceso.id_proceso_nomina),

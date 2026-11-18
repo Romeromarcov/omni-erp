@@ -175,9 +175,7 @@ class FacturaFiscal(models.Model):
     )
 
     # Campos fiscales específicos
-    numero_control = models.CharField(
-        max_length=50, help_text="Número de control compartido con notas de crédito"
-    )
+    numero_control = models.CharField(max_length=50, help_text="Número de control compartido con notas de crédito")
     numero_factura = models.CharField(max_length=50, help_text="Número individual de la factura")
     fecha_emision = models.DateField()
     fecha_vencimiento = models.DateField(null=True, blank=True)
@@ -505,9 +503,7 @@ class NotaCreditoFiscal(models.Model):
         "FacturaFiscal", on_delete=models.CASCADE, related_name="notas_credito_fiscal"
     )
     numero_control = models.CharField(max_length=50, help_text="Número de control compartido con la factura")
-    numero_nota_credito = models.CharField(
-        max_length=50, help_text="Número individual de la nota de crédito"
-    )
+    numero_nota_credito = models.CharField(max_length=50, help_text="Número individual de la nota de crédito")
 
     fecha_emision = models.DateField()
     fecha_vencimiento = models.DateField(null=True, blank=True)
@@ -660,12 +656,8 @@ class EsquemaComision(models.Model):
     """
 
     id_esquema_comision = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="esquemas_comision"
-    )
-    vendedor = models.ForeignKey(
-        "core.Usuarios", on_delete=models.PROTECT, related_name="esquemas_comision"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="esquemas_comision")
+    vendedor = models.ForeignKey("core.Usuarios", on_delete=models.PROTECT, related_name="esquemas_comision")
     # Porcentaje: convención Decimal(7,4) del proyecto (omni-decimal-money).
     porcentaje_base = models.DecimalField(
         max_digits=7,
@@ -699,9 +691,7 @@ class EsquemaComisionCategoria(models.Model):
     """Override del porcentaje de un esquema para una categoría de producto."""
 
     id_esquema_comision_categoria = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    esquema = models.ForeignKey(
-        EsquemaComision, on_delete=models.CASCADE, related_name="overrides_categoria"
-    )
+    esquema = models.ForeignKey(EsquemaComision, on_delete=models.CASCADE, related_name="overrides_categoria")
     categoria = models.ForeignKey(
         "inventario.CategoriaProducto",
         on_delete=models.CASCADE,
@@ -748,18 +738,10 @@ class ComisionVenta(models.Model):
     ]
 
     id_comision_venta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="comisiones_venta"
-    )
-    vendedor = models.ForeignKey(
-        "core.Usuarios", on_delete=models.PROTECT, related_name="comisiones_venta"
-    )
-    nota_venta = models.OneToOneField(
-        NotaVenta, on_delete=models.PROTECT, related_name="comision_venta"
-    )
-    esquema = models.ForeignKey(
-        EsquemaComision, on_delete=models.PROTECT, related_name="comisiones"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="comisiones_venta")
+    vendedor = models.ForeignKey("core.Usuarios", on_delete=models.PROTECT, related_name="comisiones_venta")
+    nota_venta = models.OneToOneField(NotaVenta, on_delete=models.PROTECT, related_name="comision_venta")
+    esquema = models.ForeignKey(EsquemaComision, on_delete=models.PROTECT, related_name="comisiones")
     base_comisionable = models.DecimalField(
         max_digits=18, decimal_places=4, help_text="Subtotal sin impuestos de la nota."
     )

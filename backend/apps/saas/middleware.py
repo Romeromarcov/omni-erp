@@ -128,14 +128,17 @@ class SuscripcionActivaMiddleware:
             if sus is None:
                 logger.warning(
                     "saas_middleware | empresa=%s | user=%s | sin suscripcion activa",
-                    empresa.pk, user.pk,
+                    empresa.pk,
+                    user.pk,
                 )
                 return HttpResponse(
-                    content=json.dumps({
-                        "detail": "Su empresa no tiene una suscripción activa. "
-                                  "Por favor, contáctenos para activar su plan.",
-                        "codigo": "SUSCRIPCION_REQUERIDA",
-                    }),
+                    content=json.dumps(
+                        {
+                            "detail": "Su empresa no tiene una suscripción activa. "
+                            "Por favor, contáctenos para activar su plan.",
+                            "codigo": "SUSCRIPCION_REQUERIDA",
+                        }
+                    ),
                     content_type="application/json",
                     status=402,
                 )

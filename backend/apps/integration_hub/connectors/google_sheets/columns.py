@@ -182,9 +182,7 @@ def _cell(value: Any) -> Any:
     return value
 
 
-def build_rows(
-    tipo_entidad: str, registros: list[dict]
-) -> tuple[list[str], list[list]]:
+def build_rows(tipo_entidad: str, registros: list[dict]) -> tuple[list[str], list[list]]:
     """
     Construye ``(encabezado, filas)`` para una entidad.
 

@@ -68,19 +68,13 @@ def test_proveedor_se_crea_con_contacto_gps_y_credito(api, bot_usuario, empresa_
     )
     assert r.status_code == 201, r.data
     p = Proveedor.objects.get(id_empresa=empresa_a)
-    assert (
-        p.rif == "J-301234567"
-        and p.email == "v@x.com"
-        and p.documento_json["origen"] == "bot"
-    )
+    assert p.rif == "J-301234567" and p.email == "v@x.com" and p.documento_json["origen"] == "bot"
     c = p.contacto
     assert c.es_proveedor and c.dias_pago == 45 and c.latitud == Decimal("10.480600")
     assert Contacto.objects.filter(id_empresa=empresa_a, rif="J-301234567").count() == 1
 
 
-def test_proveedor_existente_por_rif_no_se_duplica_ni_se_pisa(
-    api, bot_usuario, empresa_a
-):  # noqa: F811
+def test_proveedor_existente_por_rif_no_se_duplica_ni_se_pisa(api, bot_usuario, empresa_a):  # noqa: F811
     p = Proveedor.objects.create(
         id_empresa=empresa_a,
         razon_social="Nombre Original",
@@ -91,9 +85,7 @@ def test_proveedor_existente_por_rif_no_se_duplica_ni_se_pisa(
     assert r.status_code == 201 and r.data["resultado"]["creado"] is False
     p.refresh_from_db()
     assert Proveedor.objects.count() == 1
-    assert (
-        p.razon_social == "Nombre Original" and p.telefono == "0414-1111111"
-    )  # no se pisa lo que ya había
+    assert p.razon_social == "Nombre Original" and p.telefono == "0414-1111111"  # no se pisa lo que ya había
     assert p.email == "nuevo@x.com"  # sí se completa lo que faltaba
     assert p.contacto.es_proveedor
 
@@ -102,12 +94,7 @@ def test_proveedor_rif_y_telefono_invalidos(api, bot_usuario):  # noqa: F811
     assert enviar(api, "proveedor", _prov(rif="ABC")).status_code == 422
     assert enviar(api, "proveedor", _prov(telefono="12")).status_code == 422
     assert enviar(api, "proveedor", _prov(dias_credito="mucho")).status_code == 422
-    assert (
-        enviar(
-            api, "proveedor", _prov(ubicacion={"latitud": 99, "longitud": 0})
-        ).status_code
-        == 422
-    )
+    assert enviar(api, "proveedor", _prov(ubicacion={"latitud": 99, "longitud": 0})).status_code == 422
 
 
 def test_proveedor_idempotente(api, bot_usuario, empresa_a):  # noqa: F811
@@ -135,27 +122,16 @@ def test_factura_crea_cuenta_por_pagar(api, bot_usuario, proveedor):  # noqa: F8
     r = enviar(api, "factura_proveedor", _factura(fecha_vencimiento="2026-12-10"))
     assert r.status_code == 201 and r.data["estado"] == "PROCESADO", r.data
     cxp = CuentaPorPagar.objects.get(id_proveedor=proveedor)
-    assert (
-        cxp.monto_total == cxp.monto_pendiente == Decimal("1160")
-        and cxp.estado == "PENDIENTE"
-    )
+    assert cxp.monto_total == cxp.monto_pendiente == Decimal("1160") and cxp.estado == "PENDIENTE"
     assert str(cxp.fecha_vencimiento) == "2026-12-10"
     d = cxp.documento_json
-    assert (
-        d["numero_factura"] == "A-000123"
-        and d["moneda"] == "USD"
-        and d["numero_control"] == "00-0456"
-    )
+    assert d["numero_factura"] == "A-000123" and d["moneda"] == "USD" and d["numero_control"] == "00-0456"
     assert d["iva"] == "160" and d["base_imponible"] == "1000"
     assert r.data["resultado"]["avisos"] == []
 
 
-def test_factura_sin_vencimiento_usa_los_dias_de_credito_del_proveedor(
-    api, bot_usuario, proveedor, empresa_a
-):  # noqa: F811
-    c = Contacto.objects.create(
-        id_empresa=empresa_a, nombre="X", es_proveedor=True, dias_pago=15
-    )
+def test_factura_sin_vencimiento_usa_los_dias_de_credito_del_proveedor(api, bot_usuario, proveedor, empresa_a):  # noqa: F811
+    c = Contacto.objects.create(id_empresa=empresa_a, nombre="X", es_proveedor=True, dias_pago=15)
     proveedor.contacto = c
     proveedor.save()
     enviar(api, "factura_proveedor", _factura())
@@ -164,14 +140,10 @@ def test_factura_sin_vencimiento_usa_los_dias_de_credito_del_proveedor(
 
 def test_factura_sin_numero_de_control_avisa_pero_se_carga(api, bot_usuario, proveedor):  # noqa: F811
     r = enviar(api, "factura_proveedor", _factura(numero_control=None))
-    assert r.status_code == 201 and r.data["resultado"]["avisos"] == [
-        "sin número de control"
-    ]
+    assert r.status_code == 201 and r.data["resultado"]["avisos"] == ["sin número de control"]
 
 
-def test_factura_incompleta_no_crea_nada_y_se_completa_despues(
-    api, bot_usuario, proveedor
-):  # noqa: F811
+def test_factura_incompleta_no_crea_nada_y_se_completa_despues(api, bot_usuario, proveedor):  # noqa: F811
     r = enviar(
         api,
         "factura_proveedor",
@@ -180,20 +152,13 @@ def test_factura_incompleta_no_crea_nada_y_se_completa_despues(
         auto=True,
     )
     assert r.status_code == 201 and r.data["estado"] == "INCOMPLETO"
-    assert (
-        set(r.data["incompleto"]) == {"monto_total", "fecha_emision"}
-        and CuentaPorPagar.objects.count() == 0
-    )
+    assert set(r.data["incompleto"]) == {"monto_total", "fecha_emision"} and CuentaPorPagar.objects.count() == 0
     r2 = api.post(
         f"/api/bots/ingest/{r.data['id_ingesta']}/completar/",
         {"cambios": {"monto_total": "1160", "fecha_emision": "2026-11-10"}},
         format="json",
     )
-    assert (
-        r2.status_code == 200
-        and r2.data["estado"] == "PROCESADO"
-        and r2.data["incompleto"] == []
-    )
+    assert r2.status_code == 200 and r2.data["estado"] == "PROCESADO" and r2.data["incompleto"] == []
     assert CuentaPorPagar.objects.get().monto_total == Decimal("1160")
     # ya procesada: no se puede volver a completar
     assert (
@@ -208,19 +173,12 @@ def test_factura_incompleta_no_crea_nada_y_se_completa_despues(
 
 def test_factura_sin_proveedor_queda_incompleta(api, bot_usuario):  # noqa: F811
     r = enviar(api, "factura_proveedor", _factura(proveedor=None, rif=None))
-    assert (
-        r.data["estado"] == "INCOMPLETO"
-        and "proveedor (nombre o RIF)" in r.data["incompleto"]
-    )
+    assert r.data["estado"] == "INCOMPLETO" and "proveedor (nombre o RIF)" in r.data["incompleto"]
 
 
-def test_factura_con_proveedor_desconocido_sin_rif_lo_crea_provisional(
-    api, bot_usuario, empresa_a
-):  # noqa: F811
+def test_factura_con_proveedor_desconocido_sin_rif_lo_crea_provisional(api, bot_usuario, empresa_a):  # noqa: F811
     r = enviar(api, "factura_proveedor", _factura(rif=None, proveedor="Nadie S.A."))
-    assert (
-        r.status_code == 201 and r.data["resultado"]["proveedor_creado"] is True
-    ), r.data
+    assert r.status_code == 201 and r.data["resultado"]["proveedor_creado"] is True, r.data
     p = Proveedor.objects.get(id_empresa=empresa_a, razon_social="Nadie S.A.")
     assert p.rif.startswith("PEND-") and p.documento_json["provisional"] is True
     assert CuentaPorPagar.objects.get().id_proveedor == p
@@ -232,18 +190,11 @@ def test_factura_sin_nombre_y_con_rif_desconocido_pide_el_nombre(api, bot_usuari
     assert CuentaPorPagar.objects.count() == 0
 
 
-def test_factura_con_proveedor_nuevo_y_rif_lo_crea_provisional(
-    api, bot_usuario, empresa_a
-):  # noqa: F811
-    r = enviar(
-        api, "factura_proveedor", _factura(proveedor="Nuevo Prov", rif="J-999999999")
-    )
+def test_factura_con_proveedor_nuevo_y_rif_lo_crea_provisional(api, bot_usuario, empresa_a):  # noqa: F811
+    r = enviar(api, "factura_proveedor", _factura(proveedor="Nuevo Prov", rif="J-999999999"))
     assert r.status_code == 201, r.data
     p = Proveedor.objects.get(id_empresa=empresa_a, rif="J-999999999")
-    assert (
-        p.documento_json["provisional"] is True
-        and CuentaPorPagar.objects.get().id_proveedor == p
-    )
+    assert p.documento_json["provisional"] is True and CuentaPorPagar.objects.get().id_proveedor == p
 
 
 def test_factura_duplicada_se_rechaza_con_409(api, bot_usuario, proveedor):  # noqa: F811
@@ -253,12 +204,8 @@ def test_factura_duplicada_se_rechaza_con_409(api, bot_usuario, proveedor):  # n
     assert CuentaPorPagar.objects.count() == 1
 
 
-def test_misma_factura_de_otro_proveedor_es_valida(
-    api, bot_usuario, proveedor, empresa_a
-):  # noqa: F811
-    Proveedor.objects.create(
-        id_empresa=empresa_a, razon_social="Otro", rif="J-111111111"
-    )
+def test_misma_factura_de_otro_proveedor_es_valida(api, bot_usuario, proveedor, empresa_a):  # noqa: F811
+    Proveedor.objects.create(id_empresa=empresa_a, razon_social="Otro", rif="J-111111111")
     enviar(api, "factura_proveedor", _factura(), key="a")
     assert (
         enviar(
@@ -305,9 +252,7 @@ def test_pago_proveedor_referencia_la_factura_cargada(api, bot_usuario, proveedo
     assert r.status_code == 201 and r.data["estado"] == "BORRADOR"
     assert r.data["resultado"]["cxp_id"] == str(cxp.pk)
     cxp.refresh_from_db()
-    assert cxp.monto_pendiente == Decimal(
-        "1160"
-    )  # solo se referencia: el abono lo aplica quien concilia
+    assert cxp.monto_pendiente == Decimal("1160")  # solo se referencia: el abono lo aplica quien concilia
 
 
 def test_pago_proveedor_con_factura_desconocida_no_falla(api, bot_usuario, proveedor):  # noqa: F811
@@ -329,49 +274,32 @@ def test_pago_proveedor_con_factura_desconocida_no_falla(api, bot_usuario, prove
 
 @pytest.mark.tenant
 def test_no_usa_proveedores_de_otra_empresa(api, bot_usuario, empresa_b):  # noqa: F811
-    Proveedor.objects.create(
-        id_empresa=empresa_b, razon_social="Ajeno", rif="J-301234567"
-    )
+    Proveedor.objects.create(id_empresa=empresa_b, razon_social="Ajeno", rif="J-301234567")
     r = enviar(api, "proveedor", _prov())
-    assert (
-        r.data["resultado"]["creado"] is True
-    )  # el RIF ajeno no cuenta como existente
-    r = enviar(
-        api, "factura_proveedor", _factura(rif=None, proveedor="Ajeno"), key="otra"
-    )
-    assert (
-        r.status_code == 201 and r.data["resultado"]["proveedor_creado"] is True
-    )  # no usa el ajeno
+    assert r.data["resultado"]["creado"] is True  # el RIF ajeno no cuenta como existente
+    r = enviar(api, "factura_proveedor", _factura(rif=None, proveedor="Ajeno"), key="otra")
+    assert r.status_code == 201 and r.data["resultado"]["proveedor_creado"] is True  # no usa el ajeno
 
 
 # ── carreras y robustez (hallazgos de las pruebas de punta a punta) ──────────
 
 
-def test_alta_de_proveedor_que_pierde_la_carrera_devuelve_el_existente(
-    api, bot_usuario, empresa_a, monkeypatch
-):
+def test_alta_de_proveedor_que_pierde_la_carrera_devuelve_el_existente(api, bot_usuario, empresa_a, monkeypatch):
     """Si otro envío simultáneo creó el proveedor entre la búsqueda y el alta, no hay 500: se usa el que quedó."""
     from apps.bots_ingest.services import handlers
 
-    Proveedor.objects.create(
-        id_empresa=empresa_a, razon_social="Ya existe", rif="J-301234567"
-    )
+    Proveedor.objects.create(id_empresa=empresa_a, razon_social="Ya existe", rif="J-301234567")
     real = handlers._proveedor_por
     llamadas = {"n": 0}
 
     def primero_no_lo_ve(*a, **k):
         llamadas["n"] += 1
-        return (
-            None if llamadas["n"] == 1 else real(*a, **k)
-        )  # la 1.ª búsqueda ocurre «antes» de que el otro cree
+        return None if llamadas["n"] == 1 else real(*a, **k)  # la 1.ª búsqueda ocurre «antes» de que el otro cree
 
     monkeypatch.setattr(handlers, "_proveedor_por", primero_no_lo_ve)
     r = enviar(api, "proveedor", _prov())
     assert r.status_code == 201, r.data
-    assert (
-        r.data["resultado"]["creado"] is False
-        and Proveedor.objects.filter(id_empresa=empresa_a).count() == 1
-    )
+    assert r.data["resultado"]["creado"] is False and Proveedor.objects.filter(id_empresa=empresa_a).count() == 1
 
 
 def test_factura_con_proveedor_nuevo_que_pierde_la_carrera_tambien_se_resuelve(
@@ -379,9 +307,7 @@ def test_factura_con_proveedor_nuevo_que_pierde_la_carrera_tambien_se_resuelve(
 ):
     from apps.bots_ingest.services import handlers
 
-    Proveedor.objects.create(
-        id_empresa=empresa_a, razon_social="Nuevo Prov", rif="J-999999999"
-    )
+    Proveedor.objects.create(id_empresa=empresa_a, razon_social="Nuevo Prov", rif="J-999999999")
     real = handlers._proveedor_por
     llamadas = {"n": 0}
 
@@ -390,19 +316,13 @@ def test_factura_con_proveedor_nuevo_que_pierde_la_carrera_tambien_se_resuelve(
         return None if llamadas["n"] == 1 else real(*a, **k)
 
     monkeypatch.setattr(handlers, "_proveedor_por", primero_no_lo_ve)
-    r = enviar(
-        api, "factura_proveedor", _factura(proveedor="Nuevo Prov", rif="J-999999999")
-    )
+    r = enviar(api, "factura_proveedor", _factura(proveedor="Nuevo Prov", rif="J-999999999"))
     assert r.status_code == 201, r.data
-    assert (
-        Proveedor.objects.filter(id_empresa=empresa_a, rif="J-999999999").count() == 1
-    )
+    assert Proveedor.objects.filter(id_empresa=empresa_a, rif="J-999999999").count() == 1
 
 
 @pytest.mark.django_db(transaction=True)
-def test_la_misma_factura_enviada_en_paralelo_se_carga_una_sola_vez(
-    servicio, bot_usuario, proveedor, empresa_a
-):
+def test_la_misma_factura_enviada_en_paralelo_se_carga_una_sola_vez(servicio, bot_usuario, proveedor, empresa_a):
     """Seis envíos simultáneos de la misma factura (claves distintas): una sola cuenta por pagar."""
     from concurrent.futures import ThreadPoolExecutor
 
@@ -459,52 +379,30 @@ def _gasto(**kw):
 @pytest.fixture
 def monedas(db):
     return {
-        c: Moneda.objects.get_or_create(
-            codigo_iso=c, defaults={"nombre": c, "simbolo": c}
-        )[0]
-        for c in ("USD", "VES")
+        c: Moneda.objects.get_or_create(codigo_iso=c, defaults={"nombre": c, "simbolo": c})[0] for c in ("USD", "VES")
     }
 
 
-def test_gasto_crea_el_proveedor_desde_el_documento_y_el_gasto(
-    api, bot_usuario, monedas, empresa_a
-):  # noqa: F811
+def test_gasto_crea_el_proveedor_desde_el_documento_y_el_gasto(api, bot_usuario, monedas, empresa_a):  # noqa: F811
     r = enviar(api, "gasto", _gasto())
     assert r.status_code == 201 and r.data["estado"] == "PROCESADO", r.data
     assert r.data["resultado"]["proveedor_creado"] is True
     p = Proveedor.objects.get(id_empresa=empresa_a, rif="J-307654321")
-    assert p.razon_social == "Comidas Rápidas Valencia C.A." and p.direccion.startswith(
-        "C.C. Sambil"
-    )
-    assert (
-        p.telefono == "0241-5551234"
-        and p.contacto.es_proveedor
-        and p.documento_json["provisional"] is True
-    )
+    assert p.razon_social == "Comidas Rápidas Valencia C.A." and p.direccion.startswith("C.C. Sambil")
+    assert p.telefono == "0241-5551234" and p.contacto.es_proveedor and p.documento_json["provisional"] is True
     g = Gasto.objects.get(id_empresa=empresa_a)
     assert (g.monto, g.monto_iva, g.id_moneda.codigo_iso) == (
         Decimal("11.60"),
         Decimal("1.60"),
         "USD",
     )
-    assert (
-        g.id_proveedor == p
-        and g.numero_factura == "00012345"
-        and g.tiene_factura is True
-    )
-    assert (
-        g.id_categoria_gasto.nombre_categoria == "Compras menores"
-    )  # «Alimentación» no existe: va a la por defecto
-    assert (
-        g.estado_gasto == "PENDIENTE_APROBACION"
-        and g.id_usuario_registro_id == bot_usuario.usuario_id
-    )
+    assert g.id_proveedor == p and g.numero_factura == "00012345" and g.tiene_factura is True
+    assert g.id_categoria_gasto.nombre_categoria == "Compras menores"  # «Alimentación» no existe: va a la por defecto
+    assert g.estado_gasto == "PENDIENTE_APROBACION" and g.id_usuario_registro_id == bot_usuario.usuario_id
     assert g.descripcion == "Almuerzo de la jornada de campo"
 
 
-def test_gasto_con_proveedor_existente_no_lo_duplica_ni_pisa_sus_datos(
-    api, bot_usuario, monedas, empresa_a
-):  # noqa: F811
+def test_gasto_con_proveedor_existente_no_lo_duplica_ni_pisa_sus_datos(api, bot_usuario, monedas, empresa_a):  # noqa: F811
     p = Proveedor.objects.create(
         id_empresa=empresa_a,
         razon_social="Nombre Original",
@@ -515,12 +413,8 @@ def test_gasto_con_proveedor_existente_no_lo_duplica_ni_pisa_sus_datos(
     assert r.status_code == 201 and r.data["resultado"]["proveedor_creado"] is False
     p.refresh_from_db()
     assert Proveedor.objects.filter(id_empresa=empresa_a).count() == 1
-    assert (
-        p.razon_social == "Nombre Original" and p.telefono == "0414-1112233"
-    )  # no se pisa
-    assert (
-        p.direccion == "C.C. Sambil, local 12, Valencia"
-    )  # sí se completa lo que le faltaba
+    assert p.razon_social == "Nombre Original" and p.telefono == "0414-1112233"  # no se pisa
+    assert p.direccion == "C.C. Sambil, local 12, Valencia"  # sí se completa lo que le faltaba
     assert Gasto.objects.get().id_proveedor == p
 
 
@@ -531,9 +425,7 @@ def test_gasto_sin_rif_usa_un_rif_provisional_estable_y_reconoce_al_proveedor_de
     r2 = enviar(
         api,
         "gasto",
-        _gasto(
-            rif=None, proveedor="  comidas  rápidas valencia c.a. ", numero_factura="A2"
-        ),
+        _gasto(rif=None, proveedor="  comidas  rápidas valencia c.a. ", numero_factura="A2"),
         key="b",
     )
     assert r1.status_code == r2.status_code == 201, (r1.data, r2.data)
@@ -544,20 +436,14 @@ def test_gasto_sin_rif_usa_un_rif_provisional_estable_y_reconoce_al_proveedor_de
     assert "proveedor sin RIF: pendiente de completar" in r1.data["resultado"]["avisos"]
 
 
-def test_llega_el_rif_de_un_proveedor_creado_sin_el(
-    api, bot_usuario, monedas, empresa_a
-):  # noqa: F811
+def test_llega_el_rif_de_un_proveedor_creado_sin_el(api, bot_usuario, monedas, empresa_a):  # noqa: F811
     enviar(api, "gasto", _gasto(rif=None, numero_factura="A1"), key="a")
-    enviar(
-        api, "gasto", _gasto(numero_factura="A2"), key="b"
-    )  # ahora el documento trae el RIF
+    enviar(api, "gasto", _gasto(numero_factura="A2"), key="b")  # ahora el documento trae el RIF
     p = Proveedor.objects.get(id_empresa=empresa_a)
     assert p.rif == "J-307654321"
 
 
-def test_mismo_nombre_con_otro_rif_es_otro_proveedor(
-    api, bot_usuario, monedas, empresa_a
-):  # noqa: F811
+def test_mismo_nombre_con_otro_rif_es_otro_proveedor(api, bot_usuario, monedas, empresa_a):  # noqa: F811
     Proveedor.objects.create(
         id_empresa=empresa_a,
         razon_social="Comidas Rápidas Valencia C.A.",
@@ -568,17 +454,10 @@ def test_mismo_nombre_con_otro_rif_es_otro_proveedor(
     assert Proveedor.objects.filter(id_empresa=empresa_a).count() == 2
 
 
-def test_gasto_usa_la_categoria_existente_por_nombre(
-    api, bot_usuario, monedas, empresa_a
-):  # noqa: F811
-    CategoriaGasto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Alimentación y bebidas"
-    )
+def test_gasto_usa_la_categoria_existente_por_nombre(api, bot_usuario, monedas, empresa_a):  # noqa: F811
+    CategoriaGasto.objects.create(id_empresa=empresa_a, nombre_categoria="Alimentación y bebidas")
     enviar(api, "gasto", _gasto())
-    assert (
-        Gasto.objects.get().id_categoria_gasto.nombre_categoria
-        == "Alimentación y bebidas"
-    )
+    assert Gasto.objects.get().id_categoria_gasto.nombre_categoria == "Alimentación y bebidas"
 
 
 def test_gasto_en_bolivares_acepta_bs_y_variantes(api, bot_usuario, monedas):  # noqa: F811
@@ -586,23 +465,15 @@ def test_gasto_en_bolivares_acepta_bs_y_variantes(api, bot_usuario, monedas):  #
     assert r.status_code == 201 and Gasto.objects.get().id_moneda.codigo_iso == "VES"
 
 
-def test_gasto_con_moneda_inexistente_se_rechaza_sin_basura(
-    api, bot_usuario, monedas, empresa_a
-):  # noqa: F811
+def test_gasto_con_moneda_inexistente_se_rechaza_sin_basura(api, bot_usuario, monedas, empresa_a):  # noqa: F811
     r = enviar(api, "gasto", _gasto(moneda="XYZ"))
     assert r.status_code == 422 and "moneda" in r.data["error"].lower()
-    assert (
-        Proveedor.objects.filter(id_empresa=empresa_a).count() == 0
-        and Gasto.objects.count() == 0
-    )  # nada a medias
+    assert Proveedor.objects.filter(id_empresa=empresa_a).count() == 0 and Gasto.objects.count() == 0  # nada a medias
 
 
 def test_gasto_sin_numero_de_factura_se_registra_con_aviso(api, bot_usuario, monedas):  # noqa: F811
     r = enviar(api, "gasto", _gasto(numero_factura=None))
-    assert (
-        r.status_code == 201
-        and "sin número de factura" in r.data["resultado"]["avisos"]
-    )
+    assert r.status_code == 201 and "sin número de factura" in r.data["resultado"]["avisos"]
     g = Gasto.objects.get()
     assert g.tiene_factura is False and g.numero_factura is None
 
@@ -610,31 +481,16 @@ def test_gasto_sin_numero_de_factura_se_registra_con_aviso(api, bot_usuario, mon
 def test_gasto_duplicado_del_mismo_proveedor_es_409(api, bot_usuario, monedas):  # noqa: F811
     assert enviar(api, "gasto", _gasto(), key="a").status_code == 201
     r = enviar(api, "gasto", _gasto(), key="b")
-    assert (
-        r.status_code == 409
-        and "ya está cargada" in r.data["error"]
-        and Gasto.objects.count() == 1
-    )
+    assert r.status_code == 409 and "ya está cargada" in r.data["error"] and Gasto.objects.count() == 1
 
 
-@pytest.mark.parametrize(
-    "quitar", ["proveedor", "fecha_emision", "monto_total", "moneda"]
-)
-def test_gasto_incompleto_no_crea_nada_hasta_completarse(
-    api, bot_usuario, monedas, empresa_a, quitar
-):  # noqa: F811
+@pytest.mark.parametrize("quitar", ["proveedor", "fecha_emision", "monto_total", "moneda"])
+def test_gasto_incompleto_no_crea_nada_hasta_completarse(api, bot_usuario, monedas, empresa_a, quitar):  # noqa: F811
     d = _gasto()
     d.pop(quitar)
     r = enviar(api, "gasto", d, key="g1", auto=True)
-    assert (
-        r.status_code == 201
-        and r.data["estado"] == "INCOMPLETO"
-        and quitar in r.data["incompleto"][0]
-    )
-    assert (
-        Gasto.objects.count() == 0
-        and Proveedor.objects.filter(id_empresa=empresa_a).count() == 0
-    )
+    assert r.status_code == 201 and r.data["estado"] == "INCOMPLETO" and quitar in r.data["incompleto"][0]
+    assert Gasto.objects.count() == 0 and Proveedor.objects.filter(id_empresa=empresa_a).count() == 0
     r2 = api.post(
         f"/api/bots/ingest/{r.data['id_ingesta']}/completar/",
         {"cambios": {quitar: _gasto()[quitar]}},
@@ -656,16 +512,11 @@ def test_gasto_incompleto_no_crea_nada_hasta_completarse(
 )
 def test_gasto_con_datos_invalidos(api, bot_usuario, monedas, empresa_a, cambio):  # noqa: F811
     assert enviar(api, "gasto", _gasto(**cambio)).status_code == 422
-    assert (
-        Gasto.objects.count() == 0
-        and Proveedor.objects.filter(id_empresa=empresa_a).count() == 0
-    )
+    assert Gasto.objects.count() == 0 and Proveedor.objects.filter(id_empresa=empresa_a).count() == 0
 
 
 @pytest.mark.django_db(transaction=True)
-def test_gastos_simultaneos_de_un_proveedor_nuevo_no_lo_duplican(
-    servicio, bot_usuario, monedas, empresa_a
-):  # noqa: F811
+def test_gastos_simultaneos_de_un_proveedor_nuevo_no_lo_duplican(servicio, bot_usuario, monedas, empresa_a):  # noqa: F811
     """Seis recibos de un proveedor que aún no existe, enviados a la vez: un solo proveedor y seis gastos."""
     from concurrent.futures import ThreadPoolExecutor
 
@@ -676,9 +527,7 @@ def test_gastos_simultaneos_de_un_proveedor_nuevo_no_lo_duplican(
         try:
             c = APIClient()
             c.force_authenticate(user=servicio)
-            return enviar(
-                c, "gasto", _gasto(numero_factura=f"R-{i}"), key=f"g-{i}"
-            ).status_code
+            return enviar(c, "gasto", _gasto(numero_factura=f"R-{i}"), key=f"g-{i}").status_code
         finally:
             connection.close()
 
@@ -688,16 +537,11 @@ def test_gastos_simultaneos_de_un_proveedor_nuevo_no_lo_duplican(
         with ThreadPoolExecutor(max_workers=6) as ex:
             codigos = list(ex.map(enviar_en_hilo, range(6)))
     assert codigos == [201] * 6, codigos
-    assert (
-        Proveedor.objects.filter(id_empresa=empresa_a).count() == 1
-        and Gasto.objects.count() == 6
-    )
+    assert Proveedor.objects.filter(id_empresa=empresa_a).count() == 1 and Gasto.objects.count() == 6
 
 
 @pytest.mark.tenant
-def test_gasto_no_usa_el_proveedor_ni_la_categoria_de_otra_empresa(
-    api, bot_usuario, monedas, empresa_a, empresa_b
-):  # noqa: F811
+def test_gasto_no_usa_el_proveedor_ni_la_categoria_de_otra_empresa(api, bot_usuario, monedas, empresa_a, empresa_b):  # noqa: F811
     Proveedor.objects.create(
         id_empresa=empresa_b,
         razon_social="Comidas Rápidas Valencia C.A.",
@@ -707,16 +551,11 @@ def test_gasto_no_usa_el_proveedor_ni_la_categoria_de_otra_empresa(
     r = enviar(api, "gasto", _gasto())
     assert r.status_code == 201 and r.data["resultado"]["proveedor_creado"] is True
     g = Gasto.objects.get(id_empresa=empresa_a)
-    assert (
-        g.id_proveedor.id_empresa_id == empresa_a.pk
-        and g.id_categoria_gasto.id_empresa_id == empresa_a.pk
-    )
+    assert g.id_proveedor.id_empresa_id == empresa_a.pk and g.id_categoria_gasto.id_empresa_id == empresa_a.pk
 
 
 @pytest.mark.tenant
-def test_gasto_no_usa_moneda_privada_de_otra_empresa(
-    api, bot_usuario, monedas, empresa_a, empresa_b
-):  # noqa: F811
+def test_gasto_no_usa_moneda_privada_de_otra_empresa(api, bot_usuario, monedas, empresa_a, empresa_b):  # noqa: F811
     Moneda.objects.create(
         codigo_iso="TKB",
         nombre="Token Privado B",
@@ -731,4 +570,3 @@ def test_gasto_no_usa_moneda_privada_de_otra_empresa(
     assert "no existe en Omni" in r.data["error"]
     assert "moneda" in r.data["faltan"]
     assert not Gasto.objects.filter(id_empresa=empresa_a).exists()
-

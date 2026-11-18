@@ -89,7 +89,6 @@ def producto(empresa_a, categoria, unidad, moneda_usd):
 
 
 class TestRegistrarMovimiento:
-
     def test_entrada_crea_stock_inicial(self, user_a, empresa_a, almacen_a, producto):
         registrar_movimiento(
             empresa=empresa_a,
@@ -161,9 +160,7 @@ class TestRegistrarMovimiento:
                 usuario=user_a,
             )
 
-    def test_transferencia_mueve_stock_entre_almacenes(
-        self, user_a, empresa_a, almacen_a, almacen_b, producto
-    ):
+    def test_transferencia_mueve_stock_entre_almacenes(self, user_a, empresa_a, almacen_a, almacen_b, producto):
         now = timezone.now()
         registrar_movimiento(
             empresa=empresa_a,
@@ -189,9 +186,7 @@ class TestRegistrarMovimiento:
         assert stock_a.cantidad_disponible == Decimal("60")
         assert stock_b.cantidad_disponible == Decimal("40")
 
-    def test_transferencia_mismo_almacen_lanza_error(
-        self, user_a, empresa_a, almacen_a, producto
-    ):
+    def test_transferencia_mismo_almacen_lanza_error(self, user_a, empresa_a, almacen_a, producto):
         with pytest.raises(MovimientoInvalidoError, match="distintos"):
             registrar_movimiento(
                 empresa=empresa_a,
@@ -251,9 +246,7 @@ class TestRegistrarMovimiento:
         stock = StockActual.objects.get(id_producto=producto, id_almacen=almacen_a)
         assert stock.cantidad_disponible == Decimal("80")
 
-    def test_movimiento_es_atomico_si_falla_stock(
-        self, user_a, empresa_a, almacen_a, almacen_b, producto
-    ):
+    def test_movimiento_es_atomico_si_falla_stock(self, user_a, empresa_a, almacen_a, almacen_b, producto):
         """Si la segunda actualización de stock falla, el movimiento completo se revierte."""
         with pytest.raises(StockInsuficienteError):
             registrar_movimiento(
@@ -267,6 +260,7 @@ class TestRegistrarMovimiento:
                 usuario=user_a,
             )
         from apps.inventario.models import MovimientoInventario
+
         assert MovimientoInventario.objects.count() == 0
 
 
@@ -274,7 +268,6 @@ class TestRegistrarMovimiento:
 
 
 class TestMovimientoInventarioAPI:
-
     @pytest.fixture(autouse=True)
     def _client(self, user_a):
         self.client = APIClient()
@@ -325,9 +318,7 @@ class TestMovimientoInventarioAPI:
         data = response.json()
         assert str(self.user_a.pk) == str(data["id_usuario_registro"])
 
-    def test_api_aislamiento_empresa_b_no_ve_movimientos(
-        self, user_b, empresa_a, almacen_a, producto
-    ):
+    def test_api_aislamiento_empresa_b_no_ve_movimientos(self, user_b, empresa_a, almacen_a, producto):
         """user_b pertenece a empresa_b: no debe ver movimientos de empresa_a."""
         registrar_movimiento(
             empresa=empresa_a,
@@ -349,10 +340,7 @@ class TestMovimientoInventarioAPI:
 
 
 class TestKardexEndpoint:
-
-    def test_kardex_retorna_historial_con_saldo_corriente(
-        self, user_a, empresa_a, almacen_a, producto
-    ):
+    def test_kardex_retorna_historial_con_saldo_corriente(self, user_a, empresa_a, almacen_a, producto):
         client = APIClient()
         client.force_authenticate(user=user_a)
         now = timezone.now()
@@ -423,9 +411,7 @@ class TestKardexEndpoint:
         assert response.status_code == 200
         assert len(response.json()["kardex"]) == 2
 
-    def test_kardex_empresa_b_no_puede_ver_producto_de_empresa_a(
-        self, user_b, empresa_a, almacen_a, producto
-    ):
+    def test_kardex_empresa_b_no_puede_ver_producto_de_empresa_a(self, user_b, empresa_a, almacen_a, producto):
         client_b = APIClient()
         client_b.force_authenticate(user=user_b)
         url = f"/api/inventario/productos/{producto.pk}/kardex/"
@@ -437,7 +423,6 @@ class TestKardexEndpoint:
 
 
 class TestStockActualAPI:
-
     def test_filtro_por_producto(self, user_a, empresa_a, almacen_a, almacen_b, producto):
         client = APIClient()
         client.force_authenticate(user=user_a)
@@ -508,9 +493,7 @@ class TestProductoAPI:
         self.client = APIClient()
         self.client.force_authenticate(user=user_a)
 
-    def test_crear_producto_con_metodo_valoracion_fifo(
-        self, empresa_a, categoria, unidad, moneda_usd
-    ):
+    def test_crear_producto_con_metodo_valoracion_fifo(self, empresa_a, categoria, unidad, moneda_usd):
         url = "/api/inventario/productos/"
         payload = {
             "id_empresa": str(empresa_a.pk),
@@ -539,9 +522,7 @@ class TestProductoAPI:
     def test_listar_productos_incluye_metodo_valoracion(self, producto):
         response = self.client.get("/api/inventario/productos/")
         assert response.status_code == 200
-        fila = next(
-            p for p in response.json()["results"] if p["id_producto"] == str(producto.pk)
-        )
+        fila = next(p for p in response.json()["results"] if p["id_producto"] == str(producto.pk))
         # default del modelo
         assert fila["metodo_valoracion"] == "PROMEDIO"
 

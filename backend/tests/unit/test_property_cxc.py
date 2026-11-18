@@ -64,6 +64,7 @@ def _partida(dias: int, monto: Decimal, idx: int = 0) -> PartidaCartera:
 
 # ── Bucket: frontera exacta ────────────────────────────────────────────────────
 
+
 @given(dias=dias_strategy)
 def test_bucket_pertenece_al_catalogo(dias):
     assert _calcular_bucket(dias) in BUCKETS
@@ -83,6 +84,7 @@ def test_bucket_fronteras_exactas():
 
 
 # ── Aging: sumas e invariantes de conteo ───────────────────────────────────────
+
 
 @settings(max_examples=300)
 @given(
@@ -135,6 +137,7 @@ def test_aging_ignora_saldo_cero_o_negativo():
 
 
 # ── Scoring: fórmula, no-negatividad y monotonía ───────────────────────────────
+
 
 @given(
     dias=st.integers(min_value=0, max_value=3650),

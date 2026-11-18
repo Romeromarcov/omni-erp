@@ -9,6 +9,7 @@ Cubre:
   correcto) y excepción del producer (False).
 - ``_delivery_report`` con y sin error.
 """
+
 import json
 from unittest import mock
 
@@ -67,6 +68,7 @@ class TestHelpers:
 
     def test_settings_rotos_degradan_con_defaults(self):
         """Si django.conf.settings no está disponible, los helpers no explotan."""
+
         class _SettingsRotos:
             def __getattr__(self, name):
                 raise RuntimeError("settings no configurados")
@@ -104,7 +106,8 @@ class TestGetProducer:
     def test_fallo_de_conexion_devuelve_none(self, monkeypatch):
         monkeypatch.setattr(producer, "KAFKA_AVAILABLE", True)
         monkeypatch.setattr(
-            producer, "Producer",
+            producer,
+            "Producer",
             mock.Mock(side_effect=RuntimeError("broker inaccesible")),
             raising=False,
         )
@@ -127,9 +130,7 @@ class TestPublicarEvento:
         monkeypatch.setattr(producer, "KAFKA_AVAILABLE", True)
         monkeypatch.setattr(producer, "Producer", FakeProducer, raising=False)
 
-        ok = producer.publicar_evento(
-            "ventas.pedido.creado", {"numero": "PED-1"}, empresa_id="emp-1"
-        )
+        ok = producer.publicar_evento("ventas.pedido.creado", {"numero": "PED-1"}, empresa_id="emp-1")
         assert ok is True
 
         fake = producer._producer_instance

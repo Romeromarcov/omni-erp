@@ -60,7 +60,9 @@ def fiscal_parafiscales_pendientes(
     )
     logger.info(
         "fiscal_parafiscales_pendientes | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(pagos),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(pagos),
     )
     return [
         {

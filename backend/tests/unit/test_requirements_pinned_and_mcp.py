@@ -20,9 +20,7 @@ pytestmark = pytest.mark.unit
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 REQUIREMENTS_PATH = BACKEND_DIR / "requirements.txt"
 
-EXACT_PIN_RE = re.compile(
-    r"^[A-Za-z0-9][A-Za-z0-9._-]*(?:\[[A-Za-z0-9.,_-]+\])?==[A-Za-z0-9.+_-]+$"
-)
+EXACT_PIN_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(?:\[[A-Za-z0-9.,_-]+\])?==[A-Za-z0-9.+_-]+$")
 FORBIDDEN_SPEC_TOKENS = (">=", "<=", "~=", "!=", "===", ">", "<", "*")
 
 BASE_MCP_TOOLS = {
@@ -65,22 +63,16 @@ def test_requirements_txt_uses_exact_pins():
 
     for line in lines:
         spec = line.split(";", 1)[0].strip()
-        if any(tok in spec for tok in FORBIDDEN_SPEC_TOKENS) or not EXACT_PIN_RE.match(
-            spec
-        ):
+        if any(tok in spec for tok in FORBIDDEN_SPEC_TOKENS) or not EXACT_PIN_RE.match(spec):
             invalid.append(line)
             continue
         name, version = spec.split("==", 1)
         normalized_name = name.split("[", 1)[0].lower().replace("_", "-")
         packages[normalized_name] = version
 
-    assert (
-        not invalid
-    ), f"Dependencias sin pin exacto '==' en requirements.txt: {invalid}"
+    assert not invalid, f"Dependencias sin pin exacto '==' en requirements.txt: {invalid}"
     for expected in ("mcp", "confluent-kafka", "django-ratelimit", "anthropic"):
-        assert (
-            expected in packages
-        ), f"Falta dependencia requerida en requirements.txt: {expected}"
+        assert expected in packages, f"Falta dependencia requerida en requirements.txt: {expected}"
 
 
 def test_mcp_available_and_base_tools_registered():
@@ -92,6 +84,4 @@ def test_mcp_available_and_base_tools_registered():
 
     registered = {tool.name for tool in asyncio.run(mcp_server.mcp.list_tools())}
     missing = BASE_MCP_TOOLS - registered
-    assert (
-        not missing
-    ), f"Faltan tools MCP base registradas en FastMCP: {sorted(missing)}"
+    assert not missing, f"Faltan tools MCP base registradas en FastMCP: {sorted(missing)}"

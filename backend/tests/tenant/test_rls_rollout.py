@@ -74,9 +74,7 @@ def test_registro_cubre_todo_modelo_tenant():
 
 def test_registro_sin_tablas_fantasma():
     tenant = _modelos_tenant()
-    fantasmas = sorted(
-        (set(rls.RLS_TABLES) | set(rls.RLS_EXCLUDED_TABLES)) - set(tenant)
-    )
+    fantasmas = sorted((set(rls.RLS_TABLES) | set(rls.RLS_EXCLUDED_TABLES)) - set(tenant))
     assert not fantasmas, f"Tablas en el registro RLS que ya no son modelos tenant: {fantasmas}"
 
 
@@ -143,21 +141,17 @@ def test_politica_activa_y_force_en_tabla(tabla):
 
     assert estado is not None, f"Tabla {tabla} no existe en el esquema public"
     assert estado[0], f"{tabla}: ROW LEVEL SECURITY no está ENABLE"
-    assert estado[1], (
-        f"{tabla}: falta FORCE ROW LEVEL SECURITY (sin FORCE el rol dueño "
-        "salta la política)"
-    )
+    assert estado[1], f"{tabla}: falta FORCE ROW LEVEL SECURITY (sin FORCE el rol dueño " "salta la política)"
     assert politica is not None, f"{tabla}: falta la política {rls.POLICY_NAME}"
 
     qual, with_check = politica
     assert columna in qual, f"{tabla}: la política no filtra por {columna}: {qual}"
-    assert rls.GUC_EMPRESAS in qual and rls.GUC_BYPASS in qual, (
-        f"{tabla}: la política no usa los GUC de sesión: {qual}"
-    )
+    assert (
+        rls.GUC_EMPRESAS in qual and rls.GUC_BYPASS in qual
+    ), f"{tabla}: la política no usa los GUC de sesión: {qual}"
     es_compartida = tabla in rls.RLS_SHARED_NULL_TABLES
     assert (f"{columna} IS NULL" in qual) == es_compartida, (
-        f"{tabla}: cláusula 'IS NULL' {'esperada' if es_compartida else 'inesperada'} "
-        f"en la política: {qual}"
+        f"{tabla}: cláusula 'IS NULL' {'esperada' if es_compartida else 'inesperada'} " f"en la política: {qual}"
     )
     assert with_check == qual, f"{tabla}: WITH CHECK no es simétrico al USING"
 
@@ -168,33 +162,25 @@ def test_politica_activa_y_force_en_tabla(tabla):
 def _mk_almacen(empresa, marca):
     from apps.almacenes.models import Almacen
 
-    return Almacen.objects.create(
-        id_empresa=empresa, nombre_almacen=f"Almacén {marca}", codigo_almacen=f"AL-{marca}"
-    )
+    return Almacen.objects.create(id_empresa=empresa, nombre_almacen=f"Almacén {marca}", codigo_almacen=f"AL-{marca}")
 
 
 def _mk_proveedor(empresa, marca):
     from apps.proveedores.models import Proveedor
 
-    return Proveedor.objects.create(
-        id_empresa=empresa, razon_social=f"Proveedor {marca}", rif=f"J-4040404{marca}"
-    )
+    return Proveedor.objects.create(id_empresa=empresa, razon_social=f"Proveedor {marca}", rif=f"J-4040404{marca}")
 
 
 def _mk_categoria_gasto(empresa, marca):
     from apps.gastos.models import CategoriaGasto
 
-    return CategoriaGasto.objects.create(
-        id_empresa=empresa, nombre_categoria=f"Categoría {marca}"
-    )
+    return CategoriaGasto.objects.create(id_empresa=empresa, nombre_categoria=f"Categoría {marca}")
 
 
 def _mk_categoria_ticket(empresa, marca):
     from apps.servicio_cliente.models import CategoriaTicket
 
-    return CategoriaTicket.objects.create(
-        id_empresa=empresa, nombre_categoria=f"Tickets {marca}"
-    )
+    return CategoriaTicket.objects.create(id_empresa=empresa, nombre_categoria=f"Tickets {marca}")
 
 
 # (tabla, factory) — cubre apps distintas y la variante de columna por defecto.
@@ -206,12 +192,8 @@ _REPRESENTATIVAS = [
 ]
 
 
-@pytest.mark.parametrize(
-    "tabla,factory", _REPRESENTATIVAS, ids=[t for t, _ in _REPRESENTATIVAS]
-)
-def test_lote3_aisla_por_empresa_sin_filtro_de_aplicacion(
-    tabla, factory, empresa_a, empresa_b
-):
+@pytest.mark.parametrize("tabla,factory", _REPRESENTATIVAS, ids=[t for t, _ in _REPRESENTATIVAS])
+def test_lote3_aisla_por_empresa_sin_filtro_de_aplicacion(tabla, factory, empresa_a, empresa_b):
     rls.apply_system_default()
     obj_a = factory(empresa_a, "A")
     obj_b = factory(empresa_b, "B")
@@ -258,9 +240,7 @@ def _mk_cargo(empresa, marca):
 def _mk_moneda(empresa, marca):
     from apps.finanzas.models import Moneda
 
-    return Moneda.objects.create(
-        empresa=empresa, codigo_iso=f"X{marca}", nombre=f"Moneda {marca}", simbolo="¤"
-    )
+    return Moneda.objects.create(empresa=empresa, codigo_iso=f"X{marca}", nombre=f"Moneda {marca}", simbolo="¤")
 
 
 def _mk_rol(empresa, marca):
@@ -278,12 +258,8 @@ _COMPARTIDAS = [
 ]
 
 
-@pytest.mark.parametrize(
-    "tabla,factory", _COMPARTIDAS, ids=[t for t, _ in _COMPARTIDAS]
-)
-def test_catalogo_compartido_fila_null_es_global_y_resto_aislado(
-    tabla, factory, empresa_a, empresa_b
-):
+@pytest.mark.parametrize("tabla,factory", _COMPARTIDAS, ids=[t for t, _ in _COMPARTIDAS])
+def test_catalogo_compartido_fila_null_es_global_y_resto_aislado(tabla, factory, empresa_a, empresa_b):
     rls.apply_system_default()
     obj_global = factory(None, "G")
     obj_a = factory(empresa_a, "A")

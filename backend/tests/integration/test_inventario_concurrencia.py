@@ -64,6 +64,7 @@ class TestReservaStockConcurrencia:
                     otros_errores.append(str(exc))
             finally:
                 from django.db import connection as _conn
+
                 _conn.close()
 
         hilos = [threading.Thread(target=intentar_reserva) for _ in range(N_HILOS)]
@@ -79,8 +80,7 @@ class TestReservaStockConcurrencia:
 
         # Invariante anti-sobreventa: lo comprometido nunca supera lo disponible.
         assert stock.cantidad_comprometida <= stock.cantidad_disponible, (
-            f"¡SOBREVENTA! comprometida={stock.cantidad_comprometida} > "
-            f"disponible={stock.cantidad_disponible}"
+            f"¡SOBREVENTA! comprometida={stock.cantidad_comprometida} > " f"disponible={stock.cantidad_disponible}"
         )
         # Exactamente 2 reservas caben (prueba la serialización, no solo el no-oversell).
         assert len(exitos) == 2, f"Esperados 2 éxitos, hubo {len(exitos)}"

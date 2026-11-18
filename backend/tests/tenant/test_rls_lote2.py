@@ -40,12 +40,8 @@ def _enforce_rls_role(rls_test_role):
 def clientes(empresa_a, empresa_b):
     """Crea un cliente por empresa con el contexto de sistema (bypass on)."""
     rls.apply_system_default()
-    a = Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Cliente Alpha", rif="J-11111111-1"
-    )
-    b = Cliente.objects.create(
-        id_empresa=empresa_b, razon_social="Cliente Beta", rif="J-22222222-2"
-    )
+    a = Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente Alpha", rif="J-11111111-1")
+    b = Cliente.objects.create(id_empresa=empresa_b, razon_social="Cliente Beta", rif="J-22222222-2")
     yield {"a": a, "b": b}
     # Evita que el contexto fijado en cada test se filtre al siguiente.
     rls.apply_system_default()
@@ -84,9 +80,7 @@ def _contacto_ids(qs):
 # --- crm_cliente ------------------------------------------------------------
 
 
-def test_cliente_rls_aisla_por_empresa_sin_filtro_de_aplicacion(
-    clientes, empresa_a, empresa_b
-):
+def test_cliente_rls_aisla_por_empresa_sin_filtro_de_aplicacion(clientes, empresa_a, empresa_b):
     # Contexto = solo empresa A. El ORM no aplica filtro por empresa aquí.
     rls.apply_context([empresa_a.id_empresa], bypass=False)
     assert _cliente_ids(Cliente.objects.all()) == {clientes["a"].id_cliente}
@@ -116,17 +110,13 @@ def test_cliente_rls_no_permite_insertar_en_otra_empresa(clientes, empresa_a, em
     rls.apply_context([empresa_a.id_empresa], bypass=False)
     with pytest.raises((IntegrityError, ProgrammingError)):
         with transaction.atomic():
-            Cliente.objects.create(
-                id_empresa=empresa_b, razon_social="Intrusa", rif="J-99999999-9"
-            )
+            Cliente.objects.create(id_empresa=empresa_b, razon_social="Intrusa", rif="J-99999999-9")
 
 
 # --- crm_contacto_cliente ---------------------------------------------------
 
 
-def test_contacto_rls_aisla_por_empresa_sin_filtro_de_aplicacion(
-    contactos, empresa_a, empresa_b
-):
+def test_contacto_rls_aisla_por_empresa_sin_filtro_de_aplicacion(contactos, empresa_a, empresa_b):
     rls.apply_context([empresa_a.id_empresa], bypass=False)
     assert _contacto_ids(ContactoCliente.objects.all()) == {contactos["a"].id_contacto}
 

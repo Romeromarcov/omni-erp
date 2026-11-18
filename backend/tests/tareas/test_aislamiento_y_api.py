@@ -25,9 +25,7 @@ pytestmark = [pytest.mark.django_db]
 BASE = "/api/tareas"
 
 
-def test_aislamiento_multitenant_estricto_en_todos_los_endpoints(
-    empresa_a, empresa_b, user_a, user_b, client_a
-):
+def test_aislamiento_multitenant_estricto_en_todos_los_endpoints(empresa_a, empresa_b, user_a, user_b, client_a):
     area_b = services.crear_area_operativa(empresa=empresa_b, nombre="Ventas B", lider=user_b)
     proy_b = services.crear_proyecto_con_secciones(
         empresa=empresa_b, nombre="Tablero B", area=area_b, propietario=user_b
@@ -62,10 +60,7 @@ def test_aislamiento_multitenant_estricto_en_todos_los_endpoints(
     assert client_a.get(f"{BASE}/areas/{area_b.id_area}/").status_code == 404
     assert client_a.get(f"{BASE}/proyectos/{proy_b.id_proyecto}/").status_code == 404
     assert client_a.get(f"{BASE}/items/{tarea_b.id_tarea}/").status_code == 404
-    assert (
-        client_a.get(f"{BASE}/recurrentes/{rec_b.id_plantilla_recurrente}/").status_code
-        == 404
-    )
+    assert client_a.get(f"{BASE}/recurrentes/{rec_b.id_plantilla_recurrente}/").status_code == 404
     assert client_a.get(f"{BASE}/minutas/{min_b.id_minuta}/").status_code == 404
 
     # Intentos de referencia cross-tenant al crear en empresa_a se rechazan por TenantFKScopeMixin (400 SEC-M1)
@@ -93,22 +88,15 @@ def test_aislamiento_multitenant_estricto_en_todos_los_endpoints(
         ).status_code
         == 400
     )
-    assert (
-        client_a.post(
-            f"{BASE}/secciones/",
-            {"proyecto": str(proy_b.id_proyecto), "nombre": "Intrusa"},
-            format="json",
-        ).status_code
-        in (400, 403)
-    )
+    assert client_a.post(
+        f"{BASE}/secciones/",
+        {"proyecto": str(proy_b.id_proyecto), "nombre": "Intrusa"},
+        format="json",
+    ).status_code in (400, 403)
 
 
-def test_flujo_completo_area_tablero_kanban_subtareas_comentarios_y_entidad_erp(
-    empresa_a, user_a, client_a
-):
-    depto = Departamento.objects.create(
-        id_empresa=empresa_a, nombre_departamento="Operaciones"
-    )
+def test_flujo_completo_area_tablero_kanban_subtareas_comentarios_y_entidad_erp(empresa_a, user_a, client_a):
+    depto = Departamento.objects.create(id_empresa=empresa_a, nombre_departamento="Operaciones")
     r_area = client_a.post(
         f"{BASE}/areas/",
         {
@@ -127,12 +115,7 @@ def test_flujo_completo_area_tablero_kanban_subtareas_comentarios_y_entidad_erp(
     assert len(r_area.data["miembros"]) == 1
 
     # Duplicado de área activa responde 409
-    assert (
-        client_a.post(
-            f"{BASE}/areas/", {"nombre": "Logistica y Almacen"}, format="json"
-        ).status_code
-        == 409
-    )
+    assert client_a.post(f"{BASE}/areas/", {"nombre": "Logistica y Almacen"}, format="json").status_code == 409
 
     # Sincronización de miembros por endpoint dedicado
     r_sync = client_a.post(
@@ -183,9 +166,7 @@ def test_flujo_completo_area_tablero_kanban_subtareas_comentarios_y_entidad_erp(
     assert r_sub.status_code == 201
 
     # Mover tarjeta en Kanban a 'En revisión' actualiza estado automáticamente
-    sec_revision = next(
-        s for s in r_personal_1.data["secciones"] if s["estado_destino"] == "EN_REVISION"
-    )
+    sec_revision = next(s for s in r_personal_1.data["secciones"] if s["estado_destino"] == "EN_REVISION")
     r_mov = client_a.post(
         f"{BASE}/items/{tarea_id}/mover/",
         {"seccion": sec_revision["id_seccion"], "orden_tablero": 2},
@@ -305,10 +286,7 @@ def test_autenticacion_capability_token_scopes_lectura_y_escritura(empresa_a, us
     cli_read = APIClient()
     cli_read.credentials(HTTP_X_CAPABILITY_TOKEN=str(tok_read.token))
     assert cli_read.get(f"{BASE}/items/").status_code == 200
-    assert (
-        cli_read.post(f"{BASE}/items/", {"titulo": "No permitido"}, format="json").status_code
-        == 403
-    )
+    assert cli_read.post(f"{BASE}/items/", {"titulo": "No permitido"}, format="json").status_code == 403
 
     cli_write = APIClient()
     cli_write.credentials(HTTP_X_CAPABILITY_TOKEN=str(tok_write.token))

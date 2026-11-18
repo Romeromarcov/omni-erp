@@ -170,9 +170,7 @@ def confirmar_paso(*, operacion: OperacionInventario, paso: OperacionInventarioP
     if paso.confirmado:
         raise OperacionError("El paso ya fue confirmado.")
 
-    anteriores_sin_confirmar = operacion.pasos.filter(
-        secuencia__lt=paso.secuencia, confirmado=False
-    ).exists()
+    anteriores_sin_confirmar = operacion.pasos.filter(secuencia__lt=paso.secuencia, confirmado=False).exists()
     if anteriores_sin_confirmar:
         raise PasoFueraDeOrdenError(
             f"No se puede confirmar el paso {paso.secuencia} ('{paso.nombre_paso}') "
@@ -266,9 +264,7 @@ def _completar_operacion(operacion: OperacionInventario, usuario) -> None:
 
     # DR Inventario / CR Cuentas por Pagar (al valor realmente layereado).
     if operacion.tipo_operacion == "RECEPCION" and valor_recepcion > 0:
-        generar_asiento_o_fallar(
-            "RECEPCION_MERCANCIA", operacion, empresa, monto=valor_recepcion, usuario=usuario
-        )
+        generar_asiento_o_fallar("RECEPCION_MERCANCIA", operacion, empresa, monto=valor_recepcion, usuario=usuario)
 
     operacion.estado = "COMPLETADA"
     operacion.save(update_fields=["estado"])
@@ -282,9 +278,7 @@ def _completar_venta(operacion, usuario) -> None:
     from apps.ventas.models import NotaVenta
     from apps.ventas.services import confirmar_nota_venta
 
-    nota = NotaVenta.objects.filter(
-        id_nota_venta=operacion.origen_id, id_empresa=operacion.id_empresa
-    ).first()
+    nota = NotaVenta.objects.filter(id_nota_venta=operacion.origen_id, id_empresa=operacion.id_empresa).first()
     if nota is None:
         raise OperacionError("La NotaVenta vinculada no existe en esta empresa.")
     confirmar_nota_venta(nota, operacion.id_almacen, usuario)

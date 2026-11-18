@@ -14,6 +14,7 @@ Foco en el **enforcement de scope del MCP**, que es seguridad-crítica:
 - A nivel de herramienta: ``omni_ping`` (token inválido → PermissionError) y
   ``omni_get_empresas`` (exige ``core:read``).
 """
+
 import datetime
 import uuid
 
@@ -45,6 +46,7 @@ def _token(empresa, scopes, *, activo=True, expires_at=None, creado_por=None):
 
 # ── _resolve_token ────────────────────────────────────────────────────────────
 
+
 class TestResolveToken:
     def test_token_valido_devuelve_contexto(self, empresa_a):
         tok = _token(empresa_a, ["crm:read"])
@@ -74,6 +76,7 @@ class TestResolveToken:
 
 # ── Gate del comodín '*' (SEC-NEW-4) ──────────────────────────────────────────
 
+
 class TestComodinGate:
     def test_comodin_de_token_de_sistema_se_conserva(self, empresa_a):
         """creado_por=None → token de sistema → '*' efectivo."""
@@ -99,6 +102,7 @@ class TestComodinGate:
 
 # ── _require_scope ────────────────────────────────────────────────────────────
 
+
 class TestRequireScope:
     def test_contexto_none_lanza(self):
         with pytest.raises(PermissionError):
@@ -116,6 +120,7 @@ class TestRequireScope:
 
 
 # ── Nivel de herramienta ──────────────────────────────────────────────────────
+
 
 class TestToolsScope:
     def test_omni_ping_token_invalido_lanza(self):

@@ -105,9 +105,7 @@ class PrediccionAgente(models.Model):
     alternativas = models.JSONField(default=list, blank=True)
 
     # Evaluación humana
-    resultado_humano = models.CharField(
-        max_length=20, choices=RESULTADO_CHOICES, default="pendiente"
-    )
+    resultado_humano = models.CharField(max_length=20, choices=RESULTADO_CHOICES, default="pendiente")
     categoria_correcta = models.CharField(max_length=100, blank=True)
 
     # Metadatos

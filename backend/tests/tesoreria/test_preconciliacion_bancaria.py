@@ -513,9 +513,9 @@ class TestServicioPreconciliacionYColaHumana:
 
         props = {
             p.id_movimiento_bancario.referencia: p
-            for p in PropuestaConciliacionBancaria.objects.filter(
-                id_empresa=empresa_a, activo=True
-            ).select_related("id_movimiento_bancario")
+            for p in PropuestaConciliacionBancaria.objects.filter(id_empresa=empresa_a, activo=True).select_related(
+                "id_movimiento_bancario"
+            )
         }
         assert props["99887766"].tipo == TIPO_PAGO
         assert props["99887766"].id_pago_nativo_id == pago_ingreso.id_pago
@@ -649,15 +649,9 @@ class TestServicioPreconciliacionYColaHumana:
         empresa_a.save(update_fields=["identificador_fiscal"])
 
         # Contactos nativos: único vs ambiguo vs propio
-        Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Cliente Único C.A.", rif="J-223344556"
-        )
-        Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Duplicado Uno", rif="J-777777778"
-        )
-        Proveedor.objects.create(
-            id_empresa=empresa_a, razon_social="Duplicado Dos", rif="J-777777778"
-        )
+        Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente Único C.A.", rif="J-223344556")
+        Cliente.objects.create(id_empresa=empresa_a, razon_social="Duplicado Uno", rif="J-777777778")
+        Proveedor.objects.create(id_empresa=empresa_a, razon_social="Duplicado Dos", rif="J-777777778")
         Contacto.objects.create(
             id_empresa=empresa_a,
             tipo_persona="NATURAL",
@@ -666,9 +660,7 @@ class TestServicioPreconciliacionYColaHumana:
             cedula="V-14555666",
             es_cliente=True,
         )
-        res_rifs = contactos_por_rif_nativos(
-            empresa_a, ["J223344556", "J777777778", "V14555666", "J111111111"]
-        )
+        res_rifs = contactos_por_rif_nativos(empresa_a, ["J223344556", "J777777778", "V14555666", "J111111111"])
         assert res_rifs == {
             "J223344556": "Cliente Único C.A.",
             "V14555666": "María Pérez",
@@ -678,9 +670,7 @@ class TestServicioPreconciliacionYColaHumana:
         prov_gasto = Proveedor.objects.create(
             id_empresa=empresa_a, razon_social="Servicios Luz C.A.", rif="J-888888889"
         )
-        cat_gasto = CategoriaGasto.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Servicios"
-        )
+        cat_gasto = CategoriaGasto.objects.create(id_empresa=empresa_a, nombre_categoria="Servicios")
         gasto = Gasto.objects.create(
             id_empresa=empresa_a,
             fecha_gasto=date(2026, 9, 15),
@@ -704,9 +694,7 @@ class TestServicioPreconciliacionYColaHumana:
             referencia="556677",
         )
 
-        prov_odoo, _ = ConectorProveedor.objects.get_or_create(
-            codigo="odoo", defaults={"nombre": "Odoo"}
-        )
+        prov_odoo, _ = ConectorProveedor.objects.get_or_create(codigo="odoo", defaults={"nombre": "Odoo"})
         instancia_odoo = ConectorInstancia.objects.create(
             id_empresa=empresa_a,
             id_proveedor=prov_odoo,
@@ -830,18 +818,19 @@ class TestServicioPreconciliacionYColaHumana:
                 incluir_odoo=True,
             )
         # Cuenta sin movimientos devuelve ceros
-        assert generar_propuestas_conciliacion(
-            empresa=empresa_a, cuenta_bancaria=cuenta_ves_a
-        ) == {"nuevas": 0, "actualizadas": 0, "ya_decididas": 0, "total_evaluados": 0}
+        assert generar_propuestas_conciliacion(empresa=empresa_a, cuenta_bancaria=cuenta_ves_a) == {
+            "nuevas": 0,
+            "actualizadas": 0,
+            "ya_decididas": 0,
+            "total_evaluados": 0,
+        }
 
         # Moneda distinta en pago nativo es ignorada por cargar_pagos_nativos_candidatos
         moneda_usd, _ = Moneda.objects.get_or_create(
             codigo_iso="USD",
             defaults={"nombre": "Dólar", "simbolo": "$", "tipo_moneda": "fiat", "es_generica": True},
         )
-        cliente = Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Cliente Manual C.A.", rif="J-501112223"
-        )
+        cliente = Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente Manual C.A.", rif="J-501112223")
         pedido = Pedido.objects.create(
             id_empresa=empresa_a,
             id_cliente=cliente,
@@ -896,20 +885,16 @@ class TestServicioPreconciliacionYColaHumana:
         )
         generar_propuestas_conciliacion(empresa=empresa_a, cuenta_bancaria=cuenta_ves_a)
         p1, p2 = list(
-            PropuestaConciliacionBancaria.objects.filter(
-                id_empresa=empresa_a, activo=True
-            ).order_by("id_movimiento_bancario__fecha_mov")
+            PropuestaConciliacionBancaria.objects.filter(id_empresa=empresa_a, activo=True).order_by(
+                "id_movimiento_bancario__fecha_mov"
+            )
         )
-        p2.candidatos_json = [
-            {"fuente": "ODOO", "id": "7701", "nombre": "BNK/2026/7701", "socio": "Socio Odoo"}
-        ]
+        p2.candidatos_json = [{"fuente": "ODOO", "id": "7701", "nombre": "BNK/2026/7701", "socio": "Socio Odoo"}]
         p2.save(update_fields=["candidatos_json"])
 
         # Validaciones de borde en decidir_propuesta_conciliacion
         with pytest.raises(DecisionPreconciliacionInvalida, match="Acción desconocida"):
-            decidir_propuesta_conciliacion(
-                empresa=empresa_a, propuesta_id=str(p1.pk), accion="SALTAR", usuario=user_a
-            )
+            decidir_propuesta_conciliacion(empresa=empresa_a, propuesta_id=str(p1.pk), accion="SALTAR", usuario=user_a)
         with pytest.raises(DecisionPreconciliacionInvalida, match="no ambos"):
             decidir_propuesta_conciliacion(
                 empresa=empresa_a,
@@ -1035,14 +1020,10 @@ class TestServicioPreconciliacionYColaHumana:
             comentario="Reabrir p2 para anular extracto",
         )
         assert desactivar_extracto_bancario(imp.archivo) == 2
-        assert not PropuestaConciliacionBancaria.objects.filter(
-            id_empresa=empresa_a, activo=True
-        ).exists()
+        assert not PropuestaConciliacionBancaria.objects.filter(id_empresa=empresa_a, activo=True).exists()
 
         # Configuración con conector inactivo o sin journal_id falla limpiamente
-        prov_odoo, _ = ConectorProveedor.objects.get_or_create(
-            codigo="odoo", defaults={"nombre": "Odoo"}
-        )
+        prov_odoo, _ = ConectorProveedor.objects.get_or_create(codigo="odoo", defaults={"nombre": "Odoo"})
         con_inactivo = ConectorInstancia.objects.create(
             id_empresa=empresa_a,
             id_proveedor=prov_odoo,
@@ -1144,9 +1125,7 @@ class TestAPIPreconciliacionMultiTenantYRLS:
             ).status_code
             == 400
         )
-        prov_odoo, _ = ConectorProveedor.objects.get_or_create(
-            codigo="odoo", defaults={"nombre": "Odoo"}
-        )
+        prov_odoo, _ = ConectorProveedor.objects.get_or_create(codigo="odoo", defaults={"nombre": "Odoo"})
         conector_b = ConectorInstancia.objects.create(
             id_empresa=empresa_b,
             id_proveedor=prov_odoo,
@@ -1168,17 +1147,14 @@ class TestAPIPreconciliacionMultiTenantYRLS:
             == 400
         )
         # Usuario A no puede crear configuración indicando empresa_b (TenantFKScopeMixin rechaza con 400/403)
-        assert (
-            api_a.post(
-                self.URL_CFG,
-                {
-                    "id_empresa": str(empresa_b.id_empresa),
-                    "id_cuenta_bancaria": str(cuenta_ves_b.id_cuenta_bancaria),
-                },
-                format="json",
-            ).status_code
-            in (400, 403)
-        )
+        assert api_a.post(
+            self.URL_CFG,
+            {
+                "id_empresa": str(empresa_b.id_empresa),
+                "id_cuenta_bancaria": str(cuenta_ves_b.id_cuenta_bancaria),
+            },
+            format="json",
+        ).status_code in (400, 403)
 
         # 2. Crear configuración válida en empresa A y verificar unicidad activa + PATCH + soft delete
         r_cfg = api_a.post(
@@ -1382,9 +1358,7 @@ class TestAPIPreconciliacionMultiTenantYRLS:
         assert bitacora_a["results"][0]["comentario"] == "Comisión estándar"
 
         # Si una propuesta es RECHAZADA, el movimiento tampoco puede borrarse hasta reabrirla
-        prop_pend = PropuestaConciliacionBancaria.objects.get(
-            id_movimiento_bancario=mov_pend, activo=True
-        )
+        prop_pend = PropuestaConciliacionBancaria.objects.get(id_movimiento_bancario=mov_pend, activo=True)
         assert (
             api_a.post(
                 f"{self.URL_PROP}{prop_pend.pk}/decidir/",
@@ -1393,9 +1367,7 @@ class TestAPIPreconciliacionMultiTenantYRLS:
             ).status_code
             == 200
         )
-        assert (
-            api_a.delete(f"/api/tesoreria/movimientos-bancarios/{mov_pend.pk}/").status_code == 400
-        )
+        assert api_a.delete(f"/api/tesoreria/movimientos-bancarios/{mov_pend.pk}/").status_code == 400
         assert (
             api_a.post(
                 f"{self.URL_PROP}{prop_pend.pk}/decidir/",
@@ -1408,14 +1380,10 @@ class TestAPIPreconciliacionMultiTenantYRLS:
         # Borrar movimiento pendiente desactiva también su propuesta PENDIENTE
         r_del_mov = api_a.delete(f"/api/tesoreria/movimientos-bancarios/{mov_pend.pk}/")
         assert r_del_mov.status_code == 204
-        assert not PropuestaConciliacionBancaria.objects.filter(
-            id_movimiento_bancario=mov_pend, activo=True
-        ).exists()
+        assert not PropuestaConciliacionBancaria.objects.filter(id_movimiento_bancario=mov_pend, activo=True).exists()
 
         # Movimiento ya conciliado no puede borrarse
-        assert (
-            api_a.delete(f"/api/tesoreria/movimientos-bancarios/{mov_com.pk}/").status_code == 400
-        )
+        assert api_a.delete(f"/api/tesoreria/movimientos-bancarios/{mov_com.pk}/").status_code == 400
 
         # Parámetros inválidos devuelven 400 (nunca 500)
         assert api_a.get(self.URL_PROP, {"desde": "no-es-fecha"}).status_code == 400
@@ -1632,9 +1600,7 @@ class TestAPIPreconciliacionMultiTenantYRLS:
         assert contactos_por_rif_odoo(fake_ex_atipico, ["J401234567"]) == {"J401234567": ""}
 
         # B-1: CORREGIR rechaza pagos nativos con sentido invertido, otra moneda u otra cuenta bancaria
-        cliente = Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Cliente Regresión", rif="J-334455667"
-        )
+        cliente = Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente Regresión", rif="J-334455667")
         pedido = Pedido.objects.create(
             id_empresa=empresa_a,
             id_cliente=cliente,
@@ -1642,9 +1608,7 @@ class TestAPIPreconciliacionMultiTenantYRLS:
             fecha_pedido=date(2026, 11, 10),
             estado="APROBADO",
         )
-        prov = Proveedor.objects.create(
-            id_empresa=empresa_a, razon_social="Prov Regresión", rif="J-665544332"
-        )
+        prov = Proveedor.objects.create(id_empresa=empresa_a, razon_social="Prov Regresión", rif="J-665544332")
         cxp = CuentaPorPagar.objects.create(
             id_empresa=empresa_a,
             id_proveedor=prov,
@@ -1856,10 +1820,7 @@ class TestAPIPreconciliacionMultiTenantYRLS:
         )
         with pytest.raises(ExtractoBancarioError, match="período de conciliación cerrado"):
             desactivar_extracto_bancario(imp_cerr.archivo)
-        assert (
-            api_a.delete(f"/api/tesoreria/movimientos-bancarios/{mov_en_cierre.pk}/").status_code
-            == 400
-        )
+        assert api_a.delete(f"/api/tesoreria/movimientos-bancarios/{mov_en_cierre.pk}/").status_code == 400
         assert (
             api_a.post(
                 "/api/tesoreria/movimientos-bancarios/",
@@ -1875,5 +1836,3 @@ class TestAPIPreconciliacionMultiTenantYRLS:
             ).status_code
             == 400
         )
-
-

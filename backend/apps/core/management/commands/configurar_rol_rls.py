@@ -40,9 +40,7 @@ ENV_ROL = "OMNI_APP_DB_ROLE"
 DEFAULT_ROL = "omni_app"
 
 # Atributos del rol: login sí; nada de privilegios que salten RLS o hagan DDL.
-_ATRIBUTOS = (
-    "LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION INHERIT"
-)
+_ATRIBUTOS = "LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION INHERIT"
 
 
 class Command(BaseCommand):
@@ -101,26 +99,16 @@ class Command(BaseCommand):
             db_name = cursor.fetchone()[0]
 
             grants = [
-                sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(
-                    sql.Identifier(db_name), ident
-                ),
+                sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(sql.Identifier(db_name), ident),
                 sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(ident),
-                sql.SQL(
-                    "GRANT SELECT, INSERT, UPDATE, DELETE "
-                    "ON ALL TABLES IN SCHEMA public TO {}"
-                ).format(ident),
-                sql.SQL(
-                    "GRANT USAGE, SELECT, UPDATE "
-                    "ON ALL SEQUENCES IN SCHEMA public TO {}"
-                ).format(ident),
+                sql.SQL("GRANT SELECT, INSERT, UPDATE, DELETE " "ON ALL TABLES IN SCHEMA public TO {}").format(ident),
+                sql.SQL("GRANT USAGE, SELECT, UPDATE " "ON ALL SEQUENCES IN SCHEMA public TO {}").format(ident),
                 # Tablas/secuencias futuras creadas por el rol dueño (migraciones).
                 sql.SQL(
-                    "ALTER DEFAULT PRIVILEGES IN SCHEMA public "
-                    "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {}"
+                    "ALTER DEFAULT PRIVILEGES IN SCHEMA public " "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {}"
                 ).format(ident),
                 sql.SQL(
-                    "ALTER DEFAULT PRIVILEGES IN SCHEMA public "
-                    "GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {}"
+                    "ALTER DEFAULT PRIVILEGES IN SCHEMA public " "GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {}"
                 ).format(ident),
             ]
             for stmt in grants:

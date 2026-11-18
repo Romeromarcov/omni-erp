@@ -32,8 +32,12 @@ def _cuenta(empresa, codigo, nombre, tipo="ACTIVO", nat="DEUDORA"):
     from apps.contabilidad.models import PlanCuentas
 
     return PlanCuentas.objects.create(
-        id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta=nombre,
-        tipo_cuenta=tipo, naturaleza=nat, nivel=1,
+        id_empresa=empresa,
+        codigo_cuenta=codigo,
+        nombre_cuenta=nombre,
+        tipo_cuenta=tipo,
+        naturaleza=nat,
+        nivel=1,
     )
 
 
@@ -41,8 +45,12 @@ def _mapeo(empresa, tipo_asiento, debe, haber):
     from apps.contabilidad.models import MapeoContable
 
     return MapeoContable.objects.create(
-        id_empresa=empresa, tipo_asiento=tipo_asiento, cuenta_debe=debe,
-        cuenta_haber=haber, descripcion_plantilla=tipo_asiento, activo=True,
+        id_empresa=empresa,
+        tipo_asiento=tipo_asiento,
+        cuenta_debe=debe,
+        cuenta_haber=haber,
+        descripcion_plantilla=tipo_asiento,
+        activo=True,
     )
 
 
@@ -65,31 +73,29 @@ def _mapeos_completos(empresa):
 def proveedor(db, empresa_a):
     from apps.proveedores.models import Proveedor
 
-    return Proveedor.objects.create(
-        id_empresa=empresa_a, razon_social="Proveedor Flujo", rif="J-60606060-6"
-    )
+    return Proveedor.objects.create(id_empresa=empresa_a, razon_social="Proveedor Flujo", rif="J-60606060-6")
 
 
 @pytest.fixture
 def almacen(db, empresa_a):
     from apps.almacenes.models import Almacen
 
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Alm Flujo", codigo_almacen="ALM-FL"
-    )
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Alm Flujo", codigo_almacen="ALM-FL")
 
 
 @pytest.fixture
 def producto(db, empresa_a, moneda_usd):
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="U Flujo", abreviatura="U-FL", tipo="CANTIDAD"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="U Flujo", abreviatura="U-FL", tipo="CANTIDAD")
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat Flujo")
     return Producto.objects.create(
-        id_empresa=empresa_a, nombre_producto="Prod Flujo", sku="PROD-FL",
-        id_unidad_medida_base=unidad, id_categoria=categoria, id_moneda_precio=moneda_usd,
+        id_empresa=empresa_a,
+        nombre_producto="Prod Flujo",
+        sku="PROD-FL",
+        id_unidad_medida_base=unidad,
+        id_categoria=categoria,
+        id_moneda_precio=moneda_usd,
     )
 
 
@@ -107,21 +113,25 @@ def _asientos_cuadran(empresa):
 
 
 class TestFlujoCompletoComprasPagos:
-    def test_ciclo_compra_pago_completo(
-        self, empresa_a, empresa_b, proveedor, almacen, producto, user_a
-    ):
+    def test_ciclo_compra_pago_completo(self, empresa_a, empresa_b, proveedor, almacen, producto, user_a):
         from apps.compras.models import DetalleOrdenCompra, OrdenCompra
 
         _mapeos_completos(empresa_a)
 
         # 1) OC con una línea (subtotal 1000) → aprobar (sin regla de aprobación).
         oc = OrdenCompra.objects.create(
-            id_empresa=empresa_a, id_proveedor=proveedor, numero_orden="OC-FL-1",
-            fecha_orden=timezone.now().date(), estado="BORRADOR",
+            id_empresa=empresa_a,
+            id_proveedor=proveedor,
+            numero_orden="OC-FL-1",
+            fecha_orden=timezone.now().date(),
+            estado="BORRADOR",
         )
         DetalleOrdenCompra.objects.create(
-            id_orden_compra=oc, id_producto=producto, cantidad=Decimal("10"),
-            precio_unitario=Decimal("100.00"), subtotal=Decimal("1000.00"),
+            id_orden_compra=oc,
+            id_producto=producto,
+            cantidad=Decimal("10"),
+            precio_unitario=Decimal("100.00"),
+            subtotal=Decimal("1000.00"),
         )
         aprobar_orden_compra(oc, user_a)
         oc.refresh_from_db()
@@ -129,7 +139,9 @@ class TestFlujoCompletoComprasPagos:
 
         # 2) Recepción → stock + costo + CxP + asiento RECEPCION_MERCANCIA (T04).
         res = registrar_recepcion(
-            oc, almacen, user_a,
+            oc,
+            almacen,
+            user_a,
             items=[{"producto": producto, "cantidad": "10", "costo_unitario": "100.00"}],
         )
         cxp = res["cxp"]
@@ -149,8 +161,11 @@ class TestFlujoCompletoComprasPagos:
 
         # 4) Abono parcial a otra tasa → CxP parcial + diferencia cambiaria (T06/T07).
         registrar_abono_cxp(
-            cxp, Decimal("400.00"), user_a,
-            tasa_original=Decimal("36"), tasa_pago=Decimal("40"),
+            cxp,
+            Decimal("400.00"),
+            user_a,
+            tasa_original=Decimal("36"),
+            tasa_pago=Decimal("40"),
         )
         cxp.refresh_from_db()
         assert cxp.monto_pendiente == Decimal("600.0000")

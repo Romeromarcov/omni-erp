@@ -12,6 +12,7 @@ con dos cosas que solo se ven de punta a punta:
 Además cubre la authz de SuscripcionViewSet: solo el proveedor puede crear /
 suspender / cancelar suscripciones (un tenant no debe auto-gestionar su billing).
 """
+
 from datetime import timedelta
 
 import pytest
@@ -34,14 +35,19 @@ RUTA_PROTEGIDA = "/api/core/empresas/"
 @pytest.fixture
 def plan_c2(db):
     return Plan.objects.create(
-        nombre="Plan C2", nivel="PRO", precio_mensual="10.00", precio_anual="100.00",
+        nombre="Plan C2",
+        nivel="PRO",
+        precio_mensual="10.00",
+        precio_anual="100.00",
     )
 
 
 @pytest.fixture
 def superusuario_omni(db, empresa_a):
     user = User.objects.create_user(
-        username="omni_c2", password="pass1234", es_superusuario_omni=True,
+        username="omni_c2",
+        password="pass1234",
+        es_superusuario_omni=True,
     )
     user.empresas.add(empresa_a)
     return user
@@ -162,7 +168,8 @@ class TestSuscripcionAuthz:
         client.force_authenticate(user=user_a)
         resp = client.patch(
             reverse("suscripcion-detail", kwargs={"pk": sus.pk}),
-            {"estado": "ACTIVA"}, format="json",
+            {"estado": "ACTIVA"},
+            format="json",
         )
         assert resp.status_code == 403
         sus.refresh_from_db()

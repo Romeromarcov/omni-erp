@@ -8,6 +8,7 @@ Bucket names: al_dia / 1_30 / 31_60 / 61_90 / mas_90
 (Note: el calcular_aging() original en services.py usa nombres diferentes
  — este es el nuevo estándar para el módulo cxc)
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,6 +42,7 @@ class PartidaCartera:
     Representación canónica agnóstica al origen (Omni nativo u Odoo via Hub).
     Calcula dias_vencida, vencida y bucket automáticamente en __post_init__.
     """
+
     cliente_id: str
     cliente_nombre: str
     orden_ref: str
@@ -75,6 +77,7 @@ class PartidaCartera:
     def from_omni(cls, cxc) -> "PartidaCartera":
         """Construye desde CuentaPorCobrar nativo de Omni."""
         from django.db.models import Sum
+
         total_abonado = cxc.abonos.aggregate(t=Sum("monto"))["t"] or Decimal("0")
         saldo = cxc.monto - total_abonado
 
@@ -133,9 +136,7 @@ def calcular_aging(partidas: list[PartidaCartera]) -> dict:
             "partidas_vencidas": int,
         }
     """
-    buckets: dict[str, dict] = {
-        b: {"count": 0, "total": Decimal("0")} for b in BUCKETS
-    }
+    buckets: dict[str, dict] = {b: {"count": 0, "total": Decimal("0")} for b in BUCKETS}
 
     total_pendiente = Decimal("0")
     partidas_vencidas = 0

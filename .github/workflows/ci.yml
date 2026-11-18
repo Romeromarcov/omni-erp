@@ -452,6 +452,10 @@ jobs:
         # subconjunto está limpio y bloquea para impedir regresiones.
         run: ruff check apps/ config/ --select E9,F63,F7,F82,F823,F811
 
+      - name: Ruff format (estilo uniforme — BLOQUEANTE)
+        working-directory: backend
+        run: ruff format --check apps/ config/ tests/
+
       - name: Ruff (limpieza gradual — no bloqueante aún)
         working-directory: backend
         # F401 (imports sin usar): se limpia por fases; al quedar en cero, moverlo

@@ -30,25 +30,25 @@ logger = logging.getLogger(__name__)
 TIPOS_ASIENTO = frozenset(
     {
         "FACTURA_VENTA",
-        "FACTURA_VENTA_IVA",   # CTF-001: asiento separado para el IVA
-        "NOTA_VENTA",          # CTF-001: asiento al confirmar nota de venta
-        "DEVOLUCION_VENTA",      # 1.G: reverso de la venta (espejo del asiento de venta)
+        "FACTURA_VENTA_IVA",  # CTF-001: asiento separado para el IVA
+        "NOTA_VENTA",  # CTF-001: asiento al confirmar nota de venta
+        "DEVOLUCION_VENTA",  # 1.G: reverso de la venta (espejo del asiento de venta)
         "DEVOLUCION_VENTA_IVA",  # 1.G: reverso del IVA débito fiscal de la factura
         "FACTURA_COMPRA",
-        "GASTO",                 # Gasto aprobado → DR Cuenta Gasto / CR CxP o Banco
-        "GASTO_IVA",             # Porción IVA crédito fiscal del gasto (asiento separado)
+        "GASTO",  # Gasto aprobado → DR Cuenta Gasto / CR CxP o Banco
+        "GASTO_IVA",  # Porción IVA crédito fiscal del gasto (asiento separado)
         "RECEPCION_MERCANCIA",
-        "COSTO_VENTA",         # COGS: DR Costo de Ventas / CR Inventario al despachar venta
+        "COSTO_VENTA",  # COGS: DR Costo de Ventas / CR Inventario al despachar venta
         "AJUSTE_INVENTARIO",
         "SALIDA_INTERNA",
         "PAGO_CXC",
         "PAGO_CXP",
         "GANANCIA_CAMBIARIA",  # Diferencia en cambio favorable al pagar una CxP en divisa
-        "PERDIDA_CAMBIARIA",   # Diferencia en cambio desfavorable al pagar una CxP en divisa
-        "NOMINA",              # CTF-013: asiento del proceso de nómina LOTTT
-        "CAMBIO_DIVISA",       # CTF-013: asiento de la operación de cambio de divisa
-        "PAGO_TERCERO",        # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro
-        "PAGO_PARAFISCAL",     # Capa B §6.7: pago de contribución parafiscal (IVSS/FAOV/INCES…)
+        "PERDIDA_CAMBIARIA",  # Diferencia en cambio desfavorable al pagar una CxP en divisa
+        "NOMINA",  # CTF-013: asiento del proceso de nómina LOTTT
+        "CAMBIO_DIVISA",  # CTF-013: asiento de la operación de cambio de divisa
+        "PAGO_TERCERO",  # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro
+        "PAGO_PARAFISCAL",  # Capa B §6.7: pago de contribución parafiscal (IVSS/FAOV/INCES…)
     }
 )
 
@@ -89,12 +89,13 @@ def generar_asiento_o_fallar(tipo: str, documento, empresa=None, monto: Decimal 
     except MapeoContableNoEncontrado as exc:
         if getattr(empresa, "contabilidad_activa", False):
             raise AsientoError(
-                f"Configure el Mapeo Contable antes de continuar "
-                f"(contabilidad activa, {tipo}): {exc}"
+                f"Configure el Mapeo Contable antes de continuar " f"(contabilidad activa, {tipo}): {exc}"
             ) from exc
         logger.warning(
             "Asiento omitido (sin mapeo, contabilidad inactiva) | tipo=%s | empresa=%s | razón=%s",
-            tipo, getattr(empresa, "pk", None), exc,
+            tipo,
+            getattr(empresa, "pk", None),
+            exc,
         )
         return None, str(exc)
 

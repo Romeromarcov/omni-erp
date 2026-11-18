@@ -42,11 +42,7 @@ _PISTAS_AREA_POR_DEFECTO: dict[str, tuple[str, ...]] = {
 
 
 def _norm(texto: str) -> str:
-    limpio = (
-        unicodedata.normalize("NFKD", limpiar_texto(texto).lower())
-        .encode("ascii", "ignore")
-        .decode("ascii")
-    )
+    limpio = unicodedata.normalize("NFKD", limpiar_texto(texto).lower()).encode("ascii", "ignore").decode("ascii")
     return re.sub(r"\s+", " ", limpio).strip()
 
 
@@ -152,11 +148,7 @@ def _resolver_usuario_y_area(
         if area_resuelta.lider_id:
             usuario_resuelto = area_resuelta.lider
         else:
-            primera_membresia = (
-                area_resuelta.miembros.filter(activo=True)
-                .select_related("usuario")
-                .first()
-            )
+            primera_membresia = area_resuelta.miembros.filter(activo=True).select_related("usuario").first()
             if primera_membresia is not None:
                 usuario_resuelto = primera_membresia.usuario
 
@@ -171,9 +163,7 @@ def enriquecer_borrador_minuta(
 ) -> list[dict[str, Any]]:
     """Normaliza y enriquece cada ítem de borrador resolviendo usuarios, áreas y fechas de la empresa."""
     hoy = fecha_referencia or timezone.localdate()
-    usuarios = list(
-        Usuarios.objects.filter(empresas=empresa, is_active=True).order_by("first_name", "username")
-    )
+    usuarios = list(Usuarios.objects.filter(empresas=empresa, is_active=True).order_by("first_name", "username"))
     areas = list(
         AreaOperativa.objects.filter(id_empresa=empresa, activo=True)
         .select_related("lider")
@@ -188,9 +178,7 @@ def enriquecer_borrador_minuta(
         if not titulo:
             continue
         descripcion = limpiar_texto(str(raw.get("descripcion") or raw.get("notes") or ""))
-        asignado_nombre = limpiar_texto(
-            str(raw.get("asignado_nombre") or raw.get("assignee_name") or "")
-        )
+        asignado_nombre = limpiar_texto(str(raw.get("asignado_nombre") or raw.get("assignee_name") or ""))
         area_hint = limpiar_texto(str(raw.get("area") or ""))
         prioridad = str(raw.get("prioridad") or PrioridadTarea.MEDIA).upper()
         if prioridad not in PrioridadTarea.values:
@@ -228,9 +216,7 @@ def enriquecer_borrador_minuta(
                 "prioridad": prioridad,
                 "asignado_a_id": str(usuario.pk) if usuario else None,
                 "asignado_nombre": (
-                    usuario.get_full_name().strip() or usuario.username
-                    if usuario
-                    else asignado_nombre
+                    usuario.get_full_name().strip() or usuario.username if usuario else asignado_nombre
                 ),
                 "area_id": str(area.pk) if area else None,
                 "area_nombre": area.nombre if area else "",
@@ -299,29 +285,21 @@ def confirmar_minuta(
         minuta.estado = minuta_bloqueada.estado
         minuta.confirmada_en = minuta_bloqueada.confirmada_en
         return list(
-            Tarea.objects.filter(
-                id_empresa=empresa, minuta_origen=minuta_bloqueada, activo=True
-            ).order_by("fecha_creacion", "pk")
+            Tarea.objects.filter(id_empresa=empresa, minuta_origen=minuta_bloqueada, activo=True).order_by(
+                "fecha_creacion", "pk"
+            )
         )
 
     fuente_items = (
-        enriquecer_borrador_minuta(
-            empresa, items_confirmados, fecha_referencia=minuta_bloqueada.fecha_reunion
-        )
+        enriquecer_borrador_minuta(empresa, items_confirmados, fecha_referencia=minuta_bloqueada.fecha_reunion)
         if items_confirmados is not None
         else list(minuta_bloqueada.borrador_tareas or [])
     )
     if not fuente_items:
         raise TareaError("La minuta no contiene tareas para confirmar.")
 
-    usuarios_map = {
-        str(u.pk): u
-        for u in Usuarios.objects.filter(empresas=empresa, is_active=True)
-    }
-    areas_map = {
-        str(a.pk): a
-        for a in AreaOperativa.objects.filter(id_empresa=empresa, activo=True)
-    }
+    usuarios_map = {str(u.pk): u for u in Usuarios.objects.filter(empresas=empresa, is_active=True)}
+    areas_map = {str(a.pk): a for a in AreaOperativa.objects.filter(id_empresa=empresa, activo=True)}
 
     creadas: list[Tarea] = []
     for idx, item in enumerate(fuente_items):
@@ -330,11 +308,7 @@ def confirmar_minuta(
             continue
         usuario = usuarios_map.get(str(item.get("asignado_a_id") or ""))
         area = areas_map.get(str(item.get("area_id") or ""))
-        fecha_venc = (
-            parse_date(str(item["fecha_vencimiento"]))
-            if item.get("fecha_vencimiento")
-            else None
-        )
+        fecha_venc = parse_date(str(item["fecha_vencimiento"])) if item.get("fecha_vencimiento") else None
         prioridad = str(item.get("prioridad") or PrioridadTarea.MEDIA).upper()
         if prioridad not in PrioridadTarea.values:
             prioridad = PrioridadTarea.MEDIA
@@ -361,9 +335,7 @@ def confirmar_minuta(
     minuta_bloqueada.borrador_tareas = fuente_items
     minuta_bloqueada.estado = MinutaReunion.Estado.CONFIRMADA
     minuta_bloqueada.confirmada_en = timezone.now()
-    minuta_bloqueada.save(
-        update_fields=["borrador_tareas", "estado", "confirmada_en", "fecha_actualizacion"]
-    )
+    minuta_bloqueada.save(update_fields=["borrador_tareas", "estado", "confirmada_en", "fecha_actualizacion"])
     minuta.borrador_tareas = minuta_bloqueada.borrador_tareas
     minuta.estado = minuta_bloqueada.estado
     minuta.confirmada_en = minuta_bloqueada.confirmada_en

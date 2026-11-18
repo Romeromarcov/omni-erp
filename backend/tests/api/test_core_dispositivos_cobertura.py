@@ -27,6 +27,7 @@ quedaban sin cubrir:
 
 Fixtures empresa_a / user_a / moneda_usd vienen del conftest de tests/.
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -143,9 +144,7 @@ class TestLoginConDispositivo:
         assert datos["ip_address"] == "10.2.2.2"
         assert datos["dispositivo"]["fingerprint"] == FP
 
-    def test_dispositivo_con_caja_sin_sesion_abre_automatico(
-        self, user_con_sucursal, dispositivo_a, caja_a
-    ):
+    def test_dispositivo_con_caja_sin_sesion_abre_automatico(self, user_con_sucursal, dispositivo_a, caja_a):
         dispositivo_a.caja_fisica = caja_a
         dispositivo_a.save()
         resp = _login(user_con_sucursal, device_ip="10.3.3.3")
@@ -161,9 +160,7 @@ class TestLoginConDispositivo:
         assert sesion.estado == "ABIERTA"
         assert sesion.ip_address == "10.3.3.3"
 
-    def test_dispositivo_con_sesion_activa_no_abre_otra(
-        self, user_con_sucursal, dispositivo_a, caja_a
-    ):
+    def test_dispositivo_con_sesion_activa_no_abre_otra(self, user_con_sucursal, dispositivo_a, caja_a):
         dispositivo_a.caja_fisica = caja_a
         dispositivo_a.save()
         sesion = SesionCajaFisica.abrir_sesion(caja_fisica=caja_a, usuario=user_con_sucursal)
@@ -187,9 +184,7 @@ class TestLoginConDispositivo:
         assert resp.json()["dispositivo"] == {"error": "Error interno al procesar el dispositivo."}
         assert "access" in resp.json()
 
-    def test_error_abriendo_sesion_automatica_reporta_error_sesion(
-        self, user_con_sucursal, dispositivo_a, caja_a
-    ):
+    def test_error_abriendo_sesion_automatica_reporta_error_sesion(self, user_con_sucursal, dispositivo_a, caja_a):
         dispositivo_a.caja_fisica = caja_a
         dispositivo_a.save()
         with patch(
@@ -229,17 +224,18 @@ class TestLoginAccionAbrirSesionModal:
         assert sesion.estado == "ABIERTA"
         assert sesion.ip_address == "10.4.4.4"
 
-    def test_accion_abrir_sesion_modal_con_error_reporta_error_sesion(
-        self, user_con_sucursal, dispositivo_a, caja_a
-    ):
+    def test_accion_abrir_sesion_modal_con_error_reporta_error_sesion(self, user_con_sucursal, dispositivo_a, caja_a):
         accion = {
             "accion": "abrir_sesion",
             "mensaje": "Abrir sesión",
             "datos": {"caja_fisica": caja_a},
         }
-        with patch("apps.core.utils.determinar_accion_dispositivo", return_value=accion), patch(
-            "apps.finanzas.models.SesionCajaFisica.abrir_sesion",
-            side_effect=RuntimeError("falla"),
+        with (
+            patch("apps.core.utils.determinar_accion_dispositivo", return_value=accion),
+            patch(
+                "apps.finanzas.models.SesionCajaFisica.abrir_sesion",
+                side_effect=RuntimeError("falla"),
+            ),
         ):
             resp = _login(user_con_sucursal)
         assert resp.status_code == 200

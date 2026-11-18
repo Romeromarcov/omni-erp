@@ -13,5 +13,6 @@ class IntegrationHubConfig(AppConfig):
         from apps.integration_hub.connectors.google_sheets.connector import (
             GoogleSheetsConnector,
         )
+
         registry.register(OdooConnector)
         registry.register(GoogleSheetsConnector)

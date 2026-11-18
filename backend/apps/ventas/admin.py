@@ -44,6 +44,7 @@ class ComisionVentaAdmin(admin.ModelAdmin):
     list_display = ["nota_venta", "vendedor", "monto", "estado", "fecha_devengo"]
     list_filter = ["estado"]
 
+
 # Registraciones agregadas automáticamente
 
 

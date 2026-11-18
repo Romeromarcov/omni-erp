@@ -26,15 +26,22 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 def _tipo(empresa, codigo="ORDEN_COMPRA"):
     return TipoAprobacion.objects.create(
-        id_empresa=empresa, codigo_tipo=codigo, nombre_tipo=codigo,
-        modulo_origen=codigo.lower(), activo=True,
+        id_empresa=empresa,
+        codigo_tipo=codigo,
+        nombre_tipo=codigo,
+        modulo_origen=codigo.lower(),
+        activo=True,
     )
 
 
 def _etapa(tipo, orden=1, minimo=None, maximo=None, usuario=None, activo=True):
     return FlujoAprobacion.objects.create(
-        id_tipo_aprobacion=tipo, orden_etapa=orden, nombre_etapa=f"Etapa {orden}",
-        monto_minimo=minimo, monto_maximo=maximo, id_usuario_aprobador=usuario,
+        id_tipo_aprobacion=tipo,
+        orden_etapa=orden,
+        nombre_etapa=f"Etapa {orden}",
+        monto_minimo=minimo,
+        monto_maximo=maximo,
+        id_usuario_aprobador=usuario,
         activo=activo,
     )
 
@@ -43,9 +50,7 @@ def _etapa(tipo, orden=1, minimo=None, maximo=None, usuario=None, activo=True):
 def proveedor(db, empresa_a):
     from apps.proveedores.models import Proveedor
 
-    return Proveedor.objects.create(
-        id_empresa=empresa_a, razon_social="Prov Aprob", rif="J-30303030-3"
-    )
+    return Proveedor.objects.create(id_empresa=empresa_a, razon_social="Prov Aprob", rif="J-30303030-3")
 
 
 @pytest.fixture
@@ -57,8 +62,12 @@ def producto(db, empresa_a, moneda_usd):
     )
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat AP")
     return Producto.objects.create(
-        id_empresa=empresa_a, nombre_producto="Prod AP", sku="PROD-AP-1",
-        id_unidad_medida_base=unidad, id_categoria=categoria, id_moneda_precio=moneda_usd,
+        id_empresa=empresa_a,
+        nombre_producto="Prod AP",
+        sku="PROD-AP-1",
+        id_unidad_medida_base=unidad,
+        id_categoria=categoria,
+        id_moneda_precio=moneda_usd,
     )
 
 
@@ -73,12 +82,18 @@ def _orden(empresa, proveedor, monto, producto, estado="BORRADOR"):
     _OC_SEQ.append(1)
     numero = f"OC-AP-{len(_OC_SEQ)}"
     oc = OrdenCompra.objects.create(
-        id_empresa=empresa, id_proveedor=proveedor, numero_orden=numero,
-        fecha_orden=timezone.now().date(), estado=estado,
+        id_empresa=empresa,
+        id_proveedor=proveedor,
+        numero_orden=numero,
+        fecha_orden=timezone.now().date(),
+        estado=estado,
     )
     DetalleOrdenCompra.objects.create(
-        id_orden_compra=oc, id_producto=producto, cantidad=Decimal("1"),
-        precio_unitario=Decimal(monto), subtotal=Decimal(monto),
+        id_orden_compra=oc,
+        id_producto=producto,
+        cantidad=Decimal("1"),
+        precio_unitario=Decimal(monto),
+        subtotal=Decimal(monto),
     )
     return oc
 
@@ -228,9 +243,14 @@ class TestIntegracionGastos:
         from apps.gastos.models import Gasto
 
         return Gasto.objects.create(
-            id_empresa=empresa, fecha_gasto=timezone.now().date(), descripcion="g",
-            monto=Decimal(monto), id_moneda=moneda, id_categoria_gasto=categoria,
-            tiene_factura=True, estado_gasto="PENDIENTE_APROBACION",
+            id_empresa=empresa,
+            fecha_gasto=timezone.now().date(),
+            descripcion="g",
+            monto=Decimal(monto),
+            id_moneda=moneda,
+            id_categoria_gasto=categoria,
+            tiene_factura=True,
+            estado_gasto="PENDIENTE_APROBACION",
         )
 
     def test_gasto_sobre_umbral_bloquea(self, empresa_a, user_a, categoria, moneda_usd):
@@ -322,8 +342,12 @@ class TestAuthzAprobador:
         rol = Roles.objects.create(id_empresa=empresa_a, nombre_rol="Aprobador Compras")
         tipo = _tipo(empresa_a)
         FlujoAprobacion.objects.create(
-            id_tipo_aprobacion=tipo, orden_etapa=1, nombre_etapa="E", monto_minimo=Decimal("100"),
-            rol_aprobador=rol, activo=True,
+            id_tipo_aprobacion=tipo,
+            orden_etapa=1,
+            nombre_etapa="E",
+            monto_minimo=Decimal("100"),
+            rol_aprobador=rol,
+            activo=True,
         )
         oc = _orden(empresa_a, proveedor, "1000", producto)
         sol = aprob.crear_solicitud(oc, empresa_a, user_a, "ORDEN_COMPRA", Decimal("1000"))

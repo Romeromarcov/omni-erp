@@ -8,6 +8,7 @@ habilitando el reporte de costos y el análisis de variación.
 Reglas: Decimal en todo (R-CODE-4), atómico (R-CODE-11), aislado por empresa
 (R-CODE-1) e idempotente (no duplica si la OF ya fue costeada).
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -54,9 +55,7 @@ def persistir_costos_orden(orden, *, fecha_hora=None, forzar=False):
 
     moneda = orden.empresa.id_moneda_base
     if moneda is None:
-        raise ManufacturaError(
-            "La empresa no tiene moneda base configurada; no se puede costear la orden."
-        )
+        raise ManufacturaError("La empresa no tiene moneda base configurada; no se puede costear la orden.")
 
     producido = sum(
         (_d(p.cantidad) for p in ProduccionTerminada.objects.filter(orden_produccion=orden)),

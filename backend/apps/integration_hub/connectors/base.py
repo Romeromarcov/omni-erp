@@ -125,64 +125,36 @@ class BaseConnector(ABC):
 
     # ── Lectura (pull) ────────────────────────────────────────────────────────
 
-    def pull_contactos(
-        self, desde: datetime | None = None, limite: int = 500
-    ) -> list[dict]:
+    def pull_contactos(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
         """
         Trae contactos (clientes/proveedores) del sistema externo.
         Retorna lista de dicts normalizados con claves estándar.
         """
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta sync de contactos"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de contactos")
 
-    def pull_productos(
-        self, desde: datetime | None = None, limite: int = 500
-    ) -> list[dict]:
+    def pull_productos(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
         """Trae productos del sistema externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta sync de productos"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de productos")
 
-    def pull_pedidos_venta(
-        self, desde: datetime | None = None, limite: int = 200
-    ) -> list[dict]:
+    def pull_pedidos_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
         """Trae pedidos de venta del sistema externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta sync de pedidos de venta"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de pedidos de venta")
 
-    def pull_pedidos_compra(
-        self, desde: datetime | None = None, limite: int = 200
-    ) -> list[dict]:
+    def pull_pedidos_compra(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
         """Trae órdenes de compra del sistema externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta sync de pedidos de compra"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de pedidos de compra")
 
-    def pull_facturas_venta(
-        self, desde: datetime | None = None, limite: int = 200
-    ) -> list[dict]:
+    def pull_facturas_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
         """Trae facturas de venta del sistema externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta sync de facturas de venta"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de facturas de venta")
 
-    def pull_pagos(
-        self, desde: datetime | None = None, limite: int = 300
-    ) -> list[dict]:
+    def pull_pagos(self, desde: datetime | None = None, limite: int = 300) -> list[dict]:
         """Trae pagos del sistema externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta sync de pagos"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de pagos")
 
-    def pull_inventario(
-        self, desde: datetime | None = None, limite: int = 500
-    ) -> list[dict]:
+    def pull_inventario(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
         """Trae movimientos o niveles de inventario del sistema externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta sync de inventario"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de inventario")
 
     # ── Escritura (push) ──────────────────────────────────────────────────────
 
@@ -191,27 +163,19 @@ class BaseConnector(ABC):
         Crea o actualiza un contacto en el sistema externo.
         Retorna el ID externo creado/actualizado.
         """
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta push de contactos"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de contactos")
 
     def push_producto(self, datos: dict) -> str:
         """Crea o actualiza un producto en el sistema externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta push de productos"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de productos")
 
     def push_pedido_venta(self, datos: dict) -> str:
         """Crea un pedido de venta en borrador en el sistema externo. Retorna su ID externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta push de pedidos de venta"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de pedidos de venta")
 
     def push_pago(self, datos: dict) -> str:
         """Crea un pago (cliente o proveedor) en borrador en el sistema externo. Retorna su ID externo."""
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta push de pagos"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de pagos")
 
     def push_entidades(self, tipo_entidad: str, registros: list[dict]) -> "SyncResult":
         """
@@ -221,9 +185,7 @@ class BaseConnector(ABC):
         Sheets) en flujos outbound: el ExportEngine lee del origen con ``pull_*``
         y vuelca aquí. Retorna un SyncResult con los contadores de la operación.
         """
-        raise ConnectorNotSupportedError(
-            f"{self.PROVIDER_NAME} no soporta exportación masiva de entidades"
-        )
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta exportación masiva de entidades")
 
     # ── Utilidades ────────────────────────────────────────────────────────────
 

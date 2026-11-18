@@ -7,6 +7,7 @@ Mode B (datasource='native'): Lee de CuentaPorCobrar nativo de Omni.
 CxC nunca llama al Hub ni a CuentaPorCobrar directamente.
 Siempre pasa por get_cartera_provider().
 """
+
 from __future__ import annotations
 
 import logging
@@ -78,9 +79,7 @@ class OdooCarteraProvider(CarteraProvider):
             )
             return registry.get_connector(instancia)
         except ConectorInstancia.DoesNotExist:
-            raise RuntimeError(
-                f"No hay instancia Odoo activa para empresa {self.empresa.pk}"
-            )
+            raise RuntimeError(f"No hay instancia Odoo activa para empresa {self.empresa.pk}")
 
     def get_partidas(self, solo_vencidas: bool = False, fecha_desde=None) -> list:
         from apps.cuentas_por_cobrar.services_aging import PartidaCartera
@@ -104,10 +103,14 @@ class NativeCarteraProvider(CarteraProvider):
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
         from apps.cuentas_por_cobrar.services_aging import PartidaCartera
 
-        qs = CuentaPorCobrar.objects.filter(
-            empresa=self.empresa,
-            estado__in=["pendiente", "parcial", "vencida"],
-        ).prefetch_related("abonos").select_related("cliente")
+        qs = (
+            CuentaPorCobrar.objects.filter(
+                empresa=self.empresa,
+                estado__in=["pendiente", "parcial", "vencida"],
+            )
+            .prefetch_related("abonos")
+            .select_related("cliente")
+        )
 
         if fecha_desde:
             qs = qs.filter(fecha_vencimiento__gte=fecha_desde)
@@ -137,10 +140,14 @@ class NativeCarteraProvider(CarteraProvider):
         except (ValueError, TypeError, AttributeError):
             pass
 
-        abonos = AbonoCxC.objects.filter(
-            filtro,
-            cuenta_por_cobrar__empresa=self.empresa,
-        ).select_related("cuenta_por_cobrar").order_by("-fecha_abono")
+        abonos = (
+            AbonoCxC.objects.filter(
+                filtro,
+                cuenta_por_cobrar__empresa=self.empresa,
+            )
+            .select_related("cuenta_por_cobrar")
+            .order_by("-fecha_abono")
+        )
 
         return [
             {

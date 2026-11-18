@@ -253,18 +253,14 @@ def almacen_a(db, empresa_a):
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
 
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-IDEM", tipo="CANTIDAD"
-    )
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-IDEM", tipo="CANTIDAD")
 
 
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
 
-    return CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Cat Idem"
-    )
+    return CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat Idem")
 
 
 @pytest.fixture
@@ -316,9 +312,7 @@ class TestIdempotenciaConfirmarPedido:
         )
         return pedido
 
-    def test_confirmar_misma_clave_no_duplica_cxc(
-        self, empresa_a, cliente_a, almacen_a, producto, user_a, stock_100
-    ):
+    def test_confirmar_misma_clave_no_duplica_cxc(self, empresa_a, cliente_a, almacen_a, producto, user_a, stock_100):
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
         pedido = self._pedido(empresa_a, cliente_a, producto)
@@ -415,9 +409,7 @@ class TestIdempotenciaRamas:
         """Sin empresa resoluble, el decorador delega en la vista (no scoping)."""
         from django.contrib.auth import get_user_model
 
-        user = get_user_model().objects.create_user(
-            username="idem_sin_empresa", password="x", is_active=True
-        )
+        user = get_user_model().objects.create_user(username="idem_sin_empresa", password="x", is_active=True)
         client = APIClient()
         client.force_authenticate(user=user)
         r = _abonar(client, cxc_a.pk, "100.00", key="k-sin-emp")
@@ -487,9 +479,7 @@ class TestIdempotenciaRamas:
         assert r1.status_code == 201
 
         # Simula el paso del tiempo: la clave vence.
-        ClaveIdempotencia.objects.filter(clave="ttl-key").update(
-            expira_en=timezone.now() - timedelta(seconds=1)
-        )
+        ClaveIdempotencia.objects.filter(clave="ttl-key").update(expira_en=timezone.now() - timedelta(seconds=1))
 
         r2 = _abonar(client, cxc_a.pk, "100.00", key="ttl-key")
         assert r2.status_code == 201
@@ -530,9 +520,7 @@ class TestIdempotenciaRamas:
 def metodo_pago_generico(db):
     from apps.finanzas.models import MetodoPago
 
-    return MetodoPago.objects.create(
-        nombre_metodo="Efectivo Idem", tipo_metodo="EFECTIVO", es_generico=True
-    )
+    return MetodoPago.objects.create(nombre_metodo="Efectivo Idem", tipo_metodo="EFECTIVO", es_generico=True)
 
 
 @pytest.fixture
@@ -589,9 +577,7 @@ class TestIdempotenciaPago:
         caja_a.refresh_from_db()
         assert caja_a.saldo_actual == Decimal("150.00")
 
-    def test_misma_clave_payload_distinto_422(
-        self, empresa_a, user_a, moneda_usd, metodo_pago_generico, caja_a
-    ):
+    def test_misma_clave_payload_distinto_422(self, empresa_a, user_a, moneda_usd, metodo_pago_generico, caja_a):
         from apps.finanzas.models import Pago
 
         client = APIClient()
@@ -610,9 +596,7 @@ class TestIdempotenciaPago:
         caja_a.refresh_from_db()
         assert caja_a.saldo_actual == Decimal("150.00")
 
-    def test_sin_cabecera_dos_pagos(
-        self, empresa_a, user_a, moneda_usd, metodo_pago_generico, caja_a
-    ):
+    def test_sin_cabecera_dos_pagos(self, empresa_a, user_a, moneda_usd, metodo_pago_generico, caja_a):
         from apps.finanzas.models import Pago
 
         client = APIClient()
@@ -679,9 +663,7 @@ class TestIdempotenciaAcuerdoRegistrarPago:
             **headers,
         )
 
-    def test_reintento_misma_clave_no_duplica_pago_de_cuota(
-        self, user_a, acuerdo_a, moneda_usd, metodo_a
-    ):
+    def test_reintento_misma_clave_no_duplica_pago_de_cuota(self, user_a, acuerdo_a, moneda_usd, metodo_a):
         from apps.finanzas.models import Pago
 
         client = APIClient()

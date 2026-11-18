@@ -35,9 +35,7 @@ def ejecutar_ciclo_empresa(empresa_id: str, momento: str = "AUTO") -> dict[str, 
 @shared_task(name="tareas.ejecutar_ciclo_todos")
 def ejecutar_ciclo_todos(momento: str = "AUTO") -> dict[str, Any]:
     """Itera de forma aislada sobre todas las empresas activas para disparar su ciclo operativo."""
-    ids = list(
-        Empresa.objects.filter(activo=True).values_list("id_empresa", flat=True)
-    )
+    ids = list(Empresa.objects.filter(activo=True).values_list("id_empresa", flat=True))
     procesadas = 0
     errores = 0
     for emp_id in ids:

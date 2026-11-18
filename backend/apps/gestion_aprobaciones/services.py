@@ -45,9 +45,7 @@ def _verificar_aprobador(etapa, usuario) -> None:
     if etapa.rol_aprobador_id is not None:
         from apps.core.models import UsuarioRoles
 
-        if not UsuarioRoles.objects.filter(
-            id_usuario=usuario, id_rol=etapa.rol_aprobador_id
-        ).exists():
+        if not UsuarioRoles.objects.filter(id_usuario=usuario, id_rol=etapa.rol_aprobador_id).exists():
             raise AprobacionError("No posee el rol aprobador requerido para esta etapa.")
 
 
@@ -68,14 +66,10 @@ def evaluar_etapas(empresa, codigo_tipo: str, monto) -> list:
     from .models import FlujoAprobacion, TipoAprobacion
 
     monto = Decimal(str(monto))
-    tipo = TipoAprobacion.objects.filter(
-        id_empresa=empresa, codigo_tipo=codigo_tipo, activo=True
-    ).first()
+    tipo = TipoAprobacion.objects.filter(id_empresa=empresa, codigo_tipo=codigo_tipo, activo=True).first()
     if tipo is None:
         return []
-    etapas = FlujoAprobacion.objects.filter(
-        id_tipo_aprobacion=tipo, activo=True
-    ).order_by("orden_etapa")
+    etapas = FlujoAprobacion.objects.filter(id_tipo_aprobacion=tipo, activo=True).order_by("orden_etapa")
     return [e for e in etapas if _etapa_aplica(e, monto)]
 
 
@@ -141,9 +135,7 @@ def registrar_decision(solicitud, usuario, aprobado: bool, comentarios: str = ""
 
     solicitud = SolicitudAprobacion.objects.select_for_update().get(pk=solicitud.pk)
     if solicitud.estado_solicitud != PENDIENTE:
-        raise AprobacionError(
-            f"La solicitud no está pendiente (estado: {solicitud.estado_solicitud})."
-        )
+        raise AprobacionError(f"La solicitud no está pendiente (estado: {solicitud.estado_solicitud}).")
 
     etapa = solicitud.etapa_actual_flujo
     # Authz (SEC HIGH): solo el aprobador designado de la etapa puede decidir.
@@ -165,9 +157,9 @@ def registrar_decision(solicitud, usuario, aprobado: bool, comentarios: str = ""
     # Siguiente etapa aplicable (mismo tipo, activa, monto en rango, orden mayor).
     siguientes = [
         e
-        for e in FlujoAprobacion.objects.filter(
-            id_tipo_aprobacion=solicitud.id_tipo_aprobacion, activo=True
-        ).order_by("orden_etapa")
+        for e in FlujoAprobacion.objects.filter(id_tipo_aprobacion=solicitud.id_tipo_aprobacion, activo=True).order_by(
+            "orden_etapa"
+        )
         if e.orden_etapa > etapa.orden_etapa and _etapa_aplica(e, solicitud.monto)
     ]
     if siguientes:

@@ -10,6 +10,7 @@ con CapabilityToken reales (patrón de ``test_mcp_server_scope.py``):
 - ``ventas_get_facturas``: listado, filtro por estado, campos devueltos.
 - Export ``MCP_TOOLS`` para el auto-discovery del servidor.
 """
+
 import datetime
 import uuid
 from decimal import Decimal
@@ -48,25 +49,20 @@ def _token(empresa, scopes, *, activo=True, expires_at=None, creado_por=None):
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def cliente(db, empresa_a):
     from apps.crm.models import Cliente
 
-    return Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Cliente MCP", rif="J-44444444-4"
-    )
+    return Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente MCP", rif="J-44444444-4")
 
 
 @pytest.fixture
 def producto(db, empresa_a, moneda_usd):
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-MCP", tipo="CANTIDAD"
-    )
-    categoria = CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="General MCP"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-MCP", tipo="CANTIDAD")
+    categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="General MCP")
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto MCP",
@@ -144,12 +140,11 @@ def facturas(db, empresa_a, cliente, moneda_usd):
 
 # ── ventas_get_cotizacion ─────────────────────────────────────────────────────
 
+
 class TestGetCotizacion:
     def test_devuelve_detalle_completo(self, empresa_a, cotizacion):
         tok = _token(empresa_a, ["ventas:read"])
-        res = ventas_get_cotizacion(
-            str(tok.token), str(empresa_a.id_empresa), str(cotizacion.id_cotizacion)
-        )
+        res = ventas_get_cotizacion(str(tok.token), str(empresa_a.id_empresa), str(cotizacion.id_cotizacion))
         assert res["id_cotizacion"] == str(cotizacion.id_cotizacion)
         assert res["numero"] == "COT-MCP-001"
         assert res["cliente"] == "Cliente MCP"
@@ -165,43 +160,32 @@ class TestGetCotizacion:
 
     def test_no_encontrada_devuelve_error(self, empresa_a):
         tok = _token(empresa_a, ["ventas:read"])
-        res = ventas_get_cotizacion(
-            str(tok.token), str(empresa_a.id_empresa), str(uuid.uuid4())
-        )
+        res = ventas_get_cotizacion(str(tok.token), str(empresa_a.id_empresa), str(uuid.uuid4()))
         assert "error" in res
 
     def test_scope_faltante_lanza_permissionerror(self, empresa_a, cotizacion):
         tok = _token(empresa_a, ["crm:read"])  # falta ventas:read
         with pytest.raises(PermissionError):
-            ventas_get_cotizacion(
-                str(tok.token), str(empresa_a.id_empresa), str(cotizacion.id_cotizacion)
-            )
+            ventas_get_cotizacion(str(tok.token), str(empresa_a.id_empresa), str(cotizacion.id_cotizacion))
 
-    def test_empresa_distinta_al_token_lanza_permissionerror(
-        self, empresa_a, empresa_b, cotizacion
-    ):
+    def test_empresa_distinta_al_token_lanza_permissionerror(self, empresa_a, empresa_b, cotizacion):
         tok = _token(empresa_a, ["ventas:read"])
         with pytest.raises(PermissionError):
-            ventas_get_cotizacion(
-                str(tok.token), str(empresa_b.id_empresa), str(cotizacion.id_cotizacion)
-            )
+            ventas_get_cotizacion(str(tok.token), str(empresa_b.id_empresa), str(cotizacion.id_cotizacion))
 
     def test_cross_tenant_no_filtra_datos(self, empresa_b, cotizacion):
         """Token de B con empresa_id de B no puede leer la cotización de A."""
         tok_b = _token(empresa_b, ["ventas:read"])
-        res = ventas_get_cotizacion(
-            str(tok_b.token), str(empresa_b.id_empresa), str(cotizacion.id_cotizacion)
-        )
+        res = ventas_get_cotizacion(str(tok_b.token), str(empresa_b.id_empresa), str(cotizacion.id_cotizacion))
         assert "error" in res
 
     def test_token_invalido_lanza_permissionerror(self, empresa_a, cotizacion):
         with pytest.raises(PermissionError):
-            ventas_get_cotizacion(
-                "no-es-uuid", str(empresa_a.id_empresa), str(cotizacion.id_cotizacion)
-            )
+            ventas_get_cotizacion("no-es-uuid", str(empresa_a.id_empresa), str(cotizacion.id_cotizacion))
 
 
 # ── ventas_get_notas_venta ────────────────────────────────────────────────────
+
 
 class TestGetNotasVenta:
     def test_lista_todas_ordenadas_por_fecha_desc(self, empresa_a, notas_venta):
@@ -213,9 +197,7 @@ class TestGetNotasVenta:
 
     def test_filtra_por_estado(self, empresa_a, notas_venta):
         tok = _token(empresa_a, ["ventas:read"])
-        res = ventas_get_notas_venta(
-            str(tok.token), str(empresa_a.id_empresa), estado="BORRADOR"
-        )
+        res = ventas_get_notas_venta(str(tok.token), str(empresa_a.id_empresa), estado="BORRADOR")
         assert len(res) == 1
         assert res[0]["numero"] == "NV-MCP-001"
 
@@ -231,6 +213,7 @@ class TestGetNotasVenta:
 
 
 # ── ventas_get_facturas ───────────────────────────────────────────────────────
+
 
 class TestGetFacturas:
     """
@@ -272,6 +255,7 @@ class TestGetFacturas:
 
 
 # ── Export para auto-discovery ────────────────────────────────────────────────
+
 
 def test_mcp_tools_exporta_las_tres_herramientas_con_scope():
     nombres = {t["name"] for t in MCP_TOOLS}

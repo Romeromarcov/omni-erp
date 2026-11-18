@@ -69,9 +69,7 @@ class TestCuentaPorPagarViewSetGuard:
         assert cxp_a.estado == "PENDIENTE"  # no se mutó
 
     def test_patch_monto_pendiente_bloqueado_405(self, cxp_a, client_a):
-        resp = client_a.patch(
-            f"{URL}{cxp_a.pk}/", {"monto_pendiente": "1.00"}, format="json"
-        )
+        resp = client_a.patch(f"{URL}{cxp_a.pk}/", {"monto_pendiente": "1.00"}, format="json")
         assert resp.status_code == 405
         cxp_a.refresh_from_db()
         assert cxp_a.monto_pendiente == Decimal("1000.00")  # no se mutó

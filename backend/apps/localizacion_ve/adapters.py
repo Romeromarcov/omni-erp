@@ -5,6 +5,7 @@ Inicialmente DELEGAN en la lógica fiscal existente (`apps/fiscal`) en vez de
 mover el código de golpe. El import de fiscal es perezoso (dentro del método)
 para no romper el orden de carga de apps.
 """
+
 from decimal import Decimal
 
 from apps.localizacion.ports import CalculadoraNomina, MotorImpuestos

@@ -28,9 +28,7 @@ def test_helper_falla_si_falta_mapeo_y_contabilidad_activa(empresa_a):
     empresa_a.contabilidad_activa = True
     empresa_a.save(update_fields=["contabilidad_activa"])
     doc = MagicMock()
-    with patch.object(
-        contab_services, "generar_asiento", side_effect=MapeoContableNoEncontrado("sin mapeo")
-    ):
+    with patch.object(contab_services, "generar_asiento", side_effect=MapeoContableNoEncontrado("sin mapeo")):
         with pytest.raises(AsientoError):
             generar_asiento_o_fallar("AJUSTE_INVENTARIO", doc, empresa_a)
 
@@ -39,9 +37,7 @@ def test_helper_falla_si_falta_mapeo_y_contabilidad_activa(empresa_a):
 def test_helper_best_effort_si_contabilidad_inactiva(empresa_a):
     assert empresa_a.contabilidad_activa is False  # default
     doc = MagicMock()
-    with patch.object(
-        contab_services, "generar_asiento", side_effect=MapeoContableNoEncontrado("sin mapeo")
-    ):
+    with patch.object(contab_services, "generar_asiento", side_effect=MapeoContableNoEncontrado("sin mapeo")):
         asiento, error = generar_asiento_o_fallar("AJUSTE_INVENTARIO", doc, empresa_a)
     assert asiento is None
     assert "sin mapeo" in error
@@ -52,9 +48,7 @@ def test_helper_propaga_asiento_error_aunque_contabilidad_inactiva(empresa_a):
     """Un descuadre real (AsientoError no-mapeo) SIEMPRE rompe, exija o no contabilidad."""
     assert empresa_a.contabilidad_activa is False
     doc = MagicMock()
-    with patch.object(
-        contab_services, "generar_asiento", side_effect=AsientoError("descuadre debe!=haber")
-    ):
+    with patch.object(contab_services, "generar_asiento", side_effect=AsientoError("descuadre debe!=haber")):
         with pytest.raises(AsientoError):
             generar_asiento_o_fallar("AJUSTE_INVENTARIO", doc, empresa_a)
 

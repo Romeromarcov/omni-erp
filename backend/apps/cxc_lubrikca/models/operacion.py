@@ -66,16 +66,10 @@ class PedidoLubrikca(CxcLubrikcaBaseModel):
     es_primera_compra = models.BooleanField(default=False)
     facturada = models.BooleanField(default=False)
     factura_id = models.CharField(max_length=100, blank=True)
-    monto_facturado = models.DecimalField(
-        max_digits=18, decimal_places=2, null=True, blank=True
-    )
+    monto_facturado = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     # Notas de crédito reales de Odoo (out_refund). Fase 5 las poblará.
-    ncs_facturadas = models.DecimalField(
-        max_digits=18, decimal_places=2, default=Decimal("0")
-    )
-    estado_entrega = models.CharField(
-        max_length=20, choices=EstadoEntrega.choices, blank=True
-    )
+    ncs_facturadas = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0"))
+    estado_entrega = models.CharField(max_length=20, choices=EstadoEntrega.choices, blank=True)
     entregada_completa = models.BooleanField(default=False)
     tiene_devolucion = models.BooleanField(default=False)
 
@@ -91,18 +85,14 @@ class PedidoLubrikca(CxcLubrikcaBaseModel):
 
 # --- 3.3 LineaPedidoLubrikca (espejo de LineaOrden) -------------------------
 class LineaPedidoLubrikca(CxcLubrikcaBaseModel):
-    pedido = models.ForeignKey(
-        PedidoLubrikca, on_delete=models.CASCADE, related_name="lineas"
-    )
+    pedido = models.ForeignKey(PedidoLubrikca, on_delete=models.CASCADE, related_name="lineas")
     linea_id = models.CharField(max_length=100)
     producto = models.CharField(max_length=200)
     marca = models.CharField(max_length=100, default="*")
     categoria = models.CharField(max_length=100, default="*")
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
     precio_unitario = models.DecimalField(max_digits=18, decimal_places=4)
-    cantidad_entregada = models.DecimalField(
-        max_digits=18, decimal_places=4, default=0
-    )
+    cantidad_entregada = models.DecimalField(max_digits=18, decimal_places=4, default=0)
 
     class Meta:
         ordering = ["linea_id"]
@@ -160,42 +150,26 @@ class Vinculacion(CxcLubrikcaBaseModel):
     ``AbonoCxC`` del núcleo: esta es la extensión específica de Lubrikca.
     """
 
-    pedido = models.ForeignKey(
-        PedidoLubrikca, on_delete=models.CASCADE, related_name="vinculaciones"
-    )
-    pago = models.ForeignKey(
-        PagoLubrikca, on_delete=models.CASCADE, related_name="vinculaciones"
-    )
+    pedido = models.ForeignKey(PedidoLubrikca, on_delete=models.CASCADE, related_name="vinculaciones")
+    pago = models.ForeignKey(PagoLubrikca, on_delete=models.CASCADE, related_name="vinculaciones")
     monto_aplicado = models.DecimalField(max_digits=18, decimal_places=4)
     hora_pago_confirmada = models.DateTimeField()
     tasa_bcv_aplicada = models.DecimalField(max_digits=18, decimal_places=8)
     tasa_binance_aplicada = models.DecimalField(max_digits=18, decimal_places=8)
     es_tasa_heredada = models.BooleanField(default=False)
     moneda_abono = models.CharField(max_length=3, choices=Moneda.choices)
-    tipo_tasa_abono = models.CharField(
-        max_length=10, choices=TipoTasa.choices, default=TipoTasa.N_A
-    )
+    tipo_tasa_abono = models.CharField(max_length=10, choices=TipoTasa.choices, default=TipoTasa.N_A)
     # Equivalentes congelados (3.9b) — calculados UNA vez, nunca recalculados.
-    equiv_usd_bcv = models.DecimalField(
-        max_digits=18, decimal_places=6, null=True, blank=True
-    )
-    equiv_usd_binance = models.DecimalField(
-        max_digits=18, decimal_places=6, null=True, blank=True
-    )
-    equiv_ves_bcv = models.DecimalField(
-        max_digits=18, decimal_places=6, null=True, blank=True
-    )
-    equiv_ves_binance = models.DecimalField(
-        max_digits=18, decimal_places=6, null=True, blank=True
-    )
+    equiv_usd_bcv = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    equiv_usd_binance = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    equiv_ves_bcv = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    equiv_ves_binance = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
     estado = models.CharField(
         max_length=20,
         choices=EstadoVinculacion.choices,
         default=EstadoVinculacion.PENDIENTE,
     )
-    confirmado_por = models.ForeignKey(
-        "core.Usuarios", null=True, blank=True, on_delete=models.SET_NULL
-    )
+    confirmado_por = models.ForeignKey("core.Usuarios", null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ["-created_at"]
@@ -208,25 +182,17 @@ class Vinculacion(CxcLubrikcaBaseModel):
 
 # --- 3.10 BandejaFacturacion (salida del motor + cierre híbrido) ------------
 class BandejaFacturacion(CxcLubrikcaBaseModel):
-    pedido = models.OneToOneField(
-        PedidoLubrikca, on_delete=models.CASCADE, related_name="bandeja"
-    )
+    pedido = models.OneToOneField(PedidoLubrikca, on_delete=models.CASCADE, related_name="bandeja")
     lista_aplicada = models.CharField(max_length=50)
     precio_base_calculado = models.DecimalField(max_digits=18, decimal_places=2)
     descuentos_detalle = models.JSONField(default=list)
-    total_descuentos = models.DecimalField(
-        max_digits=18, decimal_places=2, default=0
-    )
+    total_descuentos = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     ncs_calculadas = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     total_motor = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     requiere_revision = models.BooleanField(default=False)
     candidata_a_cierre = models.BooleanField(default=False)
-    estado = models.CharField(
-        max_length=20, choices=EstadoBandeja.choices, default=EstadoBandeja.CALCULADO
-    )
-    aprobado_por = models.ForeignKey(
-        "core.Usuarios", null=True, blank=True, on_delete=models.SET_NULL
-    )
+    estado = models.CharField(max_length=20, choices=EstadoBandeja.choices, default=EstadoBandeja.CALCULADO)
+    aprobado_por = models.ForeignKey("core.Usuarios", null=True, blank=True, on_delete=models.SET_NULL)
     calculado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -247,12 +213,8 @@ class ConfiguracionConciliacion(CxcLubrikcaBaseModel):
     permitir historial editable vía CRUD).
     """
 
-    tolerance_rounding = models.DecimalField(
-        max_digits=18, decimal_places=2, default=Decimal("0.01")
-    )
-    tolerance_red = models.DecimalField(
-        max_digits=18, decimal_places=2, default=Decimal("1.00")
-    )
+    tolerance_rounding = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.01"))
+    tolerance_red = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("1.00"))
 
     class Meta:
         ordering = ["-created_at"]
@@ -271,19 +233,13 @@ class ConciliacionLubrikca(CxcLubrikcaBaseModel):
     semáforo verde/amarillo/rojo. Write-back purista: nada se escribe a Odoo.
     """
 
-    pedido = models.OneToOneField(
-        PedidoLubrikca, on_delete=models.CASCADE, related_name="conciliacion"
-    )
+    pedido = models.OneToOneField(PedidoLubrikca, on_delete=models.CASCADE, related_name="conciliacion")
     total_motor = models.DecimalField(max_digits=18, decimal_places=2)
     monto_facturado = models.DecimalField(max_digits=18, decimal_places=2)
     ncs = models.DecimalField(max_digits=18, decimal_places=2)
     diferencia = models.DecimalField(max_digits=18, decimal_places=2)
-    resultado = models.CharField(
-        max_length=10, choices=ResultadoConciliacion.choices
-    )
-    revisado_por = models.ForeignKey(
-        "core.Usuarios", null=True, blank=True, on_delete=models.SET_NULL
-    )
+    resultado = models.CharField(max_length=10, choices=ResultadoConciliacion.choices)
+    revisado_por = models.ForeignKey("core.Usuarios", null=True, blank=True, on_delete=models.SET_NULL)
     conciliado_en = models.DateTimeField(auto_now=True)
 
     class Meta:

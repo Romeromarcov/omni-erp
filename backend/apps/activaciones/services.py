@@ -67,32 +67,22 @@ def disponibilidad(
     """
     eventos = _eventos_solapados(calendario, inicio, fin, excluir_evento)
     puntos = [inicio] + [e.inicio for e in eventos if inicio < e.inicio < fin]
-    uso_por_evento = {
-        e.pk: {u.recurso_id: u.cantidad for u in e.usos.all()} for e in eventos
-    }
+    uso_por_evento = {e.pk: {u.recurso_id: u.cantidad for u in e.usos.all()} for e in eventos}
     out = []
     for r in calendario.recursos.filter(activo=True):
         pico = 0
         for t in puntos:
-            usado = sum(
-                uso_por_evento[e.pk].get(r.pk, 0)
-                for e in eventos
-                if e.inicio <= t < e.fin
-            )
+            usado = sum(uso_por_evento[e.pk].get(r.pk, 0) for e in eventos if e.inicio <= t < e.fin)
             pico = max(pico, usado)
         out.append(Disponibilidad(r.codigo, r.nombre, r.capacidad, pico))
     return out
 
 
-def verificar_capacidad(
-    calendario, inicio, fin, usos: dict[str, int], excluir_evento=None
-) -> None:
+def verificar_capacidad(calendario, inicio, fin, usos: dict[str, int], excluir_evento=None) -> None:
     """Lanza ``CapacidadExcedida`` si ``usos`` ({codigo: cantidad}) no cabe en el horario."""
     if fin <= inicio:
         raise ActivacionError("La hora de fin debe ser posterior a la de inicio.")
-    disp = {
-        d.codigo: d for d in disponibilidad(calendario, inicio, fin, excluir_evento)
-    }
+    disp = {d.codigo: d for d in disponibilidad(calendario, inicio, fin, excluir_evento)}
     for codigo, cantidad in usos.items():
         if cantidad <= 0:
             continue
@@ -119,13 +109,9 @@ def verificar_capacidad(
 
 
 def calendario_predeterminado(empresa) -> CalendarioActivacion:
-    cal = CalendarioActivacion.objects.filter(
-        id_empresa=empresa, activo=True, es_predeterminado=True
-    ).first()
+    cal = CalendarioActivacion.objects.filter(id_empresa=empresa, activo=True, es_predeterminado=True).first()
     if cal is None:
-        raise ActivacionError(
-            "La empresa no tiene un calendario de activaciones predeterminado."
-        )
+        raise ActivacionError("La empresa no tiene un calendario de activaciones predeterminado.")
     return cal
 
 
@@ -147,9 +133,7 @@ def crear_evento(
     origen=EventoActivacion.Origen.WEB,
 ) -> EventoActivacion:
     """Crea un evento validando capacidad. Serializa por calendario (lock de fila) para evitar carreras."""
-    cal = CalendarioActivacion.objects.select_for_update().get(
-        pk=calendario.pk, id_empresa=empresa
-    )
+    cal = CalendarioActivacion.objects.select_for_update().get(pk=calendario.pk, id_empresa=empresa)
     usos = {k: int(v) for k, v in (usos or {}).items() if int(v) > 0}
     verificar_capacidad(cal, inicio, fin, usos)
     evento = EventoActivacion.objects.create(
@@ -166,17 +150,9 @@ def crear_evento(
         notas=notas,
         origen=origen,
     )
-    recursos = {
-        r.codigo: r
-        for r in RecursoActivacion.objects.filter(calendario=cal, activo=True)
-    }
+    recursos = {r.codigo: r for r in RecursoActivacion.objects.filter(calendario=cal, activo=True)}
     UsoRecursoEvento.objects.bulk_create(
-        [
-            UsoRecursoEvento(
-                id_empresa=empresa, evento=evento, recurso=recursos[c], cantidad=n
-            )
-            for c, n in usos.items()
-        ]
+        [UsoRecursoEvento(id_empresa=empresa, evento=evento, recurso=recursos[c], cantidad=n) for c, n in usos.items()]
     )
     transaction.on_commit(lambda: encolar_sync(evento.pk))
     return evento
@@ -196,11 +172,7 @@ def sincronizar_google(evento_id) -> None:
     """Refleja el evento en Google Calendar. Nunca lanza: un fallo se guarda en ``sync_error``."""
     from . import google_calendar
 
-    evento = (
-        EventoActivacion.objects.select_related("calendario")
-        .prefetch_related("usos__recurso")
-        .get(pk=evento_id)
-    )
+    evento = EventoActivacion.objects.select_related("calendario").prefetch_related("usos__recurso").get(pk=evento_id)
     if not evento.calendario.google_calendar_id or not google_calendar.configurado():
         return
     try:

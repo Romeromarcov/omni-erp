@@ -26,6 +26,7 @@ Backfill de diff-coverage (gate ≥95 % en CI) — ramas no cubiertas de:
 Todos los tests usan los fixtures multi-tenant de conftest (R-CODE-1) y
 Decimal para dinero (R-CODE-4).
 """
+
 import datetime
 import uuid
 from decimal import Decimal
@@ -98,9 +99,7 @@ class TestAuthViewsAxes:
         y el login procede normal (toggle real de configuración por entorno)."""
         settings.AXES_ENABLED = False
         client = APIClient()
-        resp = client.post(
-            self.URL, {"username": "user_empresa_a", "password": "testpass123"}, format="json"
-        )
+        resp = client.post(self.URL, {"username": "user_empresa_a", "password": "testpass123"}, format="json")
         assert resp.status_code == 200, resp.content
         assert "access" in resp.data
         assert resp.data["user"]["username"] == "user_empresa_a"
@@ -119,15 +118,11 @@ class TestAuthViewsAxes:
             # Se limpia la caché del rate-limit SEC-07 (5/min por IP) para que
             # los 10 fallos lleguen a authenticate() y axes (BD) los registre.
             cache.clear()
-            r = client.post(
-                self.URL, {"username": "user_empresa_a", "password": "incorrecta"}, format="json"
-            )
+            r = client.post(self.URL, {"username": "user_empresa_a", "password": "incorrecta"}, format="json")
             assert r.status_code == 401
 
         cache.clear()
-        bloqueado = client.post(
-            self.URL, {"username": "user_empresa_a", "password": "testpass123"}, format="json"
-        )
+        bloqueado = client.post(self.URL, {"username": "user_empresa_a", "password": "testpass123"}, format="json")
         assert bloqueado.status_code == 429
         assert bloqueado.json()["error"] == LOCKOUT_MESSAGE
         assert "access" not in bloqueado.json()
@@ -168,9 +163,7 @@ class TestIdempotenciaNo2xxNoConsumeClave:
         metodo.monedas.add(moneda_usd)
         return metodo
 
-    def test_respuesta_404_borra_la_clave_y_permite_reintentar(
-        self, client_a, acuerdo_a, moneda_usd, metodo_a
-    ):
+    def test_respuesta_404_borra_la_clave_y_permite_reintentar(self, client_a, acuerdo_a, moneda_usd, metodo_a):
         """L180-185 (objetivo L185): si la vista devuelve 4xx, el registro de
         idempotencia se borra (no se consume la clave) y un reintento legítimo
         con la MISMA clave puede ejecutar la operación corregida."""
@@ -254,9 +247,7 @@ class TestSerializerMixins:
         assert path == "id_sucursal_predeterminada__id_empresa"
         assert nulls == ["id_sucursal_predeterminada"]
 
-    def test_scoped_queryset_dos_saltos_con_empresa_padre_nullable(
-        self, empresa_a, empresa_b, cxc_a, cxc_b
-    ):
+    def test_scoped_queryset_dos_saltos_con_empresa_padre_nullable(self, empresa_a, empresa_b, cxc_a, cxc_b):
         """L73-74 + L100-104 (objetivo L74): AbonoCxC llega a Empresa vía
         CuentaPorCobrar.empresa (nullable). El scope debe excluir los abonos
         del tenant ajeno y conservar los de filas globales (empresa=None)."""
@@ -285,9 +276,7 @@ class TestSerializerMixins:
         queda restringido al tenant."""
         from apps.core.serializer_mixins import scope_tenant_fks
 
-        caja_b = CajaFisica.objects.create(
-            empresa=empresa_b, nombre="Caja B", identificador_dispositivo="disp-b"
-        )
+        caja_b = CajaFisica.objects.create(empresa=empresa_b, nombre="Caja B", identificador_dispositivo="disp-b")
 
         class _CajaSerializer(drf_serializers.Serializer):
             caja = drf_serializers.PrimaryKeyRelatedField(queryset=CajaFisica.objects.all())
@@ -304,18 +293,14 @@ class TestSerializerMixins:
         assert caja_fisica_a in qs
         assert caja_b not in qs
 
-    def test_scope_tenant_fks_campos_exoticos_no_rompen_el_scope(
-        self, empresa_a, empresa_b, caja_fisica_a
-    ):
+    def test_scope_tenant_fks_campos_exoticos_no_rompen_el_scope(self, empresa_a, empresa_b, caja_fisica_a):
         """L121-123, L134-138 (objetivos L123, L136, L138): un nested serializer
         sin ``fields``, un RelatedField sin queryset (override de get_queryset,
         patrón documentado de DRF) y un queryset exótico sin ``model`` se
         saltan sin error — y los campos normales SÍ quedan escopeados."""
         from apps.core.serializer_mixins import scope_tenant_fks
 
-        caja_b = CajaFisica.objects.create(
-            empresa=empresa_b, nombre="Caja B2", identificador_dispositivo="disp-b2"
-        )
+        caja_b = CajaFisica.objects.create(empresa=empresa_b, nombre="Caja B2", identificador_dispositivo="disp-b2")
 
         class _QuerysetExotico:
             def all(self):  # tiene .all pero no .model → no introspeccionable
@@ -353,24 +338,18 @@ class TestSerializerMixins:
 
 
 class TestEstadoCuentaPdfNoDisponible:
-    def test_importerror_de_reportlab_responde_503_sin_detalle_interno(
-        self, client_a, empresa_a
-    ):
+    def test_importerror_de_reportlab_responde_503_sin_detalle_interno(self, client_a, empresa_a):
         """L142-149 (objetivos L144, L146-147): si la generación del PDF lanza
         ImportError (reportlab ausente en el servidor), la API responde 503 con
         mensaje seguro y NO filtra el detalle interno (SEC-M4 / R-CODE-8)."""
         from apps.crm.models import Cliente
 
-        cliente = Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Cliente PDF", rif="V-11222333"
-        )
+        cliente = Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente PDF", rif="V-11222333")
         with mock.patch(
             "apps.cuentas_por_cobrar.pdf_estado_cuenta.generar_pdf_estado_cuenta",
             side_effect=ImportError("reportlab no está instalado"),
         ):
-            resp = client_a.get(
-                f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente.id_cliente}/pdf/"
-            )
+            resp = client_a.get(f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente.id_cliente}/pdf/")
         assert resp.status_code == 503
         assert resp.json() == {"error": "Generación de PDF no disponible en este servidor."}
         assert "reportlab" not in resp.content.decode()
@@ -432,9 +411,7 @@ class TestAcuerdoPagoCreateSerializer:
     def test_crear_con_gestion_propia_es_valido(self, client_a, gestion_a):
         """L86-91 → L95: una gestión del MISMO tenant pasa la validación y queda
         enlazada al acuerdo."""
-        resp = client_a.post(
-            self.URL, self._payload(gestion=str(gestion_a.pk)), format="json"
-        )
+        resp = client_a.post(self.URL, self._payload(gestion=str(gestion_a.pk)), format="json")
         assert resp.status_code == 201, resp.content
         acuerdo = AcuerdoPago.objects.get()
         assert acuerdo.gestion_id == gestion_a.pk
@@ -537,9 +514,7 @@ class TestNominaServices:
         config = config_nomina_de_empresa(empresa_a)
         assert config.parametros.valor_ut == ParametrosLOTTT().valor_ut
 
-    def test_salario_invalido_en_documento_json_revienta_el_proceso(
-        self, proceso_a, empleado_a
-    ):
+    def test_salario_invalido_en_documento_json_revienta_el_proceso(self, proceso_a, empleado_a):
         """L105-113 (objetivo L111-112): un salario ilegible en documento_json
         cae a 0 (con warning) y, sin salario mínimo configurado, el proceso
         falla con error de negocio y NO persiste nóminas parciales."""
@@ -585,9 +560,7 @@ class TestNominaServices:
         from apps.nomina.services import NominaProcesoError, procesar_proceso_nomina
 
         with pytest.raises(NominaProcesoError, match="Valor inválido en 'dias_trabajados'"):
-            procesar_proceso_nomina(
-                proceso_a, datos_empleados={str(empleado_a.pk): {"dias_trabajados": "quince"}}
-            )
+            procesar_proceso_nomina(proceso_a, datos_empleados={str(empleado_a.pk): {"dias_trabajados": "quince"}})
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -598,9 +571,7 @@ class TestNominaServices:
 class TestNominaMcpResumen:
     @staticmethod
     def _token(empresa, scopes):
-        return CapabilityToken.objects.create(
-            empresa=empresa, nombre="tok-diffcov", scopes=scopes
-        )
+        return CapabilityToken.objects.create(empresa=empresa, nombre="tok-diffcov", scopes=scopes)
 
     def test_resumen_empresa_distinta_al_token(self, empresa_a, empresa_b, proceso_a):
         """L116-117 (objetivo L117): el resumen exige que empresa_id coincida
@@ -635,36 +606,49 @@ class TestMapeoContableSerializer:
         from apps.contabilidad.serializers import MapeoContableSerializer
 
         cuenta_a = PlanCuentas.objects.create(
-            id_empresa=empresa_a, codigo_cuenta="5.1", nombre_cuenta="Gasto Nómina",
-            tipo_cuenta="GASTO", naturaleza="DEUDORA", nivel=1,
+            id_empresa=empresa_a,
+            codigo_cuenta="5.1",
+            nombre_cuenta="Gasto Nómina",
+            tipo_cuenta="GASTO",
+            naturaleza="DEUDORA",
+            nivel=1,
         )
         cuenta_a2 = PlanCuentas.objects.create(
-            id_empresa=empresa_a, codigo_cuenta="2.1", nombre_cuenta="Nómina por Pagar",
-            tipo_cuenta="PASIVO", naturaleza="ACREEDORA", nivel=1,
+            id_empresa=empresa_a,
+            codigo_cuenta="2.1",
+            nombre_cuenta="Nómina por Pagar",
+            tipo_cuenta="PASIVO",
+            naturaleza="ACREEDORA",
+            nivel=1,
         )
         cuenta_b = PlanCuentas.objects.create(
-            id_empresa=empresa_b, codigo_cuenta="5.1", nombre_cuenta="Gasto Ajeno",
-            tipo_cuenta="GASTO", naturaleza="DEUDORA", nivel=1,
+            id_empresa=empresa_b,
+            codigo_cuenta="5.1",
+            nombre_cuenta="Gasto Ajeno",
+            tipo_cuenta="GASTO",
+            naturaleza="DEUDORA",
+            nivel=1,
         )
 
-        invalido = MapeoContableSerializer(data={
-            "id_empresa": empresa_a.pk,
-            "tipo_asiento": "NOMINA",
-            "cuenta_debe": cuenta_b.pk,   # ← de empresa B
-            "cuenta_haber": cuenta_a2.pk,
-        })
+        invalido = MapeoContableSerializer(
+            data={
+                "id_empresa": empresa_a.pk,
+                "tipo_asiento": "NOMINA",
+                "cuenta_debe": cuenta_b.pk,  # ← de empresa B
+                "cuenta_haber": cuenta_a2.pk,
+            }
+        )
         assert not invalido.is_valid()
-        assert (
-            str(invalido.errors["cuenta_debe"][0])
-            == "La cuenta no pertenece a la empresa del mapeo."
-        )
+        assert str(invalido.errors["cuenta_debe"][0]) == "La cuenta no pertenece a la empresa del mapeo."
 
-        valido = MapeoContableSerializer(data={
-            "id_empresa": empresa_a.pk,
-            "tipo_asiento": "NOMINA",
-            "cuenta_debe": cuenta_a.pk,
-            "cuenta_haber": cuenta_a2.pk,
-        })
+        valido = MapeoContableSerializer(
+            data={
+                "id_empresa": empresa_a.pk,
+                "tipo_asiento": "NOMINA",
+                "cuenta_debe": cuenta_a.pk,
+                "cuenta_haber": cuenta_a2.pk,
+            }
+        )
         assert valido.is_valid(), valido.errors
 
 
@@ -691,7 +675,7 @@ class TestSyncEngineDecimalDefensivo:
                 "codigo_interno": "SKU-DC-1",
                 "nombre": "Producto Externo DC",
                 "precio_venta": "no-es-un-precio",  # InvalidOperation → 0
-                "costo": ["12"],                    # InvalidOperation → 0
+                "costo": ["12"],  # InvalidOperation → 0
             },
             instancia,
         )

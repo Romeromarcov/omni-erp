@@ -60,9 +60,7 @@ class RLSContextMiddleware:
             return
         from .viewsets import get_empresas_visible
 
-        empresa_ids = list(
-            get_empresas_visible(user).values_list("id_empresa", flat=True)
-        )
+        empresa_ids = list(get_empresas_visible(user).values_list("id_empresa", flat=True))
         rls.apply_context(empresa_ids, bypass=False)
 
     @staticmethod

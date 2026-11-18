@@ -21,11 +21,26 @@ PROVEEDORES_BASE = [
         ),
         "icono_url": "/static/integration_hub/icons/odoo.svg",
         "versiones_soportadas": [
-            "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
         ],
         "capacidades": [
-            "contactos", "productos", "pedidos_venta", "pedidos_compra",
-            "facturas_venta", "pagos", "inventario",
+            "contactos",
+            "productos",
+            "pedidos_venta",
+            "pedidos_compra",
+            "facturas_venta",
+            "pagos",
+            "inventario",
         ],
         "requiere_url": True,
         "requiere_db": False,
@@ -45,8 +60,13 @@ PROVEEDORES_BASE = [
         "icono_url": "/static/integration_hub/icons/google_sheets.svg",
         "versiones_soportadas": ["v4"],
         "capacidades": [
-            "contactos", "productos", "pedidos_venta", "pedidos_compra",
-            "facturas_venta", "pagos", "inventario",
+            "contactos",
+            "productos",
+            "pedidos_venta",
+            "pedidos_compra",
+            "facturas_venta",
+            "pagos",
+            "inventario",
         ],
         "requiere_url": False,
         "requiere_db": False,
@@ -57,14 +77,16 @@ PROVEEDORES_BASE = [
     {
         "codigo": "sap_b1",
         "nombre": "SAP Business One",
-        "descripcion": (
-            "Integración con SAP Business One vía Service Layer REST API."
-        ),
+        "descripcion": ("Integración con SAP Business One vía Service Layer REST API."),
         "icono_url": "/static/integration_hub/icons/sap.svg",
         "versiones_soportadas": ["9.3", "10.0"],
         "capacidades": [
-            "contactos", "productos", "pedidos_venta", "pedidos_compra",
-            "facturas_venta", "pagos",
+            "contactos",
+            "productos",
+            "pedidos_venta",
+            "pedidos_compra",
+            "facturas_venta",
+            "pagos",
         ],
         "requiere_url": True,
         "requiere_db": True,
@@ -76,8 +98,7 @@ PROVEEDORES_BASE = [
         "codigo": "woocommerce",
         "nombre": "WooCommerce",
         "descripcion": (
-            "Integración con tiendas WooCommerce vía REST API. Sincroniza "
-            "productos, pedidos y clientes."
+            "Integración con tiendas WooCommerce vía REST API. Sincroniza " "productos, pedidos y clientes."
         ),
         "icono_url": "/static/integration_hub/icons/woocommerce.svg",
         "versiones_soportadas": ["3.x", "4.x", "5.x", "6.x", "7.x", "8.x"],
@@ -91,13 +112,14 @@ PROVEEDORES_BASE = [
     {
         "codigo": "shopify",
         "nombre": "Shopify",
-        "descripcion": (
-            "Integración con Shopify vía Admin API. Sincroniza catálogo, "
-            "pedidos e inventario."
-        ),
+        "descripcion": ("Integración con Shopify vía Admin API. Sincroniza catálogo, " "pedidos e inventario."),
         "icono_url": "/static/integration_hub/icons/shopify.svg",
         "versiones_soportadas": [
-            "2023-01", "2023-04", "2023-07", "2023-10", "2024-01",
+            "2023-01",
+            "2023-04",
+            "2023-07",
+            "2023-10",
+            "2024-01",
         ],
         "capacidades": ["contactos", "productos", "pedidos_venta", "inventario"],
         "requiere_url": True,

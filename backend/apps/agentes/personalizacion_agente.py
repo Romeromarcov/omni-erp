@@ -36,7 +36,7 @@ AGENTE_ID = "personalizacion_capa2"
 @dataclass
 class SugerenciaFlujo:
     paso: str
-    accion: str          # "habilitar" | "deshabilitar"
+    accion: str  # "habilitar" | "deshabilitar"
     razonamiento: str
     prioridad: str = "media"  # "alta" | "media" | "baja"
 
@@ -44,9 +44,9 @@ class SugerenciaFlujo:
 @dataclass
 class SugerenciaPrecio:
     descripcion: str
-    ajuste_porcentual: Decimal   # positivo = subida, negativo = baja
+    ajuste_porcentual: Decimal  # positivo = subida, negativo = baja
     razonamiento: str
-    aplicar_a: str = "todos"     # "todos" | nombre de lista específica
+    aplicar_a: str = "todos"  # "todos" | nombre de lista específica
 
 
 @dataclass
@@ -56,7 +56,7 @@ class SugerenciaCredito:
     limite_actual: Decimal
     limite_sugerido: Decimal
     razonamiento: str
-    riesgo: str = "bajo"         # "bajo" | "medio" | "alto"
+    riesgo: str = "bajo"  # "bajo" | "medio" | "alto"
 
 
 @dataclass
@@ -83,30 +83,36 @@ def _analizar_flujo_documentos(empresa) -> list[SugerenciaFlujo]:
 
         # Sugerir habilitar APROBACION_PEDIDO si no está activo
         if "APROBACION_PEDIDO" in pasos_deshabilitados:
-            sugerencias.append(SugerenciaFlujo(
-                paso="APROBACION_PEDIDO",
-                accion="habilitar",
-                razonamiento="Habilitar la aprobación de pedidos reduce errores y mejora el control interno.",
-                prioridad="media",
-            ))
+            sugerencias.append(
+                SugerenciaFlujo(
+                    paso="APROBACION_PEDIDO",
+                    accion="habilitar",
+                    razonamiento="Habilitar la aprobación de pedidos reduce errores y mejora el control interno.",
+                    prioridad="media",
+                )
+            )
 
         # Sugerir revisar COTIZACION si hay muchos pasos habilitados
         if len(pasos_habilitados) > 5 and "COTIZACION" in pasos_habilitados:
-            sugerencias.append(SugerenciaFlujo(
-                paso="COTIZACION",
-                accion="revisar",
-                razonamiento="Con muchos pasos habilitados, considere si la cotización es obligatoria o solo para clientes nuevos.",
-                prioridad="baja",
-            ))
+            sugerencias.append(
+                SugerenciaFlujo(
+                    paso="COTIZACION",
+                    accion="revisar",
+                    razonamiento="Con muchos pasos habilitados, considere si la cotización es obligatoria o solo para clientes nuevos.",
+                    prioridad="baja",
+                )
+            )
 
     except Exception as exc:
         logger.warning("No se pudo analizar ConfiguracionFlujoDocumentos: %s", exc)
-        sugerencias.append(SugerenciaFlujo(
-            paso="CONFIGURACION_FLUJO",
-            accion="revisar",
-            razonamiento="No se encontró configuración de flujo. Se recomienda revisar y configurar los pasos del proceso.",
-            prioridad="alta",
-        ))
+        sugerencias.append(
+            SugerenciaFlujo(
+                paso="CONFIGURACION_FLUJO",
+                accion="revisar",
+                razonamiento="No se encontró configuración de flujo. Se recomienda revisar y configurar los pasos del proceso.",
+                prioridad="alta",
+            )
+        )
 
     return sugerencias
 
@@ -145,25 +151,29 @@ def _analizar_credito_clientes(empresa) -> list[SugerenciaCredito]:
                 if tasa_mora > 0.30:
                     # Reduir límite
                     limite_sugerido = limite_actual * Decimal("0.70")
-                    sugerencias.append(SugerenciaCredito(
-                        cliente_id=str(cliente.pk),
-                        cliente_nombre=str(cliente),
-                        limite_actual=limite_actual,
-                        limite_sugerido=limite_sugerido.quantize(Decimal("0.01")),
-                        razonamiento=f"Tasa de mora: {tasa_mora:.0%}. Se sugiere reducir el límite de crédito en 30%.",
-                        riesgo="alto",
-                    ))
+                    sugerencias.append(
+                        SugerenciaCredito(
+                            cliente_id=str(cliente.pk),
+                            cliente_nombre=str(cliente),
+                            limite_actual=limite_actual,
+                            limite_sugerido=limite_sugerido.quantize(Decimal("0.01")),
+                            razonamiento=f"Tasa de mora: {tasa_mora:.0%}. Se sugiere reducir el límite de crédito en 30%.",
+                            riesgo="alto",
+                        )
+                    )
                 elif tasa_mora == 0 and cxc_pagadas >= 5:
                     # Buen historial → aumentar límite
                     limite_sugerido = limite_actual * Decimal("1.25")
-                    sugerencias.append(SugerenciaCredito(
-                        cliente_id=str(cliente.pk),
-                        cliente_nombre=str(cliente),
-                        limite_actual=limite_actual,
-                        limite_sugerido=limite_sugerido.quantize(Decimal("0.01")),
-                        razonamiento=f"Historial de pagos excelente ({cxc_pagadas} facturas pagadas, 0 moras). Se sugiere aumentar el límite en 25%.",
-                        riesgo="bajo",
-                    ))
+                    sugerencias.append(
+                        SugerenciaCredito(
+                            cliente_id=str(cliente.pk),
+                            cliente_nombre=str(cliente),
+                            limite_actual=limite_actual,
+                            limite_sugerido=limite_sugerido.quantize(Decimal("0.01")),
+                            razonamiento=f"Historial de pagos excelente ({cxc_pagadas} facturas pagadas, 0 moras). Se sugiere aumentar el límite en 25%.",
+                            riesgo="bajo",
+                        )
+                    )
             except Exception:
                 continue
 
@@ -194,15 +204,17 @@ def _analizar_listas_precios(empresa) -> list[SugerenciaPrecio]:
                     bajo_margen_count += 1
 
         if bajo_margen_count > 0:
-            sugerencias.append(SugerenciaPrecio(
-                descripcion=f"{bajo_margen_count} producto(s) con margen < 15%",
-                ajuste_porcentual=Decimal("10.00"),
-                razonamiento=(
-                    f"Se detectaron {bajo_margen_count} producto(s) con margen bruto menor al 15%. "
-                    "Se recomienda revisar los precios de venta o negociar costos con proveedores."
-                ),
-                aplicar_a="productos_bajo_margen",
-            ))
+            sugerencias.append(
+                SugerenciaPrecio(
+                    descripcion=f"{bajo_margen_count} producto(s) con margen < 15%",
+                    ajuste_porcentual=Decimal("10.00"),
+                    razonamiento=(
+                        f"Se detectaron {bajo_margen_count} producto(s) con margen bruto menor al 15%. "
+                        "Se recomienda revisar los precios de venta o negociar costos con proveedores."
+                    ),
+                    aplicar_a="productos_bajo_margen",
+                )
+            )
 
     except Exception as exc:
         logger.warning("No se pudo analizar listas de precios: %s", exc)

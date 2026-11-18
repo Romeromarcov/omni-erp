@@ -41,10 +41,7 @@ class DocumentoViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles. M-BUG-4: excluir soft-deleted.
-        return (
-            Documento.objects.filter(id_empresa__in=_empresas(self.request), activo=True)
-            .order_by("-fecha_subida")
-        )
+        return Documento.objects.filter(id_empresa__in=_empresas(self.request), activo=True).order_by("-fecha_subida")
 
     @action(
         detail=False,

@@ -21,11 +21,7 @@ def sincronizar_odoo_task(ingesta_id: str) -> None:
     from .models import IngestaBot
     from .services import odoo_push
 
-    ing = (
-        IngestaBot.objects.select_related("bot_usuario__usuario", "id_empresa")
-        .filter(pk=ingesta_id)
-        .first()
-    )
+    ing = IngestaBot.objects.select_related("bot_usuario__usuario", "id_empresa").filter(pk=ingesta_id).first()
     if ing is not None:
         odoo_push.sincronizar(ing)
 

@@ -14,6 +14,7 @@ Cubre:
 - ``enviar_cotizacion_pdf`` y ``enviar_estado_cuenta_pdf`` (PDF mockeado): feliz y
   ``EmailError`` cuando el cliente no tiene email.
 """
+
 import sys
 import types
 from types import SimpleNamespace
@@ -223,9 +224,7 @@ def _cotizacion_fake(email_cliente):
 class TestEnviarCotizacionPdf:
     def test_envia_con_pdf_adjunto(self):
         cot = _cotizacion_fake("cliente@acme.test")
-        with patch(
-            "apps.ventas.pdf_cotizacion.generar_pdf_cotizacion", return_value=b"%PDF-cot"
-        ) as gen:
+        with patch("apps.ventas.pdf_cotizacion.generar_pdf_cotizacion", return_value=b"%PDF-cot") as gen:
             ok = enviar_cotizacion_pdf(cot)
         assert ok is True
         gen.assert_called_once_with(cot)

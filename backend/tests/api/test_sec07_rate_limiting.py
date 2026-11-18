@@ -69,9 +69,7 @@ class TestSEC07LoginView:
         """Los 5 primeros intentos deben pasar (401, no 429)."""
         for i in range(5):
             resp = self._post(api_client)
-            assert resp.status_code != 429, (
-                f"Intento {i + 1} fue bloqueado con 429, debería pasar."
-            )
+            assert resp.status_code != 429, f"Intento {i + 1} fue bloqueado con 429, debería pasar."
 
     def test_sexto_intento_retorna_429(self, api_client, db):
         """El 6to intento consecutivo desde la misma IP devuelve 429."""
@@ -133,9 +131,7 @@ class TestSEC07TokenView:
         """Los 5 primeros intentos deben pasar (401, no 429)."""
         for i in range(5):
             resp = self._post(api_client)
-            assert resp.status_code != 429, (
-                f"Intento {i + 1} fue bloqueado con 429, debería pasar."
-            )
+            assert resp.status_code != 429, f"Intento {i + 1} fue bloqueado con 429, debería pasar."
 
     def test_sexto_intento_retorna_429(self, api_client, db):
         """El 6to intento consecutivo desde la misma IP devuelve 429."""

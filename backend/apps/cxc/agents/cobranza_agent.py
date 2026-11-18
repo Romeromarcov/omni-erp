@@ -4,6 +4,7 @@ Agente IA de Cobranza.
 Usa el gateway LLM (apps.core.llm_gateway) con streaming para analizar cartera
 y gestionar clientes. El modelo se resuelve por env (LLM_MODEL_ANALISIS).
 """
+
 from __future__ import annotations
 
 import logging
@@ -70,12 +71,16 @@ class CobranzaAgent:
             partidas = provider.get_partidas(solo_vencidas=True)
             prioridades = priorizar(partidas)[:top_n]
 
-            tasa_hoy = TasaCambio.objects.filter(
-                fecha_tasa=date.today(),
-                tipo_tasa="OFICIAL_BCV",
-                id_moneda_origen__codigo_iso="USD",
-                id_moneda_destino__codigo_iso="VES",
-            ).order_by("-fecha_creacion").first()
+            tasa_hoy = (
+                TasaCambio.objects.filter(
+                    fecha_tasa=date.today(),
+                    tipo_tasa="OFICIAL_BCV",
+                    id_moneda_origen__codigo_iso="USD",
+                    id_moneda_destino__codigo_iso="VES",
+                )
+                .order_by("-fecha_creacion")
+                .first()
+            )
 
             tasa_str = str(tasa_hoy.valor_tasa) if tasa_hoy else "N/D"
 
@@ -91,10 +96,12 @@ class CobranzaAgent:
                 )
 
             with gateway.stream(
-                messages=[{
-                    "role": "user",
-                    "content": f"Analiza esta cartera y genera plan de cobranza:\n\n{contexto}",
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"Analiza esta cartera y genera plan de cobranza:\n\n{contexto}",
+                    }
+                ],
                 system=SYSTEM_PROMPT,
                 max_tokens=4096,
                 uso=llm_gateway.USO_ANALISIS,
@@ -162,10 +169,12 @@ class CobranzaAgent:
 
             gateway = llm_gateway.get_gateway(client=self._get_client())
             with gateway.stream(
-                messages=[{
-                    "role": "user",
-                    "content": f"Gestiona este cliente específico:\n\n{contexto}",
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"Gestiona este cliente específico:\n\n{contexto}",
+                    }
+                ],
                 system=SYSTEM_PROMPT,
                 max_tokens=2048,
                 uso=llm_gateway.USO_ANALISIS,

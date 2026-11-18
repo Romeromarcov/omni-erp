@@ -144,9 +144,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             instancia.estado = "error"
             instancia.mensaje_estado = mensaje
             instancia.ultimo_test_conexion = timezone.now()
-            instancia.save(
-                update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"]
-            )
+            instancia.save(update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"])
             return Response(
                 {"success": False, "message": mensaje},
                 status=status.HTTP_502_BAD_GATEWAY,
@@ -206,10 +204,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         desde_fecha = params.get("desde")
 
         # Verificar que la entidad esté activa en la instancia
-        if (
-            tipo_entidad not in instancia.entidades_activas
-            and instancia.entidades_activas
-        ):
+        if tipo_entidad not in instancia.entidades_activas and instancia.entidades_activas:
             return Response(
                 {
                     "error": f"La entidad '{tipo_entidad}' no está habilitada en este conector. "
@@ -286,14 +281,11 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
 
         from .tasks import ejecutar_export_instancia
 
-        task = ejecutar_export_instancia.delay(
-            str(instancia.pk), tipos, incremental=not full
-        )
+        task = ejecutar_export_instancia.delay(str(instancia.pk), tipos, incremental=not full)
 
         return Response(
             {
-                "mensaje": "Exportación encolada. Consulta el historial de jobs "
-                "para ver el progreso.",
+                "mensaje": "Exportación encolada. Consulta el historial de jobs " "para ver el progreso.",
                 "task_id": task.id,
             },
             status=status.HTTP_202_ACCEPTED,
@@ -303,9 +295,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
     def list_jobs(self, request, pk=None):
         """Lista el historial de jobs de sincronización de esta instancia."""
         instancia = self.get_object()
-        jobs = JobSincronizacion.objects.filter(id_instancia=instancia).order_by(
-            "-iniciado_en"
-        )[:50]
+        jobs = JobSincronizacion.objects.filter(id_instancia=instancia).order_by("-iniciado_en")[:50]
         return Response(JobSincronizacionSerializer(jobs, many=True).data)
 
     @action(detail=True, methods=["get"], url_path="entidades/(?P<tipo_entidad>[^/.]+)")
@@ -366,9 +356,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             )
         except Exception:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
-            logger.exception(
-                "preview_data error [%s / %s]", instancia.nombre, tipo_entidad
-            )
+            logger.exception("preview_data error [%s / %s]", instancia.nombre, tipo_entidad)
             return Response(
                 {"error": "Error consultando datos del sistema externo."},
                 status=status.HTTP_502_BAD_GATEWAY,
@@ -396,9 +384,7 @@ class JobSincronizacionViewSet(ReadOnlyModelViewSet):
     def list_logs(self, request, pk=None):
         """Logs detallados de un job específico."""
         job = self.get_object()
-        logs = LogDetalleSincronizacion.objects.filter(id_job=job).order_by(
-            "-creado_en"
-        )[:500]
+        logs = LogDetalleSincronizacion.objects.filter(id_job=job).order_by("-creado_en")[:500]
         return Response(LogDetalleSincronizacionSerializer(logs, many=True).data)
 
     @action(detail=True, methods=["post"], url_path="cancelar")
@@ -436,9 +422,7 @@ class IntegrationHubStatusView(APIView):
 
     def get(self, request):
         empresa = _empresa(request)
-        conectores = ConectorInstancia.objects.filter(
-            id_empresa=empresa, activo=True
-        ).select_related("id_proveedor")
+        conectores = ConectorInstancia.objects.filter(id_empresa=empresa, activo=True).select_related("id_proveedor")
 
         activos = conectores.filter(estado="activo").count()
         con_error = conectores.filter(estado="error").count()
@@ -465,9 +449,7 @@ class IntegrationHubStatusView(APIView):
                 "jobs_24h": {
                     "total": jobs_recientes.count(),
                     "completados": jobs_recientes.filter(estado="completado").count(),
-                    "con_errores": jobs_recientes.filter(
-                        estado="completado_con_errores"
-                    ).count(),
+                    "con_errores": jobs_recientes.filter(estado="completado_con_errores").count(),
                     "fallidos": jobs_recientes.filter(estado="fallido").count(),
                     "en_progreso": jobs_recientes.filter(estado="en_progreso").count(),
                 },

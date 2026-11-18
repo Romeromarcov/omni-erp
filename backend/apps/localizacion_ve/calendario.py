@@ -19,17 +19,17 @@ from typing import Optional
 # ── Feriados fijos nacionales ─────────────────────────────────────────────────
 
 _FERIADOS_FIJOS: list[tuple[int, int, str]] = [
-    (1,  1,  "Año Nuevo"),
-    (1,  15, "Día del Maestro"),          # Variable pero comúnmente el 15/1
-    (3,  19, "San José"),                 # 19 de marzo
-    (4,  19, "19 de Abril — Proclamación de Independencia"),
-    (5,  1,  "Día del Trabajador"),
-    (6,  24, "Batalla de Carabobo"),
-    (7,  5,  "Día de la Independencia"),
-    (7,  24, "Natalicio de Simón Bolívar"),
+    (1, 1, "Año Nuevo"),
+    (1, 15, "Día del Maestro"),  # Variable pero comúnmente el 15/1
+    (3, 19, "San José"),  # 19 de marzo
+    (4, 19, "19 de Abril — Proclamación de Independencia"),
+    (5, 1, "Día del Trabajador"),
+    (6, 24, "Batalla de Carabobo"),
+    (7, 5, "Día de la Independencia"),
+    (7, 24, "Natalicio de Simón Bolívar"),
     (10, 12, "Día de la Resistencia Indígena"),
-    (11, 1,  "Todos los Santos"),
-    (12, 8,  "Inmaculada Concepción"),
+    (11, 1, "Todos los Santos"),
+    (12, 8, "Inmaculada Concepción"),
     (12, 17, "Muerte de Simón Bolívar"),
     (12, 24, "Nochebuena"),
     (12, 25, "Navidad"),

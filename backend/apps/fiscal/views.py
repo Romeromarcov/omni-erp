@@ -42,6 +42,7 @@ class TasaIVAEmpresaViewSet(BaseModelViewSet):
         empresa = None
         if empresa_id:
             from apps.core.models import Empresa
+
             try:
                 # SEC-B2: el pk de Empresa es id_empresa (no id); con id__in el
                 # ORM lanzaba FieldError (500). Se filtra por empresas visibles.

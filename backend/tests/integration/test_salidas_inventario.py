@@ -35,9 +35,7 @@ def almacen(db, empresa_a):
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
 
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad SI", abreviatura="UN-SI", tipo="CANTIDAD"
-    )
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad SI", abreviatura="UN-SI", tipo="CANTIDAD")
 
 
 @pytest.fixture

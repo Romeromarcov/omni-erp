@@ -142,9 +142,7 @@ class ExtractoBancarioArchivoViewSet(
 
     def get_queryset(self):
         empresas = _empresas(self.request)
-        qs = super().get_queryset().filter(id_empresa__in=empresas).select_related(
-            "id_cuenta_bancaria", "id_empresa"
-        )
+        qs = super().get_queryset().filter(id_empresa__in=empresas).select_related("id_cuenta_bancaria", "id_empresa")
         empresa_id = self.request.query_params.get("empresa")
         cuenta_id = self.request.query_params.get("cuenta")
         cuadra = self.request.query_params.get("cuadra")
@@ -204,13 +202,13 @@ class ExtractoBancarioArchivoViewSet(
                     {"error": "Sin empresa accesible."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            qs_cuenta = CuentaBancariaEmpresa.objects.select_related(
-                "id_empresa", "id_moneda"
-            ).filter(pk=cuenta_uuid, id_empresa=empresa)
+            qs_cuenta = CuentaBancariaEmpresa.objects.select_related("id_empresa", "id_moneda").filter(
+                pk=cuenta_uuid, id_empresa=empresa
+            )
         else:
-            qs_cuenta = CuentaBancariaEmpresa.objects.select_related(
-                "id_empresa", "id_moneda"
-            ).filter(pk=cuenta_uuid, id_empresa__in=empresas)
+            qs_cuenta = CuentaBancariaEmpresa.objects.select_related("id_empresa", "id_moneda").filter(
+                pk=cuenta_uuid, id_empresa__in=empresas
+            )
 
         cuenta = qs_cuenta.first()
         if cuenta is None:
@@ -234,9 +232,7 @@ class ExtractoBancarioArchivoViewSet(
         except ExtractoBancarioError as exc:
             return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
 
-        codigo_http = (
-            status.HTTP_200_OK if res.ya_existia_archivo else status.HTTP_201_CREATED
-        )
+        codigo_http = status.HTTP_200_OK if res.ya_existia_archivo else status.HTTP_201_CREATED
         return Response(
             {
                 "archivo": ExtractoBancarioArchivoSerializer(res.archivo).data,
@@ -317,12 +313,7 @@ class MovimientoBancarioViewSet(ActiveFilterMixin, BaseModelViewSet):
 
     def get_queryset(self):
         empresas = _empresas(self.request)
-        qs = (
-            super()
-            .get_queryset()
-            .filter(id_empresa__in=empresas)
-            .select_related("id_cuenta_bancaria", "id_empresa")
-        )
+        qs = super().get_queryset().filter(id_empresa__in=empresas).select_related("id_cuenta_bancaria", "id_empresa")
         empresa_id = self.request.query_params.get("empresa")
         cuenta_id = self.request.query_params.get("cuenta")
         estado = self.request.query_params.get("estado")
@@ -355,9 +346,7 @@ class MovimientoBancarioViewSet(ActiveFilterMixin, BaseModelViewSet):
             CuentaBancariaEmpresa.objects.select_for_update().get(pk=instance.id_cuenta_bancaria_id)
             mov_locked = MovimientoBancario.objects.select_for_update().get(pk=instance.pk)
             if mov_locked.estado == "CONCILIADO":
-                raise ValidationError(
-                    {"error": "No se puede desactivar un movimiento bancario ya conciliado."}
-                )
+                raise ValidationError({"error": "No se puede desactivar un movimiento bancario ya conciliado."})
             if ConciliacionBancaria.objects.filter(
                 id_empresa_id=mov_locked.id_empresa_id,
                 id_cuenta_bancaria_id=mov_locked.id_cuenta_bancaria_id,
@@ -368,8 +357,7 @@ class MovimientoBancarioViewSet(ActiveFilterMixin, BaseModelViewSet):
                 raise ValidationError(
                     {
                         "error": (
-                            "No se puede desactivar un movimiento dentro de un período "
-                            "de conciliación cerrado."
+                            "No se puede desactivar un movimiento dentro de un período " "de conciliación cerrado."
                         )
                     }
                 )
@@ -390,9 +378,7 @@ class MovimientoBancarioViewSet(ActiveFilterMixin, BaseModelViewSet):
                     }
                 )
             if props_activas:
-                PropuestaConciliacionBancaria.objects.filter(
-                    pk__in=[p.pk for p in props_activas]
-                ).update(activo=False)
+                PropuestaConciliacionBancaria.objects.filter(pk__in=[p.pk for p in props_activas]).update(activo=False)
             mov_locked.soft_delete()
             instance.activo = False
 
@@ -422,11 +408,7 @@ class MovimientoBancarioViewSet(ActiveFilterMixin, BaseModelViewSet):
 
         cuenta_uuid = _validar_uuid(cuenta_id, "cuenta_bancaria")
         empresas = _empresas(request)
-        empresa = (
-            empresas.filter(pk=_validar_uuid(empresa_id, "empresa")).first()
-            if empresa_id
-            else empresas.first()
-        )
+        empresa = empresas.filter(pk=_validar_uuid(empresa_id, "empresa")).first() if empresa_id else empresas.first()
         if not empresa:
             return Response({"error": "Sin empresa accesible."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -483,9 +465,9 @@ class ConciliacionBancariaViewSet(BaseModelViewSet):
     search_fields = ["observaciones", "estado", "id_cuenta_bancaria__nombre_banco"]
 
     def get_queryset(self):
-        return ConciliacionBancaria.objects.filter(
-            id_empresa__in=_empresas(self.request)
-        ).select_related("id_cuenta_bancaria", "id_empresa")
+        return ConciliacionBancaria.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
+            "id_cuenta_bancaria", "id_empresa"
+        )
 
     def perform_create(self, serializer):
         from .services import iniciar_conciliacion
@@ -532,12 +514,8 @@ class ConciliacionBancariaViewSet(BaseModelViewSet):
     name="list",
     decorator=swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter(
-                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
-            openapi.Parameter(
-                "cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
+            openapi.Parameter("empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+            openapi.Parameter("cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
         ]
     ),
 )
@@ -615,21 +593,13 @@ class ConfiguracionConciliacionCuentaViewSet(ActiveFilterMixin, BaseModelViewSet
     name="list",
     decorator=swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter(
-                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
-            openapi.Parameter(
-                "cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
+            openapi.Parameter("empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+            openapi.Parameter("cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
             openapi.Parameter("estado", openapi.IN_QUERY, type=openapi.TYPE_STRING),
             openapi.Parameter("tipo", openapi.IN_QUERY, type=openapi.TYPE_STRING),
             openapi.Parameter("regla", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-            openapi.Parameter(
-                "desde", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE
-            ),
-            openapi.Parameter(
-                "hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE
-            ),
+            openapi.Parameter("desde", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
+            openapi.Parameter("hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
         ]
     ),
 )
@@ -697,9 +667,7 @@ class PropuestaConciliacionBancariaViewSet(
         if empresa_id:
             qs = qs.filter(id_empresa=_validar_uuid(empresa_id, "empresa"))
         if cuenta_id:
-            qs = qs.filter(
-                id_movimiento_bancario__id_cuenta_bancaria=_validar_uuid(cuenta_id, "cuenta")
-            )
+            qs = qs.filter(id_movimiento_bancario__id_cuenta_bancaria=_validar_uuid(cuenta_id, "cuenta"))
         if estado:
             qs = qs.filter(estado=estado.replace("\x00", "").strip().upper())
         if tipo:
@@ -741,13 +709,17 @@ class PropuestaConciliacionBancariaViewSet(
                     {"error": "Sin empresa accesible."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            cuenta = CuentaBancariaEmpresa.objects.select_related(
-                "id_empresa", "id_moneda"
-            ).filter(pk=cuenta_uuid, id_empresa=empresa).first()
+            cuenta = (
+                CuentaBancariaEmpresa.objects.select_related("id_empresa", "id_moneda")
+                .filter(pk=cuenta_uuid, id_empresa=empresa)
+                .first()
+            )
         else:
-            cuenta = CuentaBancariaEmpresa.objects.select_related(
-                "id_empresa", "id_moneda"
-            ).filter(pk=cuenta_uuid, id_empresa__in=empresas).first()
+            cuenta = (
+                CuentaBancariaEmpresa.objects.select_related("id_empresa", "id_moneda")
+                .filter(pk=cuenta_uuid, id_empresa__in=empresas)
+                .first()
+            )
             empresa = cuenta.id_empresa if cuenta is not None else None
 
         if cuenta is None or empresa is None:
@@ -792,14 +764,10 @@ class PropuestaConciliacionBancariaViewSet(
                 propuesta_id=str(instancia.pk),
                 accion=datos["accion"],
                 usuario=request.user,
-                pago_nativo_id=(
-                    str(datos["pago_nativo_id"]) if datos.get("pago_nativo_id") else None
-                ),
+                pago_nativo_id=(str(datos["pago_nativo_id"]) if datos.get("pago_nativo_id") else None),
                 pago_externo_id=datos.get("pago_externo_id") or "",
                 pago_nombre=datos.get("pago_nombre") or "",
-                cuenta_contable_id=(
-                    str(datos["cuenta_contable_id"]) if datos.get("cuenta_contable_id") else None
-                ),
+                cuenta_contable_id=(str(datos["cuenta_contable_id"]) if datos.get("cuenta_contable_id") else None),
                 cuenta_contable_codigo=datos.get("cuenta_contable_codigo") or "",
                 comentario=datos.get("comentario") or "",
             )
@@ -816,12 +784,8 @@ class PropuestaConciliacionBancariaViewSet(
 
     @swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter(
-                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
-            openapi.Parameter(
-                "cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
+            openapi.Parameter("empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+            openapi.Parameter("cuenta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
             openapi.Parameter("decididas_desde", openapi.IN_QUERY, type=openapi.TYPE_STRING),
             openapi.Parameter("decididas_hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING),
         ],
@@ -849,15 +813,9 @@ class PropuestaConciliacionBancariaViewSet(
 
     @swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter(
-                "empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
-            openapi.Parameter(
-                "propuesta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
-            openapi.Parameter(
-                "movimiento", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID
-            ),
+            openapi.Parameter("empresa", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+            openapi.Parameter("propuesta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+            openapi.Parameter("movimiento", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
             openapi.Parameter("accion", openapi.IN_QUERY, type=openapi.TYPE_STRING),
         ],
         responses={200: DecisionPreconciliacionBancariaSerializer(many=True)},
@@ -865,9 +823,9 @@ class PropuestaConciliacionBancariaViewSet(
     @action(detail=False, methods=["get"], url_path="bitacora")
     def bitacora(self, request):
         empresas = _empresas(request)
-        qs = DecisionPreconciliacionBancaria.objects.filter(
-            id_empresa__in=empresas, activo=True
-        ).select_related("id_movimiento_bancario", "id_propuesta")
+        qs = DecisionPreconciliacionBancaria.objects.filter(id_empresa__in=empresas, activo=True).select_related(
+            "id_movimiento_bancario", "id_propuesta"
+        )
 
         params = request.query_params
         if params.get("empresa"):
@@ -875,9 +833,7 @@ class PropuestaConciliacionBancariaViewSet(
         if params.get("propuesta"):
             qs = qs.filter(id_propuesta=_validar_uuid(params.get("propuesta"), "propuesta"))
         if params.get("movimiento"):
-            qs = qs.filter(
-                id_movimiento_bancario=_validar_uuid(params.get("movimiento"), "movimiento")
-            )
+            qs = qs.filter(id_movimiento_bancario=_validar_uuid(params.get("movimiento"), "movimiento"))
         if params.get("accion"):
             qs = qs.filter(accion=str(params.get("accion")).replace("\x00", "").strip().upper())
 
@@ -887,4 +843,3 @@ class PropuestaConciliacionBancariaViewSet(
             ser = DecisionPreconciliacionBancariaSerializer(pagina, many=True)
             return self.get_paginated_response(ser.data)
         return Response(DecisionPreconciliacionBancariaSerializer(qs, many=True).data)
-

@@ -41,20 +41,15 @@ _TITULO_POR_EVENTO = {
 # Templates de mensaje in-app por evento (Django template syntax)
 _MENSAJE_TEMPLATES = {
     "PEDIDO_CONFIRMADO": (
-        "El pedido #{{ numero_pedido }} del cliente {{ nombre_cliente }} "
-        "ha sido confirmado exitosamente."
+        "El pedido #{{ numero_pedido }} del cliente {{ nombre_cliente }} " "ha sido confirmado exitosamente."
     ),
-    "PAGO_RECIBIDO": (
-        "Se registró un pago de {{ monto }} {{ moneda }} "
-        "para la factura #{{ numero_factura }}."
-    ),
+    "PAGO_RECIBIDO": ("Se registró un pago de {{ monto }} {{ moneda }} " "para la factura #{{ numero_factura }}."),
     "STOCK_BAJO": (
         "El producto {{ nombre_producto }} tiene stock bajo: "
         "{{ cantidad_actual }} unidades (mínimo: {{ cantidad_minima }})."
     ),
     "FACTURA_VENCIDA": (
-        "La factura #{{ numero_factura }} de {{ nombre_cliente }} "
-        "venció el {{ fecha_vencimiento }}."
+        "La factura #{{ numero_factura }} de {{ nombre_cliente }} " "venció el {{ fecha_vencimiento }}."
     ),
 }
 
@@ -140,6 +135,7 @@ def _encolar_email(codigo_evento: str, usuario, contexto: dict) -> None:
             estado="PENDIENTE",
         )
         from apps.notificaciones.tasks import enviar_notificacion_email
+
         enviar_notificacion_email.delay(
             str(plantilla.id_plantilla),
             email,

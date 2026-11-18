@@ -7,6 +7,7 @@ activo de la empresa. Nunca escribe a Odoo ni a las tablas de trabajo humano.
 Uso:
     python manage.py sincronizar_cxc_lubrikca --empresa <id_o_rif> [--desde "2026-06-01 00:00:00"]
 """
+
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
@@ -16,9 +17,7 @@ class Command(BaseCommand):
     help = "Sincroniza el espejo CxC Lubrikca desde Odoo (solo lectura)."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--empresa", required=True, help="id_empresa (UUID) o RIF del tenant."
-        )
+        parser.add_argument("--empresa", required=True, help="id_empresa (UUID) o RIF del tenant.")
         parser.add_argument(
             "--desde",
             default=None,

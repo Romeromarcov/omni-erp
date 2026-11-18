@@ -83,9 +83,7 @@ def test_regla_especial_viernes_previo_a_vencimiento_lunes():
 
 
 def test_escalacion_progresiva_y_bloqueo_automatico_idempotente(empresa_a, user_a, admin_user_a):
-    area = services.crear_area_operativa(
-        empresa=empresa_a, nombre="Cobranza", lider=admin_user_a
-    )
+    area = services.crear_area_operativa(empresa=empresa_a, nombre="Cobranza", lider=admin_user_a)
     cfg = services.obtener_o_crear_configuracion_seguimiento(empresa_a)
     cfg.gerente = admin_user_a
     cfg.save()
@@ -167,9 +165,7 @@ def test_recurrencia_mensual_bisiesto_e_intradia_idempotente(empresa_a, user_a, 
 # ── 3. Minutas con IA (inferencia de área/responsable + fechas relativas) ────
 
 
-def test_minutas_enriquecimiento_por_area_y_confirmacion_atomica(
-    empresa_a, user_a, admin_user_a, client_a
-):
+def test_minutas_enriquecimiento_por_area_y_confirmacion_atomica(empresa_a, user_a, admin_user_a, client_a):
     user_a.first_name = "Pedro"
     user_a.last_name = "Gómez"
     user_a.save()
@@ -268,9 +264,7 @@ def test_herramientas_mcp_y_aislamiento_por_token(empresa_a, empresa_b, user_a):
     assert creada["creada"] is True
     tarea_id = creada["id_tarea"]
 
-    listado = tareas_mcp.tareas_listar(
-        str(tok_rw.token), str(empresa_a.id_empresa), estado="PENDIENTE"
-    )
+    listado = tareas_mcp.tareas_listar(str(tok_rw.token), str(empresa_a.id_empresa), estado="PENDIENTE")
     assert len(listado) == 1
     assert listado[0]["id_tarea"] == tarea_id
 
@@ -296,9 +290,7 @@ def test_herramientas_mcp_y_aislamiento_por_token(empresa_a, empresa_b, user_a):
     assert conf_res["estado"] == "CONFIRMADA"
     assert len(conf_res["tareas_creadas"]) == 1
 
-    resumen = tareas_mcp.tareas_resumen_equipo(
-        str(tok_rw.token), str(empresa_a.id_empresa)
-    )
+    resumen = tareas_mcp.tareas_resumen_equipo(str(tok_rw.token), str(empresa_a.id_empresa))
     assert resumen["totales"]["completadas"] == 1
 
 
