@@ -24,6 +24,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import idempotent
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
@@ -117,7 +118,7 @@ class PagoTerceroViewSet(BaseModelViewSet):
             raise ValidationError({"detail": str(exc)}) from exc
         except AsientoError as exc:
             # R-CODE-11: la transacción ya fue revertida (abono + estado).
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         pago.refresh_from_db()
         cxp.refresh_from_db()
@@ -173,7 +174,7 @@ class PagoTerceroViewSet(BaseModelViewSet):
         except PagoTerceroError as exc:
             raise ValidationError({"detail": str(exc)}) from exc
         except AsientoError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         pago.refresh_from_db()
         return self._respuesta(

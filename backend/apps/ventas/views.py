@@ -1,7 +1,8 @@
 import logging
-from apps.core.serializer_mixins import TenantFKScopeMixin
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -9,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.idempotency import IdempotentCreateMixin, idempotent
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.viewsets import EmpresaInjectMixin, get_empresas_visible
 
 logger = logging.getLogger(__name__)
@@ -717,8 +719,20 @@ class ListaPrecioViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelV
             except Producto.DoesNotExist:
                 errores.append({"fila": idx, "error": f"Producto '{codigo}' no encontrado en esta empresa"})
                 continue
-            except Exception as exc:
-                errores.append({"fila": idx, "error": str(exc)})
+            except (Producto.MultipleObjectsReturned, ValueError):
+                errores.append(
+                    {
+                        "fila": idx,
+                        "error": "El código de producto es inválido o coincide con más de un producto.",
+                    }
+                )
+                continue
+            except Exception:
+                logger.exception(
+                    "Error inesperado al buscar el producto en la fila %s de importación de precios",
+                    idx,
+                )
+                errores.append({"fila": idx, "error": "Error inesperado al buscar el producto."})
                 continue
 
             try:
@@ -742,8 +756,25 @@ class ListaPrecioViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelV
                     creados += 1
                 else:
                     actualizados += 1
-            except Exception as exc:
-                errores.append({"fila": idx, "error": str(exc)})
+            except (
+                InvalidOperation,
+                ValueError,
+                DjangoValidationError,
+                ValidationError,
+                IntegrityError,
+            ) as exc:
+                msg = (
+                    "Precio o precio mínimo numérico inválido."
+                    if isinstance(exc, InvalidOperation)
+                    else "Datos inválidos o conflicto al registrar el precio."
+                )
+                errores.append({"fila": idx, "error": msg})
+            except Exception:
+                logger.exception(
+                    "Error inesperado al procesar la fila %s de importación de precios",
+                    idx,
+                )
+                errores.append({"fila": idx, "error": "Error inesperado al procesar la fila."})
 
         return Response(
             {

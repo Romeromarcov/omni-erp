@@ -22,6 +22,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import DateField
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import IdempotentCreateMixin, idempotent
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
@@ -198,7 +199,7 @@ class PagoContribucionParafiscalViewSet(IdempotentCreateMixin, BaseModelViewSet)
             raise ValidationError({"detail": str(exc)}) from exc
         except AsientoError as exc:
             # R-CODE-11: la transacción ya fue revertida (Pago + caja + estado).
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         pago_parafiscal.refresh_from_db()
         extra = {"pago_id": str(pago.pk)}

@@ -11,6 +11,7 @@ from apps.core.capability_auth import (
     CapabilityTokenAuthentication,
     tiene_scope_capacidad,
 )
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     BaseModelViewSet,
     EmpresaInjectMixin,
@@ -154,7 +155,7 @@ class IngestaBotViewSet(
         except svc.UsuarioBotDesconocido as e:
             raise PermissionDenied(str(e)) from e
         except HandlerError as e:
-            return Response({"error": str(e), "faltan": e.faltan}, status=e.status)
+            return domain_error_response(e, status_code=e.status, extra={"faltan": e.faltan})
         return Response(
             IngestaSerializer(ing).data,
             status=status.HTTP_201_CREATED if creada else 200,
@@ -174,7 +175,7 @@ class IngestaBotViewSet(
         try:
             ing = svc.completar(ing, cambios)
         except HandlerError as e:
-            return Response({"error": str(e)}, status=e.status)
+            return domain_error_response(e, status_code=e.status)
         return Response(IngestaSerializer(ing).data)
 
     @action(detail=True, methods=["post"], url_path="sincronizar")
@@ -318,7 +319,7 @@ class BotControlViewSet(viewsets.ViewSet):
         try:
             return Response(ctrl_svc.detalle_bot(empresa, str(codigo or "")))
         except DatoControlInvalido as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     def partial_update(self, request, codigo=None):
         empresa = _empresa_requerida(request.user)
@@ -332,7 +333,7 @@ class BotControlViewSet(viewsets.ViewSet):
                 actor=ctrl_svc.nombre_actor(request.user),
             )
         except DatoControlInvalido as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
         return Response(detalle)
 
 

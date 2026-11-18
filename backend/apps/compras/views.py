@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import BaseModelViewSet, EmpresaInjectMixin, get_empresas_visible
 
 from .models import (
@@ -54,7 +55,7 @@ class OrdenCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
         try:
             aprobar_orden_compra(oc, request.user)
         except CompraError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         return Response({"detail": "Orden aprobada.", "estado": oc.estado})
 
 
@@ -104,8 +105,11 @@ class RecepcionMercanciaViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-
             oc = OrdenCompra.objects.get(pk=oc_id, id_empresa__in=_empresas(request))
             # H-SEC-11: el almacén debe ser de una empresa visible del usuario.
             almacen = Almacen.objects.get(pk=almacen_id, id_empresa__in=_empresas(request))
-        except (OrdenCompra.DoesNotExist, Almacen.DoesNotExist) as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except (OrdenCompra.DoesNotExist, Almacen.DoesNotExist):
+            return Response(
+                {"detail": "Orden de compra o almacén no encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Resolve product instances for each item
         from apps.inventario.models import Producto
@@ -128,7 +132,7 @@ class RecepcionMercanciaViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-
         try:
             resultado = registrar_recepcion(oc, almacen, request.user, items)
         except CompraError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
 
         return Response(
             {
@@ -183,7 +187,7 @@ class FacturaCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
                 usuario=request.user,
             )
         except CompraError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
 
         return Response(
             {

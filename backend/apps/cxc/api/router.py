@@ -1,9 +1,12 @@
 """Router principal de CxC API."""
+import logging
 from datetime import date
 
 from django.http import JsonResponse
 from django.urls import path
 from rest_framework.routers import DefaultRouter
+
+logger = logging.getLogger(__name__)
 
 
 def _health_check_view(request):
@@ -13,20 +16,23 @@ def _health_check_view(request):
         from apps.cxc.models import GestionCobranza
         GestionCobranza.objects.exists()
         checks["db"] = "ok"
-    except Exception as e:
-        checks["db"] = f"error: {e}"
+    except Exception:
+        logger.warning("cxc health check fallo (%s)", "db", exc_info=True)
+        checks["db"] = "error"
     try:
         from django.core.cache import cache
         cache.set("cxc:health", "ok", timeout=5)
         checks["cache"] = "ok"
-    except Exception as e:
-        checks["cache"] = f"error: {e}"
+    except Exception:
+        logger.warning("cxc health check fallo (%s)", "cache", exc_info=True)
+        checks["cache"] = "error"
     try:
         from apps.finanzas.models import TasaCambio
         tasa = TasaCambio.objects.filter(fecha_tasa=date.today()).exists()
         checks["tasa_hoy"] = "ok" if tasa else "sin_tasa"
-    except Exception as e:
-        checks["tasa_hoy"] = f"error: {e}"
+    except Exception:
+        logger.warning("cxc health check fallo (%s)", "tasa_hoy", exc_info=True)
+        checks["tasa_hoy"] = "error"
     all_ok = all(v == "ok" for v in checks.values())
     return JsonResponse({"status": "ok" if all_ok else "degraded", "checks": checks})
 

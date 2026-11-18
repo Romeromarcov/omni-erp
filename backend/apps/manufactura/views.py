@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     ActiveFilterMixin,
     BaseModelViewSet,
@@ -158,7 +159,7 @@ class OrdenProduccionViewSet(BaseModelViewSet):
                 incluir_opcionales=bool(request.data.get("incluir_opcionales", False)),
             )
         except (ValueError, services.ManufacturaError, StockInsuficienteError) as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         return Response({
             "estado": orden.estado,
             "consumos": ConsumoMaterialSerializer(resultado["consumos"], many=True).data,
@@ -180,7 +181,7 @@ class OrdenProduccionViewSet(BaseModelViewSet):
                 observaciones=str(request.data.get("observaciones", "")),
             )
         except (ValueError, services.ManufacturaError) as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         orden.refresh_from_db()
         return Response({
             "estado_orden": orden.estado,
@@ -211,7 +212,7 @@ class OrdenProduccionViewSet(BaseModelViewSet):
                 costos_indirectos=_parse_decimal(request.data.get("costos_indirectos"), "costos_indirectos"),
             )
         except (ValueError, services.ManufacturaError) as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         orden.refresh_from_db()
         return Response({
             "estado": orden.estado,
@@ -229,7 +230,7 @@ class OrdenProduccionViewSet(BaseModelViewSet):
         try:
             costo = services.costeo_real_orden(orden)
         except services.ManufacturaError as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         etapas = orden.etapas.select_related("etapa").order_by("orden")
         return Response({
             "orden_id": str(orden.pk),
@@ -254,7 +255,7 @@ class OrdenProduccionViewSet(BaseModelViewSet):
                 incluir_opcionales=request.query_params.get("incluir_opcionales") in ("true", "1"),
             )
         except (ValueError, services.ManufacturaError) as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         return Response({
             "orden_id": str(orden.pk),
             "cantidad": str(orden.cantidad),

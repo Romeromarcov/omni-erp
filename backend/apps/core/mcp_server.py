@@ -44,9 +44,10 @@ Herramientas disponibles (v1):
 import logging
 import os
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional
 
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 
 import django
@@ -58,6 +59,8 @@ try:
 except RuntimeError:
     # Ya inicializado (entorno de test o servidor Django corriendo)
     pass
+
+from apps.core.exceptions import DomainError, sanitize_mcp_error
 
 logger = logging.getLogger("omni.mcp")
 
@@ -482,6 +485,24 @@ def omni_get_ventas_resumen(
     }
 
 
+def _controlled_types_crear_pedido() -> tuple[type[BaseException], ...]:
+    """Devuelve excepciones controladas de pedido sin acoplar mypy a ventas.services."""
+    from importlib import import_module  # noqa: PLC0415
+
+    venta_error = getattr(import_module("apps.ventas.services"), "VentaError", None)
+    tipos: list[type[BaseException]] = [
+        DomainError,
+        ValueError,
+        ValidationError,
+        PermissionError,
+        ObjectDoesNotExist,
+        InvalidOperation,
+    ]
+    if isinstance(venta_error, type) and issubclass(venta_error, BaseException):
+        tipos.append(venta_error)
+    return tuple(tipos)
+
+
 def omni_crear_pedido(
     capability_token: str,
     empresa_id: str,
@@ -558,8 +579,14 @@ def omni_crear_pedido(
             "cantidad_lineas": len(productos),
         }
     except Exception as exc:
-        logger.exception("omni_crear_pedido | error: %s", exc)
-        return {"error": str(exc)}
+        return {
+            "error": sanitize_mcp_error(
+                exc,
+                logger=logger,
+                tool_name="omni_crear_pedido",
+                controlled_types=_controlled_types_crear_pedido(),
+            )
+        }
 
 
 def omni_get_pedidos(
@@ -618,8 +645,22 @@ def omni_get_pedidos(
             for p in pedidos
         ]
     except Exception as exc:
-        logger.exception("omni_get_pedidos | error: %s", exc)
-        return [{"error": str(exc)}]
+        return [
+            {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="omni_get_pedidos",
+                    controlled_types=(
+                        DomainError,
+                        ValueError,
+                        ValidationError,
+                        PermissionError,
+                        ObjectDoesNotExist,
+                    ),
+                )
+            }
+        ]
 
 
 def omni_registrar_movimiento_inventario(
@@ -653,6 +694,10 @@ def omni_registrar_movimiento_inventario(
     from django.utils import timezone  # noqa: PLC0415
 
     from apps.inventario.models import MovimientoInventario  # noqa: PLC0415
+    from apps.inventario.services import (  # noqa: PLC0415
+        MovimientoInvalidoError,
+        StockInsuficienteError,
+    )
 
     context = _resolve_token(capability_token)
     _require_scope(context, "inventario:write")
@@ -707,8 +752,23 @@ def omni_registrar_movimiento_inventario(
             "empresa_id": empresa_id,
         }
     except Exception as exc:
-        logger.exception("omni_registrar_movimiento_inventario | error: %s", exc)
-        return {"error": str(exc)}
+        return {
+            "error": sanitize_mcp_error(
+                exc,
+                logger=logger,
+                tool_name="omni_registrar_movimiento_inventario",
+                controlled_types=(
+                    DomainError,
+                    ValueError,
+                    ValidationError,
+                    PermissionError,
+                    ObjectDoesNotExist,
+                    InvalidOperation,
+                    StockInsuficienteError,
+                    MovimientoInvalidoError,
+                ),
+            )
+        }
 
 
 def omni_get_correlativo_fiscal(
@@ -770,8 +830,20 @@ def omni_get_correlativo_fiscal(
             "error": f"No existe configuración de correlativo para tipo '{tipo_documento}' en la empresa {empresa_id}."
         }
     except Exception as exc:
-        logger.exception("omni_get_correlativo_fiscal | error: %s", exc)
-        return {"error": str(exc)}
+        return {
+            "error": sanitize_mcp_error(
+                exc,
+                logger=logger,
+                tool_name="omni_get_correlativo_fiscal",
+                controlled_types=(
+                    DomainError,
+                    ValueError,
+                    ValidationError,
+                    PermissionError,
+                    ObjectDoesNotExist,
+                ),
+            )
+        }
 
 
 def omni_buscar_cliente(
@@ -834,8 +906,22 @@ def omni_buscar_cliente(
             for c in qs
         ]
     except Exception as exc:
-        logger.exception("omni_buscar_cliente | error: %s", exc)
-        return [{"error": str(exc)}]
+        return [
+            {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="omni_buscar_cliente",
+                    controlled_types=(
+                        DomainError,
+                        ValueError,
+                        ValidationError,
+                        PermissionError,
+                        ObjectDoesNotExist,
+                    ),
+                )
+            }
+        ]
 
 
 def omni_cxc_get_cartera_vencida(

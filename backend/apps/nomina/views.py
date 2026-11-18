@@ -4,6 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import get_empresas_visible
 
 from .models import (
@@ -157,12 +158,12 @@ class ProcesoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
                 proceso, datos_empleados, usuario=request.user
             )
         except NominaProcesoError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         except AsientoError as exc:
             # Contabilidad activa sin mapeo NOMINA (u otro error de asiento):
             # el @transaction.atomic del servicio ya revirtió todo el proceso
             # al propagar la excepción — aquí solo se traduce a 422.
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         data = self.get_serializer(proceso).data
         data["asiento_contable"] = str(asiento.id_asiento) if asiento else None
