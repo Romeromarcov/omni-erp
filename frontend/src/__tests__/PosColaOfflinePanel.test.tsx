@@ -126,4 +126,24 @@ describe('PosColaOfflinePanel', () => {
     expect(screen.getByTestId('pos-cola-estado-red').textContent).toContain('Sin conexión');
     expect(screen.getByTestId('pos-cola-sincronizar')).toBeDisabled();
   });
+
+  it('deshabilita Reintentar, Descartar y Limpiar historial mientras flushing está en curso', () => {
+    render(
+      <PosColaOfflinePanel
+        open
+        items={ITEMS}
+        online
+        flushing
+        onClose={vi.fn()}
+        onSincronizarAhora={vi.fn()}
+        onReintentar={vi.fn()}
+        onDescartar={vi.fn()}
+        onLimpiarSincronizadas={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('pos-cola-sincronizar')).toBeDisabled();
+    expect(screen.getByTestId('pos-cola-reintentar-uuid-rev-5678')).toBeDisabled();
+    expect(screen.getByTestId('pos-cola-descartar-uuid-rev-5678')).toBeDisabled();
+    expect(screen.getByTestId('pos-cola-limpiar-historial')).toBeDisabled();
+  });
 });

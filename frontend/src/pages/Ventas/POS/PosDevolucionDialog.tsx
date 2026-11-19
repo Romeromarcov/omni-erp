@@ -19,6 +19,7 @@ import { D, toFixedStr } from '../../../lib/decimal';
 import { newIdempotencyKey } from '../../../lib/idempotency';
 import { almacenesService } from '../../../services/almacenesService';
 import type { MetodoPagoEmpresaActiva } from '../../../services/metodosPagoEmpresaActiva';
+import { idMetodoPagoReal, nombreMetodoPagoReal } from './posCatalog';
 import {
   buscarVentaPorNumero,
   devolverVenta,
@@ -280,9 +281,14 @@ export default function PosDevolucionDialog({
                   slotProps={{ select: { native: true }, htmlInput: { 'data-testid': 'pos-dev-metodo' }, inputLabel: { shrink: true } }}
                 >
                   <option value="" />
-                  {metodos.map((m) => (
-                    <option key={m.id} value={m.id}>{m.nombre_metodo}</option>
-                  ))}
+                  {metodos.map((m) => {
+                    const mId = idMetodoPagoReal(m);
+                    return (
+                      <option key={m.id || mId} value={mId}>
+                        {nombreMetodoPagoReal(m)}
+                      </option>
+                    );
+                  })}
                 </TextField>
                 <TextField
                   select fullWidth size="small"

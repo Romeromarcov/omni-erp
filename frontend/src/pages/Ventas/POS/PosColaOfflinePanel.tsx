@@ -154,6 +154,7 @@ export default function PosColaOfflinePanel({
                             size="small"
                             color="inherit"
                             startIcon={<ReplayIcon />}
+                            disabled={flushing}
                             onClick={() => onReintentar(item.idempotencyKey)}
                             data-testid={`pos-cola-reintentar-${item.idempotencyKey}`}
                           >
@@ -163,6 +164,7 @@ export default function PosColaOfflinePanel({
                             size="small"
                             color="inherit"
                             startIcon={<DeleteOutlineIcon />}
+                            disabled={flushing}
                             onClick={() => onDescartar(item.idempotencyKey)}
                             data-testid={`pos-cola-descartar-${item.idempotencyKey}`}
                           >
@@ -201,6 +203,7 @@ export default function PosColaOfflinePanel({
                   </Typography>
                   <Button
                     size="small"
+                    disabled={flushing}
                     onClick={onLimpiarSincronizadas}
                     data-testid="pos-cola-limpiar-historial"
                   >

@@ -60,6 +60,7 @@ import PosRecibo, { type ReciboData } from './PosRecibo';
 import PosDevolucionDialog, { type ReciboDevolucionData } from './PosDevolucionDialog';
 import PosReciboDevolucion from './PosReciboDevolucion';
 import PosColaOfflinePanel from './PosColaOfflinePanel';
+import { codigoIsoMonedaReal } from './posCatalog';
 import { subtotalCarrito, type PosCartItem, type PosPago, totalPagado } from './posTotals';
 
 /** Nombre del cliente genérico de mostrador (se crea una vez por empresa). */
@@ -181,12 +182,15 @@ export default function PosPage() {
   });
   const tasaBcv = tasaBcvData?.tasa ? String(tasaBcvData.tasa) : '1';
 
-  // Moneda del documento: la moneda país (VES) si está activa; si no, la primera.
+  // Moneda del documento: prioriza la marcada es_pais / VES; si no, la primera.
   const monedaDocumento = useMemo(
-    () => monedas.find((m) => m.codigo_iso?.toUpperCase() === 'VES') ?? monedas[0],
+    () =>
+      monedas.find((m) => (m as { es_pais?: boolean }).es_pais === true) ??
+      monedas.find((m) => codigoIsoMonedaReal(m).toUpperCase() === 'VES') ??
+      monedas[0],
     [monedas],
   );
-  const codigoIsoDocumento = monedaDocumento?.codigo_iso ?? 'VES';
+  const codigoIsoDocumento = (monedaDocumento ? codigoIsoMonedaReal(monedaDocumento) : '') || 'VES';
 
   const productosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -311,7 +315,7 @@ export default function PosPage() {
     const almacenes = queryClient.getQueryData<Almacen[]>(['pos', 'almacenes']);
     if (!Array.isArray(almacenes) || almacenes.length === 0) return undefined;
     const activos = almacenes.filter((a) => a.id_empresa === empresaId && a.activo !== false);
-    return (activos[0] ?? almacenes[0])?.id_almacen;
+    return activos[0]?.id_almacen;
   };
 
   const refrescarColaOffline = useCallback(async () => {

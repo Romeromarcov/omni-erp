@@ -46,18 +46,14 @@ vi.mock('../services/productosService', () => ({
   ]),
 }));
 
+const fetchMetodosMock = vi.fn();
 vi.mock('../services/metodosPagoEmpresaActiva', () => ({
-  fetchMetodosPagoEmpresaActivos: vi.fn().mockResolvedValue([
-    { id: 'met-efe', nombre_metodo: 'Efectivo', monedas: [] },
-    { id: 'met-pm', nombre_metodo: 'Pago Móvil', monedas: ['mon-ves'] },
-  ]),
+  fetchMetodosPagoEmpresaActivos: (...a: unknown[]) => fetchMetodosMock(...a),
 }));
 
+const fetchMonedasMock = vi.fn();
 vi.mock('../services/monedasEmpresaActiva', () => ({
-  fetchMonedasEmpresaActivas: vi.fn().mockResolvedValue([
-    { id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES' },
-    { id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD' },
-  ]),
+  fetchMonedasEmpresaActivas: (...a: unknown[]) => fetchMonedasMock(...a),
 }));
 
 vi.mock('../services/tasaBCV', () => ({
@@ -95,8 +91,8 @@ vi.mock('../services/cajasFisicasService', () => ({
 
 import PosPage from '../pages/Ventas/POS/PosPage';
 
-function renderPos() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderPos(queryClientArg?: QueryClient) {
+  const queryClient = queryClientArg ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={['/pos']}>
@@ -112,6 +108,14 @@ beforeEach(async () => {
   localStorage.setItem('id_empresa', 'emp-1');
   Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
   await clearOutbox();
+  fetchMetodosMock.mockResolvedValue([
+    { id: 'met-efe', nombre_metodo: 'Efectivo', monedas: [] },
+    { id: 'met-pm', nombre_metodo: 'Pago Móvil', monedas: ['mon-ves'] },
+  ]);
+  fetchMonedasMock.mockResolvedValue([
+    { id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES' },
+    { id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD' },
+  ]);
   getSesionActivaMock.mockResolvedValue(SESION);
   createNotaMock.mockResolvedValue({
     id_nota_venta: 'nv-1',
@@ -515,5 +519,74 @@ describe('PosPage', () => {
     fireEvent.click(screen.getByTestId('pos-cobrar'));
     expect((await screen.findByTestId('pos-error')).textContent).toMatch(/cliente de mostrador en caché local/i);
     expect(screen.queryByTestId('pos-total-cobrar')).not.toBeInTheDocument();
+  });
+
+  it('usa UUIDs reales de MetodoPagoEmpresaActivaSerializer y MonedaEmpresaActivaSerializer en online y offline y omite almacenes inactivos', async () => {
+    fetchMetodosMock.mockResolvedValue([
+      { id: 'act-met-1', metodo_pago: 'real-met-efe', nombre: 'Efectivo Real', activa: true },
+    ]);
+    fetchMonedasMock.mockResolvedValue([
+      { id: 'act-mon-usd', moneda: 'real-mon-usd', moneda_codigo_iso: 'USD', moneda_nombre: 'Dólar', activa: true, es_pais: false },
+      { id: 'act-mon-ves', moneda: 'real-mon-ves', moneda_codigo_iso: 'VES', moneda_nombre: 'Bolívar', activa: true, es_pais: true },
+    ]);
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(['pos', 'almacenes'], [
+      { id_almacen: 'alm-inact', id_empresa: 'emp-1', nombre_almacen: 'Inactivo', activo: false },
+    ]);
+    localStorage.setItem('pos_cliente_mostrador_emp-1', 'cli-cf');
+
+    renderPos(qc);
+    await screen.findByText('Harina PAN');
+    expect(screen.getByTestId('pos-subtotal').textContent).toContain('VES');
+
+    // Cobro online: valida que createPagoDocumento recibe metodo_pago y moneda reales (no los `id` de activación).
+    await agregarHarinaPorScan(1);
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    await screen.findByTestId('pos-total-cobrar');
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'real-met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'real-mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '3.83' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+
+    await waitFor(() => expect(createPagoDocumentoMock).toHaveBeenCalledTimes(1));
+    expect(createPagoDocumentoMock.mock.calls[0][2]).toMatchObject({
+      id_metodo_pago: 'real-met-efe',
+      id_moneda: 'real-mon-ves',
+      tasa: '1',
+    });
+
+    await screen.findByTestId('pos-recibo-numero');
+    fireEvent.click(screen.getByTestId('pos-nueva-venta'));
+
+    // Ahora sin red: encola el sobre con UUIDs reales y SIN enviar id_almacen inactivo.
+    await act(async () => {
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+      window.dispatchEvent(new Event('offline'));
+    });
+
+    await agregarHarinaPorScan(1); // 1.10 VES
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    await screen.findByTestId('pos-pago-modo-offline');
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'real-met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'real-mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '1.10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+
+    await screen.findByTestId('pos-recibo-provisional');
+    const pendientes = await listPending();
+    expect(pendientes).toHaveLength(1);
+    expect(pendientes[0].payload.id_almacen).toBeUndefined();
+    expect(pendientes[0].payload.pagos).toEqual([
+      expect.objectContaining({
+        id_metodo_pago: 'real-met-efe',
+        id_moneda: 'real-mon-ves',
+        tasa: '1',
+      }),
+    ]);
   });
 });

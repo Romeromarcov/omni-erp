@@ -21,7 +21,8 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 
 CERO = Decimal("0")
@@ -63,17 +64,20 @@ def _permitir_stock_negativo_pos(empresa) -> bool:
 
 def _decimal(valor, campo: str) -> Decimal:
     if valor is None or valor == "":
-        raise VentaPosError(f"Falta el valor numérico de '{campo}'.")
+        raise VentaPosError(f"Falta el valor numérico de '{campo}'.", codigo="REQUIERE_REVISION")
     try:
-        return Decimal(str(valor))
+        d = Decimal(str(valor))
     except (InvalidOperation, TypeError, ValueError):
-        raise VentaPosError(f"Valor decimal inválido en '{campo}': {valor!r}.")
+        raise VentaPosError(f"Valor decimal inválido en '{campo}': {valor!r}.", codigo="REQUIERE_REVISION")
+    if not d.is_finite():
+        raise VentaPosError(f"Valor decimal no finito en '{campo}': {valor!r}.", codigo="REQUIERE_REVISION")
+    return d
 
 
 def _obligatorio(datos: dict, campo: str):
     valor = datos.get(campo)
     if not valor:
-        raise VentaPosError(f"Falta el campo obligatorio '{campo}'.")
+        raise VentaPosError(f"Falta el campo obligatorio '{campo}'.", codigo="REQUIERE_REVISION")
     return valor
 
 
@@ -165,20 +169,27 @@ def crear_venta_pos_offline(empresa, usuario, datos: dict) -> dict:
         if datos.get("fecha_local"):
             documento_json["fecha_local"] = str(datos["fecha_local"])
 
-    nota = NotaVenta.objects.create(
-        id_empresa=empresa,
-        id_cliente=cliente,
-        numero_nota=numero_nota,
-        fecha_nota=timezone.localdate(),
-        estado="BORRADOR",
-        documento_json=documento_json,
-    )
+    try:
+        with transaction.atomic():
+            nota = NotaVenta.objects.create(
+                id_empresa=empresa,
+                id_cliente=cliente,
+                numero_nota=numero_nota,
+                fecha_nota=timezone.localdate(),
+                estado="BORRADOR",
+                documento_json=documento_json,
+            )
+    except IntegrityError as exc:
+        raise VentaPosError(
+            f"Ya existe una nota de venta con el número '{numero_nota}' en esta empresa.",
+            codigo="REQUIERE_REVISION",
+        ) from exc
 
     # --- Detalles: el servidor recalcula el subtotal de cada línea (R-CODE-4) ---
     total_servidor = CERO
     for i, det in enumerate(detalles_in):
         if not isinstance(det, dict):
-            raise VentaPosError(f"'detalles[{i}]' debe ser un objeto.")
+            raise VentaPosError(f"'detalles[{i}]' debe ser un objeto.", codigo="REQUIERE_REVISION")
         producto = _tenant_get(
             Producto,
             det.get("id_producto"),
@@ -187,13 +198,17 @@ def crear_venta_pos_offline(empresa, usuario, datos: dict) -> dict:
         )
         cantidad = _decimal(det.get("cantidad"), f"detalles[{i}].cantidad")
         precio = _decimal(det.get("precio_unitario"), f"detalles[{i}].precio_unitario")
-        descuento_pct = _decimal(det.get("descuento_porcentaje", "0"), f"detalles[{i}].descuento_porcentaje")
+        raw_desc = det.get("descuento_porcentaje")
+        descuento_pct = _decimal("0" if raw_desc is None else raw_desc, f"detalles[{i}].descuento_porcentaje")
         if cantidad <= CERO:
-            raise VentaPosError(f"La cantidad de 'detalles[{i}]' debe ser mayor que 0.")
+            raise VentaPosError(f"La cantidad de 'detalles[{i}]' debe ser mayor que 0.", codigo="REQUIERE_REVISION")
         if precio < CERO:
-            raise VentaPosError(f"El precio de 'detalles[{i}]' no puede ser negativo.")
+            raise VentaPosError(f"El precio de 'detalles[{i}]' no puede ser negativo.", codigo="REQUIERE_REVISION")
         if descuento_pct < CERO or descuento_pct > Decimal("100"):
-            raise VentaPosError(f"El descuento de 'detalles[{i}]' debe estar entre 0 y 100.")
+            raise VentaPosError(
+                f"El descuento de 'detalles[{i}]' debe estar entre 0 y 100.",
+                codigo="REQUIERE_REVISION",
+            )
         factor_descuento = Decimal("1") - (descuento_pct / Decimal("100"))
         subtotal = (cantidad * precio * factor_descuento).quantize(CUANTOS)
         DetalleNotaVenta.objects.create(
@@ -262,26 +277,46 @@ def crear_venta_pos_offline(empresa, usuario, datos: dict) -> dict:
     pagos_creados = []
     for i, p in enumerate(pagos_in):
         if not isinstance(p, dict):
-            raise VentaPosError(f"'pagos[{i}]' debe ser un objeto.")
+            raise VentaPosError(f"'pagos[{i}]' debe ser un objeto.", codigo="REQUIERE_REVISION")
+        metodo_id = _obligatorio(p, "id_metodo_pago")
         try:
-            metodo = MetodoPago.objects.get(pk=_obligatorio(p, "id_metodo_pago"))
+            metodo = MetodoPago.objects.filter(
+                Q(empresa=empresa) | Q(empresa__isnull=True) | Q(es_publico=True) | Q(es_generico=True),
+                activo=True,
+            ).get(pk=metodo_id)
         except (MetodoPago.DoesNotExist, DjangoValidationError, ValueError):
-            raise VentaPosError(f"'pagos[{i}].id_metodo_pago' no existe.")
+            raise VentaPosError(
+                f"'pagos[{i}].id_metodo_pago' no existe o no está disponible para esta empresa.",
+                codigo="REQUIERE_REVISION",
+            )
+        moneda_id = _obligatorio(p, "id_moneda")
         try:
-            moneda = Moneda.objects.get(pk=_obligatorio(p, "id_moneda"))
+            moneda = Moneda.objects.filter(
+                Q(empresa=empresa) | Q(empresa__isnull=True) | Q(es_publica=True) | Q(es_generica=True),
+                activo=True,
+            ).get(pk=moneda_id)
         except (Moneda.DoesNotExist, DjangoValidationError, ValueError):
-            raise VentaPosError(f"'pagos[{i}].id_moneda' no existe.")
+            raise VentaPosError(
+                f"'pagos[{i}].id_moneda' no existe o no está disponible para esta empresa.",
+                codigo="REQUIERE_REVISION",
+            )
         monto = _decimal(p.get("monto"), f"pagos[{i}].monto")
         if monto <= CERO:
-            raise VentaPosError(f"El monto de 'pagos[{i}]' debe ser mayor que 0.")
-        tasa = _decimal(p.get("tasa", "1"), f"pagos[{i}].tasa")
+            raise VentaPosError(f"El monto de 'pagos[{i}]' debe ser mayor que 0.", codigo="REQUIERE_REVISION")
+        raw_tasa = p.get("tasa")
+        tasa = _decimal("1" if raw_tasa is None else raw_tasa, f"pagos[{i}].tasa")
+        if tasa <= CERO:
+            raise VentaPosError(f"La tasa de 'pagos[{i}]' debe ser mayor que 0.", codigo="REQUIERE_REVISION")
 
         caja_fisica = None
         if p.get("id_caja_fisica"):
             try:
                 caja_fisica = CajaFisica.objects.get(pk=p["id_caja_fisica"], empresa=empresa)
             except (CajaFisica.DoesNotExist, DjangoValidationError, ValueError):
-                raise VentaPosError(f"'pagos[{i}].id_caja_fisica' no encontrada en esta empresa.")
+                raise VentaPosError(
+                    f"'pagos[{i}].id_caja_fisica' no encontrada en esta empresa.",
+                    codigo="REQUIERE_REVISION",
+                )
         elif caja_fisica_envelope is not None:
             caja_fisica = caja_fisica_envelope
 
@@ -290,13 +325,19 @@ def crear_venta_pos_offline(empresa, usuario, datos: dict) -> dict:
             try:
                 caja_virtual = Caja.objects.get(pk=p["id_caja_virtual"], empresa=empresa)
             except (Caja.DoesNotExist, DjangoValidationError, ValueError):
-                raise VentaPosError(f"'pagos[{i}].id_caja_virtual' no encontrada en esta empresa.")
+                raise VentaPosError(
+                    f"'pagos[{i}].id_caja_virtual' no encontrada en esta empresa.",
+                    codigo="REQUIERE_REVISION",
+                )
         cuenta_bancaria = None
         if p.get("id_cuenta_bancaria"):
             try:
                 cuenta_bancaria = CuentaBancariaEmpresa.objects.get(pk=p["id_cuenta_bancaria"], id_empresa=empresa)
             except (CuentaBancariaEmpresa.DoesNotExist, DjangoValidationError, ValueError):
-                raise VentaPosError(f"'pagos[{i}].id_cuenta_bancaria' no encontrada en esta empresa.")
+                raise VentaPosError(
+                    f"'pagos[{i}].id_cuenta_bancaria' no encontrada en esta empresa.",
+                    codigo="REQUIERE_REVISION",
+                )
 
         pago = Pago.objects.create(
             id_empresa=empresa,

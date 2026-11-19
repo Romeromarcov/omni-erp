@@ -197,4 +197,58 @@ describe('salesOutbox', () => {
     await enqueueSale(venta('DUP'));
     expect(await listPending()).toHaveLength(1);
   });
+
+  it('preserva ventas encoladas concurrentemente mientras flushOutbox tiene un envío en vuelo', async () => {
+    await enqueueSale(venta('V1'));
+
+    let resolveV1!: (value: unknown) => void;
+    const v1EnVuelo = new Promise((res) => {
+      resolveV1 = res;
+    });
+
+    const poster = vi.fn().mockImplementation((_endpoint: string, _payload: unknown, key: string) => {
+      if (key === 'V1') return v1EnVuelo;
+      return Promise.resolve({ id_nota_venta: `srv-${key}`, numero_nota: `POS-${key}` });
+    });
+
+    const pFlush = flushOutbox(poster);
+    await vi.waitFor(() => expect(poster).toHaveBeenCalledTimes(1));
+
+    // Mientras V1 está en vuelo, el cajero emite V2 y la encola.
+    await enqueueSale(venta('V2'));
+
+    resolveV1({ id_nota_venta: 'srv-V1', numero_nota: 'POS-V1' });
+    const res = await pFlush;
+
+    expect(res).toMatchObject({ enviados: 2, rechazados: 0, pendientes: 0 });
+    const items = await listOutboxItems();
+    expect(items.map((i) => [i.idempotencyKey, i.estado])).toEqual([
+      ['V1', 'SINCRONIZADA'],
+      ['V2', 'SINCRONIZADA'],
+    ]);
+  });
+
+  it('clearOutbox durante un envío en vuelo aborta el flush y no resucita ventas ni pisa una nueva sesión', async () => {
+    await enqueueSale(venta('OLD-1'));
+
+    let resolveOld!: (value: unknown) => void;
+    const oldEnVuelo = new Promise((res) => {
+      resolveOld = res;
+    });
+    const poster = vi.fn().mockImplementation(() => oldEnVuelo);
+
+    const pFlush = flushOutbox(poster);
+    await vi.waitFor(() => expect(poster).toHaveBeenCalledTimes(1));
+
+    // Ocurre logout() → clearOutbox() y luego un nuevo tenant encola NEW-1 antes de que resuelva OLD-1.
+    await clearOutbox();
+    await enqueueSale(venta('NEW-1'));
+
+    resolveOld({ id_nota_venta: 'srv-old', numero_nota: 'POS-OLD' });
+    const res = await pFlush;
+
+    expect(res).toMatchObject({ enviados: 0, rechazados: 0, pendientes: 0 });
+    const items = await listOutboxItems();
+    expect(items.map((i) => [i.idempotencyKey, i.estado])).toEqual([['NEW-1', 'PENDIENTE']]);
+  });
 });

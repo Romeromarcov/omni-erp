@@ -131,64 +131,119 @@ function hasIndexedDB(): boolean {
 // Almacén único por módulo (memoria en tests; IndexedDB en navegador).
 const storage: KVStorage = hasIndexedDB() ? idbStorage() : memoryStorage();
 
+// Época monotónica incrementada en clearOutbox(): invalida cualquier flush
+// en vuelo iniciado antes de la purga (evita resucitar ventas tras logout).
+let clearEpoch = 0;
+// Mutex serializado para operaciones rápidas read-modify-write sobre storage.
+let storageQueue: Promise<void> = Promise.resolve();
+// Mutex separado para serializar corridas de flushOutbox sin bloquear enqueue/clear.
+let flushQueue: Promise<void> = Promise.resolve();
+
+function enqueueOn<T>(getTail: () => Promise<void>, setTail: (next: Promise<void>) => void, fn: () => Promise<T>): Promise<T> {
+  const run = getTail().then(fn, fn);
+  setTail(
+    run.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return run;
+}
+
+function withStorageLock<T>(fn: () => Promise<T>): Promise<T> {
+  return enqueueOn(
+    () => storageQueue,
+    (next) => {
+      storageQueue = next;
+    },
+    fn,
+  );
+}
+
+function withFlushLock<T>(fn: () => Promise<T>): Promise<T> {
+  return enqueueOn(
+    () => flushQueue,
+    (next) => {
+      flushQueue = next;
+    },
+    fn,
+  );
+}
+
 function estadoDe(entry: OutboxSale): OutboxSaleEstado {
   return entry.estado ?? 'PENDIENTE';
 }
 
 /** Encola una venta para reenvío diferido (idempotente por idempotencyKey). */
 export async function enqueueSale(entry: OutboxSale): Promise<void> {
-  const cola = await storage.read();
-  if (cola.some((v) => v.idempotencyKey === entry.idempotencyKey)) {
-    return;
-  }
-  cola.push({ ...entry, estado: estadoDe(entry) });
-  await storage.write(cola);
+  return withStorageLock(async () => {
+    const cola = await storage.read();
+    if (cola.some((v) => v.idempotencyKey === entry.idempotencyKey)) {
+      return;
+    }
+    cola.push({ ...entry, estado: estadoDe(entry) });
+    await storage.write(cola);
+  });
 }
 
 /** Lista las ventas pendientes de envío en orden FIFO. */
 export async function listPending(): Promise<OutboxSale[]> {
-  const cola = await storage.read();
-  return cola.filter((v) => estadoDe(v) === 'PENDIENTE').map((v) => ({ ...v, estado: 'PENDIENTE' }));
+  return withStorageLock(async () => {
+    const cola = await storage.read();
+    return cola.filter((v) => estadoDe(v) === 'PENDIENTE').map((v) => ({ ...v, estado: 'PENDIENTE' }));
+  });
 }
 
 /** Lista todas las entradas del outbox (pendientes, sincronizadas y en revisión). */
 export async function listOutboxItems(): Promise<OutboxSale[]> {
-  const cola = await storage.read();
-  return cola.map((v) => ({ ...v, estado: estadoDe(v) }));
+  return withStorageLock(async () => {
+    const cola = await storage.read();
+    return cola.map((v) => ({ ...v, estado: estadoDe(v) }));
+  });
 }
 
 /** Descarta explícitamente una entrada del outbox por su idempotencyKey. */
 export async function discardOutboxItem(idempotencyKey: string): Promise<void> {
-  const cola = await storage.read();
-  await storage.write(cola.filter((v) => v.idempotencyKey !== idempotencyKey));
+  return withStorageLock(async () => {
+    const cola = await storage.read();
+    await storage.write(cola.filter((v) => v.idempotencyKey !== idempotencyKey));
+  });
 }
 
 /** Reencola una entrada en 'REQUIERE_REVISION' para volver a intentar su envío. */
 export async function retryOutboxItem(idempotencyKey: string): Promise<void> {
-  const cola = await storage.read();
-  const next = cola.map((v) =>
-    v.idempotencyKey === idempotencyKey
-      ? {
-          ...v,
-          estado: 'PENDIENTE' as const,
-          errorMensaje: undefined,
-          errorCodigo: undefined,
-          errorStatus: undefined,
-        }
-      : v,
-  );
-  await storage.write(next);
+  return withStorageLock(async () => {
+    const cola = await storage.read();
+    const next = cola.map((v) =>
+      v.idempotencyKey === idempotencyKey
+        ? {
+            ...v,
+            estado: 'PENDIENTE' as const,
+            errorMensaje: undefined,
+            errorCodigo: undefined,
+            errorStatus: undefined,
+          }
+        : v,
+    );
+    await storage.write(next);
+  });
 }
 
 /** Limpia solo las ventas ya sincronizadas preservando pendientes y en revisión. */
 export async function clearSyncedOutboxItems(): Promise<void> {
-  const cola = await storage.read();
-  await storage.write(cola.filter((v) => estadoDe(v) !== 'SINCRONIZADA'));
+  return withStorageLock(async () => {
+    const cola = await storage.read();
+    await storage.write(cola.filter((v) => estadoDe(v) !== 'SINCRONIZADA'));
+  });
 }
 
 /** Vacía toda la cola y registros locales del outbox (uso en logout / reset). */
 export async function clearOutbox(): Promise<void> {
-  await storage.write([]);
+  clearEpoch += 1;
+  return withStorageLock(async () => {
+    clearEpoch += 1;
+    await storage.write([]);
+  });
 }
 
 function statusDe(err: unknown): number | undefined {
@@ -236,74 +291,143 @@ function extraerSyncInfo(resp: unknown): {
   return { idNotaVenta, numeroNota, alertaStockNegativo };
 }
 
+async function aplicarTransicionItem(
+  idempotencyKey: string,
+  epochInicial: number,
+  transform: (item: OutboxSale) => OutboxSale,
+): Promise<{ abortado: boolean; aplicado: boolean }> {
+  return withStorageLock(async () => {
+    if (clearEpoch !== epochInicial) {
+      return { abortado: true, aplicado: false };
+    }
+    const colaActual = await storage.read();
+    let encontrado = false;
+    const siguienteCola = colaActual.map((item) => {
+      if (item.idempotencyKey !== idempotencyKey) return item;
+      encontrado = true;
+      return transform(item);
+    });
+    if (encontrado) {
+      await storage.write(siguienteCola);
+    }
+    return { abortado: false, aplicado: encontrado };
+  });
+}
+
 /**
- * Reenvía las ventas pendientes en orden FIFO.
+ * Reenvía las ventas pendientes en orden FIFO de forma atómica por ítem.
+ * - Preserva ventas encoladas concurrentemente mientras `poster` está en vuelo.
+ * - Si `clearOutbox()` corre durante un envío, aborta al detectar cambio de época
+ *   sin resucitar registros ni escribir sobre la cola nueva.
  * - 2xx: pasa a 'SINCRONIZADA' con el mapeo idNotaVenta / numeroNota del servidor.
  * - 4xx (rechazo permanente): pasa a 'REQUIERE_REVISION' sin reintentar en bucle.
  * - Error de red o 5xx (transitorio): detiene el flush y conserva las pendientes.
  */
 export async function flushOutbox(poster: SalePoster): Promise<FlushResult> {
-  const cola = await storage.read();
-  const siguiente: OutboxSale[] = cola.map((v) => ({ ...v, estado: estadoDe(v) }));
-  const sincronizadas: FlushSincronizada[] = [];
-  const resultado: FlushResult = {
-    enviados: 0,
-    rechazados: 0,
-    pendientes: 0,
-    errores: [],
-    sincronizadas,
-  };
+  const epochInicial = clearEpoch;
+  return withFlushLock(async () => {
+    const sincronizadas: FlushSincronizada[] = [];
+    const resultado: FlushResult = {
+      enviados: 0,
+      rechazados: 0,
+      pendientes: 0,
+      errores: [],
+      sincronizadas,
+    };
+    const intentadas = new Set<string>();
 
-  for (const venta of siguiente) {
-    if (estadoDe(venta) !== 'PENDIENTE') continue;
-    try {
-      const resp = await poster(venta.endpoint, venta.payload, venta.idempotencyKey);
-      const info = extraerSyncInfo(resp);
-      venta.estado = 'SINCRONIZADA';
-      venta.idNotaVenta = info.idNotaVenta;
-      venta.numeroNota = info.numeroNota;
-      venta.alertaStockNegativo = info.alertaStockNegativo;
-      venta.syncedAt = Date.now();
-      venta.errorMensaje = undefined;
-      venta.errorCodigo = undefined;
-      venta.errorStatus = undefined;
-      resultado.enviados += 1;
-      sincronizadas.push({
-        idempotencyKey: venta.idempotencyKey,
-        idNotaVenta: info.idNotaVenta,
-        numeroNota: info.numeroNota,
-        alertaStockNegativo: info.alertaStockNegativo,
+    while (true) {
+      const paso = await withStorageLock(async () => {
+        if (clearEpoch !== epochInicial) {
+          return { abortado: true as const, venta: null };
+        }
+        const cola = await storage.read();
+        const venta =
+          cola.find((v) => estadoDe(v) === 'PENDIENTE' && !intentadas.has(v.idempotencyKey)) ?? null;
+        return { abortado: false as const, venta };
       });
-    } catch (err) {
-      const status = statusDe(err);
-      const { mensaje, codigo } = detalleError(err);
-      if (status !== undefined && status >= 400 && status < 500) {
-        // Permanente: no reintentar en bucle; pasa a REQUIERE_REVISION visible para el cajero.
-        venta.estado = 'REQUIERE_REVISION';
-        venta.errorMensaje = mensaje;
-        venta.errorCodigo = codigo;
-        venta.errorStatus = status;
-        resultado.rechazados += 1;
+
+      if (paso.abortado) {
+        resultado.pendientes = 0;
+        return resultado;
+      }
+      if (!paso.venta) {
+        break;
+      }
+
+      const venta = paso.venta;
+      intentadas.add(venta.idempotencyKey);
+
+      try {
+        const resp = await poster(venta.endpoint, venta.payload, venta.idempotencyKey);
+        const info = extraerSyncInfo(resp);
+        const tx = await aplicarTransicionItem(venta.idempotencyKey, epochInicial, (actual) => ({
+          ...actual,
+          estado: 'SINCRONIZADA',
+          idNotaVenta: info.idNotaVenta,
+          numeroNota: info.numeroNota,
+          alertaStockNegativo: info.alertaStockNegativo,
+          syncedAt: Date.now(),
+          errorMensaje: undefined,
+          errorCodigo: undefined,
+          errorStatus: undefined,
+        }));
+        if (tx.abortado) {
+          resultado.pendientes = 0;
+          return resultado;
+        }
+        if (tx.aplicado) {
+          resultado.enviados += 1;
+          sincronizadas.push({
+            idempotencyKey: venta.idempotencyKey,
+            idNotaVenta: info.idNotaVenta,
+            numeroNota: info.numeroNota,
+            alertaStockNegativo: info.alertaStockNegativo,
+          });
+        }
+      } catch (err) {
+        const status = statusDe(err);
+        const { mensaje, codigo } = detalleError(err);
+        if (status !== undefined && status >= 400 && status < 500) {
+          // Permanente: no reintentar en bucle; pasa a REQUIERE_REVISION visible para el cajero.
+          const tx = await aplicarTransicionItem(venta.idempotencyKey, epochInicial, (actual) => ({
+            ...actual,
+            estado: 'REQUIERE_REVISION',
+            errorMensaje: mensaje,
+            errorCodigo: codigo,
+            errorStatus: status,
+          }));
+          if (tx.abortado) {
+            resultado.pendientes = 0;
+            return resultado;
+          }
+          if (tx.aplicado) {
+            resultado.rechazados += 1;
+            resultado.errores.push({
+              idempotencyKey: venta.idempotencyKey,
+              status,
+              codigo,
+              mensaje,
+            });
+          }
+          continue;
+        }
+        // Transitorio: detener; esta y las siguientes siguen PENDIENTE.
         resultado.errores.push({
           idempotencyKey: venta.idempotencyKey,
           status,
           codigo,
           mensaje,
         });
-        continue;
+        break;
       }
-      // Transitorio: detener; esta y las siguientes siguen PENDIENTE.
-      resultado.errores.push({
-        idempotencyKey: venta.idempotencyKey,
-        status,
-        codigo,
-        mensaje,
-      });
-      break;
     }
-  }
 
-  await storage.write(siguiente);
-  resultado.pendientes = siguiente.filter((v) => estadoDe(v) === 'PENDIENTE').length;
-  return resultado;
+    resultado.pendientes = await withStorageLock(async () => {
+      if (clearEpoch !== epochInicial) return 0;
+      const colaFinal = await storage.read();
+      return colaFinal.filter((v) => estadoDe(v) === 'PENDIENTE').length;
+    });
+    return resultado;
+  });
 }

@@ -33,6 +33,31 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_SCOPE_KEY = 'pos_auth_scope';
+
+function buildAuthScope(usuario: Usuario): string {
+  const empresaId = usuario.empresas?.[0]?.id_empresa ?? '';
+  return `${String(usuario.id)}:${empresaId}`;
+}
+
+function purgeOfflineLocalState(): void {
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith('pos_cliente_mostrador_') || k.startsWith('pos_almacen_'))
+    .forEach((k) => localStorage.removeItem(k));
+  // Offline réplica local (CTF-008): purgar caché en memoria, IndexedDB y cola
+  // outbox para evitar fugas entre usuarios/tenants en terminales compartidos (R-CODE-1).
+  queryClient.clear();
+  void clearPersistedQueryCache();
+  void clearOutbox();
+}
+
+function purgeAllSessionLocalState(): void {
+  localStorage.removeItem('id_empresa');
+  localStorage.removeItem('id_sucursal');
+  localStorage.removeItem(AUTH_SCOPE_KEY);
+  purgeOfflineLocalState();
+}
+
 // FE-HIGH-13 migration shim: remove any legacy token/PII left in localStorage
 // by previous versions. Only non-PII UI selection keys are allowed to remain.
 function purgeLegacyAuthStorage(): void {
@@ -62,17 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDispositivoInfoState(null);
     clearSession();
     // Drop UI selection too — it is per-session and may leak across users.
-    localStorage.removeItem('id_empresa');
-    localStorage.removeItem('id_sucursal');
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith('pos_cliente_mostrador_') || k.startsWith('pos_almacen_'))
-      .forEach((k) => localStorage.removeItem(k));
-    // Offline réplica local (CTF-008): purgar el caché de negocio en memoria,
-    // su réplica en IndexedDB y la cola outbox para que los datos/ventas de un
-    // tenant/usuario no queden disponibles para el siguiente (R-CODE-1).
-    queryClient.clear();
-    void clearPersistedQueryCache();
-    void clearOutbox();
+    purgeAllSessionLocalState();
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -104,8 +119,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const hydrated = await hydrateSession();
       if (cancelled) return;
       if (hydrated) {
+        const nextScope = buildAuthScope(hydrated);
+        const prevScope = localStorage.getItem(AUTH_SCOPE_KEY);
+        if (prevScope && prevScope !== nextScope) {
+          purgeOfflineLocalState();
+        }
+        localStorage.setItem(AUTH_SCOPE_KEY, nextScope);
         setUser(hydrated);
         setTokenState(getAccessToken());
+      } else {
+        // Sin sesión válida al arrancar (token expirado/ausente): no conservar
+        // datos/ventas offline de una sesión previa en terminal compartido.
+        purgeAllSessionLocalState();
       }
       setIsLoading(false);
     })();
@@ -122,6 +147,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // El spinner del formulario lo maneja LoginPage con su estado local.
     // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie.
     const { token: newToken, usuario, dispositivo } = await loginAndFetchUser(username, password);
+    const nextScope = buildAuthScope(usuario);
+    const prevScope = localStorage.getItem(AUTH_SCOPE_KEY);
+    if (prevScope && prevScope !== nextScope) {
+      purgeOfflineLocalState();
+    }
+    localStorage.setItem(AUTH_SCOPE_KEY, nextScope);
+
     setTokenState(newToken);
     setUser(usuario);
 

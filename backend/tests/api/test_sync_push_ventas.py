@@ -738,3 +738,214 @@ def test_descuento_invalido_y_caja_fisica_en_pago(client_a, empresa_a, empresa_b
     r_ok = client_a.post(URL, sobre_ok, format="json", **_hdr("venta-cf-ok"))
     assert r_ok.status_code == 201, r_ok.data
     assert Pago.objects.get(pk=r_ok.data["pagos"][0]).id_caja_fisica_id == caja_a.id_caja_fisica
+
+
+def test_metodo_pago_y_moneda_ajenos_o_inactivos_rechazan_422_y_revierten(
+    client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo
+):
+    from apps.finanzas.models import MetodoPago, Moneda, Pago, TasaCambio
+    from apps.inventario.models import StockActual
+
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="5", precio="10.00")
+    cliente = _cliente(empresa_a)
+
+    # 1. MetodoPago privado de empresa_b → 422 REQUIERE_REVISION y rollback completo
+    metodo_b = MetodoPago.objects.create(
+        empresa=empresa_b,
+        nombre_metodo="Privado Beta",
+        tipo_metodo="EFECTIVO",
+        es_publico=False,
+        es_generico=False,
+    )
+    sobre_mb = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_b,
+        moneda_usd,
+        cantidad="2",
+        precio="10.00",
+        total="20.00",
+        client_uuid="venta-met-ajeno",
+    )
+    r_mb = client_a.post(URL, sobre_mb, format="json", **_hdr("venta-met-ajeno"))
+    assert r_mb.status_code == 422, r_mb.data
+    assert r_mb.data["codigo"] == "REQUIERE_REVISION"
+    assert _count_notas(empresa_a) == 0
+    assert Pago.objects.filter(id_empresa=empresa_a).count() == 0
+    assert StockActual.objects.get(id_producto=producto, id_almacen=almacen).cantidad_disponible == Decimal("5.0000")
+
+    # 2. Moneda privada de empresa_b → 422 REQUIERE_REVISION y rollback completo
+    moneda_b = Moneda.objects.create(
+        empresa=empresa_b,
+        codigo_iso="ZBT",
+        nombre="Beta Coin",
+        simbolo="B",
+        es_publica=False,
+        es_generica=False,
+    )
+    sobre_monb = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_b,
+        cantidad="1",
+        precio="10.00",
+        total="10.00",
+        client_uuid="venta-mon-ajena",
+    )
+    r_monb = client_a.post(URL, sobre_monb, format="json", **_hdr("venta-mon-ajena"))
+    assert r_monb.status_code == 422, r_monb.data
+    assert r_monb.data["codigo"] == "REQUIERE_REVISION"
+    assert _count_notas(empresa_a) == 0
+    assert StockActual.objects.get(id_producto=producto, id_almacen=almacen).cantidad_disponible == Decimal("5.0000")
+
+    # 3. MetodoPago propio inactivo → 422 REQUIERE_REVISION
+    metodo_inactivo = MetodoPago.objects.create(
+        empresa=empresa_a,
+        nombre_metodo="Inactivo Alpha",
+        tipo_metodo="OTRO",
+        activo=False,
+        es_publico=False,
+        es_generico=False,
+    )
+    sobre_inact = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_inactivo,
+        moneda_usd,
+        cantidad="1",
+        precio="10.00",
+        total="10.00",
+        client_uuid="venta-met-inact",
+    )
+    r_inact = client_a.post(URL, sobre_inact, format="json", **_hdr("venta-met-inact"))
+    assert r_inact.status_code == 422, r_inact.data
+    assert r_inact.data["codigo"] == "REQUIERE_REVISION"
+    assert _count_notas(empresa_a) == 0
+
+    # 4. MetodoPago y Moneda privados propios activos → 201 OK
+    metodo_propio = MetodoPago.objects.create(
+        empresa=empresa_a,
+        nombre_metodo="Vale Alpha",
+        tipo_metodo="OTRO",
+        activo=True,
+        es_publico=False,
+        es_generico=False,
+    )
+    moneda_propia = Moneda.objects.create(
+        empresa=empresa_a,
+        codigo_iso="ZAP",
+        nombre="Alpha Coin",
+        simbolo="A",
+        activo=True,
+        es_publica=False,
+        es_generica=False,
+    )
+    TasaCambio.objects.create(
+        id_empresa=empresa_a,
+        id_moneda_origen=moneda_propia,
+        id_moneda_destino=moneda_usd,
+        tipo_tasa="FIJA",
+        fecha_tasa=timezone.localdate(),
+        valor_tasa=Decimal("1.0000"),
+    )
+    caja_a = _caja_virtual(empresa_a, moneda_propia)
+    sobre_ok = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_propio,
+        moneda_propia,
+        caja=caja_a,
+        cantidad="1",
+        precio="10.00",
+        total="10.00",
+        client_uuid="venta-propia-ok",
+    )
+    r_ok = client_a.post(URL, sobre_ok, format="json", **_hdr("venta-propia-ok"))
+    assert r_ok.status_code == 201, r_ok.data
+    assert _count_notas(empresa_a) == 1
+
+
+def test_decimal_no_finito_none_y_colision_numero_nota(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    from apps.inventario.models import StockActual
+    from apps.ventas.models import NotaVenta
+
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="10", precio="20.00")
+    cliente = _cliente(empresa_a)
+
+    # NaN / Infinity → 422 REQUIERE_REVISION sin 500
+    for clave, campo, valor in [
+        ("venta-nan", "cantidad", "NaN"),
+        ("venta-inf", "precio_unitario", "Infinity"),
+    ]:
+        sobre_bad = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid=clave)
+        sobre_bad["detalles"][0][campo] = valor
+        r_bad = client_a.post(URL, sobre_bad, format="json", **_hdr(clave))
+        assert r_bad.status_code == 422, r_bad.data
+        assert r_bad.data["codigo"] == "REQUIERE_REVISION"
+        assert _count_notas(empresa_a) == 0
+
+    # descuento_porcentaje=None y tasa=None se normalizan a 0 y 1
+    sobre_none = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="1",
+        precio="20.00",
+        total="20.00",
+        client_uuid="venta-none-defaults",
+    )
+    sobre_none["detalles"][0]["descuento_porcentaje"] = None
+    sobre_none["pagos"][0]["tasa"] = None
+    r_none = client_a.post(URL, sobre_none, format="json", **_hdr("venta-none-defaults"))
+    assert r_none.status_code == 201, r_none.data
+    assert r_none.data["total"] == "20.0000"
+
+    # tasa <= 0 → 422 REQUIERE_REVISION
+    sobre_tasa_cero = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="1",
+        precio="20.00",
+        total="20.00",
+        client_uuid="venta-tasa-cero",
+    )
+    sobre_tasa_cero["pagos"][0]["tasa"] = "0"
+    r_tc = client_a.post(URL, sobre_tasa_cero, format="json", **_hdr("venta-tasa-cero"))
+    assert r_tc.status_code == 422, r_tc.data
+    assert r_tc.data["codigo"] == "REQUIERE_REVISION"
+
+    # Colisión de numero_nota previa en la misma empresa → 422 REQUIERE_REVISION sin 500
+    NotaVenta.objects.create(
+        id_empresa=empresa_a,
+        id_cliente=cliente,
+        numero_nota="NV-DUP-POS",
+        fecha_nota=timezone.localdate(),
+        estado="BORRADOR",
+    )
+    sobre_dup = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="1",
+        precio="20.00",
+        total="20.00",
+        client_uuid="venta-numero-dup",
+    )
+    sobre_dup["numero_nota"] = "NV-DUP-POS"
+    r_dup = client_a.post(URL, sobre_dup, format="json", **_hdr("venta-numero-dup"))
+    assert r_dup.status_code == 422, r_dup.data
+    assert r_dup.data["codigo"] == "REQUIERE_REVISION"
+    assert _count_notas(empresa_a) == 2  # venta-none-defaults + NV-DUP-POS previa
+    assert StockActual.objects.get(id_producto=producto, id_almacen=almacen).cantidad_disponible == Decimal("9.0000")
