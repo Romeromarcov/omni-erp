@@ -57,8 +57,13 @@ class AjusteCajaBancoSerializer(serializers.Serializer):
                 raise PermissionDenied("No tiene permiso sobre la moneda especificada.")
             raise serializers.ValidationError({"moneda": "La moneda no pertenece a la empresa indicada."})
 
-        if not getattr(usuario, "es_superusuario_omni", False):
-            usuario_visible_ids = set(get_empresas_visible(usuario).values_list("id_empresa", flat=True))
+        if request is not None and getattr(request, "user", None) and request.user.is_authenticated and not es_super:
+            from apps.core.viewsets import get_all_subsidiarias
+
+            empresas_usuario = list(usuario.empresas.all())
+            usuario_visible_ids = {e.id_empresa for e in empresas_usuario}
+            for emp_u in empresas_usuario:
+                usuario_visible_ids.update(get_all_subsidiarias(emp_u))
             if empresa.id_empresa not in usuario_visible_ids:
                 raise PermissionDenied("El usuario no pertenece a la empresa indicada.")
 

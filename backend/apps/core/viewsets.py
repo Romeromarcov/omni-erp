@@ -516,11 +516,13 @@ class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet)
 
     @action(detail=True, methods=["post"])
     def activar(self, request, pk=None):
+        """Reactiva un permiso global del sistema (solo superusuario Omni)."""
         self._assert_superuser()
         return super().activar(request, pk=pk)
 
     @action(detail=True, methods=["post"])
     def desactivar(self, request, pk=None):
+        """Desactiva lógicamente un permiso global del sistema (solo superusuario Omni)."""
         self._assert_superuser()
         return super().desactivar(request, pk=pk)
 

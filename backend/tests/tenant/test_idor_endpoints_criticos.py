@@ -569,6 +569,23 @@ class TestIDORFinanzasYCerradosEnPR9:
             == 400
         )
 
+        # Usuario normal de Empresa A NO puede atribuir ajuste a un superusuario Omni externo
+        assert (
+            client_a.post(
+                url,
+                {
+                    "empresa": str(empresa_a.pk),
+                    "monto": "10.00",
+                    "moneda": str(moneda_usd.pk),
+                    "caja": str(finanzas_b["caja_a"].pk),
+                    "usuario": str(superuser.pk),
+                    "tipo_ajuste": "POSITIVO",
+                },
+                format="json",
+            ).status_code
+            == 403
+        )
+
         # Listados adicionales en finanzas usan get_empresas_visible sin fugas
         for list_url in (
             "/api/finanzas/monedas/activas/",
@@ -580,15 +597,41 @@ class TestIDORFinanzasYCerradosEnPR9:
         ):
             assert client_a.get(list_url).status_code == 200
 
-    def test_tasa_oficial_bcv_rechaza_empresa_o_moneda_privada_ajena(self, client_a, empresa_b, moneda_usd):
+    def test_tasa_oficial_bcv_rechaza_empresa_o_moneda_privada_ajena(self, client_a, empresa_a, empresa_b, moneda_usd):
         moneda_priv_b = Moneda.objects.create(
             codigo_iso="PVB", nombre="Privada B", simbolo="P", es_generica=False, es_publica=False, empresa=empresa_b
+        )
+        moneda_priv_a = Moneda.objects.create(
+            codigo_iso="PVA", nombre="Privada A", simbolo="A", es_generica=False, es_publica=False, empresa=empresa_a
+        )
+        TasaCambio.objects.create(
+            id_empresa=None,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_priv_a,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("36.50"),
+            fecha_tasa=timezone.localdate(),
         )
         assert client_a.get(f"/api/finanzas/tasa-oficial-bcv/?id_empresa={empresa_b.pk}").status_code == 404
         assert (
             client_a.get(f"/api/finanzas/tasa-oficial-bcv/?id_moneda_transaccion={moneda_priv_b.pk}").status_code
             == 404
         )
+        # B-2: UUIDs malformados devuelven 404 controlado (nunca 500) y codigo_iso privado ajeno -> 404
+        assert (
+            client_a.get(
+                f"/api/finanzas/tasa-oficial-bcv/?id_empresa=no-es-uuid&id_moneda_transaccion={moneda_usd.pk}"
+            ).status_code
+            == 404
+        )
+        assert (
+            client_a.get(
+                f"/api/finanzas/tasa-oficial-bcv/?id_empresa={empresa_a.pk}&id_moneda_transaccion=no-es-uuid"
+            ).status_code
+            == 404
+        )
+        assert client_a.get("/api/finanzas/tasa-oficial-bcv/?moneda_origen=USD&moneda_destino=PVB").status_code == 404
+        assert client_a.get("/api/finanzas/tasa-oficial-bcv/?moneda_origen=USD&moneda_destino=PVA").status_code == 200
 
         from rest_framework.test import APIClient
 
@@ -609,6 +652,9 @@ class TestIDORFinanzasYCerradosEnPR9:
     def test_objetos_globales_y_publicos_ajenos_no_editables_por_usuario_normal(
         self, client_a, empresa_a, empresa_b, moneda_usd, metodo_efectivo
     ):
+        moneda_pub_a = Moneda.objects.create(
+            codigo_iso="PUA", nombre="Publica A", simbolo="PA", es_generica=False, es_publica=True, empresa=empresa_a
+        )
         moneda_pub_b = Moneda.objects.create(
             codigo_iso="PUB", nombre="Publica B", simbolo="PB", es_generica=False, es_publica=True, empresa=empresa_b
         )
@@ -617,6 +663,9 @@ class TestIDORFinanzasYCerradosEnPR9:
         )
         metodo_generico = MetodoPago.objects.create(
             empresa=None, nombre_metodo="Efectivo Global", tipo_metodo="EFECTIVO", es_generico=True, es_publico=False
+        )
+        metodo_pub_a = MetodoPago.objects.create(
+            empresa=empresa_a, nombre_metodo="Publico A", tipo_metodo="OTRO", es_generico=False, es_publico=True
         )
         metodo_pub_b = MetodoPago.objects.create(
             empresa=empresa_b, nombre_metodo="Publico B", tipo_metodo="OTRO", es_generico=False, es_publico=True
@@ -633,12 +682,68 @@ class TestIDORFinanzasYCerradosEnPR9:
             fecha_tasa=date.today(),
         )
 
-        # Monedas globales o públicas de Empresa B -> 403
+        # B-1: Monedas/métodos legítimos de usuario normal omitiendo empresa -> 201 y privadas
+        resp_moneda_ok = client_a.post(
+            "/api/finanzas/monedas/",
+            {"codigo_iso": "SOL", "nombre": "Sol Local", "simbolo": "S", "tipo_moneda": "fiat"},
+            format="json",
+        )
+        assert resp_moneda_ok.status_code == 201, resp_moneda_ok.content
+        moneda_creada = Moneda.objects.get(codigo_iso="SOL")
+        assert moneda_creada.empresa == empresa_a
+        assert moneda_creada.es_generica is False
+        assert moneda_creada.es_publica is False
+
+        resp_metodo_ok = client_a.post(
+            "/api/finanzas/metodos-pago/",
+            {"nombre_metodo": "Transferencia Local A", "tipo_metodo": "OTRO", "monedas": [str(moneda_usd.pk)]},
+            format="json",
+        )
+        assert resp_metodo_ok.status_code == 201, resp_metodo_ok.content
+        metodo_creado = MetodoPago.objects.get(pk=resp_metodo_ok.data["id_metodo_pago"])
+        assert metodo_creado.empresa == empresa_a
+        assert metodo_creado.es_generico is False
+        assert metodo_creado.es_publico is False
+
+        # B-1: Usuario normal sin empresas no puede crear catálogos globales -> 403
+        from rest_framework.test import APIClient
+
+        user_sin_emp = Usuarios.objects.create_user(
+            username=f"sin_emp_{uuid.uuid4().hex[:6]}",
+            password="PasswordSegura123!",
+            email="sin_emp@test.local",
+        )
+        client_sin_emp = APIClient()
+        client_sin_emp.force_authenticate(user=user_sin_emp)
+        assert (
+            client_sin_emp.post(
+                "/api/finanzas/monedas/",
+                {"codigo_iso": "SEM", "nombre": "Sin Emp", "simbolo": "S", "tipo_moneda": "fiat"},
+                format="json",
+            ).status_code
+            == 403
+        )
+        assert not Moneda.objects.filter(codigo_iso="SEM").exists()
+        assert (
+            client_sin_emp.post(
+                "/api/finanzas/metodos-pago/",
+                {"nombre_metodo": "Sin Emp", "tipo_metodo": "OTRO", "monedas": []},
+                format="json",
+            ).status_code
+            == 403
+        )
+
+        # Monedas globales o públicas (propias o de Empresa B) -> 403
         assert (
             client_a.patch(f"/api/finanzas/monedas/{moneda_usd.pk}/", {"nombre": "Hack"}, format="json").status_code
             == 403
         )
         assert client_a.delete(f"/api/finanzas/monedas/{moneda_usd.pk}/").status_code == 403
+        assert (
+            client_a.patch(f"/api/finanzas/monedas/{moneda_pub_a.pk}/", {"nombre": "Hack"}, format="json").status_code
+            == 403
+        )
+        assert client_a.delete(f"/api/finanzas/monedas/{moneda_pub_a.pk}/").status_code == 403
         assert (
             client_a.patch(f"/api/finanzas/monedas/{moneda_pub_b.pk}/", {"nombre": "Hack"}, format="json").status_code
             == 403
@@ -660,6 +765,14 @@ class TestIDORFinanzasYCerradosEnPR9:
         )
         assert (
             client_a.post(
+                "/api/finanzas/monedas/",
+                {"codigo_iso": "PUBX", "nombre": "Publica Inyectada", "simbolo": "P", "es_publica": True},
+                format="json",
+            ).status_code
+            == 403
+        )
+        assert (
+            client_a.post(
                 "/api/finanzas/metodos-pago/",
                 {
                     "nombre_metodo": "Global Hack",
@@ -667,6 +780,14 @@ class TestIDORFinanzasYCerradosEnPR9:
                     "es_generico": True,
                     "empresa": str(empresa_a.pk),
                 },
+                format="json",
+            ).status_code
+            == 403
+        )
+        assert (
+            client_a.post(
+                "/api/finanzas/metodos-pago/",
+                {"nombre_metodo": "Publico Inyectado", "tipo_metodo": "OTRO", "es_publico": True},
                 format="json",
             ).status_code
             == 403
@@ -697,9 +818,13 @@ class TestIDORFinanzasYCerradosEnPR9:
             client_a.patch(f"/api/finanzas/monedas/{moneda_a.pk}/", {"es_generica": True}, format="json").status_code
             == 403
         )
+        assert (
+            client_a.patch(f"/api/finanzas/monedas/{moneda_a.pk}/", {"es_publica": True}, format="json").status_code
+            == 403
+        )
         assert client_a.delete(f"/api/finanzas/monedas/{moneda_a.pk}/").status_code in (200, 204)
 
-        # Métodos de pago globales o públicos de Empresa B -> 403 (y privado sin empresa -> 404)
+        # Métodos de pago globales o públicos (propios o de Empresa B) -> 403 (y privado sin empresa -> 404)
         assert (
             client_a.patch(
                 f"/api/finanzas/metodos-pago/{metodo_efectivo.pk}/", {"nombre_metodo": "Hack"}, format="json"
@@ -715,12 +840,19 @@ class TestIDORFinanzasYCerradosEnPR9:
         assert client_a.delete(f"/api/finanzas/metodos-pago/{metodo_generico.pk}/").status_code == 403
         assert (
             client_a.patch(
+                f"/api/finanzas/metodos-pago/{metodo_pub_a.pk}/", {"nombre_metodo": "Hack"}, format="json"
+            ).status_code
+            == 403
+        )
+        assert client_a.delete(f"/api/finanzas/metodos-pago/{metodo_pub_a.pk}/").status_code == 403
+        assert (
+            client_a.patch(
                 f"/api/finanzas/metodos-pago/{metodo_pub_b.pk}/", {"nombre_metodo": "Hack"}, format="json"
             ).status_code
             == 403
         )
         assert client_a.delete(f"/api/finanzas/metodos-pago/{metodo_pub_b.pk}/").status_code == 403
-        # Propio sigue editable y eliminable, pero no puede escalarse a global
+        # Propio sigue editable y eliminable, pero no puede escalarse a global ni público
         assert (
             client_a.patch(
                 f"/api/finanzas/metodos-pago/{metodo_a.pk}/",
@@ -732,6 +864,12 @@ class TestIDORFinanzasYCerradosEnPR9:
         assert (
             client_a.patch(
                 f"/api/finanzas/metodos-pago/{metodo_a.pk}/", {"es_generico": True}, format="json"
+            ).status_code
+            == 403
+        )
+        assert (
+            client_a.patch(
+                f"/api/finanzas/metodos-pago/{metodo_a.pk}/", {"es_publico": True}, format="json"
             ).status_code
             == 403
         )
@@ -892,22 +1030,38 @@ class TestIDORFinanzasYCerradosEnPR9:
             == 404
         )
 
-        # SucursalSerializer anti-IDOR en POST (ajena/inexistente) y PATCH -> 400
+        # SucursalSerializer anti-IDOR en POST (ajena/inexistente -> mismo error) y PATCH/PUT same-tenant
         resp_post_suc = client_a.post(
             "/api/core/sucursales/",
             {"id_empresa": str(empresa_b.pk), "nombre": "Sucursal Hack", "codigo_sucursal": "HACK1"},
             format="json",
         )
         assert resp_post_suc.status_code == 400
-        assert (
-            client_a.post(
-                "/api/core/sucursales/",
-                {"id_empresa": str(uuid.uuid4()), "nombre": "Sucursal Ghost", "codigo_sucursal": "HACK2"},
-                format="json",
-            ).status_code
-            == 400
+        resp_ghost_suc = client_a.post(
+            "/api/core/sucursales/",
+            {"id_empresa": str(uuid.uuid4()), "nombre": "Sucursal Ghost", "codigo_sucursal": "HACK2"},
+            format="json",
         )
+        assert resp_ghost_suc.status_code == 400
+        assert resp_post_suc.json() == resp_ghost_suc.json()
         assert not Sucursal.objects.filter(id_empresa=empresa_b, codigo_sucursal="HACK1").exists()
+
+        # B-3: PUT y PATCH same-tenant enviando id_empresa propia -> 200
+        resp_patch_own = client_a.patch(
+            f"/api/core/sucursales/{sucursal_a.pk}/",
+            {"id_empresa": str(empresa_a.pk), "nombre": "Sucursal A Patch"},
+            format="json",
+        )
+        assert resp_patch_own.status_code == 200, resp_patch_own.content
+        resp_put_own = client_a.put(
+            f"/api/core/sucursales/{sucursal_a.pk}/",
+            {"id_empresa": str(empresa_a.pk), "nombre": "Sucursal A Put", "codigo_sucursal": "SUC-A1"},
+            format="json",
+        )
+        assert resp_put_own.status_code == 200, resp_put_own.content
+        sucursal_a.refresh_from_db()
+        assert sucursal_a.nombre == "Sucursal A Put"
+        assert sucursal_a.id_empresa_id == empresa_a.pk
 
         resp_patch_suc = client_a.patch(
             f"/api/core/sucursales/{sucursal_a.pk}/",

@@ -279,49 +279,73 @@ class _CatalogoTenantGuardMixin:
     """Restringe escritura/borrado de catálogos híbridos (globales o públicos) a superusuario/dueño."""
 
     _guard_empresa_field: str = "empresa"
-    _guard_global_flag: str | None = None
+    _guard_global_flags: tuple[str, ...] = ()
     _guard_recurso_nombre: str = "registros"
+    _guard_auto_empresa_en_create: bool = False
 
-    def _assert_puede_escribir_catalogo(self, instance=None, data=None, prevalidate_post=False):
+    def _assert_puede_escribir_catalogo(self, instance=None, data=None, prevalidate_post=False, is_create=False):
         user = self.request.user
         if getattr(user, "es_superusuario_omni", False):
             return
         from rest_framework.exceptions import PermissionDenied
 
         emp_field = self._guard_empresa_field
-        flag_field = self._guard_global_flag
         visible_ids = set(get_empresas_visible(user).values_list("id_empresa", flat=True))
 
         if instance is not None:
-            is_global = bool(flag_field and getattr(instance, flag_field, False))
+            is_flagged = any(bool(getattr(instance, f, False)) for f in self._guard_global_flags)
             inst_emp_id = getattr(instance, f"{emp_field}_id", None)
-            if is_global or inst_emp_id is None or inst_emp_id not in visible_ids:
+            if is_flagged or inst_emp_id is None or inst_emp_id not in visible_ids:
                 raise PermissionDenied(
-                    f"No tiene permiso para modificar o eliminar {self._guard_recurso_nombre} globales o de otra empresa."
+                    f"No tiene permiso para modificar o eliminar {self._guard_recurso_nombre} globales, públicos o de otra empresa."
                 )
 
         if data is not None:
-            default_flag = getattr(instance, flag_field, False) if (instance and flag_field) else False
-            is_global = bool(flag_field and data.get(flag_field, default_flag) in (True, "true", "True", "1", 1))
+            is_flagged = any(
+                data.get(f, getattr(instance, f, False) if instance else False) in (True, "true", "True", "1", 1)
+                for f in self._guard_global_flags
+            )
+            if is_flagged:
+                raise PermissionDenied(
+                    f"Solo un superusuario Omni puede crear o marcar {self._guard_recurso_nombre} globales o públicos."
+                )
             if prevalidate_post:
-                if is_global or (emp_field in data and data.get(emp_field) is None):
+                if emp_field in data and data.get(emp_field) is None:
                     raise PermissionDenied(
                         f"Solo un superusuario Omni puede crear {self._guard_recurso_nombre} globales."
                     )
+                if is_create and self._guard_auto_empresa_en_create and not visible_ids:
+                    raise PermissionDenied(
+                        f"El usuario no tiene una empresa visible para crear {self._guard_recurso_nombre}."
+                    )
+                return
+
+            if is_create and self._guard_auto_empresa_en_create:
+                if not visible_ids:
+                    raise PermissionDenied(
+                        f"El usuario no tiene una empresa visible para crear {self._guard_recurso_nombre}."
+                    )
+                if emp_field in data:
+                    raw_emp = data.get(emp_field)
+                    emp_id = getattr(raw_emp, "pk", raw_emp)
+                    if emp_id is None or emp_id not in visible_ids:
+                        raise PermissionDenied(
+                            f"No tiene permiso para asignar {self._guard_recurso_nombre} fuera de su empresa."
+                        )
                 return
 
             default_emp = getattr(instance, f"{emp_field}_id", None) if instance else None
             raw_emp = data.get(emp_field, default_emp)
             emp_id = getattr(raw_emp, "pk", raw_emp)
-            if is_global or emp_id is None or emp_id not in visible_ids:
+            if emp_id is None or emp_id not in visible_ids:
                 raise PermissionDenied(
-                    f"Solo un superusuario Omni puede crear o asignar {self._guard_recurso_nombre} globales."
+                    f"Solo un superusuario Omni puede crear o asignar {self._guard_recurso_nombre} globales o de otra empresa."
                 )
 
     def check_permissions(self, request):
         super().check_permissions(request)
         if getattr(self, "action", None) == "create" and hasattr(request, "data"):
-            self._assert_puede_escribir_catalogo(data=request.data, prevalidate_post=True)
+            self._assert_puede_escribir_catalogo(data=request.data, prevalidate_post=True, is_create=True)
 
     def check_object_permissions(self, request, obj):
         from rest_framework.permissions import SAFE_METHODS
@@ -337,7 +361,7 @@ class _CatalogoTenantGuardMixin:
             self._assert_puede_escribir_catalogo(instance=obj, data=data, prevalidate_post=True)
 
     def perform_create(self, serializer):
-        self._assert_puede_escribir_catalogo(data=serializer.validated_data)
+        self._assert_puede_escribir_catalogo(data=serializer.validated_data, is_create=True)
         serializer.save()
 
     def perform_update(self, serializer):
@@ -351,8 +375,9 @@ class _CatalogoTenantGuardMixin:
 
 class MonedaViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
     _guard_empresa_field = "empresa"
-    _guard_global_flag = "es_generica"
+    _guard_global_flags = ("es_generica", "es_publica")
     _guard_recurso_nombre = "monedas"
+    _guard_auto_empresa_en_create = True
 
     @action(detail=False, methods=["get"], url_path="activas")
     def activas(self, request):
@@ -399,7 +424,7 @@ class MonedaViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
 
 class TasaCambioViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
     _guard_empresa_field = "id_empresa"
-    _guard_global_flag = None
+    _guard_global_flags = ()
     _guard_recurso_nombre = "tasas de cambio"
     queryset = TasaCambio.objects.all()
     serializer_class = TasaCambioSerializer
@@ -422,8 +447,9 @@ from apps.core.models import Empresa
 
 class MetodoPagoViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
     _guard_empresa_field = "empresa"
-    _guard_global_flag = "es_generico"
+    _guard_global_flags = ("es_generico", "es_publico")
     _guard_recurso_nombre = "métodos de pago"
+    _guard_auto_empresa_en_create = True
     # SEC-A1 (auditoría 2026-06-10): se eliminó el override de get_object que
     # bypaseaba get_queryset() para la acción `reutilizar` — permitía operar
     # métodos de pago privados de otra empresa por UUID (IDOR, CWE-639).

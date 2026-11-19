@@ -165,10 +165,16 @@ class MonedaSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user if "request" in self.context else None
-        # Si no es superusuario, fuerza empresa y flags
+        # Si no es superusuario, fuerza empresa y flags (sin permitir empresa=None si no tiene empresas)
         if not getattr(user, "es_superusuario_omni", False):
-            empresas = user.empresas.all()
-            validated_data["empresa"] = empresas.first() if empresas.exists() else None
+            from rest_framework.exceptions import PermissionDenied
+
+            from apps.core.viewsets import get_empresas_visible
+
+            empresas = get_empresas_visible(user) if user is not None else None
+            if not empresas or not empresas.exists():
+                raise PermissionDenied("El usuario no tiene ninguna empresa visible asignada.")
+            validated_data["empresa"] = empresas.first()
             validated_data["es_generica"] = False
             validated_data["es_publica"] = False
         return super().create(validated_data)
@@ -326,12 +332,19 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get("request")
-        # Forzar empresa si no viene en el payload
-        if request and not validated_data.get("empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and empresas.exists():
-                validated_data["empresa"] = empresas.first()
+        user = getattr(request, "user", None) if request else None
+        # Si no es superusuario, fuerza empresa visible (incluye subsidiarias) y flags privadas
+        if not getattr(user, "es_superusuario_omni", False):
+            from rest_framework.exceptions import PermissionDenied
+
+            from apps.core.viewsets import get_empresas_visible
+
+            empresas = get_empresas_visible(user) if user is not None else None
+            if not empresas or not empresas.exists():
+                raise PermissionDenied("El usuario no tiene ninguna empresa visible asignada.")
+            validated_data["empresa"] = empresas.first()
+            validated_data["es_generico"] = False
+            validated_data["es_publico"] = False
         instance = super().create(validated_data)
         # Logging para depuración
         import logging
@@ -354,12 +367,11 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
-        # Forzar empresa si no viene en el payload
-        if request and not validated_data.get("empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and empresas.exists():
-                validated_data["empresa"] = empresas.first()
+        user = getattr(request, "user", None) if request else None
+        if not getattr(user, "es_superusuario_omni", False):
+            validated_data.pop("empresa", None)
+            validated_data.pop("es_generico", None)
+            validated_data.pop("es_publico", None)
         instance = super().update(instance, validated_data)
         import logging
 
