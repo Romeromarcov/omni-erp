@@ -33,7 +33,7 @@ const TablaProductos: React.FC<TablaProductosProps> = ({ detalles, productos, on
         {detalles.map((det, idx) => {
           const productoObj = productos.find(p => p.id_producto === det.id_producto);
           const nombre = det.producto || productoObj?.nombre_producto || '';
-          const cantidad = D(det.cantidad).toNumber();
+          const cantidad = D(det.cantidad).toString();
           const precio = D(det.precio_unitario);
           const descPorc = D(det.descuento_porcentaje);
           const total = subtotalLinea(det.cantidad, det.precio_unitario, det.descuento_porcentaje);
@@ -118,7 +118,7 @@ const TablaProductos: React.FC<TablaProductosProps> = ({ detalles, productos, on
           {detalles.map((det, idx) => {
             const productoObj = productos.find(p => p.id_producto === det.id_producto);
             const nombre = det.producto || productoObj?.nombre_producto || '';
-            const cantidad = D(det.cantidad).toNumber();
+            const cantidad = D(det.cantidad).toString();
             const precio = D(det.precio_unitario);
             const unidad = '';
             const descPorc = D(det.descuento_porcentaje);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get, fetchBlob } from '../../../services/api';
-import { sumDecimals, subtotalLinea } from '../../../lib/decimal';
+import { sumDecimals, subtotalLinea, toFixedStr } from '../../../lib/decimal';
 import { pagosService } from '../../../services/pagosService';
 import { useParams, useNavigate } from 'react-router-dom';
 import TablaProductos from '../../../components/Pedidos/TablaProductos';
@@ -146,12 +146,12 @@ const FacturaFiscalDetailPage: React.FC = () => {
 
   // FE-HIGH-7: total con aritmética decimal (no Number()*Number()).
   const calcularTotalFactura = () => {
-    if (!factura?.detalles) return 0;
-    return sumDecimals(
+    if (!factura?.detalles) return '0.00';
+    return toFixedStr(sumDecimals(
       factura.detalles.map((d) =>
         subtotalLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje),
       ),
-    ).toNumber();
+    ));
   };
 
   // FE-NEW-1: descargar el PDF vía fetchBlob (envía Authorization desde el token

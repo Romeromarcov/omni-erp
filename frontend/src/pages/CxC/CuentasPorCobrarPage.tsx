@@ -32,11 +32,11 @@ import { useSnackbar } from '../../contexts/feedbackTypes';
 import Pagination from '../../components/Pagination';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../components/ui';
 import type { Column } from '../../components/ui';
+import { D, formatoDecimal, type DecimalInput } from '../../lib/decimal';
 
 const PAGE_SIZE = 20;
 
-const money = (v: string | number) =>
-  `$${parseFloat(String(v)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`;
+const money = (v: DecimalInput) => `$${formatoDecimal(v, 2, 2)}`;
 
 export default function CuentasPorCobrarPage() {
   const queryClient = useQueryClient();
@@ -145,7 +145,7 @@ export default function CuentasPorCobrarPage() {
           size="small"
           variant="contained"
           startIcon={<PaymentsOutlined />}
-          disabled={c.estado === 'pagada' || parseFloat(c.saldo_pendiente) <= 0}
+          disabled={c.estado === 'pagada' || D(c.saldo_pendiente).lte(0)}
           onClick={() => abrirModal(c)}
         >
           Abonar

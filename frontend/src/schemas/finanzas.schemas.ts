@@ -3,6 +3,7 @@
  * Used with react-hook-form + @hookform/resolvers/zod.
  */
 import { z } from 'zod';
+import { parseDecimalSeguro } from './decimal.schemas';
 
 // ── Moneda ────────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,8 @@ export const monedaSchema = z.object({
 });
 
 export type MonedaInput = z.infer<typeof monedaSchema>;
-// zod 4: con z.coerce la entrada del formulario (unknown) difiere de la salida validada.
+// zod 4: `decimales` es un entero discreto con `z.coerce.number()` (las inputs HTML envían string),
+// por lo que la entrada (`unknown`) difiere legítimamente de la salida tipada (`number`).
 export type MonedaFormValues = z.input<typeof monedaSchema>;
 
 // ── Transacción Financiera ─────────────────────────────────────────────────────
@@ -50,7 +52,7 @@ export const transaccionFinancieraSchema = z.object({
   monto: z
     .string()
     .min(1, 'El monto es obligatorio')
-    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, {
+    .refine((v) => parseDecimalSeguro(v)?.gt(0) ?? false, {
       message: 'El monto debe ser mayor a 0',
     }),
   id_moneda: z.string().min(1, 'La moneda es obligatoria'),
@@ -71,7 +73,7 @@ export const registroTransaccionSchema = z.object({
   monto_transaccion: z
     .string()
     .min(1, 'El monto es obligatorio')
-    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, { message: 'El monto debe ser mayor a 0' }),
+    .refine((v) => parseDecimalSeguro(v)?.gt(0) ?? false, { message: 'El monto debe ser mayor a 0' }),
   id_moneda_transaccion: z.string().min(1, 'La moneda de transacción es obligatoria'),
   id_metodo_pago: z.string().min(1, 'El método de pago es obligatorio'),
   referencia_pago: z.string().optional(),

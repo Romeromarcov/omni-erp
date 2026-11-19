@@ -1,4 +1,5 @@
 // ─── Tipos compartidos del módulo ModalPago ───────────────────────────────────
+import type { DecimalInput } from '../../lib/decimal';
 
 export interface MetodoPago {
   id_metodo_pago: string;
@@ -31,12 +32,12 @@ export type MonedaEmpresaActiva = {
 export interface Pago {
   id_metodo_pago: string;
   id_moneda: string;
-  monto: number;
+  monto: string;
   referencia?: string;
-  tasa: number;
+  tasa: string;
   tipo_tasa?: string;
-  monto_base?: number;
-  monto_pais?: number;
+  monto_base?: string;
+  monto_pais?: string;
   observaciones?: string;
   id_caja_fisica?: string;
   id_caja_virtual?: string;
@@ -83,7 +84,7 @@ export interface CajaVirtual {
 export interface NotaCredito {
   id_nota_credito: string;
   numero_nota: string;
-  monto_disponible: number;
+  monto_disponible: string | number;
   id_moneda: string;
   fecha_emision: string;
   fecha_vencimiento?: string;
@@ -112,7 +113,7 @@ export interface Datafono {
 
 export interface ModalPagoProps {
   open: boolean;
-  monto: number;
+  monto: DecimalInput;
   onClose: () => void;
   onConfirm: (
     pagos: Pago[],

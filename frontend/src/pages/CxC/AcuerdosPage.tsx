@@ -5,6 +5,7 @@ import { post } from '../../services/api';
 import { useAcuerdos, useInvalidateCxC } from '../../hooks/useCxC';
 import { calcularCuotasPreview } from '../../utils/cuotasPreview';
 import type { AcuerdoPago, CuotaPreview } from '../../types/cxc';
+import { D, toFixedStr } from '../../lib/decimal';
 import { PageContainer, PageHeader, StatusChip } from '../../components/ui';
 
 const PERIODICIDAD_OPTIONS = ['unico', 'semanal', 'quincenal', 'mensual'] as const;
@@ -50,14 +51,14 @@ export default function AcuerdosPage() {
     monto_cuota: '', porcentaje_abono: '', moneda_codigo: 'USD', observaciones: '',
   });
 
-  const previewCuotas: CuotaPreview[] = form.monto_total && parseFloat(form.monto_total) > 0
+  const previewCuotas: CuotaPreview[] = form.monto_total && D(form.monto_total).gt(0)
     ? calcularCuotasPreview({
         fechaInicio: form.fecha_inicio,
-        plazoTotalDias: parseInt(form.plazo_total_dias) || 30,
+        plazoTotalDias: parseInt(form.plazo_total_dias, 10) || 30,
         periodicidad: form.periodicidad,
-        montoTotal: parseFloat(form.monto_total),
-        montoCuota: form.monto_cuota ? parseFloat(form.monto_cuota) : undefined,
-        porcentajeAbono: form.porcentaje_abono ? parseFloat(form.porcentaje_abono) : undefined,
+        montoTotal: form.monto_total,
+        montoCuota: form.monto_cuota || undefined,
+        porcentajeAbono: form.porcentaje_abono || undefined,
       })
     : [];
 
@@ -67,10 +68,10 @@ export default function AcuerdosPage() {
     try {
       await post('/cobranza/acuerdos/', {
         ...form,
-        monto_total: parseFloat(form.monto_total),
-        plazo_total_dias: parseInt(form.plazo_total_dias),
-        monto_cuota: form.monto_cuota ? parseFloat(form.monto_cuota) : null,
-        porcentaje_abono: form.porcentaje_abono ? parseFloat(form.porcentaje_abono) : null,
+        monto_total: form.monto_total.trim(),
+        plazo_total_dias: parseInt(form.plazo_total_dias, 10),
+        monto_cuota: form.monto_cuota.trim() || null,
+        porcentaje_abono: form.porcentaje_abono.trim() || null,
       });
       setShowWizard(false);
       setStep(0);
@@ -189,7 +190,7 @@ export default function AcuerdosPage() {
                         <TableRow key={c.numero}>
                           <TableCell>{c.numero}</TableCell>
                           <TableCell>{c.fecha_vencimiento}</TableCell>
-                          <TableCell align="right">${c.monto.toFixed(2)}</TableCell>
+                          <TableCell align="right">${c.monto}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -219,7 +220,7 @@ export default function AcuerdosPage() {
               <StatusChip value={ac.estado} colorMap={ESTADO_COLORS} />
             </Box>
             <Typography variant="body2" color="text.secondary">
-              ${parseFloat(ac.monto_total).toFixed(2)} {ac.moneda_codigo} — {PERIODICIDAD_LABELS.get(ac.periodicidad)} — desde {ac.fecha_inicio}
+              ${toFixedStr(ac.monto_total)} {ac.moneda_codigo} — {PERIODICIDAD_LABELS.get(ac.periodicidad)} — desde {ac.fecha_inicio}
             </Typography>
             {/* Timeline de cuotas */}
             {ac.cuotas && ac.cuotas.length > 0 && (

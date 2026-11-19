@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { D, sumDecimals } from '../../lib/decimal';
+import { D, formatoDecimal, sumDecimals } from '../../lib/decimal';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Box, Button, Chip, FormControlLabel, Checkbox, MenuItem, Stack, TextField, Typography } from '@mui/material';
@@ -13,10 +13,10 @@ import { inventarioKeys } from '../../lib/queryKeys';
 type ChipColor = 'error' | 'warning' | 'success';
 
 function stockBadge(stock: StockActual): { label: string; color: ChipColor } {
-  const disponible = parseFloat(stock.cantidad_disponible);
-  const minima = parseFloat(stock.cantidad_minima);
-  if (disponible <= 0) return { label: 'SIN STOCK', color: 'error' };
-  if (minima > 0 && disponible < minima) return { label: 'BAJO', color: 'warning' };
+  const disponible = D(stock.cantidad_disponible);
+  const minima = D(stock.cantidad_minima);
+  if (disponible.lte(0)) return { label: 'SIN STOCK', color: 'error' };
+  if (minima.gt(0) && disponible.lt(minima)) return { label: 'BAJO', color: 'warning' };
   return { label: 'NORMAL', color: 'success' };
 }
 
@@ -44,21 +44,21 @@ const StockActualPage: React.FC = () => {
     const nombre = (s.producto_nombre ?? '').toLowerCase();
     const matchProducto = filtroProducto === '' || nombre.includes(filtroProducto.toLowerCase());
     const matchAlmacen = filtroAlmacen === '' || s.almacen_nombre === filtroAlmacen;
-    const matchAlerta = !soloAlertas || parseFloat(s.cantidad_disponible) < parseFloat(s.cantidad_minima);
+    const matchAlerta = !soloAlertas || D(s.cantidad_disponible).lt(D(s.cantidad_minima));
     return matchProducto && matchAlmacen && matchAlerta;
   });
 
   const totalProductos = productos.length;
-  const totalUnidades = sumDecimals(stockList.map((s) => D(s.cantidad_disponible))).toNumber();
+  const totalUnidades = sumDecimals(stockList.map((s) => s.cantidad_disponible));
 
   const columns: Column<StockActual>[] = [
     { key: 'producto', header: 'Producto', render: (s) => s.producto_nombre ?? s.id_producto },
     { key: 'almacen', header: 'Almacén', render: (s) => s.almacen_nombre ?? '—' },
-    { key: 'disponible', header: 'Disponible', render: (s) => parseFloat(s.cantidad_disponible).toLocaleString() },
-    { key: 'minimo', header: 'Mínimo', render: (s) => parseFloat(s.cantidad_minima).toLocaleString() },
-    { key: 'maximo', header: 'Máximo', render: (s) => parseFloat(s.cantidad_maxima).toLocaleString() },
-    { key: 'comprometido', header: 'Comprometido', render: (s) => parseFloat(s.cantidad_comprometida).toLocaleString() },
-    { key: 'transito', header: 'En tránsito', render: (s) => parseFloat(s.cantidad_en_transito).toLocaleString() },
+    { key: 'disponible', header: 'Disponible', render: (s) => formatoDecimal(s.cantidad_disponible, 0, 4) },
+    { key: 'minimo', header: 'Mínimo', render: (s) => formatoDecimal(s.cantidad_minima, 0, 4) },
+    { key: 'maximo', header: 'Máximo', render: (s) => formatoDecimal(s.cantidad_maxima, 0, 4) },
+    { key: 'comprometido', header: 'Comprometido', render: (s) => formatoDecimal(s.cantidad_comprometida, 0, 4) },
+    { key: 'transito', header: 'En tránsito', render: (s) => formatoDecimal(s.cantidad_en_transito, 0, 4) },
     {
       key: 'estado',
       header: 'Estado',
@@ -88,7 +88,7 @@ const StockActualPage: React.FC = () => {
     <PageContainer>
       <PageHeader
         title="Stock Actual"
-        subtitle={`${totalProductos} productos · ${Math.round(totalUnidades).toLocaleString()} unidades totales`}
+        subtitle={`${totalProductos} productos · ${formatoDecimal(totalUnidades.toDecimalPlaces(0), 0, 0)} unidades totales`}
         actions={
           <>
             <Button variant="outlined" onClick={() => navigate('/inventario')}>Dashboard</Button>

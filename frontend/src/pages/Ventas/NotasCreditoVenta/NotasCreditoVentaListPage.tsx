@@ -10,6 +10,7 @@ import type { PaginatedResponse } from '../../../services/ventas';
 import Pagination from '../../../components/Pagination';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
+import { formatoDecimal } from '../../../lib/decimal';
 
 const PAGE_SIZE = 20;
 
@@ -31,7 +32,7 @@ export default function NotasCreditoVentaListPage() {
     { key: 'fecha', header: t('ventas.tabla.fecha'), render: (n) => new Date(n.fecha_emision).toLocaleDateString() },
     { key: 'motivo', header: t('ventas.notasCredito.tabla.motivo'), render: (n) => n.motivo },
     { key: 'estado', header: t('ventas.tabla.estado'), render: (n) => <StatusChip value={n.estado} /> },
-    { key: 'total', header: t('ventas.notasCredito.tabla.total'), align: 'right', render: (n) => Number(n.monto_total ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2 }) },
+    { key: 'total', header: t('ventas.notasCredito.tabla.total'), align: 'right', render: (n) => formatoDecimal(n.monto_total ?? 0) },
     {
       key: 'acciones',
       header: t('ventas.tabla.acciones'),

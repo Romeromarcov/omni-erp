@@ -195,7 +195,11 @@ describe('PosPage', () => {
     expect(optsNota.headers['Idempotency-Key']).toBeTruthy();
     expect(payload.id_caja).toBe('caja-1');
     expect(payload.id_sucursal).toBe('suc-1');
-    expect((payload.detalles as Array<{ subtotal: number }>)[0].subtotal).toBe(3.3);
+    expect((payload.detalles as Array<Record<string, unknown>>)[0]).toMatchObject({
+      cantidad: '3',
+      precio_unitario: '1.1',
+      subtotal: '3.30',
+    });
 
     expect((await screen.findByTestId('pos-total-cobrar')).textContent).toContain('3.83 VES');
     expect(screen.getByTestId('pos-iva-cobrar').textContent).toContain('0.53');
@@ -225,8 +229,8 @@ describe('PosPage', () => {
     expect(keys[0]).not.toBe(keys[1]);
     expect(llamadas[0][0]).toBe('NOTA_VENTA');
     expect(llamadas[0][1]).toBe('nv-1');
-    expect(llamadas[0][2]).toMatchObject({ monto: 2, id_moneda: 'mon-ves', tasa: 1, id_caja_fisica: 'caja-1' });
-    expect(llamadas[1][2]).toMatchObject({ monto: 0.05, id_moneda: 'mon-usd', tasa: 40 });
+    expect(llamadas[0][2]).toMatchObject({ monto: '2', id_moneda: 'mon-ves', tasa: '1', id_caja_fisica: 'caja-1' });
+    expect(llamadas[1][2]).toMatchObject({ monto: '0.05', id_moneda: 'mon-usd', tasa: '40' });
 
     // Recibo 80mm con total del backend y vuelto.
     const recibo = await screen.findByTestId('pos-recibo');

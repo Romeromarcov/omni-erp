@@ -7,6 +7,7 @@ import { Box, Button, Stack, TextField, Typography } from '@mui/material';
 import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { downloadCsv } from '../../../utils/csv';
+import { toFixedStr } from '../../../lib/decimal';
 
 type MovimientoCaja = {
   id_movimiento: string;
@@ -51,13 +52,13 @@ const CajaMovimientosListPage: React.FC = () => {
     { key: 'fecha', header: 'Fecha', render: (row) => row.fecha_movimiento },
     { key: 'hora', header: 'Hora', render: (row) => row.hora_movimiento },
     { key: 'tipo', header: 'Tipo', render: (row) => row.tipo_movimiento },
-    { key: 'monto', header: 'Monto', align: 'right', render: (row) => Number(row.monto).toFixed(2) },
+    { key: 'monto', header: 'Monto', align: 'right', render: (row) => toFixedStr(row.monto) },
     { key: 'moneda', header: 'Moneda', render: (row) => row.moneda_codigo_iso || '-' },
     { key: 'concepto', header: 'Concepto', render: (row) => row.concepto },
     { key: 'referencia', header: 'Referencia', render: (row) => row.referencia },
     { key: 'caja', header: 'Caja', render: (row) => row.caja_nombre || '-' },
-    { key: 'saldo_anterior', header: 'Saldo Anterior', align: 'right', render: (row) => Number(row.saldo_anterior).toFixed(2) },
-    { key: 'saldo_nuevo', header: 'Saldo Nuevo', align: 'right', render: (row) => Number(row.saldo_nuevo).toFixed(2) },
+    { key: 'saldo_anterior', header: 'Saldo Anterior', align: 'right', render: (row) => toFixedStr(row.saldo_anterior) },
+    { key: 'saldo_nuevo', header: 'Saldo Nuevo', align: 'right', render: (row) => toFixedStr(row.saldo_nuevo) },
     { key: 'usuario', header: 'Usuario', render: (row) => row.usuario_registro_username || '-' },
   ];
 

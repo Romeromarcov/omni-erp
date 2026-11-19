@@ -2,14 +2,15 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import ResumenPago from '../components/Pedidos/ResumenPago';
 import type { Moneda } from '../components/Pedidos/types';
+import { D, type DecimalInput } from '../lib/decimal';
 
 const USD: Moneda = { id_moneda: 'usd', nombre: 'Dólar', codigo_iso: 'USD', es_base: true };
 const VES: Moneda = { id_moneda: 'ves', nombre: 'Bolívar', codigo_iso: 'VES', es_pais: true };
 
 // Misma regla que ModalPago: diferencia positiva dentro de tolerancia,
 // negativa solo si se permite.
-const aceptable = (tolerancia: number, permitirNegativas: boolean) => (d: number) =>
-  d > 0 ? d <= tolerancia : permitirNegativas;
+const aceptable = (tolerancia: DecimalInput, permitirNegativas: boolean) => (d: DecimalInput) =>
+  D(d).gt(0) ? D(d).lte(D(tolerancia)) : permitirNegativas;
 
 function renderResumen(overrides: Partial<React.ComponentProps<typeof ResumenPago>> = {}) {
   const props: React.ComponentProps<typeof ResumenPago> = {

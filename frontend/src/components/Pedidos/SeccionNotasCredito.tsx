@@ -3,6 +3,7 @@ import { Box, Typography, List, ListItem, ListItemText, Button, Card, CardConten
 import type { NotaCredito, Moneda } from './types';
 import SectionTitle from '../ui/SectionTitle';
 import StatusChip from '../ui/StatusChip';
+import { D, sumDecimals, toFixedStr, type DecimalInput } from '../../lib/decimal';
 
 interface SeccionNotasCreditoProps {
   notasCredito: NotaCredito[];
@@ -10,7 +11,7 @@ interface SeccionNotasCreditoProps {
   monedas: Moneda[];
   monedaBase: Moneda | undefined;
   monedaPais: Moneda | undefined;
-  tasaBCV: number;
+  tasaBCV: DecimalInput;
   onToggle: (nota: NotaCredito) => void;
 }
 
@@ -30,13 +31,16 @@ const SeccionNotasCredito: React.FC<SeccionNotasCreditoProps> = ({
 }) => {
   if (notasCredito.length === 0) return null;
 
-  const totalSeleccionadoBase = notasCreditoSeleccionadas.reduce((total, nota) => {
-    const tasaConversion =
-      nota.id_moneda === monedaBase?.id_moneda ? 1
-      : nota.id_moneda === _monedaPais?.id_moneda ? 1 / _tasaBCV
-      : _tasaBCV;
-    return total + nota.monto_disponible * tasaConversion;
-  }, 0);
+  const tasaBcvDec = D(_tasaBCV);
+  const totalSeleccionadoBase = sumDecimals(
+    notasCreditoSeleccionadas.map((nota) => {
+      const tasaConversion =
+        nota.id_moneda === monedaBase?.id_moneda ? D(1)
+        : nota.id_moneda === _monedaPais?.id_moneda ? (tasaBcvDec.isZero() ? D(0) : D(1).dividedBy(tasaBcvDec))
+        : tasaBcvDec;
+      return D(nota.monto_disponible).times(tasaConversion);
+    }),
+  );
 
   return (
     <Card
@@ -75,7 +79,7 @@ const SeccionNotasCredito: React.FC<SeccionNotasCreditoProps> = ({
                 }
               >
                 <ListItemText
-                  primary={`${nota.numero_nota} — ${codigoMoneda} ${nota.monto_disponible.toFixed(2)}`}
+                  primary={`${nota.numero_nota} — ${codigoMoneda} ${toFixedStr(nota.monto_disponible)}`}
                   secondary={[
                     `Emisión: ${new Date(nota.fecha_emision).toLocaleDateString()}`,
                     nota.fecha_vencimiento
@@ -91,7 +95,7 @@ const SeccionNotasCredito: React.FC<SeccionNotasCreditoProps> = ({
 
         {notasCreditoSeleccionadas.length > 0 && (
           <Typography variant="body2" color="primary" sx={{ mt: 1.5, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-            Total aplicado: {monedaBase?.codigo_iso} {totalSeleccionadoBase.toFixed(2)}
+            Total aplicado: {monedaBase?.codigo_iso} {toFixedStr(totalSeleccionadoBase)}
           </Typography>
         )}
       </CardContent>

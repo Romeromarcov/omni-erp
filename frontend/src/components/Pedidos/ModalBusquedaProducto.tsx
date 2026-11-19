@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import ModalBusqueda from '../ModalBusqueda';
 import type { Producto } from '../../services/productosService';
+import { toFixedStr } from '../../lib/decimal';
+import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 import { Box, Button, Typography } from '@mui/material';
 
 interface ModalBusquedaProductoProps {
@@ -39,7 +41,7 @@ const ModalBusquedaProducto: React.FC<ModalBusquedaProductoProps> = ({ open, pro
               {prod.nombre_producto}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              SKU: {prod.sku} | Precio: {typeof prod.precio_venta_sugerido === 'number' ? prod.precio_venta_sugerido.toFixed(2) : 'N/A'}
+              SKU: {prod.sku} | Precio: {prod.precio_venta_sugerido !== undefined && prod.precio_venta_sugerido !== null && parseDecimalSeguro(prod.precio_venta_sugerido) ? toFixedStr(prod.precio_venta_sugerido) : 'N/A'}
             </Typography>
           </Box>
           <Button

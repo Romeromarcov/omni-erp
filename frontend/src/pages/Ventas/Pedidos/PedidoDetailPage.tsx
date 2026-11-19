@@ -10,7 +10,7 @@ import type { PedidoDetalleForm } from '../../../components/Pedidos/TablaProduct
 import LineasProductoTabla from '../../../components/Pedidos/LineasProductoTabla';
 import type { ColumnDef } from '../../../hooks/useColumnVisibility';
 import ResumenTotales from '../../../components/Pedidos/ResumenTotales';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, sumDecimals, toFixedStr } from '../../../lib/decimal';
 import { fetchProductos } from '../../../services/productosService';
 import { mensajeDeError, toList } from '../../../utils/api';
 import { almacenesKeys, cxcKeys, inventarioKeys, pagosKeys, pedidosKeys } from '../../../lib/queryKeys';
@@ -79,7 +79,7 @@ const LINE_COLUMNS: ColumnDef<PedidoDetalle>[] = [
     always: true,
     render: (d) => (typeof d.id_producto === 'object' && d.id_producto ? d.id_producto.nombre_producto : '—'),
   },
-  { key: 'cantidad', label: 'Cantidad', align: 'right', defaultVisible: true, render: (d) => D(d.cantidad).toNumber() },
+  { key: 'cantidad', label: 'Cantidad', align: 'right', defaultVisible: true, render: (d) => D(d.cantidad).toString() },
   {
     key: 'precio',
     label: 'Precio unit.',
@@ -235,10 +235,10 @@ const PedidoDetailPage: React.FC = () => {
   };
 
   const calcularTotalPedido = () => {
-    if (!pedido?.detalles) return 0;
-    return sumDecimals(
+    if (!pedido?.detalles) return '0.00';
+    return toFixedStr(sumDecimals(
       pedido.detalles.map((detalle) => D(detalle.precio_unitario).times(D(detalle.cantidad)))
-    ).toNumber();
+    ));
   };
 
   return (

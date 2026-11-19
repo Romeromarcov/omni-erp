@@ -37,6 +37,7 @@ import { fetchMonedas } from '../../services/monedas';
 import { listasPrecioKeys } from '../../lib/queryKeys';
 import { getEmpresaId } from '../../utils/empresa';
 import { mensajeDeError } from '../../utils/api';
+import { D } from '../../lib/decimal';
 
 interface FormState {
   nombre: string;
@@ -480,7 +481,7 @@ const DetalleListaPrecio: React.FC<DetalleListaPrecioProps> = ({ lista, empresaI
             >
               <Typography variant="body2">
                 {nombreProducto(d.id_producto)} · {d.precio}
-                {Number(d.precio_minimo) > 0 ? ` · mín. ${d.precio_minimo}` : ''}
+                {D(d.precio_minimo).gt(0) ? ` · mín. ${d.precio_minimo}` : ''}
                 {d.activo ? '' : ' · Inactivo'}
               </Typography>
               <Stack direction="row" spacing={0.5}>

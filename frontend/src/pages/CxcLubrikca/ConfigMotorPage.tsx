@@ -31,6 +31,8 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import { cxcLubrikcaService } from '../../services/cxcLubrikcaService';
 import { cxcLubrikcaKeys } from '../../lib/queryKeys';
+import { formatoDecimal } from '../../lib/decimal';
+import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 import {
   descuentoMarcaSchema,
   descuentoBcvSchema,
@@ -101,9 +103,10 @@ const TIPO_TASA_OPTS = [
 const str = (v: unknown): string => (v == null ? '—' : String(v));
 // Fracción string → "%": 0.03 → "3%".
 const pct = (v: unknown): string => {
-  const n = parseFloat(String(v ?? '0'));
-  if (Number.isNaN(n)) return '—';
-  return `${(n * 100).toLocaleString('es-VE', { maximumFractionDigits: 4 })}%`;
+  const raw = v ?? '0';
+  const d = typeof raw === 'string' || typeof raw === 'number' ? parseDecimalSeguro(raw) : null;
+  if (!d) return '—';
+  return `${formatoDecimal(d.times(100), 0, 4)}%`;
 };
 const boolChip = (v: unknown) => <StatusChip value={Boolean(v)} />;
 

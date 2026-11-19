@@ -122,16 +122,21 @@ test.describe('Fiscal: Libro de Ventas SENIAT (compliance VE)', () => {
       await expect(fila).toBeVisible();
       await expect(fila.getByText(numeroControl)).toBeVisible();
 
-      // Formato exacto que renderiza la página (fmt = toLocaleString por defecto),
-      // evaluado en el MISMO runtime del navegador para no acoplarse a un locale.
-      const baseFmt = await page.evaluate((n: number) =>
-        n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        Number(baseImponible),
-      );
-      const ivaFmt = await page.evaluate((n: number) =>
-        n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        Number(montoIva),
-      );
+      // Formato exacto que renderiza la página (`formatoDecimal` → `'es-VE'`, 2 decimales),
+      // evaluado en el MISMO runtime del navegador con locale `'es-VE'` explícito para que
+      // coincida tanto en desarrollo como en runners Linux/CI (`ubuntu-24.04` en-US).
+      const formatVe = (valor: string | number) =>
+        page.evaluate(
+          (v: number) =>
+            new Intl.NumberFormat('es-VE', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+              useGrouping: true,
+            }).format(v),
+          Number(valor),
+        );
+      const baseFmt = await formatVe(baseImponible);
+      const ivaFmt = await formatVe(montoIva);
       await expect(fila.getByText(baseFmt, { exact: true })).toBeVisible();
       await expect(fila.getByText(ivaFmt, { exact: true })).toBeVisible();
     });
@@ -154,9 +159,14 @@ test.describe('Fiscal: Libro de Ventas SENIAT (compliance VE)', () => {
       // El total de IVA del libro incluye (≥) el IVA de la factura sembrada.
       expect(ivaTotalLibro).toBeGreaterThanOrEqual(Number(montoIva));
 
-      // Y la UI muestra ese mismo total de IVA en el KPI (formato del runtime).
-      const ivaUi = await page.evaluate((n: number) =>
-        n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      // Y la UI muestra ese mismo total de IVA en el KPI (locale `'es-VE'` explícito).
+      const ivaUi = await page.evaluate(
+        (n: number) =>
+          new Intl.NumberFormat('es-VE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+            useGrouping: true,
+          }).format(n),
         ivaTotalLibro,
       );
       await expect(page.getByText(ivaUi).first()).toBeVisible();

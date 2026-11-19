@@ -7,6 +7,7 @@
  */
 import React, { useState } from 'react';
 import { prediccionesService, type SugerenciaActiva } from '../services/agentesService';
+import { formatoDecimal } from '../lib/decimal';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -135,7 +136,7 @@ const SugerenciasWidget: React.FC = () => {
                 />
                 {s.monto && (
                   <Chip
-                    label={`$${Number(s.monto).toLocaleString()}`}
+                    label={`$${formatoDecimal(s.monto, 0, 2, 'en-US')}`}
                     size="small"
                     variant="outlined"
                     color="warning"

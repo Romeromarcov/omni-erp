@@ -58,8 +58,8 @@ describe('useModalPagoData — tasa BCV', () => {
     await waitFor(() => expect(result.current.tasaBCVError).not.toBeNull());
     expect(result.current.tasaBCVError?.message).toBe('BCV caído');
     expect(result.current.tasaBCVNoDisponible).toBe(true);
-    // Cae al valor por defecto seguro de 1 cuando no hay tasa.
-    expect(result.current.tasaBCV).toBe(1);
+    // Cae al valor por defecto seguro de '1' cuando no hay tasa.
+    expect(result.current.tasaBCV).toBe('1');
   });
 
   it('expone la tasa y no bloquea el submit cuando la carga es exitosa', async () => {
@@ -74,7 +74,7 @@ describe('useModalPagoData — tasa BCV', () => {
     const { result } = renderHook(() => useModalPagoData({ empresaId: 'emp-1' }), { wrapper });
 
     await waitFor(() => expect(result.current.tasaBCVLoading).toBe(false));
-    expect(result.current.tasaBCV).toBe(36.5);
+    expect(result.current.tasaBCV).toBe('36.50');
     expect(result.current.tasaBCVError).toBeNull();
     expect(result.current.tasaBCVNoDisponible).toBe(false);
   });

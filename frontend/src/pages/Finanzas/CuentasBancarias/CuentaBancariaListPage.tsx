@@ -5,6 +5,7 @@ import { getCuentasBancarias } from '../../../services/cuentaBancariaService';
 import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
+import { toFixedStr } from '../../../lib/decimal';
 
 type CuentaBancaria = {
   id_cuenta_bancaria: string;
@@ -12,7 +13,7 @@ type CuentaBancaria = {
   numero_cuenta: string;
   tipo_cuenta: string;
   moneda_codigo_iso: string;
-  saldo_actual: number;
+  saldo_actual: number | string;
   activo: boolean;
 };
 
@@ -84,7 +85,7 @@ const CuentaBancariaListPage: React.FC = () => {
                 <TableCell>{row.numero_cuenta}</TableCell>
                 <TableCell>{row.tipo_cuenta}</TableCell>
                 <TableCell>{row.moneda_codigo_iso}</TableCell>
-                <TableCell align="right">{Number(row.saldo_actual).toFixed(2)}</TableCell>
+                <TableCell align="right">{toFixedStr(row.saldo_actual)}</TableCell>
                 <TableCell align="center"><StatusChip value={row.activo} /></TableCell>
                 <TableCell align="center">
                   <Stack direction="row" spacing={1} justifyContent="center">

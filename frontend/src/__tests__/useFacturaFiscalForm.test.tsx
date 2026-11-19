@@ -73,7 +73,7 @@ const DETALLE = {
   comentarios: '',
 };
 
-const PAGO: Pago = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: 30.3, tasa: 1 };
+const PAGO: Pago = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: '30.3', tasa: '1' };
 
 const VALUES: FacturaFiscalFormInput = {
   numero_factura: '',
@@ -114,12 +114,38 @@ describe('useFacturaFiscalForm.submitFacturaFiscal', () => {
     expect(payload).not.toHaveProperty('numero_factura');
     expect(payload.id_cliente).toEqual({ id_cliente: 'cli-1' });
     const detalles = payload.detalles as Array<Record<string, unknown>>;
-    // 3 × 10.10 = 30.30 exacto (decimal.js, sin error binario).
-    expect(detalles[0].subtotal).toBe('30.30');
+    // 3 × 10.10 = 30.30 exacto (decimal.js, sin error binario) y campos como string decimal.
+    expect(detalles[0]).toMatchObject({
+      id_producto: 'p1',
+      cantidad: '3',
+      precio_unitario: '10.10',
+      descuento_porcentaje: '0',
+      subtotal: '30.30',
+    });
     expect(createPagoDocumentoMock).toHaveBeenCalledWith('FACTURA_FISCAL', 'ff-1', PAGO);
     expect(result.current.numeroFacturaCreado).toBe('FF-1');
     expect(result.current.success).toMatch(/creada exitosamente.*FF-1/i);
     expect(result.current.getValues('detalles')).toEqual([]);
+  });
+
+  it('preserva cantidades decimales exactas (0.30 sin deriva de flotante)', async () => {
+    const { result } = renderHook(() => useFacturaFiscalForm(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.submitFacturaFiscal({
+        ...VALUES,
+        detalles: [{ ...DETALLE, cantidad: '3', precio_unitario: '0.1', descuento_porcentaje: '' }],
+      });
+    });
+
+    const [payload] = facturaCreateMock.mock.calls[0] as [Record<string, unknown>];
+    const detalles = payload.detalles as Array<Record<string, unknown>>;
+    expect(detalles[0]).toMatchObject({
+      cantidad: '3',
+      precio_unitario: '0.1',
+      descuento_porcentaje: '0',
+      subtotal: '0.30',
+    });
   });
 
   it('avisa cuando la factura se crea pero los pagos fallan', async () => {

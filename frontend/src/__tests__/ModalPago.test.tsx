@@ -14,8 +14,8 @@ interface HookData {
   metodos: MetodoPago[];
   monedas: Moneda[];
   cajas: CajaVirtual[];
-  tasaBCV: number;
-  toleranciaPositiva: number;
+  tasaBCV: string;
+  toleranciaPositiva: string;
   permitirNegativas: boolean;
   notasCredito: NotaCredito[];
   cuentasBancarias: CuentaBancaria[];
@@ -59,8 +59,8 @@ function baseHookData(): HookData {
     metodos: METODOS,
     monedas: MONEDAS,
     cajas: CAJAS,
-    tasaBCV: 10,
-    toleranciaPositiva: 0.5,
+    tasaBCV: '10',
+    toleranciaPositiva: '0.5',
     permitirNegativas: true,
     notasCredito: [],
     cuentasBancarias: CUENTAS,
@@ -167,9 +167,9 @@ describe('ModalPago — agregar pagos y conversiones de dinero', () => {
       id_metodo_pago: 'efe',
       id_moneda: 'ves',
       moneda: 'VES',
-      monto: 1000,
-      monto_base: 100,
-      monto_pais: 1000,
+      monto: '1000',
+      monto_base: '100',
+      monto_pais: '1000',
       id_caja_virtual: 'cv1',
     });
     expect(vueltos).toBeUndefined();
@@ -186,6 +186,22 @@ describe('ModalPago — agregar pagos y conversiones de dinero', () => {
 
     expect(snackbar.warning).not.toHaveBeenCalled();
     expect(screen.getByText(/Monto: USD 100\.00 \| Base: USD 100\.00 \| País: VES 1000\.00/)).toBeInTheDocument();
+  });
+
+  it('suma pagos decimales sin deriva binaria (0.1 + 0.2 === 0.30 exacto)', async () => {
+    const user = userEvent.setup();
+    const props = renderModal({ monto: '0.30' });
+
+    await seleccionarMetodoYMoneda('Transferencia', 'USD', '0.1');
+    await user.click(screen.getByRole('button', { name: /agregar/i }));
+    await seleccionarMetodoYMoneda('Transferencia', 'USD', '0.2');
+    await user.click(screen.getByRole('button', { name: /agregar/i }));
+
+    await user.click(screen.getByRole('button', { name: /confirmar pagos/i }));
+    expect(props.onConfirm).toHaveBeenCalledTimes(1);
+    const [pagos] = (props.onConfirm as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(pagos[0]).toMatchObject({ monto: '0.1', monto_base: '0.1' });
+    expect(pagos[1]).toMatchObject({ monto: '0.2', monto_base: '0.2' });
   });
 
   it('permite eliminar un pago agregado', async () => {
@@ -309,8 +325,8 @@ describe('ModalPago — vuelto', () => {
     expect(vueltos[0]).toMatchObject({
       id_metodo_pago: 'efectivo',
       id_moneda: 'VES',
-      tasa: 10,
-      monto: 5, // 50 USD disponibles / tasa de vuelto 10 (comportamiento actual)
+      tasa: '10',
+      monto: '5', // 50 USD disponibles / tasa de vuelto 10
       referencia: 'Vuelto automático',
     });
   });
@@ -371,7 +387,7 @@ describe('ModalPago — tasa BCV no disponible', () => {
   it('muestra el error de tasa y deshabilita la confirmación', async () => {
     hookData = {
       ...baseHookData(),
-      tasaBCV: 1,
+      tasaBCV: '1',
       tasaBCVError: new Error('BCV caído'),
       tasaBCVNoDisponible: true,
     };

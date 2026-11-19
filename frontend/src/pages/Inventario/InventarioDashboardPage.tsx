@@ -9,15 +9,16 @@ import ScaleOutlined from '@mui/icons-material/ScaleOutlined';
 import { stockActualService, productoInventarioService } from '../../services/inventarioService';
 import type { StockActual } from '../../services/inventarioService';
 import { inventarioKeys } from '../../lib/queryKeys';
+import { D, formatoDecimal, sumDecimals } from '../../lib/decimal';
 import { PageContainer, PageHeader, KpiCard, DataTable } from '../../components/ui';
 import type { Column } from '../../components/ui';
 
 function stockLevel(stock: StockActual): 'critico' | 'bajo' | 'normal' {
-  const disponible = parseFloat(stock.cantidad_disponible);
-  const minima = parseFloat(stock.cantidad_minima);
-  if (minima <= 0) return 'normal';
-  if (disponible <= 0) return 'critico';
-  if (disponible < minima) return 'bajo';
+  const disponible = D(stock.cantidad_disponible);
+  const minima = D(stock.cantidad_minima);
+  if (minima.lte(0)) return 'normal';
+  if (disponible.lte(0)) return 'critico';
+  if (disponible.lt(minima)) return 'bajo';
   return 'normal';
 }
 
@@ -42,18 +43,14 @@ const InventarioDashboardPage: React.FC = () => {
   const totalSKUs = productos.length;
   const alertas = stockList.filter((s) => stockLevel(s) !== 'normal');
   const criticos = stockList.filter((s) => stockLevel(s) === 'critico');
-  const valorTotal = stockList.reduce((sum, s) => {
-    const cantidad = parseFloat(s.cantidad_disponible);
-    // If we had unit cost, we'd multiply; use available qty as proxy
-    return sum + (isNaN(cantidad) ? 0 : cantidad);
-  }, 0);
+  const valorTotal = sumDecimals(stockList.map((s) => s.cantidad_disponible));
 
   const columns: Column<StockActual>[] = [
     { key: 'producto', header: 'Producto', render: (s) => s.producto_nombre ?? s.id_producto },
     { key: 'almacen', header: 'Almacén', render: (s) => s.almacen_nombre ?? '—' },
-    { key: 'disponible', header: 'Disponible', render: (s) => parseFloat(s.cantidad_disponible).toLocaleString() },
-    { key: 'minimo', header: 'Mínimo', render: (s) => parseFloat(s.cantidad_minima).toLocaleString() },
-    { key: 'comprometido', header: 'Comprometido', render: (s) => parseFloat(s.cantidad_comprometida).toLocaleString() },
+    { key: 'disponible', header: 'Disponible', render: (s) => formatoDecimal(s.cantidad_disponible, 0, 4) },
+    { key: 'minimo', header: 'Mínimo', render: (s) => formatoDecimal(s.cantidad_minima, 0, 4) },
+    { key: 'comprometido', header: 'Comprometido', render: (s) => formatoDecimal(s.cantidad_comprometida, 0, 4) },
     {
       key: 'estado',
       header: 'Estado',
@@ -109,7 +106,7 @@ const InventarioDashboardPage: React.FC = () => {
             />
             <KpiCard
               label="Unidades totales"
-              value={Math.round(valorTotal).toLocaleString()}
+              value={formatoDecimal(valorTotal.toDecimalPlaces(0), 0, 0)}
               icon={<ScaleOutlined />}
               tone="tint"
               caption="Suma de cantidades disponibles"

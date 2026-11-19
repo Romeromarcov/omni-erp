@@ -2,17 +2,18 @@ import React from 'react';
 import { Box, Typography, Button, FormControl, InputLabel, Select, MenuItem, TextField, Card, CardContent } from '@mui/material';
 import type { Pago, Moneda } from './types';
 import SectionTitle from '../ui/SectionTitle';
+import { D, toFixedStr, type DecimalInput } from '../../lib/decimal';
 
 interface SeccionVueltoProps {
-  vueltoDisponible: number;
+  vueltoDisponible: DecimalInput;
   mostrarVueltos: boolean;
   vuelto: Pago | null;
   monedas: Moneda[];
   monedaBase: Moneda | undefined;
   onConfigurar: () => void;
   onMonedaChange: (monedaId: string) => void;
-  onMontoChange: (monto: number) => void;
-  onTasaChange: (tasa: number) => void;
+  onMontoChange: (monto: string) => void;
+  onTasaChange: (tasa: string) => void;
   onConfirmarVuelto: () => void;
   onCancelar: () => void;
 }
@@ -35,7 +36,7 @@ const SeccionVuelto: React.FC<SeccionVueltoProps> = ({
   onConfirmarVuelto,
   onCancelar,
 }) => {
-  if (vueltoDisponible <= 0) return null;
+  if (D(vueltoDisponible).lte(0)) return null;
 
   return (
     <Card
@@ -53,7 +54,7 @@ const SeccionVuelto: React.FC<SeccionVueltoProps> = ({
       <CardContent sx={{ p: { xs: 2, md: 2.5 }, '&:last-child': { pb: { xs: 2, md: 2.5 } } }}>
         <SectionTitle>
           <Typography component="span" color="warning.dark" sx={{ fontWeight: 700, fontSize: 15 }}>
-            Vuelto disponible: {monedaBase?.codigo_iso} {vueltoDisponible.toFixed(2)}
+            Vuelto disponible: {monedaBase?.codigo_iso} {toFixedStr(vueltoDisponible)}
           </Typography>
         </SectionTitle>
 
@@ -85,8 +86,8 @@ const SeccionVuelto: React.FC<SeccionVueltoProps> = ({
             <TextField
               label="Monto"
               type="number"
-              value={vuelto?.monto ?? 0}
-              onChange={e => onMontoChange(Number(e.target.value))}
+              value={vuelto?.monto ?? '0'}
+              onChange={e => onMontoChange(e.target.value)}
               size="small"
               sx={{ width: 120 }}
             />
@@ -94,8 +95,8 @@ const SeccionVuelto: React.FC<SeccionVueltoProps> = ({
             <TextField
               label="Tasa"
               type="number"
-              value={vuelto?.tasa ?? 1}
-              onChange={e => onTasaChange(Number(e.target.value))}
+              value={vuelto?.tasa ?? '1'}
+              onChange={e => onTasaChange(e.target.value)}
               size="small"
               sx={{ width: 100 }}
             />

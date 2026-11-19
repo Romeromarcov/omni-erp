@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { D, sumDecimals } from '../../lib/decimal';
+import { D, formatoDecimal, sumDecimals } from '../../lib/decimal';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Box, Button, Chip, Stack, TextField, Typography } from '@mui/material';
@@ -59,11 +59,11 @@ const KardexPage: React.FC = () => {
   // Running totals for entrada/salida columns
   const totalEntradas = sumDecimals(
     movimientos.filter((m) => ENTRADAS.has(m.tipo_movimiento)).map((m) => D(m.cantidad).abs()),
-  ).toNumber();
+  );
 
   const totalSalidas = sumDecimals(
     movimientos.filter((m) => SALIDAS.has(m.tipo_movimiento)).map((m) => D(m.cantidad).abs()),
-  ).toNumber();
+  );
 
   const columns: Column<MovimientoInventario>[] = [
     { key: 'fecha', header: 'Fecha', render: (m) => new Date(m.fecha_hora_movimiento).toLocaleString() },
@@ -83,7 +83,7 @@ const KardexPage: React.FC = () => {
         const sign = isEntrada ? '+' : isSalida ? '-' : '±';
         return (
           <Typography component="span" sx={{ fontWeight: 700, color }}>
-            {sign}{Math.abs(parseFloat(m.cantidad)).toLocaleString()}
+            {sign}{formatoDecimal(D(m.cantidad).abs(), 0, 4)}
           </Typography>
         );
       },
@@ -95,7 +95,7 @@ const KardexPage: React.FC = () => {
       header: 'Costo unit.',
       render: (m) =>
         m.costo_unitario_movimiento
-          ? parseFloat(m.costo_unitario_movimiento).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+          ? formatoDecimal(m.costo_unitario_movimiento, 2, 4)
           : '—',
     },
     { key: 'observaciones', header: 'Observaciones', render: (m) => m.observaciones ?? '—' },
@@ -139,13 +139,13 @@ const KardexPage: React.FC = () => {
 
       {/* Summary cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
-        <KpiCard label="Total entradas" value={totalEntradas.toLocaleString()} icon={<TrendingUpOutlined />} tone="success" />
-        <KpiCard label="Total salidas" value={totalSalidas.toLocaleString()} icon={<TrendingDownOutlined />} tone="error" emphasizeError />
+        <KpiCard label="Total entradas" value={formatoDecimal(totalEntradas, 0, 4)} icon={<TrendingUpOutlined />} tone="success" />
+        <KpiCard label="Total salidas" value={formatoDecimal(totalSalidas, 0, 4)} icon={<TrendingDownOutlined />} tone="error" emphasizeError />
         <KpiCard
           label="Saldo neto"
-          value={(totalEntradas - totalSalidas).toLocaleString()}
+          value={formatoDecimal(totalEntradas.minus(totalSalidas), 0, 4)}
           icon={<AccountBalanceOutlined />}
-          tone={totalEntradas >= totalSalidas ? 'brand' : 'warning'}
+          tone={totalEntradas.gte(totalSalidas) ? 'brand' : 'warning'}
         />
       </Box>
 

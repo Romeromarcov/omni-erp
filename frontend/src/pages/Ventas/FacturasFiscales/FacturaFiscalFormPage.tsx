@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Controller } from 'react-hook-form';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, sumDecimals, toFixedStr } from '../../../lib/decimal';
 import type { Pago, NotaCredito } from '../../../components/Pedidos/ModalPago';
 import { useNavigate, useParams } from 'react-router-dom';
 import ModalBusquedaProducto from '../../../components/Pedidos/ModalBusquedaProducto';
@@ -307,7 +307,7 @@ const FacturaFiscalFormPage: React.FC = () => {
       />
       <ModalPago
         open={showPagoModal}
-        monto={sumDecimals(detalles.map((d: { precio_unitario?: string; cantidad?: string }) => D(d.precio_unitario).times(D(d.cantidad)))).toNumber()}
+        monto={toFixedStr(sumDecimals(detalles.map((d: { precio_unitario?: string; cantidad?: string }) => D(d.precio_unitario).times(D(d.cantidad)))))}
         onClose={() => setShowPagoModal(false)}
         onConfirm={handleConfirmPago}
         empresaId={idEmpresa || localStorage.getItem('id_empresa') || ''}

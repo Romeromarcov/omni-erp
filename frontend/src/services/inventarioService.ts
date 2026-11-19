@@ -1,4 +1,5 @@
 import { get, post, patch, del } from './api';
+import { D } from '../lib/decimal';
 import { toList, type PaginatedResponse } from '../utils/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -129,10 +130,10 @@ export interface AjusteInventarioPayload {
   id_almacen_destino?: string;
   id_almacen_origen?: string;
   tipo_movimiento: 'AJUSTE';
-  cantidad: number;
+  cantidad: string;
   fecha_hora_movimiento: string;
   observaciones?: string;
-  costo_unitario_movimiento?: number;
+  costo_unitario_movimiento?: string;
 }
 
 // Normalización de respuestas paginadas: ver `toList` en utils/api.
@@ -164,7 +165,7 @@ export const stockActualService = {
   getBajoMinimo: async (empresaId?: string): Promise<StockActual[]> => {
     const all = await stockActualService.getAll(empresaId ? { empresa: empresaId } : undefined);
     return all.filter(
-      (s) => parseFloat(s.cantidad_disponible) < parseFloat(s.cantidad_minima) && parseFloat(s.cantidad_minima) > 0
+      (s) => D(s.cantidad_disponible).lessThan(D(s.cantidad_minima)) && D(s.cantidad_minima).greaterThan(0)
     );
   },
 };

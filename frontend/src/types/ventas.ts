@@ -4,13 +4,13 @@ export interface DetallePedido {
   id_pedido?: string;
   id_producto: string;
   id_variante?: string;
-  cantidad: number;
-  precio_unitario: number;
-  descuento_porcentaje: number;
-  descuento_monto?: number;
-  subtotal: number;
-  monto_impuesto?: number;
-  total_linea?: number;
+  cantidad: string;
+  precio_unitario: string;
+  descuento_porcentaje: string;
+  descuento_monto?: string;
+  subtotal: string;
+  monto_impuesto?: string;
+  total_linea?: string;
   observaciones?: string;
   sku?: string;
   producto?: string;
@@ -39,10 +39,10 @@ export interface Pedido {
   observaciones?: string;
   condiciones_comerciales?: string;
   detalles: DetallePedido[];
-  monto_total?: number;
-  monto_impuesto?: number;
-  monto_descuento?: number;
-  subtotal?: number;
+  monto_total?: string;
+  monto_impuesto?: string;
+  monto_descuento?: string;
+  subtotal?: string;
   // Props para integración
   convertido_a_nota_venta?: boolean;
   id_cotizacion_origen?: string;
@@ -53,13 +53,13 @@ export interface DetalleNotaVenta {
   id_nota_venta?: string;
   id_producto: string;
   id_variante?: string;
-  cantidad: number;
-  precio_unitario: number;
-  descuento_porcentaje: number;
-  descuento_monto?: number;
-  subtotal: number;
-  monto_impuesto?: number;
-  total_linea?: number;
+  cantidad: string;
+  precio_unitario: string;
+  descuento_porcentaje: string;
+  descuento_monto?: string;
+  subtotal: string;
+  monto_impuesto?: string;
+  total_linea?: string;
   observaciones?: string;
   sku?: string;
   producto?: string;
@@ -88,10 +88,10 @@ export interface NotaVenta {
   observaciones?: string;
   condiciones_comerciales?: string;
   detalles: DetalleNotaVenta[];
-  monto_total?: number;
-  monto_impuesto?: number;
-  monto_descuento?: number;
-  subtotal?: number;
+  monto_total?: string;
+  monto_impuesto?: string;
+  monto_descuento?: string;
+  subtotal?: string;
   // Props para integración
   convertido_a_factura?: boolean;
   id_pedido_origen?: string;
@@ -105,13 +105,13 @@ export interface DetalleCotizacion {
   id_cotizacion?: string;
   id_producto: string;
   id_variante?: string;
-  cantidad: number;
-  precio_unitario: number;
-  descuento_porcentaje: number;
-  descuento_monto?: number;
-  subtotal: number;
-  monto_impuesto?: number;
-  total_linea?: number;
+  cantidad: string;
+  precio_unitario: string;
+  descuento_porcentaje: string;
+  descuento_monto?: string;
+  subtotal: string;
+  monto_impuesto?: string;
+  total_linea?: string;
   observaciones?: string;
   sku?: string;
   producto?: string;
@@ -141,10 +141,10 @@ export interface Cotizacion {
   observaciones?: string;
   condiciones_comerciales?: string;
   detalles: DetalleCotizacion[];
-  monto_total?: number;
-  monto_impuesto?: number;
-  monto_descuento?: number;
-  subtotal?: number;
+  monto_total?: string;
+  monto_impuesto?: string;
+  monto_descuento?: string;
+  subtotal?: string;
   // Props para integración
   convertido_a_pedido?: boolean;
 }
@@ -154,13 +154,13 @@ export interface DetalleFacturaFiscal {
   id_factura: string;
   id_producto: string;
   id_variante?: string;
-  cantidad: number;
-  precio_unitario: number;
-  descuento_porcentaje: number;
-  descuento_monto: number;
-  subtotal: number;
-  monto_impuesto: number;
-  total_linea: number;
+  cantidad: string;
+  precio_unitario: string;
+  descuento_porcentaje: string;
+  descuento_monto: string;
+  subtotal: string;
+  monto_impuesto: string;
+  total_linea: string;
   observaciones?: string;
 }
 
@@ -179,11 +179,11 @@ export interface FacturaFiscal {
   fecha_emision: string;
   fecha_vencimiento?: string;
   id_moneda: string;
-  tasa_cambio: number;
+  tasa_cambio: string;
   estado: 'BORRADOR' | 'EMITIDA' | 'ANULADA' | 'PAGADA';
-  base_imponible: number;
-  monto_iva: number;
-  monto_total: number;
+  base_imponible: string;
+  monto_iva: string;
+  monto_total: string;
   observaciones?: string;
   fecha_creacion: string;
   detalles: DetalleFacturaFiscal[];

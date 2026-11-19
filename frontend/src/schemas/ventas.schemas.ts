@@ -3,8 +3,8 @@
  * Used with react-hook-form + @hookform/resolvers/zod.
  */
 import { z } from 'zod';
-import { subtotalLinea, sumDecimals } from '../lib/decimal';
-import { decimalEntre, decimalNoNegativo, decimalPositivo } from './decimal.schemas';
+import { D, subtotalLinea, sumDecimals } from '../lib/decimal';
+import { decimalEntre, decimalNoNegativo, decimalPositivo, parseDecimalSeguro } from './decimal.schemas';
 
 /** Tolerancia de redondeo para comparaciones monetarias (1 céntimo). */
 const MONTO_EPSILON = 0.01;
@@ -21,19 +21,23 @@ export const detalleVentaSchema = z.object({
   cantidad: z
     .string()
     .min(1, 'La cantidad es obligatoria')
-    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, {
+    .refine((v) => parseDecimalSeguro(v)?.gt(0) ?? false, {
       message: 'La cantidad debe ser mayor a 0',
     }),
   precio_unitario: z
     .string()
     .min(1, 'El precio unitario es obligatorio')
-    .refine((v) => !isNaN(Number(v)) && Number(v) >= 0, {
+    .refine((v) => parseDecimalSeguro(v)?.gte(0) ?? false, {
       message: 'El precio unitario no puede ser negativo',
     }),
   descuento_porcentaje: z
     .string()
     .optional()
-    .refine((v) => v === undefined || v === '' || (!isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100), {
+    .refine((v) => {
+      if (v === undefined || v === '') return true;
+      const d = parseDecimalSeguro(v);
+      return d !== null && d.gte(0) && d.lte(100);
+    }, {
       message: 'El descuento debe estar entre 0 y 100',
     }),
 });
@@ -190,7 +194,7 @@ export const facturaFiscalSchema = z.object({
   monto_total: z
     .union([z.string(), z.number()])
     .optional()
-    .refine((v) => v === undefined || v === '' || !isNaN(Number(v)), {
+    .refine((v) => v === undefined || v === '' || parseDecimalSeguro(v) !== null, {
       message: 'El monto total debe ser un número válido',
     }),
   observaciones: z.string().max(1000).optional(),
@@ -209,12 +213,13 @@ export const facturaFiscalSchema = z.object({
   // suma de los subtotales de las líneas (calculada con decimal.js).
   .superRefine((data, ctx) => {
     if (data.monto_total === undefined || data.monto_total === '') return;
+    if (parseDecimalSeguro(data.monto_total) === null) return;
     const sumaDetalles = sumDecimals(
       data.detalles.map((d) =>
         subtotalLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje),
       ),
     );
-    const declarado = Number(data.monto_total);
+    const declarado = D(data.monto_total);
     if (sumaDetalles.minus(declarado).abs().greaterThan(MONTO_EPSILON)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -263,8 +268,6 @@ export const notaCreditoVentaSchema = z.object({
 });
 
 export type NotaCreditoVentaInput = z.infer<typeof notaCreditoVentaSchema>;
-// zod 4: con z.coerce la entrada del formulario difiere de la salida validada.
-export type NotaCreditoVentaFormValues = z.input<typeof notaCreditoVentaSchema>;
 
 // ── Nota de Crédito Fiscal ──────────────────────────────────────────────────────
 
@@ -311,8 +314,6 @@ export const notaCreditoFiscalSchema = z.object({
 });
 
 export type NotaCreditoFiscalInput = z.infer<typeof notaCreditoFiscalSchema>;
-// zod 4: con z.coerce la entrada del formulario difiere de la salida validada.
-export type NotaCreditoFiscalFormValues = z.input<typeof notaCreditoFiscalSchema>;
 
 // ── Devolución de Venta ─────────────────────────────────────────────────────────
 
@@ -359,5 +360,3 @@ export const devolucionVentaSchema = z.object({
 });
 
 export type DevolucionVentaInput = z.infer<typeof devolucionVentaSchema>;
-// zod 4: con z.coerce la entrada del formulario difiere de la salida validada.
-export type DevolucionVentaFormValues = z.input<typeof devolucionVentaSchema>;
