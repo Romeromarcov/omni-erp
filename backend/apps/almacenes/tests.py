@@ -1,7 +1,5 @@
 from django.apps import apps
-from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 
 from .models import Almacen
 

@@ -199,12 +199,12 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
   useEffect(() => {
     const cajaPred = cajasUsuario.find(c => c.es_predeterminada);
     if (cajaPred?.caja?.id_caja && onCajaPredet) onCajaPredet(cajaPred.caja.id_caja);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: onCajaPredet es callback inline del caller; solo aplicar al cargar cajasUsuario
   }, [cajasUsuario]);
 
   useEffect(() => {
     if (sesionActiva && onSesionCargada) onSesionCargada(sesionActiva);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: onSesionCargada es callback inline del caller; solo aplicar al cargar sesionActiva
   }, [sesionActiva]);
 
   useEffect(() => {
@@ -215,7 +215,7 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
         : String(vendedores[0]?.id ?? '');
       onVendedorPredet(preferred);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: onVendedorPredet es callback inline del caller; solo aplicar al cambiar vendedores/sesionActiva
   }, [vendedores, sesionActiva]);
 
   // ── Staging de línea de producto (FormularioProducto) ─────────────────────────

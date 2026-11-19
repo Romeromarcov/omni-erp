@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — Fase 0 cerrada; avances Fase 1/3/4 (Tareas 1.1, 1.2, 1.3, 3.3, 3.5 y 3.6 cerradas) |
+| **Estado**   | EN CURSO — Fase 0 (`0.1`–`0.4`) y Fase 1 (`1.1`–`1.3`) cerradas; Fase 3 (`3.2`–`3.6`) y Fase 4 (`4.1`, `4.3`) cerradas |
 | **Fecha**    | 2026-11-14                                |
 | **Esfuerzo** | ~3–4 semanas, repartibles en PRs pequeños (R-PROC-2) |
 | **Owner**    | equipo-backend / devops (acciones del propietario marcadas con 👤) |
@@ -33,11 +33,13 @@
 
 ## 2. Hallazgos (con evidencia)
 
-> **Nota de actualización (`2026-11-17`):** los valores mostrados en esta tabla (`H5`, `H12`)
-> corresponden a la foto base del `2026-11-14`. Los conteos remedidos sobre código real (`origin/develop @ ff2bdb6`)
-> viven en [`docs/tech-debt/INVENTORY.md`](../tech-debt/INVENTORY.md): `38` `Response({...str(e|exc|err)...})`
-> en 15 archivos, `201` `# noqa` (51 archivos de `apps/`+`config/`), `40` `eslint-disable` en `.ts`/`.tsx`
-> (`38` en producción + `2` en tests) y `0` `TODO`/`FIXME` reales en código de `apps/`/`config/`/`src/`.
+> **Nota de actualización (`2026-11-19`):** los valores mostrados en esta tabla (`H5`, `H12`)
+> corresponden a la foto base del `2026-11-14`. Los conteos remedidos sobre código real tras las
+> tareas `1.1` y `3.4` viven en [`docs/tech-debt/INVENTORY.md`](../tech-debt/INVENTORY.md):
+> `0` `Response({...str(e|exc|err)...})`, `0` `ruff F401` (bloqueante en CI), `0` `print(`
+> ejecutable, `0` `TODO`/`FIXME` reales en código/infra, `187` `# noqa` justificados en `43`
+> archivos de `apps/`+`config/` y `40` `eslint-disable` documentados en `.ts`/`.tsx`
+> (`38` en producción + `2` en tests).
 
 | # | Hallazgo | Evidencia | Certeza |
 |---|----------|-----------|---------|
@@ -95,7 +97,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 | 3.1 | 👤 Borrar ramas integradas y activar *Automatically delete head branches* | H11 |
 | 3.2 | ✅ Revisar `frontend/test-import.js`; ignorar carpetas locales basura (`backend/%SystemDrive%`, `backend/sqlite-tools`, `.venv*`) | H12 |
 | 3.3 | ✅ D2: migrar a `ruff` (config en `setup.cfg`/`pyproject`), quitar `black`/`isort`, PR mecánico de reformateo | H12 |
-| 3.4 | ⬜ Barrido: justificar o quitar `# noqa`/`eslint-disable`, imports sin usar, TODOs | H12 |
+| 3.4 | ✅ Barrido: limpiados 120 `F401` (`ruff F401` promovido a bloqueante en CI y pre-commit), `print(` ejecutable en `config/celery.py` → `logger.info`, `# noqa` obsoletos (`203` → `187` justificados en 43 archivos), `eslint-disable` documentados (`40` en `frontend/src/`), `TODO` en `infra/nginx/nginx.prod.conf` eliminado (`0` reales), `INVENTORY.md` y skills al día | H12 |
 | 3.5 | ✅ Actualizar `docs/tech-debt/INVENTORY.md`; unificar `docs/archive` y `docs/_archive`. **No** se modifican fechas de CTF (D3) *(cerrado en PR `#288` `docs/gobernanza-graphify-y-planes-v13`)* | H12 |
 | 3.6 | ✅ Actions con aviso de Node 20: subir versiones *(cerrado en PR `#289`)* | — |
 
@@ -105,7 +107,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 |---|-------|----------|
 | 4.1 | ✅ D4: `PersistQueryClientProvider onSuccess` → invalidar consultas activas; test | H13 |
 | 4.2 | ⬜ Montos, segunda pasada (R-CODE-4): otros formularios con `number`, `utils/formatCurrency`, volver a tipar `D()`, alias `XFormValues` redundantes | — |
-| 4.3 | 👤 Railway: `DATABASE_URL`/`REDIS_URL` como referencias; quitar el host de producción de `DJANGO_ALLOWED_HOSTS`; no usar *Sync* con entornos de PR | H14 |
+| 4.3 | ✅ Railway `staging`: aplicadas referencias `${{Postgres.DATABASE_URL}}`/`${{Redis.REDIS_URL}}` y `DJANGO_ALLOWED_HOSTS` sin host de producción en `omni-erp-backend`, `omni-erp-worker` y `omni-erp-beat`; regla de no usar *Sync* con entornos de PR | H14 |
 | 4.4 | ⬜ Connect S2 en adelante, **después de la fase 2** (perfil público con `rls.rls_bypass()` acotado y solo tarjetas `ACTIVA`) | — |
 
 ## 4. Detalle — Monedas (tarea 0.2)
@@ -129,7 +131,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 1. Verificar que `ci-runner` se registra tras 0.1.
 2. Activar *Automatically delete head branches* y borrar las ramas integradas (3.1).
 3. Crear el rol de aplicación en Railway y cambiar `DATABASE_URL` (2.2, 2.3).
-4. Ajustes de variables de staging (4.3).
+4. ✅ Ajustes de variables de staging aplicados en Railway (4.3).
 
 ## 6. Riesgos
 

@@ -74,7 +74,7 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
         : [],
     });
     base.setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: base cambia cada render; solo rehidratar al cargar facturaData
   }, [facturaData, isLoadingFactura]);
 
   const submitFacturaFiscal = async (values: FacturaFiscalFormInput, pagosToSend?: Pago[]) => {

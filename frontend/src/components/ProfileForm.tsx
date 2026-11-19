@@ -30,7 +30,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialValues, onSubmit, load
     if (!isDirty) {
       reset(initialValues);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cambiar initialValues, sin disparar por isDirty/reset
   }, [initialValues]);
 
   return (

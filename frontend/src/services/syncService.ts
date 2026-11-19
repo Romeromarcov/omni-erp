@@ -86,8 +86,7 @@ export async function pullAllDeltas<T extends SyncRecord = SyncRecord>(
   for (let i = 0; i < maxPaginas; i++) {
     const page = await pullDeltas<T>(entity, { desde, limite: options.limite });
     serverTime = page.server_time;
-    // `pk` es un nombre de campo constante de PK_FIELD (no input de usuario).
-    // eslint-disable-next-line security/detect-object-injection
+    // eslint-disable-next-line security/detect-object-injection -- FP: `pk` es un nombre de campo constante de PK_FIELD, no input de usuario
     for (const r of page.results) porPk.set(r[pk], r);
     if (!page.has_more || page.results.length === 0) break;
     // Avanzar el cursor al máximo fecha_actualizacion de la página.

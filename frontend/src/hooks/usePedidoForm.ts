@@ -71,7 +71,7 @@ export const usePedidoForm = (pedidoId?: string) => {
         : [],
     });
     base.setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: base cambia cada render; solo rehidratar al cargar pedidoData
   }, [pedidoData, isLoadingPedido]);
 
   const submitPedido = async (values: PedidoFormInput, pagosToSend?: Pago[]) => {

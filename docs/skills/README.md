@@ -50,7 +50,7 @@ contexto. Antes de tocar código, revisá la(s) skill(s) relevante(s).
 | [omni-testing-pytest](omni-testing-pytest/SKILL.md) | Escribir/depurar tests backend: factories, aislamiento, integración, eval, cobertura. |
 | [omni-definition-of-done](omni-definition-of-done/SKILL.md) | Antes de declarar "terminado" o abrir PR: el gate de cierre de 7 pasos en orden. |
 | [omni-ctf-deuda](omni-ctf-deuda/SKILL.md) | Deuda o excepción inevitable: crear un Compromiso Técnico Fechado con `vence_en` y dueño (R-PROC-6). |
-| [omni-pr-discipline](omni-pr-discipline/SKILL.md) | Preparar/entregar un PR: plantilla, auto-checklist, draft (nunca ready). |
+| [omni-pr-discipline](omni-pr-discipline/SKILL.md) | Preparar/entregar un PR: plantilla, auto-checklist, flujo `draft` → revisión independiente → `ready` y merge a `develop` con CI verde; `develop → main` solo con aprobación del propietario. |
 
 ## Frontend (mantenidas aparte)
 

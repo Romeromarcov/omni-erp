@@ -132,7 +132,6 @@ class PedidoSerializer(serializers.ModelSerializer):
         detalles_data = validated_data.pop("detalles", [])
 
         # Asignación automática del número de pedido
-        from django.db.models import Max
 
         from apps.core.models import Sucursal
         from apps.finanzas.models import Caja, SesionCajaFisica

@@ -44,7 +44,7 @@ export default function Sidebar({ collapsed, onNavigate }: SidebarProps) {
   useEffect(() => {
     const active = sections.find((s) => s.items && sectionMatchesPath(s, location.pathname));
     if (active) setOpenGroups((prev) => ({ ...prev, [active.id]: true }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo auto-abrir grupo al cambiar location.pathname; sections se recalcula cada render
   }, [location.pathname]);
 
   const go = (path: string) => {

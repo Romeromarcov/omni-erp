@@ -1,9 +1,6 @@
-import uuid
 from apps.core.uuid import uuid7
 
 from django.db import models
-
-from apps.core.models import Empresa
 
 
 class Cargo(models.Model):

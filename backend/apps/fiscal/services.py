@@ -325,7 +325,7 @@ def calcular_impuestos(subtotal: Decimal, empresa, moneda=None) -> dict:
     # Get IGTF rate for return value
     try:
         tasa_iva_reducido_obj = TasaIVAEmpresa.objects.get(id_empresa=empresa, tipo="REDUCIDO", activo=True)
-        _tasa_reducido = Decimal(str(tasa_iva_reducido_obj.tasa))  # noqa: F841 — available for callers
+        _tasa_reducido = Decimal(str(tasa_iva_reducido_obj.tasa))
     except TasaIVAEmpresa.DoesNotExist:
         _tasa_reducido = TASA_IVA_REDUCIDO
 

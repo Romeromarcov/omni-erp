@@ -55,6 +55,6 @@ def sync_cxc_lubrikca(empresa_id: str):
         conteos = sincronizar_empresa(empresa)
         logger.info("cxc_lubrikca.sync: empresa=%s conteos=%s", empresa_id, conteos)
         return {"empresa_id": empresa_id, **conteos}
-    except Exception as exc:  # noqa: BLE001 — el worker no debe morir por un tenant
+    except Exception as exc:  # el worker no debe morir por un tenant
         logger.exception("cxc_lubrikca.sync error empresa=%s: %s", empresa_id, exc)
         return {"empresa_id": empresa_id, "error": str(exc)}

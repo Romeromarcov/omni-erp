@@ -1,5 +1,3 @@
-from rest_framework import viewsets
-
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import Beneficio, BeneficioEmpleado, Cargo, Empleado, LicenciaEmpleado, TipoLicencia

@@ -1,6 +1,5 @@
 from django.db import models
 
-from apps.core.models import Empresa
 from apps.finanzas.models import Moneda
 
 

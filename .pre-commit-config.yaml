@@ -26,7 +26,7 @@ repos:
     rev: v0.8.4
     hooks:
       - id: ruff
-        args: [--select, "E9,F63,F7,F82,F823,F811"]
+        args: [--select, "E9,F63,F7,F82,F823,F811,F401"]
         exclude: '^backend/apps/.*/migrations/.*\.py$'
       - id: ruff-format
         exclude: '^backend/apps/.*/migrations/.*\.py$'

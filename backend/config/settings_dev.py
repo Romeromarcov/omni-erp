@@ -5,7 +5,7 @@ import os
 # firmar JWTs con una clave conocida. Copiá .env.example a .env y generá una clave.
 os.environ.setdefault("DEBUG", "True")
 
-from .settings_base import *  # noqa: F401, F403
+from .settings_base import *  # noqa: F403
 
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]

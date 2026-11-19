@@ -148,7 +148,6 @@ class SoftDeleteModelMixin:
             # No está en activos — buscar en inactivos con los mismos filtros de empresa.
             # Usamos una copia mutable del GET dict para no mutar el QueryDict original
             # (que es inmutable y causaría AttributeError en producción).
-            from django.http import QueryDict  # noqa: PLC0415
 
             original_get = self.request._request.GET
             mutable_get = original_get.copy()  # copy() retorna un QueryDict mutable

@@ -189,7 +189,6 @@ Responde SOLO con un JSON válido:
         Returns:
             Lista de SugerenciaCobranza ordenada por prioridad desc.
         """
-        from django.utils import timezone as tz
 
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 

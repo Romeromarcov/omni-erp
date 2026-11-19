@@ -5,19 +5,20 @@
 > Fechado en [`docs/ctf/`](../ctf/) (R-PROC-6). Este inventario es la referencia operativa
 > de deuda estática y de baja prioridad; al promover un ítem a crítico, se le crea su CTF.
 >
-> Última medición verificada: **2026-11-17** sobre `origin/develop @ ff2bdb6`
-> (Plan 06 — Tarea 3.5).
+> Última medición verificada: **2026-11-19** sobre `fix/limpieza-estatica-noqa-print-f401`
+> (base `origin/develop @ 435ad92`, Plan 06 — Tarea 3.4).
 
-## Métricas estáticas medidas en código actual (`origin/develop @ ff2bdb6`)
+## Métricas estáticas medidas en código actual (`Plan 06 — Tarea 3.4`)
 
-Medición ejecutada con `git grep -I -n` sobre el repositorio actual (separando código ejecutable, tests, docstrings y documentación):
+Medición ejecutada con `git grep -I -n` y `ruff` sobre el árbol limpio (separando código ejecutable, tests, docstrings y documentación):
 
 | Indicador | Alcance medido | Conteo real | Desglose / observación | Seguimiento |
 |---|---|---:|---|---|
-| `# noqa` | `backend/apps/` + `backend/config/` (`.py`) | **201** *(51 archivos)* | `195` en `apps/` + `6` en `config/` (`0` en tests dentro de `apps/`). Adicional: `79` en `backend/tests/` + `backend/tests_eval/`. | Plan 06 — Tarea 3.4 |
-| `TODO` / `FIXME` / `HACK` / `XXX` | `backend/apps/` + `backend/config/` + `frontend/src/` (`.py`/`.ts`/`.tsx`, `\b...\b`) | **0** reales | Las 12 coincidencias literales son 9 usos de la palabra española `"TODO"` en comentarios/docstrings y 3 fixtures `'XXX'` en tests FE. En `infra/nginx/nginx.prod.conf:26` queda **1** `# TODO: set specific server_name in prod (M-SEC-6)`. | Limpio en código de app |
-| `eslint-disable` | `frontend/src/` (`.ts`/`.tsx`) | **40** | **38** en código de producción (`react-hooks/exhaustive-deps`, `security/detect-object-injection`, `react-refresh/only-export-components`, `security/detect-unsafe-regex`) + **2** en `frontend/src/__tests__/api.test.ts` (documentadas como FP). | Plan 06 — Tarea 3.4 |
-| `print(` | `backend/apps/` + `backend/config/` (`.py`) | **5** | **1** en código ejecutable (`backend/config/celery.py:34`, `debug_task`) + **4** en docstrings de ejemplo (`agentes/cobranza.py:18`, `agentes/reorden.py:22`, `localizacion_ve/calendario.py:9-10`). **0** en lógica de negocio de `apps/`. | R-CODE-3 / Plan 06 |
+| `ruff F401` (imports sin usar) | `backend/apps/` + `backend/config/` (`.py`) | **0 (bloqueante en CI)** | Limpiadas 120 ocurrencias; `4` imports con side-effect o chequeo de SDK (`apps/core/apps.py`, `apps/eventos/apps.py`, `apps/localizacion/apps.py`, `apps/cxc/agents/cobranza_agent.py`) conservados explícitamente con `# noqa: F401` documentado y `FlujoError` re-exportado vía alias PEP 484 en `apps/ventas/services.py`. Promovido a bloqueante en `.github/workflows/ci.yml` y `.pre-commit-config.yaml`. | Plan 06 — Tarea 3.4 ✅ |
+| `# noqa` | `backend/apps/` + `backend/config/` (`.py`) | **187** *(43 archivos)* | `182` en `apps/` + `5` en `config/` (`0` en tests dentro de `apps/`): `114` `PLC0415`, `31` `BLE001`, `24` `S101`, `10` `E402`, `4` `F401`, `2` `F403`, `1` `ARG002`, `1` `S310` (reducidos desde `203` en `51` archivos al retirar obsoletos/redundantes). Adicional: `79` en `backend/tests/` + `backend/tests_eval/`. | Plan 06 — Tarea 3.4 ✅ |
+| `TODO` / `FIXME` / `HACK` / `XXX` | `backend/apps/` + `backend/config/` + `frontend/src/` + `infra/` | **0** reales | Las `12` coincidencias literales son `9` usos de la palabra española `"TODO"` en comentarios/docstrings (`8` en `backend/apps/` + `1` en `frontend/src/services/inventarioService.ts:149`) y `3` fixtures `'XXX'` en tests FE. En `infra/nginx/nginx.prod.conf:26` se eliminó el `# TODO` redundante (`0` en `infra/`). | Limpio en código e infra ✅ |
+| `eslint-disable` | `frontend/src/` (`.ts`/`.tsx`) | **40** | **38** en código de producción (`17` `security/detect-object-injection`, `15` `react-hooks/exhaustive-deps`, `4` `react-refresh/only-export-components`, `2` `security/detect-unsafe-regex`) + **2** en `frontend/src/__tests__/api.test.ts` (`security/detect-possible-timing-attacks`), todos activos (`eslint --report-unused-disable-directives` limpio) y documentados con razón explícita. | Plan 06 — Tarea 3.4 ✅ |
+| `print(` | `backend/apps/` + `backend/config/` (`.py`) | **0** ejecutables | **0** en código ejecutable (`backend/config/celery.py:34` migrado a `logger.info`). Quedan **4** en docstrings de ejemplo (`agentes/cobranza.py:18`, `agentes/reorden.py:22`, `localizacion_ve/calendario.py:9-10`). | R-CODE-3 / Plan 06 ✅ |
 | `console.log` | `frontend/src/` (`.ts`/`.tsx`) | **0** | **0** en código `.ts`/`.tsx` (`1` solo en ejemplo Markdown de `frontend/src/services/README_PagosService.md:166`). | Limpio (R-CODE-3) |
 | `any` explícito (`: any`, `as any`, `<any>`, `any[]`) | `frontend/src/` (`.ts`/`.tsx`) | **0** | **0** en código `.ts`/`.tsx` (`2` solo en ejemplo Markdown de `frontend/src/services/README_PagosService.md:156,178`). | Limpio (R-CODE-3) |
 | `Response({...str(e\|exc\|err)...})` | `backend/apps/` + `backend/config/` (`:!*test*`) | **0** *(remediado)* | ✅ **Resuelto (Plan 06 — H5 / Tarea 1.1):** cubrió las 44 ocurrencias base en 17 archivos (38 unilínea en 15 archivos + 6 multilínea en `cxc_lubrikca/api/conciliacion_viewsets.py` y `cxc_lubrikca/api/operacion_viewsets.py`, además de la variante multilínea `CapacidadExcedida` en `activaciones/views.py` y `_error(str(exc))` en `manufactura/views.py`) mediante `apps/core/exceptions.py` (`domain_error_response`), junto con las fugas `except Exception` de `core/mcp_server.py`, importación CSV en `ventas/views.py` y `cxc/health/` (`cxc/api/router.py`). Verificado con guardia AST en `tests/unit/test_http_error_sanitization.py`. | Plan 06 — H5 / Tarea 1.1 ✅ |
@@ -25,6 +26,7 @@ Medición ejecutada con `git grep -I -n` sobre el repositorio actual (separando 
 ### Comandos reproducibles
 
 ```bash
+cd backend && ruff check apps/ config/ --select E9,F63,F7,F82,F823,F811,F401
 git grep -I -n '# noqa' -- backend/apps backend/config
 git grep -I -n -E '\b(TODO|FIXME|HACK|XXX)\b' -- backend/apps backend/config frontend/src infra
 git grep -I -n 'eslint-disable' -- frontend/src
