@@ -12,8 +12,8 @@ const MONEDAS: Moneda[] = [
 const VUELTO: Pago = {
   id_metodo_pago: 'efectivo',
   id_moneda: 'VES',
-  monto: 73,
-  tasa: 36.5,
+  monto: '73',
+  tasa: '36.5',
   referencia: 'Vuelto automático',
 };
 
@@ -59,7 +59,7 @@ describe('SeccionVuelto', () => {
     expect(props.onConfigurar).toHaveBeenCalledTimes(1);
   });
 
-  it('en modo edición permite cambiar moneda, monto y tasa convirtiendo a número', async () => {
+  it('en modo edición permite cambiar moneda, monto y tasa conservando string decimal exacto', async () => {
     const user = userEvent.setup();
     const props = renderSeccion({ mostrarVueltos: true, vuelto: VUELTO });
 
@@ -68,12 +68,12 @@ describe('SeccionVuelto', () => {
     await user.click(await screen.findByRole('option', { name: 'USD' }));
     expect(props.onMonedaChange).toHaveBeenCalledWith('USD');
 
-    // Monto y tasa: deben llegar como number, no como string
+    // Monto y tasa: deben llegar como string decimal exacto (sin pasar por Number/float)
     fireEvent.change(screen.getByLabelText(/monto/i), { target: { value: '50.25' } });
-    expect(props.onMontoChange).toHaveBeenCalledWith(50.25);
+    expect(props.onMontoChange).toHaveBeenCalledWith('50.25');
 
     fireEvent.change(screen.getByLabelText(/tasa/i), { target: { value: '37' } });
-    expect(props.onTasaChange).toHaveBeenCalledWith(37);
+    expect(props.onTasaChange).toHaveBeenCalledWith('37');
   });
 
   it('confirma y cancela el vuelto con sus callbacks', async () => {

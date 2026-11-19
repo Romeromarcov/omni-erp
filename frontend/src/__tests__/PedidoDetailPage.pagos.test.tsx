@@ -70,11 +70,11 @@ vi.mock('../components/Pedidos/ResumenTotales', () => ({
 }));
 
 interface PagoStub {
-  monto: number; id_metodo_pago: string; id_moneda: string; tasa: number; referencia?: string;
+  monto: string; id_metodo_pago: string; id_moneda: string; tasa: string; referencia?: string;
 }
 interface NotaStub { id_nota_credito: string; monto_disponible: number }
-const PAGO: PagoStub = { monto: 25.5, id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: 1, referencia: 'REF-9' };
-const VUELTO: PagoStub = { monto: 1.5, id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: 1 };
+const PAGO: PagoStub = { monto: '25.5', id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: '1', referencia: 'REF-9' };
+const VUELTO: PagoStub = { monto: '1.5', id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: '1' };
 const NOTA: NotaStub = { id_nota_credito: 'nc-1', monto_disponible: 4 };
 
 vi.mock('../components/Pedidos/ModalPago', () => ({
@@ -190,7 +190,7 @@ describe('PedidoDetailPage — líneas y pagos', () => {
       expect(createPagoDocumentoMock).toHaveBeenCalledWith(
         'PEDIDO',
         'ped-001',
-        expect.objectContaining({ monto: 25.5, id_metodo_pago: 'mp-1', referencia: 'REF-9' }),
+        expect.objectContaining({ monto: '25.5', id_metodo_pago: 'mp-1', referencia: 'REF-9' }),
       );
       expect(procesarVueltosMock).toHaveBeenCalledWith([VUELTO]);
     });

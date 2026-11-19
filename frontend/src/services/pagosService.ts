@@ -1,5 +1,6 @@
 import { get, post, put, del } from './api';
 import { IDEMPOTENCY_HEADER, newIdempotencyKey } from '../lib/idempotency';
+import { D } from '../lib/decimal';
 import type { NotaCredito, Pago as PagoModal } from '../components/Pedidos/ModalPago';
 
 export interface Pago {
@@ -9,9 +10,9 @@ export interface Pago {
   tipo_documento: string;
   id_documento: string;
   fecha_pago: string;
-  monto: number;
+  monto: string;
   id_moneda: string;
-  tasa: number;
+  tasa: string;
   id_metodo_pago: string;
   referencia?: string;
   observaciones?: string;
@@ -190,10 +191,10 @@ export const pagosService = {
     tipoDocumento: string,
     idDocumento: string,
     pagoData: {
-      monto: number;
+      monto: string | number;
       id_metodo_pago: string;
       id_moneda: string;
-      tasa: number;
+      tasa: string | number;
       referencia?: string;
       observaciones?: string;
       id_caja_fisica?: string;
@@ -220,15 +221,18 @@ export const pagosService = {
       this.getMonedaInfo(pagoData.id_moneda)
     ]);
 
+    const montoStr = typeof pagoData.monto === 'string' ? pagoData.monto : D(pagoData.monto).toString();
+    const tasaStr = typeof pagoData.tasa === 'string' ? pagoData.tasa : D(pagoData.tasa).toString();
+
     const pago: Omit<Pago, 'id_pago'> = {
       id_empresa: documentoInfo.id_empresa,
       tipo_operacion: tipoOperacion,
       tipo_documento: tipoDocumento,
       id_documento: idDocumento,
       fecha_pago: new Date().toISOString(),
-      monto: pagoData.monto,
+      monto: montoStr,
       id_moneda: pagoData.id_moneda,
-      tasa: pagoData.tasa,
+      tasa: tasaStr,
       id_metodo_pago: pagoData.id_metodo_pago,
       referencia: pagoData.referencia,
       observaciones: pagoData.observaciones,

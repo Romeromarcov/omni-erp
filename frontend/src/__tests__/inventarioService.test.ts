@@ -122,13 +122,14 @@ describe('productoInventarioService CRUD', () => {
 });
 
 describe('movimientoService', () => {
-  it('registrarAjuste postea el movimiento AJUSTE', async () => {
+  it('registrarAjuste postea el movimiento AJUSTE como string decimal exacto', async () => {
     vi.mocked(post).mockResolvedValue({ id_movimiento_inventario: 'm1' });
     const payload = {
       id_empresa: 'e1',
       id_producto: 'p1',
       tipo_movimiento: 'AJUSTE' as const,
-      cantidad: 5,
+      cantidad: '10.1234',
+      costo_unitario_movimiento: '0.30',
       fecha_hora_movimiento: '2026-06-01T00:00:00Z',
       id_almacen_destino: 'a1',
     };

@@ -28,6 +28,24 @@ function parsear(valor: string): Decimal | null {
   return new Decimal(valor);
 }
 
+/**
+ * Parsea un string o number finito a `Decimal` sin pasar por `Number()` / float.
+ * Devuelve `null` si está vacío o no es un número decimal finito válido.
+ */
+export function parseDecimalSeguro(valor: string | number): Decimal | null {
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) ? new Decimal(valor) : null;
+  }
+  const trimmed = valor.trim();
+  if (!trimmed) return null;
+  try {
+    const d = new Decimal(trimmed);
+    return d.isFinite() ? d : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Base: string sin espacios en los extremos, no vacío y con formato decimal válido. */
 const base = (requerido: string, invalido: string) =>
   z

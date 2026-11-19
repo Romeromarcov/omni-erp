@@ -4,6 +4,7 @@ import { PageContainer, PageHeader, SectionTitle, StatusChip } from '../../../co
 import { useQuery } from '@tanstack/react-query';
 import { cajasFisicasService, type CajaFisica } from '../../../services/cajasFisicasService';
 import { finanzasKeys } from '../../../lib/queryKeys';
+import { formatCurrency } from '../../../utils/formatCurrency';
 import { Alert, Box, Button, Card, CardActions, CardContent, Chip, Divider, Paper, Typography } from '@mui/material';
 
 
@@ -17,7 +18,7 @@ interface CajaVirtual {
   activa: boolean;
   empresa_nombre?: string;
   sucursal_nombre?: string;
-  saldo_actual: number;
+  saldo_actual: string | number;
   fecha_creacion: string;
 }
 
@@ -26,7 +27,7 @@ interface Datafono {
   nombre: string;
   serial: string;
   activo: boolean;
-  saldo_actual: number;
+  saldo_actual: string | number;
   ultima_conexion?: string;
   empresa_nombre?: string;
   sucursal_nombre?: string;
@@ -55,14 +56,6 @@ const CajaFisicaDetailPage: React.FC = () => {
     queryFn: () => cajasFisicasService.getDatafonosAsociados(id!) as Promise<Datafono[]>,
     enabled: !!id,
   });
-
-  const formatCurrency = (amount: number, currency: string = 'VES') => {
-    return new Intl.NumberFormat('es-VE', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Nunca';
@@ -171,7 +164,7 @@ const CajaFisicaDetailPage: React.FC = () => {
                       Tipo: {caja.tipo_caja_display}
                     </Typography>
                   <Typography variant="h5" color="primary">
-                    {formatCurrency(caja.saldo_actual, caja.moneda_codigo_iso)}
+                    {formatCurrency(caja.saldo_actual, caja.moneda_codigo_iso || 'VES', 'es-VE')}
                   </Typography>
                 </CardContent>
                 <CardActions>
@@ -223,7 +216,7 @@ const CajaFisicaDetailPage: React.FC = () => {
                       Cuenta bancaria: {datafono.cuenta_bancaria_nombre || 'No asignada'}
                     </Typography>
                   <Typography variant="h5" color="primary">
-                    {formatCurrency(datafono.saldo_actual)}
+                    {formatCurrency(datafono.saldo_actual, 'VES', 'es-VE')}
                   </Typography>
                 </CardContent>
                 <CardActions>

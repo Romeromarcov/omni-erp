@@ -8,7 +8,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
-import { notaCreditoFiscalSchema, type NotaCreditoFiscalFormValues, type NotaCreditoFiscalInput } from '../../../schemas/ventas.schemas';
+import { notaCreditoFiscalSchema, type NotaCreditoFiscalInput } from '../../../schemas/ventas.schemas';
 import { ventasKeys } from '../../../lib/queryKeys';
 import type { NotaCreditoFiscal } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
@@ -16,12 +16,12 @@ import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Card, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { D, sumDecimals, type DecimalInput } from '../../../lib/decimal';
+import { D, formatoMoneda, sumDecimals, type DecimalInput } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const IVA_RATE = 0.16;
 
-const defaultValues: NotaCreditoFiscalFormValues = {
+const defaultValues: NotaCreditoFiscalInput = {
   id_cliente: '',
   id_factura_origen: '',
   numero_control: '',
@@ -59,7 +59,7 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
     reset,
     watch,
     formState: { errors, isDirty },
-  } = useForm<NotaCreditoFiscalFormValues, unknown, NotaCreditoFiscalInput>({
+  } = useForm<NotaCreditoFiscalInput>({
     resolver: zodResolver(notaCreditoFiscalSchema),
     mode: 'onBlur',
     defaultValues,
@@ -387,13 +387,13 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            {linea?.subtotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                            {formatoMoneda(linea?.subtotal ?? 0)}
                           </TableCell>
                           <TableCell align="right">
-                            {linea?.montoImpuesto.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                            {formatoMoneda(linea?.montoImpuesto ?? 0)}
                           </TableCell>
                           <TableCell align="right">
-                            {linea?.totalLinea.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                            {formatoMoneda(linea?.totalLinea ?? 0)}
                           </TableCell>
                           <TableCell align="right">
                             <IconButton onClick={() => remove(index)} color="error" size="small">
@@ -417,13 +417,13 @@ const NotaCreditoFiscalFormPage: React.FC = () => {
             <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit,minmax(200px,1fr))' }, gap: 2 }}>
                 <Box sx={{ fontSize: 14 }}>
-                  Base Imponible: {baseImponible.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                  Base Imponible: {formatoMoneda(baseImponible)}
                 </Box>
                 <Box sx={{ fontSize: 14 }}>
-                  IVA: {montoIva.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                  IVA: {formatoMoneda(montoIva)}
                 </Box>
                 <Box sx={{ fontWeight: 700, textAlign: { sm: 'right' } }}>
-                  Total: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                  Total: {formatoMoneda(montoTotal)}
                 </Box>
               </Box>
             </Box>

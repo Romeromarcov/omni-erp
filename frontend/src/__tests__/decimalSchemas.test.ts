@@ -148,4 +148,14 @@ describe('formatoMoneda (solo presentación)', () => {
   it('un valor no numérico se muestra como 0 (D() lo trata como 0)', () => {
     expect(formatoMoneda('abc')).toMatch(/0,00/);
   });
+
+  it('conserva todos los dígitos en montos VES grandes sin pérdida IEEE-754', () => {
+    expect(formatoMoneda('123456789012345678.95', 'VES', 'es-VE')).toContain('123.456.789.012.345.678,95');
+  });
+
+  it('normaliza valores negativos que redondean a cero (-0.001)', () => {
+    const txt = formatoMoneda('-0.001', 'VES', 'es-VE');
+    expect(txt).not.toContain('-');
+    expect(txt).toMatch(/0,00/);
+  });
 });

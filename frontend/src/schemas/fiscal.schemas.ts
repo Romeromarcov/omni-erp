@@ -2,6 +2,7 @@
  * GAP-11: Zod validation schemas for fiscal configuration forms.
  */
 import { z } from 'zod';
+import { parseDecimalSeguro } from './decimal.schemas';
 
 // ── Configuración Fiscal ──────────────────────────────────────────────────────
 
@@ -12,7 +13,11 @@ export const configuracionFiscalSchema = z.object({
     .string()
     .optional()
     .refine(
-      (v) => !v || (!isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 1),
+      (v) => {
+        if (!v) return true;
+        const d = parseDecimalSeguro(v);
+        return d !== null && d.gte(0) && d.lte(1);
+      },
       { message: 'La tasa IGTF debe estar entre 0.0000 y 1.0000 (ej: 0.03 para 3%)' }
     ),
 });
@@ -32,7 +37,10 @@ export const tasaIVASchema = z.object({
     .string()
     .min(1, 'La tasa es obligatoria')
     .refine(
-      (v) => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 1,
+      (v) => {
+        const d = parseDecimalSeguro(v);
+        return d !== null && d.gte(0) && d.lte(1);
+      },
       { message: 'La tasa debe estar entre 0.0000 y 1.0000 (ej: 0.16 para 16%)' }
     ),
   activo: z.boolean().default(true),

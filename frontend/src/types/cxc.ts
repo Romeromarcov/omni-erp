@@ -81,5 +81,5 @@ export interface PlantillaCobranza {
 export interface CuotaPreview {
   numero: number;
   fecha_vencimiento: string;
-  monto: number;
+  monto: string;
 }

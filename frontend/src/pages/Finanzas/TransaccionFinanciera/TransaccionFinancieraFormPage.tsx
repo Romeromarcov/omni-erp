@@ -11,7 +11,7 @@ interface EmpresaData {
 }
 
 interface TasaBCVResponse {
-  valor_tasa?: number;
+  valor_tasa?: number | string;
 }
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,8 @@ import { fetchMonedasEmpresaActivas } from '../../../services/monedasEmpresaActi
 import { fetchMetodosPagoEmpresaActivos } from '../../../services/metodosPagoEmpresaActiva';
 import { toList } from '../../../utils/api';
 import { registroTransaccionSchema, type RegistroTransaccionInput } from '../../../schemas/finanzas.schemas';
+import { D } from '../../../lib/decimal';
+import { parseDecimalSeguro } from '../../../schemas/decimal.schemas';
 import { Alert, Box, Button, Card, Grid, MenuItem, Stack, TextField } from '@mui/material';
 
 
@@ -57,7 +59,7 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   const navigate = useNavigate();
   const [monedaBase, setMonedaBase] = useState('');
   const [tasaCambio, setTasaCambio] = useState('');
-  const [tasaBCV, setTasaBCV] = useState<number | null>(null);
+  const [tasaBCV, setTasaBCV] = useState<string | null>(null);
   const [tasaError, setTasaError] = useState('');
   const [montoBase, setMontoBase] = useState('');
 
@@ -140,7 +142,7 @@ const TransaccionFinancieraFormPage: React.FC = () => {
     // Si la moneda base es igual a la moneda de transacción, tasa = 1
     if (monedaBase && nombreMonedaDestino && monedaBase === nombreMonedaDestino) {
       setTasaCambio('1');
-      setTasaBCV(1);
+      setTasaBCV('1');
       setTasaError('');
       return;
     }
@@ -158,9 +160,14 @@ const TransaccionFinancieraFormPage: React.FC = () => {
         get(`/finanzas/tasa-oficial-bcv/?moneda_origen=${codigoOrigen}&moneda_destino=${codigoDestino}&fecha=${fecha}`)
           .then((data) => {
             const tasaData = data as TasaBCVResponse;
-            if (tasaData && typeof tasaData.valor_tasa === 'number') {
-              setTasaBCV(tasaData.valor_tasa);
-              setTasaCambio(tasaData.valor_tasa.toString());
+            const parsed =
+              tasaData && (typeof tasaData.valor_tasa === 'number' || typeof tasaData.valor_tasa === 'string')
+                ? parseDecimalSeguro(tasaData.valor_tasa)
+                : null;
+            if (parsed) {
+              const raw = String(tasaData.valor_tasa);
+              setTasaBCV(raw);
+              setTasaCambio(raw);
             } else {
               setTasaBCV(null);
               setTasaCambio('');
@@ -175,25 +182,17 @@ const TransaccionFinancieraFormPage: React.FC = () => {
   }, [idEmpresa, idMonedaTransaccion, monedas, fechaHoraTransaccion, monedaBase]);
 
   useEffect(() => {
-    const monto = parseFloat(montoTransaccion);
-    const tasa = parseFloat(tasaCambio);
+    const monto = parseDecimalSeguro(montoTransaccion);
+    const tasa = parseDecimalSeguro(tasaCambio);
     // Buscar la moneda seleccionada en el array de monedas activas
     const monedaDestino = monedas.find(m => m.moneda === idMonedaTransaccion);
     const nombreMonedaDestino = monedaDestino?.moneda_nombre || '';
     // Si la moneda base es igual a la moneda de transacción
     if (monedaBase && nombreMonedaDestino && monedaBase === nombreMonedaDestino) {
-      if (!isNaN(monto)) {
-        setMontoBase(monto.toFixed(2));
-      } else {
-        setMontoBase('');
-      }
+      setMontoBase(monto ? monto.toFixed(2) : '');
     } else {
       // Si son diferentes, monto base = monto transaccion / tasa de cambio
-      if (!isNaN(monto) && !isNaN(tasa) && tasa > 0) {
-        setMontoBase((monto / tasa).toFixed(2));
-      } else {
-        setMontoBase('');
-      }
+      setMontoBase(monto && tasa && tasa.gt(0) ? monto.dividedBy(tasa).toFixed(2) : '');
     }
   }, [montoTransaccion, tasaCambio, monedaBase, idMonedaTransaccion, monedas]);
 
@@ -202,8 +201,9 @@ const TransaccionFinancieraFormPage: React.FC = () => {
     const value = e.target.value;
     if (/^\d*\.?\d*$/.test(value)) {
       setTasaCambio(value);
+      const valDec = parseDecimalSeguro(value);
       // Validar que no sea menor a la tasa BCV
-      if (tasaBCV !== null && parseFloat(value) < tasaBCV) {
+      if (tasaBCV !== null && valDec && valDec.lt(D(tasaBCV))) {
         setTasaError(`La tasa no puede ser menor a la oficial BCV (${tasaBCV})`);
       } else {
         setTasaError('');
@@ -222,18 +222,18 @@ const TransaccionFinancieraFormPage: React.FC = () => {
       const nombreMonedaPais = empresaData.moneda_pais_nombre || '';
 
       let montoMonedaPais = '';
-      const montoTransaccionNum = parseFloat(form.monto_transaccion);
-      const tasaNum = parseFloat(tasaCambio);
+      const montoTransaccionDec = parseDecimalSeguro(form.monto_transaccion);
+      const tasaDec = parseDecimalSeguro(tasaCambio);
       const monedaTransaccion = monedas.find(m => m.moneda === form.id_moneda_transaccion);
       const nombreMonedaTransaccion = monedaTransaccion?.moneda_nombre || '';
 
       if (nombreMonedaTransaccion && nombreMonedaPais && nombreMonedaTransaccion === nombreMonedaPais) {
-        if (!isNaN(montoTransaccionNum)) {
-          montoMonedaPais = montoTransaccionNum.toFixed(2);
+        if (montoTransaccionDec) {
+          montoMonedaPais = montoTransaccionDec.toFixed(2);
         }
       } else {
-        if (!isNaN(montoTransaccionNum) && !isNaN(tasaNum) && tasaNum > 0) {
-          montoMonedaPais = (montoTransaccionNum * tasaNum).toFixed(2);
+        if (montoTransaccionDec && tasaDec && tasaDec.gt(0)) {
+          montoMonedaPais = montoTransaccionDec.times(tasaDec).toFixed(2);
         }
       }
 

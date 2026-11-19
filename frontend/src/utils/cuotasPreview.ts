@@ -1,12 +1,14 @@
+import Decimal from 'decimal.js';
+import { D, type DecimalInput } from '../lib/decimal';
 import type { CuotaPreview } from '../types/cxc';
 
 export interface CuotasParams {
   fechaInicio: string;         // ISO date string
   plazoTotalDias: number;
   periodicidad: 'unico' | 'semanal' | 'quincenal' | 'mensual';
-  montoTotal: number;
-  montoCuota?: number;
-  porcentajeAbono?: number;
+  montoTotal: DecimalInput;
+  montoCuota?: DecimalInput;
+  porcentajeAbono?: DecimalInput;
 }
 
 function proximaFecha(base: Date, periodicidad: string, n: number): Date {
@@ -24,44 +26,45 @@ function proximaFecha(base: Date, periodicidad: string, n: number): Date {
 export function calcularCuotasPreview(params: CuotasParams): CuotaPreview[] {
   const { fechaInicio, plazoTotalDias, periodicidad, montoTotal, montoCuota, porcentajeAbono } = params;
   const base = new Date(fechaInicio);
+  const totalDec = D(montoTotal);
 
   if (periodicidad === 'unico') {
     return [{
       numero: 1,
       fecha_vencimiento: fechaInicio,
-      monto: Math.round(montoTotal * 100) / 100,
+      monto: totalDec.toDecimalPlaces(2).toFixed(2),
     }];
   }
 
   const diasPorCuota = periodicidad === 'semanal' ? 7 : periodicidad === 'quincenal' ? 15 : 30;
   const numCuotas = Math.max(1, Math.floor(plazoTotalDias / diasPorCuota));
 
-  let montoUnit: number;
-  if (montoCuota) {
-    montoUnit = Math.round(montoCuota * 100) / 100;
-  } else if (porcentajeAbono) {
-    montoUnit = Math.round((montoTotal * porcentajeAbono / 100) * 100) / 100;
+  let montoUnit: Decimal;
+  if (montoCuota !== undefined && montoCuota !== null && montoCuota !== '' && D(montoCuota).gt(0)) {
+    montoUnit = D(montoCuota).toDecimalPlaces(2);
+  } else if (porcentajeAbono !== undefined && porcentajeAbono !== null && porcentajeAbono !== '' && D(porcentajeAbono).gt(0)) {
+    montoUnit = totalDec.times(D(porcentajeAbono)).dividedBy(100).toDecimalPlaces(2);
   } else {
-    montoUnit = Math.round((montoTotal / numCuotas) * 100) / 100;
+    montoUnit = totalDec.dividedBy(numCuotas).toDecimalPlaces(2);
   }
 
   const cuotas: CuotaPreview[] = [];
-  let acumulado = 0;
+  let acumulado = new Decimal(0);
 
   for (let i = 1; i <= numCuotas; i++) {
     const fecha = proximaFecha(base, periodicidad, i - 1);
     const monto = i === numCuotas
-      ? Math.round((montoTotal - acumulado) * 100) / 100
+      ? totalDec.minus(acumulado).toDecimalPlaces(2)
       : montoUnit;
 
-    if (monto <= 0) continue;
+    if (monto.lte(0)) continue;
 
     cuotas.push({
       numero: i,
       fecha_vencimiento: fecha.toISOString().split('T')[0],
-      monto,
+      monto: monto.toFixed(2),
     });
-    acumulado += monto;
+    acumulado = acumulado.plus(monto);
   }
 
   return cuotas;

@@ -17,8 +17,8 @@ import { pagosService } from '../services/pagosService';
 
 const basePago = {
   id_empresa: 'e', tipo_operacion: 'INGRESO' as const, tipo_documento: 'NOTA_VENTA',
-  id_documento: 'd', fecha_pago: '2026-01-01', monto: 10, id_moneda: 'm',
-  tasa: 1, id_metodo_pago: 'mp',
+  id_documento: 'd', fecha_pago: '2026-01-01', monto: '10', id_moneda: 'm',
+  tasa: '1', id_metodo_pago: 'mp',
 };
 
 describe('pagosService — consultas', () => {
@@ -89,7 +89,7 @@ describe('pagosService — mutaciones', () => {
   });
 
   it('updatePago y deletePago pegan al endpoint del recurso', async () => {
-    await pagosService.updatePago('p-x', { monto: 5 });
+    await pagosService.updatePago('p-x', { monto: '5' });
     expect(vi.mocked(put).mock.calls[0][0]).toBe('/finanzas/pagos/p-x/');
     await pagosService.deletePago('p-x');
     expect(vi.mocked(del).mock.calls[0][0]).toBe('/finanzas/pagos/p-x/');
@@ -194,7 +194,7 @@ describe('pagosService — info de documento/método/moneda', () => {
     vi.mocked(post).mockResolvedValueOnce({ id_pago: 'srv-1' });
 
     const res = await pagosService.createPagoDocumento('NOTA_VENTA', 'nv-1', {
-      monto: 50, id_metodo_pago: 'mp', id_moneda: 'm', tasa: 1,
+      monto: '10.1234', id_metodo_pago: 'mp', id_moneda: 'm', tasa: '0.30',
     }, 'clave-x');
 
     expect(res).toEqual({ id_pago: 'srv-1' });
@@ -204,6 +204,8 @@ describe('pagosService — info de documento/método/moneda', () => {
     expect(pago.tipo_operacion).toBe('INGRESO');
     expect(pago.id_empresa).toBe('emp-1');
     expect(pago.id_nota_venta).toBe('nv-1');
+    expect(pago.monto).toBe('10.1234');
+    expect(pago.tasa).toBe('0.30');
     expect(pago.metodo).toBe('Efectivo');
     expect(pago.moneda).toBe('USD');
     expect((opts as { headers: Record<string, string> }).headers['Idempotency-Key']).toBe('clave-x');

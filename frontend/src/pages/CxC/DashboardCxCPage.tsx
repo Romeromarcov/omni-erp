@@ -7,6 +7,7 @@ import { useCarteraDashboard } from '../../hooks/useCxC';
 import type { PrioridadCliente } from '../../types/cxc';
 import { PageContainer, PageHeader, KpiCard, AgingBars, SectionTitle, StatusChip } from '../../components/ui';
 import type { AgingBar } from '../../components/ui';
+import { D, formatoDecimal, type DecimalInput } from '../../lib/decimal';
 
 // Map en lugar de Record: la clave del bucket viene de la API y un objeto
 // plano expondría la cadena de prototipos ("__proto__", "constructor") (CTF-006).
@@ -34,8 +35,7 @@ const BUCKET_CHIP_COLOR: Record<string, 'success' | 'warning' | 'error'> = {
   mas_90: 'error',
 };
 
-const money = (v: string | number) =>
-  `$${parseFloat(String(v)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`;
+const money = (v: DecimalInput) => `$${formatoDecimal(v, 2, 2)}`;
 
 export default function DashboardCxCPage() {
   const { data, loading, error } = useCarteraDashboard();
@@ -45,15 +45,16 @@ export default function DashboardCxCPage() {
   if (!data) return null;
 
   const buckets = data.buckets;
-  const totalGeneral = parseFloat(data.total_pendiente) || 1;
+  const totalPendienteDec = D(data.total_pendiente);
+  const totalGeneral = totalPendienteDec.isZero() ? D(1) : totalPendienteDec;
 
   const bars: AgingBar[] = Object.entries(buckets).map(([key, val]) => {
-    const total = parseFloat(val.total);
+    const total = D(val.total);
     return {
       key,
       label: BUCKET_LABELS.get(key) ?? key,
       amount: `${money(total)} · ${val.count}`,
-      pct: (total / totalGeneral) * 100,
+      pct: total.dividedBy(totalGeneral).times(100).toNumber(),
       gradient: BUCKET_GRADIENT.get(key) ?? 'linear-gradient(90deg,#90a4ae,#607d8b)',
     };
   });
@@ -75,7 +76,7 @@ export default function DashboardCxCPage() {
         <KpiCard label="Partidas Vencidas" value={data.partidas_vencidas} icon={<ReportProblemOutlined />} tone="error" emphasizeError />
         <KpiCard
           label="Tasa BCV Hoy"
-          value={data.tasa_bcv_hoy ? `Bs. ${parseFloat(data.tasa_bcv_hoy).toLocaleString('es-VE', { minimumFractionDigits: 2 })}` : 'N/D'}
+          value={data.tasa_bcv_hoy ? `Bs. ${formatoDecimal(data.tasa_bcv_hoy, 2, 2)}` : 'N/D'}
           icon={<CurrencyExchangeOutlined />}
           tone="ai"
         />

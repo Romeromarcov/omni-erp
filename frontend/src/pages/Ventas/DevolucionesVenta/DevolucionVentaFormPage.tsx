@@ -8,7 +8,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
-import { devolucionVentaSchema, type DevolucionVentaFormValues, type DevolucionVentaInput } from '../../../schemas/ventas.schemas';
+import { devolucionVentaSchema, type DevolucionVentaInput } from '../../../schemas/ventas.schemas';
 import { ventasKeys } from '../../../lib/queryKeys';
 import type { DevolucionVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
@@ -16,10 +16,10 @@ import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Card, Checkbox, FormControlLabel, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, formatoMoneda, sumDecimals } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
-const defaultValues: DevolucionVentaFormValues = {
+const defaultValues: DevolucionVentaInput = {
   id_cliente: '',
   id_factura_origen: '',
   fecha_devolucion: new Date().toISOString().split('T')[0],
@@ -46,7 +46,7 @@ const DevolucionVentaFormPage: React.FC = () => {
     reset,
     watch,
     formState: { errors, isDirty },
-  } = useForm<DevolucionVentaFormValues, unknown, DevolucionVentaInput>({
+  } = useForm<DevolucionVentaInput>({
     resolver: zodResolver(devolucionVentaSchema),
     mode: 'onBlur',
     defaultValues,
@@ -330,7 +330,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                       const linea = detalles?.at(index);
                       // eslint-disable-next-line security/detect-object-injection -- FP: `index` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
                       const erroresLinea = errors.detalles?.[index];
-                      const subtotal = D(linea?.cantidad_devuelta || 0).times(D(linea?.precio_unitario || 0)).toNumber();
+                      const subtotal = D(linea?.cantidad_devuelta || 0).times(D(linea?.precio_unitario || 0));
                       return (
                         <TableRow key={fieldItem.id}>
                           <TableCell>
@@ -376,7 +376,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            {subtotal.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                            {formatoMoneda(subtotal)}
                           </TableCell>
                           <TableCell>
                             <Controller
@@ -435,7 +435,7 @@ const DevolucionVentaFormPage: React.FC = () => {
           {fields.length > 0 && (
             <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
               <Box sx={{ textAlign: 'right', fontWeight: 700 }}>
-                Total de la Devolución: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                Total de la Devolución: {formatoMoneda(montoTotal)}
               </Box>
               {generarNotaCredito && (
                 <Box sx={{ mt: 1, textAlign: 'right', color: 'success.main', fontSize: 14 }}>

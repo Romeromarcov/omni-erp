@@ -488,7 +488,7 @@ describe('useDocumentoVentaBase — helpers de formulario', () => {
 
     act(() => {
       result.current.setDetalleForm({ id_producto: 'p1', cantidad: '1', precio_unitario: '2' });
-      const pago: Pago = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: 10, tasa: 1 };
+      const pago: Pago = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: '10', tasa: '1' };
       result.current.setPagos([pago]);
       result.current.setDescuentoGeneral('5');
       result.current.setClienteManual({

@@ -20,6 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
+import { D } from '../../lib/decimal';
 import { PageContainer, PageHeader } from '../../components/ui';
 import {
   configuracionFiscalService,
@@ -80,7 +81,7 @@ const ConfiguracionFiscalPage: React.FC = () => {
       if (!empresaId) throw new Error('No hay empresa activa.');
       const payload = {
         ...form,
-        tasa_igtf: parseFloat(form.tasa_igtf).toFixed(4),
+        tasa_igtf: D(form.tasa_igtf).toFixed(4),
         id_empresa: empresaId,
       };
       if (config) {
@@ -170,7 +171,7 @@ const ConfiguracionFiscalPage: React.FC = () => {
                     sx={{ maxWidth: 280 }}
                   />
                   <Typography variant="body2" color="text.secondary">
-                    = {(parseFloat(form.tasa_igtf || '0') * 100).toFixed(1)}%
+                    = {D(form.tasa_igtf || '0').times(100).toFixed(1)}%
                   </Typography>
                 </Stack>
               )}
@@ -201,7 +202,7 @@ const ConfiguracionFiscalPage: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell>{t.nombre}</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>{(parseFloat(t.tasa) * 100).toFixed(0)}%</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>{D(t.tasa).times(100).toFixed(0)}%</TableCell>
                           <TableCell>
                             <Chip size="small" label={t.activo ? 'Activo' : 'Inactivo'} color={t.activo ? 'success' : 'error'} variant="outlined" />
                           </TableCell>

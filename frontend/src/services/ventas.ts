@@ -23,8 +23,8 @@ interface ConversionData {
 interface PagoData {
   metodo: string;
   moneda: string;
-  monto: number;
-  tasa: number;
+  monto: string | number;
+  tasa: string | number;
   referencia?: string;
   observacion?: string;
 }

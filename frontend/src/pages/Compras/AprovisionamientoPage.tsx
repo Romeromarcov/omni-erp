@@ -48,6 +48,7 @@ import { aprovisionamientoKeys } from '../../lib/queryKeys';
 import { getEmpresaId } from '../../utils/empresa';
 import { getSessionUsuarioId } from '../../services/session';
 import { mensajeDeError } from '../../utils/api';
+import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 
 const PRIORIDAD_OPCIONES = ['BAJA', 'MEDIA', 'ALTA', 'URGENTE'];
 const ESTADO_REQ_OPCIONES = ['BORRADOR', 'PENDIENTE', 'APROBADA', 'RECHAZADA', 'PROCESADA', 'ANULADA'];
@@ -1318,12 +1319,12 @@ const DetalleOfertaDrawer: React.FC<{ oferta: OfertaProveedor; onClose: () => vo
     setError('');
   };
 
-  // Subtotal = cantidad × precio_unitario (montos como string, R-CODE-4).
+  // Subtotal = cantidad × precio_unitario (aritmética Decimal exacta, R-CODE-4).
   const calcularSubtotal = (cantidad: string, precio: string): string => {
-    const c = Number(cantidad);
-    const p = Number(precio);
-    if (!Number.isFinite(c) || !Number.isFinite(p)) return '0';
-    return (c * p).toFixed(4);
+    const c = parseDecimalSeguro(cantidad);
+    const p = parseDecimalSeguro(precio);
+    if (!c || !p) return '0';
+    return c.times(p).toFixed(4);
   };
 
   const guardar = useMutation({

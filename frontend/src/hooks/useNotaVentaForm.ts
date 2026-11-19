@@ -7,7 +7,7 @@ import { getEmpresaId } from '../utils/empresa';
 import type { Pago } from '../components/Pedidos/ModalPago';
 import { NotaVentaService } from '../services/ventas';
 import { useDocumentoVentaBase } from './useDocumentoVentaBase';
-import { subtotalLinea } from '../lib/decimal';
+import { subtotalLinea, toFixedStr } from '../lib/decimal';
 import { notaVentaFormSchema, type NotaVentaFormInput } from '../schemas/ventas.schemas';
 
 const notaVentaService = new NotaVentaService();
@@ -90,12 +90,12 @@ export const useNotaVentaForm = (notaVentaId?: string) => {
       base.setValue('id_cliente', newId);
     }
 
-    // FE-HIGH-7: subtotal con aritmética decimal (no Number()*Number()).
+    // FE-HIGH-7 / R-CODE-4: detalles y subtotal como strings decimales exactos.
     const detallesConSubtotal = values.detalles.map(d => ({
       id_producto: d.id_producto,
-      cantidad: Number(d.cantidad),
-      precio_unitario: Number(d.precio_unitario),
-      subtotal: subtotalLinea(d.cantidad, d.precio_unitario).toNumber(),
+      cantidad: d.cantidad,
+      precio_unitario: d.precio_unitario,
+      subtotal: toFixedStr(subtotalLinea(d.cantidad, d.precio_unitario)),
     }));
     const payload: Record<string, unknown> = {
       ...values,

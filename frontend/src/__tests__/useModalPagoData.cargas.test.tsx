@@ -99,7 +99,7 @@ describe('useModalPagoData — parámetros de tolerancia', () => {
 
     const { result } = renderHook(() => useModalPagoData({ empresaId: 'emp-1' }), { wrapper });
 
-    await waitFor(() => expect(result.current.toleranciaPositiva).toBe(1.25));
+    await waitFor(() => expect(result.current.toleranciaPositiva).toBe('1.25'));
     expect(result.current.permitirNegativas).toBe(false);
   });
 
@@ -114,7 +114,7 @@ describe('useModalPagoData — parámetros de tolerancia', () => {
     const { result } = renderHook(() => useModalPagoData({ empresaId: 'emp-1' }), { wrapper });
 
     await waitFor(() => expect(mockGet).toHaveBeenCalled());
-    await waitFor(() => expect(result.current.toleranciaPositiva).toBe(0.5));
+    await waitFor(() => expect(result.current.toleranciaPositiva).toBe('0.5'));
     expect(result.current.permitirNegativas).toBe(true);
   });
 });

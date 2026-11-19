@@ -12,6 +12,7 @@ import { fetchMonedas } from '../../../services/monedas';
 import type { Moneda } from '../../../services/monedas';
 import { Alert, Box, Button, Card, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { PageContainer, PageHeader } from '../../../components/ui';
+import { formatoDecimal } from '../../../lib/decimal';
 
 interface TasaCambio {
   id_tasa_cambio: string;
@@ -78,7 +79,7 @@ const TasaCambioListPage: React.FC = () => {
               Tasa Oficial BCV USD/VES hoy ({tasaOficial.fecha_tasa}):
             </Typography>
             <Typography fontWeight={700} color="success.main" variant="h6">
-              {Number(tasaOficial.valor_tasa).toLocaleString('es-VE', { minimumFractionDigits: 4 })}
+              {formatoDecimal(tasaOficial.valor_tasa, 4, 4)}
             </Typography>
           </>
         ) : (

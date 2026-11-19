@@ -10,6 +10,7 @@ import type { PaginatedResponse } from '../../../services/ventas';
 import Pagination from '../../../components/Pagination';
 import { PageContainer, PageHeader, DataTable } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
+import { formatoDecimal } from '../../../lib/decimal';
 
 const PAGE_SIZE = 20;
 
@@ -49,7 +50,7 @@ export default function FacturasFiscalesListPage() {
       key: 'total',
       header: t('ventas.facturasFiscales.tabla.total'),
       align: 'right',
-      render: (f) => Number(f.monto_total ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
+      render: (f) => formatoDecimal(f.monto_total ?? 0),
     },
     {
       key: 'acciones',

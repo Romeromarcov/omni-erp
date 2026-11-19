@@ -8,7 +8,7 @@ import { getEmpresaId } from '../../../utils/empresa';
 import { fetchProductos } from '../../../services/productosService';
 import { fetchClientes } from '../../../services/clientesService';
 import { toList } from '../../../utils/api';
-import { notaCreditoVentaSchema, type NotaCreditoVentaFormValues, type NotaCreditoVentaInput } from '../../../schemas/ventas.schemas';
+import { notaCreditoVentaSchema, type NotaCreditoVentaInput } from '../../../schemas/ventas.schemas';
 import { ventasKeys } from '../../../lib/queryKeys';
 import type { NotaCreditoVenta } from '../../../types/ventas';
 import type { Cliente } from '../../../services/clientesService';
@@ -16,10 +16,10 @@ import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Card, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, formatoMoneda, sumDecimals } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
-const defaultValues: NotaCreditoVentaFormValues = {
+const defaultValues: NotaCreditoVentaInput = {
   id_cliente: '',
   fecha_emision: new Date().toISOString().split('T')[0],
   estado: 'BORRADOR',
@@ -44,7 +44,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
     reset,
     watch,
     formState: { errors, isDirty },
-  } = useForm<NotaCreditoVentaFormValues, unknown, NotaCreditoVentaInput>({
+  } = useForm<NotaCreditoVentaInput>({
     resolver: zodResolver(notaCreditoVentaSchema),
     mode: 'onBlur',
     defaultValues,
@@ -279,7 +279,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                       const linea = detalles?.at(index);
                       // eslint-disable-next-line security/detect-object-injection -- FP: `index` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
                       const erroresLinea = errors.detalles?.[index];
-                      const subtotal = D(linea?.cantidad || 0).times(D(linea?.precio_unitario || 0)).toNumber();
+                      const subtotal = D(linea?.cantidad || 0).times(D(linea?.precio_unitario || 0));
                       return (
                         <TableRow key={fieldItem.id}>
                           <TableCell>
@@ -325,7 +325,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            {subtotal.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                            {formatoMoneda(subtotal)}
                           </TableCell>
                           <TableCell align="right">
                             <IconButton onClick={() => remove(index)} color="error" size="small">
@@ -347,7 +347,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
 
           {fields.length > 0 && (
             <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1, textAlign: 'right', fontWeight: 700 }}>
-              Total: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+              Total: {formatoMoneda(montoTotal)}
             </Box>
           )}
         </Card>

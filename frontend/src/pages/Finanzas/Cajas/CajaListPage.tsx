@@ -5,13 +5,14 @@ import { getCajas } from '../../../services/cajaService';
 import { toList } from '../../../utils/api';
 import { Alert, Box, Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import { PageContainer, PageHeader, StatusChip } from '../../../components/ui';
+import { toFixedStr } from '../../../lib/decimal';
 
 type Caja = {
   id_caja: string;
   nombre: string;
   sucursal_nombre: string;
   moneda_codigo_iso: string;
-  saldo_actual: number;
+  saldo_actual: number | string;
   activa: boolean;
   tipo_caja: string;
   tipo_caja_display?: string;
@@ -87,7 +88,7 @@ const CajaListPage: React.FC = () => {
                 <TableCell>{row.tipo_caja_display || row.tipo_caja}</TableCell>
                 <TableCell>{row.sucursal_nombre}</TableCell>
                 <TableCell>{row.moneda_codigo_iso}</TableCell>
-                <TableCell align="right">{Number(row.saldo_actual).toFixed(2)}</TableCell>
+                <TableCell align="right">{toFixedStr(row.saldo_actual)}</TableCell>
                 <TableCell align="center">
                   <StatusChip value={row.activa} />
                 </TableCell>

@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Decimal from 'decimal.js';
-import { toFixedStr } from '../../../lib/decimal';
+import { D, toFixedStr } from '../../../lib/decimal';
 import { newIdempotencyKey } from '../../../lib/idempotency';
 import type { MetodoPagoEmpresaActiva } from '../../../services/metodosPagoEmpresaActiva';
 import type { MonedaEmpresaActiva } from '../../../services/monedasEmpresaActiva';
@@ -64,7 +64,7 @@ export default function PosPagoDialog({
   const agregarPago = () => {
     const moneda = monedas.find((mo) => mo.id_moneda === idMoneda);
     const metodo = metodos.find((m) => m.id === idMetodo);
-    if (!metodo || !moneda || !monto || Number(monto) <= 0) {
+    if (!metodo || !moneda || !monto || D(monto).lessThanOrEqualTo(0)) {
       setErrorForm('Selecciona método, moneda y un monto mayor que cero.');
       return;
     }

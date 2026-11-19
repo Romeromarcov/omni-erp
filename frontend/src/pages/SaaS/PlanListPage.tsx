@@ -4,10 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert, Box, Button, FormControlLabel, Switch } from '@mui/material';
 import { PageContainer, PageHeader, DataTable, StatusChip, type Column } from '../../components/ui';
 import { fetchPlanes, deactivatePlan, type Plan } from '../../services/saasService';
+import { formatoDecimal } from '../../lib/decimal';
+import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 
 function fmtMoney(v: string): string {
-  const n = Number(v);
-  return Number.isFinite(n) ? n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v;
+  const d = parseDecimalSeguro(v);
+  return d ? formatoDecimal(d, 2, 2) : v;
 }
 
 function fmtLimite(v: number): string {

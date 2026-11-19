@@ -218,9 +218,9 @@ export default function PosPage() {
       const idCliente = await obtenerClienteMostrador();
       const detalles = carrito.map((item) => ({
         id_producto: item.id_producto,
-        cantidad: Number(item.cantidad),
-        precio_unitario: Number(item.precio),
-        subtotal: subtotalLinea(item.cantidad, item.precio).toNumber(),
+        cantidad: item.cantidad,
+        precio_unitario: item.precio,
+        subtotal: toFixedStr(subtotalLinea(item.cantidad, item.precio)),
       }));
       const payload = {
         fecha_emision: new Date().toISOString().slice(0, 10),
@@ -265,10 +265,10 @@ export default function PosPage() {
           'NOTA_VENTA',
           notaCreada.id_nota_venta,
           {
-            monto: Number(pago.monto),
+            monto: pago.monto,
             id_metodo_pago: pago.id_metodo_pago,
             id_moneda: pago.id_moneda,
-            tasa: Number(pago.tasa),
+            tasa: pago.tasa,
             referencia: pago.referencia,
             id_caja_fisica: sesion?.caja_fisica_principal.id_caja,
           },

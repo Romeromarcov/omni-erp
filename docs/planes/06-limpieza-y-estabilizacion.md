@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — Fase 0 (`0.1`–`0.4`) y Fase 1 (`1.1`–`1.3`) cerradas; Fase 3 (`3.2`–`3.6`) y Fase 4 (`4.1`, `4.3`) cerradas |
+| **Estado**   | EN CURSO — Fase 0 (`0.1`–`0.4`) y Fase 1 (`1.1`–`1.3`) cerradas; Fase 3 (`3.2`–`3.6`) y Fase 4 (`4.1`–`4.3`) cerradas |
 | **Fecha**    | 2026-11-14                                |
 | **Esfuerzo** | ~3–4 semanas, repartibles en PRs pequeños (R-PROC-2) |
 | **Owner**    | equipo-backend / devops (acciones del propietario marcadas con 👤) |
@@ -106,7 +106,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 | # | Tarea | Resuelve |
 |---|-------|----------|
 | 4.1 | ✅ D4: `PersistQueryClientProvider onSuccess` → invalidar consultas activas; test | H13 |
-| 4.2 | ⬜ Montos, segunda pasada (R-CODE-4): otros formularios con `number`, `utils/formatCurrency`, volver a tipar `D()`, alias `XFormValues` redundantes | — |
+| 4.2 | ✅ Montos, segunda pasada (R-CODE-4): otros formularios/hooks/servicios sin `Number`/`parseFloat`/`toNumber`, `utils/formatCurrency` unificado con Decimal, volver a tipar `D()`, eliminar alias `XFormValues` redundantes | — |
 | 4.3 | ✅ Railway `staging`: aplicadas referencias `${{Postgres.DATABASE_URL}}`/`${{Redis.REDIS_URL}}` y `DJANGO_ALLOWED_HOSTS` sin host de producción en `omni-erp-backend`, `omni-erp-worker` y `omni-erp-beat`; regla de no usar *Sync* con entornos de PR | H14 |
 | 4.4 | ⬜ Connect S2 en adelante, **después de la fase 2** (perfil público con `rls.rls_bypass()` acotado y solo tarjetas `ACTIVA`) | — |
 

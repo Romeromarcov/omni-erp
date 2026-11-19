@@ -14,12 +14,13 @@ import {
   type Suscripcion,
 } from '../../services/saasService';
 import { fetchEmpresas } from '../../services/empresas';
+import { formatoDecimal, type DecimalInput } from '../../lib/decimal';
 
 const DIAS_POR_VENCER = 30;
 const ESTADOS_VIGENTES = ['ACTIVA', 'TRIAL'];
 
-function fmtMoney(n: number): string {
-  return n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmtMoney(v: DecimalInput): string {
+  return formatoDecimal(v, 2, 2);
 }
 
 const AdminSaasDashboardPage: React.FC = () => {
