@@ -99,12 +99,30 @@ class RegistroAuditoriaAdmin(admin.ModelAdmin):
     list_filter = ("tipo_evento", "nombre_modelo_afectado", "id_usuario")
     search_fields = ("tipo_evento", "nombre_modelo_afectado", "id_registro_afectado", "cambios_json__icontains")
     readonly_fields = (
-        "fecha_hora_accion",
+        "id_log_auditoria",
+        "id_empresa",
         "id_usuario",
+        "tipo_evento",
+        "modulo_afectado",
+        "nombre_modelo_afectado",
+        "id_registro_afectado",
+        "descripcion_accion",
+        "cambios_json",
+        "fecha_hora_accion",
         "direccion_ip",
         "navegador_info",
-        "cambios_json",
+        "resultado_evento",
+        "mensaje_error",
     )  # No se pueden editar desde el admin
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Empresa)

@@ -134,3 +134,21 @@ def test_rechaza_nombre_de_rol_invalido(db, monkeypatch):
     monkeypatch.setenv(ENV_PASSWORD, PASSWORD)
     with pytest.raises(CommandError, match="Identificador SQL inválido"):
         call_command("configurar_rol_rls", rol='mal"; DROP ROLE x;--', stdout=io.StringIO())
+
+
+def test_auditoria_sin_update_ni_delete_para_rol_runtime(rol_limpio, monkeypatch):
+    """P1-5 (R13): el rol de runtime solo tiene SELECT/INSERT en tablas de auditoría."""
+    from django.core.management import call_command
+    from django.db import connection
+
+    monkeypatch.setenv("OMNI_APP_DB_PASSWORD", "test_pwd_12345")
+    call_command("configurar_rol_rls", rol=ROL)
+
+    with connection.cursor() as cur:
+        for tabla in ("public.auditoria_logauditoria", "public.registro_auditoria"):
+            for priv in ("SELECT", "INSERT"):
+                cur.execute("SELECT has_table_privilege(%s, %s, %s)", [ROL, tabla, priv])
+                assert cur.fetchone()[0] is True, f"{ROL} debería conservar {priv} en {tabla}"
+            for priv in ("UPDATE", "DELETE"):
+                cur.execute("SELECT has_table_privilege(%s, %s, %s)", [ROL, tabla, priv])
+                assert cur.fetchone()[0] is False, f"{ROL} NO debe tener {priv} en {tabla}"
