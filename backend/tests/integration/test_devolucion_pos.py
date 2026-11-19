@@ -622,3 +622,47 @@ class TestDevolucionAtomicidad:
         assert (
             AsientoContable.objects.filter(id_empresa=empresa_a, nombre_modelo_origen="DevolucionVenta").count() == 0
         )
+
+    def test_tasa_cambio_faltante_en_reembolso_lanza_venta_error_y_revierte_todo(
+        self, empresa_a, cliente, producto, almacen, user_a, moneda_usd, metodo_efectivo_pos, sesion_abierta
+    ):
+        """Si la factura está en moneda distinta a la base sin TasaCambio vigente,
+        TasaCambioError se traduce a VentaError y toda la devolución revierte."""
+        from apps.ventas.models import FacturaFiscal
+        from tests.factories import MonedaFactory
+
+        moneda_ves = MonedaFactory(codigo_iso="VES", nombre="Bolívar", simbolo="Bs")
+        _stock_inicial(empresa_a, producto, almacen, 10, user_a)
+        nota = _venta_entregada(empresa_a, cliente, producto, almacen, user_a)
+        factura = FacturaFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente,
+            id_nota_venta_origen=nota,
+            numero_control="00-TC-001",
+            numero_factura="FAC-TC-001",
+            fecha_emision=timezone.now().date(),
+            base_imponible=Decimal("50.00"),
+            monto_iva=Decimal("8.00"),
+            monto_total=Decimal("58.00"),
+            id_moneda=moneda_ves,
+            estado="EMITIDA",
+        )
+        nota.id_factura_resultante = factura
+        nota.estado = "FACTURADA"
+        nota.save(update_fields=["id_factura_resultante", "estado"])
+
+        stock_antes = _disponible(producto, almacen)
+        with pytest.raises(VentaError, match="tasa de cambio"):
+            registrar_devolucion_pos(
+                nota_venta=nota,
+                lineas=_lineas(nota, "2"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
+            )
+
+        assert _disponible(producto, almacen) == stock_antes
+        assert DevolucionVenta.objects.filter(id_nota_venta_origen=nota).count() == 0
+        assert NotaCreditoFiscal.objects.filter(id_empresa=empresa_a).count() == 0
+        assert Pago.objects.filter(id_empresa=empresa_a, tipo_operacion="EGRESO").count() == 0
+        assert TransaccionFinanciera.objects.filter(id_empresa=empresa_a, tipo_transaccion="EGRESO").count() == 0

@@ -18,24 +18,63 @@ const DB_NAME = 'omni-erp-outbox';
 const STORE_NAME = 'ventas-pendientes';
 const KEY = 'cola';
 
+export type OutboxSaleEstado = 'PENDIENTE' | 'SINCRONIZADA' | 'REQUIERE_REVISION';
+
 export interface OutboxSale {
   /** Clave de idempotencia estable; el backend deduplica por ella. */
   idempotencyKey: string;
-  /** Endpoint relativo, p. ej. "/ventas/notas-venta/". */
+  /** Endpoint relativo, p. ej. "/sync/push/ventas/". */
   endpoint: string;
   /** Cuerpo del POST tal cual se enviaría online. */
   payload: Record<string, unknown>;
   /** Epoch ms en que se encoló (orden FIFO y diagnóstico). */
   createdAt: number;
+  /** Estado del ciclo offline (por defecto 'PENDIENTE'). */
+  estado?: OutboxSaleEstado;
+  /** Folio provisional local mientras espera confirmación del servidor. */
+  folioProvisional?: string;
+  /** Total provisional local mostrado en cola. */
+  totalProvisional?: string;
+  /** Moneda de despliegue asociada al total provisional. */
+  codigoIso?: string;
+  /** ID definitivo devuelto por el servidor al sincronizar. */
+  idNotaVenta?: string;
+  /** Número definitivo devuelto por el servidor al sincronizar. */
+  numeroNota?: string;
+  /** Epoch ms en que se confirmó la sincronización. */
+  syncedAt?: number;
+  /** Indica si la venta sincronizó usando stock negativo permitido por tenant. */
+  alertaStockNegativo?: boolean;
+  /** Detalle del rechazo permanente cuando pasa a 'REQUIERE_REVISION'. */
+  errorMensaje?: string;
+  /** Código de rechazo del servidor (p. ej. 'REQUIERE_REVISION'). */
+  errorCodigo?: string;
+  /** Código HTTP del rechazo permanente (4xx). */
+  errorStatus?: number;
+}
+
+export interface FlushSincronizada {
+  idempotencyKey: string;
+  idNotaVenta?: string;
+  numeroNota?: string;
+  alertaStockNegativo?: boolean;
+}
+
+export interface FlushError {
+  idempotencyKey: string;
+  status?: number;
+  codigo?: string;
+  mensaje: string;
 }
 
 export interface FlushResult {
   enviados: number;
-  /** Rechazos permanentes (4xx): se descartan de la cola, no reintentables. */
+  /** Rechazos permanentes (4xx): pasan a REQUIERE_REVISION sin reintentar en bucle. */
   rechazados: number;
-  /** Entradas que quedan para el próximo intento (error de red / 5xx). */
+  /** Entradas que quedan PENDIENTE para el próximo intento (error de red / 5xx). */
   pendientes: number;
-  errores: { idempotencyKey: string; status?: number; mensaje: string }[];
+  errores: FlushError[];
+  sincronizadas?: FlushSincronizada[];
 }
 
 /** Reenvía una venta; resuelve con la respuesta o lanza (con `.status` si es HTTP). */
@@ -92,19 +131,62 @@ function hasIndexedDB(): boolean {
 // Almacén único por módulo (memoria en tests; IndexedDB en navegador).
 const storage: KVStorage = hasIndexedDB() ? idbStorage() : memoryStorage();
 
-/** Encola una venta para reenvío diferido. */
+function estadoDe(entry: OutboxSale): OutboxSaleEstado {
+  return entry.estado ?? 'PENDIENTE';
+}
+
+/** Encola una venta para reenvío diferido (idempotente por idempotencyKey). */
 export async function enqueueSale(entry: OutboxSale): Promise<void> {
   const cola = await storage.read();
-  cola.push(entry);
+  if (cola.some((v) => v.idempotencyKey === entry.idempotencyKey)) {
+    return;
+  }
+  cola.push({ ...entry, estado: estadoDe(entry) });
   await storage.write(cola);
 }
 
-/** Lista las ventas pendientes en orden FIFO. */
+/** Lista las ventas pendientes de envío en orden FIFO. */
 export async function listPending(): Promise<OutboxSale[]> {
-  return storage.read();
+  const cola = await storage.read();
+  return cola.filter((v) => estadoDe(v) === 'PENDIENTE').map((v) => ({ ...v, estado: 'PENDIENTE' }));
 }
 
-/** Vacía la cola (uso en tests / reset explícito). */
+/** Lista todas las entradas del outbox (pendientes, sincronizadas y en revisión). */
+export async function listOutboxItems(): Promise<OutboxSale[]> {
+  const cola = await storage.read();
+  return cola.map((v) => ({ ...v, estado: estadoDe(v) }));
+}
+
+/** Descarta explícitamente una entrada del outbox por su idempotencyKey. */
+export async function discardOutboxItem(idempotencyKey: string): Promise<void> {
+  const cola = await storage.read();
+  await storage.write(cola.filter((v) => v.idempotencyKey !== idempotencyKey));
+}
+
+/** Reencola una entrada en 'REQUIERE_REVISION' para volver a intentar su envío. */
+export async function retryOutboxItem(idempotencyKey: string): Promise<void> {
+  const cola = await storage.read();
+  const next = cola.map((v) =>
+    v.idempotencyKey === idempotencyKey
+      ? {
+          ...v,
+          estado: 'PENDIENTE' as const,
+          errorMensaje: undefined,
+          errorCodigo: undefined,
+          errorStatus: undefined,
+        }
+      : v,
+  );
+  await storage.write(next);
+}
+
+/** Limpia solo las ventas ya sincronizadas preservando pendientes y en revisión. */
+export async function clearSyncedOutboxItems(): Promise<void> {
+  const cola = await storage.read();
+  await storage.write(cola.filter((v) => estadoDe(v) !== 'SINCRONIZADA'));
+}
+
+/** Vacía toda la cola y registros locales del outbox (uso en logout / reset). */
 export async function clearOutbox(): Promise<void> {
   await storage.write([]);
 }
@@ -117,51 +199,111 @@ function statusDe(err: unknown): number | undefined {
   return undefined;
 }
 
-function mensajeDe(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return String(err);
+function detalleError(err: unknown): { mensaje: string; codigo?: string } {
+  if (!(err instanceof Error)) return { mensaje: String(err) };
+  try {
+    const parsed: unknown = JSON.parse(err.message);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const obj = parsed as Record<string, unknown>;
+      const codigo = typeof obj.codigo === 'string' ? obj.codigo : undefined;
+      const msg =
+        (typeof obj.error === 'string' && obj.error) ||
+        (typeof obj.detail === 'string' && obj.detail) ||
+        err.message;
+      return { mensaje: msg, codigo };
+    }
+  } catch {
+    // Error no-JSON (p. ej. TypeError o Error simple): usar message tal cual.
+  }
+  return { mensaje: err.message };
+}
+
+function extraerSyncInfo(resp: unknown): {
+  idNotaVenta?: string;
+  numeroNota?: string;
+  alertaStockNegativo?: boolean;
+} {
+  if (!resp || typeof resp !== 'object') return {};
+  const obj = resp as Record<string, unknown>;
+  const idNotaVenta = typeof obj.id_nota_venta === 'string' ? obj.id_nota_venta : undefined;
+  const numeroNota =
+    typeof obj.numero_nota === 'string'
+      ? obj.numero_nota
+      : typeof obj.numero_nota_venta === 'string'
+        ? obj.numero_nota_venta
+        : undefined;
+  const alertaStockNegativo = obj.alerta_stock_negativo === true;
+  return { idNotaVenta, numeroNota, alertaStockNegativo };
 }
 
 /**
- * Reenvía las ventas pendientes en orden. Un 4xx (rechazo permanente) se
- * descarta; un error de red o 5xx (transitorio) detiene el flush y conserva el
- * resto para el próximo intento (evita perder el orden y machacar el servidor).
+ * Reenvía las ventas pendientes en orden FIFO.
+ * - 2xx: pasa a 'SINCRONIZADA' con el mapeo idNotaVenta / numeroNota del servidor.
+ * - 4xx (rechazo permanente): pasa a 'REQUIERE_REVISION' sin reintentar en bucle.
+ * - Error de red o 5xx (transitorio): detiene el flush y conserva las pendientes.
  */
 export async function flushOutbox(poster: SalePoster): Promise<FlushResult> {
   const cola = await storage.read();
-  const resultado: FlushResult = { enviados: 0, rechazados: 0, pendientes: 0, errores: [] };
-  let cortadoEn = cola.length; // índice donde un error transitorio detuvo el flush
+  const siguiente: OutboxSale[] = cola.map((v) => ({ ...v, estado: estadoDe(v) }));
+  const sincronizadas: FlushSincronizada[] = [];
+  const resultado: FlushResult = {
+    enviados: 0,
+    rechazados: 0,
+    pendientes: 0,
+    errores: [],
+    sincronizadas,
+  };
 
-  for (const [idx, venta] of cola.entries()) {
+  for (const venta of siguiente) {
+    if (estadoDe(venta) !== 'PENDIENTE') continue;
     try {
-      await poster(venta.endpoint, venta.payload, venta.idempotencyKey);
+      const resp = await poster(venta.endpoint, venta.payload, venta.idempotencyKey);
+      const info = extraerSyncInfo(resp);
+      venta.estado = 'SINCRONIZADA';
+      venta.idNotaVenta = info.idNotaVenta;
+      venta.numeroNota = info.numeroNota;
+      venta.alertaStockNegativo = info.alertaStockNegativo;
+      venta.syncedAt = Date.now();
+      venta.errorMensaje = undefined;
+      venta.errorCodigo = undefined;
+      venta.errorStatus = undefined;
       resultado.enviados += 1;
+      sincronizadas.push({
+        idempotencyKey: venta.idempotencyKey,
+        idNotaVenta: info.idNotaVenta,
+        numeroNota: info.numeroNota,
+        alertaStockNegativo: info.alertaStockNegativo,
+      });
     } catch (err) {
       const status = statusDe(err);
+      const { mensaje, codigo } = detalleError(err);
       if (status !== undefined && status >= 400 && status < 500) {
-        // Permanente: nunca va a pasar; se descarta y se reporta.
+        // Permanente: no reintentar en bucle; pasa a REQUIERE_REVISION visible para el cajero.
+        venta.estado = 'REQUIERE_REVISION';
+        venta.errorMensaje = mensaje;
+        venta.errorCodigo = codigo;
+        venta.errorStatus = status;
         resultado.rechazados += 1;
         resultado.errores.push({
           idempotencyKey: venta.idempotencyKey,
           status,
-          mensaje: mensajeDe(err),
+          codigo,
+          mensaje,
         });
         continue;
       }
-      // Transitorio: detener; esta y las siguientes quedan pendientes.
+      // Transitorio: detener; esta y las siguientes siguen PENDIENTE.
       resultado.errores.push({
         idempotencyKey: venta.idempotencyKey,
         status,
-        mensaje: mensajeDe(err),
+        codigo,
+        mensaje,
       });
-      cortadoEn = idx;
       break;
     }
   }
 
-  // La cola restante = lo no procesado (desde el corte transitorio, si hubo).
-  const restantes = cola.slice(cortadoEn);
-  await storage.write(restantes);
-  resultado.pendientes = restantes.length;
+  await storage.write(siguiente);
+  resultado.pendientes = siguiente.filter((v) => estadoDe(v) === 'PENDIENTE').length;
   return resultado;
 }

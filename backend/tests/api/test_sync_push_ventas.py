@@ -392,3 +392,349 @@ def test_sin_totales_cliente_se_acepta(client_a, empresa_a, user_a, moneda_usd, 
     r = client_a.post(URL, sobre, format="json", **_hdr("venta-sin-totales"))
     assert r.status_code == 201, r.data
     assert r.data["estado"] == "ENTREGADA"
+    assert r.data["alerta_stock_negativo"] is False
+    assert r.data["productos_stock_negativo"] == []
+
+
+# ── Stock negativo POS + REQUIERE_REVISION + resolución por sucursal ─────────
+
+
+def _param_stock_negativo(empresa, valor="true", *, activo=True):
+    from apps.configuracion_motor.models import ParametroSistema
+
+    return ParametroSistema.objects.create(
+        id_empresa=empresa,
+        nombre_parametro="Permitir stock negativo POS",
+        codigo_parametro="permitir_stock_negativo_pos",
+        valor_parametro=valor,
+        tipo_dato="BOOLEANO",
+        activo=activo,
+    )
+
+
+def test_stock_insuficiente_sin_parametro_rechaza_422_y_revierte(
+    client_a, empresa_a, user_a, moneda_usd, metodo_efectivo
+):
+    from apps.finanzas.models import Pago
+    from apps.inventario.models import MovimientoInventario, StockActual
+
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="1")
+    cliente = _cliente(empresa_a)
+    caja = _caja_virtual(empresa_a, moneda_usd)
+    sobre = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        caja=caja,
+        cantidad="3",
+        total="60.00",
+        client_uuid="venta-stock-insuf-default",
+    )
+
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-stock-insuf-default"))
+
+    assert r.status_code == 422, r.data
+    assert r.data["codigo"] == "REQUIERE_REVISION"
+    assert "stock insuficiente" in r.data["error"].lower()
+    assert _count_notas(empresa_a) == 0
+    assert Pago.objects.filter(id_empresa=empresa_a).count() == 0
+    assert MovimientoInventario.objects.filter(id_empresa=empresa_a, tipo_movimiento="DESPACHO_VENTA").count() == 0
+    stock = StockActual.objects.get(id_producto=producto, id_almacen=almacen)
+    assert stock.cantidad_disponible == Decimal("1.0000")
+
+
+def test_stock_insuficiente_con_parametro_false_rechaza_422(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    _param_stock_negativo(empresa_a, "false")
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="1")
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="2",
+        total="40.00",
+        client_uuid="venta-stock-false",
+    )
+
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-stock-false"))
+
+    assert r.status_code == 422, r.data
+    assert r.data["codigo"] == "REQUIERE_REVISION"
+    assert _count_notas(empresa_a) == 0
+
+
+def test_stock_negativo_permitido_crea_venta_con_alerta_y_aisla_tenant(
+    client_a, client_b, empresa_a, empresa_b, user_a, user_b, moneda_usd, metodo_efectivo
+):
+    from apps.inventario.models import StockActual
+
+    _param_stock_negativo(empresa_a, "true")
+    producto_a, almacen_a = _producto_con_stock(empresa_a, user_a, stock="1")
+    cliente_a = _cliente(empresa_a)
+    caja_a = _caja_virtual(empresa_a, moneda_usd)
+    sobre_a = _sobre(
+        cliente_a,
+        almacen_a,
+        producto_a,
+        metodo_efectivo,
+        moneda_usd,
+        caja=caja_a,
+        cantidad="4",
+        total="80.00",
+        client_uuid="venta-stock-neg-ok",
+    )
+
+    r1 = client_a.post(URL, sobre_a, format="json", **_hdr("venta-stock-neg-ok"))
+    r2 = client_a.post(URL, sobre_a, format="json", **_hdr("venta-stock-neg-ok"))
+
+    assert r1.status_code == 201, r1.data
+    assert r1.data["alerta_stock_negativo"] is True
+    assert len(r1.data["productos_stock_negativo"]) == 1
+    assert r1.data["productos_stock_negativo"][0]["id_producto"] == str(producto_a.id_producto)
+    assert Decimal(r1.data["productos_stock_negativo"][0]["cantidad_disponible"]) == Decimal("-3.0000")
+
+    # Idempotencia conservada: replay devuelve el mismo 201 sin volver a descontar.
+    assert r2.status_code == 201
+    assert r2.data["id_nota_venta"] == r1.data["id_nota_venta"]
+    stock_a = StockActual.objects.get(id_producto=producto_a, id_almacen=almacen_a)
+    assert stock_a.cantidad_disponible == Decimal("-3.0000")
+
+    # Multi-tenant: empresa_b sin el parámetro sigue rechazada con 422 REQUIERE_REVISION.
+    producto_b, almacen_b = _producto_con_stock(empresa_b, user_b, stock="1")
+    cliente_b = _cliente(empresa_b, rif="V-88888888-8")
+    sobre_b = _sobre(
+        cliente_b,
+        almacen_b,
+        producto_b,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="4",
+        total="80.00",
+        client_uuid="venta-stock-neg-b",
+    )
+    rb = client_b.post(URL, sobre_b, format="json", **_hdr("venta-stock-neg-b"))
+    assert rb.status_code == 422, rb.data
+    assert rb.data["codigo"] == "REQUIERE_REVISION"
+    assert _count_notas(empresa_b) == 0
+
+
+def test_stock_negativo_parametro_global_y_override_tenant(
+    client_a, client_b, empresa_a, empresa_b, user_a, user_b, moneda_usd, metodo_efectivo
+):
+    from apps.configuracion_motor.models import ParametroSistema
+
+    # Global truthy ("si") aplica a empresa_a; empresa_b tiene override explícito "false".
+    ParametroSistema.objects.create(
+        id_empresa=None,
+        nombre_parametro="Global stock negativo POS",
+        codigo_parametro="permitir_stock_negativo_pos",
+        valor_parametro="si",
+        tipo_dato="BOOLEANO",
+        activo=True,
+    )
+    _param_stock_negativo(empresa_b, "false")
+
+    producto_a, almacen_a = _producto_con_stock(empresa_a, user_a, stock="1")
+    cliente_a = _cliente(empresa_a)
+    sobre_a = _sobre(
+        cliente_a,
+        almacen_a,
+        producto_a,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="2",
+        total="40.00",
+        client_uuid="venta-global-true",
+    )
+    ra = client_a.post(URL, sobre_a, format="json", **_hdr("venta-global-true"))
+    assert ra.status_code == 201, ra.data
+    assert ra.data["alerta_stock_negativo"] is True
+
+    producto_b, almacen_b = _producto_con_stock(empresa_b, user_b, stock="1")
+    cliente_b = _cliente(empresa_b, rif="V-77777777-7")
+    sobre_b = _sobre(
+        cliente_b,
+        almacen_b,
+        producto_b,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="2",
+        total="40.00",
+        client_uuid="venta-override-false",
+    )
+    rb = client_b.post(URL, sobre_b, format="json", **_hdr("venta-override-false"))
+    assert rb.status_code == 422, rb.data
+    assert rb.data["codigo"] == "REQUIERE_REVISION"
+
+
+def test_resuelve_almacen_por_id_sucursal_y_falla_si_no_hay_almacen(
+    client_a, empresa_a, user_a, moneda_usd, metodo_efectivo
+):
+    from apps.core.models import Sucursal
+    from apps.finanzas.models import CajaFisica
+
+    sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal POS", codigo_sucursal="SUC-POS-1")
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="10")
+    almacen.id_sucursal = sucursal
+    almacen.save(update_fields=["id_sucursal"])
+    cliente = _cliente(empresa_a)
+    caja_fisica = CajaFisica.objects.create(
+        empresa=empresa_a, sucursal=sucursal, nombre="Caja Sucursal", identificador_dispositivo="POS-SUC-1"
+    )
+
+    sobre = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="2",
+        total="40.00",
+        client_uuid="venta-por-sucursal",
+    )
+    sobre.pop("id_almacen")
+    sobre["id_sucursal"] = str(sucursal.id_sucursal)
+    sobre["id_caja"] = str(caja_fisica.id_caja_fisica)
+
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-por-sucursal"))
+    assert r.status_code == 201, r.data
+    assert r.data["movimientos"] == 1
+    from apps.finanzas.models import Pago
+
+    pago = Pago.objects.get(pk=r.data["pagos"][0])
+    assert pago.id_caja_fisica_id == caja_fisica.id_caja_fisica
+
+    # Sucursal sin almacén asociado ni almacén sin sucursal → 422 REQUIERE_REVISION.
+    sucursal_vacia = Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal Vacia", codigo_sucursal="SUC-VAC")
+    sobre_vacia = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="1",
+        total="20.00",
+        client_uuid="venta-suc-sin-alm",
+    )
+    sobre_vacia.pop("id_almacen")
+    sobre_vacia["id_sucursal"] = str(sucursal_vacia.id_sucursal)
+    r_vacia = client_a.post(URL, sobre_vacia, format="json", **_hdr("venta-suc-sin-alm"))
+    assert r_vacia.status_code == 422, r_vacia.data
+    assert r_vacia.data["codigo"] == "REQUIERE_REVISION"
+    assert "id_almacen" in r_vacia.data["error"]
+
+
+def test_total_incoherente_y_recursos_invalidos_devuelven_codigo_requiere_revision(
+    client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo
+):
+    from apps.finanzas.models import CajaFisica
+
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="10")
+    cliente = _cliente(empresa_a)
+    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-rev-total")
+    sobre["totales_cliente"]["total"] = "99.00"
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-rev-total"))
+    assert r.status_code == 422
+    assert r.data["codigo"] == "REQUIERE_REVISION"
+
+    # Sin id_almacen ni id_sucursal
+    sobre_sin_alm = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-sin-alm")
+    sobre_sin_alm.pop("id_almacen")
+    r_alm = client_a.post(URL, sobre_sin_alm, format="json", **_hdr("venta-sin-alm"))
+    assert r_alm.status_code == 422
+    assert r_alm.data["codigo"] == "REQUIERE_REVISION"
+
+    # id_caja de empresa ajena → 422 REQUIERE_REVISION
+    caja_b = CajaFisica.objects.create(empresa=empresa_b, nombre="Caja B", identificador_dispositivo="POS-B")
+    sobre_caja_b = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-caja-fis-b")
+    sobre_caja_b["id_caja"] = str(caja_b.id_caja_fisica)
+    r_cb = client_a.post(URL, sobre_caja_b, format="json", **_hdr("venta-caja-fis-b"))
+    assert r_cb.status_code == 422
+    assert r_cb.data["codigo"] == "REQUIERE_REVISION"
+
+
+def test_descuento_y_tasa_cambio_faltante_en_pago(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
+    from tests.factories import MonedaFactory
+
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="10", precio="20.00")
+    cliente = _cliente(empresa_a)
+    caja = _caja_virtual(empresa_a, moneda_usd)
+
+    # Descuento 10% sobre 2 × 20.00 = 36.00
+    sobre = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        caja=caja,
+        cantidad="2",
+        precio="20.00",
+        total="36.00",
+        client_uuid="venta-con-descuento",
+    )
+    sobre["detalles"][0]["descuento_porcentaje"] = "10"
+    r = client_a.post(URL, sobre, format="json", **_hdr("venta-con-descuento"))
+    assert r.status_code == 201, r.data
+    assert r.data["total"] == "36.0000"
+
+    # Pago en otra moneda sin TasaCambio → 422 REQUIERE_REVISION y rollback
+    moneda_ves = MonedaFactory(codigo_iso="VES", nombre="Bolívar", simbolo="Bs")
+    sobre_sin_tasa = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_ves,
+        cantidad="1",
+        precio="20.00",
+        total="20.00",
+        client_uuid="venta-sin-tasa",
+    )
+    r_tasa = client_a.post(URL, sobre_sin_tasa, format="json", **_hdr("venta-sin-tasa"))
+    assert r_tasa.status_code == 422, r_tasa.data
+    assert r_tasa.data["codigo"] == "REQUIERE_REVISION"
+    assert _count_notas(empresa_a) == 1  # solo la venta con descuento quedó
+
+
+def test_descuento_invalido_y_caja_fisica_en_pago(client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo):
+    from apps.finanzas.models import CajaFisica, Pago
+
+    producto, almacen = _producto_con_stock(empresa_a, user_a, stock="10", precio="10.00")
+    cliente = _cliente(empresa_a)
+    caja_a = CajaFisica.objects.create(empresa=empresa_a, nombre="Caja A", identificador_dispositivo="POS-A")
+    caja_b = CajaFisica.objects.create(empresa=empresa_b, nombre="Caja B", identificador_dispositivo="POS-B")
+
+    # Descuento > 100 → 422
+    sobre_desc = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-desc-mal")
+    sobre_desc["detalles"][0]["descuento_porcentaje"] = "150"
+    r_desc = client_a.post(URL, sobre_desc, format="json", **_hdr("venta-desc-mal"))
+    assert r_desc.status_code == 422
+
+    # id_caja_fisica ajena en pagos[] → 422 y rollback
+    sobre_cf_b = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-cf-ajena")
+    sobre_cf_b["pagos"][0]["id_caja_fisica"] = str(caja_b.id_caja_fisica)
+    r_cfb = client_a.post(URL, sobre_cf_b, format="json", **_hdr("venta-cf-ajena"))
+    assert r_cfb.status_code == 422
+
+    # id_caja_fisica propia en pagos[] y id_caja no-UUID en sobre → 201 OK
+    sobre_ok = _sobre(
+        cliente,
+        almacen,
+        producto,
+        metodo_efectivo,
+        moneda_usd,
+        cantidad="1",
+        precio="10.00",
+        total="10.00",
+        client_uuid="venta-cf-ok",
+    )
+    sobre_ok["id_caja"] = "no-es-uuid"
+    sobre_ok["pagos"][0]["id_caja_fisica"] = str(caja_a.id_caja_fisica)
+    r_ok = client_a.post(URL, sobre_ok, format="json", **_hdr("venta-cf-ok"))
+    assert r_ok.status_code == 201, r_ok.data
+    assert Pago.objects.get(pk=r_ok.data["pagos"][0]).id_caja_fisica_id == caja_a.id_caja_fisica

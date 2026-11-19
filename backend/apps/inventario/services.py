@@ -63,10 +63,22 @@ class MovimientoInvalidoError(Exception):
 # ── Helpers internos ──────────────────────────────────────────────────────────
 
 
-def _actualizar_stock(empresa, producto, variante, almacen, delta: Decimal) -> StockActual:
+def _actualizar_stock(
+    empresa,
+    producto,
+    variante,
+    almacen,
+    delta: Decimal,
+    *,
+    permitir_negativo: bool = False,
+) -> StockActual:
     """
     Aplica `delta` a StockActual.cantidad_disponible dentro de una transacción activa.
     Usa get_or_create + select_for_update para evitar race conditions.
+
+    Por defecto ``permitir_negativo=False`` preserva la semántica estricta del ERP
+    (lanza ``StockInsuficienteError`` si el saldo resultante queda < 0). Solo flujos
+    opt-in autorizados por tenant (p. ej. POS offline) pasan ``permitir_negativo=True``.
     """
     stock, _ = StockActual.objects.get_or_create(
         id_producto=producto,
@@ -79,8 +91,21 @@ def _actualizar_stock(empresa, producto, variante, almacen, delta: Decimal) -> S
 
     nuevo = stock.cantidad_disponible + delta
     if nuevo < 0:
-        raise StockInsuficienteError(
-            f"Stock insuficiente en '{almacen}'. " f"Disponible: {stock.cantidad_disponible}, solicitado: {abs(delta)}"
+        if not permitir_negativo:
+            raise StockInsuficienteError(
+                f"Stock insuficiente en '{almacen}'. "
+                f"Disponible: {stock.cantidad_disponible}, solicitado: {abs(delta)}"
+            )
+        logger.warning(
+            "Stock negativo permitido | empresa=%s producto=%s variante=%s almacen=%s "
+            "disponible_anterior=%s delta=%s disponible_nuevo=%s",
+            getattr(empresa, "pk", empresa),
+            getattr(producto, "pk", producto),
+            getattr(variante, "pk", variante),
+            getattr(almacen, "pk", almacen),
+            stock.cantidad_disponible,
+            delta,
+            nuevo,
         )
     stock.cantidad_disponible = nuevo
     stock.save(update_fields=["cantidad_disponible", "fecha_ultima_actualizacion"])
@@ -194,6 +219,7 @@ def registrar_movimiento(
     nombre_modelo_origen=None,
     usuario,
     observaciones=None,
+    permitir_negativo: bool = False,
 ) -> MovimientoInventario:
     """
     Crea un MovimientoInventario y actualiza StockActual de forma atómica.
@@ -316,14 +342,35 @@ def registrar_movimiento(
         _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
 
     elif tipo in TIPOS_SALIDA:
-        _actualizar_stock(empresa, producto, variante, almacen_origen, -cantidad)
+        _actualizar_stock(
+            empresa,
+            producto,
+            variante,
+            almacen_origen,
+            -cantidad,
+            permitir_negativo=permitir_negativo,
+        )
 
     elif tipo in TIPOS_TRANSFERENCIA:
-        _actualizar_stock(empresa, producto, variante, almacen_origen, -cantidad)
+        _actualizar_stock(
+            empresa,
+            producto,
+            variante,
+            almacen_origen,
+            -cantidad,
+            permitir_negativo=permitir_negativo,
+        )
         _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
 
     elif tipo in TIPOS_AJUSTE:
-        _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
+        _actualizar_stock(
+            empresa,
+            producto,
+            variante,
+            almacen_destino,
+            cantidad,
+            permitir_negativo=permitir_negativo,
+        )
 
     # TIPOS_INFORMATIVO (RESERVA_VENTA): solo registra el evento, sin alterar StockActual.
     # La reserva ya fue reflejada en cantidad_comprometida por reservar_stock().

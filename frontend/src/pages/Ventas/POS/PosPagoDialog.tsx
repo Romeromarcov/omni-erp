@@ -4,7 +4,7 @@
  * idempotencia generada una sola vez (PR #86/#89): un doble toque en
  * "Confirmar cobro" no puede duplicar pagos.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Divider, IconButton, List, ListItem, ListItemText, Stack, TextField, Typography,
@@ -30,6 +30,8 @@ interface Props {
   tasaBcv: string;
   /** true mientras se registran los pagos en el backend. */
   procesando: boolean;
+  /** true cuando se opera sin conexión (total provisional, sin IVA calculado). */
+  modoOffline?: boolean;
   error: string | null;
   onConfirm: (pagos: PosPago[], vueltoCalculado: string) => void;
   onClose: () => void;
@@ -37,7 +39,7 @@ interface Props {
 
 export default function PosPagoDialog({
   open, total, montoImpuesto, codigoIsoDocumento, metodos, monedas, tasaBcv,
-  procesando, error, onConfirm, onClose,
+  procesando, modoOffline = false, error, onConfirm, onClose,
 }: Props) {
   const [pagos, setPagos] = useState<PosPago[]>([]);
   const [idMetodo, setIdMetodo] = useState('');
@@ -45,6 +47,15 @@ export default function PosPagoDialog({
   const [monto, setMonto] = useState('');
   const [referencia, setReferencia] = useState('');
   const [errorForm, setErrorForm] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setPagos([]);
+      setErrorForm('');
+      setMonto('');
+      setReferencia('');
+    }
+  }, [open]);
 
   const metodoSel = metodos.find((m) => m.id === idMetodo);
   // Si el método restringe monedas, solo se ofrecen esas.
@@ -107,9 +118,16 @@ export default function PosPagoDialog({
               Total: {toFixedStr(total)} {codigoIsoDocumento}
             </Typography>
             <Typography variant="body2" color="text.secondary" data-testid="pos-iva-cobrar">
-              IVA incluido: {toFixedStr(montoImpuesto)} {codigoIsoDocumento}
+              {modoOffline
+                ? `IVA provisional: ${toFixedStr(montoImpuesto)} ${codigoIsoDocumento} (se calcula al sincronizar)`
+                : `IVA incluido: ${toFixedStr(montoImpuesto)} ${codigoIsoDocumento}`}
             </Typography>
           </Box>
+          {modoOffline && (
+            <Alert severity="info" data-testid="pos-pago-modo-offline">
+              Modo sin conexión: el total mostrado es provisional. La venta se encolará y el servidor calculará el IVA definitivo al sincronizar.
+            </Alert>
+          )}
           <Divider />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <TextField

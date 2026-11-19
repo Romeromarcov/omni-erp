@@ -17,6 +17,7 @@ import {
 } from '../services/session';
 import { queryClient } from '../lib/queryClient';
 import { clearPersistedQueryCache } from '../lib/idbPersister';
+import { clearOutbox } from '../lib/salesOutbox';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -63,11 +64,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Drop UI selection too — it is per-session and may leak across users.
     localStorage.removeItem('id_empresa');
     localStorage.removeItem('id_sucursal');
-    // Offline réplica local (CTF-008): purgar el caché de negocio en memoria y
-    // su réplica en IndexedDB para que los datos de un tenant/usuario no queden
-    // disponibles para el siguiente en un dispositivo compartido (R-CODE-1).
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('pos_cliente_mostrador_') || k.startsWith('pos_almacen_'))
+      .forEach((k) => localStorage.removeItem(k));
+    // Offline réplica local (CTF-008): purgar el caché de negocio en memoria,
+    // su réplica en IndexedDB y la cola outbox para que los datos/ventas de un
+    // tenant/usuario no queden disponibles para el siguiente (R-CODE-1).
     queryClient.clear();
     void clearPersistedQueryCache();
+    void clearOutbox();
   }, []);
 
   const refreshUser = useCallback(async () => {

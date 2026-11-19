@@ -2,9 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearOutbox,
+  clearSyncedOutboxItems,
+  discardOutboxItem,
   enqueueSale,
   flushOutbox,
+  listOutboxItems,
   listPending,
+  retryOutboxItem,
   type OutboxSale,
 } from '../salesOutbox';
 
@@ -109,5 +113,88 @@ describe('salesOutbox', () => {
 
     expect(r).toMatchObject({ enviados: 1, rechazados: 1, pendientes: 0 });
     expect(await listPending()).toEqual([]);
+  });
+
+  it('guarda mapeo SINCRONIZADA tras 2xx y no reenvía en futuros flushes', async () => {
+    await enqueueSale({ ...venta('S1'), folioProvisional: 'POS-S1' });
+    const poster = vi.fn().mockResolvedValue({
+      id_nota_venta: 'nv-srv-1',
+      numero_nota: 'POS-srv-1',
+      alerta_stock_negativo: true,
+    });
+
+    const r1 = await flushOutbox(poster);
+    expect(r1.enviados).toBe(1);
+    expect(r1.sincronizadas).toEqual([
+      { idempotencyKey: 'S1', idNotaVenta: 'nv-srv-1', numeroNota: 'POS-srv-1', alertaStockNegativo: true },
+    ]);
+
+    const items = await listOutboxItems();
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      idempotencyKey: 'S1',
+      estado: 'SINCRONIZADA',
+      idNotaVenta: 'nv-srv-1',
+      numeroNota: 'POS-srv-1',
+      alertaStockNegativo: true,
+    });
+
+    // Segundo flush no vuelve a enviar la venta sincronizada.
+    const r2 = await flushOutbox(poster);
+    expect(r2).toMatchObject({ enviados: 0, rechazados: 0, pendientes: 0 });
+    expect(poster).toHaveBeenCalledTimes(1);
+  });
+
+  it('422 REQUIERE_REVISION marca estado permanente sin reintento en bucle y soporta Reintentar / Descartar', async () => {
+    await enqueueSale(venta('R1'));
+    const err422 = new Error(JSON.stringify({ error: 'Stock insuficiente.', codigo: 'REQUIERE_REVISION' })) as Error & {
+      status: number;
+    };
+    err422.status = 422;
+    const poster = vi.fn().mockRejectedValueOnce(err422).mockResolvedValueOnce({
+      id_nota_venta: 'nv-ok',
+      numero_nota: 'POS-ok',
+    });
+
+    const r1 = await flushOutbox(poster);
+    expect(r1).toMatchObject({ enviados: 0, rechazados: 1, pendientes: 0 });
+    expect(r1.errores[0]).toMatchObject({
+      idempotencyKey: 'R1',
+      status: 422,
+      codigo: 'REQUIERE_REVISION',
+      mensaje: 'Stock insuficiente.',
+    });
+
+    // No se reintenta en un flush posterior mientras esté en REQUIERE_REVISION.
+    await flushOutbox(poster);
+    expect(poster).toHaveBeenCalledTimes(1);
+
+    const items = await listOutboxItems();
+    expect(items[0]).toMatchObject({
+      estado: 'REQUIERE_REVISION',
+      errorMensaje: 'Stock insuficiente.',
+      errorCodigo: 'REQUIERE_REVISION',
+      errorStatus: 422,
+    });
+
+    // Reintentar la vuelve a PENDIENTE y limpia errores.
+    await retryOutboxItem('R1');
+    expect((await listPending()).map((i) => i.idempotencyKey)).toEqual(['R1']);
+    const r2 = await flushOutbox(poster);
+    expect(r2.enviados).toBe(1);
+    expect((await listOutboxItems())[0].estado).toBe('SINCRONIZADA');
+
+    // clearSyncedOutboxItems y discardOutboxItem.
+    await enqueueSale(venta('P2'));
+    await clearSyncedOutboxItems();
+    expect((await listOutboxItems()).map((i) => i.idempotencyKey)).toEqual(['P2']);
+    await discardOutboxItem('P2');
+    expect(await listOutboxItems()).toEqual([]);
+  });
+
+  it('enqueueSale deduplica por idempotencyKey', async () => {
+    await enqueueSale(venta('DUP'));
+    await enqueueSale(venta('DUP'));
+    expect(await listPending()).toHaveLength(1);
   });
 });

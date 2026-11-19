@@ -56,4 +56,32 @@ describe('buildVentaOfflineEnvelope', () => {
     expect(sobre.pagos[0].monto).toBe('7.00');
     expect(typeof sobre.totales_cliente.iva).toBe('string');
   });
+
+  it('soporta campos opcionales id_almacen, tasa, referencia, id_caja_fisica y descuento_porcentaje', () => {
+    const sobre = buildVentaOfflineEnvelope({
+      ...inputValido(),
+      id_almacen: 'alm-1',
+      detalles: [{ id_producto: 'p1', cantidad: '2', precio_unitario: '3.50', descuento_porcentaje: '10' }],
+      pagos: [
+        {
+          id_metodo_pago: 'm1',
+          id_moneda: 'usd',
+          monto: '6.30',
+          tasa: '1',
+          referencia: 'REF-123',
+          id_caja_fisica: 'cf-1',
+        },
+      ],
+    });
+    expect(sobre.id_almacen).toBe('alm-1');
+    expect(sobre.detalles[0].descuento_porcentaje).toBe('10');
+    expect(sobre.pagos[0]).toMatchObject({
+      tasa: '1',
+      referencia: 'REF-123',
+      id_caja_fisica: 'cf-1',
+    });
+
+    const sinAlmacen = buildVentaOfflineEnvelope(inputValido());
+    expect('id_almacen' in sinAlmacen).toBe(false);
+  });
 });
