@@ -11,6 +11,7 @@ import { lineaTotal } from './posTotals';
 
 export interface ReciboData {
   numero: string;
+  provisionalOffline?: boolean;
   fecha: string;
   empresaNombre: string;
   cajaNombre: string;
@@ -52,8 +53,22 @@ export default function PosRecibo({ open, recibo, onNuevaVenta }: Props) {
         <Box className="pos-recibo-80mm" sx={{ fontFamily: 'monospace', maxWidth: '80mm', mx: 'auto' }} data-testid="pos-recibo">
           <Typography align="center" sx={{ fontWeight: 'bold' }}>{recibo.empresaNombre}</Typography>
           <Typography align="center" variant="body2">Caja: {recibo.cajaNombre}</Typography>
-          <Typography align="center" variant="body2">
-            {recibo.numero ? `Nota de venta N° ${recibo.numero}` : 'Nota de venta'}
+          {recibo.provisionalOffline && (
+            <Typography
+              align="center"
+              variant="body2"
+              data-testid="pos-recibo-provisional"
+              sx={{ fontWeight: 'bold', border: '1px dashed', py: 0.5, my: 0.5 }}
+            >
+              POR CONFIRMAR (OFFLINE)
+            </Typography>
+          )}
+          <Typography align="center" variant="body2" data-testid="pos-recibo-numero">
+            {recibo.provisionalOffline
+              ? `Folio provisional N° ${recibo.numero}`
+              : recibo.numero
+                ? `Nota de venta N° ${recibo.numero}`
+                : 'Nota de venta'}
           </Typography>
           <Typography align="center" variant="body2">{recibo.fecha}</Typography>
           <Divider sx={{ my: 1, borderStyle: 'dashed' }} />

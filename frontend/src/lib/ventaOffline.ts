@@ -22,6 +22,8 @@ export interface VentaOfflineDetalle {
   cantidad: string;
   /** Precio unitario como string (sin float). */
   precio_unitario: string;
+  /** Descuento porcentual opcional como string ("0" por defecto). */
+  descuento_porcentaje?: string;
 }
 
 export interface VentaOfflinePago {
@@ -29,6 +31,12 @@ export interface VentaOfflinePago {
   id_moneda: string;
   /** Monto como string (sin float). */
   monto: string;
+  /** Tasa aplicada ("1" por defecto en moneda del documento). */
+  tasa?: string;
+  /** Referencia bancaria / comprobante opcional. */
+  referencia?: string;
+  /** Caja física opcional asociada al cobro POS. */
+  id_caja_fisica?: string;
 }
 
 export interface VentaOfflineTotales {
@@ -43,6 +51,8 @@ export interface VentaOfflineEnvelope {
   /** Marca de tiempo local (ISO con offset) en que se creó la venta offline. */
   fecha_local: string;
   id_sucursal: string;
+  /** Almacén explícito opcional (el servidor resuelve el principal de la sucursal si falta). */
+  id_almacen?: string;
   id_caja: string;
   id_cliente: string;
   detalles: VentaOfflineDetalle[];
@@ -53,6 +63,7 @@ export interface VentaOfflineEnvelope {
 
 export interface VentaOfflineInput {
   id_sucursal: string;
+  id_almacen?: string;
   id_caja: string;
   id_cliente: string;
   detalles: VentaOfflineDetalle[];
@@ -87,6 +98,7 @@ export function buildVentaOfflineEnvelope(
     client_uuid: opts.clientUuid ?? newIdempotencyKey(),
     fecha_local: now.toISOString(),
     id_sucursal: input.id_sucursal,
+    ...(input.id_almacen ? { id_almacen: input.id_almacen } : {}),
     id_caja: input.id_caja,
     id_cliente: input.id_cliente,
     // Copias defensivas para que el sobre no comparta referencias mutables.

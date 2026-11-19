@@ -152,6 +152,12 @@ class SyncPushVentasView(APIView):
         except VentaPosError as exc:
             # 4xx de validación → la clave de idempotencia NO se consume; el cajero
             # corrige y reenvía (ADR-012 §5: no es transitorio, no se reintenta en bucle).
-            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            codigo = getattr(exc, "codigo", None)
+            extra = {"codigo": codigo} if codigo else None
+            return domain_error_response(
+                exc,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                extra=extra,
+            )
 
         return Response(resultado, status=status.HTTP_201_CREATED)

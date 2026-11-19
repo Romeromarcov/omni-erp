@@ -4,7 +4,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Usuario } from '../services/users';
 import type { DispositivoInfo } from '../types/dispositivos';
-import { loginAndFetchUser, hydrateSession, logoutSession } from '../services/auth';
+import * as authService from '../services/auth';
+import type { HydrateSessionResult } from '../services/auth';
 import {
   getAccessToken,
   setUnauthorizedHandler,
@@ -17,6 +18,7 @@ import {
 } from '../services/session';
 import { queryClient } from '../lib/queryClient';
 import { clearPersistedQueryCache } from '../lib/idbPersister';
+import { clearOutbox } from '../lib/salesOutbox';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -32,11 +34,48 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_SCOPE_KEY = 'pos_auth_scope';
+
+function buildAuthScope(usuario: Usuario): string {
+  const empresaId = usuario.empresas?.[0]?.id_empresa ?? '';
+  return `${String(usuario.id)}:${empresaId}`;
+}
+
+function purgeOfflineLocalState(): void {
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith('pos_cliente_mostrador_') || k.startsWith('pos_almacen_'))
+    .forEach((k) => localStorage.removeItem(k));
+  // Offline réplica local (CTF-008): purgar caché en memoria, IndexedDB y cola
+  // outbox para evitar fugas entre usuarios/tenants en terminales compartidos (R-CODE-1).
+  queryClient.clear();
+  void clearPersistedQueryCache();
+  void clearOutbox();
+}
+
+function purgeAllSessionLocalState(): void {
+  localStorage.removeItem('id_empresa');
+  localStorage.removeItem('id_sucursal');
+  localStorage.removeItem(AUTH_SCOPE_KEY);
+  purgeOfflineLocalState();
+}
+
 // FE-HIGH-13 migration shim: remove any legacy token/PII left in localStorage
 // by previous versions. Only non-PII UI selection keys are allowed to remain.
 function purgeLegacyAuthStorage(): void {
   ['token', 'usuario', 'empresa', 'sucursal', 'roles', 'permisos', 'id_usuario',
     'caja_fisica', 'dispositivo_info'].forEach((k) => localStorage.removeItem(k));
+}
+
+async function resolveHydration(): Promise<HydrateSessionResult> {
+  try {
+    if (typeof authService.hydrateSessionResult === 'function') {
+      return await authService.hydrateSessionResult();
+    }
+    const usuario = await authService.hydrateSession();
+    return usuario ? { status: 'ok', usuario } : { status: 'rejected' };
+  } catch {
+    return { status: 'transient_error' };
+  }
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -53,32 +92,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDispositivoInfoState(info);
   }, []);
 
+  const applyAuthenticatedScope = useCallback((usuario: Usuario, purgeOnMismatch = true) => {
+    const nextScope = buildAuthScope(usuario);
+    const prevScope = localStorage.getItem(AUTH_SCOPE_KEY);
+    if (purgeOnMismatch && prevScope && prevScope !== nextScope) {
+      purgeAllSessionLocalState();
+    }
+    localStorage.setItem(AUTH_SCOPE_KEY, nextScope);
+  }, []);
+
   const logout = useCallback(() => {
-    logoutSession();
+    authService.logoutSession();
     setTokenState(null);
     setUser(null);
     setCajaFisicaState(null);
     setDispositivoInfoState(null);
     clearSession();
     // Drop UI selection too — it is per-session and may leak across users.
-    localStorage.removeItem('id_empresa');
-    localStorage.removeItem('id_sucursal');
-    // Offline réplica local (CTF-008): purgar el caché de negocio en memoria y
-    // su réplica en IndexedDB para que los datos de un tenant/usuario no queden
-    // disponibles para el siguiente en un dispositivo compartido (R-CODE-1).
-    queryClient.clear();
-    void clearPersistedQueryCache();
+    purgeAllSessionLocalState();
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const hydrated = await hydrateSession();
-    if (hydrated) {
-      setUser(hydrated);
+    const res = await resolveHydration();
+    if (res.status === 'ok') {
+      applyAuthenticatedScope(res.usuario);
+      setUser(res.usuario);
       setTokenState(getAccessToken());
-    } else {
+    } else if (res.status === 'rejected') {
       logout();
     }
-  }, [logout]);
+    // Ante 'transient_error' (red / offline / 5xx) NO llamar a logout():
+    // preserva outbox, caché local y pos_auth_scope hasta recuperar conexión.
+  }, [applyAuthenticatedScope, logout]);
 
   // FE-HIGH-11/13: wire the api layer's unauthorized handler to context logout.
   useEffect(() => {
@@ -96,18 +141,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let cancelled = false;
     purgeLegacyAuthStorage();
     (async () => {
-      const hydrated = await hydrateSession();
+      const res = await resolveHydration();
       if (cancelled) return;
-      if (hydrated) {
-        setUser(hydrated);
+      if (res.status === 'ok') {
+        applyAuthenticatedScope(res.usuario);
+        setUser(res.usuario);
         setTokenState(getAccessToken());
+      } else if (res.status === 'rejected') {
+        // Sin sesión válida confirmada (401/403/400 o refresh sin token): purgar
+        // datos/ventas offline de una sesión previa en terminal compartido.
+        purgeAllSessionLocalState();
+      } else {
+        // F5 estando offline / 5xx transitorio: limpiar solo estado en memoria y
+        // preservar salesOutbox, caché persistida y pos_auth_scope.
+        setTokenState(null);
+        setUser(null);
       }
       setIsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [applyAuthenticatedScope]);
 
   const login = async (username: string, password: string): Promise<DispositivoInfo | null> => {
     // OJO: NO tocar `isLoading` aquí. Ese flag protege solo la rehidratación
@@ -116,7 +171,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // empresa/sucursal tras el login (bug detectado por el E2E de TEST-6).
     // El spinner del formulario lo maneja LoginPage con su estado local.
     // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie.
-    const { token: newToken, usuario, dispositivo } = await loginAndFetchUser(username, password);
+    const { token: newToken, usuario, dispositivo } = await authService.loginAndFetchUser(username, password);
+    applyAuthenticatedScope(usuario);
+
     setTokenState(newToken);
     setUser(usuario);
 

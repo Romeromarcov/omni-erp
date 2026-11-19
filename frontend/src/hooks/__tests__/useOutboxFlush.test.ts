@@ -68,4 +68,23 @@ describe('useOutboxFlush', () => {
     window.dispatchEvent(new Event('online'));
     await waitFor(() => expect(poster).toHaveBeenCalledTimes(1));
   });
+
+  it('marca REQUIERE_REVISION en 422 sin reintentar en bucle al reconectar', async () => {
+    setOnline(false);
+    await enqueueSale(venta);
+    const err422 = new Error(JSON.stringify({ error: 'Total difiere', codigo: 'REQUIERE_REVISION' })) as Error & {
+      status: number;
+    };
+    err422.status = 422;
+    const poster = vi.fn().mockRejectedValue(err422);
+
+    const { result } = renderHook(() => useOutboxFlush(poster));
+    setOnline(true);
+    window.dispatchEvent(new Event('online'));
+
+    await waitFor(() => expect(result.current.lastResult?.rechazados).toBe(1));
+    expect(await listPending()).toHaveLength(0);
+    await result.current.flushNow();
+    expect(poster).toHaveBeenCalledTimes(1);
+  });
 });

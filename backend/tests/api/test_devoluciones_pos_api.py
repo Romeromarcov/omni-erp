@@ -225,6 +225,36 @@ class TestDevolverAPI:
         resp = api_client.post(_url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json")
         assert resp.status_code == 401
 
+    def test_tasa_cambio_faltante_responde_400_controlado_y_revierte(
+        self, client_a, empresa_a, venta_entregada, almacen_a, metodo_pos, sesion_a
+    ):
+        from apps.ventas.models import FacturaFiscal
+        from tests.factories import MonedaFactory
+
+        moneda_ves = MonedaFactory(codigo_iso="VES", nombre="Bolívar", simbolo="Bs")
+        factura = FacturaFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=venta_entregada.id_cliente,
+            id_nota_venta_origen=venta_entregada,
+            numero_control="00-TC-API",
+            numero_factura="FAC-TC-API",
+            fecha_emision=timezone.now().date(),
+            base_imponible=Decimal("35.00"),
+            monto_iva=Decimal("5.60"),
+            monto_total=Decimal("40.60"),
+            id_moneda=moneda_ves,
+            estado="EMITIDA",
+        )
+        venta_entregada.id_factura_resultante = factura
+        venta_entregada.estado = "FACTURADA"
+        venta_entregada.save(update_fields=["id_factura_resultante", "estado"])
+
+        resp = client_a.post(_url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json")
+        assert resp.status_code == 400
+        assert "tasa de cambio" in str(resp.data).lower()
+        assert DevolucionVenta.objects.filter(id_nota_venta_origen=venta_entregada).count() == 0
+        assert Pago.objects.filter(id_empresa=empresa_a, tipo_operacion="EGRESO").count() == 0
+
 
 # ── GET /devoluciones/ y búsqueda por número ─────────────────────────────────
 

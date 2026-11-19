@@ -1,6 +1,6 @@
 # ADR-012: Modelo Transaccional de Venta POS Offline
 
-**Estado:** Aceptado — backend implementado (`POST /api/sync/push/ventas/`, PR atómico de dinero)
+**Estado:** Implementado — ciclo completo cliente + servidor (`POST /api/sync/push/ventas/`, outbox POS con reconciliación y UI de cola)
 **Fecha:** 2026-06-19
 **Autor(es):** Marco Romero, Claude Opus 4.8
 **Categoría:** Arquitectura — Offline-first (deriva de ADR-001, habilita CTF-008 Nivel 2)
@@ -114,22 +114,28 @@ POST /api/sync/push/ventas/    (Idempotency-Key: <client_uuid>)
 ### 6. Stock e inventario
 
 - Offline, el stock mostrado es el del **último pull** (puede estar desfasado).
-- El servidor aplica el despacho real al confirmar; si el stock no alcanza,
-  la política (rechazar vs. permitir negativo con alerta) se define por
-  configuración de tenant y **queda fuera de este ADR** (se decide al
-  implementar el endpoint). Este ADR solo fija que **la verdad de stock es del
-  servidor al confirmar**, no del cliente.
+- El servidor aplica el despacho real al confirmar; si el stock no alcanza, la
+  política por tenant se gobierna por `ParametroSistema`
+  (`codigo_parametro="permitir_stock_negativo_pos"`, default `False`):
+  - `False`: rechaza con HTTP `422` (`codigo: "REQUIERE_REVISION"`), revierte
+    la transacción completa y deja la venta visible en la cola del cajero.
+  - `True`: permite despachar con `StockActual.cantidad_disponible < 0`
+    emitiendo warning estructurado y devolviendo `alerta_stock_negativo: true`
+    y `productos_stock_negativo` en la respuesta `201`.
+- **La verdad de stock es del servidor al confirmar**, no del cliente.
 
 ---
 
 ## Alcance y límites
 
 **Cubre:** ventas POS de contado/credito creadas offline (nota + pagos +
-entrega) como unidad atómica idempotente.
+entrega) como unidad atómica idempotente, política por tenant de stock negativo
+en POS offline, cola FIFO en `salesOutbox` con estados `PENDIENTE` /
+`SINCRONIZADA` / `REQUIERE_REVISION`, recibo provisional `POR CONFIRMAR (OFFLINE)`
+y reconciliación de folios al reconectar (`PosColaOfflinePanel`).
 
 **No cubre (PRs/decisiones posteriores):**
 - Devoluciones offline.
-- Política de stock insuficiente al confirmar (config de tenant).
 - Edición offline de documentos existentes (eso es el *version-check* de
   updates, decisión aparte).
 
@@ -152,15 +158,18 @@ entrega) como unidad atómica idempotente.
 
 ---
 
-## Plan de implementación (PRs focales posteriores)
+## Estado de implementación (completado 2026-11-19)
 
-1. **Backend**: `POST /api/sync/push/ventas/` atómico + idempotente, con la
-   batería de tests anterior. (PR de dinero — revisión cuidadosa.)
-2. **Frontend**: `PosPage` arma el sobre `VentaOffline`, lo encola en
-   `salesOutbox` al detectar fallo de red, y un flujo de **flush al volver
-   online** que reconcilia `client_uuid → id_nota_venta`.
-3. **Frontend**: UI de estado de cola (ventas "por confirmar" / "requiere
-   revisión") para el cajero.
+1. **Backend**: `POST /api/sync/push/ventas/` atómico + idempotente con
+   resolución automática de almacén por `id_sucursal`, soporte opt-in de stock
+   negativo (`permitir_stock_negativo_pos`), códigos `REQUIERE_REVISION` en
+   `422` y cobertura integral en `tests/api/test_sync_push_ventas.py`.
+2. **Frontend — Outbox y contrato**: `ventaOffline.ts` y `salesOutbox.ts` con
+   ciclo completo (`PENDIENTE` / `SINCRONIZADA` / `REQUIERE_REVISION`),
+   `useOutboxFlush` y purga en `AuthContext.logout()`.
+3. **Frontend — POS y UI de cola**: `PosPage.tsx` cableado con fallback
+   offline, recibo provisional `POR CONFIRMAR (OFFLINE)` en `PosRecibo.tsx`,
+   reconciliación automática al reconectar y panel `PosColaOfflinePanel.tsx`.
 
 ---
 

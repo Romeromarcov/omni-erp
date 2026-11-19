@@ -336,7 +336,7 @@ def _buscar_cxc_flujo_venta(nota_venta, pedido=None, para_actualizar: bool = Fal
 
 
 @transaction.atomic
-def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
+def entregar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo: bool = False) -> dict:
     """
     Despacha la NotaVenta: mueve stock físico, libera reservas, genera CxC si
     el flujo aún no tiene una.
@@ -405,6 +405,7 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
                 nombre_modelo_origen="NotaVenta",
                 usuario=usuario,
                 observaciones=f"Entrega nota {nota_venta.numero_nota}",
+                permitir_negativo=permitir_stock_negativo,
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise VentaError(str(exc)) from exc
@@ -454,7 +455,7 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
 
 
 @transaction.atomic
-def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
+def confirmar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo: bool = False) -> dict:
     """
     Entrega la NotaVenta y genera el asiento contable NOTA_VENTA (R-CODE-11 — CTF-001).
 
@@ -470,11 +471,18 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
         nota_venta: instancia NotaVenta en estado BORRADOR
         almacen:    almacén de despacho
         usuario:    usuario que ejecuta la acción
+        permitir_stock_negativo: si True, permite despachar dejando StockActual < 0
+            (solo flujos opt-in autorizados por tenant, p. ej. POS offline).
 
     Returns:
         {"movimientos": [...], "cxc": ..., "asiento": AsientoContable | None, "asiento_error": str | None}
     """
-    resultado = entregar_nota_venta(nota_venta, almacen, usuario)
+    resultado = entregar_nota_venta(
+        nota_venta,
+        almacen,
+        usuario,
+        permitir_stock_negativo=permitir_stock_negativo,
+    )
 
     asiento = None
     asiento_error = None
@@ -776,7 +784,7 @@ def registrar_devolucion_pos(
         movimientos, sesion_caja, asiento/asiento_error, asiento_iva/asiento_iva_error.
     """
     from apps.finanzas.models import Pago, SesionCajaFisica
-    from apps.finanzas.services import registrar_efectos_pago
+    from apps.finanzas.services import TasaCambioError, registrar_efectos_pago
     from apps.fiscal.services import siguiente_numero
     from apps.ventas.models import (
         DetalleDevolucionVenta,
@@ -1026,7 +1034,10 @@ def registrar_devolucion_pos(
         id_caja_fisica=sesion.caja_fisica,
         id_usuario_registro=usuario,
     )
-    registrar_efectos_pago(pago)
+    try:
+        registrar_efectos_pago(pago)
+    except TasaCambioError as exc:
+        raise VentaError(str(exc)) from exc
 
     # ── 4. Asiento contable de reverso (R-CODE-11, misma transacción) ────────
     from apps.contabilidad.services import generar_asiento_o_fallar

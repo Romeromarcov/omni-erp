@@ -120,4 +120,47 @@ describe('PosPagoDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('normaliza el contrato real de serializer (metodo_pago/nombre y moneda/moneda_codigo_iso) sin campos legados', () => {
+    const metodosReales = [
+      { id: 'act-met-1', metodo_pago: 'real-met-efe', nombre: 'Efectivo Real', activa: true },
+    ] as unknown as React.ComponentProps<typeof PosPagoDialog>['metodos'];
+    const monedasReales = [
+      {
+        id: 'act-mon-1',
+        moneda: 'real-mon-ves',
+        moneda_codigo_iso: 'VES',
+        moneda_nombre: 'Bolívar',
+        activa: true,
+      },
+      {
+        id: 'act-mon-2',
+        moneda: 'real-mon-usd',
+        moneda_codigo_iso: 'USD',
+        moneda_nombre: 'Dólar',
+        activa: true,
+      },
+    ] as unknown as React.ComponentProps<typeof PosPagoDialog>['monedas'];
+
+    renderDialog({ metodos: metodosReales, monedas: monedasReales, total: new Decimal('10.00') });
+
+    const metodoSelect = screen.getByTestId('pos-pago-metodo') as HTMLSelectElement;
+    expect(Array.from(metodoSelect.options).map((o) => o.value)).toContain('real-met-efe');
+    expect(Array.from(metodoSelect.options).map((o) => o.value)).not.toContain('act-met-1');
+
+    const monedaSelect = screen.getByTestId('pos-pago-moneda') as HTMLSelectElement;
+    expect(Array.from(monedaSelect.options).map((o) => o.value)).toEqual(['', 'real-mon-ves', 'real-mon-usd']);
+
+    agregarPago('10', 'real-met-efe', 'real-mon-ves');
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm.mock.calls[0][0][0]).toMatchObject({
+      id_metodo_pago: 'real-met-efe',
+      nombre_metodo: 'Efectivo Real',
+      id_moneda: 'real-mon-ves',
+      codigo_iso: 'VES',
+      tasa: '1',
+    });
+  });
 });
