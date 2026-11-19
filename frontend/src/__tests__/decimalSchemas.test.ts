@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { D, formatoMoneda } from '../lib/decimal';
-import { decimalEntre, decimalNoNegativo, decimalPositivo } from '../schemas/decimal.schemas';
+import { decimalEntre, decimalNoNegativo, decimalPositivo, parseDecimalSeguro } from '../schemas/decimal.schemas';
 import {
   detalleNotaCreditoFiscalSchema,
   detalleNotaCreditoVentaSchema,
@@ -157,5 +157,28 @@ describe('formatoMoneda (solo presentación)', () => {
     const txt = formatoMoneda('-0.001', 'VES', 'es-VE');
     expect(txt).not.toContain('-');
     expect(txt).toMatch(/0,00/);
+  });
+});
+
+describe('parseDecimalSeguro (formato decimal estricto)', () => {
+  it.each(['10', '0.0001', '-3.25', '+7.5', '.5', ' 123456789012345678.95 '])('acepta %j', (v) => {
+    expect(parseDecimalSeguro(v)?.toString()).toBeTruthy();
+  });
+
+  it('conserva precisión exacta >15 cifras en string', () => {
+    expect(parseDecimalSeguro('123456789012345678.95')?.toString()).toBe('123456789012345678.95');
+  });
+
+  it.each(['1e5', '1E-3', '0x10', '0b101', '0o77', 'Infinity', '-Infinity', 'NaN', 'abc', '5.', '.', '1,5', '', '  '])(
+    'rechaza notación no estricta o no decimal %j',
+    (v) => {
+      expect(parseDecimalSeguro(v)).toBeNull();
+    },
+  );
+
+  it('rechaza números no finitos', () => {
+    expect(parseDecimalSeguro(Infinity)).toBeNull();
+    expect(parseDecimalSeguro(NaN)).toBeNull();
+    expect(parseDecimalSeguro(12.5)?.toString()).toBe('12.5');
   });
 });

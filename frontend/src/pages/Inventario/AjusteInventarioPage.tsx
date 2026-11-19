@@ -20,7 +20,7 @@ import {
   movimientoService,
 } from '../../services/inventarioService';
 import { inventarioKeys } from '../../lib/queryKeys';
-import { D, formatoDecimal } from '../../lib/decimal';
+import { formatoDecimal } from '../../lib/decimal';
 import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 
 type TipoAjuste = 'ENTRADA' | 'SALIDA';
@@ -84,6 +84,11 @@ const AjusteInventarioPage: React.FC = () => {
     mutationFn: () => {
       const cantidad = parseDecimalSeguro(form.cantidad);
       if (!cantidad || cantidad.lte(0)) throw new Error('La cantidad debe ser mayor a 0.');
+      const costoRaw = form.costo_unitario.trim();
+      const costoUnitario = costoRaw ? parseDecimalSeguro(costoRaw) : null;
+      if (costoRaw && (!costoUnitario || costoUnitario.lt(0))) {
+        throw new Error('El costo unitario debe ser un número válido mayor o igual a 0.');
+      }
       if (!form.id_producto) throw new Error('Seleccione un producto.');
       if (!form.id_almacen) throw new Error('Seleccione un almacén.');
 
@@ -94,9 +99,7 @@ const AjusteInventarioPage: React.FC = () => {
         cantidad: form.tipo_ajuste === 'SALIDA' ? cantidad.negated().toString() : cantidad.toString(),
         fecha_hora_movimiento: new Date(form.fecha_hora).toISOString(),
         observaciones: form.observaciones || undefined,
-        costo_unitario_movimiento: form.costo_unitario.trim()
-          ? D(form.costo_unitario.trim()).toString()
-          : undefined,
+        costo_unitario_movimiento: costoUnitario ? costoUnitario.toString() : undefined,
         ...(form.tipo_ajuste === 'ENTRADA'
           ? { id_almacen_destino: form.id_almacen }
           : { id_almacen_origen: form.id_almacen }),

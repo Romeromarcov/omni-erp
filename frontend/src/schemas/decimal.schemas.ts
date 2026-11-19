@@ -29,8 +29,9 @@ function parsear(valor: string): Decimal | null {
 }
 
 /**
- * Parsea un string o number finito a `Decimal` sin pasar por `Number()` / float.
- * Devuelve `null` si está vacío o no es un número decimal finito válido.
+ * Parsea un string o number finito en formato decimal estricto a `Decimal` sin pasar por `Number()` / float.
+ * Rechaza notación científica (`1e5`), hexadecimales/binarios/octales (`0x10`, `0b10`, `0o10`),
+ * `NaN`, `Infinity`, comas o texto arbitrario antes de llegar a DRF.
  */
 export function parseDecimalSeguro(valor: string | number): Decimal | null {
   if (typeof valor === 'number') {
@@ -38,12 +39,18 @@ export function parseDecimalSeguro(valor: string | number): Decimal | null {
   }
   const trimmed = valor.trim();
   if (!trimmed) return null;
-  try {
-    const d = new Decimal(trimmed);
-    return d.isFinite() ? d : null;
-  } catch {
-    return null;
-  }
+  const sinSigno = trimmed.startsWith('-') || trimmed.startsWith('+') ? trimmed.slice(1) : trimmed;
+  const partes = sinSigno.split('.');
+  const esFormatoEstricto =
+    partes.length === 1
+      ? SOLO_DIGITOS.test(partes[0])
+      : partes.length === 2 &&
+        (partes[0] === ''
+          ? SOLO_DIGITOS.test(partes[1])
+          : SOLO_DIGITOS.test(partes[0]) && SOLO_DIGITOS.test(partes[1]));
+  if (!esFormatoEstricto) return null;
+  const d = new Decimal(trimmed);
+  return d.isFinite() ? d : null;
 }
 
 /** Base: string sin espacios en los extremos, no vacío y con formato decimal válido. */
