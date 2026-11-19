@@ -8,6 +8,7 @@ Cobertura DoD:
   - Aislamiento multi-tenant de modelos y acciones nuevas (R-CODE-1).
   - El costeo usa el costo del consumo (snapshot), no el costo_promedio vigente.
 """
+
 from decimal import Decimal
 
 import pytest
@@ -30,9 +31,9 @@ def D(x):
 
 def test_calcular_costo_mano_obra_horas_y_destajo():
     etapas = [
-        (D("2"), D("5"), D("0")),     # 10
-        (D("0"), D("0"), D("15")),    # destajo puro
-        (D("1.5"), D("4"), D("2")),   # 6 + 2
+        (D("2"), D("5"), D("0")),  # 10
+        (D("0"), D("0"), D("15")),  # destajo puro
+        (D("1.5"), D("4"), D("2")),  # 6 + 2
     ]
     assert mfg.calcular_costo_mano_obra(etapas) == D("33")
 
@@ -55,9 +56,7 @@ def base_mfg(db, empresa_a, moneda_usd):
         id_empresa=empresa_a, nombre="Unidad 1I", abreviatura="UN-1I", tipo="CANTIDAD"
     )
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="MFG-1I")
-    almacen = Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén 1I", codigo_almacen="AL-1I"
-    )
+    almacen = Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén 1I", codigo_almacen="AL-1I")
     return unidad, categoria, almacen
 
 
@@ -79,8 +78,11 @@ def _stock(empresa, producto, almacen, cantidad, comprometida="0"):
     from apps.inventario.models import StockActual
 
     return StockActual.objects.create(
-        id_empresa=empresa, id_producto=producto, id_almacen=almacen,
-        cantidad_disponible=D(cantidad), cantidad_comprometida=D(comprometida),
+        id_empresa=empresa,
+        id_producto=producto,
+        id_almacen=almacen,
+        cantidad_disponible=D(cantidad),
+        cantidad_comprometida=D(comprometida),
     )
 
 
@@ -110,8 +112,13 @@ def escenario(db, empresa_a, moneda_usd, base_mfg):
     ConfiguracionManufactura.objects.create(empresa=empresa_a, porcentaje_overhead=D("10"))
 
     return {
-        "almacen": almacen, "silla": silla, "madera": madera, "tela": tela,
-        "bom": bom, "unidad": unidad, "categoria": categoria,
+        "almacen": almacen,
+        "silla": silla,
+        "madera": madera,
+        "tela": tela,
+        "bom": bom,
+        "unidad": unidad,
+        "categoria": categoria,
     }
 
 
@@ -129,7 +136,9 @@ def test_ciclo_completo_of_etapas_costeo_real(empresa_a, escenario, user_a):
     from apps.inventario.models import StockActual
 
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("10"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("10"),
         lista_materiales=escenario["bom"],
     )
     # Las etapas del catálogo se materializan en la OF, en secuencia.
@@ -144,24 +153,25 @@ def test_ciclo_completo_of_etapas_costeo_real(empresa_a, escenario, user_a):
         ("ENSAMBLE", D("3"), D("4"), D("0")),
         ("LIJADO", D("1.5"), D("4"), D("0")),
         ("PINTURA", D("2"), D("5"), D("0")),
-        ("TAPIZADO", D("0"), D("0"), D("10")),   # 10 u × 1.50 = 15
+        ("TAPIZADO", D("0"), D("0"), D("10")),  # 10 u × 1.50 = 15
         ("CONTROL_FINAL", D("1"), D("6"), D("0")),
     ]
     for codigo, horas, tarifa, cant_destajo in plan:
         etapa = mfg.avanzar_etapa_orden(
-            orden, usuario=user_a, horas_trabajadas=horas,
-            tarifa_hora=tarifa, cantidad_destajo=cant_destajo,
+            orden,
+            usuario=user_a,
+            horas_trabajadas=horas,
+            tarifa_hora=tarifa,
+            cantidad_destajo=cant_destajo,
         )
         assert etapa.etapa.codigo == codigo
         assert etapa.estado == "completada"
-        assert etapa.completada_por == user_a       # quién
-        assert etapa.fecha_completada is not None   # cuándo
+        assert etapa.completada_por == user_a  # quién
+        assert etapa.fecha_completada is not None  # cuándo
 
     assert mfg.costo_mano_obra_orden(orden) == D("59")
 
-    out = mfg.registrar_produccion_terminada(
-        orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a
-    )
+    out = mfg.registrar_produccion_terminada(orden, cantidad=D("10"), almacen=escenario["almacen"], usuario=user_a)
     costo = out["costo"]
     assert costo["costo_materiales"] == D("290")
     assert costo["mano_obra"] == D("59")
@@ -179,16 +189,16 @@ def test_ciclo_completo_of_etapas_costeo_real(empresa_a, escenario, user_a):
 @pytest.mark.django_db
 def test_no_cerrar_of_con_etapas_pendientes(empresa_a, escenario, user_a):
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("2"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("2"),
         lista_materiales=escenario["bom"],
     )
     mfg.consumir_materiales_orden(orden, almacen=escenario["almacen"], usuario=user_a)
     mfg.avanzar_etapa_orden(orden, usuario=user_a)  # solo CORTE
 
     with pytest.raises(mfg.ManufacturaError, match="pendiente"):
-        mfg.registrar_produccion_terminada(
-            orden, cantidad=D("2"), almacen=escenario["almacen"], usuario=user_a
-        )
+        mfg.registrar_produccion_terminada(orden, cantidad=D("2"), almacen=escenario["almacen"], usuario=user_a)
     orden.refresh_from_db()
     assert orden.estado == "en_proceso"  # nada se cerró
 
@@ -197,7 +207,9 @@ def test_no_cerrar_of_con_etapas_pendientes(empresa_a, escenario, user_a):
 def test_costeo_usa_snapshot_del_consumo_no_costo_vigente(empresa_a, escenario, user_a):
     """Si costo_promedio cambia DESPUÉS del consumo, el costeo real no cambia."""
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("4"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("4"),
         lista_materiales=escenario["bom"],
     )
     mfg.consumir_materiales_orden(orden, almacen=escenario["almacen"], usuario=user_a)
@@ -212,7 +224,9 @@ def test_costeo_usa_snapshot_del_consumo_no_costo_vigente(empresa_a, escenario, 
 @pytest.mark.django_db
 def test_avanzar_etapa_sin_pendientes_falla(empresa_a, escenario, user_a):
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("1"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("1"),
         lista_materiales=escenario["bom"],
     )
     for _ in range(len(ETAPAS_ESTANDAR)):
@@ -229,9 +243,7 @@ def test_orden_sin_etapas_configuradas_opera_flujo_simple(empresa_a, base_mfg, m
     producto = _producto(empresa_a, unidad, categoria, moneda_usd, "Banco simple", "0")
     orden = mfg.crear_orden_produccion(empresa=empresa_a, producto=producto, cantidad=D("1"))
     assert orden.etapas.count() == 0
-    out = mfg.registrar_produccion_terminada(
-        orden, cantidad=D("1"), almacen=almacen, usuario=user_a, mano_obra=D("5")
-    )
+    out = mfg.registrar_produccion_terminada(orden, cantidad=D("1"), almacen=almacen, usuario=user_a, mano_obra=D("5"))
     assert out["costo"]["costo_total"] == D("5")
 
 
@@ -248,7 +260,9 @@ def test_mrp_faltantes_correctos(empresa_a, escenario, user_a):
         cantidad_disponible=D("12"), cantidad_comprometida=D("2")
     )
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("10"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("10"),
         lista_materiales=escenario["bom"],
     )
     faltantes = {f["producto_id"]: f for f in mfg.calcular_mrp_orden(orden)}
@@ -269,20 +283,16 @@ def test_mrp_ignora_stock_de_otra_empresa(empresa_a, empresa_b, escenario, moned
     """R-CODE-1: el stock de la empresa B no cuenta para el MRP de la empresa A."""
     from apps.almacenes.models import Almacen
 
-    almacen_b = Almacen.objects.create(
-        id_empresa=empresa_b, nombre_almacen="Almacén B 1I", codigo_almacen="AL-B1I"
-    )
+    almacen_b = Almacen.objects.create(id_empresa=empresa_b, nombre_almacen="Almacén B 1I", codigo_almacen="AL-B1I")
     # Stock enorme del MISMO producto pero en empresa B (caso borde teórico).
     _stock(empresa_b, escenario["madera"], almacen_b, "1000")
     from apps.inventario.models import StockActual
-    StockActual.objects.filter(
-        id_producto=escenario["madera"], id_empresa=empresa_a
-    ).update(cantidad_disponible=D("0"))
 
-    faltantes = {
-        f["producto_id"]: f
-        for f in mfg.calcular_mrp_lista(escenario["bom"], D("10"))
-    }
+    StockActual.objects.filter(id_producto=escenario["madera"], id_empresa=empresa_a).update(
+        cantidad_disponible=D("0")
+    )
+
+    faltantes = {f["producto_id"]: f for f in mfg.calcular_mrp_lista(escenario["bom"], D("10"))}
     assert faltantes[str(escenario["madera"].pk)]["a_comprar"] == D("20")
 
 
@@ -335,9 +345,7 @@ def test_api_ciclo_completo_of(client_a, empresa_a, escenario, user_a):
     assert all(D(f["a_comprar"]) == 0 for f in resp.data["faltantes"])
 
     # Consumir materiales
-    resp = client_a.post(
-        f"{BASE}/{orden_id}/consumir-materiales/", {"almacen_id": almacen_id}, format="json"
-    )
+    resp = client_a.post(f"{BASE}/{orden_id}/consumir-materiales/", {"almacen_id": almacen_id}, format="json")
     assert resp.status_code == 200, resp.content
     assert resp.data["costo_materiales"] == "290.0000"
     assert resp.data["estado"] == "en_proceso"
@@ -381,16 +389,14 @@ def test_api_almacen_de_otra_empresa_rechazado(client_a, empresa_a, empresa_b, e
     """R-CODE-1: no se puede consumir contra un almacén de otra empresa."""
     from apps.almacenes.models import Almacen
 
-    almacen_b = Almacen.objects.create(
-        id_empresa=empresa_b, nombre_almacen="Almacén ajeno", codigo_almacen="AL-X"
-    )
+    almacen_b = Almacen.objects.create(id_empresa=empresa_b, nombre_almacen="Almacén ajeno", codigo_almacen="AL-X")
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("1"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("1"),
         lista_materiales=escenario["bom"],
     )
-    resp = client_a.post(
-        f"{BASE}/{orden.pk}/consumir-materiales/", {"almacen_id": str(almacen_b.pk)}, format="json"
-    )
+    resp = client_a.post(f"{BASE}/{orden.pk}/consumir-materiales/", {"almacen_id": str(almacen_b.pk)}, format="json")
     assert resp.status_code == 400
     assert "no encontrado" in resp.data["error"].lower()
 
@@ -400,7 +406,9 @@ def test_api_aislamiento_ordenes_y_etapas(client_b, empresa_a, escenario, user_a
     """R-CODE-1: el usuario de la empresa B no ve ni opera la OF de la A,
     ni su catálogo de etapas."""
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("1"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("1"),
         lista_materiales=escenario["bom"],
     )
     for url in (
@@ -497,7 +505,9 @@ def test_mcp_manufactura_get_costeo_orden(empresa_a, escenario, user_a):
     from apps.manufactura.mcp import manufactura_get_costeo_orden
 
     orden = mfg.crear_orden_produccion(
-        empresa=empresa_a, producto=escenario["silla"], cantidad=D("10"),
+        empresa=empresa_a,
+        producto=escenario["silla"],
+        cantidad=D("10"),
         lista_materiales=escenario["bom"],
     )
     mfg.consumir_materiales_orden(orden, almacen=escenario["almacen"], usuario=user_a)

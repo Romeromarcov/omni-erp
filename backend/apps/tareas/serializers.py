@@ -204,9 +204,7 @@ class TareaSerializer(BaseModelSerializer):
     proyecto_nombre = serializers.CharField(source="proyecto.nombre", read_only=True, default="")
     seccion_nombre = serializers.CharField(source="seccion.nombre", read_only=True, default="")
     area_nombre = serializers.CharField(source="area.nombre", read_only=True, default="")
-    usar_tablero_personal_si_falta = serializers.BooleanField(
-        write_only=True, required=False, default=True
-    )
+    usar_tablero_personal_si_falta = serializers.BooleanField(write_only=True, required=False, default=True)
 
     class Meta:
         model = Tarea
@@ -276,9 +274,7 @@ class TareaMoverInputSerializer(serializers.Serializer):
 
 class ComentarioInputSerializer(serializers.Serializer):
     cuerpo = serializers.CharField()
-    autor_nombre = serializers.CharField(
-        max_length=150, required=False, allow_blank=True, default=""
-    )
+    autor_nombre = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
 
 
 class DependenciaInputSerializer(serializers.Serializer):
@@ -287,9 +283,7 @@ class DependenciaInputSerializer(serializers.Serializer):
 
 class PlantillaTareaRecurrenteSerializer(BaseModelSerializer):
     asignado_nombre = serializers.SerializerMethodField()
-    dia_mes = serializers.IntegerField(
-        min_value=1, max_value=31, required=False, allow_null=True
-    )
+    dia_mes = serializers.IntegerField(min_value=1, max_value=31, required=False, allow_null=True)
     dias_semana = serializers.ListField(
         child=serializers.IntegerField(min_value=0, max_value=6),
         required=False,
@@ -345,31 +339,19 @@ class MinutaItemPropuestoSerializer(serializers.Serializer):
     task_name = serializers.CharField(max_length=240, required=False, allow_blank=True, default="")
     descripcion = serializers.CharField(required=False, allow_blank=True, default="")
     notes = serializers.CharField(required=False, allow_blank=True, default="")
-    prioridad = serializers.ChoiceField(
-        choices=PrioridadTarea.choices, required=False, default=PrioridadTarea.MEDIA
-    )
+    prioridad = serializers.ChoiceField(choices=PrioridadTarea.choices, required=False, default=PrioridadTarea.MEDIA)
     asignado_a_id = serializers.UUIDField(required=False, allow_null=True)
-    asignado_nombre = serializers.CharField(
-        max_length=150, required=False, allow_blank=True, default=""
-    )
-    assignee_name = serializers.CharField(
-        max_length=150, required=False, allow_blank=True, default=""
-    )
+    asignado_nombre = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+    assignee_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     area = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
     area_id = serializers.UUIDField(required=False, allow_null=True)
-    fecha_vencimiento = serializers.CharField(
-        max_length=40, required=False, allow_blank=True, allow_null=True
-    )
-    due_on = serializers.CharField(
-        max_length=40, required=False, allow_blank=True, allow_null=True
-    )
+    fecha_vencimiento = serializers.CharField(max_length=40, required=False, allow_blank=True, allow_null=True)
+    due_on = serializers.CharField(max_length=40, required=False, allow_blank=True, allow_null=True)
 
 
 class MinutaReunionSerializer(BaseModelSerializer):
     fecha_reunion = serializers.DateField(required=False, allow_null=True)
-    items_propuestos = MinutaItemPropuestoSerializer(
-        many=True, write_only=True, required=False, default=list
-    )
+    items_propuestos = MinutaItemPropuestoSerializer(many=True, write_only=True, required=False, default=list)
 
     class Meta:
         model = MinutaReunion
@@ -404,9 +386,7 @@ class MinutaReunionSerializer(BaseModelSerializer):
 
 class MinutaConfirmarInputSerializer(serializers.Serializer):
     proyecto = serializers.UUIDField(required=False, allow_null=True)
-    items_confirmados = MinutaItemPropuestoSerializer(
-        many=True, required=False, allow_null=True
-    )
+    items_confirmados = MinutaItemPropuestoSerializer(many=True, required=False, allow_null=True)
 
 
 class ConfiguracionSeguimientoTareasSerializer(BaseModelSerializer):

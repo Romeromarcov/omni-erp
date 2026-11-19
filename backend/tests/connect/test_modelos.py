@@ -389,9 +389,7 @@ def test_lead_publico_con_consentimiento_completo_ok(empresa_a):
 
 @pytest.mark.django_db
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "faltante", [{"consentimiento_fecha": None}, {"consentimiento_texto": ""}]
-)
+@pytest.mark.parametrize("faltante", [{"consentimiento_fecha": None}, {"consentimiento_texto": ""}])
 def test_consentimiento_aceptado_exige_fecha_y_texto(empresa_a, faltante):
     with pytest.raises(IntegrityError), transaction.atomic():
         crear_lead(empresa_a, fuente=Lead.Fuente.MANUAL, **consentimiento(**faltante))

@@ -72,9 +72,7 @@ class PermisoTareas(permissions.BasePermission):
             return False
         if isinstance(user, CapabilityPrincipal):
             if request.method in permissions.SAFE_METHODS:
-                return tiene_scope_capacidad(user, "tareas:read") or tiene_scope_capacidad(
-                    user, "tareas:write"
-                )
+                return tiene_scope_capacidad(user, "tareas:read") or tiene_scope_capacidad(user, "tareas:write")
             return tiene_scope_capacidad(user, "tareas:write")
         return True
 
@@ -129,9 +127,7 @@ def _genera_ciclo_subtarea(empresa_id, tarea_id, nuevo_padre: Tarea | None) -> b
         vistos.add(actual.pk)
         if actual.tarea_padre_id is None:
             break
-        actual = Tarea.objects.filter(
-            pk=actual.tarea_padre_id, id_empresa_id=empresa_id
-        ).first()
+        actual = Tarea.objects.filter(pk=actual.tarea_padre_id, id_empresa_id=empresa_id).first()
     return False
 
 
@@ -164,12 +160,7 @@ class AreaOperativaViewSet(_BaseTareasViewSet):
     ordering_fields = ["nombre", "fecha_creacion"]
 
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .select_related("departamento", "lider")
-            .prefetch_related("miembros__usuario")
-        )
+        return super().get_queryset().select_related("departamento", "lider").prefetch_related("miembros__usuario")
 
     def create(self, request, *args, **kwargs):
         ser = self.get_serializer(data=request.data)
@@ -230,9 +221,7 @@ class AreaOperativaViewSet(_BaseTareasViewSet):
             if u is not None:
                 usuarios.append(u)
         try:
-            services.sincronizar_miembros_area(
-                empresa=area.id_empresa, area=area, usuarios=usuarios
-            )
+            services.sincronizar_miembros_area(empresa=area.id_empresa, area=area, usuarios=usuarios)
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
         area.refresh_from_db()
@@ -246,12 +235,7 @@ class ProyectoViewSet(_BaseTareasViewSet):
     ordering_fields = ["nombre", "fecha_creacion"]
 
     def get_queryset(self):
-        qs = (
-            super()
-            .get_queryset()
-            .select_related("area", "propietario")
-            .prefetch_related("secciones")
-        )
+        qs = super().get_queryset().select_related("area", "propietario").prefetch_related("secciones")
         archivado = self.request.query_params.get("archivado")
         if archivado in ("true", "1"):
             qs = qs.filter(archivado=True)
@@ -271,9 +255,7 @@ class ProyectoViewSet(_BaseTareasViewSet):
                 nombre=d["nombre"],
                 descripcion=d.get("descripcion", ""),
                 color=d.get("color", "#1D9E75"),
-                vista_predeterminada=d.get(
-                    "vista_predeterminada", Proyecto.VistaPredeterminada.TABLERO
-                ),
+                vista_predeterminada=d.get("vista_predeterminada", Proyecto.VistaPredeterminada.TABLERO),
                 area=d.get("area"),
                 propietario=propietario,
             )
@@ -285,11 +267,7 @@ class ProyectoViewSet(_BaseTareasViewSet):
     def mi_tablero(self, request):
         empresa = _empresa_activa_o_403(request)
         usuario_id = request.data.get("usuario")
-        usuario = (
-            _resolver_usuario_tenant(empresa, usuario_id)
-            if usuario_id
-            else _actor_humano(request)
-        )
+        usuario = _resolver_usuario_tenant(empresa, usuario_id) if usuario_id else _actor_humano(request)
         if usuario is None:
             return Response(
                 {"error": "Indica un usuario válido para asegurar su tablero personal."},
@@ -334,11 +312,7 @@ class TareaViewSet(_BaseTareasViewSet):
     ordering_fields = ["orden_tablero", "fecha_vencimiento", "prioridad", "fecha_creacion"]
 
     def get_queryset(self):
-        qs = (
-            super()
-            .get_queryset()
-            .select_related("proyecto", "seccion", "area", "asignado_a", "creado_por")
-        )
+        qs = super().get_queryset().select_related("proyecto", "seccion", "area", "asignado_a", "creado_por")
         p = self.request.query_params
         if p.get("estado"):
             qs = qs.filter(estado=p["estado"])
@@ -364,9 +338,7 @@ class TareaViewSet(_BaseTareasViewSet):
         if p.get("vencidas") in ("true", "1"):
             from django.utils import timezone as dj_tz  # noqa: PLC0415
 
-            qs = qs.exclude(estado__in=["COMPLETADA", "CANCELADA"]).filter(
-                fecha_vencimiento__lt=dj_tz.localdate()
-            )
+            qs = qs.exclude(estado__in=["COMPLETADA", "CANCELADA"]).filter(fecha_vencimiento__lt=dj_tz.localdate())
         desde = parse_date(p.get("vencimiento_desde") or "")
         if desde:
             qs = qs.filter(fecha_vencimiento__gte=desde)
@@ -401,9 +373,7 @@ class TareaViewSet(_BaseTareasViewSet):
                 entidad_tipo=d.get("entidad_tipo") or "",
                 entidad_id=d.get("entidad_id"),
                 idempotency_key=d.get("idempotency_key") or "",
-                usar_tablero_personal_si_falta=d.get(
-                    "usar_tablero_personal_si_falta", True
-                ),
+                usar_tablero_personal_si_falta=d.get("usar_tablero_personal_si_falta", True),
             )
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
@@ -419,16 +389,10 @@ class TareaViewSet(_BaseTareasViewSet):
             and "idempotency_key" in serializer.validated_data
             and serializer.validated_data["idempotency_key"] != instancia.idempotency_key
         ):
-            raise ValidationError(
-                {"idempotency_key": "No se puede modificar idempotency_key una vez fijado."}
-            )
+            raise ValidationError({"idempotency_key": "No se puede modificar idempotency_key una vez fijado."})
         nuevo_padre = serializer.validated_data.get("tarea_padre")
-        if nuevo_padre is not None and _genera_ciclo_subtarea(
-            instancia.id_empresa_id, instancia.pk, nuevo_padre
-        ):
-            raise ValidationError(
-                {"tarea_padre": "La relación de subtarea genera un ciclo."}
-            )
+        if nuevo_padre is not None and _genera_ciclo_subtarea(instancia.id_empresa_id, instancia.pk, nuevo_padre):
+            raise ValidationError({"tarea_padre": "La relación de subtarea genera un ciclo."})
         nuevo_estado = serializer.validated_data.pop("estado", None)
         actualizada = _guardar_validando_modelo(lambda: serializer.save())
         if nuevo_estado is not None and nuevo_estado != actualizada.estado:
@@ -496,17 +460,13 @@ class TareaViewSet(_BaseTareasViewSet):
             )
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
-        return Response(
-            ComentarioTareaSerializer(comentario).data, status=status.HTTP_201_CREATED
-        )
+        return Response(ComentarioTareaSerializer(comentario).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["get", "post"], url_path="dependencias")
     def dependencias(self, request, pk=None):
         tarea = self.get_object()
         if request.method == "GET":
-            qs = tarea.dependencias_entrantes.filter(activo=True).select_related(
-                "depende_de"
-            )
+            qs = tarea.dependencias_entrantes.filter(activo=True).select_related("depende_de")
             return Response(DependenciaTareaSerializer(qs, many=True).data)
 
         ser = DependenciaInputSerializer(data=request.data)
@@ -526,9 +486,7 @@ class TareaViewSet(_BaseTareasViewSet):
             )
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
-        return Response(
-            DependenciaTareaSerializer(dep).data, status=status.HTTP_201_CREATED
-        )
+        return Response(DependenciaTareaSerializer(dep).data, status=status.HTTP_201_CREATED)
 
 
 class PlantillaTareaRecurrenteViewSet(_BaseTareasViewSet):
@@ -538,11 +496,7 @@ class PlantillaTareaRecurrenteViewSet(_BaseTareasViewSet):
     ordering_fields = ["proxima_ejecucion", "titulo", "fecha_creacion"]
 
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .select_related("proyecto", "area", "asignado_a", "creado_por")
-        )
+        return super().get_queryset().select_related("proyecto", "area", "asignado_a", "creado_por")
 
     def perform_create(self, serializer):
         empresa = _empresa_activa_o_403(self.request)
@@ -553,20 +507,14 @@ class PlantillaTareaRecurrenteViewSet(_BaseTareasViewSet):
         asignado = serializer.validated_data.get("asignado_a")
         if asignado is not None:
             _resolver_usuario_tenant(empresa, asignado.pk)
-        _guardar_validando_modelo(
-            lambda: serializer.save(
-                id_empresa=empresa, creado_por=_actor_humano(self.request)
-            )
-        )
+        _guardar_validando_modelo(lambda: serializer.save(id_empresa=empresa, creado_por=_actor_humano(self.request)))
 
     @action(detail=False, methods=["post"], url_path="materializar")
     def materializar(self, request):
         empresa = _empresa_activa_o_403(request)
         fecha = parse_date(str(request.data.get("fecha") or ""))
         try:
-            res = services.generar_tareas_recurrentes_pendientes(
-                empresa, fecha_hoy=fecha
-            )
+            res = services.generar_tareas_recurrentes_pendientes(empresa, fecha_hoy=fecha)
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
         return Response(res)
@@ -596,9 +544,7 @@ class MinutaReunionViewSet(_BaseTareasViewSet):
             )
         except services.TareaError as exc:
             return _respuesta_error_dominio(exc)
-        return Response(
-            MinutaReunionSerializer(minuta).data, status=status.HTTP_201_CREATED
-        )
+        return Response(MinutaReunionSerializer(minuta).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="confirmar")
     def confirmar(self, request, pk=None):
@@ -652,9 +598,7 @@ class ConfiguracionSeguimientoView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             _resolver_usuario_tenant(empresa, ger_uid)
-        ser = ConfiguracionSeguimientoTareasSerializer(
-            cfg, data=request.data, partial=True
-        )
+        ser = ConfiguracionSeguimientoTareasSerializer(cfg, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
         ser.save()
         return Response(ser.data)

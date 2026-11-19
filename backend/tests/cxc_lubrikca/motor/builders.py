@@ -27,8 +27,7 @@ from apps.cxc_lubrikca.services.motor.models import (
 
 
 def cliente(cliente_id: str = "C1", vendedor: str = "rep@lubrikca.com") -> Cliente:
-    return Cliente(cliente_id=cliente_id, nombre="Cliente " + cliente_id,
-                   vendedor_email=vendedor)
+    return Cliente(cliente_id=cliente_id, nombre="Cliente " + cliente_id, vendedor_email=vendedor)
 
 
 def orden(
@@ -160,27 +159,30 @@ def descuento(
 
 
 def regla_bcv_completo(
-    porcentaje: str = "0.15", desde: date = date(2026, 1, 1),
+    porcentaje: str = "0.15",
+    desde: date = date(2026, 1, 1),
     hasta: date | None = None,
 ) -> DescuentoBCVCompleto:
     return DescuentoBCVCompleto(
-        vigencia_desde=desde, porcentaje=Decimal(porcentaje),
+        vigencia_desde=desde,
+        porcentaje=Decimal(porcentaje),
         vigencia_hasta=hasta,
     )
 
 
 def promo_primera(
-    producto: str = "LIGA", desde: date = date(2026, 1, 1),
+    producto: str = "LIGA",
+    desde: date = date(2026, 1, 1),
     hasta: date | None = None,
 ) -> PromocionPrimeraCompra:
     return PromocionPrimeraCompra(
-        producto=producto, vigencia_desde=desde, vigencia_hasta=hasta,
+        producto=producto,
+        vigencia_desde=desde,
+        vigencia_hasta=hasta,
     )
 
 
-def regla_recompra(
-    valor: str = "0.03", desde: date = date(2026, 1, 1)
-) -> ReglaRecurrencia:
+def regla_recompra(valor: str = "0.03", desde: date = date(2026, 1, 1)) -> ReglaRecurrencia:
     return ReglaRecurrencia(
         condicion=Condicion.RECOMPRA,
         tipo_beneficio=TipoBeneficio.PORCENTAJE,
@@ -189,9 +191,7 @@ def regla_recompra(
     )
 
 
-def regla_primera_compra(
-    valor: str = "50", desde: date = date(2026, 1, 1)
-) -> ReglaRecurrencia:
+def regla_primera_compra(valor: str = "50", desde: date = date(2026, 1, 1)) -> ReglaRecurrencia:
     return ReglaRecurrencia(
         condicion=Condicion.PRIMERA_COMPRA,
         tipo_beneficio=TipoBeneficio.NOTA_CREDITO,

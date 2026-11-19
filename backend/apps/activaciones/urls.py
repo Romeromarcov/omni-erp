@@ -8,9 +8,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(
-    "calendarios", CalendarioActivacionViewSet, basename="activ-calendarios"
-)
+router.register("calendarios", CalendarioActivacionViewSet, basename="activ-calendarios")
 router.register("recursos", RecursoActivacionViewSet, basename="activ-recursos")
 router.register("eventos", EventoActivacionViewSet, basename="activ-eventos")
 

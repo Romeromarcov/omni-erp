@@ -179,27 +179,19 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
 
         fecha = operacion.fecha_operacion.date()
         tasa = (
-            TasaCambio.objects.filter(
-                id_moneda_origen=moneda, id_moneda_destino=base, fecha_tasa__lte=fecha
-            )
+            TasaCambio.objects.filter(id_moneda_origen=moneda, id_moneda_destino=base, fecha_tasa__lte=fecha)
             .order_by("-fecha_tasa", "-hora_tasa")
             .first()
         )
         if tasa:
-            return (monto * Decimal(str(tasa.valor_tasa))).quantize(
-                self._DOS_DECIMALES, rounding=ROUND_HALF_UP
-            )
+            return (monto * Decimal(str(tasa.valor_tasa))).quantize(self._DOS_DECIMALES, rounding=ROUND_HALF_UP)
         inversa = (
-            TasaCambio.objects.filter(
-                id_moneda_origen=base, id_moneda_destino=moneda, fecha_tasa__lte=fecha
-            )
+            TasaCambio.objects.filter(id_moneda_origen=base, id_moneda_destino=moneda, fecha_tasa__lte=fecha)
             .order_by("-fecha_tasa", "-hora_tasa")
             .first()
         )
         if inversa and Decimal(str(inversa.valor_tasa)):
-            return (monto / Decimal(str(inversa.valor_tasa))).quantize(
-                self._DOS_DECIMALES, rounding=ROUND_HALF_UP
-            )
+            return (monto / Decimal(str(inversa.valor_tasa))).quantize(self._DOS_DECIMALES, rounding=ROUND_HALF_UP)
         raise serializers.ValidationError(
             {
                 "tasa_cambio": (
@@ -304,12 +296,8 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
                 Gasto.objects.create(
                     id_empresa=empresa,
                     fecha_gasto=operacion.fecha_operacion.date(),
-                    descripcion=(
-                        f"Comisión cambio divisas {operacion.numero_operacion}: {descripcion}"
-                    ),
-                    monto=Decimal(str(operacion.comision)).quantize(
-                        self._DOS_DECIMALES, rounding=ROUND_HALF_UP
-                    ),
+                    descripcion=(f"Comisión cambio divisas {operacion.numero_operacion}: {descripcion}"),
+                    monto=Decimal(str(operacion.comision)).quantize(self._DOS_DECIMALES, rounding=ROUND_HALF_UP),
                     id_moneda=operacion.moneda_origen,
                     id_categoria_gasto=categoria,
                     estado_gasto="APROBADO",
@@ -340,12 +328,8 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
 
 
 class ExtractoBancarioArchivoSerializer(serializers.ModelSerializer):
-    cuenta_nombre_banco = serializers.CharField(
-        source="id_cuenta_bancaria.nombre_banco", read_only=True
-    )
-    cuenta_numero = serializers.CharField(
-        source="id_cuenta_bancaria.numero_cuenta", read_only=True
-    )
+    cuenta_nombre_banco = serializers.CharField(source="id_cuenta_bancaria.nombre_banco", read_only=True)
+    cuenta_numero = serializers.CharField(source="id_cuenta_bancaria.numero_cuenta", read_only=True)
 
     class Meta:
         model = ExtractoBancarioArchivo
@@ -473,15 +457,11 @@ class MovimientoBancarioSerializer(serializers.ModelSerializer):
 
     def validate_monto(self, value):
         if Decimal(str(value)) <= Decimal("0"):
-            raise serializers.ValidationError(
-                "El monto del movimiento bancario debe ser mayor a cero."
-            )
+            raise serializers.ValidationError("El monto del movimiento bancario debe ser mayor a cero.")
         return value
 
     def validate(self, attrs):
-        empresa = attrs.get("id_empresa") or (
-            self.instance.id_empresa if self.instance is not None else None
-        )
+        empresa = attrs.get("id_empresa") or (self.instance.id_empresa if self.instance is not None else None)
         cuenta = attrs.get("id_cuenta_bancaria") or (
             self.instance.id_cuenta_bancaria if self.instance is not None else None
         )
@@ -507,8 +487,7 @@ class MovimientoBancarioSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {
                             "fecha_mov": (
-                                "El período de conciliación bancaria para esta fecha "
-                                "ya se encuentra cerrado."
+                                "El período de conciliación bancaria para esta fecha " "ya se encuentra cerrado."
                             )
                         }
                     )
@@ -523,11 +502,7 @@ class MovimientoBancarioSerializer(serializers.ModelSerializer):
                 .exclude(estado="PENDIENTE")
                 .exists()
             )
-            if (
-                self.instance.estado == "CONCILIADO"
-                or self.instance.origen == "EXTRACTO"
-                or tiene_decision_humana
-            ):
+            if self.instance.estado == "CONCILIADO" or self.instance.origen == "EXTRACTO" or tiene_decision_humana:
                 modificados = [
                     campo
                     for campo in self._CAMPOS_INMUTABLES_CONTABLE
@@ -541,10 +516,7 @@ class MovimientoBancarioSerializer(serializers.ModelSerializer):
                     else:
                         motivo = "importado desde un extracto bancario validado"
                     raise serializers.ValidationError(
-                        {
-                            campo: f"No se puede modificar '{campo}' en un movimiento {motivo}."
-                            for campo in modificados
-                        }
+                        {campo: f"No se puede modificar '{campo}' en un movimiento {motivo}." for campo in modificados}
                     )
         return attrs
 
@@ -553,26 +525,36 @@ class ConciliacionBancariaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConciliacionBancaria
         fields = [
-            "id", "id_empresa", "id_cuenta_bancaria",
-            "periodo_inicio", "periodo_fin",
-            "saldo_banco", "saldo_libro", "diferencia",
-            "estado", "movimientos_conciliados", "movimientos_pendientes",
-            "realizada_por", "fecha_creacion", "fecha_cierre", "observaciones",
+            "id",
+            "id_empresa",
+            "id_cuenta_bancaria",
+            "periodo_inicio",
+            "periodo_fin",
+            "saldo_banco",
+            "saldo_libro",
+            "diferencia",
+            "estado",
+            "movimientos_conciliados",
+            "movimientos_pendientes",
+            "realizada_por",
+            "fecha_creacion",
+            "fecha_cierre",
+            "observaciones",
         ]
         read_only_fields = [
-            "id", "diferencia", "estado",
-            "movimientos_conciliados", "movimientos_pendientes",
-            "fecha_creacion", "fecha_cierre",
+            "id",
+            "diferencia",
+            "estado",
+            "movimientos_conciliados",
+            "movimientos_pendientes",
+            "fecha_creacion",
+            "fecha_cierre",
         ]
 
 
 class ConfiguracionConciliacionCuentaSerializer(serializers.ModelSerializer):
-    cuenta_nombre_banco = serializers.CharField(
-        source="id_cuenta_bancaria.nombre_banco", read_only=True
-    )
-    cuenta_numero = serializers.CharField(
-        source="id_cuenta_bancaria.numero_cuenta", read_only=True
-    )
+    cuenta_nombre_banco = serializers.CharField(source="id_cuenta_bancaria.nombre_banco", read_only=True)
+    cuenta_numero = serializers.CharField(source="id_cuenta_bancaria.numero_cuenta", read_only=True)
 
     class Meta:
         model = ConfiguracionConciliacionCuenta
@@ -612,9 +594,7 @@ class ConfiguracionConciliacionCuentaSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        empresa = attrs.get("id_empresa") or (
-            self.instance.id_empresa if self.instance is not None else None
-        )
+        empresa = attrs.get("id_empresa") or (self.instance.id_empresa if self.instance is not None else None)
         cuenta = attrs.get("id_cuenta_bancaria") or (
             self.instance.id_cuenta_bancaria if self.instance is not None else None
         )
@@ -642,9 +622,7 @@ class ConfiguracionConciliacionCuentaSerializer(serializers.ModelSerializer):
             )
             if plan is not None:
                 if empresa is not None and str(plan.id_empresa_id) != str(empresa.pk):
-                    raise serializers.ValidationError(
-                        {campo_cuenta: "La cuenta contable pertenece a otra empresa."}
-                    )
+                    raise serializers.ValidationError({campo_cuenta: "La cuenta contable pertenece a otra empresa."})
                 if not plan.activo:
                     raise serializers.ValidationError(
                         {campo_cuenta: "La cuenta contable indicada se encuentra inactiva."}
@@ -656,16 +634,10 @@ class ConfiguracionConciliacionCuentaSerializer(serializers.ModelSerializer):
         )
         if conector is not None:
             if empresa is not None and str(conector.id_empresa_id) != str(empresa.pk):
-                raise serializers.ValidationError(
-                    {"id_conector_odoo": "El conector Odoo pertenece a otra empresa."}
-                )
+                raise serializers.ValidationError({"id_conector_odoo": "El conector Odoo pertenece a otra empresa."})
             if conector.id_proveedor is None or conector.id_proveedor.codigo != "odoo":
                 raise serializers.ValidationError(
-                    {
-                        "id_conector_odoo": (
-                            "El conector seleccionado no corresponde al proveedor 'odoo'."
-                        )
-                    }
+                    {"id_conector_odoo": ("El conector seleccionado no corresponde al proveedor 'odoo'.")}
                 )
 
         incluir_odoo = attrs.get(
@@ -680,8 +652,7 @@ class ConfiguracionConciliacionCuentaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "incluir_pagos_odoo": (
-                        "Para consultar pagos candidatos en Odoo debe indicar "
-                        "id_conector_odoo y odoo_journal_id."
+                        "Para consultar pagos candidatos en Odoo debe indicar " "id_conector_odoo y odoo_journal_id."
                     )
                 }
             )
@@ -689,33 +660,21 @@ class ConfiguracionConciliacionCuentaSerializer(serializers.ModelSerializer):
 
 
 class PropuestaConciliacionBancariaSerializer(serializers.ModelSerializer):
-    movimiento_fecha = serializers.DateField(
-        source="id_movimiento_bancario.fecha_mov", read_only=True
-    )
-    movimiento_tipo = serializers.CharField(
-        source="id_movimiento_bancario.tipo", read_only=True
-    )
+    movimiento_fecha = serializers.DateField(source="id_movimiento_bancario.fecha_mov", read_only=True)
+    movimiento_tipo = serializers.CharField(source="id_movimiento_bancario.tipo", read_only=True)
     movimiento_monto = serializers.DecimalField(
         source="id_movimiento_bancario.monto",
         max_digits=18,
         decimal_places=2,
         read_only=True,
     )
-    movimiento_referencia = serializers.CharField(
-        source="id_movimiento_bancario.referencia", read_only=True
-    )
-    movimiento_descripcion = serializers.CharField(
-        source="id_movimiento_bancario.descripcion", read_only=True
-    )
+    movimiento_referencia = serializers.CharField(source="id_movimiento_bancario.referencia", read_only=True)
+    movimiento_descripcion = serializers.CharField(source="id_movimiento_bancario.descripcion", read_only=True)
     movimiento_categoria = serializers.CharField(
         source="id_movimiento_bancario.categoria_clasificacion", read_only=True
     )
-    movimiento_huella = serializers.CharField(
-        source="id_movimiento_bancario.huella", read_only=True
-    )
-    cuenta_bancaria_id = serializers.UUIDField(
-        source="id_movimiento_bancario.id_cuenta_bancaria_id", read_only=True
-    )
+    movimiento_huella = serializers.CharField(source="id_movimiento_bancario.huella", read_only=True)
+    cuenta_bancaria_id = serializers.UUIDField(source="id_movimiento_bancario.id_cuenta_bancaria_id", read_only=True)
     cuenta_nombre_banco = serializers.CharField(
         source="id_movimiento_bancario.id_cuenta_bancaria.nombre_banco", read_only=True
     )
@@ -726,9 +685,7 @@ class PropuestaConciliacionBancariaSerializer(serializers.ModelSerializer):
         source="id_movimiento_bancario.id_cuenta_bancaria.id_moneda.codigo_iso",
         read_only=True,
     )
-    decidida_por_username = serializers.CharField(
-        source="decidida_por.username", read_only=True, default=""
-    )
+    decidida_por_username = serializers.CharField(source="decidida_por.username", read_only=True, default="")
 
     class Meta:
         model = PropuestaConciliacionBancaria
@@ -795,25 +752,17 @@ class DecidirPropuestaRequestSerializer(serializers.Serializer):
     pago_externo_id = serializers.CharField(
         required=False, allow_blank=True, allow_null=True, default="", max_length=64
     )
-    pago_nombre = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True, default="", max_length=200
-    )
+    pago_nombre = serializers.CharField(required=False, allow_blank=True, allow_null=True, default="", max_length=200)
     cuenta_contable_id = serializers.UUIDField(required=False, allow_null=True)
     cuenta_contable_codigo = serializers.CharField(
         required=False, allow_blank=True, allow_null=True, default="", max_length=150
     )
-    comentario = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True, default="", max_length=1000
-    )
+    comentario = serializers.CharField(required=False, allow_blank=True, allow_null=True, default="", max_length=1000)
 
 
 class DecisionPreconciliacionBancariaSerializer(serializers.ModelSerializer):
-    movimiento_referencia = serializers.CharField(
-        source="id_movimiento_bancario.referencia", read_only=True
-    )
-    movimiento_descripcion = serializers.CharField(
-        source="id_movimiento_bancario.descripcion", read_only=True
-    )
+    movimiento_referencia = serializers.CharField(source="id_movimiento_bancario.referencia", read_only=True)
+    movimiento_descripcion = serializers.CharField(source="id_movimiento_bancario.descripcion", read_only=True)
 
     class Meta:
         model = DecisionPreconciliacionBancaria
@@ -834,4 +783,3 @@ class DecisionPreconciliacionBancariaSerializer(serializers.ModelSerializer):
             "activo",
         ]
         read_only_fields = fields
-

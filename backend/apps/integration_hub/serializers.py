@@ -57,22 +57,14 @@ class ConectorProveedorSerializer(serializers.ModelSerializer):
 
     def validate_versiones_soportadas(self, value):
         if not isinstance(value, list):
-            raise serializers.ValidationError(
-                "Versiones soportadas debe ser una lista."
-            )
+            raise serializers.ValidationError("Versiones soportadas debe ser una lista.")
         return value
 
 
 class ConectorInstanciaSerializer(serializers.ModelSerializer):
-    proveedor_nombre = serializers.CharField(
-        source="id_proveedor.nombre", read_only=True
-    )
-    proveedor_codigo = serializers.CharField(
-        source="id_proveedor.codigo", read_only=True
-    )
-    proveedor_capacidades = serializers.JSONField(
-        source="id_proveedor.capacidades", read_only=True
-    )
+    proveedor_nombre = serializers.CharField(source="id_proveedor.nombre", read_only=True)
+    proveedor_codigo = serializers.CharField(source="id_proveedor.codigo", read_only=True)
+    proveedor_capacidades = serializers.JSONField(source="id_proveedor.capacidades", read_only=True)
     # Nunca serializar configuracion completa — R-CODE-8
     # Solo mostrar campos seguros (host, user) sin api_key ni password
     configuracion_publica = serializers.SerializerMethodField()
@@ -148,9 +140,7 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
     def validate_configuracion(self, value: dict) -> dict:
         """Valida que la configuracion sea un objeto JSON."""
         if not isinstance(value, dict):
-            raise serializers.ValidationError(
-                "La configuración debe ser un objeto JSON."
-            )
+            raise serializers.ValidationError("La configuración debe ser un objeto JSON.")
         return value
 
     def validate(self, attrs: dict) -> dict:
@@ -164,9 +154,7 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
         if configuracion is None:
             return attrs  # PATCH parcial sin configuracion: nada que validar
 
-        proveedor = attrs.get("id_proveedor") or (
-            self.instance.id_proveedor if self.instance else None
-        )
+        proveedor = attrs.get("id_proveedor") or (self.instance.id_proveedor if self.instance else None)
         codigo = getattr(proveedor, "codigo", "")
 
         # En edición, un campo secreto que llega vacío se conserva del valor
@@ -202,9 +190,7 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
         else:
             for campo in ("host", "user", "api_key"):
                 if not presente(campo):
-                    raise serializers.ValidationError(
-                        {"configuracion": f"Se requiere el campo '{campo}'."}
-                    )
+                    raise serializers.ValidationError({"configuracion": f"Se requiere el campo '{campo}'."})
         return attrs
 
     def update(self, instance, validated_data):
@@ -236,16 +222,12 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
-            raise serializers.ValidationError(
-                f"Ya existe un conector con el nombre '{value}' en esta empresa."
-            )
+            raise serializers.ValidationError(f"Ya existe un conector con el nombre '{value}' en esta empresa.")
         return value
 
 
 class JobSincronizacionSerializer(serializers.ModelSerializer):
-    instancia_nombre = serializers.CharField(
-        source="id_instancia.nombre", read_only=True
-    )
+    instancia_nombre = serializers.CharField(source="id_instancia.nombre", read_only=True)
     duracion_segundos = serializers.FloatField(read_only=True)
     iniciado_por_nombre = serializers.SerializerMethodField()
 
@@ -272,15 +254,11 @@ class JobSincronizacionSerializer(serializers.ModelSerializer):
             "iniciado_por_nombre",
             "parametros",
         ]
-        read_only_fields = [
-            f for f in fields if f not in ("tipo_entidad", "direccion", "parametros")
-        ]
+        read_only_fields = [f for f in fields if f not in ("tipo_entidad", "direccion", "parametros")]
 
     def get_iniciado_por_nombre(self, obj) -> str:
         if obj.iniciado_por:
-            return getattr(obj.iniciado_por, "get_full_name", lambda: "")() or str(
-                obj.iniciado_por
-            )
+            return getattr(obj.iniciado_por, "get_full_name", lambda: "")() or str(obj.iniciado_por)
         return "Automático"
 
 

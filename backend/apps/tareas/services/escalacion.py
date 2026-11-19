@@ -153,9 +153,7 @@ def evaluar_alertas_tarea(
         return acciones
 
     # 3. Tarea vencida (dias_restantes < 0)
-    fin_dia_vencimiento = datetime.combine(
-        fecha_vencimiento, time(18, 0), tzinfo=ahora_local.tzinfo
-    )
+    fin_dia_vencimiento = datetime.combine(fecha_vencimiento, time(18, 0), tzinfo=ahora_local.tzinfo)
     horas_vencida = max((ahora_local - fin_dia_vencimiento).total_seconds() / 3600.0, 0.0)
 
     if dias_restantes == -1 and es_manana and "vencida_manana_1d" not in enviadas:
@@ -280,8 +278,8 @@ def ejecutar_seguimiento_empresa(
                 if all(u.pk != cfg.gerente_id for u in destinatarios):
                     destinatarios.append(cfg.gerente)
 
-            tipo_notif = "ERROR" if acc.bloquear_tarea else (
-                "ADVERTENCIA" if acc.severidad == "ESCALACION" else "ALERTA"
+            tipo_notif = (
+                "ERROR" if acc.bloquear_tarea else ("ADVERTENCIA" if acc.severidad == "ESCALACION" else "ALERTA")
             )
             for usuario_dest in destinatarios:
                 Notificacion.objects.create(

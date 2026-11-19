@@ -21,6 +21,7 @@ Uso:
 Las credenciales pueden venir de variables de entorno si se omiten los flags:
     ODOO_HOST, ODOO_DB, ODOO_USER, ODOO_API_KEY
 """
+
 import os
 
 from django.core.management.base import BaseCommand, CommandError
@@ -40,8 +41,11 @@ class Command(BaseCommand):
         parser.add_argument("--nombre", default="Odoo Lubrikca")
         parser.add_argument("--entidades", default="pagos", help="Lista separada por comas.")
         parser.add_argument("--intervalo", type=int, default=60, help="Minutos entre syncs (0 = manual).")
-        parser.add_argument("--datasource-odoo", action="store_true",
-                            help="Fija cxc.datasource=odoo para el tenant (la cartera se lee de Odoo).")
+        parser.add_argument(
+            "--datasource-odoo",
+            action="store_true",
+            help="Fija cxc.datasource=odoo para el tenant (la cartera se lee de Odoo).",
+        )
         parser.add_argument("--test", action="store_true", help="Prueba la conexión tras crear.")
 
     def handle(self, *args, **opts):
@@ -79,10 +83,12 @@ class Command(BaseCommand):
 
         verbo = "creado" if creada else "actualizado"
         # NUNCA imprimir configuracion (contiene api_key).
-        self.stdout.write(self.style.SUCCESS(
-            f"Conector Odoo {verbo}: {instancia.nombre} (empresa={empresa.pk}); "
-            f"entidades={entidades}; intervalo={opts['intervalo']}min."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Conector Odoo {verbo}: {instancia.nombre} (empresa={empresa.pk}); "
+                f"entidades={entidades}; intervalo={opts['intervalo']}min."
+            )
+        )
 
         if opts["test"]:
             self._probar(instancia)

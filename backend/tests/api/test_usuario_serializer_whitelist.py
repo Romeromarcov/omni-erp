@@ -14,9 +14,9 @@ def test_usuario_serializer_no_expone_campos_de_privilegio(user_a):
     client.force_authenticate(user=user_a)
     resp = client.get("/api/core/usuarios/me/")
     assert resp.status_code == 200
-    assert PROHIBIDOS.isdisjoint(resp.data.keys()), (
-        f"UsuariosSerializer expone campos prohibidos: {PROHIBIDOS & set(resp.data.keys())}"
-    )
+    assert PROHIBIDOS.isdisjoint(
+        resp.data.keys()
+    ), f"UsuariosSerializer expone campos prohibidos: {PROHIBIDOS & set(resp.data.keys())}"
     assert "password" not in resp.data
 
 

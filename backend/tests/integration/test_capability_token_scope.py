@@ -18,9 +18,7 @@ def test_wildcard_token_interno_sin_creador_concede(empresa_a):
 
 @pytest.mark.django_db
 def test_wildcard_token_de_usuario_normal_no_concede(empresa_a, user_a):
-    t = CapabilityToken.objects.create(
-        empresa=empresa_a, nombre="user-token", scopes=["*"], creado_por=user_a
-    )
+    t = CapabilityToken.objects.create(empresa=empresa_a, nombre="user-token", scopes=["*"], creado_por=user_a)
     assert t.has_scope("ventas:write") is False
     # El scope explícito sí funciona.
     t2 = CapabilityToken.objects.create(
@@ -35,9 +33,7 @@ def test_wildcard_token_de_superusuario_concede(empresa_a):
     su = User.objects.create_user(username="su_cap", password="x", is_active=True)
     su.es_superusuario_omni = True
     su.save()
-    t = CapabilityToken.objects.create(
-        empresa=empresa_a, nombre="su-token", scopes=["*"], creado_por=su
-    )
+    t = CapabilityToken.objects.create(empresa=empresa_a, nombre="su-token", scopes=["*"], creado_por=su)
     assert t.has_scope("ventas:write") is True
 
 
@@ -49,9 +45,7 @@ def test_mcp_resolver_filtra_comodin_de_usuario_normal(empresa_a, user_a):
     """Un token de empresa con scopes=['*'] no debe conceder acceso MCP total."""
     from apps.core.mcp_server import _require_scope, _resolve_token
 
-    t = CapabilityToken.objects.create(
-        empresa=empresa_a, nombre="user-mcp", scopes=["*"], creado_por=user_a
-    )
+    t = CapabilityToken.objects.create(empresa=empresa_a, nombre="user-mcp", scopes=["*"], creado_por=user_a)
     ctx = _resolve_token(str(t.token))
     assert "*" not in ctx["scopes"]  # comodín filtrado
     with pytest.raises(PermissionError):

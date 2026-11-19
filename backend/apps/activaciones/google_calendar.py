@@ -59,9 +59,7 @@ def upsert(evento) -> str:
             timeout=_TIMEOUT,
         )
     else:
-        r = requests.post(
-            f"{_BASE}/{cal}/events", json=_cuerpo(evento), headers=h, timeout=_TIMEOUT
-        )
+        r = requests.post(f"{_BASE}/{cal}/events", json=_cuerpo(evento), headers=h, timeout=_TIMEOUT)
     r.raise_for_status()
     return r.json()["id"]
 

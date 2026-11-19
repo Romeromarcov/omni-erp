@@ -27,9 +27,7 @@ pytestmark = pytest.mark.integration
 
 @pytest.mark.django_db(transaction=True)
 class TestRegistrarPagoConcurrencia:
-    def test_doble_pago_concurrente_solo_uno_cobra(
-        self, empresa_a, user_a, moneda_usd, metodo_efectivo
-    ):
+    def test_doble_pago_concurrente_solo_uno_cobra(self, empresa_a, user_a, moneda_usd, metodo_efectivo):
         """2 hilos pagan la misma cuota de 100 por el total: 1 éxito, 1 rechazo."""
         from apps.finanzas.models import Pago
 
@@ -89,9 +87,10 @@ class TestRegistrarPagoConcurrencia:
         connections.close_all()
 
         assert not errores, f"Errores inesperados en hilos: {errores}"
-        assert sorted(resultados) == [200, 400], (
-            f"DOBLE COBRO: se esperaba exactamente un 200 y un 400, hubo {resultados}"
-        )
+        assert sorted(resultados) == [
+            200,
+            400,
+        ], f"DOBLE COBRO: se esperaba exactamente un 200 y un 400, hubo {resultados}"
 
         cuota.refresh_from_db()
         assert cuota.estado == "pagado"

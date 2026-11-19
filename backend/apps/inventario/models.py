@@ -200,6 +200,7 @@ class MovimientoInventario(TimeStampedModel):
         """Valor contable del movimiento: |cantidad| × costo_unitario.
         Usado por generar_asiento() para extraer el monto del documento."""
         from decimal import Decimal
+
         if self.costo_unitario_movimiento:
             return abs(self.cantidad) * self.costo_unitario_movimiento
         return Decimal("0")
@@ -348,13 +349,9 @@ class RequisicionInterna(OmniBaseModel):
 
 class DetalleRequisicion(models.Model):
     id_detalle = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_requisicion = models.ForeignKey(
-        RequisicionInterna, on_delete=models.CASCADE, related_name="detalles"
-    )
+    id_requisicion = models.ForeignKey(RequisicionInterna, on_delete=models.CASCADE, related_name="detalles")
     id_producto = models.ForeignKey("Producto", on_delete=models.PROTECT, related_name="detalles_requisicion_interna")
-    id_variante = models.ForeignKey(
-        "VarianteProducto", on_delete=models.SET_NULL, null=True, blank=True
-    )
+    id_variante = models.ForeignKey("VarianteProducto", on_delete=models.SET_NULL, null=True, blank=True)
     cantidad_solicitada = models.DecimalField(max_digits=18, decimal_places=4)
     cantidad_despachada = models.DecimalField(max_digits=18, decimal_places=4, default=0)
 
@@ -393,19 +390,13 @@ class ValoracionInventario(TimeStampedModel):
     METODOS = [("PROMEDIO", "Costo Promedio"), ("FIFO", "FIFO")]
 
     id_valoracion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="valoraciones_inventario"
-    )
-    id_movimiento = models.ForeignKey(
-        "MovimientoInventario", on_delete=models.CASCADE, related_name="valoraciones"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="valoraciones_inventario")
+    id_movimiento = models.ForeignKey("MovimientoInventario", on_delete=models.CASCADE, related_name="valoraciones")
     id_producto = models.ForeignKey("Producto", on_delete=models.CASCADE, related_name="valoraciones")
     id_variante = models.ForeignKey(
         "VarianteProducto", on_delete=models.CASCADE, related_name="valoraciones", null=True, blank=True
     )
-    id_almacen = models.ForeignKey(
-        "almacenes.Almacen", on_delete=models.CASCADE, related_name="valoraciones"
-    )
+    id_almacen = models.ForeignKey("almacenes.Almacen", on_delete=models.CASCADE, related_name="valoraciones")
     sentido = models.CharField(max_length=10, choices=SENTIDOS)
     metodo = models.CharField(max_length=10, choices=METODOS)
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
@@ -450,12 +441,8 @@ class PasoOperacion(OmniBaseModel):
     TIPOS_OPERACION = [("RECEPCION", "Recepción"), ("ENTREGA", "Entrega")]
 
     id_paso_operacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="pasos_operacion"
-    )
-    id_almacen = models.ForeignKey(
-        "almacenes.Almacen", on_delete=models.CASCADE, related_name="pasos_operacion"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="pasos_operacion")
+    id_almacen = models.ForeignKey("almacenes.Almacen", on_delete=models.CASCADE, related_name="pasos_operacion")
     tipo_operacion = models.CharField(max_length=12, choices=TIPOS_OPERACION)
     nombre_paso = models.CharField(max_length=100)
     secuencia = models.PositiveIntegerField(
@@ -507,9 +494,7 @@ class OperacionInventario(OmniBaseModel):
     ]
 
     id_operacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="operaciones_inventario"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="operaciones_inventario")
     numero = models.CharField(max_length=30)
     tipo_operacion = models.CharField(max_length=12, choices=TIPOS_OPERACION)
     origen_tipo = models.CharField(max_length=12, choices=ORIGENES)
@@ -517,12 +502,18 @@ class OperacionInventario(OmniBaseModel):
         null=True, blank=True, help_text="Documento de origen (OC, NotaVenta, etc.) si aplica."
     )
     id_almacen = models.ForeignKey(
-        "almacenes.Almacen", on_delete=models.PROTECT, related_name="operaciones_inventario",
+        "almacenes.Almacen",
+        on_delete=models.PROTECT,
+        related_name="operaciones_inventario",
         help_text="Almacén que recibe (recepción) o despacha (entrega).",
     )
     id_almacen_contraparte = models.ForeignKey(
-        "almacenes.Almacen", on_delete=models.PROTECT, related_name="operaciones_inventario_contraparte",
-        null=True, blank=True, help_text="Almacén destino en transferencias.",
+        "almacenes.Almacen",
+        on_delete=models.PROTECT,
+        related_name="operaciones_inventario_contraparte",
+        null=True,
+        blank=True,
+        help_text="Almacén destino en transferencias.",
     )
     estado = models.CharField(max_length=12, choices=ESTADOS, default="EN_PROCESO")
     motivo = models.TextField(blank=True, default="", help_text="Obligatorio para devoluciones/desechos.")
@@ -543,14 +534,15 @@ class OperacionInventarioPaso(models.Model):
     """Snapshot de un paso configurado, con su estado de confirmación en la operación."""
 
     id_operacion_paso = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_operacion = models.ForeignKey(
-        "OperacionInventario", on_delete=models.CASCADE, related_name="pasos"
-    )
+    id_operacion = models.ForeignKey("OperacionInventario", on_delete=models.CASCADE, related_name="pasos")
     secuencia = models.PositiveIntegerField()
     nombre_paso = models.CharField(max_length=100)
     confirmado = models.BooleanField(default=False)
     id_usuario_confirmacion = models.ForeignKey(
-        "core.Usuarios", on_delete=models.SET_NULL, null=True, blank=True,
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="pasos_operacion_confirmados",
     )
     fecha_confirmacion = models.DateTimeField(null=True, blank=True)
@@ -571,16 +563,15 @@ class OperacionInventarioLinea(models.Model):
     """Línea de producto de una operación de inventario."""
 
     id_linea = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_operacion = models.ForeignKey(
-        "OperacionInventario", on_delete=models.CASCADE, related_name="lineas"
-    )
+    id_operacion = models.ForeignKey("OperacionInventario", on_delete=models.CASCADE, related_name="lineas")
     id_producto = models.ForeignKey("Producto", on_delete=models.PROTECT, related_name="lineas_operacion")
-    id_variante = models.ForeignKey(
-        "VarianteProducto", on_delete=models.SET_NULL, null=True, blank=True
-    )
+    id_variante = models.ForeignKey("VarianteProducto", on_delete=models.SET_NULL, null=True, blank=True)
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
     costo_unitario = models.DecimalField(
-        max_digits=18, decimal_places=4, null=True, blank=True,
+        max_digits=18,
+        decimal_places=4,
+        null=True,
+        blank=True,
         help_text="Costo de recepción; en entregas lo calcula la valoración.",
     )
 

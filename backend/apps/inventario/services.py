@@ -80,8 +80,7 @@ def _actualizar_stock(empresa, producto, variante, almacen, delta: Decimal) -> S
     nuevo = stock.cantidad_disponible + delta
     if nuevo < 0:
         raise StockInsuficienteError(
-            f"Stock insuficiente en '{almacen}'. "
-            f"Disponible: {stock.cantidad_disponible}, solicitado: {abs(delta)}"
+            f"Stock insuficiente en '{almacen}'. " f"Disponible: {stock.cantidad_disponible}, solicitado: {abs(delta)}"
         )
     stock.cantidad_disponible = nuevo
     stock.save(update_fields=["cantidad_disponible", "fecha_ultima_actualizacion"])
@@ -162,7 +161,8 @@ def liberar_reserva(empresa, producto, variante, almacen, cantidad: Decimal) -> 
         # (entregar_nota_venta) lo trate como "venta directa sin reserva previa".
         logger.warning(
             "liberar_reserva: no existe StockActual para producto=%s almacen=%s — nada que liberar.",
-            getattr(producto, "pk", producto), getattr(almacen, "pk", almacen),
+            getattr(producto, "pk", producto),
+            getattr(almacen, "pk", almacen),
         )
         raise ReservaInsuficienteError("No existe reserva para el producto/almacén indicado.") from exc
     if stock.cantidad_comprometida < cantidad:
@@ -236,17 +236,13 @@ def registrar_movimiento(
     # ── Validar documento origen para salidas controladas (M5) ───────────────
     if tipo in TIPOS_SALIDA_CONTROLADA:
         if not documento_origen_id:
-            raise MovimientoInvalidoError(
-                f"El tipo '{tipo}' requiere un documento_origen_id (RequisicionInterna)."
-            )
+            raise MovimientoInvalidoError(f"El tipo '{tipo}' requiere un documento_origen_id (RequisicionInterna).")
         from .models import RequisicionInterna
 
         try:
             req = RequisicionInterna.objects.get(id_requisicion=documento_origen_id, id_empresa=empresa)
         except RequisicionInterna.DoesNotExist:
-            raise MovimientoInvalidoError(
-                f"RequisicionInterna '{documento_origen_id}' no existe."
-            )
+            raise MovimientoInvalidoError(f"RequisicionInterna '{documento_origen_id}' no existe.")
         if req.estado != "APROBADA":
             raise MovimientoInvalidoError(
                 f"La requisición debe estar APROBADA para despachar. Estado actual: {req.estado}"
@@ -288,6 +284,7 @@ def registrar_movimiento(
     # ── M5-T3: Advertencia para AJUSTE sin justificante ──────────────────────
     if tipo in TIPOS_AJUSTE_CONTROLADO and not documento_origen_id:
         import logging as _logging
+
         _logging.getLogger(__name__).warning(
             "AJUSTE de inventario registrado sin documento_origen_id. "
             "Se recomienda referenciar una autorización o justificante. "
@@ -354,6 +351,7 @@ def registrar_movimiento(
         # activa y falta el mapeo, generar_asiento_o_fallar lanza AsientoError y la
         # transacción revierte; si no, loguea un warning y continúa sin asiento.
         from apps.contabilidad.services import generar_asiento_o_fallar
+
         generar_asiento_o_fallar("AJUSTE_INVENTARIO", movimiento, empresa, monto=monto_asiento, usuario=usuario)
 
     # ── Costo de ventas (COGS) al despachar una venta (R-CODE-11) ────────────
@@ -363,12 +361,9 @@ def registrar_movimiento(
     # Promedio). El asiento de ingresos (DR CxC / CR Ingresos) lo genera el flujo
     # de ventas por separado. Best-effort: si no hay mapeo COSTO_VENTA y la
     # empresa no exige contabilidad, se omite; si la exige, revierte la entrega.
-    if (
-        tipo in TIPOS_DESPACHO_VENTA
-        and valoracion_salida is not None
-        and valoracion_salida.valor_total > 0
-    ):
+    if tipo in TIPOS_DESPACHO_VENTA and valoracion_salida is not None and valoracion_salida.valor_total > 0:
         from apps.contabilidad.services import generar_asiento_o_fallar
+
         generar_asiento_o_fallar(
             "COSTO_VENTA", movimiento, empresa, monto=valoracion_salida.valor_total, usuario=usuario
         )
@@ -392,9 +387,7 @@ def aprobar_requisicion(requisicion, aprobado_por) -> None:
     from datetime import date
 
     if requisicion.estado != "BORRADOR":
-        raise RequisicionError(
-            f"Solo se aprueban requisiciones en BORRADOR. Estado: {requisicion.estado}"
-        )
+        raise RequisicionError(f"Solo se aprueban requisiciones en BORRADOR. Estado: {requisicion.estado}")
     requisicion.estado = "APROBADA"
     requisicion.aprobado_por = aprobado_por
     requisicion.fecha_aprobacion = date.today()
@@ -415,9 +408,7 @@ def despachar_requisicion_interna(requisicion, usuario) -> list:
     from django.utils import timezone
 
     if requisicion.estado != "APROBADA":
-        raise RequisicionError(
-            f"Solo se despachan requisiciones APROBADAS. Estado: {requisicion.estado}"
-        )
+        raise RequisicionError(f"Solo se despachan requisiciones APROBADAS. Estado: {requisicion.estado}")
 
     detalles = list(requisicion.detalles.select_related("id_producto", "id_variante"))
     if not detalles:

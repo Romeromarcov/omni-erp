@@ -47,9 +47,7 @@ def cantidades_pendientes_por_producto(nota_venta) -> dict:
     """
     vendido: dict = {}
     for det in nota_venta.detalles.all():
-        vendido[det.id_producto_id] = (
-            vendido.get(det.id_producto_id, Decimal("0")) + det.cantidad
-        )
+        vendido[det.id_producto_id] = vendido.get(det.id_producto_id, Decimal("0")) + det.cantidad
 
     despachado = (
         DetalleDespacho.objects.filter(
@@ -62,9 +60,7 @@ def cantidades_pendientes_por_producto(nota_venta) -> dict:
     despachado_map = {row["id_producto"]: row["total"] for row in despachado}
 
     return {
-        producto_id: max(
-            cantidad - despachado_map.get(producto_id, Decimal("0")), Decimal("0")
-        )
+        producto_id: max(cantidad - despachado_map.get(producto_id, Decimal("0")), Decimal("0"))
         for producto_id, cantidad in vendido.items()
     }
 
@@ -129,9 +125,7 @@ def crear_despacho_desde_nota_venta(
 
     detalles_nota = {
         det.id_producto_id: det
-        for det in nota_venta.detalles.select_related(
-            "id_producto", "id_producto__id_unidad_medida_base"
-        )
+        for det in nota_venta.detalles.select_related("id_producto", "id_producto__id_unidad_medida_base")
     }
     if not detalles_nota:
         raise DespachoError("La nota de venta no tiene líneas de detalle.")
@@ -161,9 +155,7 @@ def crear_despacho_desde_nota_venta(
         vistos.add(producto_id)
         detalle_nota = detalles_nota.get(producto_id)
         if detalle_nota is None:
-            raise DespachoError(
-                f"El producto {producto_id} no pertenece a la nota de venta."
-            )
+            raise DespachoError(f"El producto {producto_id} no pertenece a la nota de venta.")
         if cantidad <= Decimal("0"):
             raise DespachoError("Las cantidades a despachar deben ser mayores a cero.")
         pendiente = pendientes.get(producto_id, Decimal("0"))

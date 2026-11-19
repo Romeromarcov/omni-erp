@@ -29,11 +29,7 @@ UBIC = {"latitud": 10.4806, "longitud": -66.9036, "precision_m": 12.5}
 
 @pytest.fixture
 def servicio(user_a):
-    user_a.user_permissions.add(
-        Permission.objects.get(
-            codename="ingestar", content_type__app_label="bots_ingest"
-        )
-    )
+    user_a.user_permissions.add(Permission.objects.get(codename="ingestar", content_type__app_label="bots_ingest"))
     return user_a
 
 
@@ -46,9 +42,7 @@ def api(servicio):
 
 @pytest.fixture
 def bot_usuario(servicio, empresa_a):
-    return BotUsuario.objects.create(
-        id_empresa=empresa_a, telegram_user_id=TG, usuario=servicio, nombre="Vendedor"
-    )
+    return BotUsuario.objects.create(id_empresa=empresa_a, telegram_user_id=TG, usuario=servicio, nombre="Vendedor")
 
 
 def enviar(api, kind, draft, key="k1", tg=TG, **fuente):
@@ -90,9 +84,7 @@ def test_contacto_exige_nombre_telefono_y_ubicacion(api, bot_usuario):
 
 
 def test_contacto_crea_contacto_con_gps_y_lead(api, bot_usuario, empresa_a):
-    p = Pipeline.objects.create(
-        id_empresa=empresa_a, nombre="Ventas", es_predeterminado=True
-    )
+    p = Pipeline.objects.create(id_empresa=empresa_a, nombre="Ventas", es_predeterminado=True)
     Etapa.objects.create(id_empresa=empresa_a, pipeline=p, nombre="Nuevo", orden=1)
     r = enviar(
         api,
@@ -106,11 +98,7 @@ def test_contacto_crea_contacto_con_gps_y_lead(api, bot_usuario, empresa_a):
     )
     assert r.status_code == 201, r.data
     c = Contacto.objects.get(id_empresa=empresa_a, nombre="Pedro")
-    assert (
-        c.latitud == Decimal("10.480600")
-        and c.longitud == Decimal("-66.903600")
-        and c.email == "p@x.com"
-    )
+    assert c.latitud == Decimal("10.480600") and c.longitud == Decimal("-66.903600") and c.email == "p@x.com"
     assert Lead.objects.filter(contacto=c).count() == 1
     assert r.data["estado"] == "PROCESADO"
 
@@ -167,18 +155,12 @@ def catalogo(empresa_a, moneda_usd):
         es_referencia=True,
         id_moneda=moneda_usd,
     )
-    prod = ProductoFactory(
-        id_empresa=empresa_a, nombre_producto="Aceite 20W50", sku="AC-20W50"
-    )
-    DetallePrecio.objects.create(
-        id_lista=lista, id_producto=prod, precio=Decimal("12.50")
-    )
+    prod = ProductoFactory(id_empresa=empresa_a, nombre_producto="Aceite 20W50", sku="AC-20W50")
+    DetallePrecio.objects.create(id_lista=lista, id_producto=prod, precio=Decimal("12.50"))
     return lista, prod
 
 
-def test_cotizacion_solo_con_nombre_crea_cliente_provisional(
-    api, bot_usuario, catalogo, empresa_a
-):
+def test_cotizacion_solo_con_nombre_crea_cliente_provisional(api, bot_usuario, catalogo, empresa_a):
     r = enviar(
         api,
         "cotizacion",
@@ -190,10 +172,7 @@ def test_cotizacion_solo_con_nombre_crea_cliente_provisional(
     assert r.status_code == 201, r.data
     cot = Cotizacion.objects.get(id_empresa=empresa_a)
     assert cot.monto_total == Decimal("50.0000") and cot.estado == "BORRADOR"
-    assert (
-        cot.id_cliente.rif.startswith("PEND-")
-        and r.data["resultado"]["cliente_provisional"] is True
-    )
+    assert cot.id_cliente.rif.startswith("PEND-") and r.data["resultado"]["cliente_provisional"] is True
 
 
 def test_cotizacion_producto_desconocido_se_rechaza(api, bot_usuario, catalogo):
@@ -235,9 +214,7 @@ def test_pedido_completa_ficha_y_guarda_gps(api, bot_usuario, catalogo, empresa_
     )
     r = enviar(api, "pedido", _pedido(), key="p")
     assert r.status_code == 201, r.data
-    cliente = Cliente.objects.get(
-        id_empresa=empresa_a, razon_social="Taller Nuevo"
-    )  # el provisional se reutiliza
+    cliente = Cliente.objects.get(id_empresa=empresa_a, razon_social="Taller Nuevo")  # el provisional se reutiliza
     assert cliente.rif == "J-123456789" and cliente.email == "t@x.com"
     assert (cliente.documento_json or {}).get("provisional") is False
     d = DireccionCliente.objects.get(id_cliente=cliente, tipo_direccion="FISCAL")
@@ -247,12 +224,8 @@ def test_pedido_completa_ficha_y_guarda_gps(api, bot_usuario, catalogo, empresa_
     assert ped.detalles.get().subtotal == Decimal("25.0000")
 
 
-def test_pedido_con_direccion_de_entrega_distinta(
-    api, bot_usuario, catalogo, empresa_a
-):
-    r = enviar(
-        api, "pedido", _pedido(entrega_igual_fiscal=False, direccion_entrega="Galpón 3")
-    )
+def test_pedido_con_direccion_de_entrega_distinta(api, bot_usuario, catalogo, empresa_a):
+    r = enviar(api, "pedido", _pedido(entrega_igual_fiscal=False, direccion_entrega="Galpón 3"))
     assert r.status_code == 201, r.data
     ent = DireccionCliente.objects.get(tipo_direccion="ENTREGA")
     assert ent.direccion_completa == "Galpón 3" and ent.latitud is not None
@@ -277,17 +250,11 @@ def test_pedido_rif_invalido(api, bot_usuario, catalogo):
     assert enviar(api, "pedido", _pedido(rif="ABC")).status_code == 422
 
 
-def test_pedido_con_rif_existente_reutiliza_ese_cliente(
-    api, bot_usuario, catalogo, empresa_a
-):
-    existente = Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Otro S.A.", rif="J-123456789"
-    )
+def test_pedido_con_rif_existente_reutiliza_ese_cliente(api, bot_usuario, catalogo, empresa_a):
+    existente = Cliente.objects.create(id_empresa=empresa_a, razon_social="Otro S.A.", rif="J-123456789")
     r = enviar(api, "pedido", _pedido(cliente="Taller Nuevo"))
     assert r.status_code == 201, r.data
-    assert (
-        Cliente.objects.filter(id_empresa=empresa_a).count() == 1
-    )  # el RIF identifica al cliente
+    assert Cliente.objects.filter(id_empresa=empresa_a).count() == 1  # el RIF identifica al cliente
     assert Pedido.objects.get().id_cliente_id == existente.id_cliente
 
 
@@ -295,9 +262,7 @@ def test_pedido_con_rif_existente_reutiliza_ese_cliente(
 
 
 def test_pago_identificado_por_rif(api, bot_usuario, empresa_a):
-    c = Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Taller", rif="J-123456789"
-    )
+    c = Cliente.objects.create(id_empresa=empresa_a, razon_social="Taller", rif="J-123456789")
     r = enviar(
         api,
         "pago",
@@ -319,25 +284,15 @@ def test_pago_identificado_por_pedido(api, bot_usuario, catalogo, empresa_a):
 
 
 def test_pago_incompleto_se_registra_y_se_completa_despues(api, bot_usuario):
-    r = enviar(
-        api, "pago", {"cliente": "Alguien", "monto": "50", "moneda": "USD"}, auto=True
-    )
-    assert (
-        r.status_code == 201
-        and r.data["estado"] == "INCOMPLETO"
-        and "referencia" in r.data["incompleto"]
-    )
+    r = enviar(api, "pago", {"cliente": "Alguien", "monto": "50", "moneda": "USD"}, auto=True)
+    assert r.status_code == 201 and r.data["estado"] == "INCOMPLETO" and "referencia" in r.data["incompleto"]
     assert r.data["auto"] is True
     r2 = api.post(
         f"{URL}{r.data['id_ingesta']}/completar/",
         {"cambios": {"referencia": "ABC123"}},
         format="json",
     )
-    assert (
-        r2.status_code == 200
-        and r2.data["estado"] == "BORRADOR"
-        and r2.data["incompleto"] == []
-    )
+    assert r2.status_code == 200 and r2.data["estado"] == "BORRADOR" and r2.data["incompleto"] == []
     assert r2.data["payload"]["referencia"] == "ABC123"
 
 
@@ -365,9 +320,7 @@ def test_pago_proveedor_incompleto_y_listado(api, bot_usuario):
 
 
 def test_no_se_completa_una_ingesta_que_no_es_pago(api, bot_usuario):
-    r = enviar(
-        api, "contacto", {"nombre": "P", "telefono": "04141234567", "ubicacion": UBIC}
-    )
+    r = enviar(api, "contacto", {"nombre": "P", "telefono": "04141234567", "ubicacion": UBIC})
     assert (
         api.post(
             f"{URL}{r.data['id_ingesta']}/completar/",
@@ -383,9 +336,7 @@ def test_no_se_completa_una_ingesta_que_no_es_pago(api, bot_usuario):
 
 @pytest.fixture
 def calendario(empresa_a):
-    c = CalendarioActivacion.objects.create(
-        id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True
-    )
+    c = CalendarioActivacion.objects.create(id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True)
     RecursoActivacion.objects.create(
         id_empresa=empresa_a,
         calendario=c,
@@ -421,28 +372,19 @@ def _evento(**kw):
 
 def test_evento_se_reserva_y_aplica_capacidad(api, bot_usuario, calendario, empresa_a):
     assert enviar(api, "evento", _evento(), key="e1").status_code == 201
-    assert (
-        enviar(api, "evento", _evento(hora_inicio="10:00"), key="e2").status_code == 201
-    )  # 1+1 promotoras
+    assert enviar(api, "evento", _evento(hora_inicio="10:00"), key="e2").status_code == 201  # 1+1 promotoras
     r = enviar(api, "evento", _evento(hora_inicio="11:00"), key="e3")  # 3ª promotora
     assert r.status_code == 409 and "promotoras" in r.data["error"].lower()
     assert EventoActivacion.objects.filter(id_empresa=empresa_a).count() == 2
-    assert not IngestaBot.objects.filter(
-        idempotency_key="e3"
-    ).exists()  # reintento posible tras editar
+    assert not IngestaBot.objects.filter(idempotency_key="e3").exists()  # reintento posible tras editar
     ev = EventoActivacion.objects.first()
     assert ev.origen == "BOT"
     # 09:00 hora de Caracas (UTC-4) = 13:00 UTC: el calendario fija la zona del evento.
-    assert ev.inicio.astimezone(timezone.utc) == datetime(
-        2026, 12, 5, 13, 0, tzinfo=timezone.utc
-    )
+    assert ev.inicio.astimezone(timezone.utc) == datetime(2026, 12, 5, 13, 0, tzinfo=timezone.utc)
 
 
 def test_evento_dos_promotoras_bloquean_el_horario(api, bot_usuario, calendario):
-    assert (
-        enviar(api, "evento", _evento(promotoras=2, igloos=0), key="e1").status_code
-        == 201
-    )
+    assert enviar(api, "evento", _evento(promotoras=2, igloos=0), key="e1").status_code == 201
     assert (
         enviar(
             api,
@@ -470,9 +412,7 @@ def test_evento_sin_calendario_predeterminado(api, bot_usuario):
 
 @pytest.mark.tenant
 def test_no_lista_ingestas_de_otra_empresa(api, bot_usuario, empresa_b, user_b):
-    ajeno = BotUsuario.objects.create(
-        id_empresa=empresa_b, telegram_user_id=555, usuario=user_b
-    )
+    ajeno = BotUsuario.objects.create(id_empresa=empresa_b, telegram_user_id=555, usuario=user_b)
     IngestaBot.objects.create(
         id_empresa=empresa_b,
         bot_usuario=ajeno,
@@ -484,12 +424,8 @@ def test_no_lista_ingestas_de_otra_empresa(api, bot_usuario, empresa_b, user_b):
 
 
 @pytest.mark.tenant
-def test_usuario_telegram_de_otra_empresa_no_resuelve(
-    api, bot_usuario, empresa_b, user_b
-):
-    BotUsuario.objects.create(
-        id_empresa=empresa_b, telegram_user_id=555, usuario=user_b
-    )
+def test_usuario_telegram_de_otra_empresa_no_resuelve(api, bot_usuario, empresa_b, user_b):
+    BotUsuario.objects.create(id_empresa=empresa_b, telegram_user_id=555, usuario=user_b)
     assert enviar(api, "contacto", {"nombre": "A"}, tg=555).status_code == 403
 
 

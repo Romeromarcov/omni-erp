@@ -4,6 +4,7 @@ Verifica el endpoint GET /api/sync/pull/: proyección whitelist, cursor por
 `fecha_actualizacion`, propagación de bajas (activo=False), aislamiento
 multi-tenant (R-CODE-1), Decimal como string (R-CODE-4) y validaciones.
 """
+
 from decimal import Decimal
 
 import pytest
@@ -18,16 +19,18 @@ URL = "/api/sync/pull/"
 def catalogo(db, empresa_a, moneda_usd):
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad S", abreviatura="UN-S", tipo="CANTIDAD"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad S", abreviatura="UN-S", tipo="CANTIDAD")
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat S")
 
     def _producto(nombre, sku, costo):
         return Producto.objects.create(
-            id_empresa=empresa_a, nombre_producto=nombre, sku=sku,
-            id_categoria=categoria, id_unidad_medida_base=unidad,
-            id_moneda_precio=moneda_usd, costo_promedio=Decimal(costo),
+            id_empresa=empresa_a,
+            nombre_producto=nombre,
+            sku=sku,
+            id_categoria=categoria,
+            id_unidad_medida_base=unidad,
+            id_moneda_precio=moneda_usd,
+            costo_promedio=Decimal(costo),
             precio_venta_sugerido=Decimal("0"),
         )
 
@@ -47,9 +50,16 @@ def test_pull_productos_devuelve_catalogo_con_whitelist(client_a, catalogo):
     fila = next(r for r in body["results"] if r["sku"] == "SKU-S1")
     # whitelist exacta de la proyección
     assert set(fila) == {
-        "id_producto", "nombre_producto", "sku", "id_categoria",
-        "id_unidad_medida_base", "id_moneda_precio", "costo_promedio",
-        "precio_venta_sugerido", "activo", "fecha_actualizacion",
+        "id_producto",
+        "nombre_producto",
+        "sku",
+        "id_categoria",
+        "id_unidad_medida_base",
+        "id_moneda_precio",
+        "costo_promedio",
+        "precio_venta_sugerido",
+        "activo",
+        "fecha_actualizacion",
     }
     # Decimal serializado como string sin pérdida de precisión (R-CODE-4)
     assert fila["costo_promedio"] == "12.3456"
@@ -123,16 +133,19 @@ def test_pull_variantes_producto(client_a, empresa_a, catalogo):
     exponen su whitelist."""
     from apps.inventario.models import VarianteProducto
 
-    VarianteProducto.objects.create(
-        id_producto=catalogo["p1"], codigo_variante="ROJO-M", sku="SKU-S1-RM"
-    )
+    VarianteProducto.objects.create(id_producto=catalogo["p1"], codigo_variante="ROJO-M", sku="SKU-S1-RM")
     body = client_a.get(URL, {"entity": "variantes_producto"}).json()
     assert body["count"] == 1
     fila = body["results"][0]
     assert fila["codigo_variante"] == "ROJO-M"
     assert set(fila) == {
-        "id_variante", "id_producto", "codigo_variante", "sku",
-        "atributos_json", "activo", "fecha_actualizacion",
+        "id_variante",
+        "id_producto",
+        "codigo_variante",
+        "sku",
+        "atributos_json",
+        "activo",
+        "fecha_actualizacion",
     }
 
 
@@ -148,12 +161,21 @@ def test_pull_clientes(client_a, empresa_a):
     from apps.crm.models import Cliente
 
     Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Cliente Uno C.A.", rif="J-12345678-9",
+        id_empresa=empresa_a,
+        razon_social="Cliente Uno C.A.",
+        rif="J-12345678-9",
     )
     body = client_a.get(URL, {"entity": "clientes"}).json()
     assert body["count"] == 1
     assert body["results"][0]["razon_social"] == "Cliente Uno C.A."
     assert set(body["results"][0]) == {
-        "id_cliente", "razon_social", "nombre_comercial", "rif",
-        "telefono", "email", "tipo_cliente", "activo", "fecha_actualizacion",
+        "id_cliente",
+        "razon_social",
+        "nombre_comercial",
+        "rif",
+        "telefono",
+        "email",
+        "tipo_cliente",
+        "activo",
+        "fecha_actualizacion",
     }

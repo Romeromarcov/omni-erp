@@ -29,8 +29,16 @@ class ConectorInstanciaAdmin(admin.ModelAdmin):
 
 @admin.register(JobSincronizacion)
 class JobSincronizacionAdmin(admin.ModelAdmin):
-    list_display = ["id_job", "id_instancia", "tipo_entidad", "estado",
-                    "total_registros", "creados", "fallidos", "iniciado_en"]
+    list_display = [
+        "id_job",
+        "id_instancia",
+        "tipo_entidad",
+        "estado",
+        "total_registros",
+        "creados",
+        "fallidos",
+        "iniciado_en",
+    ]
     list_filter = ["estado", "tipo_entidad", "direccion"]
     search_fields = ["id_instancia__nombre"]
     readonly_fields = ["iniciado_en", "completado_en", "celery_task_id"]

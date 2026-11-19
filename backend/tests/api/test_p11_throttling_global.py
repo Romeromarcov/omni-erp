@@ -101,14 +101,10 @@ def test_anon_throttle_devuelve_429_al_exceder_limite(factory):
 
     for i in range(3):
         resp = view(factory.get("/_throttle-probe/"))
-        assert resp.status_code != 429, (
-            f"Request #{i + 1} fue throttled prematuramente (esperaba que pasara)"
-        )
+        assert resp.status_code != 429, f"Request #{i + 1} fue throttled prematuramente (esperaba que pasara)"
 
     resp = view(factory.get("/_throttle-probe/"))
-    assert resp.status_code == 429, (
-        f"Se esperaba 429 en la request #4 pero se obtuvo {resp.status_code}"
-    )
+    assert resp.status_code == 429, f"Se esperaba 429 en la request #4 pero se obtuvo {resp.status_code}"
 
 
 def test_anon_throttle_primeras_requests_pasan(factory):
@@ -116,9 +112,7 @@ def test_anon_throttle_primeras_requests_pasan(factory):
     view = _AnonThrottledView.as_view()
     for i in range(3):
         resp = view(factory.get("/_throttle-probe/"))
-        assert resp.status_code != 429, (
-            f"Request #{i + 1} fue bloqueada antes del límite (tasa: 3/min)"
-        )
+        assert resp.status_code != 429, f"Request #{i + 1} fue bloqueada antes del límite (tasa: 3/min)"
 
 
 # ── Comportamiento: user throttle ─────────────────────────────────────────────
@@ -135,16 +129,12 @@ def test_user_throttle_devuelve_429_al_exceder_limite(factory, usuario):
         req = factory.get("/_throttle-probe/")
         force_authenticate(req, user=usuario)
         resp = view(req)
-        assert resp.status_code != 429, (
-            f"Request #{i + 1} fue throttled prematuramente"
-        )
+        assert resp.status_code != 429, f"Request #{i + 1} fue throttled prematuramente"
 
     req = factory.get("/_throttle-probe/")
     force_authenticate(req, user=usuario)
     resp = view(req)
-    assert resp.status_code == 429, (
-        f"Se esperaba 429 en la request #4 pero se obtuvo {resp.status_code}"
-    )
+    assert resp.status_code == 429, f"Se esperaba 429 en la request #4 pero se obtuvo {resp.status_code}"
 
 
 # ── Configuración real de producción ──────────────────────────────────────────
@@ -159,23 +149,13 @@ def test_configuracion_throttle_global_presente(settings):
     este test es la guardia de regresión para que no vuelva a borrarse.
     """
     rf = settings.REST_FRAMEWORK
-    assert "DEFAULT_THROTTLE_CLASSES" in rf, (
-        "DEFAULT_THROTTLE_CLASSES no está en REST_FRAMEWORK"
-    )
-    assert "DEFAULT_THROTTLE_RATES" in rf, (
-        "DEFAULT_THROTTLE_RATES no está en REST_FRAMEWORK"
-    )
+    assert "DEFAULT_THROTTLE_CLASSES" in rf, "DEFAULT_THROTTLE_CLASSES no está en REST_FRAMEWORK"
+    assert "DEFAULT_THROTTLE_RATES" in rf, "DEFAULT_THROTTLE_RATES no está en REST_FRAMEWORK"
 
     rates = rf["DEFAULT_THROTTLE_RATES"]
     for clave in ("anon", "user", "signup"):
-        assert clave in rates, (
-            f"Falta tasa '{clave}' en DEFAULT_THROTTLE_RATES"
-        )
+        assert clave in rates, f"Falta tasa '{clave}' en DEFAULT_THROTTLE_RATES"
 
     class_names = [c.split(".")[-1] for c in rf["DEFAULT_THROTTLE_CLASSES"]]
-    assert "AnonRateThrottle" in class_names, (
-        "AnonRateThrottle no está en DEFAULT_THROTTLE_CLASSES"
-    )
-    assert "UserRateThrottle" in class_names, (
-        "UserRateThrottle no está en DEFAULT_THROTTLE_CLASSES"
-    )
+    assert "AnonRateThrottle" in class_names, "AnonRateThrottle no está en DEFAULT_THROTTLE_CLASSES"
+    assert "UserRateThrottle" in class_names, "UserRateThrottle no está en DEFAULT_THROTTLE_CLASSES"

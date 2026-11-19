@@ -49,10 +49,7 @@ class Command(BaseCommand):
 
         if not MCP_AVAILABLE or mcp is None:
             self.stderr.write(
-                self.style.ERROR(
-                    "El SDK de MCP no está disponible. "
-                    "Instala el paquete: pip install mcp"
-                )
+                self.style.ERROR("El SDK de MCP no está disponible. " "Instala el paquete: pip install mcp")
             )
             sys.exit(1)
 
@@ -61,8 +58,7 @@ class Command(BaseCommand):
         if transport == "sse":
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Iniciando Omni MCP Server en modo SSE "
-                    f"→ http://{options['host']}:{options['port']}/sse"
+                    f"Iniciando Omni MCP Server en modo SSE " f"→ http://{options['host']}:{options['port']}/sse"
                 )
             )
             mcp.run(
@@ -71,7 +67,5 @@ class Command(BaseCommand):
                 port=options["port"],
             )
         else:
-            self.stdout.write(
-                self.style.SUCCESS("Iniciando Omni MCP Server en modo stdio...")
-            )
+            self.stdout.write(self.style.SUCCESS("Iniciando Omni MCP Server en modo stdio..."))
             mcp.run(transport="stdio")

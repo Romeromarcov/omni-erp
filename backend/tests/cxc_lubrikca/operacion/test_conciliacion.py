@@ -158,26 +158,18 @@ def test_marcar_revisado_service(empresa_a, user_a):
 # ---------------------------------------------------------------------------
 def test_resumen_cartera(empresa_a):
     # verde
-    conciliar_pedido(
-        _pedido_facturado(empresa_a, monto_facturado="100")
-    )
+    conciliar_pedido(_pedido_facturado(empresa_a, monto_facturado="100"))
     # rojo
-    p_rojo = h.crear_pedido(
-        empresa_a, so_id="SO-ROJO", facturada=True, monto_facturado=Decimal("80")
-    )
+    p_rojo = h.crear_pedido(empresa_a, so_id="SO-ROJO", facturada=True, monto_facturado=Decimal("80"))
     h.crear_bandeja(empresa_a, p_rojo, total_motor="100")
     conciliar_pedido(p_rojo)
     # facturado sin conciliar
-    h.crear_pedido(
-        empresa_a, so_id="SO-SIN", facturada=True, monto_facturado=Decimal("50")
-    )
+    h.crear_pedido(empresa_a, so_id="SO-SIN", facturada=True, monto_facturado=Decimal("50"))
     # con devolución
     h.crear_pedido(empresa_a, so_id="SO-DEV", tiene_devolucion=True)
     # cartera atascada: no facturado, entrega vieja
     vieja = timezone.now().date() - timedelta(days=60)
-    h.crear_pedido(
-        empresa_a, so_id="SO-VIEJA", facturada=False, fecha_entrega=vieja
-    )
+    h.crear_pedido(empresa_a, so_id="SO-VIEJA", facturada=False, fecha_entrega=vieja)
 
     r = resumen_cartera(empresa_a)
     assert r["por_resultado"]["verde"] == 1
@@ -192,9 +184,7 @@ def test_resumen_cartera(empresa_a):
 
 def test_resumen_cuenta_bandeja_candidata_sin_aprobar(empresa_a):
     pedido = h.crear_pedido(empresa_a, so_id="SO-CAND")
-    h.crear_bandeja(
-        empresa_a, pedido, total_motor="100", candidata_a_cierre=True
-    )
+    h.crear_bandeja(empresa_a, pedido, total_motor="100", candidata_a_cierre=True)
     r = resumen_cartera(empresa_a)
     assert r["bandejas_candidatas_sin_aprobar"] == 1
 
@@ -337,12 +327,8 @@ def test_conciliacion_ajena_no_visible(client_a, empresa_b):
     assert r.status_code == 404
 
 
-def test_listado_conciliaciones_no_filtra_otra_empresa(
-    client_a, empresa_a, empresa_b
-):
-    c_a = conciliar_pedido(
-        _pedido_facturado(empresa_a, monto_facturado="90")
-    )
+def test_listado_conciliaciones_no_filtra_otra_empresa(client_a, empresa_a, empresa_b):
+    c_a = conciliar_pedido(_pedido_facturado(empresa_a, monto_facturado="90"))
     conciliar_pedido(_pedido_facturado(empresa_b, monto_facturado="90"))
     r = client_a.get(f"{BASE}/conciliaciones/")
     assert r.status_code == 200

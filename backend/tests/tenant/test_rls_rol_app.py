@@ -30,9 +30,7 @@ PASSWORD = "solo-para-tests-ctf012"  # nosec B105 — credencial efímera de tes
 def rol_limpio(db):
     """Skip si la conexión no puede crear roles; garantiza que ROL no exista."""
     with connection.cursor() as cur:
-        cur.execute(
-            "SELECT rolsuper OR rolcreaterole FROM pg_roles WHERE rolname = current_user"
-        )
+        cur.execute("SELECT rolsuper OR rolcreaterole FROM pg_roles WHERE rolname = current_user")
         if not cur.fetchone()[0]:
             pytest.skip("El rol de conexión no tiene CREATEROLE; no se puede probar")
 
@@ -89,14 +87,11 @@ def test_crea_rol_no_dueno_con_grants_minimos(rol_limpio, monkeypatch):
         )
         secuencia = cur.fetchone()
         if secuencia:
-            cur.execute(
-                "SELECT has_sequence_privilege(%s, %s, 'USAGE')", [ROL, secuencia[0]]
-            )
+            cur.execute("SELECT has_sequence_privilege(%s, %s, 'USAGE')", [ROL, secuencia[0]])
             assert cur.fetchone()[0], f"Falta USAGE sobre la secuencia {secuencia[0]}"
         # Default privileges para tablas futuras del rol dueño.
         cur.execute(
-            "SELECT count(*) FROM pg_default_acl d"
-            " WHERE d.defaclacl::text LIKE %s",
+            "SELECT count(*) FROM pg_default_acl d" " WHERE d.defaclacl::text LIKE %s",
             [f"%{ROL}=%"],
         )
         assert cur.fetchone()[0] >= 1, "Faltan ALTER DEFAULT PRIVILEGES hacia el rol"

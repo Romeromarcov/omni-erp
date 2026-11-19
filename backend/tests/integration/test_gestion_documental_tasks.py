@@ -8,6 +8,7 @@ Cubre:
   archivo reciente respetado (ventana 24h), archivo con registro en DB
   conservado y error de borrado tolerado.
 """
+
 from datetime import datetime, timedelta, timezone as tz
 from unittest import mock
 
@@ -86,12 +87,14 @@ class TestLimpiarArchivosHuerfanos:
 
         client = mock.Mock()
         client.get_paginator.return_value.paginate.return_value = [
-            _pagina([
-                {"Key": key_registrado, "LastModified": viejo},
-                {"Key": key_huerfano, "LastModified": viejo},
-                {"Key": key_reciente, "LastModified": reciente},  # ventana 24h
-                {"Key": key_error, "LastModified": viejo},
-            ]),
+            _pagina(
+                [
+                    {"Key": key_registrado, "LastModified": viejo},
+                    {"Key": key_huerfano, "LastModified": viejo},
+                    {"Key": key_reciente, "LastModified": reciente},  # ventana 24h
+                    {"Key": key_error, "LastModified": viejo},
+                ]
+            ),
         ]
 
         def _delete(Bucket, Key):
@@ -113,9 +116,7 @@ class TestLimpiarArchivosHuerfanos:
         assert key_reciente not in claves_borradas  # dentro de la ventana de seguridad
         # Pagina con el prefijo de la empresa y el bucket configurado
         client.get_paginator.assert_called_once_with("list_objects_v2")
-        client.get_paginator.return_value.paginate.assert_called_once_with(
-            Bucket="bucket-test", Prefix=prefijo
-        )
+        client.get_paginator.return_value.paginate.assert_called_once_with(Bucket="bucket-test", Prefix=prefijo)
 
     @override_settings(USE_S3=True, S3_BUCKET_NAME="bucket-test")
     def test_pagina_sin_contents(self, empresa_a):

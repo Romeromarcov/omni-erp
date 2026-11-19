@@ -47,23 +47,37 @@ def _producto(empresa_a, moneda_usd, metodo, abbr):
     unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="U", abreviatura=abbr, tipo="CANTIDAD")
     cat = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria=f"Cat {abbr}")
     return Producto.objects.create(
-        id_empresa=empresa_a, id_categoria=cat, id_unidad_medida_base=unidad,
-        id_moneda_precio=moneda_usd, nombre_producto=f"Prod {abbr}", metodo_valoracion=metodo,
+        id_empresa=empresa_a,
+        id_categoria=cat,
+        id_unidad_medida_base=unidad,
+        id_moneda_precio=moneda_usd,
+        nombre_producto=f"Prod {abbr}",
+        metodo_valoracion=metodo,
     )
 
 
 def _entrada(empresa, prod, alm, user, qty, costo):
     registrar_movimiento(
-        empresa=empresa, fecha_hora_movimiento=timezone.now(), tipo_movimiento="ENTRADA",
-        producto=prod, cantidad=Decimal(str(qty)), almacen_destino=alm,
-        costo_unitario=Decimal(str(costo)), usuario=user,
+        empresa=empresa,
+        fecha_hora_movimiento=timezone.now(),
+        tipo_movimiento="ENTRADA",
+        producto=prod,
+        cantidad=Decimal(str(qty)),
+        almacen_destino=alm,
+        costo_unitario=Decimal(str(costo)),
+        usuario=user,
     )
 
 
 def _salida(empresa, prod, alm, user, qty):
     registrar_movimiento(
-        empresa=empresa, fecha_hora_movimiento=timezone.now(), tipo_movimiento="SALIDA",
-        producto=prod, cantidad=Decimal(str(qty)), almacen_origen=alm, usuario=user,
+        empresa=empresa,
+        fecha_hora_movimiento=timezone.now(),
+        tipo_movimiento="SALIDA",
+        producto=prod,
+        cantidad=Decimal(str(qty)),
+        almacen_origen=alm,
+        usuario=user,
     )
 
 
@@ -110,7 +124,7 @@ def test_valoracion_promedio(client_a, empresa_a, almacen, moneda_usd, user_a):
     fila = next(v for v in client_a.get(VAL).json()["valoracion"] if v["producto_id"] == str(prod.id_producto))
     assert fila["metodo"] == "PROMEDIO"
     assert fila["cantidad"] == "15.0000"
-    assert fila["valor_total"] == "225.0000"   # 300 − 75
+    assert fila["valor_total"] == "225.0000"  # 300 − 75
     assert fila["costo_promedio"] == "15.0000"
 
 
@@ -123,7 +137,7 @@ def test_valoracion_fifo(client_a, empresa_a, almacen, moneda_usd, user_a):
     fila = next(v for v in client_a.get(VAL).json()["valoracion"] if v["producto_id"] == str(prod.id_producto))
     assert fila["metodo"] == "FIFO"
     assert fila["cantidad"] == "5.0000"
-    assert fila["valor_total"] == "100.0000"    # 300 − 200 (quedan 5 @ 20)
+    assert fila["valor_total"] == "100.0000"  # 300 − 200 (quedan 5 @ 20)
     assert fila["costo_promedio"] == "20.0000"
 
 

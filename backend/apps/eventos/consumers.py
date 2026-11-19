@@ -8,6 +8,7 @@ El consumer se ejecuta en un loop bloqueante; para detenerlo usa Ctrl+C.
 Si confluent-kafka no está instalado o el broker no está disponible,
 el comando termina con un mensaje informativo.
 """
+
 import json
 import logging
 import signal
@@ -37,13 +38,16 @@ def register_handler(event_type: str):
         def handle_pedido_creado(envelope: dict) -> None:
             ...
     """
+
     def decorator(fn):
         _handlers.setdefault(event_type, []).append(fn)
         return fn
+
     return decorator
 
 
 # ── Handlers por defecto (stubs) ──────────────────────────────────────────────
+
 
 @register_handler("ventas.pedido.creado")
 def _handle_pedido_creado(envelope: dict) -> None:
@@ -91,6 +95,7 @@ def _handle_pago(envelope: dict) -> None:
 
 # ── Consumer principal ────────────────────────────────────────────────────────
 
+
 def _process_message(msg_value: bytes) -> None:
     """Deserializa el envelope y despacha al handler correspondiente."""
     try:
@@ -133,8 +138,7 @@ def run_consumer(
     """
     if not KAFKA_AVAILABLE:
         logger.error(
-            "OmniEventConsumer: confluent-kafka no está instalado. "
-            "Instala con: pip install confluent-kafka"
+            "OmniEventConsumer: confluent-kafka no está instalado. " "Instala con: pip install confluent-kafka"
         )
         return
 

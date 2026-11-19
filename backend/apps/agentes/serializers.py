@@ -1,4 +1,5 @@
 """Serializers para el módulo de Agentes IA (M9)."""
+
 from rest_framework import serializers
 
 from .models import PrediccionAgente

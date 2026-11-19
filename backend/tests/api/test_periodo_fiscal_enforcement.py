@@ -43,12 +43,8 @@ def cliente_pf(db, empresa_a):
 def producto_pf(db, empresa_a, moneda_usd):
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-PF", tipo="CANTIDAD"
-    )
-    categoria = CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Cat Período Fiscal"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-PF", tipo="CANTIDAD")
+    categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat Período Fiscal")
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto Período Fiscal",
@@ -130,9 +126,7 @@ class TestEmitirFacturaPeriodoFiscal:
     def _url(self, nota):
         return f"/api/ventas/notas-venta/{nota.id_nota_venta}/convertir-factura/"
 
-    def test_periodo_cerrado_rechaza_emision(
-        self, client_a, empresa_a, cliente_pf, producto_pf
-    ):
+    def test_periodo_cerrado_rechaza_emision(self, client_a, empresa_a, cliente_pf, producto_pf):
         from apps.ventas.models import FacturaFiscal, NotaVenta
 
         _mapeo_factura(empresa_a)
@@ -149,9 +143,7 @@ class TestEmitirFacturaPeriodoFiscal:
         assert nota.estado == "ENTREGADA"
         assert nota.convertido_a_factura is False
 
-    def test_periodo_abierto_permite_emision(
-        self, client_a, empresa_a, cliente_pf, producto_pf
-    ):
+    def test_periodo_abierto_permite_emision(self, client_a, empresa_a, cliente_pf, producto_pf):
         from apps.ventas.models import FacturaFiscal
 
         _mapeo_factura(empresa_a)
@@ -164,9 +156,7 @@ class TestEmitirFacturaPeriodoFiscal:
         factura = FacturaFiscal.objects.get(pk=resp.data["id_factura"])
         assert factura.estado == "EMITIDA"
 
-    def test_sin_periodo_registrado_permite_emision(
-        self, client_a, empresa_a, cliente_pf, producto_pf
-    ):
+    def test_sin_periodo_registrado_permite_emision(self, client_a, empresa_a, cliente_pf, producto_pf):
         # Sin fila de PeriodoFiscal el período se considera abierto (default).
         from apps.ventas.models import FacturaFiscal
 
@@ -178,9 +168,7 @@ class TestEmitirFacturaPeriodoFiscal:
         assert resp.status_code == 201, resp.content
         assert FacturaFiscal.objects.filter(id_nota_venta_origen=nota).exists()
 
-    def test_cierre_es_por_empresa_multitenant(
-        self, client_a, empresa_a, empresa_b, cliente_pf, producto_pf
-    ):
+    def test_cierre_es_por_empresa_multitenant(self, client_a, empresa_a, empresa_b, cliente_pf, producto_pf):
         # R-CODE-1: un período cerrado de OTRA empresa no bloquea la emisión de A.
         from apps.ventas.models import FacturaFiscal
 
@@ -198,9 +186,7 @@ class TestEmitirFacturaPeriodoFiscal:
 
 
 class TestDevolucionPeriodoFiscal:
-    def test_periodo_cerrado_rechaza_devolucion(
-        self, empresa_a, user_a, cliente_pf, producto_pf, metodo_efectivo
-    ):
+    def test_periodo_cerrado_rechaza_devolucion(self, empresa_a, user_a, cliente_pf, producto_pf, metodo_efectivo):
         from apps.ventas.services import VentaError, registrar_devolucion_pos
 
         _periodo(empresa_a, cerrado=True)
@@ -302,9 +288,7 @@ class TestRecepcionPeriodoFiscal:
         resultado = registrar_recepcion(orden, almacen, user_a, self._items(producto_pf))
         assert resultado["recepcion"].monto_total == Decimal("100.00")
 
-    def test_cierre_es_por_empresa_multitenant(
-        self, empresa_a, empresa_b, user_a, producto_pf
-    ):
+    def test_cierre_es_por_empresa_multitenant(self, empresa_a, empresa_b, user_a, producto_pf):
         # R-CODE-1: período cerrado de OTRA empresa no bloquea la recepción de A.
         from apps.compras.services import registrar_recepcion
 

@@ -54,9 +54,7 @@ def test_omni_get_saldo_cliente_calcula_saldo(empresa_a):
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
     from django.utils import timezone
 
-    cliente = Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Cliente MCP S.A.", rif="J-27182818-2"
-    )
+    cliente = Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente MCP S.A.", rif="J-27182818-2")
     CuentaPorCobrar.objects.create(
         cliente=cliente,
         empresa=empresa_a,
@@ -113,12 +111,8 @@ def test_transferencia_sin_empresa_lanza_valueerror(empresa_a, moneda_usd):
     from apps.finanzas.models import Caja
     from apps.finanzas.utils_transferencias import transferencia_entre_cajas
 
-    origen = Caja.objects.create(
-        empresa=empresa_a, nombre="Origen", tipo_caja="REGISTRADORA", moneda=moneda_usd
-    )
-    destino = Caja.objects.create(
-        empresa=empresa_a, nombre="Destino", tipo_caja="REGISTRADORA", moneda=moneda_usd
-    )
+    origen = Caja.objects.create(empresa=empresa_a, nombre="Origen", tipo_caja="REGISTRADORA", moneda=moneda_usd)
+    destino = Caja.objects.create(empresa=empresa_a, nombre="Destino", tipo_caja="REGISTRADORA", moneda=moneda_usd)
 
     # Simula una caja sin empresa (dato inconsistente) → debe fallar explícito.
     origen.empresa = None

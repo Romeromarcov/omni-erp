@@ -276,7 +276,7 @@ def test_lector_xlsx_shared_strings_date1904_y_columnas_altas() -> None:
         zf.writestr(
             "xl/worksheets/custom.xml",
             '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            "<sheetData><row r=\"1\">"
+            '<sheetData><row r="1">'
             '<c r="A1" t="s"><v>0</v></c>'
             '<c r="C1" t="s"><v>1</v></c>'
             '<c r="D1" t="b"><v>1</v></c>'
@@ -470,22 +470,16 @@ def test_parsers_venezuela_bdt_bancamiga_provincial_binance_y_generico() -> None
     assert {m.huella for m in ea.movimientos} <= {m.huella for m in eb.movimientos}
 
     # Binance con columnas dispersas y ordenamiento por timestamp
-    ebn = parsear_extracto(
-        _binance_xlsx(_FILAS_BINANCE), "bn.xlsx", "BINANCE", cuenta_clave="CBN", moneda="USD"
-    )
+    ebn = parsear_extracto(_binance_xlsx(_FILAS_BINANCE), "bn.xlsx", "BINANCE", cuenta_clave="CBN", moneda="USD")
     assert len(ebn.movimientos) == 6
     assert ebn.movimientos[0].referencia == "P_A251P9QHTYN71116"
     assert any("1:1" in a for a in ebn.avisos)
 
     # Genérico con columna firmada Monto y sin columna Saldo
     csv_gen = (
-        b"Fecha,Detalle,Monto\n"
-        b"2026-09-01,TRF CR INM PAGO CLIENTE,250.00\n"
-        b"2026-09-02,COMISION BANCARIA,-5.50\n"
+        b"Fecha,Detalle,Monto\n" b"2026-09-01,TRF CR INM PAGO CLIENTE,250.00\n" b"2026-09-02,COMISION BANCARIA,-5.50\n"
     )
-    egen = parsear_extracto(
-        csv_gen, "generico.csv", "GENERICO_DEB_CRED", cuenta_clave="CG", moneda="USD"
-    )
+    egen = parsear_extracto(csv_gen, "generico.csv", "GENERICO_DEB_CRED", cuenta_clave="CG", moneda="USD")
     assert len(egen.movimientos) == 2
     assert egen.movimientos[0].credito == D("250.00")
     assert egen.movimientos[1].debito == D("5.50")
@@ -495,9 +489,7 @@ def test_preparar_extracto_errores_borde() -> None:
     with pytest.raises(ExtractoBancarioError, match="vacío"):
         preparar_extracto(b"", "x.xlsx", formato_banco="BANESCO", cuenta_clave="C1")
     with pytest.raises(ExtractoBancarioError, match="MB"):
-        preparar_extracto(
-            b"x" * (10 * 1024 * 1024 + 1), "x.xlsx", formato_banco="BANESCO", cuenta_clave="C1"
-        )
+        preparar_extracto(b"x" * (10 * 1024 * 1024 + 1), "x.xlsx", formato_banco="BANESCO", cuenta_clave="C1")
     with pytest.raises(ExtractoBancarioError, match="no soportado"):
         preparar_extracto(b"Fecha\n", "x.csv", formato_banco="INEXISTENTE", cuenta_clave="C1")
     vacio = _xlsx([["Fecha", "Referencia", "Concepto", "Débito", "Crédito", "Saldo"]])
@@ -508,16 +500,46 @@ def test_preparar_extracto_errores_borde() -> None:
 def test_consolidar_cortes_continuidad_y_huecos() -> None:
     cortes = [
         CorteExtracto(
-            "1", "C1", "BDV", "0102-1111", "VES", "ago.xlsx",
-            date(2026, 8, 1), date(2026, 8, 31), D("0"), D("100"), True, datetime(2026, 9, 1, 10, 0),
+            "1",
+            "C1",
+            "BDV",
+            "0102-1111",
+            "VES",
+            "ago.xlsx",
+            date(2026, 8, 1),
+            date(2026, 8, 31),
+            D("0"),
+            D("100"),
+            True,
+            datetime(2026, 9, 1, 10, 0),
         ),
         CorteExtracto(
-            "2", "C1", "BDV", "0102-1111", "VES", "sep.xlsx",
-            date(2026, 9, 1), date(2026, 9, 30), D("100"), D("300"), True, datetime(2026, 10, 1, 10, 0),
+            "2",
+            "C1",
+            "BDV",
+            "0102-1111",
+            "VES",
+            "sep.xlsx",
+            date(2026, 9, 1),
+            date(2026, 9, 30),
+            D("100"),
+            D("300"),
+            True,
+            datetime(2026, 10, 1, 10, 0),
         ),
         CorteExtracto(
-            "3", "C1", "BDV", "0102-1111", "VES", "oct.xlsx",
-            date(2026, 10, 2), date(2026, 10, 31), D("350"), D("400"), False, datetime(2026, 11, 1, 10, 0),
+            "3",
+            "C1",
+            "BDV",
+            "0102-1111",
+            "VES",
+            "oct.xlsx",
+            date(2026, 10, 2),
+            date(2026, 10, 31),
+            D("350"),
+            D("400"),
+            False,
+            datetime(2026, 11, 1, 10, 0),
         ),
     ]
     cons = consolidar_cortes(cortes, lambda _f: D("100"))
@@ -590,9 +612,7 @@ def api_b(user_b) -> APIClient:
 
 @pytest.mark.django_db
 class TestIngestaYConsolidacionBD:
-    def test_idempotencia_archivo_solapamiento_y_borrado_logico(
-        self, empresa_a, cuenta_ves_a, user_a
-    ) -> None:
+    def test_idempotencia_archivo_solapamiento_y_borrado_logico(self, empresa_a, cuenta_ves_a, user_a) -> None:
         corte_1 = _xlsx(
             [
                 ["Cuenta: 0172-0110-79-1105554321"],
@@ -711,8 +731,7 @@ class TestAislamientoMultiTenantEndpointsYMCP:
         assert api_a.post(f"{self.URL}importar/", {}).status_code == 400
         f_dummy = SimpleUploadedFile("x.xlsx", _libro_deb_cred())
         assert (
-            api_a.post(f"{self.URL}importar/", {"cuenta_bancaria": "no-uuid", "archivo": f_dummy}).status_code
-            == 400
+            api_a.post(f"{self.URL}importar/", {"cuenta_bancaria": "no-uuid", "archivo": f_dummy}).status_code == 400
         )
         # Empresa B no puede importar sobre cuenta de Empresa A -> 404 (sin filtrar existencia)
         f_b = SimpleUploadedFile("x.xlsx", _libro_deb_cred())
@@ -824,29 +843,17 @@ class TestAislamientoMultiTenantEndpointsYMCP:
         with pytest.raises(PermissionError, match="no coincide"):
             tesoreria_saldos_extractos(str(tok_a.token), str(empresa_b.id_empresa))
         with pytest.raises(ValueError, match="UUID"):
-            tesoreria_saldos_extractos(
-                str(tok_a.token), str(empresa_a.id_empresa), cuenta_id="malo"
-            )
+            tesoreria_saldos_extractos(str(tok_a.token), str(empresa_a.id_empresa), cuenta_id="malo")
         with pytest.raises(PermissionError, match="no coincide"):
             tesoreria_listar_extractos(str(tok_a.token), str(empresa_b.id_empresa))
         with pytest.raises(ValueError, match="UUID"):
-            tesoreria_listar_extractos(
-                str(tok_a.token), str(empresa_a.id_empresa), cuenta_id="malo"
-            )
+            tesoreria_listar_extractos(str(tok_a.token), str(empresa_a.id_empresa), cuenta_id="malo")
 
         # Verificación de modelos (__str__), filtros adicionales y validaciones HTTP
         archivo_obj = ExtractoBancarioArchivo.objects.get(pk=archivo_id)
         assert "bancamiga_a.xlsx" in str(archivo_obj)
-        assert (
-            api_a.get(self.URL, {"cuenta": str(cuenta_ves_a.id_cuenta_bancaria)}).json()["count"]
-            == 1
-        )
-        assert (
-            api_b.get(
-                f"{self.URL}saldos-consolidados/", {"empresa": str(empresa_a.id_empresa)}
-            ).status_code
-            == 403
-        )
+        assert api_a.get(self.URL, {"cuenta": str(cuenta_ves_a.id_cuenta_bancaria)}).json()["count"] == 1
+        assert api_b.get(f"{self.URL}saldos-consolidados/", {"empresa": str(empresa_a.id_empresa)}).status_code == 403
         assert (
             api_a.post(
                 "/api/tesoreria/movimientos-bancarios/conciliar-auto/",
@@ -981,9 +988,7 @@ def test_parsers_validaciones_de_encabezado_y_montos_invalidos() -> None:
         parsear_extracto(mal_deb, "md.xlsx", "BANESCO", cuenta_clave="C1")
 
     # Provincial sin importe / fecha inválida
-    prov_sin_imp = _xlsx(
-        [["Fecha", "Referencia", "Descripción", "Importe", "Saldo"], ["01/09/2026", 1, "X", "", 10]]
-    )
+    prov_sin_imp = _xlsx([["Fecha", "Referencia", "Descripción", "Importe", "Saldo"], ["01/09/2026", 1, "X", "", 10]])
     with pytest.raises(ExtractoBancarioError, match="sin importe"):
         parsear_extracto(prov_sin_imp, "p.xlsx", "PROVINCIAL", cuenta_clave="C1")
 
@@ -1007,9 +1012,7 @@ def test_parsers_validaciones_de_encabezado_y_montos_invalidos() -> None:
         )
     with pytest.raises(ExtractoBancarioError, match="Monto inválido"):
         parsear_extracto(
-            _binance_xlsx(
-                [["2026-10-20 10:00:00", None, "Spot", "Deposit", None, "USD", "abc", None, ""]]
-            ),
+            _binance_xlsx([["2026-10-20 10:00:00", None, "Spot", "Deposit", None, "USD", "abc", None, ""]]),
             "b2.xlsx",
             "BINANCE",
             cuenta_clave="CB",
@@ -1017,9 +1020,7 @@ def test_parsers_validaciones_de_encabezado_y_montos_invalidos() -> None:
         )
     with pytest.raises(ExtractoBancarioError, match="sin monto"):
         parsear_extracto(
-            _binance_xlsx(
-                [["2026-10-20 10:00:00", None, "Spot", "Deposit", None, "USD", "", None, ""]]
-            ),
+            _binance_xlsx([["2026-10-20 10:00:00", None, "Spot", "Deposit", None, "USD", "", None, ""]]),
             "b3.xlsx",
             "BINANCE",
             cuenta_clave="CB",
@@ -1027,9 +1028,7 @@ def test_parsers_validaciones_de_encabezado_y_montos_invalidos() -> None:
         )
     with pytest.raises(ExtractoBancarioError, match="no compatible"):
         parsear_extracto(
-            _binance_xlsx(
-                [["2026-10-20 10:00:00", None, "Spot", "Deposit", None, "BTC", "1", None, ""]]
-            ),
+            _binance_xlsx([["2026-10-20 10:00:00", None, "Spot", "Deposit", None, "BTC", "1", None, ""]]),
             "b4.xlsx",
             "BINANCE",
             cuenta_clave="CB",
@@ -1052,9 +1051,7 @@ def test_regresion_b1_montos_menores_a_uno_binance_3_decimales_y_overflow() -> N
     # B-1.2: punto_miles=False preserva 3 decimales anglosajones en Binance ('1.250' -> 1.25)
     assert parse_monto("1.250", punto_miles=False) == D("1.25")
     ebn = parsear_extracto(
-        _binance_xlsx(
-            [["2026-10-20 10:08:27", None, "Spot", "Transfer", None, "USDT", "1.250", None, ""]]
-        ),
+        _binance_xlsx([["2026-10-20 10:08:27", None, "Spot", "Transfer", None, "USDT", "1.250", None, ""]]),
         "bn3.xlsx",
         "BINANCE",
         cuenta_clave="CBN",
@@ -1218,33 +1215,17 @@ def test_regresion_b3_m1_m2_s1_savepoint_integridad_multiempresa_e_inmutabilidad
     # Inmutabilidad contable en movimiento importado desde EXTRACTO (no permite mutar monto, sí descripción)
     mov_ext = primero.archivo.movimientos.first()
     assert mov_ext is not None
-    assert (
-        api_a.patch(f"{url_mov}{mov_ext.pk}/", {"monto": "999.00"}, format="json").status_code
-        == 400
-    )
-    assert (
-        api_a.patch(
-            f"{url_mov}{mov_ext.pk}/", {"descripcion": "Nota auditada"}, format="json"
-        ).status_code
-        == 200
-    )
+    assert api_a.patch(f"{url_mov}{mov_ext.pk}/", {"monto": "999.00"}, format="json").status_code == 400
+    assert api_a.patch(f"{url_mov}{mov_ext.pk}/", {"descripcion": "Nota auditada"}, format="json").status_code == 200
 
     # Filtro ?empresa= en ambos endpoints
     assert (
-        api_a.get(
-            "/api/tesoreria/extractos-bancarios/", {"empresa": str(empresa_a.id_empresa)}
-        ).json()["count"]
-        == 1
+        api_a.get("/api/tesoreria/extractos-bancarios/", {"empresa": str(empresa_a.id_empresa)}).json()["count"] == 1
     )
     assert (
-        api_a.get(
-            "/api/tesoreria/extractos-bancarios/", {"empresa": str(empresa_b.id_empresa)}
-        ).json()["count"]
-        == 0
+        api_a.get("/api/tesoreria/extractos-bancarios/", {"empresa": str(empresa_b.id_empresa)}).json()["count"] == 0
     )
-    assert (
-        api_a.get(url_mov, {"empresa": str(empresa_a.id_empresa)}).json()["count"] == 1
-    )
+    assert api_a.get(url_mov, {"empresa": str(empresa_a.id_empresa)}).json()["count"] == 1
 
     # M-2: precedencia determinística en tasa inversa (propia del tenant gana sobre global NULL)
     TasaCambio.objects.create(
@@ -1266,10 +1247,6 @@ def test_regresion_b3_m1_m2_s1_savepoint_integridad_multiempresa_e_inmutabilidad
     assert obtener_tasa_usd_ves(empresa_a, date(2026, 9, 20)) == D("50.00000000")
 
     # S-1: validación de limite inválido en MCP
-    tok_a = CapabilityToken.objects.create(
-        empresa=empresa_a, nombre="MCP Limite", scopes=["tesoreria:read"]
-    )
+    tok_a = CapabilityToken.objects.create(empresa=empresa_a, nombre="MCP Limite", scopes=["tesoreria:read"])
     with pytest.raises(ValueError, match="entero válido"):
         tesoreria_listar_extractos(str(tok_a.token), str(empresa_a.id_empresa), limite="abc")  # type: ignore[arg-type]
-
-

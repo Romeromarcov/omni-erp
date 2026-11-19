@@ -47,9 +47,9 @@ class PagoContribucionParafiscalViewSet(IdempotentCreateMixin, BaseModelViewSet)
 
     def get_queryset(self):
         # R-CODE-1: solo pagos de empresas visibles del usuario.
-        qs = PagoContribucionParafiscal.objects.filter(
-            id_empresa__in=_empresas(self.request)
-        ).select_related("contribucion", "id_moneda", "id_pago", "id_proceso_nomina")
+        qs = PagoContribucionParafiscal.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
+            "contribucion", "id_moneda", "id_pago", "id_proceso_nomina"
+        )
 
         estado = self.request.query_params.get("estado")
         contribucion_id = self.request.query_params.get("contribucion")
@@ -141,9 +141,7 @@ class PagoContribucionParafiscalViewSet(IdempotentCreateMixin, BaseModelViewSet)
         try:
             # El método puede ser de la empresa, global (empresa=None) o público.
             metodo = MetodoPago.objects.filter(
-                Q(empresa_id=pago_parafiscal.id_empresa_id)
-                | Q(empresa__isnull=True)
-                | Q(es_publico=True)
+                Q(empresa_id=pago_parafiscal.id_empresa_id) | Q(empresa__isnull=True) | Q(es_publico=True)
             ).get(pk=metodo_id)
         except (MetodoPago.DoesNotExist, DjangoValidationError, ValueError):
             return Response(
@@ -154,9 +152,7 @@ class PagoContribucionParafiscalViewSet(IdempotentCreateMixin, BaseModelViewSet)
         caja_id = request.data.get("caja")
         cuenta_id = request.data.get("cuenta_bancaria")
         if bool(caja_id) == bool(cuenta_id):
-            raise ValidationError(
-                {"detail": "Indique exactamente un origen de fondos: 'caja' o 'cuenta_bancaria'."}
-            )
+            raise ValidationError({"detail": "Indique exactamente un origen de fondos: 'caja' o 'cuenta_bancaria'."})
 
         caja = cuenta = None
         if caja_id:
@@ -171,9 +167,7 @@ class PagoContribucionParafiscalViewSet(IdempotentCreateMixin, BaseModelViewSet)
                 )
         else:
             try:
-                cuenta = CuentaBancariaEmpresa.objects.get(
-                    pk=cuenta_id, id_empresa_id=pago_parafiscal.id_empresa_id
-                )
+                cuenta = CuentaBancariaEmpresa.objects.get(pk=cuenta_id, id_empresa_id=pago_parafiscal.id_empresa_id)
             except (CuentaBancariaEmpresa.DoesNotExist, DjangoValidationError, ValueError):
                 return Response(
                     {"error": "Cuenta bancaria no encontrada en la empresa del pago."},

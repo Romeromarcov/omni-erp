@@ -41,9 +41,7 @@ def moneda_bol(db, empresa_a):
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
 
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad M4", abreviatura="UN-M4", tipo="CANTIDAD"
-    )
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad M4", abreviatura="UN-M4", tipo="CANTIDAD")
 
 
 @pytest.fixture
@@ -149,9 +147,7 @@ def test_precio_resuelto_desde_lista_asignada_al_cliente(
     )
 
     precio = obtener_precio(producto, empresa_a, contacto=contacto_con_lista)
-    assert precio == Decimal("120.00"), (
-        f"Esperado 120.00 (lista mayoreo del contacto), obtenido {precio}"
-    )
+    assert precio == Decimal("120.00"), f"Esperado 120.00 (lista mayoreo del contacto), obtenido {precio}"
 
 
 @pytest.mark.django_db
@@ -170,9 +166,7 @@ def test_fallback_a_lista_referencia(empresa_a, producto, lista_referencia, cont
     )
 
     precio = obtener_precio(producto, empresa_a, contacto=contacto_sin_lista)
-    assert precio == Decimal("150.00"), (
-        f"Esperado 150.00 (lista referencia), obtenido {precio}"
-    )
+    assert precio == Decimal("150.00"), f"Esperado 150.00 (lista referencia), obtenido {precio}"
 
 
 @pytest.mark.django_db

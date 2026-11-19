@@ -56,9 +56,7 @@ def _instancias(empresa, source_config_extra=None):
     return origen, destino
 
 
-def _fake_connectors(
-    monkeypatch, *, pull_result, push_result, spreadsheet_id="SHEET123"
-):
+def _fake_connectors(monkeypatch, *, pull_result, push_result, spreadsheet_id="SHEET123"):
     """Sustituye registry.get_connector por dobles según el proveedor."""
     fake_origen = MagicMock()
     fake_origen.pull_contactos.return_value = pull_result
@@ -130,16 +128,12 @@ def test_exportar_falla_sin_source_instancia(monkeypatch, empresa_a):
         id_empresa=empresa_a,
         id_proveedor=prov_sheets,
         nombre="Sheets Sin Origen",
-        configuracion={
-            "service_account": {"client_email": "x@y.iam.gserviceaccount.com"}
-        },
+        configuracion={"service_account": {"client_email": "x@y.iam.gserviceaccount.com"}},
         entidades_activas=["contactos"],
     )
     # get_connector se usa para el destino; el origen falla antes de pull.
     fake_destino = MagicMock()
-    monkeypatch.setattr(
-        export_engine_mod.registry, "get_connector", lambda inst: fake_destino
-    )
+    monkeypatch.setattr(export_engine_mod.registry, "get_connector", lambda inst: fake_destino)
     with pytest.raises(ConnectorError, match="source_instancia_id"):
         ExportEngine().exportar(destino, tipos=["contactos"])
 
@@ -164,9 +158,7 @@ def test_exportar_rechaza_origen_de_otra_empresa(monkeypatch, empresa_a, empresa
         },
         entidades_activas=["contactos"],
     )
-    monkeypatch.setattr(
-        export_engine_mod.registry, "get_connector", lambda inst: MagicMock()
-    )
+    monkeypatch.setattr(export_engine_mod.registry, "get_connector", lambda inst: MagicMock())
     with pytest.raises(ConnectorError, match="otra empresa"):
         ExportEngine().exportar(destino_a, tipos=["contactos"])
 
@@ -236,9 +228,7 @@ def test_exportar_persistir_en_omni_desactivable(monkeypatch, empresa_a):
     """Con persistir_en_omni=False, exporta a Sheets pero NO guarda en Omni."""
     from apps.core.models import Contacto
 
-    origen, destino = _instancias(
-        empresa_a, source_config_extra={"persistir_en_omni": False}
-    )
+    origen, destino = _instancias(empresa_a, source_config_extra={"persistir_en_omni": False})
     _fake_connectors(
         monkeypatch,
         pull_result=[
@@ -310,9 +300,7 @@ def test_ingerir_en_omni_omite_si_upsert_devuelve_none(monkeypatch, empresa_a):
     origen, _ = _instancias(empresa_a)
     monkeypatch.setattr(SyncEngine, "_upsert_en_omni", lambda self, t, d, i: None)
 
-    r = SyncEngine().ingerir_en_omni(
-        origen, "contactos", [{"id_externo": "1", "_checksum": "c"}]
-    )
+    r = SyncEngine().ingerir_en_omni(origen, "contactos", [{"id_externo": "1", "_checksum": "c"}])
     assert r["omitidos"] == 1
     assert r["creados"] == 0
 
@@ -328,9 +316,7 @@ def test_ingerir_en_omni_captura_error_por_registro(monkeypatch, empresa_a):
         MagicMock(side_effect=RuntimeError("x")),
     )
 
-    r = SyncEngine().ingerir_en_omni(
-        origen, "contactos", [{"id_externo": "9", "_checksum": "c"}]
-    )
+    r = SyncEngine().ingerir_en_omni(origen, "contactos", [{"id_externo": "9", "_checksum": "c"}])
     assert r["fallidos"] == 1
     assert r["errores"][0]["id_externo"] == "9"
 

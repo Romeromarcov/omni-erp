@@ -40,10 +40,7 @@ _AUTH_MAQUINA_Y_HUMANO = [
 
 
 def _es_super(user) -> bool:
-    return bool(
-        getattr(user, "is_superuser", False)
-        or getattr(user, "es_superusuario_omni", False)
-    )
+    return bool(getattr(user, "is_superuser", False) or getattr(user, "es_superusuario_omni", False))
 
 
 def _empresa_requerida(user):
@@ -65,11 +62,7 @@ class PuedeIngestar(permissions.BasePermission):
             return False
         act = getattr(view, "action", None)
         if act == "create":
-            return (
-                tiene_scope_capacidad(u, "bots:ingest")
-                or _es_super(u)
-                or u.has_perm("bots_ingest.ingestar")
-            )
+            return tiene_scope_capacidad(u, "bots:ingest") or _es_super(u) or u.has_perm("bots_ingest.ingestar")
         if _es_super(u) or u.has_perm("bots_ingest.ingestar"):
             return True
         if act in ("list", "retrieve"):
@@ -111,15 +104,11 @@ class PuedePanelBots(permissions.BasePermission):
         if tiene_scope_capacidad(u, "bots:write"):
             return True
         if request.method in permissions.SAFE_METHODS:
-            return u.has_perm("bots_ingest.ver_bots") or tiene_scope_capacidad(
-                u, "bots:read"
-            )
+            return u.has_perm("bots_ingest.ver_bots") or tiene_scope_capacidad(u, "bots:read")
         return False
 
 
-class IngestaBotViewSet(
-    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
-):
+class IngestaBotViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """``POST /ingest/`` recibe un borrador confirmado; ``GET`` lista lo recibido (p. ej. ``?estado=INCOMPLETO``)."""
 
     authentication_classes = _AUTH_MAQUINA_Y_HUMANO
@@ -130,9 +119,7 @@ class IngestaBotViewSet(
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return IngestaBot.objects.none()
-        qs = IngestaBot.objects.filter(
-            id_empresa__in=get_empresas_visible(self.request.user), activo=True
-        )
+        qs = IngestaBot.objects.filter(id_empresa__in=get_empresas_visible(self.request.user), activo=True)
         p = self.request.query_params
         if p.get("estado"):
             qs = qs.filter(estado=p["estado"])
@@ -165,13 +152,9 @@ class IngestaBotViewSet(
     def completar(self, request, pk=None):
         """Completa un pago incompleto: ``{"cambios": {"referencia": "123"}}``."""
         ing = self.get_object()
-        cambios = (
-            request.data.get("cambios") if isinstance(request.data, dict) else None
-        )
+        cambios = request.data.get("cambios") if isinstance(request.data, dict) else None
         if not isinstance(cambios, dict) or not cambios:
-            return Response(
-                {"error": "Envía «cambios» con al menos un campo."}, status=400
-            )
+            return Response({"error": "Envía «cambios» con al menos un campo."}, status=400)
         try:
             ing = svc.completar(ing, cambios)
         except HandlerError as e:
@@ -186,9 +169,7 @@ class IngestaBotViewSet(
 
         ing = self.get_object()
         if ing.kind not in KINDS_SINCRONIZABLES:
-            return Response(
-                {"error": "Este tipo de ingesta no se envía a Odoo."}, status=422
-            )
+            return Response({"error": "Este tipo de ingesta no se envía a Odoo."}, status=422)
         if ing.estado == IngestaBot.Estado.SINCRONIZADO:
             return Response({"error": "Ya está sincronizada con Odoo."}, status=409)
         if not debe_sincronizar(ing):
@@ -210,9 +191,7 @@ class BotUsuarioViewSet(EmpresaInjectMixin, BaseModelViewSet):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return BotUsuario.objects.none()
-        return BotUsuario.objects.filter(
-            id_empresa__in=get_empresas_visible(self.request.user), activo=True
-        )
+        return BotUsuario.objects.filter(id_empresa__in=get_empresas_visible(self.request.user), activo=True)
 
     @staticmethod
     def _resumen_usuario(inst: BotUsuario) -> dict:
@@ -362,9 +341,7 @@ class BotBitacoraView(APIView):
             limite = int(raw_lim)
         except (TypeError, ValueError):
             limite = 50
-        return Response(
-            {"items": ctrl_svc.listar_bitacora(empresa, entidad=entidad, limite=limite)}
-        )
+        return Response({"items": ctrl_svc.listar_bitacora(empresa, entidad=entidad, limite=limite)})
 
 
 __all__ = [

@@ -30,9 +30,7 @@ SERVICE_ACCOUNT = {
 
 
 def _odoo(empresa, nombre="Odoo Origen"):
-    prov, _ = ConectorProveedor.objects.get_or_create(
-        codigo="odoo", defaults={"nombre": "Odoo", "estado": "activo"}
-    )
+    prov, _ = ConectorProveedor.objects.get_or_create(codigo="odoo", defaults={"nombre": "Odoo", "estado": "activo"})
     return ConectorInstancia.objects.create(
         id_empresa=empresa,
         id_proveedor=prov,
@@ -63,7 +61,9 @@ def test_job_serializer_iniciado_por_automatico(empresa_a):
 
     inst = _odoo(empresa_a)
     job = JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="completado",
+        id_instancia=inst,
+        tipo_entidad="contactos",
+        estado="completado",
         iniciado_por=None,
     )
     data = JobSincronizacionSerializer(job).data
@@ -75,7 +75,9 @@ def test_job_serializer_iniciado_por_usuario(empresa_a, user_a):
 
     inst = _odoo(empresa_a)
     job = JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="completado",
+        id_instancia=inst,
+        tipo_entidad="contactos",
+        estado="completado",
         iniciado_por=user_a,
     )
     data = JobSincronizacionSerializer(job).data
@@ -95,23 +97,28 @@ def test_configurar_resuelve_empresa_por_rif(tmp_path, empresa_a):
     origen = _odoo(empresa_a)
     call_command(
         "configurar_conector_sheets",
-        "--empresa", empresa_a.identificador_fiscal,  # por RIF, no UUID
-        "--service-account", _sa_file(tmp_path),
-        "--source", origen.nombre,
-        "--nombre", "Sheets RIF",
+        "--empresa",
+        empresa_a.identificador_fiscal,  # por RIF, no UUID
+        "--service-account",
+        _sa_file(tmp_path),
+        "--source",
+        origen.nombre,
+        "--nombre",
+        "Sheets RIF",
     )
-    assert ConectorInstancia.objects.filter(
-        id_empresa=empresa_a, nombre="Sheets RIF"
-    ).exists()
+    assert ConectorInstancia.objects.filter(id_empresa=empresa_a, nombre="Sheets RIF").exists()
 
 
 def test_configurar_empresa_inexistente_falla(tmp_path):
     with pytest.raises(CommandError, match="empresa"):
         call_command(
             "configurar_conector_sheets",
-            "--empresa", "no-existe-rif",
-            "--service-account", _sa_file(tmp_path),
-            "--source", "x",
+            "--empresa",
+            "no-existe-rif",
+            "--service-account",
+            _sa_file(tmp_path),
+            "--source",
+            "x",
         )
 
 
@@ -120,9 +127,12 @@ def test_configurar_service_account_inexistente_falla(empresa_a):
     with pytest.raises(CommandError, match="service account"):
         call_command(
             "configurar_conector_sheets",
-            "--empresa", str(empresa_a.pk),
-            "--service-account", "/ruta/que/no/existe.json",
-            "--source", "Odoo Origen",
+            "--empresa",
+            str(empresa_a.pk),
+            "--service-account",
+            "/ruta/que/no/existe.json",
+            "--source",
+            "Odoo Origen",
         )
 
 
@@ -133,9 +143,12 @@ def test_configurar_service_account_json_invalido_falla(tmp_path, empresa_a):
     with pytest.raises(CommandError, match="No se pudo leer"):
         call_command(
             "configurar_conector_sheets",
-            "--empresa", str(empresa_a.pk),
-            "--service-account", str(ruta),
-            "--source", "Odoo Origen",
+            "--empresa",
+            str(empresa_a.pk),
+            "--service-account",
+            str(ruta),
+            "--source",
+            "Odoo Origen",
         )
 
 
@@ -143,14 +156,16 @@ def test_configurar_resuelve_origen_por_id(tmp_path, empresa_a):
     origen = _odoo(empresa_a)
     call_command(
         "configurar_conector_sheets",
-        "--empresa", str(empresa_a.pk),
-        "--service-account", _sa_file(tmp_path),
-        "--source", str(origen.pk),  # por UUID
-        "--nombre", "Sheets por ID origen",
+        "--empresa",
+        str(empresa_a.pk),
+        "--service-account",
+        _sa_file(tmp_path),
+        "--source",
+        str(origen.pk),  # por UUID
+        "--nombre",
+        "Sheets por ID origen",
     )
-    inst = ConectorInstancia.objects.get(
-        id_empresa=empresa_a, nombre="Sheets por ID origen"
-    )
+    inst = ConectorInstancia.objects.get(id_empresa=empresa_a, nombre="Sheets por ID origen")
     assert inst.get_config()["source_instancia_id"] == str(origen.pk)
 
 
@@ -164,15 +179,17 @@ def test_configurar_test_fallido_marca_error(tmp_path, empresa_a, monkeypatch):
 
     call_command(
         "configurar_conector_sheets",
-        "--empresa", str(empresa_a.pk),
-        "--service-account", _sa_file(tmp_path),
-        "--source", origen.nombre,
-        "--nombre", "Sheets Test Fail",
+        "--empresa",
+        str(empresa_a.pk),
+        "--service-account",
+        _sa_file(tmp_path),
+        "--source",
+        origen.nombre,
+        "--nombre",
+        "Sheets Test Fail",
         "--test",
     )
-    inst = ConectorInstancia.objects.get(
-        id_empresa=empresa_a, nombre="Sheets Test Fail"
-    )
+    inst = ConectorInstancia.objects.get(id_empresa=empresa_a, nombre="Sheets Test Fail")
     assert inst.estado == "error"
 
 
@@ -199,22 +216,26 @@ def test_exportar_empresa_por_rif(empresa_a, monkeypatch):
     origen = _odoo(empresa_a)
     destino = _sheets_destino(empresa_a, origen)
     job = MagicMock(
-        tipo_entidad="contactos", estado="completado",
-        creados=1, actualizados=0, omitidos=0, fallidos=0,
+        tipo_entidad="contactos",
+        estado="completado",
+        creados=1,
+        actualizados=0,
+        omitidos=0,
+        fallidos=0,
     )
     monkeypatch.setattr(ExportEngine, "exportar", lambda self, *a, **k: [job])
     call_command(
         "exportar_a_sheets",
-        "--empresa", empresa_a.identificador_fiscal,
-        "--destino", destino.nombre,
+        "--empresa",
+        empresa_a.identificador_fiscal,
+        "--destino",
+        destino.nombre,
     )
 
 
 def test_exportar_empresa_inexistente_falla():
     with pytest.raises(CommandError, match="empresa"):
-        call_command(
-            "exportar_a_sheets", "--empresa", "no-existe", "--destino", "x"
-        )
+        call_command("exportar_a_sheets", "--empresa", "no-existe", "--destino", "x")
 
 
 def test_exportar_connector_error_se_traduce_a_command_error(empresa_a, monkeypatch):
@@ -229,8 +250,10 @@ def test_exportar_connector_error_se_traduce_a_command_error(empresa_a, monkeypa
     with pytest.raises(CommandError, match="origen mal configurado"):
         call_command(
             "exportar_a_sheets",
-            "--empresa", str(empresa_a.pk),
-            "--destino", destino.nombre,
+            "--empresa",
+            str(empresa_a.pk),
+            "--destino",
+            destino.nombre,
         )
 
 
@@ -238,14 +261,20 @@ def test_exportar_job_fallido_usa_estilo_error(empresa_a, monkeypatch):
     origen = _odoo(empresa_a)
     destino = _sheets_destino(empresa_a, origen)
     job = MagicMock(
-        tipo_entidad="contactos", estado="fallido",
-        creados=0, actualizados=0, omitidos=0, fallidos=1,
+        tipo_entidad="contactos",
+        estado="fallido",
+        creados=0,
+        actualizados=0,
+        omitidos=0,
+        fallidos=1,
     )
     monkeypatch.setattr(ExportEngine, "exportar", lambda self, *a, **k: [job])
     call_command(
         "exportar_a_sheets",
-        "--empresa", str(empresa_a.pk),
-        "--destino", destino.nombre,
+        "--empresa",
+        str(empresa_a.pk),
+        "--destino",
+        destino.nombre,
     )
 
 
@@ -261,11 +290,15 @@ def _instancias(empresa):
         defaults={"nombre": "Google Sheets", "estado": "activo"},
     )
     origen = ConectorInstancia.objects.create(
-        id_empresa=empresa, id_proveedor=prov_odoo, nombre="Odoo Origen ee",
+        id_empresa=empresa,
+        id_proveedor=prov_odoo,
+        nombre="Odoo Origen ee",
         configuracion={"host": "h", "user": "u", "api_key": "k"},
     )
     destino = ConectorInstancia.objects.create(
-        id_empresa=empresa, id_proveedor=prov_sheets, nombre="Sheets Destino ee",
+        id_empresa=empresa,
+        id_proveedor=prov_sheets,
+        nombre="Sheets Destino ee",
         configuracion={
             "service_account": {"client_email": "svc@p.iam.gserviceaccount.com"},
             "source_instancia_id": str(origen.pk),
@@ -282,8 +315,7 @@ def test_export_tipo_sin_metodo_pull_marca_job_fallido(monkeypatch, empresa_a):
     monkeypatch.setattr(
         export_engine_mod.registry,
         "get_connector",
-        lambda inst: fake_destino if inst.id_proveedor.codigo == "google_sheets"
-        else fake_origen,
+        lambda inst: fake_destino if inst.id_proveedor.codigo == "google_sheets" else fake_origen,
     )
     jobs = ExportEngine().exportar(destino, tipos=["contactos"])
     assert jobs[0].estado == "fallido"
@@ -299,8 +331,7 @@ def test_export_destino_no_soporta_entidad_marca_fallido(monkeypatch, empresa_a)
     monkeypatch.setattr(
         export_engine_mod.registry,
         "get_connector",
-        lambda inst: fake_destino if inst.id_proveedor.codigo == "google_sheets"
-        else fake_origen,
+        lambda inst: fake_destino if inst.id_proveedor.codigo == "google_sheets" else fake_origen,
     )
     jobs = ExportEngine().exportar(destino, tipos=["contactos"])
     assert jobs[0].estado == "fallido"
@@ -315,22 +346,22 @@ def test_export_incremental_calcula_desde_del_ultimo_job(monkeypatch, empresa_a)
     # Job previo completado → su completado_en se usa como 'desde'.
     previo_ts = tz.now()
     JobSincronizacion.objects.create(
-        id_instancia=destino, tipo_entidad="contactos", direccion="outbound",
-        estado="completado", completado_en=previo_ts,
+        id_instancia=destino,
+        tipo_entidad="contactos",
+        direccion="outbound",
+        estado="completado",
+        completado_en=previo_ts,
     )
     fake_origen = MagicMock()
     fake_origen.pull_contactos.return_value = [{"id_externo": "1"}]
     fake_destino = MagicMock()
     fake_destino.supports.return_value = True
-    fake_destino.push_entidades.return_value = SyncResult(
-        tipo_entidad="contactos", total=1, creados=1
-    )
+    fake_destino.push_entidades.return_value = SyncResult(tipo_entidad="contactos", total=1, creados=1)
     fake_destino.spreadsheet_id = "S"
     monkeypatch.setattr(
         export_engine_mod.registry,
         "get_connector",
-        lambda inst: fake_destino if inst.id_proveedor.codigo == "google_sheets"
-        else fake_origen,
+        lambda inst: fake_destino if inst.id_proveedor.codigo == "google_sheets" else fake_origen,
     )
     ExportEngine().exportar(destino, tipos=["contactos"], incremental=True)
     _, kwargs = fake_origen.pull_contactos.call_args

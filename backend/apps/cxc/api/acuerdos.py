@@ -1,4 +1,5 @@
 """ViewSet para AcuerdoPago."""
+
 import logging
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from datetime import date, timedelta
@@ -33,10 +34,14 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         # H-SEC-12: aislar por empresas visibles (soporta usuarios multi-empresa).
-        return AcuerdoPago.objects.filter(
-            empresa__in=get_empresas_visible(self.request.user),
-            deleted_at__isnull=True,
-        ).prefetch_related("cuotas").order_by("-created_at")
+        return (
+            AcuerdoPago.objects.filter(
+                empresa__in=get_empresas_visible(self.request.user),
+                deleted_at__isnull=True,
+            )
+            .prefetch_related("cuotas")
+            .order_by("-created_at")
+        )
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -129,7 +134,9 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             if moneda.codigo_iso != acuerdo.moneda_codigo:
                 try:
                     monto_aplicado = convertir_monto(
-                        data["monto"], moneda, acuerdo.moneda_codigo,
+                        data["monto"],
+                        moneda,
+                        acuerdo.moneda_codigo,
                         empresa=acuerdo.empresa,
                     )
                 except TasaCambioError:
@@ -137,8 +144,7 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
                         {
                             "code": "tasa_no_disponible",
                             "detail": (
-                                "No hay tasa de cambio disponible entre la moneda "
-                                "del pago y la moneda del acuerdo."
+                                "No hay tasa de cambio disponible entre la moneda " "del pago y la moneda del acuerdo."
                             ),
                         },
                         status=400,
@@ -151,13 +157,12 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             empresa_base = getattr(acuerdo.empresa, "id_moneda_base", None)
             if empresa_base is not None and empresa_base.pk != moneda.pk:
                 try:
-                    tasa_pago = obtener_tasa_cambio(
-                        moneda, empresa_base, empresa=acuerdo.empresa
-                    ).valor_tasa
+                    tasa_pago = obtener_tasa_cambio(moneda, empresa_base, empresa=acuerdo.empresa).valor_tasa
                 except TasaCambioError:
                     logger.warning(
                         "registrar_pago: sin tasa %s→base para empresa=%s; se usa tasa=1.",
-                        getattr(moneda, "codigo_iso", moneda), acuerdo.empresa_id,
+                        getattr(moneda, "codigo_iso", moneda),
+                        acuerdo.empresa_id,
                     )
 
             # Crear pago en finanzas
@@ -204,13 +209,12 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
 
             try:
-                generar_asiento_o_fallar(
-                    "PAGO_CXC", cuota, acuerdo.empresa, data["monto"], usuario=request.user
-                )
+                generar_asiento_o_fallar("PAGO_CXC", cuota, acuerdo.empresa, data["monto"], usuario=request.user)
             except AsientoError:
                 logger.exception(
                     "registrar_pago: asiento contable obligatorio falló | empresa=%s | cuota=%s",
-                    acuerdo.empresa_id, cuota.id,
+                    acuerdo.empresa_id,
+                    cuota.id,
                 )
                 transaction.set_rollback(True)
                 return Response(
@@ -223,10 +227,12 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
                 )
 
             logger.info(
-                "pago_cuota_registrado | empresa=%s | acuerdo=%s | cuota=%s | "
-                "monto=%s | estado_cuota=%s",
-                acuerdo.empresa_id, acuerdo.pk, cuota.pk,
-                data["monto"], cuota.estado,
+                "pago_cuota_registrado | empresa=%s | acuerdo=%s | cuota=%s | " "monto=%s | estado_cuota=%s",
+                acuerdo.empresa_id,
+                acuerdo.pk,
+                cuota.pk,
+                data["monto"],
+                cuota.estado,
             )
 
         return Response(
@@ -241,13 +247,17 @@ class AcuerdoPagoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         hoy = date.today()
         limite = hoy + timedelta(days=dias)
 
-        cuotas = CuotaAcuerdo.objects.filter(
-            acuerdo__empresa__in=get_empresas_visible(request.user),
-            acuerdo__deleted_at__isnull=True,
-            fecha_vencimiento__gte=hoy,
-            fecha_vencimiento__lte=limite,
-            estado__in=["pendiente", "parcial"],
-        ).select_related("acuerdo").order_by("fecha_vencimiento")
+        cuotas = (
+            CuotaAcuerdo.objects.filter(
+                acuerdo__empresa__in=get_empresas_visible(request.user),
+                acuerdo__deleted_at__isnull=True,
+                fecha_vencimiento__gte=hoy,
+                fecha_vencimiento__lte=limite,
+                estado__in=["pendiente", "parcial"],
+            )
+            .select_related("acuerdo")
+            .order_by("fecha_vencimiento")
+        )
 
         serializer = CuotaAcuerdoSerializer(cuotas, many=True)
         return Response(serializer.data)

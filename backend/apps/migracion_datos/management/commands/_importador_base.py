@@ -151,10 +151,7 @@ class ImportadorBaseCommand(BaseCommand):
         errores = []  # (numero_linea, mensaje)
 
         modo = "ESCRITURA" if confirmar else "DRY-RUN"
-        self.stdout.write(
-            f"Importando {total} {self.nombre_entidad}(s) para empresa "
-            f"'{empresa}' [{modo}]"
-        )
+        self.stdout.write(f"Importando {total} {self.nombre_entidad}(s) para empresa " f"'{empresa}' [{modo}]")
 
         # La línea 1 del archivo es la cabecera; los datos empiezan en la 2.
         try:
@@ -195,22 +192,13 @@ class ImportadorBaseCommand(BaseCommand):
             if errores:
                 self.stdout.write(
                     self.style.WARNING(
-                        "Se detectaron errores: la transacción fue revertida, "
-                        "no se escribió ningún registro."
+                        "Se detectaron errores: la transacción fue revertida, " "no se escribió ningún registro."
                     )
                 )
             else:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Aplicado: {creados} creado(s), {actualizados} actualizado(s)."
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"Aplicado: {creados} creado(s), {actualizados} actualizado(s)."))
         else:
-            self.stdout.write(
-                self.style.WARNING(
-                    "Dry-run: no se escribió nada. Repita con --confirm para aplicar."
-                )
-            )
+            self.stdout.write(self.style.WARNING("Dry-run: no se escribió nada. Repita con --confirm para aplicar."))
 
     # ── helpers de parseo para subclases ───────────────────────────────────
 

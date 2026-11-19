@@ -15,9 +15,7 @@ from apps.integration_hub.connectors.odoo.connector import OdooConnector
 
 @pytest.fixture
 def conn():
-    c = OdooConnector.__new__(
-        OdooConnector
-    )  # sin instancia/BD: solo la lógica de mapeo
+    c = OdooConnector.__new__(OdooConnector)  # sin instancia/BD: solo la lógica de mapeo
     c._get_client = lambda: c._cli  # type: ignore[method-assign]
     c._cli = MagicMock()
     return c
@@ -35,19 +33,11 @@ def test_pedido_venta_mapea_lineas_y_devuelve_id(conn):
     )
     assert r == "77"
     vals = conn._cli.crear_pedido_venta.call_args.args[0]
-    assert (
-        vals["partner_id"] == 5
-        and vals["client_order_ref"] == "PED-1"
-        and vals["user_id"] == 3
-    )
-    assert vals["order_line"] == [
-        (0, 0, {"product_id": 9, "product_uom_qty": 2.0, "price_unit": 12.5})
-    ]
+    assert vals["partner_id"] == 5 and vals["client_order_ref"] == "PED-1" and vals["user_id"] == 3
+    assert vals["order_line"] == [(0, 0, {"product_id": 9, "product_uom_qty": 2.0, "price_unit": 12.5})]
 
 
-@pytest.mark.parametrize(
-    "datos", [{}, {"partner_id": 1}, {"partner_id": 1, "lineas": []}, {"lineas": [{}]}]
-)
+@pytest.mark.parametrize("datos", [{}, {"partner_id": 1}, {"partner_id": 1, "lineas": []}, {"lineas": [{}]}])
 def test_pedido_venta_valida_entrada(conn, datos):
     with pytest.raises(ConnectorDataError):
         conn.push_pedido_venta(datos)
@@ -55,12 +45,7 @@ def test_pedido_venta_valida_entrada(conn, datos):
 
 def test_pago_cliente_es_inbound_customer_en_borrador(conn):
     conn._cli.crear_pago.return_value = 501
-    assert (
-        conn.push_pago(
-            {"partner_id": 5, "monto": "100.5", "journal_id": 2, "referencia": "REF1"}
-        )
-        == "501"
-    )
+    assert conn.push_pago({"partner_id": 5, "monto": "100.5", "journal_id": 2, "referencia": "REF1"}) == "501"
     v = conn._cli.crear_pago.call_args.args[0]
     assert (v["payment_type"], v["partner_type"], v["amount"], v["memo"]) == (
         "inbound",
@@ -136,11 +121,7 @@ def test_contacto_envia_gps_y_marca_de_cliente(conn):
         == "55"
     )
     v = conn._cli.crear_socio.call_args.args[0]
-    assert (
-        v["customer_rank"] == 1
-        and v["partner_latitude"] == 10.48
-        and v["partner_longitude"] == -66.9
-    )
+    assert v["customer_rank"] == 1 and v["partner_latitude"] == 10.48 and v["partner_longitude"] == -66.9
 
 
 def test_contacto_reintenta_sin_gps_si_odoo_no_tiene_geolocalizacion(conn):

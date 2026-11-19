@@ -82,9 +82,7 @@ class PedidoLubrikcaViewSet(_CxcLubrikcaTenantViewSet):
         try:
             bandeja = recalcular_bandeja(pedido)
         except BridgeError as exc:
-            return domain_error_response(
-                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         return Response(BandejaFacturacionSerializer(bandeja).data)
 
     @action(detail=False, methods=["post"])
@@ -94,9 +92,7 @@ class PedidoLubrikcaViewSet(_CxcLubrikcaTenantViewSet):
         try:
             counts = sincronizar_empresa(empresa, desde=request.data.get("desde"))
         except SyncError as exc:
-            return domain_error_response(
-                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         return Response(counts)
 
 
@@ -163,18 +159,14 @@ class VinculacionViewSet(
 
         # Resolver pedido y pago dentro del tenant (404 si son de otra empresa).
         try:
-            pedido = PedidoLubrikca.objects.get(
-                id=data["pedido"], empresa=empresa, deleted_at__isnull=True
-            )
+            pedido = PedidoLubrikca.objects.get(id=data["pedido"], empresa=empresa, deleted_at__isnull=True)
         except PedidoLubrikca.DoesNotExist:
             return Response(
                 {"pedido": "No encontrado para esta empresa."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         try:
-            pago = PagoLubrikca.objects.get(
-                id=data["pago"], empresa=empresa, deleted_at__isnull=True
-            )
+            pago = PagoLubrikca.objects.get(id=data["pago"], empresa=empresa, deleted_at__isnull=True)
         except PagoLubrikca.DoesNotExist:
             return Response(
                 {"pago": "No encontrado para esta empresa."},
@@ -191,13 +183,9 @@ class VinculacionViewSet(
                 es_tasa_heredada=data["es_tasa_heredada"],
             )
         except (VinculacionError, BridgeError) as exc:
-            return domain_error_response(
-                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
 
-        return Response(
-            VinculacionSerializer(vinc).data, status=status.HTTP_201_CREATED
-        )
+        return Response(VinculacionSerializer(vinc).data, status=status.HTTP_201_CREATED)
 
 
 class BandejaFacturacionViewSet(
@@ -225,9 +213,7 @@ class BandejaFacturacionViewSet(
         try:
             solicitud = proponer_cierre(bandeja, request.user)
         except VinculacionError as exc:
-            return domain_error_response(
-                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         if solicitud is None:
             return Response(
                 {
@@ -252,8 +238,6 @@ class BandejaFacturacionViewSet(
                 comentarios=body.validated_data["comentarios"],
             )
         except (VinculacionError, AprobacionError) as exc:
-            return domain_error_response(
-                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         bandeja.refresh_from_db()
         return Response(BandejaFacturacionSerializer(bandeja).data)

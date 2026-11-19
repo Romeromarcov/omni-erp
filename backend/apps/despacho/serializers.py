@@ -17,12 +17,8 @@ from .services import ESTADOS_NOTA_DESPACHABLES
 
 
 class DetalleDespachoSerializer(serializers.ModelSerializer):
-    nombre_producto = serializers.CharField(
-        source="id_producto.nombre_producto", read_only=True
-    )
-    unidad_medida = serializers.CharField(
-        source="id_unidad_medida.abreviatura", read_only=True
-    )
+    nombre_producto = serializers.CharField(source="id_producto.nombre_producto", read_only=True)
+    unidad_medida = serializers.CharField(source="id_unidad_medida.abreviatura", read_only=True)
 
     class Meta:
         model = models.DetalleDespacho
@@ -43,12 +39,8 @@ class DetalleDespachoSerializer(serializers.ModelSerializer):
 
 class DespachoSerializer(serializers.ModelSerializer):
     detalles = DetalleDespachoSerializer(many=True, read_only=True)
-    numero_nota_venta = serializers.CharField(
-        source="id_nota_venta.numero_nota", read_only=True
-    )
-    nombre_almacen = serializers.CharField(
-        source="id_almacen_origen.nombre_almacen", read_only=True
-    )
+    numero_nota_venta = serializers.CharField(source="id_nota_venta.numero_nota", read_only=True)
+    nombre_almacen = serializers.CharField(source="id_almacen_origen.nombre_almacen", read_only=True)
     # Opcional al crear: por defecto el documento se fecha "ahora".
     fecha_despacho = serializers.DateTimeField(default=timezone.now)
 
@@ -82,14 +74,14 @@ class DespachoSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id_despacho",
-            "id_empresa",          # inyectada desde el almacén (H-API-1)
-            "numero_despacho",     # correlativo fiscal por empresa
-            "estado_despacho",     # solo cambia vía acciones de transición
+            "id_empresa",  # inyectada desde el almacén (H-API-1)
+            "numero_despacho",  # correlativo fiscal por empresa
+            "estado_despacho",  # solo cambia vía acciones de transición
             "fecha_en_ruta",
             "fecha_entrega_real",
             "fecha_devolucion",
             "fecha_cancelacion",
-            "documento_json",      # evidencia de entrega/devolución/cancelación
+            "documento_json",  # evidencia de entrega/devolución/cancelación
             "activo",
             "fecha_creacion",
             "fecha_actualizacion",
@@ -124,16 +116,13 @@ class DespachoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "id_nota_venta": (
-                        "Solo se vincula a notas ENTREGADAS o FACTURADAS "
-                        f"(estado actual: {nota.estado})."
+                        "Solo se vincula a notas ENTREGADAS o FACTURADAS " f"(estado actual: {nota.estado})."
                     )
                 }
             )
         pedido = _actual("id_pedido")
         if pedido is not None and pedido.id_empresa_id != empresa_id:
-            raise serializers.ValidationError(
-                {"id_pedido": "El pedido no pertenece a la empresa del almacén."}
-            )
+            raise serializers.ValidationError({"id_pedido": "El pedido no pertenece a la empresa del almacén."})
         transportista = _actual("id_transportista")
         if transportista is not None and transportista.empresa_id != empresa_id:
             raise serializers.ValidationError(
@@ -154,9 +143,7 @@ class LineaDespachoInputSerializer(serializers.Serializer):
     """Línea solicitada al crear un despacho parcial desde la venta."""
 
     id_producto = serializers.UUIDField()
-    cantidad = serializers.DecimalField(
-        max_digits=18, decimal_places=4, min_value=Decimal("0.0001")
-    )
+    cantidad = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal("0.0001"))
 
 
 class DespachoDesdeNotaVentaSerializer(serializers.Serializer):

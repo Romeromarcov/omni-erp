@@ -5,6 +5,7 @@ Hogar de las señales relacionadas con la auditoría del sistema. Antes vivían
 (como stub vacío) en ``apps/core/signals.py``; se movieron aquí por coherencia
 con el dominio. Se conectan vía ``AuditoriaConfig.ready()``.
 """
+
 from django.db.models.signals import post_save  # noqa: F401
 from django.dispatch import receiver  # noqa: F401
 

@@ -24,11 +24,7 @@ from .helpers import TG
 @pytest.fixture
 def servicio(user_a):
     """Usuario de servicio con el permiso de ingesta."""
-    user_a.user_permissions.add(
-        Permission.objects.get(
-            codename="ingestar", content_type__app_label="bots_ingest"
-        )
-    )
+    user_a.user_permissions.add(Permission.objects.get(codename="ingestar", content_type__app_label="bots_ingest"))
     return user_a
 
 
@@ -41,9 +37,7 @@ def api(servicio):
 
 @pytest.fixture
 def bot_usuario(servicio, empresa_a):
-    return BotUsuario.objects.create(
-        id_empresa=empresa_a, telegram_user_id=TG, usuario=servicio, nombre="Vendedor"
-    )
+    return BotUsuario.objects.create(id_empresa=empresa_a, telegram_user_id=TG, usuario=servicio, nombre="Vendedor")
 
 
 @pytest.fixture
@@ -56,21 +50,15 @@ def catalogo(empresa_a, moneda_usd):
         es_referencia=True,
         id_moneda=moneda_usd,
     )
-    prod = ProductoFactory(
-        id_empresa=empresa_a, nombre_producto="Aceite 20W50", sku="AC-20W50"
-    )
-    DetallePrecio.objects.create(
-        id_lista=lista, id_producto=prod, precio=Decimal("12.50")
-    )
+    prod = ProductoFactory(id_empresa=empresa_a, nombre_producto="Aceite 20W50", sku="AC-20W50")
+    DetallePrecio.objects.create(id_lista=lista, id_producto=prod, precio=Decimal("12.50"))
     return lista, prod
 
 
 @pytest.fixture
 def calendario(empresa_a):
     """Calendario predeterminado con 2 promotoras y 3 igloos."""
-    c = CalendarioActivacion.objects.create(
-        id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True
-    )
+    c = CalendarioActivacion.objects.create(id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True)
     RecursoActivacion.objects.create(
         id_empresa=empresa_a,
         calendario=c,

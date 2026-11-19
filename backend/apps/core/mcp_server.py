@@ -40,7 +40,6 @@ Herramientas disponibles (v1):
   - omni_get_correlativo_fiscal: siguiente número correlativo fiscal
 """
 
-
 import logging
 import os
 import uuid
@@ -67,6 +66,7 @@ logger = logging.getLogger("omni.mcp")
 # ── Importar mcp después de Django setup ─────────────────────────────────────
 try:
     from mcp.server.fastmcp import FastMCP  # type: ignore[import-untyped]
+
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
@@ -88,6 +88,7 @@ else:
 
 
 # ── Helpers de autenticación ─────────────────────────────────────────────────
+
 
 def _resolve_token(capability_token: str) -> Optional[Dict[str, Any]]:
     """
@@ -140,6 +141,7 @@ def _require_scope(context: Optional[Dict[str, Any]], scope: str) -> None:
 
 
 # ── Herramientas MCP (definidas a nivel de módulo para ser importables en tests) ─
+
 
 def omni_ping(capability_token: str) -> dict:
     """
@@ -241,9 +243,7 @@ def omni_get_clientes(
     if buscar:
         from django.db.models import Q  # noqa: PLC0415
 
-        qs = qs.filter(
-            Q(razon_social__icontains=buscar) | Q(rif__icontains=buscar)
-        )
+        qs = qs.filter(Q(razon_social__icontains=buscar) | Q(rif__icontains=buscar))
 
     clientes = qs.values("id_cliente", "razon_social", "rif", "activo")[:limit]
 
@@ -362,10 +362,10 @@ def omni_get_cxc_aging(
     )
     return {
         "empresa_id": empresa_id,
-        "corriente":   fmt_bucket(resultado["corriente"]),
-        "dias_1_30":   fmt_bucket(resultado["dias_1_30"]),
-        "dias_31_60":  fmt_bucket(resultado["dias_31_60"]),
-        "dias_61_90":  fmt_bucket(resultado["dias_61_90"]),
+        "corriente": fmt_bucket(resultado["corriente"]),
+        "dias_1_30": fmt_bucket(resultado["dias_1_30"]),
+        "dias_31_60": fmt_bucket(resultado["dias_31_60"]),
+        "dias_61_90": fmt_bucket(resultado["dias_61_90"]),
         "dias_90_mas": fmt_bucket(resultado["dias_90_mas"]),
         "total_general": resultado["total_general"],  # BUG-NEW-2
     }
@@ -962,7 +962,9 @@ def omni_cxc_get_cartera_vencida(
 
     logger.info(
         "omni_cxc_get_cartera_vencida | actor=%s | tenant=%s | count=%d",
-        context["actor_id"], context["tenant_id"], len(resultado),
+        context["actor_id"],
+        context["tenant_id"],
+        len(resultado),
     )
     return resultado
 
@@ -1003,7 +1005,8 @@ def omni_cxc_get_aging_summary(
 
     logger.info(
         "omni_cxc_get_aging_summary | actor=%s | tenant=%s",
-        context["actor_id"], context["tenant_id"],
+        context["actor_id"],
+        context["tenant_id"],
     )
     return resumen
 
@@ -1052,7 +1055,9 @@ def omni_cxc_get_tasa_cambio_hoy(
 
     logger.info(
         "omni_cxc_get_tasa_cambio_hoy | actor=%s | tipo=%s | tasa=%s",
-        context["actor_id"], tipo_tasa, tasa.valor_tasa,
+        context["actor_id"],
+        tipo_tasa,
+        tasa.valor_tasa,
     )
     return {
         "fecha": str(tasa.fecha_tasa),
@@ -1093,19 +1098,23 @@ def omni_cxc_get_acuerdos_vigentes(
     resultado = []
     for a in acuerdos:
         pendientes = a.cuotas.filter(estado__in=["pendiente", "vencido"]).count()
-        resultado.append({
-            "id": str(a.pk),
-            "monto_total": str(a.monto_total),
-            "periodicidad": a.periodicidad,
-            "estado": a.estado,
-            "fecha_inicio": str(a.fecha_inicio),
-            "cuotas_pendientes": pendientes,
-            "moneda": a.moneda_codigo,
-        })
+        resultado.append(
+            {
+                "id": str(a.pk),
+                "monto_total": str(a.monto_total),
+                "periodicidad": a.periodicidad,
+                "estado": a.estado,
+                "fecha_inicio": str(a.fecha_inicio),
+                "cuotas_pendientes": pendientes,
+                "moneda": a.moneda_codigo,
+            }
+        )
 
     logger.info(
         "omni_cxc_get_acuerdos_vigentes | actor=%s | cliente=%s | count=%d",
-        context["actor_id"], cliente_id, len(resultado),
+        context["actor_id"],
+        cliente_id,
+        len(resultado),
     )
     return resultado
 
@@ -1273,7 +1282,9 @@ def _autodiscover_module_tools(module_paths: Optional[List[str]] = None) -> dict
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
                         "mcp_autodiscover: error registrando %s desde %s: %s",
-                        name, module_path, exc,
+                        name,
+                        module_path,
+                        exc,
                     )
 
     logger.info("mcp_autodiscover: %d herramientas adicionales registradas", len(discovered))

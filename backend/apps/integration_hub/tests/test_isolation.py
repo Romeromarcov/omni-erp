@@ -2,6 +2,7 @@
 Tests de aislamiento multi-tenant del Integration Hub.
 R-CODE-1: Empresa A nunca ve datos de empresa B.
 """
+
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -83,16 +84,12 @@ class TestConectorInstanciaAislamiento:
 
     def test_usuario_a_no_puede_ver_conector_de_b(self):
         """Usuario A debe recibir 404 al intentar acceder al conector de B."""
-        response = self.client_a.get(
-            f"/api/integration-hub/instancias/{self.conector_b.id_conector}/"
-        )
+        response = self.client_a.get(f"/api/integration-hub/instancias/{self.conector_b.id_conector}/")
         assert response.status_code == 404
 
     def test_usuario_b_no_puede_ver_conector_de_a(self):
         """Usuario B debe recibir 404 al intentar acceder al conector de A."""
-        response = self.client_b.get(
-            f"/api/integration-hub/instancias/{self.conector_a.id_conector}/"
-        )
+        response = self.client_b.get(f"/api/integration-hub/instancias/{self.conector_a.id_conector}/")
         assert response.status_code == 404
 
     def test_configuracion_no_expone_api_key(self):
@@ -100,9 +97,7 @@ class TestConectorInstanciaAislamiento:
         La API nunca debe exponer el campo api_key en la configuración.
         R-CODE-8: sin secretos en respuestas.
         """
-        response = self.client_a.get(
-            f"/api/integration-hub/instancias/{self.conector_a.id_conector}/"
-        )
+        response = self.client_a.get(f"/api/integration-hub/instancias/{self.conector_a.id_conector}/")
         assert response.status_code == 200
         config_publica = response.data.get("configuracion_publica", {})
         assert "api_key" not in config_publica
@@ -111,6 +106,7 @@ class TestConectorInstanciaAislamiento:
     def test_jobs_de_a_no_visibles_para_b(self):
         """Los jobs de sincronización de A no son visibles para B."""
         from apps.integration_hub.models import JobSincronizacion
+
         job_a = JobSincronizacion.objects.create(
             id_instancia=self.conector_a,
             tipo_entidad="contactos",

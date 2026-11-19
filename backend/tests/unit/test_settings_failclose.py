@@ -61,7 +61,5 @@ def test_secret_key_ausente_en_dev_falla(tmp_path):
 
 def test_dev_arranca_con_config_correcta(tmp_path):
     """Sanity: con DJANGO_ENV=dev y SECRET_KEY presente, importa sin error."""
-    result = _import_settings(
-        {"DJANGO_ENV": "dev", "SECRET_KEY": "test-key-suficientemente-larga-para-dev"}, tmp_path
-    )
+    result = _import_settings({"DJANGO_ENV": "dev", "SECRET_KEY": "test-key-suficientemente-larga-para-dev"}, tmp_path)
     assert result.returncode == 0, f"Importación falló inesperadamente: {result.stderr}"

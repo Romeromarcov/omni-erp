@@ -23,14 +23,10 @@ CRYPTOGRAPHY_KEY = os.environ.get("CRYPTOGRAPHY_KEY")
 # Si el frontend vive en un dominio/subdominio distinto del backend (p. ej.
 # servicios separados en Railway), poné "None" en el entorno (requiere Secure,
 # que ya se aplica en prod) para que el refresh cross-site funcione.
-REFRESH_TOKEN_COOKIE_SAMESITE = os.environ.get(
-    "REFRESH_TOKEN_COOKIE_SAMESITE", "Strict"
-)
+REFRESH_TOKEN_COOKIE_SAMESITE = os.environ.get("REFRESH_TOKEN_COOKIE_SAMESITE", "Strict")
 
 DEBUG = os.environ.get("DEBUG", "False") == "True"
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver"
-).split(",")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 
 INSTALLED_APPS = [
     "drf_yasg",
@@ -138,9 +134,7 @@ AXES_ENABLED = os.environ.get("AXES_ENABLED", "True") == "True"
 # cubre la fuerza bruta LENTA acumulada contra un usuario. Con 5 ambos umbrales
 # colisionarían (el 5to intento daría lockout en vez del 401 que SEC-07 garantiza).
 AXES_FAILURE_LIMIT = int(os.environ.get("AXES_FAILURE_LIMIT", "10"))
-AXES_COOLOFF_TIME = timedelta(
-    minutes=int(os.environ.get("AXES_COOLOFF_MINUTES", "15"))
-)
+AXES_COOLOFF_TIME = timedelta(minutes=int(os.environ.get("AXES_COOLOFF_MINUTES", "15")))
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_RESET_ON_SUCCESS = True  # login exitoso limpia el contador de fallos
 # Respuesta JSON 429 genérica al lockout (el default de axes es HTML).
@@ -185,9 +179,7 @@ CONTENT_SECURITY_POLICY = {
 # SaaS — control de acceso por pago (Plan C — Fase C2).
 # Off por defecto (fail-open). Se activa primero en staging para validar el
 # flujo 402 end-to-end antes de producción.
-SAAS_VERIFICAR_SUSCRIPCION = (
-    os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
-)
+SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
 
 # --- Row Level Security (P0-1 plan de hardening) ---
 # Gobierna únicamente si el middleware aplica el enforcement por request. Las
@@ -230,9 +222,7 @@ if _database_url:
     if _u.scheme not in ("postgres", "postgresql"):
         from django.core.exceptions import ImproperlyConfigured
 
-        raise ImproperlyConfigured(
-            f"DATABASE_URL debe ser PostgreSQL (postgres://), recibido: {_u.scheme}://"
-        )
+        raise ImproperlyConfigured(f"DATABASE_URL debe ser PostgreSQL (postgres://), recibido: {_u.scheme}://")
     _db_config = {
         "NAME": (_u.path or "/omni_erp").lstrip("/"),
         "USER": unquote(_u.username or ""),
@@ -681,12 +671,7 @@ _IS_PYTEST = "PYTEST_VERSION" in os.environ or "pytest" in sys.modules
 # docker-compose) etiqueta con DJANGO_ENV.
 CACHE_KEY_PREFIX = os.environ.get(
     "CACHE_KEY_PREFIX",
-    "omni:"
-    + (
-        os.environ.get("RAILWAY_ENVIRONMENT")
-        or os.environ.get("DJANGO_ENV")
-        or "dev"
-    ),
+    "omni:" + (os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("DJANGO_ENV") or "dev"),
 )
 
 CACHES = {

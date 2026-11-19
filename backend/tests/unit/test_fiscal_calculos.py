@@ -39,9 +39,7 @@ def test_constantes_seniat_valores_literales():
     assert TASA_IVA_REDUCIDO == Decimal("0.08")
     assert TASA_IVA_EXENTO == Decimal("0")
     assert TASA_IGTF_DEFAULT == Decimal("0.03")
-    assert METODOS_PAGO_IGTF == frozenset(
-        {"DIVISA_EFECTIVO", "DIVISA_TRANSFERENCIA", "CRYPTO", "PETRO"}
-    )
+    assert METODOS_PAGO_IGTF == frozenset({"DIVISA_EFECTIVO", "DIVISA_TRANSFERENCIA", "CRYPTO", "PETRO"})
 
 
 def test_iva_negativo_mensaje_exacto():
@@ -106,9 +104,7 @@ def test_iva_negativo_levanta_error():
 # ── calcular_igtf ──────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize(
-    "metodo", ["DIVISA_EFECTIVO", "DIVISA_TRANSFERENCIA", "CRYPTO", "PETRO"]
-)
+@pytest.mark.parametrize("metodo", ["DIVISA_EFECTIVO", "DIVISA_TRANSFERENCIA", "CRYPTO", "PETRO"])
 def test_igtf_aplica_en_metodos_divisa(metodo):
     r = calcular_igtf(Decimal("100"), metodo)
     assert r["aplica"] is True
@@ -194,10 +190,10 @@ def test_pedido_varias_lineas_del_mismo_tipo_ACUMULAN():
     ]
     r = calcular_impuestos_pedido(lineas, metodo_pago="EFECTIVO_BS")
     assert r["subtotal"] == Decimal("600")
-    assert r["base_general"] == Decimal("300")    # 100+200, no 200
-    assert r["base_reducida"] == Decimal("200")   # 50+150, no 150
-    assert r["base_exenta"] == Decimal("100")     # 30+70, no 70
-    assert r["iva_general"] == Decimal("48.00")   # 16+32, no 32
+    assert r["base_general"] == Decimal("300")  # 100+200, no 200
+    assert r["base_reducida"] == Decimal("200")  # 50+150, no 150
+    assert r["base_exenta"] == Decimal("100")  # 30+70, no 70
+    assert r["iva_general"] == Decimal("48.00")  # 16+32, no 32
     assert r["iva_reducido"] == Decimal("16.00")  # 4+12, no 12
     assert r["total_iva"] == Decimal("64.00")
     assert r["total"] == Decimal("664.00")
@@ -241,7 +237,8 @@ def test_igtf_empresa_sin_atributo_localizacion_aplica():
 
     empresa = SimpleNamespace(pais_codigo_iso="VE")  # sin localizacion_legal_activa
     with mock.patch.object(
-        ConfiguracionFiscalEmpresa.objects, "get",
+        ConfiguracionFiscalEmpresa.objects,
+        "get",
         side_effect=ConfiguracionFiscalEmpresa.DoesNotExist,
     ):
         r = calcular_igtf(Decimal("100"), "DIVISA_EFECTIVO", empresa=empresa)
@@ -252,9 +249,7 @@ def test_igtf_empresa_sin_atributo_localizacion_aplica():
 def test_iva_empresa_sin_config_usa_default_por_tipo():
     from apps.fiscal.models import TasaIVAEmpresa
 
-    with mock.patch.object(
-        TasaIVAEmpresa.objects, "get", side_effect=TasaIVAEmpresa.DoesNotExist
-    ):
+    with mock.patch.object(TasaIVAEmpresa.objects, "get", side_effect=TasaIVAEmpresa.DoesNotExist):
         assert calcular_iva(Decimal("100"), "GENERAL", empresa=_empresa_ve())["tasa"] == TASA_IVA_GENERAL
         assert calcular_iva(Decimal("100"), "REDUCIDO", empresa=_empresa_ve())["tasa"] == TASA_IVA_REDUCIDO
         assert calcular_iva(Decimal("100"), "EXENTO", empresa=_empresa_ve())["tasa"] == TASA_IVA_EXENTO
@@ -263,9 +258,7 @@ def test_iva_empresa_sin_config_usa_default_por_tipo():
 
 
 def test_igtf_empresa_sin_localizacion_legal_no_aplica():
-    r = calcular_igtf(
-        Decimal("100"), "DIVISA_EFECTIVO", empresa=_empresa_ve(localizacion_legal_activa=False)
-    )
+    r = calcular_igtf(Decimal("100"), "DIVISA_EFECTIVO", empresa=_empresa_ve(localizacion_legal_activa=False))
     assert r["aplica"] is False
     assert r["monto_igtf"] == Decimal("0")
     assert r["total_con_igtf"] == Decimal("100")
@@ -281,7 +274,8 @@ def test_igtf_empresa_venezuela_aplica_case_insensitive(pais):
     from apps.fiscal.models import ConfiguracionFiscalEmpresa
 
     with mock.patch.object(
-        ConfiguracionFiscalEmpresa.objects, "get",
+        ConfiguracionFiscalEmpresa.objects,
+        "get",
         side_effect=ConfiguracionFiscalEmpresa.DoesNotExist,
     ):
         r = calcular_igtf(Decimal("100"), "DIVISA_EFECTIVO", empresa=_empresa_ve(pais_codigo_iso=pais))
@@ -295,7 +289,8 @@ def test_igtf_empresa_pais_none_aplica():
     from apps.fiscal.models import ConfiguracionFiscalEmpresa
 
     with mock.patch.object(
-        ConfiguracionFiscalEmpresa.objects, "get",
+        ConfiguracionFiscalEmpresa.objects,
+        "get",
         side_effect=ConfiguracionFiscalEmpresa.DoesNotExist,
     ):
         r = calcular_igtf(Decimal("100"), "CRYPTO", empresa=_empresa_ve(pais_codigo_iso=None))
@@ -306,7 +301,8 @@ def test_igtf_tasa_configurada_por_empresa():
     from apps.fiscal.models import ConfiguracionFiscalEmpresa
 
     with mock.patch.object(
-        ConfiguracionFiscalEmpresa.objects, "get",
+        ConfiguracionFiscalEmpresa.objects,
+        "get",
         return_value=SimpleNamespace(tasa_igtf="0.02"),
     ):
         r = calcular_igtf(Decimal("100"), "DIVISA_EFECTIVO", empresa=_empresa_ve())
@@ -324,21 +320,16 @@ def _patch_fiscal_config(config=None, tasa_general=None):
 
     if config is None:
         cfg_patch = mock.patch.object(
-            ConfiguracionFiscalEmpresa.objects, "get",
+            ConfiguracionFiscalEmpresa.objects,
+            "get",
             side_effect=ConfiguracionFiscalEmpresa.DoesNotExist,
         )
     else:
-        cfg_patch = mock.patch.object(
-            ConfiguracionFiscalEmpresa.objects, "get", return_value=config
-        )
+        cfg_patch = mock.patch.object(ConfiguracionFiscalEmpresa.objects, "get", return_value=config)
 
     def _tasa_get(**kwargs):
         # Exigir activo=True mata el mutante activo=True→False del lookup.
-        if (
-            kwargs.get("tipo") == "GENERAL"
-            and kwargs.get("activo") is True
-            and tasa_general is not None
-        ):
+        if kwargs.get("tipo") == "GENERAL" and kwargs.get("activo") is True and tasa_general is not None:
             return SimpleNamespace(tasa=tasa_general)
         raise TasaIVAEmpresa.DoesNotExist
 
@@ -374,9 +365,7 @@ def test_calcular_impuestos_igtf_en_divisa():
         config=SimpleNamespace(contribuyente_iva=True, aplica_igtf=True, tasa_igtf="0.03")
     )
     with cfg, tasa:
-        r = calcular_impuestos(
-            Decimal("100"), _empresa_ve(), moneda=SimpleNamespace(codigo_iso="USD")
-        )
+        r = calcular_impuestos(Decimal("100"), _empresa_ve(), moneda=SimpleNamespace(codigo_iso="USD"))
     assert r["tasa_igtf"] == Decimal("0.03")
     assert r["monto_igtf"] == Decimal("3.00")
     assert r["total"] == Decimal("119.00")  # 100 + 16 + 3
@@ -388,9 +377,7 @@ def test_calcular_impuestos_sin_igtf_en_bolivares(codigo):
         config=SimpleNamespace(contribuyente_iva=True, aplica_igtf=True, tasa_igtf="0.03")
     )
     with cfg, tasa:
-        r = calcular_impuestos(
-            Decimal("100"), _empresa_ve(), moneda=SimpleNamespace(codigo_iso=codigo)
-        )
+        r = calcular_impuestos(Decimal("100"), _empresa_ve(), moneda=SimpleNamespace(codigo_iso=codigo))
     assert r["monto_igtf"] == Decimal("0")
     assert r["total"] == Decimal("116.00")
 

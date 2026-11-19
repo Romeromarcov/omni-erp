@@ -10,6 +10,7 @@ Llamadas directo como funciones con CapabilityToken reales (patrón de
 - ``nomina_resumen_proceso``: totales y recibos, scope faltante.
 - Export ``MCP_TOOLS`` para el auto-discovery del servidor.
 """
+
 import datetime
 import uuid
 from decimal import Decimal

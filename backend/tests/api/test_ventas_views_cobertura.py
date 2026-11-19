@@ -13,6 +13,7 @@ Complementa los tests de flujo existentes (``test_e2e_ciclo_venta.py``,
 Fixtures (`empresa_a/b`, `user_a/b`, `moneda_usd`) vienen del conftest de
 ``tests/``. Aserciones sobre estado/efecto exacto (runner de mutación).
 """
+
 import datetime
 
 import pytest
@@ -61,9 +62,7 @@ def client_b(user_b):
 def cliente_a(db, empresa_a):
     from apps.crm.models import Cliente
 
-    return Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Cliente Alpha", rif="J-11111111-1"
-    )
+    return Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente Alpha", rif="J-11111111-1")
 
 
 @pytest.fixture
@@ -80,6 +79,7 @@ def pedido_a(db, empresa_a, cliente_a):
 
 # ── Lista + AuthN de cada ViewSet de ventas ───────────────────────────────────
 
+
 @pytest.mark.parametrize("route", VENTAS_ROUTES)
 def test_list_autenticado_200(client_a, route):
     resp = client_a.get(f"{BASE}{route}/")
@@ -93,6 +93,7 @@ def test_list_sin_token_401(route):
 
 
 # ── Aislamiento multi-tenant en PedidoViewSet ─────────────────────────────────
+
 
 class TestPedidoAislamiento:
     def test_dueña_ve_su_pedido(self, client_a, pedido_a):
@@ -114,6 +115,7 @@ class TestPedidoAislamiento:
 
 # ── confirmar: caminos de error (sin tocar stock) ─────────────────────────────
 
+
 class TestPedidoConfirmarErrores:
     def test_confirmar_sin_almacen_id_400(self, client_a, pedido_a):
         resp = client_a.post(f"{BASE}pedidos/{pedido_a.id_pedido}/confirmar/", {}, format="json")
@@ -123,9 +125,7 @@ class TestPedidoConfirmarErrores:
         """Un almacén que no pertenece a la empresa del pedido → 400."""
         from apps.almacenes.models import Almacen
 
-        almacen_b = Almacen.objects.create(
-            id_empresa=empresa_b, nombre_almacen="Alm B", codigo_almacen="ALMB"
-        )
+        almacen_b = Almacen.objects.create(id_empresa=empresa_b, nombre_almacen="Alm B", codigo_almacen="ALMB")
         resp = client_a.post(
             f"{BASE}pedidos/{pedido_a.id_pedido}/confirmar/",
             {"almacen_id": str(almacen_b.pk)},

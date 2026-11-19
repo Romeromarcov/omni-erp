@@ -40,9 +40,7 @@ class FakeCli:
             ("account.move", "create"): 801,
             ("product.product", "search"): [],
         }
-        self.r.update(
-            {(tuple(k.split(":")) if ":" in k else k): v for k, v in respuestas.items()}
-        )
+        self.r.update({(tuple(k.split(":")) if ":" in k else k): v for k, v in respuestas.items()})
         self.llamadas = []
 
     def call(self, model, method, args=None, kwargs=None):
@@ -144,19 +142,13 @@ def _pedido_ingesta(api, catalogo):
     return IngestaBot.objects.get(pk=r.data["id_ingesta"])
 
 
-def test_pedido_crea_contacto_y_pedido_en_odoo(
-    api, bot_usuario, catalogo, odoo, empresa_a
-):  # noqa: F811
+def test_pedido_crea_contacto_y_pedido_en_odoo(api, bot_usuario, catalogo, odoo, empresa_a):  # noqa: F811
     h = odoo(FakeCli(variantes={10: [{"id": 900}]}))
     ing = _pedido_ingesta(api, catalogo)
     odoo_push.sincronizar(ing)
     conn = h["conn"]
     ing.refresh_from_db()
-    assert (
-        ing.estado == "SINCRONIZADO"
-        and ing.odoo_ref == "sale.order:700"
-        and ing.error == ""
-    )
+    assert ing.estado == "SINCRONIZADO" and ing.odoo_ref == "sale.order:700" and ing.error == ""
     c = conn.contactos[0]
     assert c["identificador_fiscal"] == "J-123456789" and c["es_cliente"] is True
     assert c["latitud"] == Decimal("10.480600")
@@ -164,9 +156,7 @@ def test_pedido_crea_contacto_y_pedido_en_odoo(
     assert cliente.referencia_externa == "55"
     p = conn.pedidos[0]
     assert p["partner_id"] == 55 and p["vendedor_id"] == 4
-    assert p["lineas"][0]["product_id"] == 900 and p["lineas"][0][
-        "cantidad"
-    ] == Decimal("2.0000")
+    assert p["lineas"][0]["product_id"] == 900 and p["lineas"][0]["cantidad"] == Decimal("2.0000")
     ped = Pedido.objects.get(id_empresa=empresa_a)
     assert ped.numero_pedido == "S00700" and ped.referencia_externa == "700"
     assert ped.documento_json["numero_bot"]
@@ -180,9 +170,7 @@ def test_sincronizar_dos_veces_no_duplica(api, bot_usuario, catalogo, odoo):  # 
     assert len(h["conn"].pedidos) == 1
 
 
-def test_reintento_tras_fallo_parcial_reutiliza_el_pedido_de_odoo(
-    api, bot_usuario, catalogo, odoo
-):  # noqa: F811
+def test_reintento_tras_fallo_parcial_reutiliza_el_pedido_de_odoo(api, bot_usuario, catalogo, odoo):  # noqa: F811
     h = odoo(FakeCli(variantes={10: [{"id": 900}]}, **{"sale.order:search": [321]}))
     ing = _pedido_ingesta(api, catalogo)
     odoo_push.sincronizar(ing)
@@ -190,40 +178,26 @@ def test_reintento_tras_fallo_parcial_reutiliza_el_pedido_de_odoo(
     assert h["conn"].pedidos == [] and ing.odoo_ref == "sale.order:321"
 
 
-def test_cliente_existente_en_odoo_por_rif_no_se_recrea(
-    api, bot_usuario, catalogo, odoo
-):  # noqa: F811
+def test_cliente_existente_en_odoo_por_rif_no_se_recrea(api, bot_usuario, catalogo, odoo):  # noqa: F811
     h = odoo(FakeCli(variantes={10: [{"id": 900}]}, **{"res.partner:search": [77]}))
     odoo_push.sincronizar(_pedido_ingesta(api, catalogo))
     assert h["conn"].contactos == [] and h["conn"].pedidos[0]["partner_id"] == 77
 
 
 def test_rif_duplicado_en_odoo_no_se_adivina(api, bot_usuario, catalogo, odoo):  # noqa: F811
-    h = odoo(
-        FakeCli(variantes={10: [{"id": 900}]}, **{"res.partner:search": [1, 2]})
-    )
+    h = odoo(FakeCli(variantes={10: [{"id": 900}]}, **{"res.partner:search": [1, 2]}))
     ing = _pedido_ingesta(api, catalogo)
     odoo_push.sincronizar(ing)
     ing.refresh_from_db()
-    assert (
-        h["conn"].pedidos == []
-        and "2 contactos" in ing.error
-        and ing.estado == "PROCESADO"
-    )
+    assert h["conn"].pedidos == [] and "2 contactos" in ing.error and ing.estado == "PROCESADO"
 
 
-def test_producto_inexistente_en_odoo_deja_motivo_legible(
-    api, bot_usuario, catalogo, odoo
-):  # noqa: F811
+def test_producto_inexistente_en_odoo_deja_motivo_legible(api, bot_usuario, catalogo, odoo):  # noqa: F811
     h = odoo(FakeCli())
     ing = _pedido_ingesta(api, catalogo)
     odoo_push.sincronizar(ing)
     ing.refresh_from_db()
-    assert (
-        h["conn"].pedidos == []
-        and "Aceite 20W50" in ing.error
-        and ing.estado == "PROCESADO"
-    )
+    assert h["conn"].pedidos == [] and "Aceite 20W50" in ing.error and ing.estado == "PROCESADO"
 
 
 def test_producto_se_resuelve_por_sku_si_no_hay_mapa(api, bot_usuario, catalogo, odoo):  # noqa: F811
@@ -246,9 +220,7 @@ def test_empujar_bots_false_lo_desactiva(api, bot_usuario, catalogo, odoo):  # n
     assert h["conn"].pedidos == []
 
 
-def test_por_defecto_omni_no_empuja_a_odoo(
-    api, bot_usuario, catalogo, odoo, monkeypatch
-):  # noqa: F811
+def test_por_defecto_omni_no_empuja_a_odoo(api, bot_usuario, catalogo, odoo, monkeypatch):  # noqa: F811
     """Mientras CxC sea quien escribe en Odoo, sin ``empujar_bots: true`` explícito Omni no envía nada."""
     h = odoo(FakeCli())
     monkeypatch.setattr(
@@ -257,11 +229,7 @@ def test_por_defecto_omni_no_empuja_a_odoo(
         lambda empresa: type("I", (), {"get_config": lambda self: {}})(),
     )
     ing = odoo_push.sincronizar(_pedido_ingesta(api, catalogo))
-    assert (
-        h["conn"].pedidos == []
-        and h["conn"].contactos == []
-        and ing.estado == "PROCESADO"
-    )
+    assert h["conn"].pedidos == [] and h["conn"].contactos == [] and ing.estado == "PROCESADO"
 
 
 def test_caida_de_odoo_es_transitoria(api, bot_usuario, catalogo, odoo, monkeypatch):  # noqa: F811
@@ -276,9 +244,7 @@ def test_caida_de_odoo_es_transitoria(api, bot_usuario, catalogo, odoo, monkeypa
         odoo_push.sincronizar(_pedido_ingesta(api, catalogo))
 
 
-def test_credenciales_dedicadas_write_user_y_fallo_parcial(
-    api, bot_usuario, catalogo, odoo
-):  # noqa: F811
+def test_credenciales_dedicadas_write_user_y_fallo_parcial(api, bot_usuario, catalogo, odoo):  # noqa: F811
     clave_escritura = "wk-" + ("9" * 16)
     h = odoo(
         FakeCli(variantes={10: [{"id": 900}]}),
@@ -307,9 +273,7 @@ def test_credenciales_dedicadas_write_user_y_fallo_parcial(
 # ── contacto (borrador en res.partner) ───────────────────────────────────────
 
 
-def test_contacto_crea_borrador_en_odoo_con_fallback_gps_e_idempotencia(
-    api, bot_usuario, odoo
-):  # noqa: F811
+def test_contacto_crea_borrador_en_odoo_con_fallback_gps_e_idempotencia(api, bot_usuario, odoo):  # noqa: F811
     creados = []
 
     def crear_partner(args):
@@ -423,13 +387,7 @@ def test_proveedor_crea_borrador_reutiliza_existente_y_serializa_bloqueo(
     assert ing_nom.odoo_ref == "res.partner:725"
 
     # Nombre ambiguo en Odoo -> deja motivo legible sin adivinar
-    cli_amb = FakeCli(
-        **{
-            "res.partner:search": lambda args: [1, 2]
-            if args[0] and args[0][0][0] == "name"
-            else []
-        }
-    )
+    cli_amb = FakeCli(**{"res.partner:search": lambda args: [1, 2] if args[0] and args[0][0][0] == "name" else []})
     odoo(cli_amb)
     r_amb = enviar(
         api,
@@ -621,9 +579,7 @@ def cliente_odoo(empresa_a):
     )
 
 
-def test_pago_de_cliente_queda_en_borrador_en_odoo(
-    api, bot_usuario, cliente_odoo, odoo
-):  # noqa: F811
+def test_pago_de_cliente_queda_en_borrador_en_odoo(api, bot_usuario, cliente_odoo, odoo):  # noqa: F811
     h = odoo(FakeCli(), {"diarios_pago": {"default": 12}})
     ing = _pago(api)
     assert ing.estado == "BORRADOR"
@@ -637,16 +593,10 @@ def test_pago_de_cliente_queda_en_borrador_en_odoo(
         1,
         "cliente",
     )
-    assert (
-        p["monto"] == Decimal("100")
-        and "BOT-" in p["referencia"]
-        and "ref R1" in p["referencia"]
-    )
+    assert p["monto"] == Decimal("100") and "BOT-" in p["referencia"] and "ref R1" in p["referencia"]
 
 
-def test_diario_especifico_por_banco_o_metodo_y_moneda(
-    api, bot_usuario, cliente_odoo, odoo
-):  # noqa: F811
+def test_diario_especifico_por_banco_o_metodo_y_moneda(api, bot_usuario, cliente_odoo, odoo):  # noqa: F811
     cfg = {
         "diarios_pago": {
             "default": 12,
@@ -662,9 +612,7 @@ def test_diario_especifico_por_banco_o_metodo_y_moneda(
     assert h["conn"].pagos[0]["journal_id"] == 34
 
 
-def test_bordes_documentos_compra_idempotencia_y_campos_odoo(
-    api, bot_usuario, monedas_omni, odoo, empresa_a
-):  # noqa: F811
+def test_bordes_documentos_compra_idempotencia_y_campos_odoo(api, bot_usuario, monedas_omni, odoo, empresa_a):  # noqa: F811
     # 1. Reintento cuando account.move ya existe en Odoo por marca -> enlaza CxP y no recrea
     cli_prev = FakeCli(
         **{
@@ -742,9 +690,7 @@ def test_bordes_documentos_compra_idempotencia_y_campos_odoo(
     assert "indica el nombre del proveedor" in ing_solo_rif.error
 
 
-def test_diario_sin_config_se_autodetecta_si_es_unico(
-    api, bot_usuario, cliente_odoo, odoo
-):  # noqa: F811
+def test_diario_sin_config_se_autodetecta_si_es_unico(api, bot_usuario, cliente_odoo, odoo):  # noqa: F811
     h = odoo(
         FakeCli(
             diarios=[
@@ -758,11 +704,7 @@ def test_diario_sin_config_se_autodetecta_si_es_unico(
 
 
 def test_diario_ambiguo_pide_configurar(api, bot_usuario, cliente_odoo, odoo):  # noqa: F811
-    h = odoo(
-        FakeCli(
-            diarios=[{"id": 8, "currency_id": False}, {"id": 9, "currency_id": False}]
-        )
-    )
+    h = odoo(FakeCli(diarios=[{"id": 8, "currency_id": False}, {"id": 9, "currency_id": False}]))
     ing = _pago(api)
     odoo_push.sincronizar(ing)
     ing.refresh_from_db()
@@ -776,18 +718,12 @@ def test_pago_ve_con_alias_bs_usa_la_moneda_ves(api, bot_usuario, cliente_odoo, 
 
 
 def test_cliente_del_pago_sin_odoo_no_se_crea(api, bot_usuario, empresa_a, odoo):  # noqa: F811
-    Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Taller", rif="J-123456789"
-    )
+    Cliente.objects.create(id_empresa=empresa_a, razon_social="Taller", rif="J-123456789")
     h = odoo(FakeCli(), {"diarios_pago": {"default": 12}})
     ing = _pago(api)
     odoo_push.sincronizar(ing)
     ing.refresh_from_db()
-    assert (
-        h["conn"].contactos == []
-        and h["conn"].pagos == []
-        and "no existe en Odoo" in ing.error
-    )
+    assert h["conn"].contactos == [] and h["conn"].pagos == [] and "no existe en Odoo" in ing.error
 
 
 def test_pago_incompleto_no_se_empuja(api, bot_usuario, cliente_odoo, odoo):  # noqa: F811
@@ -799,9 +735,7 @@ def test_pago_incompleto_no_se_empuja(api, bot_usuario, cliente_odoo, odoo):  # 
     assert h["conn"].pagos == [] and "Faltan datos" in ing.error
 
 
-def test_pago_a_proveedor_es_outbound_y_anota_factura_si_existe(
-    api, bot_usuario, odoo
-):  # noqa: F811
+def test_pago_a_proveedor_es_outbound_y_anota_factura_si_existe(api, bot_usuario, odoo):  # noqa: F811
     h = odoo(
         FakeCli(**{"res.partner:search": [31], "account.move:search": [777]}),
         {"diarios_pago": {"default": 12}},
@@ -841,9 +775,7 @@ def test_proveedor_ambiguo_no_se_adivina(api, bot_usuario, odoo):  # noqa: F811
     assert h["conn"].pagos == [] and "ambiguo" in ing.error
 
 
-def test_reintento_de_pago_reutiliza_el_existente_en_odoo(
-    api, bot_usuario, cliente_odoo, odoo
-):  # noqa: F811
+def test_reintento_de_pago_reutiliza_el_existente_en_odoo(api, bot_usuario, cliente_odoo, odoo):  # noqa: F811
     h = odoo(
         FakeCli(**{"account.payment:search": [444]}),
         {"diarios_pago": {"default": 12}},
@@ -984,9 +916,7 @@ def test_endpoint_sincronizar(api, bot_usuario, catalogo, cliente_odoo):  # noqa
 
 
 @pytest.mark.tenant
-def test_aislamiento_tenant_en_sincronizacion_odoo(
-    empresa_a, empresa_b, user_a, user_b, odoo
-):  # noqa: F811
+def test_aislamiento_tenant_en_sincronizacion_odoo(empresa_a, empresa_b, user_a, user_b, odoo):  # noqa: F811
     """Una ingesta de ``empresa_a`` jamás lee ni vincula proveedores/clientes de ``empresa_b``."""
     prov_b = Proveedor.objects.create(
         id_empresa=empresa_b,
@@ -994,9 +924,7 @@ def test_aislamiento_tenant_en_sincronizacion_odoo(
         rif="J-999999999",
         referencia_externa="9999",
     )
-    bu_a = BotUsuario.objects.create(
-        id_empresa=empresa_a, telegram_user_id=919191, usuario=user_a, nombre="Op A"
-    )
+    bu_a = BotUsuario.objects.create(id_empresa=empresa_a, telegram_user_id=919191, usuario=user_a, nombre="Op A")
     # Incluso si resultado trajera el UUID de un proveedor de empresa_b, el filtro id_empresa lo ignora
     ing_a = IngestaBot.objects.create(
         id_empresa=empresa_a,
@@ -1044,19 +972,12 @@ def test_vendedor_se_busca_por_login_o_email_y_no_se_adivina():
     assert odoo_push._vendedor_odoo(una, "Ana@x.com") == 4
     dominio = una.llamadas[0][2][0]
     assert dominio[0] == "|" and ["email", "=ilike", "Ana@x.com"] in dominio
-    assert (
-        odoo_push._vendedor_odoo(FakeCli(**{"res.users:search": [4, 5]}), "a@x.com")
-        is None
-    )
-    assert (
-        odoo_push._vendedor_odoo(FakeCli(**{"res.users:search": []}), "a@x.com") is None
-    )
+    assert odoo_push._vendedor_odoo(FakeCli(**{"res.users:search": [4, 5]}), "a@x.com") is None
+    assert odoo_push._vendedor_odoo(FakeCli(**{"res.users:search": []}), "a@x.com") is None
     assert odoo_push._vendedor_odoo(FakeCli(), "") is None
 
 
-def test_endurecimiento_rif_red_pagos_y_ramas_odoo_push(
-    api, bot_usuario, monedas_omni, odoo, empresa_a
-):  # noqa: F811
+def test_endurecimiento_rif_red_pagos_y_ramas_odoo_push(api, bot_usuario, monedas_omni, odoo, empresa_a):  # noqa: F811
     from apps.core.models import Contacto
 
     # 1. Paridad de _canon_rif y _variantes_rif (incluye formato l10n_ve con dígito verificador)
@@ -1076,13 +997,9 @@ def test_endurecimiento_rif_red_pagos_y_ramas_odoo_push(
         odoo_push._decimal_seguro("NaN", "monto")
 
     # 3. _crear_partner_borrador propaga OdooCallError cuando NO es de geolocalización
-    cli_err = FakeCli(
-        **{"res.partner:create": lambda _a: (_ for _ in ()).throw(OdooCallError("Permiso denegado"))}
-    )
+    cli_err = FakeCli(**{"res.partner:create": lambda _a: (_ for _ in ()).throw(OdooCallError("Permiso denegado"))})
     with pytest.raises(OdooCallError):
-        odoo_push._crear_partner_borrador(
-            cli_err, {"name": "X"}, lat="10.1", lon="-66.1"
-        )
+        odoo_push._crear_partner_borrador(cli_err, {"name": "X"}, lat="10.1", lon="-66.1")
 
     # 4. OdooCallError encadenado a TimeoutError / OSError se relanza como ErrorTransitorio
     def fallo_timeout(_args):
@@ -1275,13 +1192,7 @@ def test_endurecimiento_rif_red_pagos_y_ramas_odoo_push(
                 payload={"proveedor": "Ambiguo"},
                 resultado={},
             ),
-            FakeCli(
-                **{
-                    "res.partner:search": lambda args: (
-                        [1, 2] if args[0] and args[0][0][0] == "name" else []
-                    )
-                }
-            ),
+            FakeCli(**{"res.partner:search": lambda args: ([1, 2] if args[0] and args[0][0][0] == "name" else [])}),
             "BOT-X",
         )
     pid_unico, creado_unico = odoo_push._resolver_o_crear_proveedor_documento(
@@ -1290,26 +1201,12 @@ def test_endurecimiento_rif_red_pagos_y_ramas_odoo_push(
             payload={"proveedor": "Existente Único"},
             resultado={},
         ),
-        FakeCli(
-            **{
-                "res.partner:search": lambda args: (
-                    [512] if args[0] and args[0][0][0] == "name" else []
-                )
-            }
-        ),
+        FakeCli(**{"res.partner:search": lambda args: ([512] if args[0] and args[0][0][0] == "name" else [])}),
         "BOT-X",
     )
     assert (pid_unico, creado_unico) == (512, False)
 
-    odoo(
-        FakeCli(
-            **{
-                "res.partner:search": lambda args: (
-                    [512] if args[0] and args[0][0][0] == "name" else []
-                )
-            }
-        )
-    )
+    odoo(FakeCli(**{"res.partner:search": lambda args: ([512] if args[0] and args[0][0][0] == "name" else [])}))
     ing_doc_mon = IngestaBot.objects.create(
         id_empresa=empresa_a,
         bot_usuario=bu,
@@ -1327,4 +1224,3 @@ def test_endurecimiento_rif_red_pagos_y_ramas_odoo_push(
     )
     odoo_push.sincronizar(ing_doc_mon)
     assert "Moneda" in ing_doc_mon.error
-

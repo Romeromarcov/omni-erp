@@ -109,9 +109,7 @@ def build_default_cache(
     # La DB del cache va en el path; si la URL traía ?db=N se descarta para que
     # no compita con el path (redis-py acepta ambos — evitamos la ambigüedad).
     query = urlencode([(k, v) for k, v in parse_qsl(parts.query) if k != "db"])
-    location = urlunsplit(
-        (parts.scheme, parts.netloc, f"/{db_num}", query, parts.fragment)
-    )
+    location = urlunsplit((parts.scheme, parts.netloc, f"/{db_num}", query, parts.fragment))
     return {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": location,

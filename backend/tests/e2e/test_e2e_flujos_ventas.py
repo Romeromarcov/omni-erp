@@ -258,9 +258,7 @@ class TestE2ENotaVentaFacturaFiscal:
         resp = client.post("/api/ventas/facturas-fiscales/", payload, format="json")
         # 201 si serializer acepta los campos; 400 si faltan campos obligatorios
         # Lo importante: la API responde y no da 500
-        assert resp.status_code in (201, 400), (
-            f"Unexpected status {resp.status_code}: {resp.data}"
-        )
+        assert resp.status_code in (201, 400), f"Unexpected status {resp.status_code}: {resp.data}"
 
     def test_nota_venta_aparece_en_listado(self, user_a, nota_venta_a):
         """GET /api/ventas/notas-venta/ retorna la nota venta de la empresa."""
@@ -288,9 +286,7 @@ class TestE2EPagosMixtos:
     y verifica que ambos quedan asociados.
     """
 
-    def test_registrar_pago_efectivo_sobre_pedido(
-        self, user_a, empresa_a, pedido_a, moneda_usd, metodo_efectivo
-    ):
+    def test_registrar_pago_efectivo_sobre_pedido(self, user_a, empresa_a, pedido_a, moneda_usd, metodo_efectivo):
         """POST /api/finanzas/pagos/ con tipo_documento=PEDIDO → 201."""
         client = APIClient()
         client.force_authenticate(user=user_a)
@@ -305,9 +301,7 @@ class TestE2EPagosMixtos:
             "tasa": "1.00",
         }
         resp = client.post("/api/finanzas/pagos/", payload, format="json")
-        assert resp.status_code in (201, 400, 422), (
-            f"Unexpected status {resp.status_code}: {resp.data}"
-        )
+        assert resp.status_code in (201, 400, 422), f"Unexpected status {resp.status_code}: {resp.data}"
 
     def test_registrar_pago_transferencia_sobre_pedido(
         self, user_a, empresa_a, pedido_a, moneda_usd, metodo_transferencia
@@ -327,9 +321,7 @@ class TestE2EPagosMixtos:
             "referencia": "REF-12345",
         }
         resp = client.post("/api/finanzas/pagos/", payload, format="json")
-        assert resp.status_code in (201, 400, 422), (
-            f"Unexpected status {resp.status_code}: {resp.data}"
-        )
+        assert resp.status_code in (201, 400, 422), f"Unexpected status {resp.status_code}: {resp.data}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -353,9 +345,7 @@ class TestE2EAnulacionPedido:
             {"estado": "ANULADO"},
             format="json",
         )
-        assert resp.status_code in (200, 400), (
-            f"Unexpected status {resp.status_code}: {resp.data}"
-        )
+        assert resp.status_code in (200, 400), f"Unexpected status {resp.status_code}: {resp.data}"
 
     def test_pedido_pendiente_estado_inicial(self, user_a, pedido_a):
         """GET /api/ventas/pedidos/{id}/ → estado inicial es PENDIENTE."""
@@ -392,9 +382,7 @@ class TestE2ESesionCaja:
         }
         resp = client.post("/api/finanzas/sesiones-caja/", payload, format="json")
         # Acepta 201 (creado) o 400 si hay validaciones pendientes
-        assert resp.status_code in (201, 400), (
-            f"Unexpected status {resp.status_code}: {resp.data}"
-        )
+        assert resp.status_code in (201, 400), f"Unexpected status {resp.status_code}: {resp.data}"
 
     def test_listar_sesiones_caja(self, user_a):
         """GET /api/finanzas/sesiones-caja/ → 200."""

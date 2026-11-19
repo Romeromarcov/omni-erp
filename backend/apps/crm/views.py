@@ -79,14 +79,11 @@ class ClienteViewSet(BaseModelViewSet):
         if cliente.tipo_cliente != "CREDITO":
             return Response({"credito_disponible": None, "detalle": "Cliente de contado."})
 
-        saldo_pendiente = (
-            CuentaPorCobrar.objects.filter(
-                cliente=cliente,
-                empresa__in=_empresas(request),
-                estado__in=["pendiente", "parcial", "vencida"],
-            ).aggregate(total=Sum("monto"))["total"]
-            or Decimal("0")
-        )
+        saldo_pendiente = CuentaPorCobrar.objects.filter(
+            cliente=cliente,
+            empresa__in=_empresas(request),
+            estado__in=["pendiente", "parcial", "vencida"],
+        ).aggregate(total=Sum("monto"))["total"] or Decimal("0")
 
         disponible = cliente.limite_credito - saldo_pendiente
         return Response(

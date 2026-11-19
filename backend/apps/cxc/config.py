@@ -18,6 +18,7 @@ Ejemplo de activación de un tenant:
     if cfg.agente_ia_enabled:
         ...
 """
+
 from __future__ import annotations
 
 import logging
@@ -56,7 +57,7 @@ class CxcConfig:
     empresa: object  # core.Empresa instance
 
     # Datasource
-    datasource: str = "native"       # "native" | "odoo"
+    datasource: str = "native"  # "native" | "odoo"
     enabled: bool = True
 
     # Agente IA

@@ -147,9 +147,7 @@ class OdooXMLRPCClient:
             raise
         except Exception as exc:
             # No propagar la excepción original que podría tener la api_key
-            raise OdooAuthError(
-                f"Error de conexión con Odoo en '{self._host}': {type(exc).__name__}"
-            ) from None
+            raise OdooAuthError(f"Error de conexión con Odoo en '{self._host}': {type(exc).__name__}") from None
 
     def call(
         self,
@@ -185,13 +183,9 @@ class OdooXMLRPCClient:
             )
             return result
         except xmlrpc.client.Fault as fault:
-            raise OdooCallError(
-                f"Odoo fault en {model}.{method}: {fault.faultCode} — {fault.faultString}"
-            ) from fault
+            raise OdooCallError(f"Odoo fault en {model}.{method}: {fault.faultCode} — {fault.faultString}") from fault
         except Exception as exc:
-            raise OdooCallError(
-                f"Error en {model}.{method}: {type(exc).__name__}: {exc}"
-            ) from exc
+            raise OdooCallError(f"Error en {model}.{method}: {type(exc).__name__}: {exc}") from exc
 
     def get_version(self) -> dict:
         """Retorna información de versión detectada al autenticar."""
@@ -346,9 +340,7 @@ class OdooXMLRPCClient:
         limite: int = 200,
     ) -> list[dict]:
         """Pedidos de venta (sale.order)."""
-        states = (
-            ["sale", "done"] if solo_confirmadas else ["draft", "sent", "sale", "done"]
-        )
+        states = ["sale", "done"] if solo_confirmadas else ["draft", "sent", "sale", "done"]
         domain: list = [["state", "in", states]]
         if desde:
             domain.append(["write_date", ">=", desde])
@@ -607,9 +599,7 @@ class OdooXMLRPCClient:
             },
         )
 
-    def get_movimientos_stock(
-        self, desde: str | None = None, limite: int = 300
-    ) -> list[dict]:
+    def get_movimientos_stock(self, desde: str | None = None, limite: int = 300) -> list[dict]:
         """Movimientos de stock realizados (stock.move en estado done)."""
         domain: list = [["state", "=", "done"]]
         if desde:

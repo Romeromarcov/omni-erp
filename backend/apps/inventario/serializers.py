@@ -55,9 +55,7 @@ class CategoriaProductoSerializer(serializers.ModelSerializer):
 
 class ProductoSerializer(serializers.ModelSerializer):
     nombre_categoria = serializers.CharField(source="id_categoria.nombre_categoria", read_only=True)
-    nombre_unidad_medida = serializers.CharField(
-        source="id_unidad_medida_base.nombre", read_only=True
-    )
+    nombre_unidad_medida = serializers.CharField(source="id_unidad_medida_base.nombre", read_only=True)
 
     class Meta:
         model = Producto
@@ -330,9 +328,7 @@ class _LineaInputSerializer(serializers.Serializer):
     producto = serializers.UUIDField()
     variante = serializers.UUIDField(required=False, allow_null=True)
     cantidad = serializers.DecimalField(max_digits=18, decimal_places=4)
-    costo_unitario = serializers.DecimalField(
-        max_digits=18, decimal_places=4, required=False, allow_null=True
-    )
+    costo_unitario = serializers.DecimalField(max_digits=18, decimal_places=4, required=False, allow_null=True)
 
 
 class CrearOperacionSerializer(serializers.Serializer):

@@ -19,9 +19,7 @@ router.register("areas", AreaOperativaViewSet, basename="tareas-areas")
 router.register("proyectos", ProyectoViewSet, basename="tareas-proyectos")
 router.register("secciones", SeccionProyectoViewSet, basename="tareas-secciones")
 router.register("items", TareaViewSet, basename="tareas-items")
-router.register(
-    "recurrentes", PlantillaTareaRecurrenteViewSet, basename="tareas-recurrentes"
-)
+router.register("recurrentes", PlantillaTareaRecurrenteViewSet, basename="tareas-recurrentes")
 router.register("minutas", MinutaReunionViewSet, basename="tareas-minutas")
 router.register("alertas", RegistroAlertaTareaViewSet, basename="tareas-alertas")
 

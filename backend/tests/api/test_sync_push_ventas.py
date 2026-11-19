@@ -5,6 +5,7 @@ sola unidad atómica e idempotente. Estos tests cubren la batería exigida por e
 ADR antes de mergear código de dinero: happy path, replay (outbox), totales
 incoherentes, falta de clave, aislamiento multi-tenant y rollback completo.
 """
+
 from decimal import Decimal
 from itertools import count
 
@@ -26,9 +27,7 @@ def _producto_con_stock(empresa, usuario, *, precio="20.00", stock="100"):
     almacen = Almacen.objects.create(
         id_empresa=empresa, nombre_almacen=f"Almacén POS {n}", codigo_almacen=f"ALM-POS-{n}"
     )
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa, nombre="Unidad", abreviatura=f"UNP-{n}", tipo="CANTIDAD"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa, nombre="Unidad", abreviatura=f"UNP-{n}", tipo="CANTIDAD")
     categoria = CategoriaProducto.objects.create(id_empresa=empresa, nombre_categoria=f"Cat POS {n}")
     producto = Producto.objects.create(
         id_empresa=empresa,
@@ -62,8 +61,19 @@ def _caja_virtual(empresa, moneda):
     return Caja.objects.create(empresa=empresa, nombre="Caja POS", moneda=moneda, saldo_actual=Decimal("0"))
 
 
-def _sobre(cliente, almacen, producto, metodo, moneda, *, caja=None, cantidad="2", precio="20.00",
-           client_uuid="venta-pos-uuid-1", total="40.00"):
+def _sobre(
+    cliente,
+    almacen,
+    producto,
+    metodo,
+    moneda,
+    *,
+    caja=None,
+    cantidad="2",
+    precio="20.00",
+    client_uuid="venta-pos-uuid-1",
+    total="40.00",
+):
     pago = {"id_metodo_pago": str(metodo.id_metodo_pago), "id_moneda": str(moneda.id_moneda), "monto": total}
     if caja is not None:
         pago["id_caja_virtual"] = str(caja.id_caja)
@@ -72,9 +82,7 @@ def _sobre(cliente, almacen, producto, metodo, moneda, *, caja=None, cantidad="2
         "fecha_local": "2026-06-19T10:00:00-04:00",
         "id_cliente": str(cliente.id_cliente),
         "id_almacen": str(almacen.id_almacen),
-        "detalles": [
-            {"id_producto": str(producto.id_producto), "cantidad": cantidad, "precio_unitario": precio}
-        ],
+        "detalles": [{"id_producto": str(producto.id_producto), "cantidad": cantidad, "precio_unitario": precio}],
         "pagos": [pago],
         "totales_cliente": {"total": total},
     }
@@ -189,9 +197,7 @@ def test_pago_invalido_revierte_toda_la_venta(client_a, empresa_a, user_a, moned
         "client_uuid": "venta-pos-rollback",
         "id_cliente": str(cliente.id_cliente),
         "id_almacen": str(almacen.id_almacen),
-        "detalles": [
-            {"id_producto": str(producto.id_producto), "cantidad": "1", "precio_unitario": "10.00"}
-        ],
+        "detalles": [{"id_producto": str(producto.id_producto), "cantidad": "1", "precio_unitario": "10.00"}],
         "pagos": [{"id_metodo_pago": str(uuid.uuid4()), "id_moneda": str(moneda_usd.id_moneda), "monto": "10.00"}],
         "totales_cliente": {"total": "10.00"},
     }
@@ -217,9 +223,7 @@ def test_detalles_vacios_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo
     assert "detalles" in r.data["error"].lower()
 
 
-def test_cliente_ajeno_rechaza(
-    client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo
-):
+def test_cliente_ajeno_rechaza(client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo):
     producto, almacen = _producto_con_stock(empresa_a, user_a)
     cliente_b = _cliente(empresa_b, rif="V-99999999-9")
     sobre = _sobre(cliente_b, almacen, producto, metodo_efectivo, moneda_usd, client_uuid="venta-cli-ajeno")
@@ -229,9 +233,7 @@ def test_cliente_ajeno_rechaza(
     assert _count_notas(empresa_a) == 0
 
 
-def test_caja_virtual_ajena_rechaza(
-    client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo
-):
+def test_caja_virtual_ajena_rechaza(client_a, empresa_a, empresa_b, user_a, moneda_usd, metodo_efectivo):
     producto, almacen = _producto_con_stock(empresa_a, user_a)
     cliente = _cliente(empresa_a)
     caja_b = _caja_virtual(empresa_b, moneda_usd)
@@ -316,7 +318,9 @@ def test_detalle_no_objeto_rechaza(client_a, empresa_a, user_a, moneda_usd, meto
 def test_precio_negativo_rechaza(client_a, empresa_a, user_a, moneda_usd, metodo_efectivo):
     producto, almacen = _producto_con_stock(empresa_a, user_a)
     cliente = _cliente(empresa_a)
-    sobre = _sobre(cliente, almacen, producto, metodo_efectivo, moneda_usd, precio="-5.00", client_uuid="venta-precio-neg")
+    sobre = _sobre(
+        cliente, almacen, producto, metodo_efectivo, moneda_usd, precio="-5.00", client_uuid="venta-precio-neg"
+    )
     r = client_a.post(URL, sobre, format="json", **_hdr("venta-precio-neg"))
     assert r.status_code == 422, r.data
     assert "precio" in r.data["error"].lower()

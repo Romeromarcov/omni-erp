@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 def _empresas(request):
     """Shortcut: devuelve empresas visibles para el usuario del request."""
     return get_empresas_visible(request.user)
+
+
 from .models import (
     ComisionVenta,
     Cotizacion,
@@ -180,7 +182,6 @@ class NotaVentaViewSet(
     # duplica la nota (opt-in del cliente, PR #86).
     idempotency_scope = "ventas:nota-venta-create"
 
-
     def get_queryset(self):
         # R-CODE-1
         qs = NotaVenta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_creacion")
@@ -233,9 +234,7 @@ class NotaVentaViewSet(
         metodo = (
             MetodoPago.objects.filter(pk=metodo_id, activo=True)
             .filter(
-                dj_models.Q(empresa=nota.id_empresa)
-                | dj_models.Q(empresa__isnull=True)
-                | dj_models.Q(es_publico=True)
+                dj_models.Q(empresa=nota.id_empresa) | dj_models.Q(empresa__isnull=True) | dj_models.Q(es_publico=True)
             )
             .first()
         )
@@ -501,14 +500,10 @@ class FacturaFiscalViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.Mode
         except ImportError:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
             logger.exception("Generación de PDF de factura no disponible")
-            return Response(
-                {"error": "Generación de PDF no disponible en este servidor."}, status=503
-            )
+            return Response({"error": "Generación de PDF no disponible en este servidor."}, status=503)
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            f'attachment; filename="factura_{factura.numero_factura}.pdf"'
-        )
+        response["Content-Disposition"] = f'attachment; filename="factura_{factura.numero_factura}.pdf"'
         return response
 
 
@@ -616,14 +611,10 @@ class CotizacionViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelVi
         except ImportError:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
             logger.exception("Generación de PDF de cotización no disponible")
-            return Response(
-                {"error": "Generación de PDF no disponible en este servidor."}, status=503
-            )
+            return Response({"error": "Generación de PDF no disponible en este servidor."}, status=503)
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            f'inline; filename="cotizacion_{cotizacion.numero_cotizacion}.pdf"'
-        )
+        response["Content-Disposition"] = f'inline; filename="cotizacion_{cotizacion.numero_cotizacion}.pdf"'
         return response
 
 
@@ -660,9 +651,7 @@ class DetalleNotaCreditoFiscalViewSet(TenantFKScopeMixin, viewsets.ModelViewSet)
 
     def get_queryset(self):
         # R-CODE-1 via parent
-        return DetalleNotaCreditoFiscal.objects.filter(
-            id_nota_credito_fiscal__id_empresa__in=_empresas(self.request)
-        )
+        return DetalleNotaCreditoFiscal.objects.filter(id_nota_credito_fiscal__id_empresa__in=_empresas(self.request))
 
 
 class ListaPrecioViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
@@ -836,9 +825,9 @@ class EsquemaComisionCategoriaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet)
 
     def get_queryset(self):
         # R-CODE-1 via EsquemaComision → id_empresa
-        return EsquemaComisionCategoria.objects.filter(
-            esquema__id_empresa__in=_empresas(self.request)
-        ).select_related("categoria", "esquema")
+        return EsquemaComisionCategoria.objects.filter(esquema__id_empresa__in=_empresas(self.request)).select_related(
+            "categoria", "esquema"
+        )
 
 
 class ComisionVentaViewSet(viewsets.ReadOnlyModelViewSet):

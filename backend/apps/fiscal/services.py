@@ -18,12 +18,14 @@ TASA_IVA_EXENTO = Decimal("0")
 TASA_IGTF_DEFAULT = Decimal("0.03")
 
 
-METODOS_PAGO_IGTF = frozenset({
-    "DIVISA_EFECTIVO",
-    "DIVISA_TRANSFERENCIA",
-    "CRYPTO",
-    "PETRO",
-})
+METODOS_PAGO_IGTF = frozenset(
+    {
+        "DIVISA_EFECTIVO",
+        "DIVISA_TRANSFERENCIA",
+        "CRYPTO",
+        "PETRO",
+    }
+)
 
 
 # ── Excepciones ───────────────────────────────────────────────────────────────
@@ -123,11 +125,15 @@ def calcular_iva(subtotal: Decimal, tipo_iva: str, empresa=None) -> dict:
     if subtotal < 0:
         raise ImpuestoError("El subtotal no puede ser negativo.")
 
-    tasa = _obtener_tasa_iva(empresa, tipo_iva) if empresa else {
-        "GENERAL": TASA_IVA_GENERAL,
-        "REDUCIDO": TASA_IVA_REDUCIDO,
-        "EXENTO": TASA_IVA_EXENTO,
-    }.get(tipo_iva, TASA_IVA_GENERAL)
+    tasa = (
+        _obtener_tasa_iva(empresa, tipo_iva)
+        if empresa
+        else {
+            "GENERAL": TASA_IVA_GENERAL,
+            "REDUCIDO": TASA_IVA_REDUCIDO,
+            "EXENTO": TASA_IVA_EXENTO,
+        }.get(tipo_iva, TASA_IVA_GENERAL)
+    )
 
     monto_iva = (subtotal * tasa).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return {

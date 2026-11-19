@@ -326,8 +326,10 @@ class BaseConocimientoArticuloViewSet(TenantFKScopeMixin, viewsets.ModelViewSet)
             return Response({"error": "Debe especificar una consulta de búsqueda"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Buscar en título, contenido y palabras clave
-        articulos = self.get_queryset().filter(activo=True).filter(
-            Q(titulo__icontains=query) | Q(contenido__icontains=query) | Q(palabras_clave__icontains=query)
+        articulos = (
+            self.get_queryset()
+            .filter(activo=True)
+            .filter(Q(titulo__icontains=query) | Q(contenido__icontains=query) | Q(palabras_clave__icontains=query))
         )
 
         serializer = self.get_serializer(articulos, many=True)

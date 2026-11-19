@@ -4,6 +4,7 @@ Gate de escritura (SuperuserWriteMixin): lectura para cualquier autenticado,
 escritura (POST/PATCH/DELETE) solo para ``es_superusuario_omni`` (dueño del
 software). DELETE es borrado lógico (``activo=False``), no físico.
 """
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -81,17 +82,13 @@ class TestEscrituraSoloOwner:
         assert ConectorProveedor.objects.filter(codigo="nuevo_prov").exists()
 
     def test_tenant_no_puede_editar(self, client_tenant, proveedor):
-        resp = client_tenant.patch(
-            f"{BASE}/{proveedor.pk}/", {"nombre": "Hackeado"}, format="json"
-        )
+        resp = client_tenant.patch(f"{BASE}/{proveedor.pk}/", {"nombre": "Hackeado"}, format="json")
         assert resp.status_code == 403
         proveedor.refresh_from_db()
         assert proveedor.nombre == "Prov CRUD"
 
     def test_owner_puede_editar(self, client_owner, proveedor):
-        resp = client_owner.patch(
-            f"{BASE}/{proveedor.pk}/", {"nombre": "Editado"}, format="json"
-        )
+        resp = client_owner.patch(f"{BASE}/{proveedor.pk}/", {"nombre": "Editado"}, format="json")
         assert resp.status_code == 200
         proveedor.refresh_from_db()
         assert proveedor.nombre == "Editado"
@@ -112,16 +109,12 @@ class TestEscrituraSoloOwner:
 
 class TestValidacionCodigo:
     def test_codigo_invalido_rechazado(self, client_owner):
-        resp = client_owner.post(
-            f"{BASE}/", {"codigo": "Odoo Producción!", "nombre": "X"}, format="json"
-        )
+        resp = client_owner.post(f"{BASE}/", {"codigo": "Odoo Producción!", "nombre": "X"}, format="json")
         assert resp.status_code == 400
         assert "codigo" in resp.data
 
     def test_codigo_se_normaliza_a_minusculas(self, client_owner):
-        resp = client_owner.post(
-            f"{BASE}/", {"codigo": "MiConector", "nombre": "X"}, format="json"
-        )
+        resp = client_owner.post(f"{BASE}/", {"codigo": "MiConector", "nombre": "X"}, format="json")
         # Se normaliza a minúsculas antes de guardar (debe coincidir con el registry).
         assert resp.status_code == 201
         assert resp.data["codigo"] == "miconector"

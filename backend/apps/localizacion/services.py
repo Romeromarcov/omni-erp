@@ -5,6 +5,7 @@ Resolución de localización por empresa (ADR-007).
 el país de la empresa y sus flags de capa. Si una capa está desactivada, los
 puertos de esa capa se reemplazan por no-ops.
 """
+
 from . import ports, registry
 
 

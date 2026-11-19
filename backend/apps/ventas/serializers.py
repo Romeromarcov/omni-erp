@@ -185,9 +185,7 @@ class PedidoSerializer(serializers.ModelSerializer):
             # ignora (cae al código genérico), nunca contamina cross-tenant.
             if sucursal_id:
                 try:
-                    sucursal = Sucursal.objects.get(
-                        id_sucursal=sucursal_id, id_empresa=id_empresa
-                    )
+                    sucursal = Sucursal.objects.get(id_sucursal=sucursal_id, id_empresa=id_empresa)
                 except Sucursal.DoesNotExist:
                     sucursal = None
             if caja_id:

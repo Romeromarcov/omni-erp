@@ -53,9 +53,7 @@ class AuditFinding:
 RateLookup = Callable[[datetime], Decimal | None]
 
 
-def _emparejar(
-    vinc: Vinculacion, movimientos: list[BankMovement]
-) -> BankMovement | None:
+def _emparejar(vinc: Vinculacion, movimientos: list[BankMovement]) -> BankMovement | None:
     """Empareja por monto exacto; si hay varios, el más cercano a la hora declarada."""
     candidatos = [m for m in movimientos if m.monto == vinc.monto_aplicado]
     if not candidatos:
@@ -67,15 +65,11 @@ def _emparejar(
 
 
 class HourAuditor:
-    def __init__(
-        self, config: HourAuditConfig, rate_lookup: RateLookup | None = None
-    ) -> None:
+    def __init__(self, config: HourAuditConfig, rate_lookup: RateLookup | None = None) -> None:
         self._config = config
         self._rate_lookup = rate_lookup
 
-    def auditar(
-        self, vinculaciones: list[Vinculacion], movimientos: list[BankMovement]
-    ) -> list[AuditFinding]:
+    def auditar(self, vinculaciones: list[Vinculacion], movimientos: list[BankMovement]) -> list[AuditFinding]:
         """Devuelve SOLO las vinculaciones que requieren revisión, priorizadas."""
         hallazgos: list[AuditFinding] = []
         for v in vinculaciones:
@@ -91,9 +85,7 @@ class HourAuditor:
         )
         return hallazgos
 
-    def _auditar_una(
-        self, v: Vinculacion, movimientos: list[BankMovement]
-    ) -> AuditFinding | None:
+    def _auditar_una(self, v: Vinculacion, movimientos: list[BankMovement]) -> AuditFinding | None:
         motivos: list[str] = []
         prioridad = Prioridad.MEDIA
 
@@ -113,13 +105,10 @@ class HourAuditor:
                 motivos=motivos,
             )
 
-        delta_min = int(
-            abs((mov.fecha_hora - v.hora_pago_confirmada).total_seconds()) // 60
-        )
+        delta_min = int(abs((mov.fecha_hora - v.hora_pago_confirmada).total_seconds()) // 60)
         if delta_min > self._config.threshold_minutes:
             motivos.append(
-                f"hora declarada difiere {delta_min} min de la real "
-                f"(umbral {self._config.threshold_minutes})"
+                f"hora declarada difiere {delta_min} min de la real " f"(umbral {self._config.threshold_minutes})"
             )
 
         if self._supera_swing(v, mov.fecha_hora):

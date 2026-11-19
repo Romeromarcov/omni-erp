@@ -29,9 +29,7 @@ class _TenantViewSet(EmpresaInjectMixin, BaseModelViewSet):
     search_fields: list[str] = []
 
     def get_queryset(self):
-        return self.model.objects.filter(
-            id_empresa__in=get_empresas_visible(self.request.user), activo=True
-        )
+        return self.model.objects.filter(id_empresa__in=get_empresas_visible(self.request.user), activo=True)
 
     def perform_destroy(self, instance):
         instance.soft_delete()
@@ -77,11 +75,7 @@ class RecursoActivacionViewSet(_TenantViewSet):
 
     def perform_create(self, serializer):
         cal = serializer.validated_data["calendario"]
-        if (
-            not get_empresas_visible(self.request.user)
-            .filter(pk=cal.id_empresa_id)
-            .exists()
-        ):
+        if not get_empresas_visible(self.request.user).filter(pk=cal.id_empresa_id).exists():
             raise PermissionDenied("Calendario fuera de tus empresas.")
         serializer.save(id_empresa=cal.id_empresa)
 
@@ -93,12 +87,7 @@ class EventoActivacionViewSet(_TenantViewSet):
     search_fields = ["cliente_nombre", "vendedor_nombre", "ubicacion"]
 
     def get_queryset(self):
-        qs = (
-            super()
-            .get_queryset()
-            .select_related("calendario")
-            .prefetch_related("usos__recurso")
-        )
+        qs = super().get_queryset().select_related("calendario").prefetch_related("usos__recurso")
         p = self.request.query_params
         if p.get("estado"):
             qs = qs.filter(estado=p["estado"])
@@ -117,20 +106,14 @@ class EventoActivacionViewSet(_TenantViewSet):
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         try:
             if d.get("calendario"):
-                cal = CalendarioActivacion.objects.get(
-                    pk=d["calendario"], id_empresa=empresa, activo=True
-                )
+                cal = CalendarioActivacion.objects.get(pk=d["calendario"], id_empresa=empresa, activo=True)
             else:
                 cal = services.calendario_predeterminado(empresa)
         except CalendarioActivacion.DoesNotExist:
             return Response({"error": "Calendario no encontrado."}, status=404)
         except services.ActivacionError as e:
             return domain_error_response(e, status_code=400)
-        cliente = (
-            Cliente.objects.filter(pk=d["cliente"], id_empresa=empresa).first()
-            if d.get("cliente")
-            else None
-        )
+        cliente = Cliente.objects.filter(pk=d["cliente"], id_empresa=empresa).first() if d.get("cliente") else None
         try:
             evento = services.crear_evento(
                 empresa=empresa,
@@ -147,14 +130,10 @@ class EventoActivacionViewSet(_TenantViewSet):
                 notas=d["notas"],
             )
         except services.CapacidadExcedida as e:
-            return domain_error_response(
-                e, status_code=status.HTTP_409_CONFLICT, extra={"detalle": e.detalle}
-            )
+            return domain_error_response(e, status_code=status.HTTP_409_CONFLICT, extra={"detalle": e.detalle})
         except services.ActivacionError as e:
             return domain_error_response(e, status_code=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            EventoActivacionSerializer(evento).data, status=status.HTTP_201_CREATED
-        )
+        return Response(EventoActivacionSerializer(evento).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="cancelar")
     def cancelar(self, request, pk=None):

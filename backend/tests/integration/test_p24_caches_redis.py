@@ -50,9 +50,7 @@ class TestRedisDbFromUrl:
 
 class TestBuildDefaultCache:
     def test_sin_redis_url_cae_a_locmem(self):
-        config = build_default_cache(
-            "", testing=False, cache_db="1", key_prefix="omni:dev"
-        )
+        config = build_default_cache("", testing=False, cache_db="1", key_prefix="omni:dev")
         assert config == LOCMEM_CACHE
         # Copia defensiva: mutar el resultado no debe tocar el default del módulo.
         assert config is not LOCMEM_CACHE
@@ -88,9 +86,7 @@ class TestBuildDefaultCache:
             cache_db="2",
             key_prefix="omni:staging",
         )
-        assert config["LOCATION"] == (
-            "rediss://default:pwd@host.example:6380/2?ssl_cert_reqs=none"
-        )
+        assert config["LOCATION"] == ("rediss://default:pwd@host.example:6380/2?ssl_cert_reqs=none")
 
     def test_colision_con_db_de_celery_en_path_falla(self):
         with pytest.raises(ImproperlyConfigured, match="colisiona"):

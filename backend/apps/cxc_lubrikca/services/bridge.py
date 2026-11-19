@@ -178,15 +178,10 @@ def construir_engine_inputs(pedido, *, fecha_calculo: date) -> EngineInputs:
     lineas = list(pedido.lineas.filter(deleted_at__isnull=True))
 
     # Métodos de pago del tenant indexados por código (para resolver tipo_tasa).
-    metodos_by_codigo = {
-        m.codigo: m
-        for m in MetodoPago.objects.filter(empresa=empresa, deleted_at__isnull=True)
-    }
+    metodos_by_codigo = {m.codigo: m for m in MetodoPago.objects.filter(empresa=empresa, deleted_at__isnull=True)}
 
     abonos: list[tuple[M.Vinculacion, M.MetodoPago]] = []
-    for vinc in pedido.vinculaciones.filter(deleted_at__isnull=True).select_related(
-        "pago"
-    ):
+    for vinc in pedido.vinculaciones.filter(deleted_at__isnull=True).select_related("pago"):
         metodo = metodos_by_codigo.get(vinc.pago.metodo_pago)
         abonos.append(
             (
@@ -196,33 +191,18 @@ def construir_engine_inputs(pedido, *, fecha_calculo: date) -> EngineInputs:
         )
 
     descuentos = [
-        _descuento_dc(r)
-        for r in DescuentoMarcaCategoria.objects.filter(
-            empresa=empresa, deleted_at__isnull=True
-        )
+        _descuento_dc(r) for r in DescuentoMarcaCategoria.objects.filter(empresa=empresa, deleted_at__isnull=True)
     ]
     reglas_recurrencia = [
-        _regla_recurrencia_dc(r)
-        for r in ReglaRecurrencia.objects.filter(
-            empresa=empresa, deleted_at__isnull=True
-        )
+        _regla_recurrencia_dc(r) for r in ReglaRecurrencia.objects.filter(empresa=empresa, deleted_at__isnull=True)
     ]
     descuento_bcv_diario = [
-        _bcv_completo_dc(r)
-        for r in DescuentoBCVCompleto.objects.filter(
-            empresa=empresa, deleted_at__isnull=True
-        )
+        _bcv_completo_dc(r) for r in DescuentoBCVCompleto.objects.filter(empresa=empresa, deleted_at__isnull=True)
     ]
     promociones = [
-        _promo_dc(r)
-        for r in PromocionPrimeraCompra.objects.filter(
-            empresa=empresa, deleted_at__isnull=True
-        )
+        _promo_dc(r) for r in PromocionPrimeraCompra.objects.filter(empresa=empresa, deleted_at__isnull=True)
     ]
-    feriados = [
-        _feriado_dc(r)
-        for r in Feriado.objects.filter(empresa=empresa, deleted_at__isnull=True)
-    ]
+    feriados = [_feriado_dc(r) for r in Feriado.objects.filter(empresa=empresa, deleted_at__isnull=True)]
 
     return EngineInputs(
         orden=_orden_dc(pedido),
@@ -244,9 +224,7 @@ def recalcular_bandeja(pedido) -> BandejaFacturacion:
     """Recalcula y persiste la ``BandejaFacturacion`` del pedido (upsert)."""
     fecha_calculo = timezone.localdate()
     try:
-        resultado = calcular_factura(
-            construir_engine_inputs(pedido, fecha_calculo=fecha_calculo)
-        )
+        resultado = calcular_factura(construir_engine_inputs(pedido, fecha_calculo=fecha_calculo))
     except KeyError as exc:
         # El price resolver lanza KeyError("Sin precio para producto=... lista=...")
         # cuando falta una fila PrecioListaLubrikca. Lo convertimos en un error de
@@ -257,8 +235,7 @@ def recalcular_bandeja(pedido) -> BandejaFacturacion:
         ) from exc
 
     detalle = [
-        {"origen": d.origen, "descripcion": d.descripcion, "monto": str(d.monto)}
-        for d in resultado.descuentos_detalle
+        {"origen": d.origen, "descripcion": d.descripcion, "monto": str(d.monto)} for d in resultado.descuentos_detalle
     ]
 
     bandeja, _ = BandejaFacturacion.objects.update_or_create(

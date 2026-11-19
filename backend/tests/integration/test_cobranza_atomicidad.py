@@ -105,17 +105,15 @@ class TestRegistrarPagoAtomico:
         client = APIClient()
         client.force_authenticate(user=user_a)
 
-        resp = client.post(
-            _url(acuerdo), _payload(cuota, moneda_usd, metodo_efectivo), format="json"
-        )
+        resp = client.post(_url(acuerdo), _payload(cuota, moneda_usd, metodo_efectivo), format="json")
 
         assert resp.status_code == 422, f"Esperado 422, fue {resp.status_code}: {resp.data}"
         assert resp.data.get("code") == "asiento_contable_requerido"
 
         # Rollback: ni Pago, ni mutación de cuota, ni auto-completar acuerdo.
-        assert not Pago.objects.filter(id_empresa=empresa_contable).exists(), (
-            "ATOMICIDAD: quedó un finanzas.Pago tras el rollback del asiento."
-        )
+        assert not Pago.objects.filter(
+            id_empresa=empresa_contable
+        ).exists(), "ATOMICIDAD: quedó un finanzas.Pago tras el rollback del asiento."
         cuota.refresh_from_db()
         assert cuota.estado == "pendiente", "ATOMICIDAD: la cuota cambió de estado pese al rollback."
         assert cuota.monto_pagado == Decimal("0"), "ATOMICIDAD: monto_pagado se actualizó pese al rollback."
@@ -134,9 +132,7 @@ class TestRegistrarPagoAtomico:
         client = APIClient()
         client.force_authenticate(user=user_a)
 
-        resp = client.post(
-            _url(acuerdo), _payload(cuota, moneda_usd, metodo_efectivo), format="json"
-        )
+        resp = client.post(_url(acuerdo), _payload(cuota, moneda_usd, metodo_efectivo), format="json")
 
         assert resp.status_code == 200, f"Esperado 200, fue {resp.status_code}: {resp.data}"
         assert Pago.objects.filter(id_empresa=empresa_contable).count() == 1

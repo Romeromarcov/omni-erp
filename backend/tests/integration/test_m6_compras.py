@@ -296,7 +296,9 @@ class TestRegistrarFacturaCompra:
     @pytest.fixture
     def recepcion(self, orden_aprobada, almacen, producto, usuario):
         resultado = registrar_recepcion(
-            orden_aprobada, almacen, usuario,
+            orden_aprobada,
+            almacen,
+            usuario,
             [{"producto": producto, "cantidad": "10", "costo_unitario": "30.00"}],
         )
         return resultado["recepcion"]

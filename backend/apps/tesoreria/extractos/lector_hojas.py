@@ -51,9 +51,7 @@ class _TablaHtmlParser(HTMLParser):
         tag_l = tag.lower()
         if tag_l == "tr":
             if len(self.filas) >= MAX_FILAS_HOJA:
-                raise ExtractoBancarioError(
-                    f"El archivo HTML excede el máximo permitido de {MAX_FILAS_HOJA} filas."
-                )
+                raise ExtractoBancarioError(f"El archivo HTML excede el máximo permitido de {MAX_FILAS_HOJA} filas.")
             self._fila = []
         elif tag_l in ("td", "th") and self._fila is not None:
             if len(self._fila) >= MAX_COLUMNAS_HOJA:
@@ -105,9 +103,7 @@ def _leer_csv(contenido: bytes) -> list[list[Any]]:
     try:
         for fila in lector:
             if len(filas) >= MAX_FILAS_HOJA:
-                raise ExtractoBancarioError(
-                    f"El archivo CSV excede el máximo permitido de {MAX_FILAS_HOJA} filas."
-                )
+                raise ExtractoBancarioError(f"El archivo CSV excede el máximo permitido de {MAX_FILAS_HOJA} filas.")
             if len(fila) > MAX_COLUMNAS_HOJA:
                 raise ExtractoBancarioError(
                     f"El archivo CSV excede el máximo permitido de {MAX_COLUMNAS_HOJA} columnas."
@@ -173,9 +169,7 @@ def _leer_entrada_zip_acotada(
         ) from exc
 
     if len(datos) > presupuesto_restante[0]:
-        raise ExtractoBancarioError(
-            "El archivo .xlsx descomprimido excede el límite de seguridad de 32 MB."
-        )
+        raise ExtractoBancarioError("El archivo .xlsx descomprimido excede el límite de seguridad de 32 MB.")
     presupuesto_restante[0] -= len(datos)
     return datos
 
@@ -198,9 +192,7 @@ def _resolver_primera_hoja_xlsx(
     datemode = 0
     target_rel: str | None = None
     if "xl/workbook.xml" in nombres:
-        wb_root = _parsear_xml_seguro(
-            _leer_entrada_zip_acotada(zf, "xl/workbook.xml", presupuesto_restante)
-        )
+        wb_root = _parsear_xml_seguro(_leer_entrada_zip_acotada(zf, "xl/workbook.xml", presupuesto_restante))
         rel_id: str | None = None
         for elem in wb_root.iter():
             lname = _local_name(elem.tag)
@@ -251,33 +243,25 @@ def _leer_xlsx(contenido: bytes) -> tuple[list[list[Any]], int]:
             )
         total_declarado = sum(max(0, info.file_size) for info in infos)
         if total_declarado > TAMANO_MAXIMO_XML_DESCOMPRIMIDO:
-            raise ExtractoBancarioError(
-                "El archivo .xlsx descomprimido excede el límite de seguridad de 32 MB."
-            )
+            raise ExtractoBancarioError("El archivo .xlsx descomprimido excede el límite de seguridad de 32 MB.")
 
         nombres = {info.filename for info in infos}
         shared_strings: list[str] = []
         if "xl/sharedStrings.xml" in nombres:
-            ss_root = _parsear_xml_seguro(
-                _leer_entrada_zip_acotada(zf, "xl/sharedStrings.xml", presupuesto_restante)
-            )
+            ss_root = _parsear_xml_seguro(_leer_entrada_zip_acotada(zf, "xl/sharedStrings.xml", presupuesto_restante))
             for child in ss_root:
                 if _local_name(child.tag) == "si":
                     shared_strings.append(_extraer_texto_si(child))
 
         ruta_hoja, datemode = _resolver_primera_hoja_xlsx(zf, nombres, presupuesto_restante)
-        sheet_root = _parsear_xml_seguro(
-            _leer_entrada_zip_acotada(zf, ruta_hoja, presupuesto_restante)
-        )
+        sheet_root = _parsear_xml_seguro(_leer_entrada_zip_acotada(zf, ruta_hoja, presupuesto_restante))
 
     filas: list[list[Any]] = []
     for elem_row in sheet_root.iter():
         if _local_name(elem_row.tag) != "row":
             continue
         if len(filas) >= MAX_FILAS_HOJA:
-            raise ExtractoBancarioError(
-                f"El archivo .xlsx excede el máximo permitido de {MAX_FILAS_HOJA} filas."
-            )
+            raise ExtractoBancarioError(f"El archivo .xlsx excede el máximo permitido de {MAX_FILAS_HOJA} filas.")
         fila: list[Any] = []
         col_cursor = 0
         for celda in elem_row:
@@ -356,9 +340,7 @@ def leer_filas_tabular(contenido: bytes, nombre_archivo: str) -> tuple[list[list
         try:
             wb = xlrd.open_workbook(file_contents=contenido)
             hoja = wb.sheet_by_index(0)
-            return [hoja.row_values(r) for r in range(min(hoja.nrows, MAX_FILAS_HOJA))], int(
-                wb.datemode
-            )
+            return [hoja.row_values(r) for r in range(min(hoja.nrows, MAX_FILAS_HOJA))], int(wb.datemode)
         except Exception as exc:
             raise ExtractoBancarioError(f"{nombre_limpio}: archivo .xls inválido: {exc}") from exc
     return _leer_csv(contenido), 0
@@ -404,8 +386,7 @@ def construir_xlsx_simple(hojas: list[tuple[str, list[list[Any]]]]) -> bytes:
             'Target="xl/workbook.xml"/></Relationships>',
         )
         sheets_xml = "".join(
-            f'<sheet name="{xml_escape(_CTRL_XML_RE.sub("", nombre)[:31])}" '
-            f'sheetId="{i}" r:id="rId{i}"/>'
+            f'<sheet name="{xml_escape(_CTRL_XML_RE.sub("", nombre)[:31])}" ' f'sheetId="{i}" r:id="rId{i}"/>'
             for i, (nombre, _filas) in enumerate(hojas, start=1)
         )
         zf.writestr(

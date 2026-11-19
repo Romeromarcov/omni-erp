@@ -111,9 +111,7 @@ class ConciliacionLubrikcaViewSet(
         try:
             conciliacion = conciliar_pedido(pedido)
         except ConciliacionError as exc:
-            return domain_error_response(
-                exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail"
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         return Response(
             ConciliacionLubrikcaSerializer(conciliacion).data,
             status=status.HTTP_201_CREATED,

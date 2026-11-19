@@ -143,10 +143,7 @@ class Suscripcion(models.Model):
     def esta_vigente(self) -> bool:
         """Retorna True si la suscripción está activa y dentro del período."""
         hoy = timezone.localdate()  # fecha en TIME_ZONE, no UTC (ver suscripcion_activa)
-        return (
-            self.estado in ("ACTIVA", "TRIAL")
-            and self.fecha_inicio <= hoy <= self.fecha_fin
-        )
+        return self.estado in ("ACTIVA", "TRIAL") and self.fecha_inicio <= hoy <= self.fecha_fin
 
     @property
     def dias_restantes(self) -> int:

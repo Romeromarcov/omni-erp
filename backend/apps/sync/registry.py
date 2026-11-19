@@ -10,6 +10,7 @@ Todas las entidades de este primer incremento son catálogo de la empresa
 (R-CODE-1): tienen `id_empresa`, `fecha_actualizacion` (delta) y `activo`
 (para propagar bajas al cliente).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -37,41 +38,67 @@ SYNC_ENTITIES: dict[str, SyncEntity] = {
         model_label="inventario.Producto",
         pk_field="id_producto",
         fields=(
-            "id_producto", "nombre_producto", "sku", "id_categoria",
-            "id_unidad_medida_base", "id_moneda_precio", "costo_promedio",
-            "precio_venta_sugerido", "activo", "fecha_actualizacion",
+            "id_producto",
+            "nombre_producto",
+            "sku",
+            "id_categoria",
+            "id_unidad_medida_base",
+            "id_moneda_precio",
+            "costo_promedio",
+            "precio_venta_sugerido",
+            "activo",
+            "fecha_actualizacion",
         ),
     ),
     "categorias_producto": SyncEntity(
         model_label="inventario.CategoriaProducto",
         pk_field="id_categoria_producto",
         fields=(
-            "id_categoria_producto", "nombre_categoria", "id_categoria_padre",
-            "activo", "fecha_actualizacion",
+            "id_categoria_producto",
+            "nombre_categoria",
+            "id_categoria_padre",
+            "activo",
+            "fecha_actualizacion",
         ),
     ),
     "unidades_medida": SyncEntity(
         model_label="inventario.UnidadMedida",
         pk_field="id_unidad_medida",
         fields=(
-            "id_unidad_medida", "nombre", "abreviatura", "tipo",
-            "activo", "fecha_actualizacion",
+            "id_unidad_medida",
+            "nombre",
+            "abreviatura",
+            "tipo",
+            "activo",
+            "fecha_actualizacion",
         ),
     ),
     "clientes": SyncEntity(
         model_label="crm.Cliente",
         pk_field="id_cliente",
         fields=(
-            "id_cliente", "razon_social", "nombre_comercial", "rif",
-            "telefono", "email", "tipo_cliente", "activo", "fecha_actualizacion",
+            "id_cliente",
+            "razon_social",
+            "nombre_comercial",
+            "rif",
+            "telefono",
+            "email",
+            "tipo_cliente",
+            "activo",
+            "fecha_actualizacion",
         ),
     ),
     "variantes_producto": SyncEntity(
         model_label="inventario.VarianteProducto",
         pk_field="id_variante",
         fields=(
-            "id_variante", "id_producto", "codigo_variante", "sku",
-            "atributos_json", "activo", "fecha_actualizacion",
+            "id_variante",
+            "id_producto",
+            "codigo_variante",
+            "sku",
+            "atributos_json",
+            "activo",
+            "fecha_actualizacion",
         ),
         # La variante no tiene id_empresa propio; se filtra por el de su producto.
         empresa_field="id_producto__id_empresa",

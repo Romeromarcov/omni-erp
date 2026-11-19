@@ -1,4 +1,3 @@
-
 from apps.core.serializers import BaseModelSerializer
 
 from .models import FlujoAprobacion, RegistroAprobacion, SolicitudAprobacion, TipoAprobacion

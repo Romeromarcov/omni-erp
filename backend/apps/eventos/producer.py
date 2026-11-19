@@ -4,6 +4,7 @@ OmniEventProducer — Publica eventos de dominio a Redpanda/Kafka.
 Si KAFKA_BROKER_URL no está configurado o el broker no responde,
 los eventos se registran en el log con level WARNING (degradación graceful).
 """
+
 import json
 import logging
 import uuid
@@ -57,8 +58,7 @@ def _get_producer():
         return _producer_instance
     except Exception as exc:
         logger.warning(
-            "OmniEventProducer: no se pudo conectar al broker (%s). "
-            "Los eventos se registrarán en el log.",
+            "OmniEventProducer: no se pudo conectar al broker (%s). " "Los eventos se registrarán en el log.",
             exc,
         )
         return None
@@ -148,8 +148,7 @@ def publicar_evento(
         return True
     except Exception as exc:
         logger.warning(
-            "OmniEventProducer: error al producir evento '%s': %s. "
-            "Evento guardado en log: %s",
+            "OmniEventProducer: error al producir evento '%s': %s. " "Evento guardado en log: %s",
             tipo,
             exc,
             json.dumps(envelope, default=str, ensure_ascii=False),

@@ -71,16 +71,24 @@ def _resolver_rango(request):
     desde_str = request.query_params.get("desde")
     hasta_str = request.query_params.get("hasta")
     if not desde_str or not hasta_str:
-        return None, None, Response(
-            {"error": "Requerido: 'periodo' (YYYY-MM) ó 'desde'+'hasta' (YYYY-MM-DD)."},
-            status=status.HTTP_400_BAD_REQUEST,
+        return (
+            None,
+            None,
+            Response(
+                {"error": "Requerido: 'periodo' (YYYY-MM) ó 'desde'+'hasta' (YYYY-MM-DD)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            ),
         )
     try:
         return date.fromisoformat(desde_str), date.fromisoformat(hasta_str), None
     except ValueError:
-        return None, None, Response(
-            {"error": "Formato de fecha inválido. Use YYYY-MM-DD."},
-            status=status.HTTP_400_BAD_REQUEST,
+        return (
+            None,
+            None,
+            Response(
+                {"error": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            ),
         )
 
 
@@ -100,9 +108,7 @@ class LibroMaestroCajaView(APIView):
         if err:
             return err
 
-        incluir_inactivas = request.query_params.get(
-            "incluir_inactivas", "false"
-        ).lower() in ("true", "1", "yes")
+        incluir_inactivas = request.query_params.get("incluir_inactivas", "false").lower() in ("true", "1", "yes")
         moneda = request.query_params.get("moneda") or None
         tipo = request.query_params.get("tipo") or None
 

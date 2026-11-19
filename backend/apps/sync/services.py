@@ -15,6 +15,7 @@ Garantías:
   autoridad fiscal).
 - **Idempotencia**: la provee el endpoint vía ``Idempotency-Key`` (= client_uuid).
 """
+
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
@@ -176,19 +177,13 @@ def crear_venta_pos_offline(empresa, usuario, datos: dict) -> dict:
             try:
                 caja_virtual = Caja.objects.get(pk=p["id_caja_virtual"], empresa=empresa)
             except Caja.DoesNotExist:
-                raise VentaPosError(
-                    f"'pagos[{i}].id_caja_virtual' no encontrada en esta empresa."
-                )
+                raise VentaPosError(f"'pagos[{i}].id_caja_virtual' no encontrada en esta empresa.")
         cuenta_bancaria = None
         if p.get("id_cuenta_bancaria"):
             try:
-                cuenta_bancaria = CuentaBancariaEmpresa.objects.get(
-                    pk=p["id_cuenta_bancaria"], id_empresa=empresa
-                )
+                cuenta_bancaria = CuentaBancariaEmpresa.objects.get(pk=p["id_cuenta_bancaria"], id_empresa=empresa)
             except CuentaBancariaEmpresa.DoesNotExist:
-                raise VentaPosError(
-                    f"'pagos[{i}].id_cuenta_bancaria' no encontrada en esta empresa."
-                )
+                raise VentaPosError(f"'pagos[{i}].id_cuenta_bancaria' no encontrada en esta empresa.")
 
         pago = Pago.objects.create(
             id_empresa=empresa,

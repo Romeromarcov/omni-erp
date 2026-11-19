@@ -15,6 +15,7 @@ Fija el comportamiento SEGURO de los hallazgos SEC-A1/A2/A3 y SEC-M2:
 
 Convención del plan: aserciones con valores exactos (sirven de runner de mutación).
 """
+
 import uuid
 
 import pytest
@@ -30,6 +31,7 @@ URL_ACTIVAS = "/api/finanzas/metodos-pago-empresa-activas/"
 
 # ── Clients ───────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def client_a(user_a):
     c = APIClient()
@@ -38,6 +40,7 @@ def client_a(user_a):
 
 
 # ── Fixtures de dominio ───────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def metodo_privado_b(empresa_b):
@@ -55,20 +58,26 @@ def metodo_privado_b(empresa_b):
 def metodo_publico(empresa_b):
     """Método público de B: reutilizable por diseño."""
     return MetodoPago.objects.create(
-        nombre_metodo="Pago Móvil Público", tipo_metodo="ELECTRONICO",
-        empresa=empresa_b, es_publico=True,
-        documento_json={"banco": "0102"}, referencia_externa="ref-publica",
+        nombre_metodo="Pago Móvil Público",
+        tipo_metodo="ELECTRONICO",
+        empresa=empresa_b,
+        es_publico=True,
+        documento_json={"banco": "0102"},
+        referencia_externa="ref-publica",
     )
 
 
 @pytest.fixture
 def metodo_generico(db):
     return MetodoPago.objects.create(
-        nombre_metodo="Efectivo Global", tipo_metodo="EFECTIVO", es_generico=True,
+        nombre_metodo="Efectivo Global",
+        tipo_metodo="EFECTIVO",
+        es_generico=True,
     )
 
 
 # ── SEC-A1: IDOR por UUID en retrieve/reutilizar ─────────────────────────────
+
 
 class TestIdorMetodoPagoAjeno:
     def test_get_metodo_privado_ajeno_404(self, client_a, metodo_privado_b):
@@ -83,9 +92,7 @@ class TestIdorMetodoPagoAjeno:
         )
         assert resp.status_code == 404
         # No se creó ninguna copia en la empresa A
-        assert not MetodoPago.objects.filter(
-            empresa=empresa_a, nombre_metodo="Zelle Privado B"
-        ).exists()
+        assert not MetodoPago.objects.filter(empresa=empresa_a, nombre_metodo="Zelle Privado B").exists()
 
     def test_patch_metodo_privado_ajeno_404(self, client_a, metodo_privado_b):
         resp = client_a.patch(
@@ -98,6 +105,7 @@ class TestIdorMetodoPagoAjeno:
 
 
 # ── SEC-A2: empresa destino fuera de las visibles ────────────────────────────
+
 
 class TestReutilizarEmpresaDestino:
     def test_reutilizar_hacia_empresa_ajena_404(self, client_a, empresa_b, metodo_publico):
@@ -132,24 +140,27 @@ class TestReutilizarEmpresaDestino:
 
     def test_crear_metodo_con_empresa_ajena_400(self, client_a, empresa_b):
         """Creación directa: declarar empresa (ajena o no) sin ser superusuario → 400."""
-        resp = client_a.post(URL_METODOS, {
-            "nombre_metodo": "Intruso", "tipo_metodo": "OTRO",
-            "empresa": str(empresa_b.id_empresa),
-        })
+        resp = client_a.post(
+            URL_METODOS,
+            {
+                "nombre_metodo": "Intruso",
+                "tipo_metodo": "OTRO",
+                "empresa": str(empresa_b.id_empresa),
+            },
+        )
         assert resp.status_code == 400
         assert not MetodoPago.objects.filter(empresa=empresa_b, nombre_metodo="Intruso").exists()
 
 
 # ── SEC-A3: buscar_reutilizar no expone privados de terceros ─────────────────
 
+
 class TestBuscarReutilizarProyeccion:
     def _results(self, resp):
         data = resp.json()
         return data["results"] if isinstance(data, dict) else data
 
-    def test_no_lista_privados_de_terceros(
-        self, client_a, metodo_privado_b, metodo_publico, metodo_generico
-    ):
+    def test_no_lista_privados_de_terceros(self, client_a, metodo_privado_b, metodo_publico, metodo_generico):
         resp = client_a.get(URL_METODOS + "buscar_reutilizar/")
         assert resp.status_code == 200
         results = self._results(resp)
@@ -169,9 +180,7 @@ class TestBuscarReutilizarProyeccion:
         results = self._results(resp)
         assert any(m["nombre_metodo"] == "Pago Móvil Público" for m in results)
         for item in results:
-            assert set(item.keys()) == {
-                "id_metodo_pago", "nombre_metodo", "tipo_metodo", "activo", "url", "aplicado"
-            }
+            assert set(item.keys()) == {"id_metodo_pago", "nombre_metodo", "tipo_metodo", "activo", "url", "aplicado"}
             assert "documento_json" not in item
             assert "referencia_externa" not in item
             assert "empresa" not in item
@@ -185,13 +194,13 @@ class TestBuscarReutilizarProyeccion:
         assert resp.status_code == 404
         assert resp.json() == {"detail": "Empresa no encontrada."}
 
-    def test_id_empresa_actual_propia_excluye_propios(
-        self, client_a, empresa_a, metodo_generico
-    ):
+    def test_id_empresa_actual_propia_excluye_propios(self, client_a, empresa_a, metodo_generico):
         pytest.importorskip("rapidfuzz")  # get_aplicado la usa cuando hay empresa actual
         MetodoPago.objects.create(
-            nombre_metodo="Público Propio", tipo_metodo="OTRO",
-            empresa=empresa_a, es_publico=True,
+            nombre_metodo="Público Propio",
+            tipo_metodo="OTRO",
+            empresa=empresa_a,
+            es_publico=True,
         )
         resp = client_a.get(
             URL_METODOS + "buscar_reutilizar/",
@@ -206,31 +215,36 @@ class TestBuscarReutilizarProyeccion:
 
 # ── SEC-M2: MetodoPagoEmpresaActiva no acepta empresa del cliente ────────────
 
+
 class TestActivacionEmpresaReadOnly:
-    def test_post_con_empresa_ajena_queda_en_la_propia(
-        self, client_a, empresa_a, empresa_b
-    ):
+    def test_post_con_empresa_ajena_queda_en_la_propia(self, client_a, empresa_a, empresa_b):
         # Método sin empresa ni flags → la señal de sync no crea filas previas.
         metodo = MetodoPago.objects.create(nombre_metodo="Suelto P01", tipo_metodo="OTRO")
-        resp = client_a.post(URL_ACTIVAS, {
-            "empresa": str(empresa_b.id_empresa),  # se ignora (read-only)
-            "metodo_pago": str(metodo.id_metodo_pago),
-            "activa": True,
-        })
+        resp = client_a.post(
+            URL_ACTIVAS,
+            {
+                "empresa": str(empresa_b.id_empresa),  # se ignora (read-only)
+                "metodo_pago": str(metodo.id_metodo_pago),
+                "activa": True,
+            },
+        )
         assert resp.status_code == 201, resp.content
         fila = MetodoPagoEmpresaActiva.objects.get(metodo_pago=metodo)
         assert fila.empresa == empresa_a
-        assert not MetodoPagoEmpresaActiva.objects.filter(
-            empresa=empresa_b, metodo_pago=metodo
-        ).exists()
+        assert not MetodoPagoEmpresaActiva.objects.filter(empresa=empresa_b, metodo_pago=metodo).exists()
 
     def test_post_con_metodo_privado_ajeno_400(self, client_a, metodo_privado_b):
-        resp = client_a.post(URL_ACTIVAS, {
-            "metodo_pago": str(metodo_privado_b.id_metodo_pago),
-            "activa": True,
-        })
+        resp = client_a.post(
+            URL_ACTIVAS,
+            {
+                "metodo_pago": str(metodo_privado_b.id_metodo_pago),
+                "activa": True,
+            },
+        )
         assert resp.status_code == 400
         assert resp.json() == {"metodo_pago": ["Método de pago no encontrado."]}
-        assert not MetodoPagoEmpresaActiva.objects.filter(
-            metodo_pago=metodo_privado_b
-        ).exclude(empresa=metodo_privado_b.empresa).exists()
+        assert (
+            not MetodoPagoEmpresaActiva.objects.filter(metodo_pago=metodo_privado_b)
+            .exclude(empresa=metodo_privado_b.empresa)
+            .exists()
+        )

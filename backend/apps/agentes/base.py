@@ -84,9 +84,7 @@ class OmniAgente:
 
     def __init__(self) -> None:
         if not self.AGENTE_ID:
-            raise ValueError(
-                f"{self.__class__.__name__} debe definir AGENTE_ID."
-            )
+            raise ValueError(f"{self.__class__.__name__} debe definir AGENTE_ID.")
 
     # ── Interfaz pública ───────────────────────────────────────────────────────
 
@@ -176,16 +174,16 @@ class OmniAgente:
                 "descripcion": resultado_accion.descripcion,
                 "datos": resultado_accion.datos,
                 "error": resultado_accion.error,
-            } if resultado_accion else None,
+            }
+            if resultado_accion
+            else None,
         }
 
     # ── Hooks para subclases ───────────────────────────────────────────────────
 
     def _analizar(self, contexto: dict[str, Any]) -> Prediccion:  # noqa: ARG002
         """Debe ser implementado por la subclase. Retorna una Prediccion."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} debe implementar _analizar()."
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} debe implementar _analizar().")
 
     def _ejecutar(self, prediccion: Prediccion) -> ResultadoAccion:  # noqa: ARG002
         """

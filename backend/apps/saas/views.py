@@ -5,6 +5,7 @@ Expone:
   - PlanViewSet:        Catálogo de planes (lectura pública, escritura solo superusuarios Omni).
   - SuscripcionViewSet: Suscripciones de empresa, con acciones cancelar/suspender.
 """
+
 import datetime
 
 from django.contrib.auth import get_user_model
@@ -70,18 +71,21 @@ class PlanViewSet(BaseModelViewSet):
     def perform_create(self, serializer):
         if not getattr(self.request.user, "es_superusuario_omni", False):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Solo superusuarios Omni pueden crear planes.")
         serializer.save()
 
     def perform_update(self, serializer):
         if not getattr(self.request.user, "es_superusuario_omni", False):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Solo superusuarios Omni pueden modificar planes.")
         serializer.save()
 
     def perform_destroy(self, instance):
         if not getattr(self.request.user, "es_superusuario_omni", False):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Solo superusuarios Omni pueden eliminar planes.")
         instance.activo = False
         instance.save(update_fields=["activo"])
@@ -219,8 +223,7 @@ class SignupView(APIView):
         plan = self._resolver_plan(data.get("plan_nivel"))
         if plan is None:
             return Response(
-                {"detail": "No hay planes disponibles para el registro. "
-                           "Contacte al proveedor."},
+                {"detail": "No hay planes disponibles para el registro. " "Contacte al proveedor."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 

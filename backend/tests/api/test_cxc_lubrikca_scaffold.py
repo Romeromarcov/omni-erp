@@ -3,6 +3,7 @@
 Verifican que la app está registrada, su router montado en ``/api/cxc-lubrikca/``
 y el health check responde. Cubren el código nuevo de la Fase 0 (apps.py + router).
 """
+
 import pytest
 from django.apps import apps as django_apps
 from rest_framework.test import APIClient

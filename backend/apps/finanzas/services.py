@@ -231,9 +231,7 @@ def registrar_efectos_pago(pago):
         if pago.id_caja_virtual_id:
             contenedor = Caja.objects.select_for_update().get(pk=pago.id_caja_virtual_id)
         else:
-            contenedor = CuentaBancariaEmpresa.objects.select_for_update().get(
-                pk=pago.id_cuenta_bancaria_id
-            )
+            contenedor = CuentaBancariaEmpresa.objects.select_for_update().get(pk=pago.id_cuenta_bancaria_id)
 
         tipo_movimiento = "INGRESO" if pago.tipo_operacion == "INGRESO" else "EGRESO"
         saldo_anterior = contenedor.saldo_actual
@@ -348,8 +346,7 @@ def realizar_cierre_caja(caja, saldo_real, usuario=None, hasta=None):
             movimientos = caja.movimientos.all()
         # Hasta el límite del cierre, inclusive
         movimientos = movimientos.filter(
-            Q(fecha_movimiento__lt=fecha_limite)
-            | Q(fecha_movimiento=fecha_limite, hora_movimiento__lte=hora_limite)
+            Q(fecha_movimiento__lt=fecha_limite) | Q(fecha_movimiento=fecha_limite, hora_movimiento__lte=hora_limite)
         )
         ingresos = sum(
             (m.monto for m in movimientos.filter(tipo_movimiento__in=tipos_ingreso)),
@@ -429,8 +426,6 @@ def realizar_cierre_caja(caja, saldo_real, usuario=None, hasta=None):
         "movimiento_ajuste_id": movimiento_ajuste.id_movimiento if movimiento_ajuste else None,
         "fecha_cierre": limite,
         "mensaje": (
-            f"Cierre de {etiqueta} realizado."
-            if descuadre == 0
-            else f"Cierre de {etiqueta} realizado con ajuste."
+            f"Cierre de {etiqueta} realizado." if descuadre == 0 else f"Cierre de {etiqueta} realizado con ajuste."
         ),
     }

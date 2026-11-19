@@ -29,18 +29,14 @@ pytestmark = pytest.mark.django_db
 def cliente_a(db, empresa_a):
     from apps.crm.models import Cliente
 
-    return Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Consumidor Final", rif="V-00000000-0"
-    )
+    return Cliente.objects.create(id_empresa=empresa_a, razon_social="Consumidor Final", rif="V-00000000-0")
 
 
 @pytest.fixture
 def almacen_a(db, empresa_a):
     from apps.almacenes.models import Almacen
 
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén test", codigo_almacen="ALM-1"
-    )
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén test", codigo_almacen="ALM-1")
 
 
 @pytest.fixture
@@ -64,19 +60,13 @@ def producto_a(db, empresa_a, moneda_usd):
 
 @pytest.fixture
 def metodo_pos(db):
-    return MetodoPago.objects.create(
-        nombre_metodo="Efectivo test", tipo_metodo="EFECTIVO", es_publico=True
-    )
+    return MetodoPago.objects.create(nombre_metodo="Efectivo test", tipo_metodo="EFECTIVO", es_publico=True)
 
 
 @pytest.fixture
 def sesion_a(db, empresa_a, user_a):
-    caja = CajaFisica.objects.create(
-        empresa=empresa_a, nombre="Caja test", identificador_dispositivo="pos-001"
-    )
-    return SesionCajaFisica.objects.create(
-        caja_fisica=caja, usuario=user_a, empresa=empresa_a, estado="ABIERTA"
-    )
+    caja = CajaFisica.objects.create(empresa=empresa_a, nombre="Caja test", identificador_dispositivo="pos-001")
+    return SesionCajaFisica.objects.create(caja_fisica=caja, usuario=user_a, empresa=empresa_a, estado="ABIERTA")
 
 
 @pytest.fixture
@@ -131,12 +121,8 @@ def _url(venta, sufijo="devolver"):
 
 
 class TestDevolverAPI:
-    def test_devolver_201_con_montos_como_string(
-        self, client_a, venta_entregada, almacen_a, metodo_pos, sesion_a
-    ):
-        resp = client_a.post(
-            _url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json"
-        )
+    def test_devolver_201_con_montos_como_string(self, client_a, venta_entregada, almacen_a, metodo_pos, sesion_a):
+        resp = client_a.post(_url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json")
         assert resp.status_code == 201, resp.data
         data = resp.data
         # R-CODE-4: dinero como string. 2 × 3.50 = 7.00 (sin IVA: no fiscal).
@@ -149,9 +135,7 @@ class TestDevolverAPI:
         assert data["movimientos_inventario"] == 1
         assert data["asiento_id"] is None  # sin mapeo y contabilidad inactiva
 
-    def test_idempotencia_reintento_no_duplica(
-        self, client_a, venta_entregada, almacen_a, metodo_pos, sesion_a
-    ):
+    def test_idempotencia_reintento_no_duplica(self, client_a, venta_entregada, almacen_a, metodo_pos, sesion_a):
         payload = _payload(venta_entregada, almacen_a, metodo_pos)
         headers = {"HTTP_IDEMPOTENCY_KEY": "devo-1"}
 
@@ -163,9 +147,7 @@ class TestDevolverAPI:
         # Misma respuesta reproducida y UNA sola devolución/egreso en BD.
         assert r2.data["devolucion"]["id_devolucion"] == r1.data["devolucion"]["id_devolucion"]
         assert DevolucionVenta.objects.filter(id_nota_venta_origen=venta_entregada).count() == 1
-        assert Pago.objects.filter(
-            id_empresa=venta_entregada.id_empresa, tipo_operacion="EGRESO"
-        ).count() == 1
+        assert Pago.objects.filter(id_empresa=venta_entregada.id_empresa, tipo_operacion="EGRESO").count() == 1
 
     def test_idempotencia_misma_clave_payload_distinto_422(
         self, client_a, venta_entregada, almacen_a, metodo_pos, sesion_a
@@ -219,46 +201,28 @@ class TestDevolverAPI:
         almacen_falso = {**base, "almacen_id": "00000000-0000-0000-0000-000000000000"}
         assert client_a.post(_url(venta_entregada), almacen_falso, format="json").status_code == 400
 
-    def test_aislamiento_user_b_no_devuelve_venta_de_a(
-        self, client_b, venta_entregada, almacen_a, metodo_pos
-    ):
+    def test_aislamiento_user_b_no_devuelve_venta_de_a(self, client_b, venta_entregada, almacen_a, metodo_pos):
         """R-CODE-1: la venta de A es invisible para B (404, ni siquiera 403)."""
-        resp = client_b.post(
-            _url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json"
-        )
+        resp = client_b.post(_url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json")
         assert resp.status_code == 404
         assert DevolucionVenta.objects.count() == 0
 
-    def test_almacen_de_otra_empresa_400(
-        self, client_a, venta_entregada, metodo_pos, sesion_a, empresa_b
-    ):
+    def test_almacen_de_otra_empresa_400(self, client_a, venta_entregada, metodo_pos, sesion_a, empresa_b):
         from apps.almacenes.models import Almacen
 
-        almacen_b = Almacen.objects.create(
-            id_empresa=empresa_b, nombre_almacen="Almacén B", codigo_almacen="ALM-B-1"
-        )
-        resp = client_a.post(
-            _url(venta_entregada), _payload(venta_entregada, almacen_b, metodo_pos), format="json"
-        )
+        almacen_b = Almacen.objects.create(id_empresa=empresa_b, nombre_almacen="Almacén B", codigo_almacen="ALM-B-1")
+        resp = client_a.post(_url(venta_entregada), _payload(venta_entregada, almacen_b, metodo_pos), format="json")
         assert resp.status_code == 400
         assert "almacen_id" in resp.data
 
-    def test_metodo_privado_de_otra_empresa_400(
-        self, client_a, venta_entregada, almacen_a, sesion_a, empresa_b
-    ):
-        metodo_b = MetodoPago.objects.create(
-            nombre_metodo="Privado B", tipo_metodo="EFECTIVO", empresa=empresa_b
-        )
-        resp = client_a.post(
-            _url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_b), format="json"
-        )
+    def test_metodo_privado_de_otra_empresa_400(self, client_a, venta_entregada, almacen_a, sesion_a, empresa_b):
+        metodo_b = MetodoPago.objects.create(nombre_metodo="Privado B", tipo_metodo="EFECTIVO", empresa=empresa_b)
+        resp = client_a.post(_url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_b), format="json")
         assert resp.status_code == 400
         assert "id_metodo_pago" in resp.data
 
     def test_requiere_autenticacion(self, api_client, venta_entregada, almacen_a, metodo_pos):
-        resp = api_client.post(
-            _url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json"
-        )
+        resp = api_client.post(_url(venta_entregada), _payload(venta_entregada, almacen_a, metodo_pos), format="json")
         assert resp.status_code == 401
 
 
@@ -266,9 +230,7 @@ class TestDevolverAPI:
 
 
 class TestConsultaDevolucionesAPI:
-    def test_estado_devolvible_por_linea(
-        self, client_a, venta_entregada, almacen_a, metodo_pos, sesion_a
-    ):
+    def test_estado_devolvible_por_linea(self, client_a, venta_entregada, almacen_a, metodo_pos, sesion_a):
         client_a.post(
             _url(venta_entregada),
             _payload(venta_entregada, almacen_a, metodo_pos, cantidad="4"),

@@ -35,9 +35,7 @@ def base_inventario(db, empresa_a, moneda_usd):
         id_empresa=empresa_a, nombre="Unidad MFG-AT", abreviatura="UN-MAT", tipo="CANTIDAD"
     )
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="MFG-AT")
-    almacen = Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén MFG-AT", codigo_almacen="AC-MAT"
-    )
+    almacen = Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén MFG-AT", codigo_almacen="AC-MAT")
     return unidad, categoria, almacen
 
 
@@ -59,7 +57,9 @@ def _stock(empresa, producto, almacen, cantidad):
     from apps.inventario.models import StockActual
 
     return StockActual.objects.create(
-        id_empresa=empresa, id_producto=producto, id_almacen=almacen,
+        id_empresa=empresa,
+        id_producto=producto,
+        id_almacen=almacen,
         cantidad_disponible=_d(cantidad),
     )
 
@@ -88,9 +88,7 @@ def test_consumo_revierte_si_un_componente_no_tiene_stock(empresa_a, base_invent
     _stock(empresa_a, comp_a, almacen, "100")
     _stock(empresa_a, comp_b, almacen, "10")
 
-    lista = ListaMateriales.objects.create(
-        empresa=empresa_a, producto_final=producto_final, nombre="BOM AT"
-    )
+    lista = ListaMateriales.objects.create(empresa=empresa_a, producto_final=producto_final, nombre="BOM AT")
     # Cada unidad requiere 4 de A y 4 de B; orden de 5 → 20 de cada uno.
     ListaMaterialesDetalle.objects.create(
         id_lista_materiales=lista, id_producto=comp_a, cantidad_requerida=_d("4"), id_unidad_medida=unidad
@@ -108,14 +106,14 @@ def test_consumo_revierte_si_un_componente_no_tiene_stock(empresa_a, base_invent
         mfg.consumir_materiales_orden(orden, almacen=almacen, usuario=user_a)
 
     # Rollback total: ningún consumo, ningún stock tocado, orden intacta.
-    assert ConsumoMaterial.objects.filter(orden_produccion=orden).count() == 0, (
-        "ATOMICIDAD: quedaron ConsumoMaterial tras el fallo de stock."
-    )
-    assert StockActual.objects.get(id_producto=comp_a, id_almacen=almacen).cantidad_disponible == _d("100"), (
-        "ATOMICIDAD: el stock del componente A se descontó pese al rollback."
-    )
-    assert StockActual.objects.get(id_producto=comp_b, id_almacen=almacen).cantidad_disponible == _d("10"), (
-        "ATOMICIDAD: el stock del componente B cambió pese al rollback."
-    )
+    assert (
+        ConsumoMaterial.objects.filter(orden_produccion=orden).count() == 0
+    ), "ATOMICIDAD: quedaron ConsumoMaterial tras el fallo de stock."
+    assert StockActual.objects.get(id_producto=comp_a, id_almacen=almacen).cantidad_disponible == _d(
+        "100"
+    ), "ATOMICIDAD: el stock del componente A se descontó pese al rollback."
+    assert StockActual.objects.get(id_producto=comp_b, id_almacen=almacen).cantidad_disponible == _d(
+        "10"
+    ), "ATOMICIDAD: el stock del componente B cambió pese al rollback."
     orden.refresh_from_db()
     assert orden.estado == "pendiente", "ATOMICIDAD: la orden cambió de estado pese al rollback."

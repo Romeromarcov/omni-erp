@@ -9,6 +9,7 @@ Verifica:
 - test_endpoint_mis_notificaciones_no_leidas(): filtro ?no_leidas=true
 - test_endpoint_marcar_leida(): PATCH /api/notificaciones/notificaciones/{id}/marcar-leida/
 """
+
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -21,6 +22,7 @@ User = get_user_model()
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def plantilla_email_pedido(db):
@@ -47,6 +49,7 @@ def plantilla_email_pago(db):
 
 
 # ── Test 1: notificación in-app creada ───────────────────────────────────────
+
 
 class TestNotificacionInApp:
     def test_notificacion_in_app_creada(self, db, empresa_a, user_a):
@@ -108,6 +111,7 @@ class TestNotificacionInApp:
 
 # ── Test 2: email Celery ──────────────────────────────────────────────────────
 
+
 class TestNotificacionEmail:
     def test_notificacion_email_enviada(self, db, empresa_a, user_a, plantilla_email_pedido):
         """emitir_notificacion encola LogNotificacion ENVIADO cuando hay plantilla activa."""
@@ -165,6 +169,7 @@ class TestNotificacionEmail:
 
 # ── Test 3: aislamiento multi-tenant ─────────────────────────────────────────
 
+
 class TestAislamientoNotificaciones:
     def test_aislamiento_notificaciones(self, db, empresa_a, empresa_b, user_a, user_b):
         """Un usuario solo ve sus propias notificaciones."""
@@ -191,6 +196,7 @@ class TestAislamientoNotificaciones:
 
 
 # ── Tests de endpoints REST ───────────────────────────────────────────────────
+
 
 @pytest.fixture
 def client_a(user_a):

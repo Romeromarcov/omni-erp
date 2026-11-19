@@ -25,9 +25,7 @@ def h(n: int) -> datetime:
 
 @pytest.fixture
 def cal(empresa_a):
-    c = CalendarioActivacion.objects.create(
-        id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True
-    )
+    c = CalendarioActivacion.objects.create(id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True)
     RecursoActivacion.objects.create(
         id_empresa=empresa_a,
         calendario=c,
@@ -146,23 +144,17 @@ def test_api_disponibilidad(client_a, cal, empresa_a):
 
 
 def test_api_cancelar(client_a, cal):
-    ev = client_a.post(
-        f"{BASE}/eventos/", _payload(0, 1, promotoras=1), format="json"
-    ).data
+    ev = client_a.post(f"{BASE}/eventos/", _payload(0, 1, promotoras=1), format="json").data
     r = client_a.post(f"{BASE}/eventos/{ev['id_evento']}/cancelar/")
     assert r.status_code == 200 and r.data["estado"] == "CANCELADO"
-    assert (
-        client_a.post(f"{BASE}/eventos/{ev['id_evento']}/cancelar/").status_code == 400
-    )
+    assert client_a.post(f"{BASE}/eventos/{ev['id_evento']}/cancelar/").status_code == 400
 
 
 def test_api_configurar_capacidad_solo_staff(client_a, user_a, cal):
     rec = RecursoActivacion.objects.get(calendario=cal, codigo="promotoras")
     url = f"{BASE}/recursos/{rec.id_recurso}/"
     assert client_a.patch(url, {"capacidad": 5}, format="json").status_code == 403
-    assert (
-        client_a.get(url).status_code == 200
-    )  # lectura abierta al usuario autenticado
+    assert client_a.get(url).status_code == 200  # lectura abierta al usuario autenticado
     user_a.is_staff = True
     user_a.save()
     r = client_a.patch(url, {"capacidad": 5}, format="json")
@@ -183,9 +175,7 @@ def test_sin_calendario_predeterminado_da_400(client_a):
 def test_no_ve_ni_usa_calendarios_ajenos(client_a, user_a, empresa_b):
     user_a.is_staff = True
     user_a.save()
-    ajeno = CalendarioActivacion.objects.create(
-        id_empresa=empresa_b, nombre="Ajeno", es_predeterminado=True
-    )
+    ajeno = CalendarioActivacion.objects.create(id_empresa=empresa_b, nombre="Ajeno", es_predeterminado=True)
     EventoActivacion.objects.create(
         id_empresa=empresa_b,
         calendario=ajeno,
@@ -219,9 +209,7 @@ def test_no_ve_ni_usa_calendarios_ajenos(client_a, user_a, empresa_b):
 # ── Sincronización con Google Calendar ──────────────────────────────────────
 
 
-def test_crear_y_cancelar_encolan_la_sync(
-    empresa_a, cal, django_capture_on_commit_callbacks
-):
+def test_crear_y_cancelar_encolan_la_sync(empresa_a, cal, django_capture_on_commit_callbacks):
     from unittest.mock import patch
 
     with patch("apps.activaciones.services.encolar_sync") as encolar:
@@ -243,14 +231,10 @@ def test_sync_guarda_id_de_google_y_registra_fallos(empresa_a, cal):
             services.sincronizar_google(ev.pk)
         ev.refresh_from_db()
         assert ev.google_event_id == "gid-1" and ev.sync_error == ""
-        with patch(
-            "apps.activaciones.google_calendar.upsert", side_effect=RuntimeError("boom")
-        ):
+        with patch("apps.activaciones.google_calendar.upsert", side_effect=RuntimeError("boom")):
             services.sincronizar_google(ev.pk)  # nunca lanza
         ev.refresh_from_db()
-        assert (
-            ev.sync_error and "boom" not in ev.sync_error
-        )  # sin filtrar detalles internos
+        assert ev.sync_error and "boom" not in ev.sync_error  # sin filtrar detalles internos
 
 
 def test_sync_sin_credenciales_se_omite(empresa_a, cal):

@@ -119,9 +119,6 @@ def test_seed_empresa_inicial_siembra_el_catalogo(monkeypatch):
     from apps.finanzas.models import MonedaEmpresaActiva
 
     activas = sorted(
-        MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list(
-            "moneda__codigo_iso", flat=True
-        )
+        MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list("moneda__codigo_iso", flat=True)
     )
     assert activas == CODIGOS
-

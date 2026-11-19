@@ -1,0 +1,22 @@
+[tool.ruff]
+line-length = 119
+target-version = "py311"
+extend-exclude = [
+    "**/migrations/*",
+    ".venv",
+    ".venv*",
+    "venv",
+    "node_modules",
+    "dist",
+    "build",
+    "graphify-out",
+]
+
+[tool.ruff.lint]
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/settings*.py" = ["F401"]
+"**/config/__init__.py" = ["F401"]
+"**/conftest.py" = ["F401"]

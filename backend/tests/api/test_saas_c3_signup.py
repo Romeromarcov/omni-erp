@@ -8,6 +8,7 @@ Verifica el endpoint público POST /api/saas/signup/:
   - valida unicidad de username y fortaleza de contraseña;
   - responde 503 si no hay planes disponibles.
 """
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache

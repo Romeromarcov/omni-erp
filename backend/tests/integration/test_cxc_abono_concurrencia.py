@@ -93,9 +93,7 @@ class TestAbonoCxCConcurrencia:
             Decimal("0"),
         )
         # Invariante anti-sobre-abono: jamás se cobra más que el monto.
-        assert total_abonado <= cxc.monto, (
-            f"¡SOBRE-ABONO! total={total_abonado} > monto={cxc.monto}"
-        )
+        assert total_abonado <= cxc.monto, f"¡SOBRE-ABONO! total={total_abonado} > monto={cxc.monto}"
         # Exactamente 2 abonos caben (prueba la serialización, no sólo el tope).
         assert len(exitos) == 2, f"Esperados 2 éxitos, hubo {len(exitos)}"
         assert len(rechazos) == 3, f"Esperados 3 rechazos, hubo {len(rechazos)}"

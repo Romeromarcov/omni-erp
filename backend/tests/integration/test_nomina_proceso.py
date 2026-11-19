@@ -201,9 +201,7 @@ class TestProcesarFeliz:
 
     def test_asiento_nomina_balanceado(self, respuesta, proceso_a, user_a):
         assert respuesta.status_code == 200
-        asiento = AsientoContable.objects.get(
-            id_documento_origen=proceso_a.pk, nombre_modelo_origen="ProcesoNomina"
-        )
+        asiento = AsientoContable.objects.get(id_documento_origen=proceso_a.pk, nombre_modelo_origen="ProcesoNomina")
         # El asiento registra al usuario que procesó la nómina (request.user).
         assert asiento.id_usuario_registro == user_a
         detalles = list(DetalleAsiento.objects.filter(id_asiento=asiento))
@@ -235,9 +233,7 @@ class TestProcesarRollback:
         assert Nomina.objects.filter(id_proceso_nomina=proceso_a).count() == 0
         assert DetalleNomina.objects.filter(id_nomina__id_proceso_nomina=proceso_a).count() == 0
 
-    def test_contabilidad_activa_sin_mapeo_revierte_todo(
-        self, client_a, empresa_contable, proceso_a, empleado_ana
-    ):
+    def test_contabilidad_activa_sin_mapeo_revierte_todo(self, client_a, empresa_contable, proceso_a, empleado_ana):
         # Sin MapeoContable NOMINA y contabilidad_activa=True → AsientoError → 422
         resp = client_a.post(f"{BASE}{proceso_a.id_proceso_nomina}/procesar/", format="json")
         assert resp.status_code == 422

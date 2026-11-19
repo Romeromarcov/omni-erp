@@ -1,4 +1,5 @@
 """Comando ``seed_proveedores_integracion`` — idempotente y no destructivo."""
+
 from io import StringIO
 
 import pytest

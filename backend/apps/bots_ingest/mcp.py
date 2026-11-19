@@ -43,9 +43,7 @@ def bots_estado_flota(capability_token: str, empresa_id: str) -> dict[str, Any]:
     if str(empresa_id) != ctx["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
     empresa = _empresa_activa(ctx["empresa_id"])
-    logger.info(
-        "bots_estado_flota | actor=%s | tenant=%s", ctx["actor_id"], ctx["tenant_id"]
-    )
+    logger.info("bots_estado_flota | actor=%s | tenant=%s", ctx["actor_id"], ctx["tenant_id"])
     return {
         "bots": control.listar_bots(empresa),
         "destinos": control.resumen_destinos(empresa),

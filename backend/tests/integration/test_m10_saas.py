@@ -26,15 +26,18 @@ class TestValidadoresVzla:
 
     def test_rif_j_valido(self):
         from apps.localizacion_ve.validators import validar_rif
+
         # Formato correcto: tipo J + 8 dígitos + DV
         assert validar_rif("J-30543012-5") is True
 
     def test_rif_v_valido(self):
         from apps.localizacion_ve.validators import validar_rif
+
         assert validar_rif("V-12345678-3") is True
 
     def test_rif_todos_tipos_validos(self):
         from apps.localizacion_ve.validators import validar_rif
+
         # Todos los prefijos soportados
         assert validar_rif("J-12345678-1") is True
         assert validar_rif("E-12345678-1") is True
@@ -43,6 +46,7 @@ class TestValidadoresVzla:
 
     def test_rif_formato_incorrecto(self):
         from apps.localizacion_ve.validators import validar_rif
+
         assert validar_rif("X-12345678-5") is False  # prefijo inválido
         assert validar_rif("") is False
         assert validar_rif("12345678") is False
@@ -50,51 +54,61 @@ class TestValidadoresVzla:
 
     def test_rif_sin_guiones(self):
         from apps.localizacion_ve.validators import validar_rif
+
         # Debe funcionar con o sin guiones
         assert validar_rif("J305430125") is True
 
     def test_normalizar_rif(self):
         from apps.localizacion_ve.validators import normalizar_rif
+
         assert normalizar_rif("J305430125") == "J-30543012-5"
         assert normalizar_rif("j-30543012-5") == "J-30543012-5"
 
     def test_normalizar_rif_invalido(self):
         from apps.localizacion_ve.validators import normalizar_rif
+
         with pytest.raises(ValueError):
             normalizar_rif("X-123")
 
     def test_cedula_valida(self):
         from apps.localizacion_ve.validators import validar_cedula
+
         assert validar_cedula("V-12345678") is True
         assert validar_cedula("E-87654321") is True
         assert validar_cedula("V12345678") is True
 
     def test_cedula_invalida(self):
         from apps.localizacion_ve.validators import validar_cedula
+
         assert validar_cedula("X-12345678") is False
         assert validar_cedula("") is False
 
     def test_normalizar_cedula(self):
         from apps.localizacion_ve.validators import normalizar_cedula
+
         assert normalizar_cedula("V12345678") == "V-12345678"
 
     def test_numero_control_valido(self):
         from apps.localizacion_ve.validators import validar_numero_control
+
         assert validar_numero_control("00-00000123") is True
         assert validar_numero_control("01-00001000") is True
 
     def test_numero_control_invalido(self):
         from apps.localizacion_ve.validators import validar_numero_control
+
         assert validar_numero_control("") is False
         assert validar_numero_control("0-123") is False
 
     def test_siguiente_numero_control(self):
         from apps.localizacion_ve.validators import siguiente_numero_control
+
         assert siguiente_numero_control("00-00000099") == "00-00000100"
         assert siguiente_numero_control("00-00000001") == "00-00000002"
 
     def test_validar_email(self):
         from apps.localizacion_ve.validators import validar_email
+
         assert validar_email("usuario@empresa.com") is True
         assert validar_email("invalido") is False
         assert validar_email("") is False
@@ -105,37 +119,45 @@ class TestCalendarioVzla:
 
     def test_ano_nuevo_es_feriado(self):
         from apps.localizacion_ve.calendario import es_feriado
+
         assert es_feriado(date(2026, 1, 1)) is True
 
     def test_dia_independencia_es_feriado(self):
         from apps.localizacion_ve.calendario import es_feriado
+
         assert es_feriado(date(2026, 7, 5)) is True
 
     def test_navidad_es_feriado(self):
         from apps.localizacion_ve.calendario import es_feriado
+
         assert es_feriado(date(2026, 12, 25)) is True
 
     def test_lunes_laborable_no_feriado(self):
         from apps.localizacion_ve.calendario import es_feriado
+
         # Lunes 2 de febrero 2026 no es feriado
         assert es_feriado(date(2026, 2, 2)) is False
 
     def test_sabado_no_es_habil(self):
         from apps.localizacion_ve.calendario import es_dia_habil
+
         # Sábado 3 enero 2026
         assert es_dia_habil(date(2026, 1, 3)) is False
 
     def test_feriado_no_es_habil(self):
         from apps.localizacion_ve.calendario import es_dia_habil
+
         assert es_dia_habil(date(2026, 1, 1)) is False
 
     def test_dia_habil_normal(self):
         from apps.localizacion_ve.calendario import es_dia_habil
+
         # Miércoles 7 enero 2026 no es feriado
         assert es_dia_habil(date(2026, 1, 7)) is True
 
     def test_feriados_del_año_tiene_entries(self):
         from apps.localizacion_ve.calendario import feriados_del_año
+
         feriados = feriados_del_año(2026)
         assert len(feriados) >= 15
         assert date(2026, 1, 1) in feriados
@@ -143,6 +165,7 @@ class TestCalendarioVzla:
 
     def test_dias_habiles_rango(self):
         from apps.localizacion_ve.calendario import dias_habiles
+
         # En una semana típica sin feriados debería haber ~5 días hábiles
         # Semana 5-9 enero 2026 (lunes a viernes, sin feriados)
         total = dias_habiles(date(2026, 1, 5), date(2026, 1, 9))
@@ -150,18 +173,21 @@ class TestCalendarioVzla:
 
     def test_dias_habiles_incluye_feriado(self):
         from apps.localizacion_ve.calendario import dias_habiles
+
         # 1 enero (feriado) al 2 enero: solo 1 día hábil (viernes 2)
         total = dias_habiles(date(2026, 1, 1), date(2026, 1, 2))
         assert total == 1  # 1 enero es feriado, 2 enero es viernes hábil
 
     def test_siguiente_dia_habil_desde_viernes(self):
         from apps.localizacion_ve.calendario import siguiente_dia_habil
+
         # Desde viernes 2 enero, el siguiente hábil debe ser lunes 5 enero
         siguiente = siguiente_dia_habil(date(2026, 1, 2))
         assert siguiente == date(2026, 1, 5)
 
     def test_semana_santa_calculada(self):
         from apps.localizacion_ve.calendario import feriados_del_año
+
         # En 2026, el domingo de Pascua es 5 de abril
         # Viernes Santo = 3 de abril, Jueves Santo = 2 de abril
         feriados = feriados_del_año(2026)
@@ -174,6 +200,7 @@ class TestFormatoVzla:
 
     def test_formatear_bolivares(self):
         from apps.localizacion_ve.formato import formatear_bolivares
+
         resultado = formatear_bolivares(Decimal("1234567.89"))
         assert "1.234.567" in resultado
         assert "89" in resultado
@@ -181,44 +208,52 @@ class TestFormatoVzla:
 
     def test_formatear_bolivares_sin_simbolo(self):
         from apps.localizacion_ve.formato import formatear_bolivares
+
         resultado = formatear_bolivares(Decimal("1000"), incluir_simbolo=False)
         assert "Bs." not in resultado
         assert "1.000" in resultado
 
     def test_formatear_usd(self):
         from apps.localizacion_ve.formato import formatear_usd
+
         resultado = formatear_usd(Decimal("1234.50"))
         assert "$" in resultado
         assert "1,234.50" in resultado
 
     def test_formatear_monto_ves(self):
         from apps.localizacion_ve.formato import formatear_monto
+
         resultado = formatear_monto(Decimal("5000"), "VES")
         assert "Bs." in resultado
 
     def test_formatear_monto_usd(self):
         from apps.localizacion_ve.formato import formatear_monto
+
         resultado = formatear_monto(Decimal("100"), "USD")
         assert "$" in resultado
 
     def test_monto_a_letras_cero(self):
         from apps.localizacion_ve.formato import monto_a_letras
+
         resultado = monto_a_letras(0)
         assert "CERO" in resultado
 
     def test_monto_a_letras_mil(self):
         from apps.localizacion_ve.formato import monto_a_letras
+
         resultado = monto_a_letras(1000, "DOLARES")
         assert "MIL" in resultado
         assert "DOLARES" in resultado
 
     def test_monto_a_letras_con_centavos(self):
         from apps.localizacion_ve.formato import monto_a_letras
+
         resultado = monto_a_letras(Decimal("1234.50"))
         assert "CON 50/100" in resultado
 
     def test_monto_a_letras_millon(self):
         from apps.localizacion_ve.formato import monto_a_letras
+
         resultado = monto_a_letras(1_000_000)
         assert "MILLÓN" in resultado or "MILLON" in resultado
 
@@ -228,6 +263,7 @@ class TestZonaHorariaVzla:
 
     def test_ahora_vet_tiene_tz(self):
         from apps.localizacion_ve.zona_horaria import ahora_vet
+
         dt = ahora_vet()
         assert dt.tzinfo is not None
         assert dt.utcoffset().total_seconds() == -4 * 3600
@@ -236,6 +272,7 @@ class TestZonaHorariaVzla:
         from datetime import timezone as tz
         from apps.localizacion_ve.zona_horaria import a_vet
         import datetime
+
         # UTC 12:00 → VET 08:00
         dt_utc = datetime.datetime(2026, 6, 15, 12, 0, 0, tzinfo=tz.utc)
         dt_vet = a_vet(dt_utc)
@@ -244,16 +281,19 @@ class TestZonaHorariaVzla:
     def test_a_vet_sin_tz_lanza_error(self):
         from apps.localizacion_ve.zona_horaria import a_vet
         import datetime
+
         with pytest.raises(ValueError):
             a_vet(datetime.datetime(2026, 1, 1, 12, 0))
 
     def test_formatear_fecha_ve(self):
         from apps.localizacion_ve.zona_horaria import formatear_fecha_ve
+
         fecha = date(2026, 5, 17)
         assert formatear_fecha_ve(fecha) == "17/05/2026"
 
     def test_inicio_dia_vet(self):
         from apps.localizacion_ve.zona_horaria import inicio_dia_vet
+
         dt = inicio_dia_vet(date(2026, 6, 15))
         assert dt.hour == 0
         assert dt.minute == 0
@@ -335,13 +375,12 @@ class TestNotificaciones:
         n2 = crear_notificacion(empresa_a, "Test 2", "Msg 2", usuario=user_a)
         n2.marcar_leida()
 
-        no_leidas = Notificacion.objects.filter(
-            id_empresa=empresa_a, id_usuario=user_a, leida=False
-        )
+        no_leidas = Notificacion.objects.filter(id_empresa=empresa_a, id_usuario=user_a, leida=False)
         assert no_leidas.count() >= 1
 
     def test_str_notificacion(self, empresa_a):
         from apps.core.models import crear_notificacion
+
         n = crear_notificacion(empresa_a, "Alerta importante", "Mensaje")
         assert "Alerta importante" in str(n)
 
@@ -358,6 +397,7 @@ class TestPlanSuscripcion:
     @pytest.fixture
     def plan_pro(self, db):
         from apps.saas.models import Plan
+
         return Plan.objects.create(
             nombre="Pro 2026",
             nivel="PRO",
@@ -370,6 +410,7 @@ class TestPlanSuscripcion:
     @pytest.fixture
     def suscripcion_activa(self, db, empresa_a, plan_pro):
         from apps.saas.models import Suscripcion
+
         hoy = date.today()
         return Suscripcion.objects.create(
             id_empresa=empresa_a,
@@ -393,6 +434,7 @@ class TestPlanSuscripcion:
 
     def test_suscripcion_vencida_no_vigente(self, db, empresa_a, plan_pro):
         from apps.saas.models import Suscripcion
+
         hoy = date.today()
         sus = Suscripcion.objects.create(
             id_empresa=empresa_a,
@@ -421,27 +463,32 @@ class TestPlanSuscripcion:
 
     def test_suscripcion_activa_helper(self, db, empresa_a, suscripcion_activa):
         from apps.saas.models import suscripcion_activa as get_sus
+
         sus = get_sus(empresa_a)
         assert sus is not None
         assert sus.esta_vigente is True
 
     def test_suscripcion_activa_sin_suscripcion(self, db, empresa_a):
         from apps.saas.models import suscripcion_activa as get_sus
+
         # empresa_a sin suscripción → None
         sus = get_sus(empresa_a)
         assert sus is None
 
     def test_tiene_feature(self, db, empresa_a, suscripcion_activa):
         from apps.saas.models import tiene_feature
+
         assert tiene_feature(empresa_a, "permite_ia") is True
         assert tiene_feature(empresa_a, "permite_api") is True
 
     def test_no_tiene_feature_sin_suscripcion(self, db, empresa_a):
         from apps.saas.models import tiene_feature
+
         assert tiene_feature(empresa_a, "permite_ia") is False
 
     def test_plan_ilimitado(self, db):
         from apps.saas.models import Plan
+
         plan = Plan.objects.create(
             nombre="Enterprise Unlimited",
             nivel="ENTERPRISE",
@@ -473,6 +520,7 @@ class TestSuscripcionMiddleware:
     def test_middleware_excluye_rutas_admin(self, empresa_a):
         """Rutas de admin nunca deben ser verificadas."""
         from apps.saas.middleware import SuscripcionActivaMiddleware, RUTAS_EXCLUIDAS_DEFAULT
+
         assert "/admin/" in RUTAS_EXCLUIDAS_DEFAULT
         assert "/api/auth/" in RUTAS_EXCLUIDAS_DEFAULT
 
@@ -491,11 +539,13 @@ class TestSuscripcionMiddlewareActivo:
     @pytest.fixture
     def plan_free(self, db):
         from apps.saas.models import Plan
+
         return Plan.objects.create(nombre="Free Middleware Test", nivel="FREE")
 
     @staticmethod
     def _middleware(get_response):
         from apps.saas.middleware import SuscripcionActivaMiddleware
+
         return SuscripcionActivaMiddleware(get_response)
 
     # ------------------------------------------------------------------
@@ -602,9 +652,7 @@ class TestSuscripcionMiddlewareActivo:
     # Caso borde: ruta excluida no se verifica aunque la suscrip. esté vencida
     # ------------------------------------------------------------------
 
-    def test_excluye_ruta_api_auth_aunque_suscripcion_vencida(
-        self, user_a, empresa_a, plan_free
-    ):
+    def test_excluye_ruta_api_auth_aunque_suscripcion_vencida(self, user_a, empresa_a, plan_free):
         """Rutas excluidas nunca llegan a _verificar_suscripcion."""
         from apps.saas.models import Suscripcion
         from django.test import RequestFactory, override_settings
@@ -644,14 +692,17 @@ class TestPDFGenerators:
 
     def test_pdf_cotizacion_importable(self):
         from apps.ventas.pdf_cotizacion import generar_pdf_cotizacion
+
         assert callable(generar_pdf_cotizacion)
 
     def test_pdf_nota_entrega_importable(self):
         from apps.despacho.pdf_nota_entrega import generar_pdf_nota_entrega
+
         assert callable(generar_pdf_nota_entrega)
 
     def test_pdf_estado_cuenta_importable(self):
         from apps.cuentas_por_cobrar.pdf_estado_cuenta import generar_pdf_estado_cuenta
+
         assert callable(generar_pdf_estado_cuenta)
 
     def test_pdf_cotizacion_retorna_bytes(self, db, empresa_a, moneda_usd):
@@ -708,10 +759,12 @@ class TestEmailService:
 
     def test_importar_email_service(self):
         from apps.core.email_service import enviar_email, EmailError
+
         assert callable(enviar_email)
 
     def test_html_a_texto(self):
         from apps.core.email_service import _html_a_texto
+
         html = "<h1>Hola</h1><p>Estimado cliente.</p>"
         texto = _html_a_texto(html)
         assert "Hola" in texto
@@ -720,10 +773,12 @@ class TestEmailService:
 
     def test_enviar_cotizacion_importable(self):
         from apps.core.email_service import enviar_cotizacion_pdf
+
         assert callable(enviar_cotizacion_pdf)
 
     def test_enviar_estado_cuenta_importable(self):
         from apps.core.email_service import enviar_estado_cuenta_pdf
+
         assert callable(enviar_estado_cuenta_pdf)
 
     def test_email_sin_destinatario_falla(self, db, empresa_a, moneda_usd):

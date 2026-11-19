@@ -5,6 +5,7 @@ Tests de cobertura de las tareas Celery del Integration Hub
 CELERY_TASK_ALWAYS_EAGER está activo en conftest — las tareas corren
 sincrónicamente. Todo acceso externo (Odoo, BCV, Binance) se mockea.
 """
+
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -36,9 +37,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 @pytest.fixture
 def proveedor(db):
-    return ConectorProveedor.objects.create(
-        codigo="fake_tasks", nombre="Fake Tasks", capacidades=["contactos"]
-    )
+    return ConectorProveedor.objects.create(codigo="fake_tasks", nombre="Fake Tasks", capacidades=["contactos"])
 
 
 @pytest.fixture
@@ -69,26 +68,18 @@ class TestEjecutarJobSincronizacion:
         assert resultado == {"error": f"Job {fake_id} no encontrado"}
 
     def test_job_ya_procesado_se_omite(self, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="completado"
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="completado")
         resultado = ejecutar_job_sincronizacion(str(job.id_job))
         assert resultado == {"estado": "completado", "mensaje": "Job ya procesado"}
 
     def test_job_cancelado_se_omite(self, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="cancelado"
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="cancelado")
         resultado = ejecutar_job_sincronizacion(str(job.id_job))
         assert resultado["mensaje"] == "Job ya procesado"
 
     def test_job_pendiente_se_ejecuta_y_retorna_contadores(self, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="pendiente"
-        )
-        conector = _mock_conector(
-            registros=[{"id_externo": "1", "nombre": "X", "_checksum": "c1"}]
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="pendiente")
+        conector = _mock_conector(registros=[{"id_externo": "1", "nombre": "X", "_checksum": "c1"}])
         with patch.object(registry, "get_connector", return_value=conector):
             resultado = ejecutar_job_sincronizacion(str(job.id_job))
 
@@ -110,9 +101,7 @@ class TestSyncAutomaticoTodos:
         instancia.ultimo_sync = None  # nunca sincronizado → dispara ya
         instancia.save()
 
-        with patch(
-            "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay"
-        ) as mock_delay:
+        with patch("apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay") as mock_delay:
             resultado = sync_automatico_todos()
 
         assert resultado == {"jobs_disparados": 2}
@@ -120,7 +109,8 @@ class TestSyncAutomaticoTodos:
         jobs = JobSincronizacion.objects.filter(id_instancia=instancia)
         assert jobs.count() == 2
         assert set(jobs.values_list("tipo_entidad", flat=True)) == {
-            "contactos", "productos",
+            "contactos",
+            "productos",
         }
         # Automáticos: sin usuario iniciador
         assert all(j.iniciado_por is None for j in jobs)
@@ -128,9 +118,7 @@ class TestSyncAutomaticoTodos:
     def test_no_dispara_si_intervalo_no_vencido(self, instancia):
         instancia.ultimo_sync = timezone.now() - timedelta(minutes=5)  # < 15 min
         instancia.save()
-        with patch(
-            "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay"
-        ) as mock_delay:
+        with patch("apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay") as mock_delay:
             resultado = sync_automatico_todos()
         assert resultado == {"jobs_disparados": 0}
         mock_delay.assert_not_called()
@@ -138,20 +126,14 @@ class TestSyncAutomaticoTodos:
     def test_dispara_si_intervalo_vencido(self, instancia):
         instancia.ultimo_sync = timezone.now() - timedelta(minutes=20)  # > 15 min
         instancia.save()
-        with patch(
-            "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay"
-        ) as mock_delay:
+        with patch("apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay") as mock_delay:
             resultado = sync_automatico_todos()
         assert resultado == {"jobs_disparados": 1}
         mock_delay.assert_called_once()
 
     def test_omite_entidad_con_job_en_progreso(self, instancia):
-        JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="en_progreso"
-        )
-        with patch(
-            "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay"
-        ) as mock_delay:
+        JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="en_progreso")
+        with patch("apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay") as mock_delay:
             resultado = sync_automatico_todos()
         assert resultado == {"jobs_disparados": 0}
         mock_delay.assert_not_called()
@@ -171,19 +153,11 @@ class TestSyncAutomaticoTodos:
 
 class TestLimpiarLogsAntiguos:
     def test_elimina_solo_logs_anteriores_al_corte(self, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="completado"
-        )
-        log_viejo = LogDetalleSincronizacion.objects.create(
-            id_job=job, id_externo="1", operacion="crear"
-        )
-        log_reciente = LogDetalleSincronizacion.objects.create(
-            id_job=job, id_externo="2", operacion="crear"
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="completado")
+        log_viejo = LogDetalleSincronizacion.objects.create(id_job=job, id_externo="1", operacion="crear")
+        log_reciente = LogDetalleSincronizacion.objects.create(id_job=job, id_externo="2", operacion="crear")
         # creado_en es auto_now_add → forzar antigüedad vía update()
-        LogDetalleSincronizacion.objects.filter(pk=log_viejo.pk).update(
-            creado_en=timezone.now() - timedelta(days=45)
-        )
+        LogDetalleSincronizacion.objects.filter(pk=log_viejo.pk).update(creado_en=timezone.now() - timedelta(days=45))
 
         resultado = limpiar_logs_antiguos(dias=30)
 
@@ -202,9 +176,7 @@ class TestSyncTasasVe:
     def monedas(self, db, moneda_usd):
         from apps.finanzas.models import Moneda
 
-        ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         return moneda_usd, ves
 
     def test_persiste_tasas_bcv_y_binance(self, monedas):
@@ -316,9 +288,7 @@ class TestSyncCarteraOdooTodos:
             valor_parametro="local",
         )
 
-        with patch(
-            "apps.integration_hub.tasks.sync_cartera_odoo.delay"
-        ) as mock_delay:
+        with patch("apps.integration_hub.tasks.sync_cartera_odoo.delay") as mock_delay:
             resultado = sync_cartera_odoo_todos()
 
         assert resultado == {"tenants_odoo": 1}
@@ -341,9 +311,7 @@ class TestSyncCarteraOdooTodos:
             activo=False,
         )
 
-        with patch(
-            "apps.integration_hub.tasks.sync_cartera_odoo.delay"
-        ) as mock_delay:
+        with patch("apps.integration_hub.tasks.sync_cartera_odoo.delay") as mock_delay:
             resultado = sync_cartera_odoo_todos()
 
         assert resultado == {"tenants_odoo": 0}
@@ -358,13 +326,16 @@ class TestSyncCarteraOdoo:
         mock_provider = MagicMock()
         mock_provider.get_partidas.return_value = partidas
 
-        with patch(
-            "apps.cuentas_por_cobrar.services_cartera_provider.get_cartera_provider",
-            return_value=mock_provider,
-        ), patch(
-            "apps.cuentas_por_cobrar.services_aging.calcular_aging",
-            return_value=resumen,
-        ) as mock_aging:
+        with (
+            patch(
+                "apps.cuentas_por_cobrar.services_cartera_provider.get_cartera_provider",
+                return_value=mock_provider,
+            ),
+            patch(
+                "apps.cuentas_por_cobrar.services_aging.calcular_aging",
+                return_value=resumen,
+            ) as mock_aging,
+        ):
             resultado = sync_cartera_odoo(str(empresa_a.pk))
 
         assert resultado == {"empresa_id": str(empresa_a.pk), "partidas": 2}

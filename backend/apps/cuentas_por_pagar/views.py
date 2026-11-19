@@ -46,9 +46,11 @@ class CuentaPorPagarViewSet(BaseModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
 
     def get_queryset(self):
-        qs = CuentaPorPagar.objects.filter(
-            id_empresa__in=_empresas(self.request)
-        ).select_related("id_empresa", "id_proveedor").prefetch_related("abonos")
+        qs = (
+            CuentaPorPagar.objects.filter(id_empresa__in=_empresas(self.request))
+            .select_related("id_empresa", "id_proveedor")
+            .prefetch_related("abonos")
+        )
 
         empresa_id = self.request.query_params.get("empresa")
         proveedor_id = self.request.query_params.get("proveedor")

@@ -23,6 +23,4 @@ def encolar_sync(evento_id) -> None:
         # la petición varios segundos con los reintentos de publicación.
         sincronizar_google_task.apply_async(args=[str(evento_id)], retry=False)
     except Exception:  # noqa: BLE001 - un broker caído no debe romper el alta del evento
-        logger.exception(
-            "No se pudo encolar la sync de Google Calendar (evento %s)", evento_id
-        )
+        logger.exception("No se pudo encolar la sync de Google Calendar (evento %s)", evento_id)

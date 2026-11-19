@@ -34,9 +34,7 @@ def _cliente_token(header_name: str, valor: str) -> APIClient:
 
 
 @pytest.mark.tenant
-def test_capability_token_aisla_latido_y_flota_entre_empresas(
-    empresa_a, empresa_b, user_a, user_b
-):
+def test_capability_token_aisla_latido_y_flota_entre_empresas(empresa_a, empresa_b, user_a, user_b):
     tok_a = CapabilityToken.objects.create(
         empresa=empresa_a,
         nombre="Worker A",
@@ -115,22 +113,15 @@ def test_capability_token_aisla_latido_y_flota_entre_empresas(
 
 
 @pytest.mark.tenant
-def test_capability_token_authorization_header_y_rechazos_invalidos(
-    empresa_a, user_a
-):
+def test_capability_token_authorization_header_y_rechazos_invalidos(empresa_a, user_a):
     tok_valido = CapabilityToken.objects.create(
         empresa=empresa_a,
         nombre="Bot Auth Header",
         scopes=["bots:heartbeat"],
         creado_por=user_a,
     )
-    cli_ok = _cliente_token(
-        "HTTP_AUTHORIZATION", f"CapabilityToken {tok_valido.token}"
-    )
-    assert (
-        cli_ok.post("/api/bots/heartbeat/", {"bot": "eventos"}, format="json").status_code
-        == 200
-    )
+    cli_ok = _cliente_token("HTTP_AUTHORIZATION", f"CapabilityToken {tok_valido.token}")
+    assert cli_ok.post("/api/bots/heartbeat/", {"bot": "eventos"}, format="json").status_code == 200
 
     # Token malformado, inexistente, revocado o expirado -> 401
     assert (
@@ -140,9 +131,7 @@ def test_capability_token_authorization_header_y_rechazos_invalidos(
         == 401
     )
     assert (
-        _cliente_token(
-            "HTTP_X_CAPABILITY_TOKEN", "00000000-0000-0000-0000-000000000000"
-        )
+        _cliente_token("HTTP_X_CAPABILITY_TOKEN", "00000000-0000-0000-0000-000000000000")
         .post("/api/bots/heartbeat/", {"bot": "eventos"}, format="json")
         .status_code
         == 401
@@ -164,10 +153,7 @@ def test_capability_token_authorization_header_y_rechazos_invalidos(
 
     # Un CapabilityToken nunca autentica en endpoints humanos ajenos al opt-in.
     assert (
-        _cliente_token("HTTP_X_CAPABILITY_TOKEN", str(tok_valido.token))
-        .get("/api/core/empresas/")
-        .status_code
-        == 401
+        _cliente_token("HTTP_X_CAPABILITY_TOKEN", str(tok_valido.token)).get("/api/core/empresas/").status_code == 401
     )
 
     # Cobertura explícita de propiedades del principal máquina-a-máquina.
@@ -190,9 +176,7 @@ def test_capability_token_authorization_header_y_rechazos_invalidos(
 
 
 @pytest.mark.tenant
-def test_scopes_granulares_impiden_escalacion_en_ingest_y_control(
-    empresa_a, user_a
-):
+def test_scopes_granulares_impiden_escalacion_en_ingest_y_control(empresa_a, user_a):
     BotUsuario.objects.create(
         id_empresa=empresa_a,
         telegram_user_id=800111,
@@ -221,12 +205,7 @@ def test_scopes_granulares_impiden_escalacion_en_ingest_y_control(
         == 403
     )
     assert cli_latido.get("/api/bots/control/").status_code == 403
-    assert (
-        cli_latido.patch(
-            "/api/bots/control/compras/", {"habilitado": False}, format="json"
-        ).status_code
-        == 403
-    )
+    assert cli_latido.patch("/api/bots/control/compras/", {"habilitado": False}, format="json").status_code == 403
 
     # Token con bots:ingest puede ingerir para bot autorizado, pero respeta BotUsuario.bots
     tok_ingest = CapabilityToken.objects.create(
@@ -322,17 +301,13 @@ def test_redaccion_secretos_y_retencion_suave_de_latidos(empresa_a):
     assert secreto_tg not in err
     assert "[oculto]" in err
 
-    diario_hoy = BotLatidoDiario.objects.get(
-        id_empresa=empresa_a, codigo="pedidos", dia=timezone.now().date()
-    )
+    diario_hoy = BotLatidoDiario.objects.get(id_empresa=empresa_a, codigo="pedidos", dia=timezone.now().date())
     assert diario_hoy.latidos == 3
     assert diario_hoy.mensajes == 20
     assert diario_hoy.errores == 5
 
     # El registro de >30 días se desactiva por soft-delete (nunca borrado físico)
-    viejo = BotLatidoDiario.objects.get(
-        id_empresa=empresa_a, codigo="pedidos", dia=dia_viejo.date()
-    )
+    viejo = BotLatidoDiario.objects.get(id_empresa=empresa_a, codigo="pedidos", dia=dia_viejo.date())
     assert viejo.activo is False
 
 
@@ -455,9 +430,7 @@ def test_validaciones_rechazan_entradas_invalidas(empresa_a, user_a):
         ).status_code
         == 422
     )
-    assert (
-        cli.patch("/api/bots/control/pedidos/", {}, format="json").status_code == 422
-    )
+    assert cli.patch("/api/bots/control/pedidos/", {}, format="json").status_code == 422
     assert (
         cli.post(
             "/api/bots/usuarios/",
@@ -517,9 +490,7 @@ def test_mcp_bots_estado_y_cambio_con_aislamiento(empresa_a, empresa_b, user_a):
     with pytest.raises(PermissionError):
         bots_estado_flota(str(tok_rw.token), str(empresa_b.id_empresa))
     with pytest.raises(PermissionError):
-        bots_cambiar_habilitado(
-            str(tok_ro.token), str(empresa_a.id_empresa), "eventos", True
-        )
+        bots_cambiar_habilitado(str(tok_ro.token), str(empresa_a.id_empresa), "eventos", True)
     with pytest.raises(PermissionError):
         bots_estado_flota("token-invalido", str(empresa_a.id_empresa))
 
@@ -551,10 +522,7 @@ def test_casos_borde_modelos_permisos_y_destinos(empresa_a, empresa_b, user_a, u
     user_a.save(update_fields=["is_staff", "is_superuser"])
     cli_a = APIClient()
     cli_a.force_authenticate(user=user_a)
-    assert (
-        cli_a.post("/api/bots/heartbeat/", {"bot": "MALO!"}, format="json").status_code
-        == 400
-    )
+    assert cli_a.post("/api/bots/heartbeat/", {"bot": "MALO!"}, format="json").status_code == 400
 
     # Estados variados en resumen_destinos (ok, error, desactivado) + detalle de bot sin kinds
     ctrl_svc.registrar_latido(
@@ -593,9 +561,7 @@ def test_casos_borde_modelos_permisos_y_destinos(empresa_a, empresa_b, user_a, u
 
     # Cross-tenant usuario en PATCH de BotUsuario -> 400 por TenantFKScopeMixin,
     # y 403 en perform_update si es_superusuario_omni=True intenta cruzar empresa
-    bu = BotUsuario.objects.create(
-        id_empresa=empresa_a, telegram_user_id=321321, usuario=user_a, nombre="Op"
-    )
+    bu = BotUsuario.objects.create(id_empresa=empresa_a, telegram_user_id=321321, usuario=user_a, nombre="Op")
     assert (
         cli_a.patch(
             f"/api/bots/usuarios/{bu.pk}/",
@@ -651,13 +617,9 @@ def test_casos_borde_modelos_permisos_y_destinos(empresa_a, empresa_b, user_a, u
     with pytest.raises(DatoControlInvalido):
         ctrl_svc.actualizar_bot(empresa=empresa_a, codigo="pedidos", cambios="mal", actor="x")
     with pytest.raises(DatoControlInvalido):
-        ctrl_svc.actualizar_bot(
-            empresa=empresa_a, codigo="pedidos", cambios={"habilitado": "si"}, actor="x"
-        )
+        ctrl_svc.actualizar_bot(empresa=empresa_a, codigo="pedidos", cambios={"habilitado": "si"}, actor="x")
     with pytest.raises(DatoControlInvalido):
-        ctrl_svc.actualizar_bot(
-            empresa=empresa_a, codigo="pedidos", cambios={"nombre": "  "}, actor="x"
-        )
+        ctrl_svc.actualizar_bot(empresa=empresa_a, codigo="pedidos", cambios={"nombre": "  "}, actor="x")
 
 
 @pytest.mark.tenant
@@ -775,12 +737,8 @@ def test_endurecimiento_seguridad_tokens_secretos_y_unicidad(empresa_a, user_a):
         scopes=["bots:read", "bots:write", "bots:heartbeat"],
         creado_por=user_a,
     )
-    bots_cambiar_habilitado(
-        str(tok.token), str(empresa_a.pk), "pedidos", False, "En mantenimiento"
-    )
-    limpio = bots_cambiar_habilitado(
-        str(tok.token), str(empresa_a.pk), "pedidos", True, ""
-    )
+    bots_cambiar_habilitado(str(tok.token), str(empresa_a.pk), "pedidos", False, "En mantenimiento")
+    limpio = bots_cambiar_habilitado(str(tok.token), str(empresa_a.pk), "pedidos", True, "")
     assert limpio["habilitado"] is True
     assert limpio["mensaje"] == ""
 
@@ -792,10 +750,7 @@ def test_endurecimiento_seguridad_tokens_secretos_y_unicidad(empresa_a, user_a):
         bots_cambiar_habilitado(str(tok.token), str(empresa_a.pk), "pedidos", False)
     cli_tok = APIClient()
     cli_tok.credentials(HTTP_X_CAPABILITY_TOKEN=str(tok.token))
-    assert (
-        cli_tok.post("/api/bots/heartbeat/", {"bot": "pedidos"}, format="json").status_code
-        == 401
-    )
+    assert cli_tok.post("/api/bots/heartbeat/", {"bot": "pedidos"}, format="json").status_code == 401
 
     empresa_a.activo = True
     empresa_a.save(update_fields=["activo"])
@@ -803,14 +758,10 @@ def test_endurecimiento_seguridad_tokens_secretos_y_unicidad(empresa_a, user_a):
     tok.save(update_fields=["activo"])
     with pytest.raises(PermissionError):
         bots_estado_flota(str(tok.token), str(empresa_a.pk))
-    assert (
-        cli_tok.post("/api/bots/heartbeat/", {"bot": "pedidos"}, format="json").status_code
-        == 401
-    )
+    assert cli_tok.post("/api/bots/heartbeat/", {"bot": "pedidos"}, format="json").status_code == 401
 
     # 5. BotBitacoraAdmin es estrictamente de solo lectura
     adm = BotBitacoraAdmin(BotBitacora, AdminSite())
     assert adm.has_add_permission(None) is False
     assert adm.has_change_permission(None) is False
     assert adm.has_delete_permission(None) is False
-

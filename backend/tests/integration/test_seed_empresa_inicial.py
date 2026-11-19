@@ -113,9 +113,7 @@ def test_empresa_existente_sin_moneda_recibe_moneda_base(monkeypatch):
     from apps.core.models import Empresa
 
     monkeypatch.setenv("OMNI_SEED_ADMIN_PASSWORD", PASSWORD)
-    Empresa.objects.create(
-        nombre_legal="Pre-existente", identificador_fiscal=RIF, id_moneda_base=None
-    )
+    Empresa.objects.create(nombre_legal="Pre-existente", identificador_fiscal=RIF, id_moneda_base=None)
     _run()
     empresa = Empresa.objects.get(identificador_fiscal=RIF)
     assert empresa.id_moneda_base is not None

@@ -50,9 +50,7 @@ def unidad(db, empresa_a):
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
 
-    return CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Cat M11"
-    )
+    return CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat M11")
 
 
 @pytest.fixture

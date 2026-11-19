@@ -47,9 +47,9 @@ class PagoTerceroViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: solo pagos de empresas visibles del usuario.
-        qs = PagoTercero.objects.filter(
-            id_empresa__in=_empresas(self.request)
-        ).select_related("id_proveedor", "id_moneda", "id_abono_cxp", "id_cxc_reintegro")
+        qs = PagoTercero.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
+            "id_proveedor", "id_moneda", "id_abono_cxp", "id_cxc_reintegro"
+        )
 
         estado = self.request.query_params.get("estado")
         proveedor_id = self.request.query_params.get("proveedor")

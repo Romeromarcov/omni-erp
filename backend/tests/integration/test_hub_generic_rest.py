@@ -40,6 +40,7 @@ def _fake_get(json_data, status=200, capture=None):
             capture["url"] = url
             capture["kwargs"] = kwargs
         return _FakeResp(json_data, status)
+
     return _get
 
 
@@ -90,10 +91,11 @@ _CONFIG = {
 
 class TestGenericRestConnector:
     def test_pull_contactos_mapea_y_extrae_raiz(self, empresa_a, monkeypatch):
-        payload = {"data": [
-            {"id": 7, "razon_social": "ACME C.A.", "correo": "a@acme.test",
-             "rif": "J-123", "es_cliente": True},
-        ]}
+        payload = {
+            "data": [
+                {"id": 7, "razon_social": "ACME C.A.", "correo": "a@acme.test", "rif": "J-123", "es_cliente": True},
+            ]
+        }
         monkeypatch.setattr(httpx, "get", _fake_get(payload))
         conn = GenericRestConnector(_instancia(empresa_a, _CONFIG))
 
@@ -186,6 +188,7 @@ class TestGenericRestConnector:
 def _fake_get_raises(exc):
     def _get(url, **kwargs):
         raise exc
+
     return _get
 
 

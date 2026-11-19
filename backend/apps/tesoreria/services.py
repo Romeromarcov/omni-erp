@@ -22,12 +22,12 @@ if TYPE_CHECKING:  # BUILD-1: solo para anotaciones (evita F821)
     from .models import MovimientoBancario, ConciliacionBancaria
 
 
-
 class ConciliacionError(Exception):
     """Error de negocio en el proceso de conciliación."""
 
 
 # ── registrar_movimiento_bancario ──────────────────────────────────────────────
+
 
 def registrar_movimiento_bancario(
     *,
@@ -153,6 +153,7 @@ def importar_extracto_csv(
 
 # ── conciliar_automatico ───────────────────────────────────────────────────────
 
+
 def conciliar_automatico(
     empresa,
     cuenta_bancaria,
@@ -232,9 +233,7 @@ def conciliar_automatico(
                 sin_match += 1
 
         if props_desactivar:
-            PropuestaConciliacionBancaria.objects.filter(pk__in=props_desactivar).update(
-                activo=False
-            )
+            PropuestaConciliacionBancaria.objects.filter(pk__in=props_desactivar).update(activo=False)
 
     return {
         "conciliados": conciliados,
@@ -302,6 +301,7 @@ def _buscar_pago_matching(mov, cuenta_bancaria, tolerancia_dias: int):
 
 # ── iniciar / cerrar conciliación ─────────────────────────────────────────────
 
+
 def iniciar_conciliacion(
     empresa,
     cuenta_bancaria,
@@ -349,15 +349,21 @@ def cerrar_conciliacion(conciliacion, usuario=None) -> "ConciliacionBancaria":
     conciliacion.fecha_cierre = timezone.now()
     if usuario:
         conciliacion.realizada_por = usuario
-    conciliacion.save(update_fields=[
-        "movimientos_pendientes", "movimientos_conciliados",
-        "estado", "fecha_cierre", "realizada_por",
-    ])
+    conciliacion.save(
+        update_fields=[
+            "movimientos_pendientes",
+            "movimientos_conciliados",
+            "estado",
+            "fecha_cierre",
+            "realizada_por",
+        ]
+    )
     return conciliacion
 
 
 def _contar_pendientes(empresa, cuenta, inicio, fin) -> int:
     from .models import MovimientoBancario
+
     return MovimientoBancario.objects.filter(
         id_empresa=empresa,
         id_cuenta_bancaria=cuenta,
@@ -370,6 +376,7 @@ def _contar_pendientes(empresa, cuenta, inicio, fin) -> int:
 
 def _contar_conciliados(empresa, cuenta, inicio, fin) -> int:
     from .models import MovimientoBancario
+
     return MovimientoBancario.objects.filter(
         id_empresa=empresa,
         id_cuenta_bancaria=cuenta,

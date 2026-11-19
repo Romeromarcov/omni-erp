@@ -157,7 +157,10 @@ def test_registrar_sin_precio_bcv_da_400(client_a, empresa_a):
     h.crear_metodo(empresa_a, codigo="PAGO_MOVIL", moneda="VES", tipo_tasa="BCV")
     h.cargar_tasas(empresa_a)
     pago = h.crear_pago(
-        empresa_a, pago_id="PG-VES", monto=Decimal("3600"), moneda="VES",
+        empresa_a,
+        pago_id="PG-VES",
+        monto=Decimal("3600"),
+        moneda="VES",
         metodo_pago="PAGO_MOVIL",
     )
     r = client_a.post(
@@ -245,7 +248,9 @@ def test_bandeja_proponer_confirmar_flujo_completo(client_a, empresa_a, user_a):
     )
     rol = Roles.objects.create(id_empresa=empresa_a, nombre_rol="Aprobador")
     FlujoAprobacion.objects.create(
-        id_tipo_aprobacion=tipo, orden_etapa=1, nombre_etapa="Gerencia",
+        id_tipo_aprobacion=tipo,
+        orden_etapa=1,
+        nombre_etapa="Gerencia",
         rol_aprobador=rol,
     )
     # user_a es el aprobador (se le asigna el rol).
@@ -297,8 +302,7 @@ def test_create_pedido_sin_empresa_da_403():
     client.force_authenticate(user=user)
     r = client.post(
         f"{BASE}/pedidos/",
-        {"so_id": "X", "cliente_externo_id": "C", "fecha": "2026-06-01",
-         "lista_precios": "4"},
+        {"so_id": "X", "cliente_externo_id": "C", "fecha": "2026-06-01", "lista_precios": "4"},
         format="json",
     )
     assert r.status_code == 403

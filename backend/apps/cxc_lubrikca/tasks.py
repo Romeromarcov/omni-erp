@@ -10,6 +10,7 @@ django-celery-beat (misma convención que el resto del ERP); ver
 ``docs/cxc-lubrikca/CHECKLIST_GO_LIVE.md``. La tarea es solo lectura de Odoo y
 nunca toca las tablas de trabajo humano (Vinculacion/Bandeja/Conciliacion).
 """
+
 from __future__ import annotations
 
 import logging

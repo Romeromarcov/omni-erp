@@ -4,6 +4,7 @@ Schemas de eventos definidos con dataclasses.
 Cada evento de dominio sigue el envelope estándar (EventoBase) más
 un payload tipado específico del contexto de negocio.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -11,6 +12,7 @@ from typing import Any
 
 
 # ── Envelope base ─────────────────────────────────────────────────────────────
+
 
 @dataclass
 class EventoBase:
@@ -23,6 +25,7 @@ class EventoBase:
 
 
 # ── Payloads de Ventas ────────────────────────────────────────────────────────
+
 
 @dataclass
 class PedidoCreadoPayload:
@@ -56,6 +59,7 @@ class FacturaCreadaPayload:
 
 # ── Payloads de Inventario ────────────────────────────────────────────────────
 
+
 @dataclass
 class MovimientoCreadoPayload:
     movimiento_id: int
@@ -68,6 +72,7 @@ class MovimientoCreadoPayload:
 
 
 # ── Payloads de Finanzas ──────────────────────────────────────────────────────
+
 
 @dataclass
 class PagoRegistradoPayload:

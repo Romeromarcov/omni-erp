@@ -39,11 +39,7 @@ def test_crea_cuenta_de_servicio_con_permiso_y_sin_staff(rif, user_a):
         f"111={user_a.email}",
     )
     bot = Usuarios.objects.get(username="bot1")
-    assert (
-        bot.check_password(PW)
-        and not bot.is_staff
-        and bot.has_perm("bots_ingest.ingestar")
-    )
+    assert bot.check_password(PW) and not bot.is_staff and bot.has_perm("bots_ingest.ingestar")
     assert BotUsuario.objects.get(telegram_user_id=111).usuario_id == user_a.pk
 
 
@@ -59,12 +55,8 @@ def test_es_idempotente_y_no_cambia_la_contrasena(rif, user_a):
         "--vendedor",
         f"111={user_a.email}",
     )
-    correr(
-        "--empresa-rif", rif, "--username", "bot1", "--vendedor", f"111={user_a.email}"
-    )
-    assert (
-        Usuarios.objects.get(username="bot1").check_password(PW) and "intacta" in salida
-    )
+    correr("--empresa-rif", rif, "--username", "bot1", "--vendedor", f"111={user_a.email}")
+    assert Usuarios.objects.get(username="bot1").check_password(PW) and "intacta" in salida
     assert BotUsuario.objects.filter(telegram_user_id=111).count() == 1
 
 
@@ -92,18 +84,12 @@ def test_errores_claros(rif, args):
     with pytest.raises(CommandError):
         call_command(
             "crear_usuario_bot",
-            *(
-                base + args
-                if args[0] != "--empresa-rif"
-                else ["--username", "botx"] + args
-            ),
+            *(base + args if args[0] != "--empresa-rif" else ["--username", "botx"] + args),
         )
 
 
 def test_no_registra_telegram_de_otra_empresa(rif, user_a, user_b, empresa_b):
-    BotUsuario.objects.create(
-        id_empresa=empresa_b, telegram_user_id=222, usuario=user_b
-    )
+    BotUsuario.objects.create(id_empresa=empresa_b, telegram_user_id=222, usuario=user_b)
     with pytest.raises(CommandError, match="otra empresa"):
         correr(
             "--empresa-rif",
@@ -123,18 +109,12 @@ def test_contrasena_debil_se_rechaza(rif):
 
 
 def test_instancia_odoo_usa_la_misma_seleccion_que_cxc(empresa_a):
-    prov, _ = ConectorProveedor.objects.get_or_create(
-        codigo="odoo", defaults={"nombre": "Odoo"}
-    )
-    vieja = ConectorInstancia.objects.create(
-        id_empresa=empresa_a, id_proveedor=prov, nombre="vieja", estado="activo"
-    )
+    prov, _ = ConectorProveedor.objects.get_or_create(codigo="odoo", defaults={"nombre": "Odoo"})
+    vieja = ConectorInstancia.objects.create(id_empresa=empresa_a, id_proveedor=prov, nombre="vieja", estado="activo")
     nueva = ConectorInstancia.objects.create(
         id_empresa=empresa_a, id_proveedor=prov, nombre="nueva", estado="configurando"
     )
-    assert (
-        odoo_push.instancia_odoo(empresa_a).pk == nueva.pk
-    )  # más reciente con activo=True, como CxC
+    assert odoo_push.instancia_odoo(empresa_a).pk == nueva.pk  # más reciente con activo=True, como CxC
     nueva.activo = False
     nueva.save()
     assert odoo_push.instancia_odoo(empresa_a).pk == vieja.pk

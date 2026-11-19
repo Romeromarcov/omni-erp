@@ -421,9 +421,7 @@ class PropuestaConciliacionBancaria(models.Model):
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, db_index=True)
     regla = models.CharField(max_length=10, default="-")
     motivo = models.CharField(max_length=500, blank=True, default="")
-    fuente_pago = models.CharField(
-        max_length=10, choices=FUENTE_PAGO_CHOICES, blank=True, default=""
-    )
+    fuente_pago = models.CharField(max_length=10, choices=FUENTE_PAGO_CHOICES, blank=True, default="")
     id_pago_nativo = models.ForeignKey(
         "finanzas.Pago",
         on_delete=models.SET_NULL,
@@ -444,9 +442,7 @@ class PropuestaConciliacionBancaria(models.Model):
     cuenta_contable_codigo = models.CharField(max_length=150, blank=True, default="")
     puntaje = models.PositiveSmallIntegerField(default=0)
     candidatos_json = models.JSONField(default=list, blank=True)
-    estado = models.CharField(
-        max_length=15, choices=ESTADO_CHOICES, default="PENDIENTE", db_index=True
-    )
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default="PENDIENTE", db_index=True)
     ultimo_comentario = models.TextField(blank=True, default="")
     decidida_por = models.ForeignKey(
         "core.Usuarios",
@@ -484,8 +480,7 @@ class PropuestaConciliacionBancaria(models.Model):
             ),
             models.UniqueConstraint(
                 fields=["id_empresa", "fuente_pago", "pago_externo_id"],
-                condition=models.Q(activo=True, estado__in=["APROBADA", "CORREGIDA"])
-                & ~models.Q(pago_externo_id=""),
+                condition=models.Q(activo=True, estado__in=["APROBADA", "CORREGIDA"]) & ~models.Q(pago_externo_id=""),
                 name="uq_tesoreria_prop_pago_ext_aprobado",
             ),
         ]
@@ -545,4 +540,3 @@ class DecisionPreconciliacionBancaria(models.Model):
 
     def __str__(self) -> str:
         return f"{self.accion} por {self.usuario_nombre or self.id_usuario_id} ({self.fecha_decision})"
-

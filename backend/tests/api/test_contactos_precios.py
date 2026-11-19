@@ -18,9 +18,7 @@ from rest_framework.test import APIClient
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
 
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CP", tipo="CANTIDAD"
-    )
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-CP", tipo="CANTIDAD")
 
 
 @pytest.fixture
@@ -318,9 +316,7 @@ class TestObtenerPrecio:
         from apps.ventas.models import DetallePrecio
         from apps.ventas.services import obtener_precio
 
-        DetallePrecio.objects.create(
-            id_lista=lista_referencia, id_producto=producto, precio=Decimal("150.00")
-        )
+        DetallePrecio.objects.create(id_lista=lista_referencia, id_producto=producto, precio=Decimal("150.00"))
         precio = obtener_precio(producto, empresa_a)
         assert precio == Decimal("150.00")
 
@@ -385,9 +381,7 @@ class TestMCPBuscarContacto:
         assert len(resultado) >= 1
         assert resultado[0]["nombre"] == "Distribuidora Ejemplo"
 
-    def test_filtrar_por_rol_proveedor(
-        self, db, empresa_a, contacto_cliente, contacto_proveedor, capability_token
-    ):
+    def test_filtrar_por_rol_proveedor(self, db, empresa_a, contacto_cliente, contacto_proveedor, capability_token):
         from apps.core.mcp_server import omni_buscar_contacto
 
         resultado = omni_buscar_contacto(
@@ -399,9 +393,7 @@ class TestMCPBuscarContacto:
         assert str(contacto_proveedor.id_contacto) in ids
         assert str(contacto_cliente.id_contacto) not in ids
 
-    def test_aislamiento_tenant_en_busqueda(
-        self, db, empresa_a, empresa_b, contacto_cliente, capability_token
-    ):
+    def test_aislamiento_tenant_en_busqueda(self, db, empresa_a, empresa_b, contacto_cliente, capability_token):
         from apps.core.models import Contacto
         from apps.core.mcp_server import omni_buscar_contacto
 

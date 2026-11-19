@@ -56,6 +56,7 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
         from apps.core.viewsets import get_empresas_visible
+
         return SesionCajaFisica.objects.filter(empresa__in=get_empresas_visible(self.request.user))
 
     def perform_create(self, serializer):
@@ -85,9 +86,9 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             )
 
         try:
-            caja_fisica = CajaFisica.objects.filter(
-                empresa__in=get_empresas_visible(self.request.user)
-            ).get(id_caja_fisica=caja_fisica_id, activa=True)
+            caja_fisica = CajaFisica.objects.filter(empresa__in=get_empresas_visible(self.request.user)).get(
+                id_caja_fisica=caja_fisica_id, activa=True
+            )
         except (CajaFisica.DoesNotExist, DjangoValidationError, ValueError, TypeError):
             # R-CODE-1: mismo mensaje para inexistente, inactiva, malformada o
             # ajena — no se filtra existencia de cajas de otros tenants.
@@ -198,9 +199,7 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
                 status=400,
             )
         try:
-            mov_salida, mov_entrada = transferencia_entre_cajas(
-                caja_origen, caja_destino, monto, usuario=usuario
-            )
+            mov_salida, mov_entrada = transferencia_entre_cajas(caja_origen, caja_destino, monto, usuario=usuario)
         except ValueError as exc:
             # Mensajes de negocio controlados (monto, saldo, moneda); no se
             # expone ningún detalle interno.
@@ -218,7 +217,6 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
 
 from rest_framework.decorators import action
-
 
 
 # NOTA: existía aquí una clase DatafonoViewSet duplicada (muerta, sombreada por
@@ -244,9 +242,7 @@ class MetodoPagoEmpresaActivaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         # R-CODE-1: SIEMPRE acotar al tenant; los query params solo estrechan
         # (antes filtraban opcionalmente → fuga cross-tenant sin ?empresa=).
-        qs = MetodoPagoEmpresaActiva.objects.filter(
-            empresa__in=get_empresas_visible(self.request.user)
-        )
+        qs = MetodoPagoEmpresaActiva.objects.filter(empresa__in=get_empresas_visible(self.request.user))
         empresa = self.request.query_params.get("empresa")
         metodo_pago = self.request.query_params.get("metodo_pago")
         if empresa:
@@ -332,6 +328,7 @@ class TasaCambioViewSet(BaseModelViewSet):
         # las específicas se filtran por empresa visible del usuario.
         from django.db.models import Q
         from apps.core.viewsets import get_empresas_visible
+
         return TasaCambio.objects.filter(
             Q(id_empresa__isnull=True) | Q(id_empresa__in=get_empresas_visible(self.request.user))
         )
@@ -392,9 +389,7 @@ class MetodoPagoViewSet(BaseModelViewSet):
             # si no, sería un oráculo sobre los métodos de otro tenant (vía
             # `aplicado` y la exclusión por empresa).
             try:
-                empresa_visible = (
-                    get_empresas_visible(request.user).filter(id_empresa=id_empresa_actual).exists()
-                )
+                empresa_visible = get_empresas_visible(request.user).filter(id_empresa=id_empresa_actual).exists()
             except (ValueError, DjangoValidationError):
                 empresa_visible = False
             if not empresa_visible:
@@ -491,9 +486,7 @@ class MetodoPagoViewSet(BaseModelViewSet):
             from apps.core.viewsets import get_empresas_visible
 
             try:
-                empresa = get_empresas_visible(request.user).filter(
-                    id_empresa=empresa_id
-                ).first()
+                empresa = get_empresas_visible(request.user).filter(id_empresa=empresa_id).first()
             except (ValueError, ValidationError):
                 empresa = None
             if empresa is None:
@@ -573,6 +566,7 @@ class MovimientoCajaBancoViewSet(BaseModelViewSet):
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
         from apps.core.viewsets import get_empresas_visible
+
         return MovimientoCajaBanco.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
 
 
@@ -738,11 +732,11 @@ class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
         from apps.core.viewsets import get_empresas_visible
+
         return CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
 
 
 class MonedaEmpresaActivaViewSet(BaseModelViewSet):
-
     queryset = MonedaEmpresaActiva.objects.all()
     serializer_class = MonedaEmpresaActivaSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -862,8 +856,6 @@ class CajaFisicaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         return CajaFisicaUsuario.objects.filter(usuario=self.request.user).select_related("caja_fisica")
 
 
-
-
 class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
     queryset = PlantillaMaestroCajasVirtuales.objects.all()
     serializer_class = PlantillaMaestroCajasVirtualesSerializer
@@ -973,7 +965,10 @@ class DatafonoViewSet(BaseModelViewSet):
             )
         except ValueError:
             logger.exception("Error al cerrar sesión datafono")
-            return Response({"success": False, "message": "No se pudo cerrar la sesión. Intente de nuevo."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"success": False, "message": "No se pudo cerrar la sesión. Intente de nuevo."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     @action(detail=True, methods=["post"], url_path="registrar-pago")
     def registrar_pago_tarjeta(self, request, pk=None):
@@ -1024,7 +1019,10 @@ class DatafonoViewSet(BaseModelViewSet):
             )
         except ValueError:
             logger.exception("Error al registrar pago tarjeta")
-            return Response({"success": False, "message": "No se pudo registrar el pago. Verifique los datos."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"success": False, "message": "No se pudo registrar el pago. Verifique los datos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class TransaccionDatafonoViewSet(BaseModelViewSet):
@@ -1103,7 +1101,10 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
             )
         except ValueError:
             logger.exception("Error al conciliar depósito")
-            return Response({"success": False, "message": "No se pudo conciliar el depósito. Verifique los datos."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"success": False, "message": "No se pudo conciliar el depósito. Verifique los datos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     @action(detail=False, methods=["get"], url_path="pendientes")
     def depositos_pendientes(self, request):
@@ -1332,6 +1333,7 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
         if pago.tipo_operacion == "INGRESO":
             try:
                 from apps.notificaciones.services import emitir_notificacion
+
                 emitir_notificacion(
                     "PAGO_RECIBIDO",
                     pago.id_empresa,

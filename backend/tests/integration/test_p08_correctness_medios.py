@@ -17,6 +17,7 @@ Tests de los hallazgos:
 BUG-M1 (promedio de sueldo en resumen de nómina) se cubre en
 ``test_nomina_views_cobertura.py::test_resumen_exacto``.
 """
+
 import datetime
 import threading
 import uuid
@@ -51,9 +52,7 @@ def cxc_con_abonos(empresa_a, user_a):
             estado="parcial",
         )
         for monto in ("10.00", "15.00"):
-            AbonoCxC.objects.create(
-                cuenta_por_cobrar=cxc, monto=Decimal(monto), usuario=user_a
-            )
+            AbonoCxC.objects.create(cuenta_por_cobrar=cxc, monto=Decimal(monto), usuario=user_a)
         cuentas.append(cxc)
     return cuentas
 
@@ -135,9 +134,7 @@ def _crear_mov(caja, user, fecha, hora, tipo, monto, moneda):
 
 
 class TestCierreCajaVentana:
-    def test_no_recuenta_movimientos_anteriores_al_ultimo_cierre(
-        self, caja_fisica_a, user_a, moneda_usd
-    ):
+    def test_no_recuenta_movimientos_anteriores_al_ultimo_cierre(self, caja_fisica_a, user_a, moneda_usd):
         """BUG-M4: con último cierre a las 12:00, un movimiento del mismo día a
         las 10:00 (ya contado en ese cierre) NO entra en el cierre siguiente;
         el de las 14:00 sí. El límite (16:00) es inclusivo y lo posterior queda
@@ -164,12 +161,14 @@ class TestCierreCajaVentana:
         )
 
         m = moneda_usd
-        _crear_mov(caja, user_a, dia, datetime.time(10, 0), "INGRESO", "50.00", m)   # antes del cierre previo → fuera
-        _crear_mov(caja, user_a, dia, datetime.time(12, 0), "INGRESO", "7.00", m)    # exactamente en el cierre previo → fuera
-        _crear_mov(caja, user_a, dia, datetime.time(14, 0), "INGRESO", "30.00", m)   # dentro de la ventana
-        _crear_mov(caja, user_a, dia, datetime.time(15, 0), "EGRESO", "4.00", m)     # dentro de la ventana
-        _crear_mov(caja, user_a, dia, datetime.time(16, 0), "INGRESO", "5.00", m)    # límite inclusivo → dentro
-        _crear_mov(caja, user_a, dia, datetime.time(17, 0), "INGRESO", "99.00", m)   # después del límite → fuera
+        _crear_mov(caja, user_a, dia, datetime.time(10, 0), "INGRESO", "50.00", m)  # antes del cierre previo → fuera
+        _crear_mov(
+            caja, user_a, dia, datetime.time(12, 0), "INGRESO", "7.00", m
+        )  # exactamente en el cierre previo → fuera
+        _crear_mov(caja, user_a, dia, datetime.time(14, 0), "INGRESO", "30.00", m)  # dentro de la ventana
+        _crear_mov(caja, user_a, dia, datetime.time(15, 0), "EGRESO", "4.00", m)  # dentro de la ventana
+        _crear_mov(caja, user_a, dia, datetime.time(16, 0), "INGRESO", "5.00", m)  # límite inclusivo → dentro
+        _crear_mov(caja, user_a, dia, datetime.time(17, 0), "INGRESO", "99.00", m)  # después del límite → fuera
         _crear_mov(
             caja, user_a, dia + datetime.timedelta(days=1), datetime.time(9, 0), "INGRESO", "88.00", m
         )  # otro día posterior → fuera
@@ -180,7 +179,7 @@ class TestCierreCajaVentana:
             hasta=datetime.datetime(2026, 6, 10, 16, 0, 0),
         )
 
-        assert resultado["ingresos"] == Decimal("35.00")   # 30 + 5
+        assert resultado["ingresos"] == Decimal("35.00")  # 30 + 5
         assert resultado["egresos"] == Decimal("4.00")
         assert resultado["saldo_teorico"] == Decimal("131.00")  # 100 + 35 - 4
         assert resultado["descuadre"] == Decimal("0.00")

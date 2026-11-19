@@ -68,7 +68,9 @@ def despacho_get_pendientes(
 
     logger.info(
         "despacho_get_pendientes | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(despachos),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(despachos),
     )
     return [
         {
@@ -76,18 +78,12 @@ def despacho_get_pendientes(
             "numero": d.numero_despacho,
             "estado": d.estado_despacho,
             "fecha_despacho": d.fecha_despacho.isoformat(),
-            "fecha_entrega_estimada": (
-                d.fecha_entrega_estimada.isoformat() if d.fecha_entrega_estimada else None
-            ),
+            "fecha_entrega_estimada": (d.fecha_entrega_estimada.isoformat() if d.fecha_entrega_estimada else None),
             "nota_venta": d.id_nota_venta.numero_nota if d.id_nota_venta else None,
-            "cliente": (
-                d.id_nota_venta.id_cliente.razon_social if d.id_nota_venta else None
-            ),
+            "cliente": (d.id_nota_venta.id_cliente.razon_social if d.id_nota_venta else None),
             "direccion_entrega": d.direccion_destino,
             "transportista": (
-                f"{d.id_transportista.nombre} {d.id_transportista.apellido}"
-                if d.id_transportista
-                else None
+                f"{d.id_transportista.nombre} {d.id_transportista.apellido}" if d.id_transportista else None
             ),
         }
         for d in despachos

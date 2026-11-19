@@ -21,9 +21,7 @@ BASE = "/api/inventario/pasos-operacion/"
 
 @pytest.fixture
 def almacen_a(empresa_a):
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Central", codigo_almacen="ALM-PO"
-    )
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Central", codigo_almacen="ALM-PO")
 
 
 @pytest.fixture
@@ -65,8 +63,11 @@ def test_crea_y_lista_pasos_ordenados_por_secuencia(client_a, empresa_a, almacen
 
 def test_actualiza_y_elimina_paso(client_a, empresa_a, almacen_a):
     paso = PasoOperacion.objects.create(
-        id_empresa=empresa_a, id_almacen=almacen_a, tipo_operacion="ENTREGA",
-        nombre_paso="Picking", secuencia=1,
+        id_empresa=empresa_a,
+        id_almacen=almacen_a,
+        tipo_operacion="ENTREGA",
+        nombre_paso="Picking",
+        secuencia=1,
     )
     resp = client_a.patch(f"{BASE}{paso.pk}/", {"nombre_paso": "Picking V2"}, format="json")
     assert resp.status_code == 200, resp.content
@@ -80,8 +81,11 @@ def test_actualiza_y_elimina_paso(client_a, empresa_a, almacen_a):
 def test_aislamiento_tenant(client_b, empresa_a, almacen_a):
     """user_b (empresa_b) no ve los pasos de empresa_a (R-CODE-1)."""
     PasoOperacion.objects.create(
-        id_empresa=empresa_a, id_almacen=almacen_a, tipo_operacion="RECEPCION",
-        nombre_paso="Confirmación", secuencia=1,
+        id_empresa=empresa_a,
+        id_almacen=almacen_a,
+        tipo_operacion="RECEPCION",
+        nombre_paso="Confirmación",
+        secuencia=1,
     )
     resp = client_b.get(BASE)
     assert resp.status_code == 200
@@ -92,25 +96,37 @@ def test_aislamiento_tenant(client_b, empresa_a, almacen_a):
 
 def test_secuencia_unica_por_almacen_y_tipo(empresa_a, almacen_a):
     PasoOperacion.objects.create(
-        id_empresa=empresa_a, id_almacen=almacen_a, tipo_operacion="RECEPCION",
-        nombre_paso="Confirmación", secuencia=1,
+        id_empresa=empresa_a,
+        id_almacen=almacen_a,
+        tipo_operacion="RECEPCION",
+        nombre_paso="Confirmación",
+        secuencia=1,
     )
     with pytest.raises(IntegrityError):
         with transaction.atomic():
             PasoOperacion.objects.create(
-                id_empresa=empresa_a, id_almacen=almacen_a, tipo_operacion="RECEPCION",
-                nombre_paso="Otro", secuencia=1,
+                id_empresa=empresa_a,
+                id_almacen=almacen_a,
+                tipo_operacion="RECEPCION",
+                nombre_paso="Otro",
+                secuencia=1,
             )
 
 
 def test_mismo_numero_secuencia_distinto_tipo_ok(empresa_a, almacen_a):
     """La misma secuencia es válida para tipos de operación distintos."""
     PasoOperacion.objects.create(
-        id_empresa=empresa_a, id_almacen=almacen_a, tipo_operacion="RECEPCION",
-        nombre_paso="Confirmación", secuencia=1,
+        id_empresa=empresa_a,
+        id_almacen=almacen_a,
+        tipo_operacion="RECEPCION",
+        nombre_paso="Confirmación",
+        secuencia=1,
     )
     paso = PasoOperacion.objects.create(
-        id_empresa=empresa_a, id_almacen=almacen_a, tipo_operacion="ENTREGA",
-        nombre_paso="Picking", secuencia=1,
+        id_empresa=empresa_a,
+        id_almacen=almacen_a,
+        tipo_operacion="ENTREGA",
+        nombre_paso="Picking",
+        secuencia=1,
     )
     assert paso.pk is not None

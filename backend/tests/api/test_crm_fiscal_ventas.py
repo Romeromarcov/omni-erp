@@ -10,9 +10,11 @@ from rest_framework.test import APIClient
 
 # ── Fixtures locales ──────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def cliente_a(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Distribuidora Pérez C.A.",
@@ -24,6 +26,7 @@ def cliente_a(db, empresa_a):
 @pytest.fixture
 def cliente_credito(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Cliente Crédito S.A.",
@@ -37,6 +40,7 @@ def cliente_credito(db, empresa_a):
 @pytest.fixture
 def almacen_a(db, empresa_a):
     from apps.almacenes.models import Almacen
+
     return Almacen.objects.create(
         id_empresa=empresa_a,
         nombre_almacen="Almacén Principal",
@@ -47,6 +51,7 @@ def almacen_a(db, empresa_a):
 @pytest.fixture
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
+
     return UnidadMedida.objects.create(
         id_empresa=empresa_a,
         nombre="Unidad",
@@ -58,6 +63,7 @@ def unidad(db, empresa_a):
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
+
     return CategoriaProducto.objects.create(
         id_empresa=empresa_a,
         nombre_categoria="Lubricantes CFV",
@@ -67,6 +73,7 @@ def categoria(db, empresa_a):
 @pytest.fixture
 def producto(db, empresa_a, unidad, categoria, moneda_usd):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Aceite Motor 20W-50",
@@ -79,6 +86,7 @@ def producto(db, empresa_a, unidad, categoria, moneda_usd):
 @pytest.fixture
 def stock_inicial(db, empresa_a, producto, almacen_a, user_a):
     from apps.inventario.services import registrar_movimiento
+
     registrar_movimiento(
         empresa=empresa_a,
         fecha_hora_movimiento=timezone.now(),
@@ -93,6 +101,7 @@ def stock_inicial(db, empresa_a, producto, almacen_a, user_a):
 @pytest.fixture
 def pedido(db, empresa_a, cliente_a):
     from apps.ventas.models import Pedido
+
     return Pedido.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_a,
@@ -105,6 +114,7 @@ def pedido(db, empresa_a, cliente_a):
 @pytest.fixture
 def pedido_con_detalle(db, pedido, producto):
     from apps.ventas.models import DetallePedido
+
     DetallePedido.objects.create(
         id_pedido=pedido,
         id_producto=producto,
@@ -116,6 +126,7 @@ def pedido_con_detalle(db, pedido, producto):
 
 
 # ── CRM: buscar por RIF ───────────────────────────────────────────────────────
+
 
 @pytest.mark.django_db
 class TestBuscarPorRif:
@@ -151,6 +162,7 @@ class TestBuscarPorRif:
 
 # ── CRM: historial de ventas ──────────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestHistorialVentas:
     def test_historial_vacio(self, cliente_a, user_a):
@@ -172,6 +184,7 @@ class TestHistorialVentas:
 
 # ── CRM: crédito disponible ───────────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestCreditoDisponible:
     def test_cliente_contado_sin_credito(self, cliente_a, user_a):
@@ -192,10 +205,12 @@ class TestCreditoDisponible:
 
 # ── Fiscal: servicios IVA / IGTF ─────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestServiciosFiscales:
     def test_iva_general_16(self):
         from apps.fiscal.services import calcular_iva
+
         resultado = calcular_iva(Decimal("100"), "GENERAL")
         assert resultado["tasa"] == Decimal("0.16")
         assert resultado["monto_iva"] == Decimal("16.00")
@@ -203,18 +218,21 @@ class TestServiciosFiscales:
 
     def test_iva_reducido_8(self):
         from apps.fiscal.services import calcular_iva
+
         resultado = calcular_iva(Decimal("100"), "REDUCIDO")
         assert resultado["tasa"] == Decimal("0.08")
         assert resultado["monto_iva"] == Decimal("8.00")
 
     def test_iva_exento_0(self):
         from apps.fiscal.services import calcular_iva
+
         resultado = calcular_iva(Decimal("100"), "EXENTO")
         assert resultado["monto_iva"] == Decimal("0")
         assert resultado["total"] == Decimal("100")
 
     def test_igtf_aplica_en_divisa(self):
         from apps.fiscal.services import calcular_igtf
+
         resultado = calcular_igtf(Decimal("1000"), "DIVISA_EFECTIVO")
         assert resultado["aplica"] is True
         assert resultado["tasa"] == Decimal("0.03")
@@ -223,12 +241,14 @@ class TestServiciosFiscales:
 
     def test_igtf_no_aplica_en_bs(self):
         from apps.fiscal.services import calcular_igtf
+
         resultado = calcular_igtf(Decimal("1000"), "EFECTIVO_BS")
         assert resultado["aplica"] is False
         assert resultado["monto_igtf"] == Decimal("0")
 
     def test_calcular_impuestos_pedido_completo(self):
         from apps.fiscal.services import calcular_impuestos_pedido
+
         lineas = [
             {"subtotal": Decimal("100"), "tipo_iva": "GENERAL"},
             {"subtotal": Decimal("50"), "tipo_iva": "EXENTO"},
@@ -243,6 +263,7 @@ class TestServiciosFiscales:
 
     def test_igtf_en_pedido_con_divisa(self):
         from apps.fiscal.services import calcular_impuestos_pedido
+
         lineas = [{"subtotal": Decimal("100"), "tipo_iva": "GENERAL"}]
         resultado = calcular_impuestos_pedido(lineas, metodo_pago="DIVISA_EFECTIVO")
         # 100 + 16 IVA = 116, IGTF 3% de 116 = 3.48
@@ -253,6 +274,7 @@ class TestServiciosFiscales:
     def test_tasa_iva_configurable_por_empresa(self, empresa_a):
         from apps.fiscal.models import TasaIVAEmpresa
         from apps.fiscal.services import calcular_iva
+
         TasaIVAEmpresa.objects.create(
             id_empresa=empresa_a,
             tipo="GENERAL",
@@ -265,6 +287,7 @@ class TestServiciosFiscales:
 
 
 # ── Ventas: confirmar pedido ──────────────────────────────────────────────────
+
 
 @pytest.mark.django_db
 class TestConfirmarPedido:
@@ -358,10 +381,9 @@ class TestConfirmarPedido:
         )
         assert resp.status_code == 400
 
-    def test_confirmar_ya_aprobado_falla(
-        self, pedido_con_detalle, almacen_a, user_a, stock_inicial
-    ):
+    def test_confirmar_ya_aprobado_falla(self, pedido_con_detalle, almacen_a, user_a, stock_inicial):
         from apps.ventas.models import Pedido
+
         Pedido.objects.filter(pk=pedido_con_detalle.pk).update(estado="APROBADO")
 
         client = APIClient()

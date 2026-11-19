@@ -49,19 +49,11 @@ class RecursoActivacion(OmniBaseModel):
     """Recurso limitado de un calendario (p. ej. ``promotoras`` = 2, ``igloos`` = 3)."""
 
     id_recurso = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="activaciones_recursos"
-    )
-    calendario = models.ForeignKey(
-        CalendarioActivacion, on_delete=models.CASCADE, related_name="recursos"
-    )
-    codigo = models.SlugField(
-        max_length=40, help_text="Identificador estable, p. ej. promotoras, igloos."
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="activaciones_recursos")
+    calendario = models.ForeignKey(CalendarioActivacion, on_delete=models.CASCADE, related_name="recursos")
+    codigo = models.SlugField(max_length=40, help_text="Identificador estable, p. ej. promotoras, igloos.")
     nombre = models.CharField(max_length=100)
-    capacidad = models.PositiveSmallIntegerField(
-        help_text="Unidades disponibles simultáneamente."
-    )
+    capacidad = models.PositiveSmallIntegerField(help_text="Unidades disponibles simultáneamente.")
 
     class Meta:
         db_table = "activaciones_recurso"
@@ -89,12 +81,8 @@ class EventoActivacion(OmniBaseModel):
         BOT = "BOT", "Bot de Telegram"
 
     id_evento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="activaciones_eventos"
-    )
-    calendario = models.ForeignKey(
-        CalendarioActivacion, on_delete=models.PROTECT, related_name="eventos"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="activaciones_eventos")
+    calendario = models.ForeignKey(CalendarioActivacion, on_delete=models.PROTECT, related_name="eventos")
     cliente = models.ForeignKey(
         "crm.Cliente",
         on_delete=models.SET_NULL,
@@ -102,9 +90,7 @@ class EventoActivacion(OmniBaseModel):
         blank=True,
         related_name="activaciones",
     )
-    cliente_nombre = models.CharField(
-        max_length=255, help_text="Nombre tal como lo indicó el vendedor."
-    )
+    cliente_nombre = models.CharField(max_length=255, help_text="Nombre tal como lo indicó el vendedor.")
     vendedor = models.ForeignKey(
         "core.Usuarios",
         on_delete=models.SET_NULL,
@@ -113,18 +99,12 @@ class EventoActivacion(OmniBaseModel):
         related_name="activaciones",
     )
     vendedor_nombre = models.CharField(max_length=150, blank=True, default="")
-    ubicacion = models.CharField(
-        max_length=500, help_text="Punto de venta / dirección."
-    )
+    ubicacion = models.CharField(max_length=500, help_text="Punto de venta / dirección.")
     inicio = models.DateTimeField()
     fin = models.DateTimeField()
-    materiales = models.JSONField(
-        default=list, blank=True, help_text="Lista de materiales a llevar."
-    )
+    materiales = models.JSONField(default=list, blank=True, help_text="Lista de materiales a llevar.")
     notas = models.TextField(blank=True, default="")
-    estado = models.CharField(
-        max_length=12, choices=Estado.choices, default=Estado.PROGRAMADO
-    )
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PROGRAMADO)
     origen = models.CharField(max_length=4, choices=Origen.choices, default=Origen.WEB)
     google_event_id = models.CharField(max_length=255, blank=True, default="")
     sync_error = models.CharField(max_length=255, blank=True, default="")
@@ -132,11 +112,7 @@ class EventoActivacion(OmniBaseModel):
     class Meta:
         db_table = "activaciones_evento"
         ordering = ["inicio"]
-        constraints = [
-            models.CheckConstraint(
-                condition=Q(fin__gt=F("inicio")), name="activ_evento_fin_gt_inicio"
-            )
-        ]
+        constraints = [models.CheckConstraint(condition=Q(fin__gt=F("inicio")), name="activ_evento_fin_gt_inicio")]
         indexes = [models.Index(fields=["calendario", "estado", "inicio", "fin"])]
 
     def __str__(self):
@@ -145,24 +121,14 @@ class EventoActivacion(OmniBaseModel):
 
 class UsoRecursoEvento(OmniBaseModel):
     id_uso = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="activaciones_usos"
-    )
-    evento = models.ForeignKey(
-        EventoActivacion, on_delete=models.CASCADE, related_name="usos"
-    )
-    recurso = models.ForeignKey(
-        RecursoActivacion, on_delete=models.PROTECT, related_name="usos"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="activaciones_usos")
+    evento = models.ForeignKey(EventoActivacion, on_delete=models.CASCADE, related_name="usos")
+    recurso = models.ForeignKey(RecursoActivacion, on_delete=models.PROTECT, related_name="usos")
     cantidad = models.PositiveSmallIntegerField()
 
     class Meta:
         db_table = "activaciones_uso_recurso"
         constraints = [
-            models.UniqueConstraint(
-                fields=["evento", "recurso"], name="activ_uso_unico"
-            ),
-            models.CheckConstraint(
-                condition=Q(cantidad__gt=0), name="activ_uso_cantidad_positiva"
-            ),
+            models.UniqueConstraint(fields=["evento", "recurso"], name="activ_uso_unico"),
+            models.CheckConstraint(condition=Q(cantidad__gt=0), name="activ_uso_cantidad_positiva"),
         ]

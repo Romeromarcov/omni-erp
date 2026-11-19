@@ -19,6 +19,7 @@ tragaba en un ``except Exception``. Ahora la sesión abierta del usuario (en la
 empresa del pedido) resuelve la caja virtual activa de su caja física y arma el
 prefijo del número de pedido; sin sesión (o sin caja virtual) cae al fallback.
 """
+
 import datetime
 from decimal import Decimal
 from types import SimpleNamespace
@@ -55,6 +56,7 @@ HOY = datetime.date(2026, 6, 9)
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def cliente(db, empresa_a):
     from apps.crm.models import Cliente
@@ -73,12 +75,8 @@ def cliente(db, empresa_a):
 def producto(db, empresa_a, moneda_usd):
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-VS", tipo="CANTIDAD"
-    )
-    categoria = CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="General VS"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-VS", tipo="CANTIDAD")
+    categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="General VS")
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto Serial",
@@ -100,6 +98,7 @@ def pedido(db, empresa_a, cliente):
 
 
 # ── PedidoSerializer.validate ─────────────────────────────────────────────────
+
 
 class TestPedidoValidate:
     def test_fecha_cierre_anterior_a_pedido_invalida(self, cliente):
@@ -126,11 +125,10 @@ class TestPedidoValidate:
 
 # ── PedidoSerializer.create — numeración y detalles ──────────────────────────
 
+
 class TestPedidoCreate:
     def test_primer_pedido_recibe_secuencia_000001(self, cliente, empresa_a):
-        ser = PedidoSerializer(
-            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"}
-        )
+        ser = PedidoSerializer(data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"})
         assert ser.is_valid(), ser.errors
         pedido = ser.save(id_empresa=empresa_a)
         assert pedido.numero_pedido == "GEN-CAJGEN-000001"
@@ -142,9 +140,7 @@ class TestPedidoCreate:
             numero_pedido="GEN-CAJGEN-000007",
             fecha_pedido=HOY,
         )
-        ser = PedidoSerializer(
-            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"}
-        )
+        ser = PedidoSerializer(data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"})
         assert ser.is_valid(), ser.errors
         pedido = ser.save(id_empresa=empresa_a)
         assert pedido.numero_pedido == "GEN-CAJGEN-000008"
@@ -171,9 +167,7 @@ class TestPedidoCreate:
         assert detalle.precio_unitario == Decimal("12.5000")
         assert detalle.subtotal == Decimal("37.5000")
 
-    def test_sesion_abierta_arma_prefijo_con_caja_de_la_sesion(
-        self, cliente, empresa_a, user_a, moneda_usd
-    ):
+    def test_sesion_abierta_arma_prefijo_con_caja_de_la_sesion(self, cliente, empresa_a, user_a, moneda_usd):
         """
         FIX (lote 2): la sesión ABIERTA del usuario resuelve la caja virtual
         activa de su caja física y el prefijo usa sucursal + nombre de caja.
@@ -182,20 +176,21 @@ class TestPedidoCreate:
         from apps.core.models import Sucursal
         from apps.finanzas.models import Caja, CajaFisica, SesionCajaFisica
 
-        sucursal = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Sucursal Sesión", codigo_sucursal="SES"
-        )
+        sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal Sesión", codigo_sucursal="SES")
         caja_fisica = CajaFisica.objects.create(
-            empresa=empresa_a, sucursal=sucursal, nombre="Caja Uno",
+            empresa=empresa_a,
+            sucursal=sucursal,
+            nombre="Caja Uno",
             identificador_dispositivo="dev-vs-1",
         )
         Caja.objects.create(
-            empresa=empresa_a, sucursal=sucursal, nombre="Caja Uno V",
-            moneda=moneda_usd, caja_fisica=caja_fisica,
+            empresa=empresa_a,
+            sucursal=sucursal,
+            nombre="Caja Uno V",
+            moneda=moneda_usd,
+            caja_fisica=caja_fisica,
         )
-        SesionCajaFisica.objects.create(
-            caja_fisica=caja_fisica, usuario=user_a, empresa=empresa_a, estado="ABIERTA"
-        )
+        SesionCajaFisica.objects.create(caja_fisica=caja_fisica, usuario=user_a, empresa=empresa_a, estado="ABIERTA")
         ser = PedidoSerializer(
             data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"},
             context={"request": SimpleNamespace(user=user_a)},
@@ -210,17 +205,13 @@ class TestPedidoCreate:
         rep = PedidoSerializer(pedido).data
         assert rep["id_usuario"]["username"] == "user_empresa_a"
 
-    def test_sesion_abierta_sin_caja_virtual_cae_al_fallback(
-        self, cliente, empresa_a, user_a
-    ):
+    def test_sesion_abierta_sin_caja_virtual_cae_al_fallback(self, cliente, empresa_a, user_a):
         from apps.finanzas.models import CajaFisica, SesionCajaFisica
 
         caja_fisica = CajaFisica.objects.create(
             empresa=empresa_a, nombre="Caja Sola", identificador_dispositivo="dev-vs-2"
         )
-        SesionCajaFisica.objects.create(
-            caja_fisica=caja_fisica, usuario=user_a, empresa=empresa_a, estado="ABIERTA"
-        )
+        SesionCajaFisica.objects.create(caja_fisica=caja_fisica, usuario=user_a, empresa=empresa_a, estado="ABIERTA")
         ser = PedidoSerializer(
             data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"},
             context={"request": SimpleNamespace(user=user_a)},
@@ -229,9 +220,7 @@ class TestPedidoCreate:
         pedido = ser.save(id_empresa=empresa_a)
         assert pedido.numero_pedido == "GEN-CAJGEN-000001"
 
-    def test_documento_json_con_sucursal_y_caja_arma_prefijo(
-        self, cliente, empresa_a, moneda_usd
-    ):
+    def test_documento_json_con_sucursal_y_caja_arma_prefijo(self, cliente, empresa_a, moneda_usd):
         """
         documento_json está excluido del input del serializer, pero puede llegar
         por kwargs de ``save()`` (como hace código interno) → el prefijo usa el
@@ -240,13 +229,9 @@ class TestPedidoCreate:
         from apps.core.models import Sucursal
         from apps.finanzas.models import Caja
 
-        sucursal = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Sucursal Web", codigo_sucursal="WEB"
-        )
+        sucursal = Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal Web", codigo_sucursal="WEB")
         caja = Caja.objects.create(empresa=empresa_a, nombre="Caja Web", moneda=moneda_usd)
-        ser = PedidoSerializer(
-            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"}
-        )
+        ser = PedidoSerializer(data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"})
         assert ser.is_valid(), ser.errors
         pedido = ser.save(
             id_empresa=empresa_a,
@@ -263,9 +248,7 @@ class TestPedidoCreate:
         """Sucursal/caja inexistentes en documento_json → DoesNotExist → GEN-CAJGEN."""
         import uuid as uuid_mod
 
-        ser = PedidoSerializer(
-            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"}
-        )
+        ser = PedidoSerializer(data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"})
         assert ser.is_valid(), ser.errors
         pedido = ser.save(
             id_empresa=empresa_a,
@@ -276,29 +259,21 @@ class TestPedidoCreate:
         )
         assert pedido.numero_pedido == "GEN-CAJGEN-000001"
 
-    def test_documento_json_con_ids_de_otra_empresa_se_ignora(
-        self, cliente, empresa_a, empresa_b
-    ):
+    def test_documento_json_con_ids_de_otra_empresa_se_ignora(self, cliente, empresa_a, empresa_b):
         """R-CODE-1: sucursal/caja de OTRA empresa en documento_json se ignoran
         (caen al código GEN-CAJGEN) — nunca contaminan el pedido cross-tenant."""
         from apps.core.models import Sucursal
         from apps.finanzas.models import Caja
 
-        sucursal_b = Sucursal.objects.create(
-            id_empresa=empresa_b, nombre="Sucursal B", codigo_sucursal="SUCB"
-        )
+        sucursal_b = Sucursal.objects.create(id_empresa=empresa_b, nombre="Sucursal B", codigo_sucursal="SUCB")
         from apps.finanzas.models import Moneda
 
         moneda_b = Moneda.objects.filter(codigo_iso="USD").first() or Moneda.objects.create(
             codigo_iso="USD", nombre="Dólar", simbolo="$", es_publica=True
         )
-        caja_b = Caja.objects.create(
-            empresa=empresa_b, nombre="Caja B", tipo_caja="REGISTRADORA", moneda=moneda_b
-        )
+        caja_b = Caja.objects.create(empresa=empresa_b, nombre="Caja B", tipo_caja="REGISTRADORA", moneda=moneda_b)
 
-        ser = PedidoSerializer(
-            data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"}
-        )
+        ser = PedidoSerializer(data={"id_cliente": str(cliente.id_cliente), "fecha_pedido": "2026-06-09"})
         assert ser.is_valid(), ser.errors
         pedido = ser.save(
             id_empresa=empresa_a,
@@ -321,6 +296,7 @@ class TestPedidoCreate:
 
 # ── to_representation: cliente anidado en todos los documentos ───────────────
 
+
 class TestClienteAnidado:
     def _assert_cliente(self, rep):
         assert rep["id_cliente"]["razon_social"] == "Cliente Serial"
@@ -331,9 +307,7 @@ class TestClienteAnidado:
         self._assert_cliente(PedidoSerializer(pedido).data)
 
     def test_nota_venta(self, empresa_a, cliente):
-        nota = NotaVenta.objects.create(
-            id_empresa=empresa_a, id_cliente=cliente, numero_nota="NV-001", fecha_nota=HOY
-        )
+        nota = NotaVenta.objects.create(id_empresa=empresa_a, id_cliente=cliente, numero_nota="NV-001", fecha_nota=HOY)
         rep = NotaVentaSerializer(nota).data
         self._assert_cliente(rep)
         assert "referencia_externa" not in rep  # SEC-NEW-3
@@ -425,6 +399,7 @@ class TestDetallePedidoNested:
 
 # ── Validaciones de campo de los detalles ─────────────────────────────────────
 
+
 class TestValidacionesDetalle:
     def _data_detalle(self, pedido, producto, cantidad="1", precio="10"):
         return {
@@ -467,9 +442,7 @@ class TestValidacionesNotaVenta:
         assert NotaVentaSerializer().validate_numero_nota("NV-9") == "NV-9"
 
     def test_detalle_cantidad_negativa_invalida(self, empresa_a, cliente, producto):
-        nota = NotaVenta.objects.create(
-            id_empresa=empresa_a, id_cliente=cliente, numero_nota="NV-V01", fecha_nota=HOY
-        )
+        nota = NotaVenta.objects.create(id_empresa=empresa_a, id_cliente=cliente, numero_nota="NV-V01", fecha_nota=HOY)
         ser = DetalleNotaVentaSerializer(
             data={
                 "id_nota_venta": str(nota.id_nota_venta),
@@ -483,9 +456,7 @@ class TestValidacionesNotaVenta:
         assert "cantidad" in ser.errors
 
     def test_detalle_precio_negativo_invalido(self, empresa_a, cliente, producto):
-        nota = NotaVenta.objects.create(
-            id_empresa=empresa_a, id_cliente=cliente, numero_nota="NV-V02", fecha_nota=HOY
-        )
+        nota = NotaVenta.objects.create(id_empresa=empresa_a, id_cliente=cliente, numero_nota="NV-V02", fecha_nota=HOY)
         ser = DetalleNotaVentaSerializer(
             data={
                 "id_nota_venta": str(nota.id_nota_venta),

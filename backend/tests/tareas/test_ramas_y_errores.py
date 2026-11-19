@@ -30,9 +30,7 @@ BASE = "/api/tareas"
 
 
 def test_str_y_clean_en_todos_los_modelos(empresa_a, empresa_b, user_a, user_b):
-    area = services.crear_area_operativa(
-        empresa=empresa_a, nombre="Finanzas", lider=user_a, miembros=[user_a]
-    )
+    area = services.crear_area_operativa(empresa=empresa_a, nombre="Finanzas", lider=user_a, miembros=[user_a])
     assert "Finanzas" in str(area)
     miembro = MiembroAreaOperativa.objects.get(area=area, usuario=user_a)
     assert str(user_a.pk) in str(miembro)
@@ -61,9 +59,7 @@ def test_str_y_clean_en_todos_los_modelos(empresa_a, empresa_b, user_a, user_b):
     )
     assert "Minuta Finanzas" in str(minuta)
 
-    t1, _ = services.crear_tarea(
-        empresa=empresa_a, titulo="Tarea 1", proyecto=proy, asignado_a=user_a
-    )
+    t1, _ = services.crear_tarea(empresa=empresa_a, titulo="Tarea 1", proyecto=proy, asignado_a=user_a)
     t2, _ = services.crear_tarea(empresa=empresa_a, titulo="Tarea 2", proyecto=proy)
     assert "Tarea 1" in str(t1)
 
@@ -147,38 +143,45 @@ def test_recurrencia_semanal_quincenal_errores_de_hora_y_frecuencia(empresa_a):
         horas_dia=["25:99"],
         proxima_ejecucion=date(2026, 11, 16),
     )
-    res_mala = services.generar_tareas_recurrentes_pendientes(
-        empresa_a, fecha_hoy=date(2026, 11, 16)
-    )
+    res_mala = services.generar_tareas_recurrentes_pendientes(empresa_a, fecha_hoy=date(2026, 11, 16))
     assert res_mala["errores"] == 1
 
 
 def test_escalacion_recurrentes_y_tramos_intermedios_24h_48h(empresa_a, user_a):
     # Preventivos de recurrentes (mensual/quincenal/semanal/diaria)
-    assert len(
-        services.evaluar_alertas_tarea(
-            fecha_creacion=date(2026, 11, 1),
-            fecha_vencimiento=date(2026, 11, 16),
-            ahora_local=datetime(2026, 11, 1, 9, 0, tzinfo=CARACAS),
-            frecuencia_recurrente="MENSUAL",
+    assert (
+        len(
+            services.evaluar_alertas_tarea(
+                fecha_creacion=date(2026, 11, 1),
+                fecha_vencimiento=date(2026, 11, 16),
+                ahora_local=datetime(2026, 11, 1, 9, 0, tzinfo=CARACAS),
+                frecuencia_recurrente="MENSUAL",
+            )
         )
-    ) == 1
-    assert len(
-        services.evaluar_alertas_tarea(
-            fecha_creacion=date(2026, 11, 9),
-            fecha_vencimiento=date(2026, 11, 16),
-            ahora_local=datetime(2026, 11, 9, 9, 0, tzinfo=CARACAS),
-            frecuencia_recurrente="QUINCENAL",
+        == 1
+    )
+    assert (
+        len(
+            services.evaluar_alertas_tarea(
+                fecha_creacion=date(2026, 11, 9),
+                fecha_vencimiento=date(2026, 11, 16),
+                ahora_local=datetime(2026, 11, 9, 9, 0, tzinfo=CARACAS),
+                frecuencia_recurrente="QUINCENAL",
+            )
         )
-    ) == 1
-    assert len(
-        services.evaluar_alertas_tarea(
-            fecha_creacion=date(2026, 11, 13),
-            fecha_vencimiento=date(2026, 11, 16),
-            ahora_local=datetime(2026, 11, 13, 9, 0, tzinfo=CARACAS),
-            frecuencia_recurrente="SEMANAL",
+        == 1
+    )
+    assert (
+        len(
+            services.evaluar_alertas_tarea(
+                fecha_creacion=date(2026, 11, 13),
+                fecha_vencimiento=date(2026, 11, 16),
+                ahora_local=datetime(2026, 11, 13, 9, 0, tzinfo=CARACAS),
+                frecuencia_recurrente="SEMANAL",
+            )
         )
-    ) == 1
+        == 1
+    )
     assert (
         services.evaluar_alertas_tarea(
             fecha_creacion=date(2026, 11, 16),
@@ -239,9 +242,7 @@ def test_minutas_fechas_relativas_y_casos_borde(empresa_a, user_a):
     assert resolver_fecha_humana("viernes", hoy=hoy) == date(2026, 11, 20)
     assert resolver_fecha_humana("sin fecha", hoy=hoy) is None
 
-    area = services.crear_area_operativa(
-        empresa=empresa_a, nombre="Ventas", miembros=[user_a]
-    )
+    area = services.crear_area_operativa(empresa=empresa_a, nombre="Ventas", miembros=[user_a])
     borrador = services.enriquecer_borrador_minuta(
         empresa_a,
         [
@@ -269,9 +270,7 @@ def test_minutas_fechas_relativas_y_casos_borde(empresa_a, user_a):
 
 
 def test_endpoints_filtros_validaciones_y_mcp_ramas_error(empresa_a, user_a, client_a):
-    proy = services.crear_proyecto_con_secciones(
-        empresa=empresa_a, nombre="Tablero Ventas", propietario=user_a
-    )
+    proy = services.crear_proyecto_con_secciones(empresa=empresa_a, nombre="Tablero Ventas", propietario=user_a)
     t1, _ = services.crear_tarea(
         empresa=empresa_a,
         titulo="Bloqueada manual",
@@ -308,22 +307,13 @@ def test_endpoints_filtros_validaciones_y_mcp_ramas_error(empresa_a, user_a, cli
     assert client_a.get(f"{BASE}/proyectos/?archivado=true").data["count"] == 0
 
     # Ejecutar seguimiento desde endpoint REST y listar bitácora de alertas
-    assert (
-        client_a.post(
-            f"{BASE}/seguimiento/ejecutar/", {"momento": "INVALIDO"}, format="json"
-        ).status_code
-        == 400
-    )
-    r_seg = client_a.post(
-        f"{BASE}/seguimiento/ejecutar/", {"momento": "TARDE"}, format="json"
-    )
+    assert client_a.post(f"{BASE}/seguimiento/ejecutar/", {"momento": "INVALIDO"}, format="json").status_code == 400
+    r_seg = client_a.post(f"{BASE}/seguimiento/ejecutar/", {"momento": "TARDE"}, format="json")
     assert r_seg.status_code == 200
     assert client_a.get(f"{BASE}/alertas/").status_code == 200
 
     # Errores de entrada en endpoints
-    area = services.crear_area_operativa(
-        empresa=empresa_a, nombre="Soporte", miembros=[user_a]
-    )
+    area = services.crear_area_operativa(empresa=empresa_a, nombre="Soporte", miembros=[user_a])
     assert (
         client_a.post(
             f"{BASE}/areas/{area.id_area}/miembros/",
@@ -341,9 +331,7 @@ def test_endpoints_filtros_validaciones_y_mcp_ramas_error(empresa_a, user_a, cli
         == 400
     )
     # Quitar miembro deja lista vacía (soft delete del miembro previo)
-    r_vacio = client_a.post(
-        f"{BASE}/areas/{area.id_area}/miembros/", {"usuarios": []}, format="json"
-    )
+    r_vacio = client_a.post(f"{BASE}/areas/{area.id_area}/miembros/", {"usuarios": []}, format="json")
     assert r_vacio.status_code == 200
     assert r_vacio.data["miembros"] == []
     # Reagregar restaura el miembro inactivo
@@ -354,17 +342,10 @@ def test_endpoints_filtros_validaciones_y_mcp_ramas_error(empresa_a, user_a, cli
     )
     assert len(r_rest.data["miembros"]) == 1
 
-    assert (
-        client_a.patch(
-            f"{BASE}/configuracion/", {"gerente": "no-uuid"}, format="json"
-        ).status_code
-        == 400
-    )
+    assert client_a.patch(f"{BASE}/configuracion/", {"gerente": "no-uuid"}, format="json").status_code == 400
 
     # MCP ramas de error controlado
-    tok = CapabilityToken.objects.create(
-        empresa=empresa_a, creado_por=user_a, scopes=["tareas:read", "tareas:write"]
-    )
+    tok = CapabilityToken.objects.create(empresa=empresa_a, creado_por=user_a, scopes=["tareas:read", "tareas:write"])
     with pytest.raises(PermissionError):
         tareas_mcp.tareas_listar(str(tok.token), "no-es-uuid")
 
@@ -372,9 +353,7 @@ def test_endpoints_filtros_validaciones_y_mcp_ramas_error(empresa_a, user_a, cli
     assert "error" in tareas_mcp.tareas_crear(
         str(tok.token), str(empresa_a.id_empresa), titulo="X", asignado_a_id=fake_uuid
     )
-    assert "error" in tareas_mcp.tareas_crear(
-        str(tok.token), str(empresa_a.id_empresa), titulo="X", area_id=fake_uuid
-    )
+    assert "error" in tareas_mcp.tareas_crear(str(tok.token), str(empresa_a.id_empresa), titulo="X", area_id=fake_uuid)
     assert "error" in tareas_mcp.tareas_crear(
         str(tok.token), str(empresa_a.id_empresa), titulo="X", proyecto_id=fake_uuid
     )
@@ -428,38 +407,16 @@ def test_cobertura_completa_endpoints_proyectos_errores_mcp_y_tasks(
     # mi-tablero con CapabilityToken sin indicar usuario responde 400
     from rest_framework.test import APIClient
 
-    tok = CapabilityToken.objects.create(
-        empresa=empresa_a, creado_por=user_a, scopes=["tareas:read", "tareas:write"]
-    )
+    tok = CapabilityToken.objects.create(empresa=empresa_a, creado_por=user_a, scopes=["tareas:read", "tareas:write"])
     cli_bot = APIClient()
     cli_bot.credentials(HTTP_X_CAPABILITY_TOKEN=str(tok.token))
     assert cli_bot.post(f"{BASE}/proyectos/mi-tablero/", {}, format="json").status_code == 400
-    assert (
-        cli_bot.post(
-            f"{BASE}/proyectos/mi-tablero/", {"usuario": str(user_a.pk)}, format="json"
-        ).status_code
-        == 200
-    )
+    assert cli_bot.post(f"{BASE}/proyectos/mi-tablero/", {"usuario": str(user_a.pk)}, format="json").status_code == 200
 
     # Errores de dominio y 404 en TareaViewSet, MinutaViewSet y servicios
-    assert (
-        client_a.post(
-            f"{BASE}/items/", {"titulo": "   "}, format="json"
-        ).status_code
-        == 400
-    )
-    assert (
-        client_a.post(
-            f"{BASE}/items/", {"titulo": "X", "area": fake_uuid}, format="json"
-        ).status_code
-        == 400
-    )
-    assert (
-        client_a.post(
-            f"{BASE}/items/", {"titulo": "X", "tarea_padre": fake_uuid}, format="json"
-        ).status_code
-        == 400
-    )
+    assert client_a.post(f"{BASE}/items/", {"titulo": "   "}, format="json").status_code == 400
+    assert client_a.post(f"{BASE}/items/", {"titulo": "X", "area": fake_uuid}, format="json").status_code == 400
+    assert client_a.post(f"{BASE}/items/", {"titulo": "X", "tarea_padre": fake_uuid}, format="json").status_code == 400
     t_ok = client_a.post(
         f"{BASE}/items/",
         {"titulo": "Auditar lote", "proyecto": proy_id},
@@ -467,24 +424,11 @@ def test_cobertura_completa_endpoints_proyectos_errores_mcp_y_tasks(
     ).data
     tid = str(t_ok["id_tarea"])
 
+    assert client_a.post(f"{BASE}/items/{tid}/mover/", {"seccion": fake_uuid}, format="json").status_code == 404
     assert (
-        client_a.post(
-            f"{BASE}/items/{tid}/mover/", {"seccion": fake_uuid}, format="json"
-        ).status_code
-        == 404
+        client_a.post(f"{BASE}/items/{tid}/dependencias/", {"depende_de": fake_uuid}, format="json").status_code == 404
     )
-    assert (
-        client_a.post(
-            f"{BASE}/items/{tid}/dependencias/", {"depende_de": fake_uuid}, format="json"
-        ).status_code
-        == 404
-    )
-    assert (
-        client_a.post(
-            f"{BASE}/items/{tid}/comentarios/", {"cuerpo": "   "}, format="json"
-        ).status_code
-        == 400
-    )
+    assert client_a.post(f"{BASE}/items/{tid}/comentarios/", {"cuerpo": "   "}, format="json").status_code == 400
     assert (
         client_a.post(
             f"{BASE}/minutas/",
@@ -522,13 +466,9 @@ def test_cobertura_completa_endpoints_proyectos_errores_mcp_y_tasks(
     from apps.tareas.services.proyectos import slugificar_area
 
     t2, _ = services.crear_tarea(empresa=empresa_a, titulo="Previa")
-    dep = services.agregar_dependencia(
-        empresa=empresa_a, tarea=Tarea.objects.get(pk=tid), depende_de=t2
-    )
+    dep = services.agregar_dependencia(empresa=empresa_a, tarea=Tarea.objects.get(pk=tid), depende_de=t2)
     dep.soft_delete()
-    dep_rest = services.agregar_dependencia(
-        empresa=empresa_a, tarea=Tarea.objects.get(pk=tid), depende_de=t2
-    )
+    dep_rest = services.agregar_dependencia(empresa=empresa_a, tarea=Tarea.objects.get(pk=tid), depende_de=t2)
     assert dep_rest.activo is True
 
     with pytest.raises(services.TareaError):
@@ -558,9 +498,7 @@ def test_cobertura_completa_endpoints_proyectos_errores_mcp_y_tasks(
         entidad_id=ent_uuid,
     )
     assert len(filtradas) == 1
-    assert "error" in tareas_mcp.tareas_crear(
-        str(tok.token), str(empresa_a.id_empresa), titulo="   "
-    )
+    assert "error" in tareas_mcp.tareas_crear(str(tok.token), str(empresa_a.id_empresa), titulo="   ")
     assert "error" in tareas_mcp.tareas_cambiar_estado(
         str(tok.token),
         str(empresa_a.id_empresa),
@@ -599,18 +537,12 @@ def test_validaciones_cruzadas_en_servicios_proyectos(empresa_a, empresa_b, user
     with pytest.raises(services.TareaError):
         services.sincronizar_miembros_area(empresa=empresa_b, area=area_a, usuarios=[])
     with pytest.raises(services.TareaError):
-        services.sincronizar_miembros_area(
-            empresa=empresa_a, area=area_a, usuarios=[user_b]
-        )
+        services.sincronizar_miembros_area(empresa=empresa_a, area=area_a, usuarios=[user_b])
 
     # Validación y unicidad de proyecto personal en crear_proyecto_con_secciones
     with pytest.raises(services.TareaError):
-        services.crear_proyecto_con_secciones(
-            empresa=empresa_a, nombre="Sin dueño", es_personal=True
-        )
-    services.crear_proyecto_con_secciones(
-        empresa=empresa_a, nombre="Personal 1", es_personal=True, propietario=user_a
-    )
+        services.crear_proyecto_con_secciones(empresa=empresa_a, nombre="Sin dueño", es_personal=True)
+    services.crear_proyecto_con_secciones(empresa=empresa_a, nombre="Personal 1", es_personal=True, propietario=user_a)
     with pytest.raises(services.TareaError):
         services.crear_proyecto_con_secciones(
             empresa=empresa_a, nombre="Personal 2", es_personal=True, propietario=user_a
@@ -629,9 +561,7 @@ def test_validaciones_cruzadas_en_servicios_proyectos(empresa_a, empresa_b, user
         secciones=[("Por hacer", EstadoTarea.PENDIENTE), ("Hecho", EstadoTarea.COMPLETADA)],
     )
     sec_hecho = proy_a.secciones.filter(estado_destino=EstadoTarea.COMPLETADA).first()
-    t_sec, _ = services.crear_tarea(
-        empresa=empresa_a, titulo="Directo a sección", seccion=sec_hecho
-    )
+    t_sec, _ = services.crear_tarea(empresa=empresa_a, titulo="Directo a sección", seccion=sec_hecho)
     assert t_sec.proyecto_id == proy_a.id_proyecto
 
     t_fallback, _ = services.crear_tarea(
@@ -657,15 +587,11 @@ def test_validaciones_cruzadas_en_servicios_proyectos(empresa_a, empresa_b, user
         services.agregar_dependencia(empresa=empresa_a, tarea=t_fallback, depende_de=t_b)
 
 
-def test_regresiones_review_patch_validadores_minuta_area_y_mcp(
-    empresa_a, user_a, client_a
-):
+def test_regresiones_review_patch_validadores_minuta_area_y_mcp(empresa_a, user_a, client_a):
     from datetime import datetime
 
     area = services.crear_area_operativa(empresa=empresa_a, nombre="Tesorería")
-    proy = services.crear_proyecto_con_secciones(
-        empresa=empresa_a, nombre="Tablero Review", propietario=user_a
-    )
+    proy = services.crear_proyecto_con_secciones(empresa=empresa_a, nombre="Tablero Review", propietario=user_a)
     t_padre, _ = services.crear_tarea(
         empresa=empresa_a,
         titulo="Padre",
@@ -787,15 +713,8 @@ def test_regresiones_review_patch_validadores_minuta_area_y_mcp(
     assert t_venc.seccion.estado_destino == EstadoTarea.BLOQUEADA
 
     # 5) MCP maneja UUIDs inválidos sin lanzar ValueError crudo
-    tok = CapabilityToken.objects.create(
-        empresa=empresa_a, creado_por=user_a, scopes=["tareas:read", "tareas:write"]
-    )
-    assert (
-        tareas_mcp.tareas_listar(
-            str(tok.token), str(empresa_a.id_empresa), asignado_a_id="bad-uuid"
-        )
-        == []
-    )
+    tok = CapabilityToken.objects.create(empresa=empresa_a, creado_por=user_a, scopes=["tareas:read", "tareas:write"])
+    assert tareas_mcp.tareas_listar(str(tok.token), str(empresa_a.id_empresa), asignado_a_id="bad-uuid") == []
     assert "error" in tareas_mcp.tareas_crear(
         str(tok.token),
         str(empresa_a.id_empresa),
@@ -811,9 +730,7 @@ def test_regresiones_review_patch_validadores_minuta_area_y_mcp(
     assert "error" in tareas_mcp.tareas_confirmar_minuta(
         str(tok.token), str(empresa_a.id_empresa), minuta_id="bad-uuid"
     )
-    res_mcp_eq = tareas_mcp.tareas_resumen_equipo(
-        str(tok.token), str(empresa_a.id_empresa), fecha="2026-11-20"
-    )
+    res_mcp_eq = tareas_mcp.tareas_resumen_equipo(str(tok.token), str(empresa_a.id_empresa), fecha="2026-11-20")
     assert "totales" in res_mcp_eq
 
     # Minuta descartada vía MCP devuelve error controlado
@@ -827,33 +744,13 @@ def test_regresiones_review_patch_validadores_minuta_area_y_mcp(
     )
 
     # Cobertura de endpoints de secciones, PATCH de área, duplicado de proyecto y comentario vacío
+    assert client_a.get(f"{BASE}/secciones/?proyecto={proy.id_proyecto}").status_code == 200
     assert (
-        client_a.get(f"{BASE}/secciones/?proyecto={proy.id_proyecto}").status_code == 200
+        client_a.patch(f"{BASE}/areas/{area.id_area}/", {"nombre": "Operaciones v2"}, format="json").status_code == 200
     )
-    assert (
-        client_a.patch(
-            f"{BASE}/areas/{area.id_area}/", {"nombre": "Operaciones v2"}, format="json"
-        ).status_code
-        == 200
-    )
-    assert (
-        client_a.post(
-            f"{BASE}/proyectos/", {"nombre": "   "}, format="json"
-        ).status_code
-        == 400
-    )
-    assert (
-        client_a.post(
-            f"{BASE}/minutas/", {"titulo": "   "}, format="json"
-        ).status_code
-        == 400
-    )
-    assert (
-        client_a.post(
-            f"{BASE}/minutas/{minuta_desc.id_minuta}/confirmar/", {}, format="json"
-        ).status_code
-        == 409
-    )
+    assert client_a.post(f"{BASE}/proyectos/", {"nombre": "   "}, format="json").status_code == 400
+    assert client_a.post(f"{BASE}/minutas/", {"titulo": "   "}, format="json").status_code == 400
+    assert client_a.post(f"{BASE}/minutas/{minuta_desc.id_minuta}/confirmar/", {}, format="json").status_code == 409
     assert (
         client_a.post(
             f"{BASE}/items/{t_padre.id_tarea}/comentarios/",
@@ -896,9 +793,7 @@ def test_regresiones_review_patch_validadores_minuta_area_y_mcp(
         frecuencia="DIARIA",
         proxima_ejecucion=date(2026, 11, 20),
     )
-    res_rec = services.generar_tareas_recurrentes_pendientes(
-        empresa_a, fecha_hoy=date(2026, 11, 20)
-    )
+    res_rec = services.generar_tareas_recurrentes_pendientes(empresa_a, fecha_hoy=date(2026, 11, 20))
     assert res_rec["errores"] >= 1
     assert res_rec["tareas_creadas"] >= 1
 
@@ -911,7 +806,3 @@ def test_regresiones_review_patch_validadores_minuta_area_y_mcp(
     cli_sin = APIClient()
     cli_sin.force_authenticate(user=u_sin_emp)
     assert cli_sin.get(f"{BASE}/resumen/").status_code == 403
-
-
-
-

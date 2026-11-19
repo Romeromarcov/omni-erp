@@ -69,9 +69,7 @@ def _predicate(empresa_column: str, *, null_visible: bool = False) -> str:
     )
 
 
-def build_enable_rls_sql(
-    table: str, empresa_column: str = "id_empresa_id", *, null_visible: bool = False
-) -> str:
+def build_enable_rls_sql(table: str, empresa_column: str = "id_empresa_id", *, null_visible: bool = False) -> str:
     """SQL idempotente para activar RLS forzado y la política en ``table``.
 
     ``empresa_column`` varía por tabla: ``id_empresa_id`` (FK por defecto de
@@ -138,9 +136,7 @@ def current_role_bypasses_rls(using: str = DEFAULT_DB_ALIAS) -> bool:
     dedicado no-dueño y sin estos atributos.
     """
     with connections[using].cursor() as cursor:
-        cursor.execute(
-            "SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user"
-        )
+        cursor.execute("SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user")
         row = cursor.fetchone()
     return bool(row and row[0])
 

@@ -32,9 +32,7 @@ def h(n: int) -> datetime:
 
 @pytest.fixture
 def cal(empresa_a):
-    c = CalendarioActivacion.objects.create(
-        id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True
-    )
+    c = CalendarioActivacion.objects.create(id_empresa=empresa_a, nombre="Activaciones", es_predeterminado=True)
     RecursoActivacion.objects.create(
         id_empresa=empresa_a,
         calendario=c,
@@ -100,9 +98,7 @@ def test_disponibilidad_puede_excluir_un_evento(empresa_a, cal):
     """Al editar un evento su propio uso no debe contarse contra la capacidad."""
     ev = _evento(empresa_a, cal, 0, 4, promotoras=2)
     con = {d.codigo: d for d in services.disponibilidad(cal, h(0), h(4))}
-    sin = {
-        d.codigo: d for d in services.disponibilidad(cal, h(0), h(4), excluir_evento=ev)
-    }
+    sin = {d.codigo: d for d in services.disponibilidad(cal, h(0), h(4), excluir_evento=ev)}
     assert con["promotoras"].libres == 0
     assert sin["promotoras"].libres == 2
 
@@ -155,9 +151,7 @@ def test_la_tarea_delega_en_el_servicio():
 def test_encolar_sync_encola_con_el_id_como_texto():
     with patch.object(tasks.sincronizar_google_task, "apply_async") as publicar:
         tasks.encolar_sync(123)
-    publicar.assert_called_once_with(
-        args=["123"], retry=False
-    )  # sin reintentos de publicación: falla rápido
+    publicar.assert_called_once_with(args=["123"], retry=False)  # sin reintentos de publicación: falla rápido
 
 
 def test_encolar_sync_no_propaga_un_broker_caido():
@@ -174,9 +168,7 @@ def test_encolar_sync_no_propaga_un_broker_caido():
 
 
 def test_calendario_con_nombre_repetido_da_400(api_staff, cal):
-    r = api_staff.post(
-        f"{BASE}/calendarios/", {"nombre": "Activaciones"}, format="json"
-    )
+    r = api_staff.post(f"{BASE}/calendarios/", {"nombre": "Activaciones"}, format="json")
     assert r.status_code == 400
     assert "nombre" in r.data
 
@@ -251,12 +243,8 @@ def test_disponibilidad_con_parametros_invalidos_da_400(api_staff, cal, params):
 
 
 @pytest.mark.tenant
-def test_no_se_puede_crear_un_recurso_en_el_calendario_de_otra_empresa(
-    api_staff, empresa_b
-):
-    ajeno = CalendarioActivacion.objects.create(
-        id_empresa=empresa_b, nombre="Ajeno", es_predeterminado=True
-    )
+def test_no_se_puede_crear_un_recurso_en_el_calendario_de_otra_empresa(api_staff, empresa_b):
+    ajeno = CalendarioActivacion.objects.create(id_empresa=empresa_b, nombre="Ajeno", es_predeterminado=True)
     r = api_staff.post(
         f"{BASE}/recursos/",
         {
@@ -277,10 +265,7 @@ def test_el_listado_de_eventos_filtra_por_estado_y_por_rango(client_a, empresa_a
     services.cancelar_evento(canc)
 
     def ids(**params):
-        return {
-            x["id_evento"]
-            for x in client_a.get(f"{BASE}/eventos/", params).data["results"]
-        }
+        return {x["id_evento"] for x in client_a.get(f"{BASE}/eventos/", params).data["results"]}
 
     assert ids(estado="PROGRAMADO") == {str(prog.pk)}
     assert ids(estado="CANCELADO") == {str(canc.pk)}
@@ -321,15 +306,11 @@ def test_staff_crea_un_recurso_en_su_calendario(api_staff, cal, empresa_a):
     )
     assert r.status_code == 201, r.data
     recurso = RecursoActivacion.objects.get(calendario=cal, codigo="igloos")
-    assert (
-        recurso.id_empresa_id == empresa_a.pk
-    )  # la empresa sale del calendario, no del cliente
+    assert recurso.id_empresa_id == empresa_a.pk  # la empresa sale del calendario, no del cliente
 
 
 @pytest.mark.tenant
-def test_la_vista_de_recursos_bloquea_por_si_misma_un_calendario_ajeno(
-    user_a, empresa_b
-):
+def test_la_vista_de_recursos_bloquea_por_si_misma_un_calendario_ajeno(user_a, empresa_b):
     """Segunda defensa: aunque el serializador dejara pasar el calendario, la vista lo bloquea."""
     from types import SimpleNamespace
 
@@ -344,9 +325,7 @@ def test_la_vista_de_recursos_bloquea_por_si_misma_un_calendario_ajeno(
         vista.perform_create(SimpleNamespace(validated_data={"calendario": ajeno}))
 
 
-def test_marcar_como_predeterminado_un_calendario_existente_desplaza_al_anterior(
-    api_staff, cal, empresa_a
-):
+def test_marcar_como_predeterminado_un_calendario_existente_desplaza_al_anterior(api_staff, cal, empresa_a):
     otro = CalendarioActivacion.objects.create(id_empresa=empresa_a, nombre="Segundo")
     r = api_staff.patch(
         f"{BASE}/calendarios/{otro.id_calendario}/",

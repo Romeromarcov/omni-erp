@@ -26,9 +26,7 @@ def generar_pdf_cotizacion(cotizacion) -> bytes:
         from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
     except ImportError as exc:
-        raise ImportError(
-            "reportlab no está instalado. Instálelo con: pip install reportlab"
-        ) from exc
+        raise ImportError("reportlab no está instalado. Instálelo con: pip install reportlab") from exc
 
     import io
 
@@ -57,11 +55,15 @@ def generar_pdf_cotizacion(cotizacion) -> bytes:
         ["Moneda:", str(cotizacion.id_moneda)],
     ]
     t_doc = Table(datos_doc, colWidths=[5 * cm, 10 * cm])
-    t_doc.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
+    t_doc.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     story.append(t_doc)
     story.append(Spacer(1, 0.5 * cm))
 
@@ -74,11 +76,15 @@ def generar_pdf_cotizacion(cotizacion) -> bytes:
         ["RIF:", rif_cliente],
     ]
     t_cli = Table(datos_cli, colWidths=[5 * cm, 10 * cm])
-    t_cli.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
+    t_cli.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     story.append(t_cli)
     story.append(Spacer(1, 0.5 * cm))
 
@@ -90,27 +96,33 @@ def generar_pdf_cotizacion(cotizacion) -> bytes:
     detalles = list(cotizacion.detalles.select_related("id_producto").all() if hasattr(cotizacion, "detalles") else [])
     for i, det in enumerate(detalles, 1):
         nombre_prod = getattr(getattr(det, "id_producto", None), "nombre_producto", str(det))
-        filas.append([
-            str(i),
-            nombre_prod,
-            str(det.cantidad),
-            f"{det.precio_unitario:,.2f}",
-            f"{det.subtotal:,.2f}",
-        ])
+        filas.append(
+            [
+                str(i),
+                nombre_prod,
+                str(det.cantidad),
+                f"{det.precio_unitario:,.2f}",
+                f"{det.subtotal:,.2f}",
+            ]
+        )
 
     if not detalles:
         filas.append(["-", "Sin líneas de detalle", "-", "-", f"{cotizacion.monto_total:,.2f}"])
 
     t_det = Table(filas, colWidths=[1 * cm, 9 * cm, 2 * cm, 3 * cm, 3 * cm])
-    t_det.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
-        ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
-    ]))
+    t_det.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+            ]
+        )
+    )
     story.append(t_det)
     story.append(Spacer(1, 0.5 * cm))
 
@@ -119,12 +131,16 @@ def generar_pdf_cotizacion(cotizacion) -> bytes:
         [["TOTAL:", f"{cotizacion.monto_total:,.2f} {cotizacion.id_moneda}"]],
         colWidths=[14 * cm, 4 * cm],
     )
-    t_total.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 12),
-        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-    ]))
+    t_total.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 12),
+                ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
     story.append(t_total)
 
     # ── Condiciones ───────────────────────────────────────────────────────────

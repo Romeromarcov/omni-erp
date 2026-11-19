@@ -46,30 +46,21 @@ class GoogleSheetsClient:
             from google.oauth2.service_account import Credentials
         except ImportError as exc:  # pragma: no cover - depende del entorno
             raise GoogleSheetsError(
-                "Faltan dependencias 'gspread' y 'google-auth'. "
-                "Instálalas con: pip install gspread google-auth."
+                "Faltan dependencias 'gspread' y 'google-auth'. " "Instálalas con: pip install gspread google-auth."
             ) from exc
 
-        if (
-            not isinstance(service_account_info, dict)
-            or "client_email" not in service_account_info
-        ):
+        if not isinstance(service_account_info, dict) or "client_email" not in service_account_info:
             raise GoogleSheetsAuthError(
-                "El service account JSON es inválido o está incompleto "
-                "(falta 'client_email')."
+                "El service account JSON es inválido o está incompleto " "(falta 'client_email')."
             )
         try:
-            creds = Credentials.from_service_account_info(
-                service_account_info, scopes=SCOPES
-            )
+            creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
             return gspread.authorize(creds)
         except GoogleSheetsError:
             raise
         except Exception as exc:
             # No incluir el detalle del error (puede filtrar partes de la clave).
-            raise GoogleSheetsAuthError(
-                f"No se pudo autenticar con Google: {type(exc).__name__}"
-            ) from exc
+            raise GoogleSheetsAuthError(f"No se pudo autenticar con Google: {type(exc).__name__}") from exc
 
     # ── Spreadsheet / Worksheet ────────────────────────────────────────────
 
@@ -184,9 +175,7 @@ class GoogleSheetsClient:
         if len(actual) < len(nueva_str):
             # Sheets recorta las celdas vacías finales: rellenar para comparar.
             actual = actual + [""] * (len(nueva_str) - len(actual))
-        return all(
-            cls._celda_igual(a, n) for a, n in zip(actual[: len(nueva_str)], nueva_str)
-        )
+        return all(cls._celda_igual(a, n) for a, n in zip(actual[: len(nueva_str)], nueva_str))
 
     @staticmethod
     def _celda_igual(actual: str, nueva: str) -> bool:
@@ -214,7 +203,5 @@ class GoogleSheetsClient:
         try:
             archivos = self._gc.list_spreadsheet_files()
         except Exception as exc:
-            raise GoogleSheetsError(
-                f"Autenticación OK pero falló el acceso a Drive: {type(exc).__name__}"
-            ) from exc
+            raise GoogleSheetsError(f"Autenticación OK pero falló el acceso a Drive: {type(exc).__name__}") from exc
         return {"spreadsheets_visibles": len(archivos)}

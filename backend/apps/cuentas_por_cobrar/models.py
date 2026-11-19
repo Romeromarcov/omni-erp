@@ -19,12 +19,16 @@ class CuentaPorCobrar(models.Model):
         blank=True,
     )
     cliente_externo_id = models.CharField(
-        max_length=100, blank=True, default="",
+        max_length=100,
+        blank=True,
+        default="",
         help_text="ID del deudor en la fuente externa (p. ej. partner_id de Odoo). "
-                  "Se usa cuando no hay FK a crm.Cliente.",
+        "Se usa cuando no hay FK a crm.Cliente.",
     )
     cliente_externo_nombre = models.CharField(
-        max_length=255, blank=True, default="",
+        max_length=255,
+        blank=True,
+        default="",
         help_text="Nombre del deudor denormalizado (fuente externa sin crm.Cliente).",
     )
     monto = models.DecimalField(max_digits=12, decimal_places=2)

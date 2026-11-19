@@ -51,6 +51,7 @@ class OrdenCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     def aprobar(self, request, pk=None):
         """POST /ordenes-compra/{pk}/aprobar/ — Aprueba una OC en estado BORRADOR/ENVIADA."""
         from .services import CompraError, aprobar_orden_compra
+
         oc = self.get_object()
         try:
             aprobar_orden_compra(oc, request.user)
@@ -113,6 +114,7 @@ class RecepcionMercanciaViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-
 
         # Resolve product instances for each item
         from apps.inventario.models import Producto
+
         items = []
         for it in items_raw:
             try:
@@ -123,11 +125,13 @@ class RecepcionMercanciaViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-
                     {"detail": f"Producto '{it.get('producto_id')}' no encontrado."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            items.append({
-                "producto": producto,
-                "cantidad": it.get("cantidad"),
-                "costo_unitario": it.get("costo_unitario", "0"),
-            })
+            items.append(
+                {
+                    "producto": producto,
+                    "cantidad": it.get("cantidad"),
+                    "costo_unitario": it.get("costo_unitario", "0"),
+                }
+            )
 
         try:
             resultado = registrar_recepcion(oc, almacen, request.user, items)
@@ -173,9 +177,7 @@ class FacturaCompraViewSet(EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
             )
 
         try:
-            recepcion = RecepcionMercancia.objects.get(
-                pk=recepcion_id, id_empresa__in=_empresas(request)
-            )
+            recepcion = RecepcionMercancia.objects.get(pk=recepcion_id, id_empresa__in=_empresas(request))
         except RecepcionMercancia.DoesNotExist:
             return Response({"detail": "Recepción no encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -243,9 +245,7 @@ class OfertaProveedorViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1 via SolicitudCotizacion parent
-        return OfertaProveedor.objects.filter(
-            id_solicitud_cotizacion__id_empresa__in=_empresas(self.request)
-        )
+        return OfertaProveedor.objects.filter(id_solicitud_cotizacion__id_empresa__in=_empresas(self.request))
 
 
 class DetalleOfertaProveedorViewSet(BaseModelViewSet):

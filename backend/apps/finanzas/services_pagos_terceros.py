@@ -72,16 +72,14 @@ def _lock(pago: "PagoTercero") -> "PagoTercero":
 def _exigir_estado(pago: "PagoTercero", esperado: str, accion: str) -> None:
     if pago.estado != esperado:
         raise PagoTerceroError(
-            f"No se puede {accion} un pago de tercero en estado '{pago.estado}' "
-            f"(se requiere '{esperado}')."
+            f"No se puede {accion} un pago de tercero en estado '{pago.estado}' " f"(se requiere '{esperado}')."
         )
 
 
 def _exigir_proveedor(pago: "PagoTercero", accion: str) -> None:
     if not pago.id_proveedor_id:
         raise PagoTerceroError(
-            f"No se puede {accion} sin proveedor asociado. "
-            "Use la acción 'asociar-proveedor' primero."
+            f"No se puede {accion} sin proveedor asociado. " "Use la acción 'asociar-proveedor' primero."
         )
 
 
@@ -119,17 +117,14 @@ def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = ""
     if str(cxp.id_empresa_id) != str(pago.id_empresa_id):
         raise PagoTerceroError("La CxP no pertenece a la empresa del pago de tercero.")
     if str(cxp.id_proveedor_id) != str(pago.id_proveedor_id):
-        raise PagoTerceroError(
-            "La CxP no pertenece al proveedor asociado al pago de tercero."
-        )
+        raise PagoTerceroError("La CxP no pertenece al proveedor asociado al pago de tercero.")
 
     try:
         abono = registrar_abono_cxp(
             cxp=cxp,
             monto=pago.monto,
             usuario=usuario,
-            descripcion=descripcion
-            or f"Pago de tercero Zelle {pago.referencia_zelle}",
+            descripcion=descripcion or f"Pago de tercero Zelle {pago.referencia_zelle}",
             # El pago de tercero lleva su PROPIO asiento PAGO_TERCERO (más abajo);
             # no debe generar también PAGO_CXP o se duplicaría el cargo a la CxP
             # y un AbonoCxPError por falta de mapeo PAGO_CXP taparía el 422 real.
@@ -144,9 +139,7 @@ def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = ""
 
     # R-CODE-11: asiento en la MISMA transacción; si falla con contabilidad
     # activa, el abono y el cambio de estado se revierten completos.
-    generar_asiento_o_fallar(
-        TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=pago.monto, usuario=usuario
-    )
+    generar_asiento_o_fallar(TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=pago.monto, usuario=usuario)
     return abono
 
 
@@ -189,15 +182,11 @@ def solicitar_reintegro(
     if comision_norm < 0:
         raise PagoTerceroError("La comisión no puede ser negativa.")
     if comision_norm >= pago.monto:
-        raise PagoTerceroError(
-            f"La comisión ({comision_norm}) debe ser menor que el monto del cobro ({pago.monto})."
-        )
+        raise PagoTerceroError(f"La comisión ({comision_norm}) debe ser menor que el monto del cobro ({pago.monto}).")
 
     monto_neto = (pago.monto - comision_norm).quantize(_DOS_DECIMALES)
     if monto_neto > _MAX_MONTO_CXC:
-        raise PagoTerceroError(
-            f"El monto del reintegro ({monto_neto}) excede el máximo soportado por CxC."
-        )
+        raise PagoTerceroError(f"El monto del reintegro ({monto_neto}) excede el máximo soportado por CxC.")
 
     # localdate() = hoy en TIME_ZONE (America/Caracas), no en UTC: con
     # now().date() la fecha de emisión/vencimiento de la CxC de reintegro se
@@ -235,9 +224,7 @@ def solicitar_reintegro(
     pago.save(update_fields=["comision", "estado", "id_cxc_reintegro", "fecha_actualizacion"])
 
     # R-CODE-11: asiento por el neto del reintegro, en la MISMA transacción.
-    generar_asiento_o_fallar(
-        TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=monto_neto, usuario=usuario
-    )
+    generar_asiento_o_fallar(TIPO_ASIENTO_PAGO_TERCERO, pago, pago.id_empresa, monto=monto_neto, usuario=usuario)
     return cxc
 
 

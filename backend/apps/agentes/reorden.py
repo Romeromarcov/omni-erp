@@ -43,8 +43,8 @@ ESTADO_REVISAR = "REVISAR"
 ESTADO_OK = "OK"
 
 # ── Umbrales por defecto (días) ───────────────────────────────────────────────
-UMBRAL_CRITICO_DEFAULT = 10   # días restantes → REORDENAR
-UMBRAL_ALERTA_DEFAULT = 20    # días restantes → REVISAR
+UMBRAL_CRITICO_DEFAULT = 10  # días restantes → REORDENAR
+UMBRAL_ALERTA_DEFAULT = 20  # días restantes → REVISAR
 
 
 # ── Resultado tipado ──────────────────────────────────────────────────────────
@@ -58,9 +58,9 @@ class SugerenciaReorden:
     almacen_nombre: str
     stock_disponible: Decimal
     cantidad_minima: Decimal
-    consumo_diario: Decimal         # promedio de salidas/día últimos 30 días
+    consumo_diario: Decimal  # promedio de salidas/día últimos 30 días
     dias_restantes: Optional[float]  # None si consumo_diario == 0
-    estado: str                      # REORDENAR | REVISAR | OK
+    estado: str  # REORDENAR | REVISAR | OK
     cantidad_sugerida_reorden: Decimal
     razonamiento: str
     modelo_llm: str = "fallback-reglas"

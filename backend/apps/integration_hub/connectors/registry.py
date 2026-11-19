@@ -14,6 +14,7 @@ Uso:
     # Obtener instancia
     connector = registry.get_connector(instancia)
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,9 +41,7 @@ class ConnectorRegistry:
         """
         code = connector_class.PROVIDER_CODE
         if not code:
-            raise ValueError(
-                f"El conector {connector_class.__name__} no tiene PROVIDER_CODE definido."
-            )
+            raise ValueError(f"El conector {connector_class.__name__} no tiene PROVIDER_CODE definido.")
         if code in self._registry:
             logger.warning(
                 "Conector '%s' ya registrado — sobreescribiendo con %s",
@@ -99,20 +98,14 @@ class ConnectorRegistry:
             cls = import_string(ruta)
         except ImportError as exc:
             raise ConnectorError(
-                f"No se pudo importar la clase '{ruta}' del proveedor "
-                f"'{proveedor.codigo}': {exc}"
+                f"No se pudo importar la clase '{ruta}' del proveedor " f"'{proveedor.codigo}': {exc}"
             ) from exc
 
         if not (isinstance(cls, type) and issubclass(cls, BaseConnector)):
-            raise ConnectorError(
-                f"La clase '{ruta}' del proveedor '{proveedor.codigo}' no es un "
-                f"BaseConnector."
-            )
+            raise ConnectorError(f"La clase '{ruta}' del proveedor '{proveedor.codigo}' no es un " f"BaseConnector.")
 
         self._registry[proveedor.codigo] = cls
-        logger.info(
-            "Conector cargado dinámicamente: %s → %s", proveedor.codigo, ruta
-        )
+        logger.info("Conector cargado dinámicamente: %s → %s", proveedor.codigo, ruta)
         return cls
 
     def list_registered(self) -> list[str]:

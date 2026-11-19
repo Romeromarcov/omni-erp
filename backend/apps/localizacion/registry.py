@@ -36,10 +36,13 @@ def _registrar_localizaciones_bundled() -> None:
     try:
         from apps.localizacion_ve.adapters import CalculadoraNominaVE, MotorImpuestosVE
 
-        register("VE", {
-            "MotorImpuestos": MotorImpuestosVE(),
-            "CalculadoraNomina": CalculadoraNominaVE(),  # Ola 5.2
-        })
+        register(
+            "VE",
+            {
+                "MotorImpuestos": MotorImpuestosVE(),
+                "CalculadoraNomina": CalculadoraNominaVE(),  # Ola 5.2
+            },
+        )
     except Exception:  # noqa: BLE001 — no romper el arranque si VE no está disponible
         pass
 

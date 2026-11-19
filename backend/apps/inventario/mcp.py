@@ -7,7 +7,6 @@ Herramientas expuestas:
   inventario_get_alertas_stock — productos con stock bajo el punto de reorden
 """
 
-
 import logging
 from decimal import Decimal
 from typing import Any, Dict, List
@@ -64,7 +63,9 @@ def inventario_get_productos(
     productos = qs.order_by("nombre_producto")[:limit]
     logger.info(
         "inventario_get_productos | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(productos),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(productos),
     )
     return [
         {
@@ -112,7 +113,9 @@ def inventario_get_stock_resumen(
 
     logger.info(
         "inventario_get_stock_resumen | actor=%s | tenant=%s | almacen=%s",
-        ctx["actor_id"], ctx["tenant_id"], almacen_id or "todos",
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        almacen_id or "todos",
     )
     return [
         {
@@ -155,18 +158,22 @@ def inventario_get_alertas_stock(
     for s in stocks:
         prod = s.id_producto
         if prod.punto_reorden and s.cantidad_disponible <= prod.punto_reorden:
-            alertas.append({
-                "producto_id": str(prod.id_producto),
-                "nombre": prod.nombre_producto,
-                "sku": prod.sku or "",
-                "stock_actual": float(s.cantidad_disponible),
-                "punto_reorden": float(prod.punto_reorden),
-                "deficit": float(prod.punto_reorden - s.cantidad_disponible),
-            })
+            alertas.append(
+                {
+                    "producto_id": str(prod.id_producto),
+                    "nombre": prod.nombre_producto,
+                    "sku": prod.sku or "",
+                    "stock_actual": float(s.cantidad_disponible),
+                    "punto_reorden": float(prod.punto_reorden),
+                    "deficit": float(prod.punto_reorden - s.cantidad_disponible),
+                }
+            )
 
     logger.info(
         "inventario_get_alertas_stock | actor=%s | tenant=%s | alertas=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(alertas),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(alertas),
     )
     return alertas
 

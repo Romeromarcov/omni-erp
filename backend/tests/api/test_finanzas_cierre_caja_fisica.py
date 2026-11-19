@@ -16,6 +16,7 @@ Cubre por API: abrir movimientos → cerrar → corte persistido → segundo cie
 solo cuenta lo nuevo; descuadre con ajuste; validaciones de entrada; límite
 anterior al último cierre; aislamiento multi-tenant (R-CODE-1).
 """
+
 import datetime
 from decimal import Decimal
 
@@ -104,9 +105,7 @@ class TestCierreCajaFisicaEndToEnd:
         assert cierre2.saldo_nuevo == Decimal("90.00")
         assert caja.movimientos.filter(tipo_movimiento="CIERRE").count() == 2
 
-    def test_descuadre_crea_ajuste_y_no_se_doble_cuenta(
-        self, client_a, caja_fisica_a, user_a, moneda_usd
-    ):
+    def test_descuadre_crea_ajuste_y_no_se_doble_cuenta(self, client_a, caja_fisica_a, user_a, moneda_usd):
         """El ajuste por descuadre se fecha en el límite del cierre → queda en
         la ventana cerrada y un cierre posterior no lo vuelve a contar."""
         caja = caja_fisica_a

@@ -15,12 +15,8 @@ from .models import PagoTercero
 
 
 class PagoTerceroSerializer(serializers.ModelSerializer):
-    proveedor_nombre = serializers.CharField(
-        source="id_proveedor.razon_social", read_only=True, default=None
-    )
-    moneda_codigo = serializers.CharField(
-        source="id_moneda.codigo_iso", read_only=True, default=None
-    )
+    proveedor_nombre = serializers.CharField(source="id_proveedor.razon_social", read_only=True, default=None)
+    moneda_codigo = serializers.CharField(source="id_moneda.codigo_iso", read_only=True, default=None)
 
     class Meta:
         model = PagoTercero
@@ -82,7 +78,5 @@ class PagoTerceroSerializer(serializers.ModelSerializer):
         proveedor = attrs.get("id_proveedor") or getattr(self.instance, "id_proveedor", None)
         if empresa is not None and proveedor is not None:
             if str(proveedor.id_empresa_id) != str(empresa.pk):
-                raise serializers.ValidationError(
-                    {"id_proveedor": "El proveedor no pertenece a la empresa indicada."}
-                )
+                raise serializers.ValidationError({"id_proveedor": "El proveedor no pertenece a la empresa indicada."})
         return attrs

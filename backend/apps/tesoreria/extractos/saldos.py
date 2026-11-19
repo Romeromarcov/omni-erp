@@ -76,14 +76,10 @@ def _convertir_usd_ves(
     mon = (moneda or "").strip().upper()
     if mon in ("USD", "USDT"):
         usd: Decimal | None = _q2(saldo)
-        ves: Decimal | None = (
-            _q2(saldo * tasa_usd_ves) if tasa_usd_ves and tasa_usd_ves > CERO else None
-        )
+        ves: Decimal | None = _q2(saldo * tasa_usd_ves) if tasa_usd_ves and tasa_usd_ves > CERO else None
         return usd, ves
     if mon == "VES":
-        usd_conv: Decimal | None = (
-            _q2(saldo / tasa_usd_ves) if tasa_usd_ves and tasa_usd_ves > CERO else None
-        )
+        usd_conv: Decimal | None = _q2(saldo / tasa_usd_ves) if tasa_usd_ves and tasa_usd_ves > CERO else None
         return usd_conv, _q2(saldo)
     return None, None
 

@@ -29,8 +29,8 @@ PUBLIC_ALLOWLIST: dict[str, str] = {
     "auth/refresh": "Refresh de token vía cookie httpOnly; público por diseño.",
     "auth/token": "JWT obtain/refresh/verify (login); público por diseño.",
     "saas/signup": "Auto-registro de prospectos (Plan C — C3): un prospecto aún no "
-                   "tiene credenciales; crea Empresa + admin + TRIAL. Con rate-limit y "
-                   "sin escalada de privilegios (es_superusuario_omni/is_staff forzados a False).",
+    "tiene credenciales; crea Empresa + admin + TRIAL. Con rate-limit y "
+    "sin escalada de privilegios (es_superusuario_omni/is_staff forzados a False).",
     "swagger": "Esquema OpenAPI / Swagger UI (drf-yasg).",
     "redoc": "Documentación ReDoc (drf-yasg).",
 }
@@ -70,9 +70,9 @@ def _es_publica(route: str) -> str | None:
 
 
 def test_se_descubrieron_rutas_api():
-    assert len(API_ROUTES) > 50, (
-        f"Solo se descubrieron {len(API_ROUTES)} rutas DRF; la introspección puede estar rota."
-    )
+    assert (
+        len(API_ROUTES) > 50
+    ), f"Solo se descubrieron {len(API_ROUTES)} rutas DRF; la introspección puede estar rota."
 
 
 @pytest.mark.parametrize("route,cls", API_ROUTES, ids=[r for r, _ in API_ROUTES])

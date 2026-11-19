@@ -48,9 +48,9 @@ class PersonalizacionConfigViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         config = self.get_object()
 
         # Desactivar todas las configuraciones anteriores de la misma empresa
-        PersonalizacionConfig.objects.filter(
-            id_empresa=config.id_empresa, activo=True
-        ).exclude(pk=config.pk).update(activo=False)
+        PersonalizacionConfig.objects.filter(id_empresa=config.id_empresa, activo=True).exclude(pk=config.pk).update(
+            activo=False
+        )
 
         config.activo = True
         config.save()

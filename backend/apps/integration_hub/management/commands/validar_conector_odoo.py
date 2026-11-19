@@ -13,6 +13,7 @@ Uso:
     python manage.py validar_conector_odoo --empresa <id_o_rif> [--limite 5]
     python manage.py validar_conector_odoo --instancia <id_conector> [--limite 5]
 """
+
 from django.core.management.base import BaseCommand, CommandError
 
 
@@ -55,9 +56,9 @@ class Command(BaseCommand):
             self.stdout.write(f"  - {cliente}: {monto} [{bucket}] {ref}")
 
         if total == 0:
-            self.stdout.write(self.style.WARNING(
-                "Sin cartera vencida en Odoo (puede ser correcto). Conectividad validada."
-            ))
+            self.stdout.write(
+                self.style.WARNING("Sin cartera vencida en Odoo (puede ser correcto). Conectividad validada.")
+            )
 
     def _resolver_instancia(self, ConectorInstancia, opts):
         if opts.get("instancia"):
@@ -80,15 +81,13 @@ class Command(BaseCommand):
                 raise CommandError(f"No se encontró empresa con id o RIF '{opts['empresa']}'.")
 
         instancia = (
-            ConectorInstancia.objects
-            .select_related("id_proveedor", "id_empresa")
+            ConectorInstancia.objects.select_related("id_proveedor", "id_empresa")
             .filter(id_empresa=empresa, id_proveedor__codigo="odoo", activo=True)
             .order_by("-fecha_actualizacion")
             .first()
         )
         if instancia is None:
             raise CommandError(
-                f"La empresa {empresa.pk} no tiene un conector Odoo activo. "
-                "Córre primero configurar_conector_odoo."
+                f"La empresa {empresa.pk} no tiene un conector Odoo activo. " "Córre primero configurar_conector_odoo."
             )
         return instancia

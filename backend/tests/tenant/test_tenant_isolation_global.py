@@ -13,6 +13,7 @@ Los catálogos legítimamente globales (Moneda, Permiso, etc.) se listan en
 `GLOBAL_ALLOWLIST`. Los ViewSets que no pueden introspectarse genéricamente se
 **reportan como skip** (no ocultan fallos: solo no se pueden evaluar aquí).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -21,6 +22,7 @@ from django.urls import get_resolver
 
 class _FakeRequest:
     """Request mínimo para invocar get_queryset() sin la maquinaria de DRF."""
+
     def __init__(self, user):
         self.user = user
         self.query_params = {}
@@ -28,11 +30,20 @@ class _FakeRequest:
         self.data = {}
         self.method = "GET"
 
+
 # Modelos/viewsets globales por diseño (no tenant-aware) — excepción documentada
 # a R-CODE-1 (catálogos compartidos).
 GLOBAL_ALLOWLIST = {
-    "Moneda", "MetodoPago", "Permiso", "Rol", "TipoDocumento", "CatalogoValor",
-    "ConectorProveedor", "UnidadMedida", "Pais", "ParametroSistema",
+    "Moneda",
+    "MetodoPago",
+    "Permiso",
+    "Rol",
+    "TipoDocumento",
+    "CatalogoValor",
+    "ConectorProveedor",
+    "UnidadMedida",
+    "Pais",
+    "ParametroSistema",
 }
 
 
@@ -117,8 +128,10 @@ def test_todo_viewset_tenant_filtra_por_empresa(user_b):
         if not aislado:
             fallos.append(f"{cls.__name__}[{model.__name__}] sin filtro de tenant/usuario en WHERE")
 
-    print(f"\n[tenant-isolation] evaluados={evaluados} "
-          f"no_introspectables={len(no_introspectables)} fallos={len(fallos)}")
+    print(
+        f"\n[tenant-isolation] evaluados={evaluados} "
+        f"no_introspectables={len(no_introspectables)} fallos={len(fallos)}"
+    )
     if no_introspectables:
         print("  skip (no introspectables):", ", ".join(sorted(no_introspectables)))
     assert not fallos, "ViewSets tenant sin aislamiento por empresa:\n  " + "\n  ".join(fallos)

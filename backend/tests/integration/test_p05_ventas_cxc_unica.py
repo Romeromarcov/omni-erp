@@ -28,6 +28,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 def _cuenta(empresa, codigo, nombre, tipo="ACTIVO", naturaleza="DEUDORA"):
     from apps.contabilidad.models import PlanCuentas
+
     return PlanCuentas.objects.create(
         id_empresa=empresa,
         codigo_cuenta=codigo,
@@ -41,6 +42,7 @@ def _cuenta(empresa, codigo, nombre, tipo="ACTIVO", naturaleza="DEUDORA"):
 @pytest.fixture
 def mapeo_factura_venta(db, empresa_a):
     from apps.contabilidad.models import MapeoContable
+
     debe = _cuenta(empresa_a, "P05-1201", "CxC P05", "ACTIVO", "DEUDORA")
     haber = _cuenta(empresa_a, "P05-4101", "Ingresos P05", "INGRESO", "ACREEDORA")
     return MapeoContable.objects.create(
@@ -59,6 +61,7 @@ def mapeo_factura_venta(db, empresa_a):
 @pytest.fixture
 def cliente_credito_p05(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Cliente Crédito P05",
@@ -72,6 +75,7 @@ def cliente_credito_p05(db, empresa_a):
 @pytest.fixture
 def cliente_contado_p05(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Cliente Contado P05",
@@ -83,11 +87,16 @@ def cliente_contado_p05(db, empresa_a):
 @pytest.fixture
 def producto_p05(db, empresa_a, moneda_usd):
     from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
+
     unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-P05", tipo="CANTIDAD",
+        id_empresa=empresa_a,
+        nombre="Unidad",
+        abreviatura="UN-P05",
+        tipo="CANTIDAD",
     )
     categoria = CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Cat P05",
+        id_empresa=empresa_a,
+        nombre_categoria="Cat P05",
     )
     return Producto.objects.create(
         id_empresa=empresa_a,
@@ -102,6 +111,7 @@ def producto_p05(db, empresa_a, moneda_usd):
 @pytest.fixture
 def almacen_p05(db, empresa_a):
     from apps.almacenes.models import Almacen
+
     return Almacen.objects.create(
         id_empresa=empresa_a,
         nombre_almacen="Almacén P05",
@@ -112,6 +122,7 @@ def almacen_p05(db, empresa_a):
 @pytest.fixture
 def stock_p05(db, empresa_a, producto_p05, almacen_p05, user_a):
     from apps.inventario.services import registrar_movimiento
+
     registrar_movimiento(
         empresa=empresa_a,
         fecha_hora_movimiento=timezone.now(),
@@ -125,6 +136,7 @@ def stock_p05(db, empresa_a, producto_p05, almacen_p05, user_a):
 
 def _crear_pedido(empresa, cliente, producto, numero):
     from apps.ventas.models import DetallePedido, Pedido
+
     pedido = Pedido.objects.create(
         id_empresa=empresa,
         id_cliente=cliente,
@@ -144,6 +156,7 @@ def _crear_pedido(empresa, cliente, producto, numero):
 
 def _crear_nota(empresa, cliente, producto, numero, pedido=None):
     from apps.ventas.models import DetalleNotaVenta, NotaVenta
+
     nota = NotaVenta.objects.create(
         id_empresa=empresa,
         id_cliente=cliente,
@@ -164,6 +177,7 @@ def _crear_nota(empresa, cliente, producto, numero, pedido=None):
 
 def _cxcs(empresa):
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
     return CuentaPorCobrar.objects.filter(empresa=empresa).order_by("pk")
 
 
@@ -172,8 +186,15 @@ def _cxcs(empresa):
 
 class TestFlujoCreditoUnaSolaCxC:
     def test_flujo_credito_completo_una_sola_cxc_por_el_total(
-        self, empresa_a, user_a, cliente_credito_p05, producto_p05,
-        almacen_p05, stock_p05, moneda_usd, mapeo_factura_venta,
+        self,
+        empresa_a,
+        user_a,
+        cliente_credito_p05,
+        producto_p05,
+        almacen_p05,
+        stock_p05,
+        moneda_usd,
+        mapeo_factura_venta,
     ):
         from apps.ventas.services import (
             confirmar_pedido,
@@ -207,8 +228,15 @@ class TestFlujoCreditoUnaSolaCxC:
         assert cxc_final.estado == "pendiente"
 
     def test_flujo_credito_preserva_abonos_al_facturar(
-        self, empresa_a, user_a, cliente_credito_p05, producto_p05,
-        almacen_p05, stock_p05, moneda_usd, mapeo_factura_venta,
+        self,
+        empresa_a,
+        user_a,
+        cliente_credito_p05,
+        producto_p05,
+        almacen_p05,
+        stock_p05,
+        moneda_usd,
+        mapeo_factura_venta,
     ):
         """Un abono parcial sobre la CxC del pedido sobrevive a la facturación."""
         from apps.cuentas_por_cobrar.models import AbonoCxC
@@ -238,8 +266,13 @@ class TestFlujoCreditoUnaSolaCxC:
 
 class TestFlujoContadoConPedido:
     def test_contado_con_pedido_entregado_sin_facturar_tiene_cxc(
-        self, empresa_a, user_a, cliente_contado_p05, producto_p05,
-        almacen_p05, stock_p05,
+        self,
+        empresa_a,
+        user_a,
+        cliente_contado_p05,
+        producto_p05,
+        almacen_p05,
+        stock_p05,
     ):
         """BUG-A4: antes esta venta quedaba SIN CxC; ahora se crea en la entrega."""
         from apps.ventas.services import confirmar_pedido, entregar_nota_venta
@@ -261,8 +294,15 @@ class TestFlujoContadoConPedido:
         assert cxc.empresa_id == empresa_a.id_empresa
 
     def test_contado_con_pedido_facturado_reutiliza_la_cxc_de_la_entrega(
-        self, empresa_a, user_a, cliente_contado_p05, producto_p05,
-        almacen_p05, stock_p05, moneda_usd, mapeo_factura_venta,
+        self,
+        empresa_a,
+        user_a,
+        cliente_contado_p05,
+        producto_p05,
+        almacen_p05,
+        stock_p05,
+        moneda_usd,
+        mapeo_factura_venta,
     ):
         from apps.ventas.services import (
             confirmar_pedido,
@@ -288,8 +328,13 @@ class TestFlujoContadoConPedido:
 
 class TestVentaDirectaSinPedido:
     def test_venta_directa_sigue_creando_cxc_en_entrega(
-        self, empresa_a, user_a, cliente_contado_p05, producto_p05,
-        almacen_p05, stock_p05,
+        self,
+        empresa_a,
+        user_a,
+        cliente_contado_p05,
+        producto_p05,
+        almacen_p05,
+        stock_p05,
     ):
         from apps.ventas.services import entregar_nota_venta
 
@@ -301,8 +346,15 @@ class TestVentaDirectaSinPedido:
         assert r["cxc"].monto == Decimal("200.00")
 
     def test_venta_directa_facturada_una_sola_cxc(
-        self, empresa_a, user_a, cliente_contado_p05, producto_p05,
-        almacen_p05, stock_p05, moneda_usd, mapeo_factura_venta,
+        self,
+        empresa_a,
+        user_a,
+        cliente_contado_p05,
+        producto_p05,
+        almacen_p05,
+        stock_p05,
+        moneda_usd,
+        mapeo_factura_venta,
     ):
         from apps.ventas.services import emitir_factura_fiscal, entregar_nota_venta
 

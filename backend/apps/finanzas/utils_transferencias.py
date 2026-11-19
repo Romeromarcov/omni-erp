@@ -35,9 +35,7 @@ def transferencia_entre_cajas(origen: Caja, destino: Caja, monto, usuario=None, 
         # deadlocks entre transferencias cruzadas concurrentes.
         cajas = {
             caja.pk: caja
-            for caja in Caja.objects.select_for_update()
-            .filter(pk__in=[origen.pk, destino.pk])
-            .order_by("pk")
+            for caja in Caja.objects.select_for_update().filter(pk__in=[origen.pk, destino.pk]).order_by("pk")
         }
         origen_lock = cajas[origen.pk]
         destino_lock = cajas[destino.pk]

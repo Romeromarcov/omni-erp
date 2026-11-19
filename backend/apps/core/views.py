@@ -13,6 +13,7 @@ pero registrados — bombas de retardo de IDOR cross-tenant (auditoría
 CRIT-1..3 / M-API-1). Se eliminaron; aquí solo quedan endpoints de función
 que no encajan en un ViewSet.
 """
+
 import logging
 
 from django.contrib.auth.models import User

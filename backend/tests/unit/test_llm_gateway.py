@@ -74,9 +74,7 @@ def _respuesta_ok(texto="hola", tokens_in=11, tokens_out=7, stop="end_turn"):
 
 
 def _exc_conexion():
-    return sdk_anthropic.APIConnectionError(
-        request=httpx.Request("POST", "https://api.invalid/v1/messages")
-    )
+    return sdk_anthropic.APIConnectionError(request=httpx.Request("POST", "https://api.invalid/v1/messages"))
 
 
 def _exc_status(codigo):
@@ -404,9 +402,7 @@ class TestStream:
 
     def test_cascada_agotada_en_apertura_lanza_llm_unavailable(self):
         cliente = MagicMock()
-        cliente.messages.stream.side_effect = lambda **_: _ManagerFalso(
-            error_apertura=_exc_conexion()
-        )
+        cliente.messages.stream.side_effect = lambda **_: _ManagerFalso(error_apertura=_exc_conexion())
         gw = _gateway_aislado(cliente)
 
         with pytest.raises(LLMUnavailable):
@@ -435,9 +431,7 @@ class TestStream:
         empresa = SimpleNamespace(pk="emp-stream-1")
 
         with caplog.at_level(logging.INFO, logger="omni.llm_gateway"):
-            with gw.stream(
-                messages=[{"role": "user", "content": "hola"}], empresa=empresa
-            ) as s:
+            with gw.stream(messages=[{"role": "user", "content": "hola"}], empresa=empresa) as s:
                 list(s.text_stream)
 
         consumo = [m for m in caplog.messages if "llm_consumo" in m]
@@ -568,9 +562,7 @@ class TestBordesDefensivos:
 
     def test_clasificacion_de_errores(self, monkeypatch):
         gw = _gateway_aislado(MagicMock())
-        api_err = sdk_anthropic.APIError(
-            "x", httpx.Request("POST", "https://api.invalid/v1/messages"), body=None
-        )
+        api_err = sdk_anthropic.APIError("x", httpx.Request("POST", "https://api.invalid/v1/messages"), body=None)
         assert gw._es_error_disponibilidad(api_err) is False  # APIError genérico: no cuenta
         assert gw._es_error_disponibilidad(_exc_conexion()) is True
         assert gw._es_error_disponibilidad(_exc_status(400)) is False
@@ -599,9 +591,7 @@ class TestBordesDefensivos:
                 raise RuntimeError("cache caída")
 
         monkeypatch.setenv("LLM_CB_UMBRAL", "1")
-        monkeypatch.setattr(
-            llm_gateway._CircuitBreaker, "_cache", lambda self: _CacheRota()
-        )
+        monkeypatch.setattr(llm_gateway._CircuitBreaker, "_cache", lambda self: _CacheRota())
         b = llm_gateway._CircuitBreaker(compartido=True)
         b.registrar_fallo("prov-roto")
         assert b.permite("prov-roto") is False
@@ -657,8 +647,7 @@ class TestSuperficie:
             if patron.search(ruta.read_text(encoding="utf-8"))
         ]
         assert infractores == [], (
-            "El SDK de anthropic solo se instancia en apps/core/llm_gateway.py; "
-            f"infractores: {infractores}"
+            "El SDK de anthropic solo se instancia en apps/core/llm_gateway.py; " f"infractores: {infractores}"
         )
 
     def test_modelos_no_hardcodeados_fuera_del_gateway(self):
@@ -669,6 +658,5 @@ class TestSuperficie:
             if patron.search(ruta.read_text(encoding="utf-8"))
         ]
         assert infractores == [], (
-            "Los IDs de modelo viven solo en apps/core/llm_gateway.py (por env); "
-            f"infractores: {infractores}"
+            "Los IDs de modelo viven solo en apps/core/llm_gateway.py (por env); " f"infractores: {infractores}"
         )

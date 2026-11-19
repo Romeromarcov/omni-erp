@@ -7,6 +7,7 @@ es un context manager que emite texto, y se verifica que el contexto que el
 agente construye desde la BD (cartera, tasa BCV, acuerdos, historial) llegue
 al prompt del modelo.
 """
+
 import sys
 from datetime import date, timedelta
 from decimal import Decimal
@@ -107,12 +108,12 @@ class TestAnalizarCartera:
     def test_con_tasa_bcv_del_dia(self, empresa_a, cxc_vencida, moneda_usd):
         from apps.finanzas.models import Moneda, TasaCambio
 
-        ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         TasaCambio.objects.create(
-            id_moneda_origen=moneda_usd, id_moneda_destino=ves,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("37.12345678"),
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("37.12345678"),
             fecha_tasa=date.today(),
         )
         cliente = _cliente_stream_falso(["ok"])
@@ -138,9 +139,7 @@ class TestAnalizarCartera:
 
 
 class TestGestionarCliente:
-    def test_contexto_completo_con_acuerdo_historial_e_instrucciones(
-        self, empresa_a, cliente_deudor, cxc_vencida
-    ):
+    def test_contexto_completo_con_acuerdo_historial_e_instrucciones(self, empresa_a, cliente_deudor, cxc_vencida):
         from apps.cxc.models import AcuerdoPago, CuotaAcuerdo, GestionCobranza
 
         acuerdo = AcuerdoPago.objects.create(
@@ -152,9 +151,11 @@ class TestGestionarCliente:
             fecha_inicio=date.today(),
         )
         CuotaAcuerdo.objects.create(
-            acuerdo=acuerdo, numero_cuota=1,
+            acuerdo=acuerdo,
+            numero_cuota=1,
             fecha_vencimiento=date.today() + timedelta(days=15),
-            monto=Decimal("300.0000"), estado="pendiente",
+            monto=Decimal("300.0000"),
+            estado="pendiente",
         )
         GestionCobranza.objects.create(
             empresa=empresa_a,

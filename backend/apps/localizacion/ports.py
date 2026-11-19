@@ -10,6 +10,7 @@ Seis puertos: tres de la capa legal (impuestos, documento legal, nómina, libro
 legal) y dos de la capa de mercado (tasas, métodos de pago). Implementaciones
 "no-op" sirven cuando una capa está desactivada para la empresa.
 """
+
 from abc import ABC, abstractmethod
 from decimal import Decimal
 
@@ -21,32 +22,28 @@ class MotorImpuestos(ABC):
     """Calcula los impuestos de una operación (IVA, IGTF, retenciones)."""
 
     @abstractmethod
-    def calcular(self, *, subtotal: Decimal, empresa, contexto: dict | None = None) -> dict:
-        ...
+    def calcular(self, *, subtotal: Decimal, empresa, contexto: dict | None = None) -> dict: ...
 
 
 class GeneradorDocumentoLegal(ABC):
     """Emite el documento fiscal legal del país (factura, nota de crédito)."""
 
     @abstractmethod
-    def emitir(self, *, documento, empresa) -> dict:
-        ...
+    def emitir(self, *, documento, empresa) -> dict: ...
 
 
 class CalculadoraNomina(ABC):
     """Conceptos y deducciones obligatorias de nómina del país."""
 
     @abstractmethod
-    def calcular(self, *, empleado, periodo, empresa) -> dict:
-        ...
+    def calcular(self, *, empleado, periodo, empresa) -> dict: ...
 
 
 class LibroLegal(ABC):
     """Libros/declaraciones para el fisco (p. ej. libros SENIAT)."""
 
     @abstractmethod
-    def generar(self, *, empresa, periodo, tipo: str):
-        ...
+    def generar(self, *, empresa, periodo, tipo: str): ...
 
 
 # ── Capa de mercado ──────────────────────────────────────────────────────────
@@ -56,16 +53,14 @@ class ProveedorTasas(ABC):
     """Obtiene tasas de cambio del mercado."""
 
     @abstractmethod
-    def obtener_tasa(self, *, origen: str, destino: str) -> Decimal | None:
-        ...
+    def obtener_tasa(self, *, origen: str, destino: str) -> Decimal | None: ...
 
 
 class MetodosPagoLocales(ABC):
     """Métodos de pago propios del país/mercado."""
 
     @abstractmethod
-    def listar(self, *, empresa) -> list[dict]:
-        ...
+    def listar(self, *, empresa) -> list[dict]: ...
 
 
 # ── No-ops (capa desactivada) ────────────────────────────────────────────────

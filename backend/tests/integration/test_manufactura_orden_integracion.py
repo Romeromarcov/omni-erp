@@ -4,6 +4,7 @@ Cierra el hueco de cobertura documentado: ejercita crear_orden_produccion,
 consumir_materiales_orden (↔ inventario, movimiento CONSUMO_PRODUCCION) y
 registrar_produccion_terminada (↔ inventario, ENTRADA al costo real).
 """
+
 from decimal import Decimal
 
 import pytest
@@ -20,6 +21,7 @@ def D(x):
 @pytest.fixture
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
+
     return UnidadMedida.objects.create(
         id_empresa=empresa_a, nombre="Unidad MFG", abreviatura="UN-MFG", tipo="CANTIDAD"
     )
@@ -28,19 +30,20 @@ def unidad(db, empresa_a):
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
+
     return CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="MFG")
 
 
 @pytest.fixture
 def almacen(db, empresa_a):
     from apps.almacenes.models import Almacen
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén MFG", codigo_almacen="AC-MFG"
-    )
+
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén MFG", codigo_almacen="AC-MFG")
 
 
 def _producto(empresa, unidad, categoria, moneda, nombre, costo):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa,
         nombre_producto=nombre,
@@ -65,8 +68,11 @@ def componente(db, empresa_a, unidad, categoria, moneda_usd):
 @pytest.fixture
 def stock_componente(db, empresa_a, componente, almacen):
     from apps.inventario.models import StockActual
+
     return StockActual.objects.create(
-        id_empresa=empresa_a, id_producto=componente, id_almacen=almacen,
+        id_empresa=empresa_a,
+        id_producto=componente,
+        id_almacen=almacen,
         cantidad_disponible=D("100"),
     )
 
@@ -75,12 +81,13 @@ def stock_componente(db, empresa_a, componente, almacen):
 def bom(db, empresa_a, producto_final, componente, unidad):
     """BOM: 1 Mesa requiere 4 Maderas."""
     from apps.manufactura.models import ListaMateriales, ListaMaterialesDetalle
-    lista = ListaMateriales.objects.create(
-        empresa=empresa_a, producto_final=producto_final, nombre="BOM Mesa"
-    )
+
+    lista = ListaMateriales.objects.create(empresa=empresa_a, producto_final=producto_final, nombre="BOM Mesa")
     ListaMaterialesDetalle.objects.create(
-        id_lista_materiales=lista, id_producto=componente,
-        cantidad_requerida=D("4"), id_unidad_medida=unidad,
+        id_lista_materiales=lista,
+        id_producto=componente,
+        cantidad_requerida=D("4"),
+        id_unidad_medida=unidad,
     )
     return lista
 

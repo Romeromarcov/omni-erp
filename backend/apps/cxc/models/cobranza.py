@@ -4,6 +4,7 @@ Modelos de Gestión de Cobranza.
 GestionCobranza: registro de una acción de cobranza (llamada, WhatsApp, etc.)
 PlantillaCobranza: mensajes reutilizables con variables interpolables.
 """
+
 from django.db import models
 
 from .base import CxcBaseModel
@@ -14,6 +15,7 @@ class PlantillaCobranza(CxcBaseModel):
     Mensaje de cobranza reutilizable con variables.
     Variables soportadas: {cliente} {orden} {monto} {vencimiento} {dias_vencida}
     """
+
     nombre = models.CharField(max_length=100)
     canal = models.CharField(
         max_length=20,

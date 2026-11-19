@@ -17,13 +17,9 @@ class BotUsuario(OmniBaseModel):
     """Vincula un usuario de Telegram con un usuario Omni (vendedor) de una empresa."""
 
     id_bot_usuario = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="bots_usuarios"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="bots_usuarios")
     telegram_user_id = models.BigIntegerField()
-    usuario = models.ForeignKey(
-        "core.Usuarios", on_delete=models.CASCADE, related_name="bots_usuarios"
-    )
+    usuario = models.ForeignKey("core.Usuarios", on_delete=models.CASCADE, related_name="bots_usuarios")
     nombre = models.CharField(max_length=150, blank=True, default="")
     bots = models.JSONField(
         default=list,
@@ -66,28 +62,16 @@ class IngestaBot(OmniBaseModel):
         ERROR = "ERROR", "Error"
 
     id_ingesta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="bots_ingestas"
-    )
-    bot_usuario = models.ForeignKey(
-        BotUsuario, on_delete=models.PROTECT, related_name="ingestas"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="bots_ingestas")
+    bot_usuario = models.ForeignKey(BotUsuario, on_delete=models.PROTECT, related_name="ingestas")
     kind = models.CharField(max_length=20, choices=Kind.choices)
     idempotency_key = models.CharField(max_length=120)
     payload = models.JSONField(help_text="Borrador tal como lo confirmó el usuario.")
     fuente = models.JSONField(default=dict, help_text="chat_id, message_id, bot, auto…")
-    auto = models.BooleanField(
-        default=False, help_text="Enviado automáticamente por falta de respuesta."
-    )
-    estado = models.CharField(
-        max_length=12, choices=Estado.choices, default=Estado.PROCESADO
-    )
-    incompleto = models.JSONField(
-        default=list, blank=True, help_text="Campos/datos que faltan."
-    )
-    resultado = models.JSONField(
-        default=dict, blank=True, help_text="Referencias a lo creado en Omni."
-    )
+    auto = models.BooleanField(default=False, help_text="Enviado automáticamente por falta de respuesta.")
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PROCESADO)
+    incompleto = models.JSONField(default=list, blank=True, help_text="Campos/datos que faltan.")
+    resultado = models.JSONField(default=dict, blank=True, help_text="Referencias a lo creado en Omni.")
     odoo_ref = models.CharField(max_length=100, blank=True, default="")
     error = models.CharField(max_length=255, blank=True, default="")
 
@@ -96,9 +80,7 @@ class IngestaBot(OmniBaseModel):
         ordering = ["-fecha_creacion"]
         permissions = [("ingestar", "Puede enviar borradores desde los bots")]
         constraints = [
-            models.UniqueConstraint(
-                fields=["id_empresa", "idempotency_key"], name="bots_ingesta_idem_unica"
-            ),
+            models.UniqueConstraint(fields=["id_empresa", "idempotency_key"], name="bots_ingesta_idem_unica"),
         ]
         indexes = [models.Index(fields=["id_empresa", "estado", "kind"])]
 
@@ -110,9 +92,7 @@ class BotRegistro(OmniBaseModel):
     """Ficha de gobierno y estado en vivo de un bot por empresa (plano de control)."""
 
     id_bot_registro = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="bots_registros"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="bots_registros")
     codigo = models.CharField(
         max_length=30,
         help_text="Identificador estable del bot (ej. pedidos, cobranza, compras, eventos, tareas).",
@@ -137,9 +117,7 @@ class BotRegistro(OmniBaseModel):
             ("gestionar_bots", "Puede configurar o pausar bots de la empresa"),
         ]
         constraints = [
-            models.UniqueConstraint(
-                fields=["id_empresa", "codigo"], name="bots_registro_empresa_codigo_unico"
-            ),
+            models.UniqueConstraint(fields=["id_empresa", "codigo"], name="bots_registro_empresa_codigo_unico"),
         ]
 
     def __str__(self):
@@ -150,9 +128,7 @@ class BotLatidoDiario(OmniBaseModel):
     """Resumen diario de actividad reportada por cada bot de la empresa."""
 
     id_bot_latido = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="bots_latidos"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="bots_latidos")
     codigo = models.CharField(max_length=30)
     dia = models.DateField()
     latidos = models.PositiveIntegerField(default=0)
@@ -178,9 +154,7 @@ class BotBitacora(OmniBaseModel):
     """Bitácora inmutable de cambios de configuración y usuarios del panel de bots."""
 
     id_bot_bitacora = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="bots_bitacora"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="bots_bitacora")
     entidad = models.CharField(max_length=80)
     accion = models.CharField(max_length=30)
     antes = models.JSONField(default=dict, blank=True)

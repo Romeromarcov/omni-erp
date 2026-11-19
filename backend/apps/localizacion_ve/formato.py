@@ -122,17 +122,50 @@ def monto_a_letras(monto: Numero, moneda: str = "DOLARES") -> str:
 # ── Conversión números a letras ───────────────────────────────────────────────
 
 _UNIDADES = [
-    "", "UNO", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE",
-    "DIEZ", "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE", "DIECISÉIS", "DIECISIETE",
-    "DIECIOCHO", "DIECINUEVE",
+    "",
+    "UNO",
+    "DOS",
+    "TRES",
+    "CUATRO",
+    "CINCO",
+    "SEIS",
+    "SIETE",
+    "OCHO",
+    "NUEVE",
+    "DIEZ",
+    "ONCE",
+    "DOCE",
+    "TRECE",
+    "CATORCE",
+    "QUINCE",
+    "DIECISÉIS",
+    "DIECISIETE",
+    "DIECIOCHO",
+    "DIECINUEVE",
 ]
 _DECENAS = [
-    "", "", "VEINTE", "TREINTA", "CUARENTA", "CINCUENTA",
-    "SESENTA", "SETENTA", "OCHENTA", "NOVENTA",
+    "",
+    "",
+    "VEINTE",
+    "TREINTA",
+    "CUARENTA",
+    "CINCUENTA",
+    "SESENTA",
+    "SETENTA",
+    "OCHENTA",
+    "NOVENTA",
 ]
 _CENTENAS = [
-    "", "CIENTO", "DOSCIENTOS", "TRESCIENTOS", "CUATROCIENTOS", "QUINIENTOS",
-    "SEISCIENTOS", "SETECIENTOS", "OCHOCIENTOS", "NOVECIENTOS",
+    "",
+    "CIENTO",
+    "DOSCIENTOS",
+    "TRESCIENTOS",
+    "CUATROCIENTOS",
+    "QUINIENTOS",
+    "SEISCIENTOS",
+    "SETECIENTOS",
+    "OCHOCIENTOS",
+    "NOVECIENTOS",
 ]
 
 

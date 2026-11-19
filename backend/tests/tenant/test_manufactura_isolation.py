@@ -127,6 +127,7 @@ def ruta_b(empresa_b):
 def orden_a(empresa_a, producto_a):
     """OrdenProduccion de Empresa A."""
     from django.utils import timezone
+
     return OrdenProduccion.objects.create(
         empresa=empresa_a,
         producto=producto_a,
@@ -139,6 +140,7 @@ def orden_a(empresa_a, producto_a):
 def orden_b(empresa_b, producto_b):
     """OrdenProduccion de Empresa B."""
     from django.utils import timezone
+
     return OrdenProduccion.objects.create(
         empresa=empresa_b,
         producto=producto_b,
@@ -174,9 +176,9 @@ class TestAislamientoListaMateriales:
 
         response = client.get(f"{URL_LISTAS}{lista_b.id}/")
 
-        assert response.status_code == 404, (
-            f"Se esperaba 404 al acceder a lista de Empresa B, se obtuvo {response.status_code}"
-        )
+        assert (
+            response.status_code == 404
+        ), f"Se esperaba 404 al acceder a lista de Empresa B, se obtuvo {response.status_code}"
 
     def test_crear_lista_inyecta_empresa_del_usuario(self, user_a, empresa_a, producto_a):
         """POST /listas-materiales/ debe asignar empresa_a automáticamente."""
@@ -207,9 +209,9 @@ class TestAislamientoListaMateriales:
 
         assert response.status_code == 201
         lista = ListaMateriales.objects.get(id=response.data["id"])
-        assert lista.empresa_id == empresa_a.pk, (
-            "El payload no debe poder sobrescribir la empresa — debe usarse la del usuario"
-        )
+        assert (
+            lista.empresa_id == empresa_a.pk
+        ), "El payload no debe poder sobrescribir la empresa — debe usarse la del usuario"
         assert lista.empresa_id != empresa_b.pk
 
 

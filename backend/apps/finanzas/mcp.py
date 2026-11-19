@@ -8,7 +8,6 @@ Herramientas expuestas:
   finanzas_pagos_terceros_pendientes   — pagos de terceros (Zelle) por gestionar
 """
 
-
 import logging
 from decimal import Decimal
 from typing import Any, Dict, List
@@ -63,7 +62,9 @@ def finanzas_get_pagos(
     pagos = qs.order_by("-fecha_pago")[:limit]
     logger.info(
         "finanzas_get_pagos | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(pagos),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(pagos),
     )
     return [
         {
@@ -111,7 +112,9 @@ def finanzas_get_saldo_caja(
 
     logger.info(
         "finanzas_get_saldo_caja | actor=%s | tenant=%s | caja=%s",
-        ctx["actor_id"], ctx["tenant_id"], caja_id,
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        caja_id,
     )
 
     # Obtener la sesión activa si existe
@@ -144,7 +147,9 @@ def finanzas_get_metodos_pago(
     metodos = MetodoPago.objects.filter(activo=True).order_by("nombre_metodo")
     logger.info(
         "finanzas_get_metodos_pago | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(metodos),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(metodos),
     )
     return [
         {
@@ -195,7 +200,9 @@ def finanzas_pagos_terceros_pendientes(
     )
     logger.info(
         "finanzas_pagos_terceros_pendientes | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(pagos),
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        len(pagos),
     )
     return [
         {

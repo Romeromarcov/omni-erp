@@ -81,9 +81,7 @@ def test_rls_no_permite_insertar_en_otra_empresa(sucursales, empresa_a, empresa_
     rls.apply_context([empresa_a.id_empresa], bypass=False)
     with pytest.raises((IntegrityError, ProgrammingError)):
         with transaction.atomic():
-            Sucursal.objects.create(
-                id_empresa=empresa_b, nombre="Intrusa", codigo_sucursal="X999"
-            )
+            Sucursal.objects.create(id_empresa=empresa_b, nombre="Intrusa", codigo_sucursal="X999")
 
 
 def test_rls_bypass_context_manager(sucursales):

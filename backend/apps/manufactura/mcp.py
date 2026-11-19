@@ -75,7 +75,10 @@ def manufactura_calcular_mrp(
     faltantes = services.calcular_mrp_lista(lista, cant, almacen=almacen)
     logger.info(
         "manufactura_calcular_mrp | actor=%s | tenant=%s | lista=%s | cantidad=%s",
-        ctx["actor_id"], ctx["tenant_id"], lista_materiales_id, cant,
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        lista_materiales_id,
+        cant,
     )
     return {
         "lista_materiales_id": str(lista.pk),
@@ -122,7 +125,9 @@ def manufactura_get_costeo_orden(
     costo = services.costeo_real_orden(orden)
     logger.info(
         "manufactura_get_costeo_orden | actor=%s | tenant=%s | orden=%s",
-        ctx["actor_id"], ctx["tenant_id"], orden_id,
+        ctx["actor_id"],
+        ctx["tenant_id"],
+        orden_id,
     )
     return {
         "orden_id": str(orden.pk),

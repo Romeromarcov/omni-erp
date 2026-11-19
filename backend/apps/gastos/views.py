@@ -84,9 +84,11 @@ class GastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
     def resumen_por_categoria(self, request):
         """Obtiene resumen de gastos por categoría"""
         # R-CODE-1: siempre parte de get_queryset() que ya filtra por empresa propia
-        gastos = self.get_queryset().filter(
-            estado_gasto__in=["APROBADO", "REEMBOLSADO", "CONTABILIZADO"]
-        ).select_related("id_categoria_gasto")
+        gastos = (
+            self.get_queryset()
+            .filter(estado_gasto__in=["APROBADO", "REEMBOLSADO", "CONTABILIZADO"])
+            .select_related("id_categoria_gasto")
+        )
 
         empresa_id = request.query_params.get("empresa_id")
 

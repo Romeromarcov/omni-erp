@@ -23,6 +23,7 @@ restantes:
 
 Aserciones con valores exactos (Decimal) — convención runner de mutación.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -57,6 +58,7 @@ pytestmark = pytest.mark.django_db
 
 # ── Clients y fixtures ───────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def client_a(user_a):
     c = APIClient()
@@ -73,33 +75,36 @@ def client_b(user_b):
 
 @pytest.fixture
 def sucursal_a(empresa_a):
-    return Sucursal.objects.create(
-        id_empresa=empresa_a, nombre="Sucursal Centro", codigo_sucursal="SC01"
-    )
+    return Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal Centro", codigo_sucursal="SC01")
 
 
 @pytest.fixture
 def cuenta_a(empresa_a, moneda_usd):
     return CuentaBancariaEmpresa.objects.create(
-        id_empresa=empresa_a, nombre_banco="Banco A", numero_cuenta="0102-77",
-        tipo_cuenta="CORRIENTE", id_moneda=moneda_usd, saldo_actual=Decimal("500.00"),
+        id_empresa=empresa_a,
+        nombre_banco="Banco A",
+        numero_cuenta="0102-77",
+        tipo_cuenta="CORRIENTE",
+        id_moneda=moneda_usd,
+        saldo_actual=Decimal("500.00"),
     )
 
 
 @pytest.fixture
 def datafono_a(empresa_a, sucursal_a, cuenta_a):
     return Datafono.objects.create(
-        id_empresa=empresa_a, id_sucursal=sucursal_a, nombre="POS API",
-        serial="POS-API-1", id_cuenta_bancaria_asociada=cuenta_a,
+        id_empresa=empresa_a,
+        id_sucursal=sucursal_a,
+        nombre="POS API",
+        serial="POS-API-1",
+        id_cuenta_bancaria_asociada=cuenta_a,
         comision_porcentaje=Decimal("2.00"),
     )
 
 
 @pytest.fixture
 def metodo_a(empresa_a, moneda_usd):
-    metodo = MetodoPago.objects.create(
-        nombre_metodo="Zelle Empresa A", tipo_metodo="ELECTRONICO", empresa=empresa_a
-    )
+    metodo = MetodoPago.objects.create(nombre_metodo="Zelle Empresa A", tipo_metodo="ELECTRONICO", empresa=empresa_a)
     # El validate() de TransaccionFinanciera exige que la moneda esté asociada
     # al método (un M2M vacío rechaza TODO — manager siempre truthy).
     metodo.monedas.add(moneda_usd)
@@ -109,7 +114,9 @@ def metodo_a(empresa_a, moneda_usd):
 @pytest.fixture
 def caja_virtual_a(empresa_a, moneda_usd):
     return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja Virtual A", moneda=moneda_usd,
+        empresa=empresa_a,
+        nombre="Caja Virtual A",
+        moneda=moneda_usd,
         tipo_caja="REGISTRADORA",
     )
 
@@ -117,10 +124,14 @@ def caja_virtual_a(empresa_a, moneda_usd):
 @pytest.fixture
 def tf_a(empresa_a, moneda_usd, metodo_a, user_a):
     return TransaccionFinanciera.objects.create(
-        id_empresa=empresa_a, fecha_hora_transaccion=timezone.now(),
-        tipo_transaccion="INGRESO", monto_transaccion=Decimal("100.00"),
-        id_moneda_transaccion=moneda_usd, monto_base_empresa=Decimal("100.00"),
-        id_metodo_pago=metodo_a, id_usuario_registro=user_a,
+        id_empresa=empresa_a,
+        fecha_hora_transaccion=timezone.now(),
+        tipo_transaccion="INGRESO",
+        monto_transaccion=Decimal("100.00"),
+        id_moneda_transaccion=moneda_usd,
+        monto_base_empresa=Decimal("100.00"),
+        id_metodo_pago=metodo_a,
+        id_usuario_registro=user_a,
     )
 
 
@@ -131,6 +142,7 @@ def _sesion_datafono_abierta(datafono, user):
 
 
 # ── CajaViewSet.cierre ───────────────────────────────────────────────────────
+
 
 class TestCajaCierre:
     def test_sin_saldo_real_400(self, client_a, caja_virtual_a):
@@ -156,21 +168,19 @@ class TestCajaCierre:
 
 # ── DatafonoViewSet ──────────────────────────────────────────────────────────
 
+
 class TestDatafonoAcciones:
     URL = "/api/finanzas/datafonos/"
 
     def test_registrar_pago_faltan_campos_400(self, client_a, datafono_a):
         resp = client_a.post(f"{self.URL}{datafono_a.id_datafono}/registrar-pago/", {})
         assert resp.status_code == 400
-        assert resp.json()["message"] == (
-            "Se requieren: monto, referencia_bancaria, id_transaccion_financiera_origen"
-        )
+        assert resp.json()["message"] == ("Se requieren: monto, referencia_bancaria, id_transaccion_financiera_origen")
 
     def test_registrar_pago_tf_inexistente_404(self, client_a, datafono_a):
         resp = client_a.post(
             f"{self.URL}{datafono_a.id_datafono}/registrar-pago/",
-            {"monto": "100.00", "referencia_bancaria": "R1",
-             "id_transaccion_financiera_origen": str(uuid.uuid4())},
+            {"monto": "100.00", "referencia_bancaria": "R1", "id_transaccion_financiera_origen": str(uuid.uuid4())},
         )
         assert resp.status_code == 404
         assert resp.json()["message"] == "Transacción financiera no encontrada"
@@ -179,8 +189,11 @@ class TestDatafonoAcciones:
         _sesion_datafono_abierta(datafono_a, user_a)
         resp = client_a.post(
             f"{self.URL}{datafono_a.id_datafono}/registrar-pago/",
-            {"monto": "150.00", "referencia_bancaria": "REF-API",
-             "id_transaccion_financiera_origen": str(tf_a.id_transaccion)},
+            {
+                "monto": "150.00",
+                "referencia_bancaria": "REF-API",
+                "id_transaccion_financiera_origen": str(tf_a.id_transaccion),
+            },
         )
         assert resp.status_code == 201, resp.content
         body = resp.json()
@@ -206,8 +219,11 @@ class TestDatafonoAcciones:
         _sesion_datafono_abierta(datafono_a, user_a)
         client_a.post(
             f"{self.URL}{datafono_a.id_datafono}/registrar-pago/",
-            {"monto": "100.00", "referencia_bancaria": "R1",
-             "id_transaccion_financiera_origen": str(tf_a.id_transaccion)},
+            {
+                "monto": "100.00",
+                "referencia_bancaria": "R1",
+                "id_transaccion_financiera_origen": str(tf_a.id_transaccion),
+            },
         )
         resp = client_a.post(f"{self.URL}{datafono_a.id_datafono}/cerrar-sesion/", {})
         assert resp.status_code == 200, resp.content
@@ -221,9 +237,7 @@ class TestDatafonoAcciones:
         assert Decimal(body["deposito"]["total_neto"]) == Decimal("196.0000")
         assert DepositoDatafono.objects.count() == 1
 
-    def test_list_filtra_por_caja_fisica_y_tenant(
-        self, client_a, client_b, datafono_a, caja_fisica_a
-    ):
+    def test_list_filtra_por_caja_fisica_y_tenant(self, client_a, client_b, datafono_a, caja_fisica_a):
         datafono_a.id_caja_fisica = caja_fisica_a
         datafono_a.save()
         resp = client_a.get(self.URL, {"id_caja_fisica": str(caja_fisica_a.id_caja_fisica)})
@@ -238,6 +252,7 @@ class TestDatafonoAcciones:
 
 # ── DepositoDatafonoViewSet ──────────────────────────────────────────────────
 
+
 class TestDepositoDatafono:
     URL = "/api/finanzas/depositos-datafono/"
 
@@ -245,7 +260,9 @@ class TestDepositoDatafono:
     def deposito(self, datafono_a, user_a):
         sesion = _sesion_datafono_abierta(datafono_a, user_a)
         TransaccionDatafono.objects.create(
-            id_datafono=datafono_a, sesion_datafono=sesion, monto=Decimal("100.00"),
+            id_datafono=datafono_a,
+            sesion_datafono=sesion,
+            monto=Decimal("100.00"),
             id_usuario_registro=user_a,
         )
         from apps.finanzas.models import cerrar_sesion_datafono
@@ -256,10 +273,15 @@ class TestDepositoDatafono:
     def movimiento(self, empresa_a, moneda_usd, user_a):
         ahora = timezone.now()
         return MovimientoCajaBanco.objects.create(
-            id_empresa=empresa_a, fecha_movimiento=ahora.date(),
-            hora_movimiento=ahora.time(), tipo_movimiento="INGRESO",
-            monto=Decimal("98.00"), id_moneda=moneda_usd, concepto="dep banco",
-            saldo_anterior=Decimal("0.00"), saldo_nuevo=Decimal("98.00"),
+            id_empresa=empresa_a,
+            fecha_movimiento=ahora.date(),
+            hora_movimiento=ahora.time(),
+            tipo_movimiento="INGRESO",
+            monto=Decimal("98.00"),
+            id_moneda=moneda_usd,
+            concepto="dep banco",
+            saldo_anterior=Decimal("0.00"),
+            saldo_nuevo=Decimal("98.00"),
             id_usuario_registro=user_a,
         )
 
@@ -314,6 +336,7 @@ class TestDepositoDatafono:
 
 # ── PlantillaMaestroCajasVirtualesViewSet ────────────────────────────────────
 
+
 class TestPlantillaMaestro:
     URL = "/api/finanzas/plantillas-maestro-cajas/"
 
@@ -323,14 +346,10 @@ class TestPlantillaMaestro:
         )
         resp = client_a.post(f"{self.URL}{plantilla.id_plantilla_maestro}/sincronizar/", {})
         assert resp.status_code == 200
-        assert resp.json() == {
-            "mensaje": "Sincronización completada para plantilla Plantilla API"
-        }
+        assert resp.json() == {"mensaje": "Sincronización completada para plantilla Plantilla API"}
 
     def test_list_solo_empresa_propia(self, client_b, empresa_a, moneda_usd):
-        PlantillaMaestroCajasVirtuales.objects.create(
-            empresa=empresa_a, nombre="De A", moneda_base=moneda_usd
-        )
+        PlantillaMaestroCajasVirtuales.objects.create(empresa=empresa_a, nombre="De A", moneda_base=moneda_usd)
         resp = client_b.get(self.URL)
         assert resp.status_code == 200
         assert resp.json()["count"] == 0
@@ -338,20 +357,24 @@ class TestPlantillaMaestro:
 
 # ── PagoViewSet ──────────────────────────────────────────────────────────────
 
+
 class TestPagoViewSet:
     URL = "/api/finanzas/pagos/"
 
     def test_create_ingreso_201(self, client_a, empresa_a, moneda_usd, metodo_a, user_a):
-        resp = client_a.post(self.URL, {
-            "id_empresa": str(empresa_a.id_empresa),
-            "tipo_operacion": "INGRESO",
-            "tipo_documento": "AJUSTE",
-            "id_documento": str(uuid.uuid4()),
-            "fecha_pago": timezone.now().isoformat(),
-            "monto": "250.5000",
-            "id_moneda": str(moneda_usd.id_moneda),
-            "id_metodo_pago": str(metodo_a.id_metodo_pago),
-        })
+        resp = client_a.post(
+            self.URL,
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "INGRESO",
+                "tipo_documento": "AJUSTE",
+                "id_documento": str(uuid.uuid4()),
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "250.5000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_a.id_metodo_pago),
+            },
+        )
         assert resp.status_code == 201, resp.content
         pago = Pago.objects.get()
         assert pago.monto == Decimal("250.5000")
@@ -359,9 +382,14 @@ class TestPagoViewSet:
 
     def test_list_aislado_por_empresa(self, client_b, empresa_a, moneda_usd, metodo_a):
         Pago.objects.create(
-            id_empresa=empresa_a, tipo_operacion="INGRESO", tipo_documento="AJUSTE",
-            id_documento=uuid.uuid4(), fecha_pago=timezone.now(),
-            monto=Decimal("10.0000"), id_moneda=moneda_usd, id_metodo_pago=metodo_a,
+            id_empresa=empresa_a,
+            tipo_operacion="INGRESO",
+            tipo_documento="AJUSTE",
+            id_documento=uuid.uuid4(),
+            fecha_pago=timezone.now(),
+            monto=Decimal("10.0000"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_a,
         )
         resp = client_b.get(self.URL)
         assert resp.json()["count"] == 0
@@ -379,6 +407,7 @@ class TestPagoViewSet:
 
 
 # ── CajaFisicaViewSet (acciones de catálogo) ─────────────────────────────────
+
 
 class TestCajaFisicaAcciones:
     URL = "/api/finanzas/cajas-fisicas/"
@@ -399,6 +428,7 @@ class TestCajaFisicaAcciones:
 
 
 # ── TransaccionFinancieraViewSet.perform_create ──────────────────────────────
+
 
 class TestTransaccionFinancieraCreate:
     URL = "/api/finanzas/transacciones-financieras/"
@@ -433,9 +463,7 @@ class TestTransaccionFinancieraCreate:
         from django.contrib.auth import get_user_model
 
         User = get_user_model()
-        sin_empresa = User.objects.create_user(
-            username="sin_empresa", password="x", email="se@x.com", is_active=True
-        )
+        sin_empresa = User.objects.create_user(username="sin_empresa", password="x", email="se@x.com", is_active=True)
         client = APIClient()
         client.force_authenticate(user=sin_empresa)
         resp = client.post(self.URL, self._payload(empresa_b, moneda_usd, metodo_a, sin_empresa))
@@ -446,6 +474,7 @@ class TestTransaccionFinancieraCreate:
 
 
 # ── MetodoPagoViewSet: reutilizar y monedas_info ─────────────────────────────
+
 
 class TestMetodoPagoAcciones:
     URL = "/api/finanzas/metodos-pago/"
@@ -459,8 +488,10 @@ class TestMetodoPagoAcciones:
         # compartido debe ser público; el caso "privado ajeno → 404" se cubre
         # en tests/tenant/test_metodos_pago_aislamiento.py.
         return MetodoPago.objects.create(
-            nombre_metodo="Pago Móvil Banesco", tipo_metodo="ELECTRONICO",
-            empresa=empresa_b, es_publico=True,
+            nombre_metodo="Pago Móvil Banesco",
+            tipo_metodo="ELECTRONICO",
+            empresa=empresa_b,
+            es_publico=True,
         )
 
     def test_reutilizar_sin_empresa_400(self, client_a, metodo_b):
@@ -478,9 +509,7 @@ class TestMetodoPagoAcciones:
 
     def test_reutilizar_similar_existente_409(self, client_a, empresa_a, metodo_b):
         pytest.importorskip("rapidfuzz")  # dependencia opcional en el entorno dev
-        MetodoPago.objects.create(
-            nombre_metodo="Pago Movil Banesco", tipo_metodo="ELECTRONICO", empresa=empresa_a
-        )
+        MetodoPago.objects.create(nombre_metodo="Pago Movil Banesco", tipo_metodo="ELECTRONICO", empresa=empresa_a)
         resp = client_a.post(
             f"{self.URL}{metodo_b.id_metodo_pago}/reutilizar/",
             {"id_empresa": str(empresa_a.id_empresa)},
@@ -504,14 +533,13 @@ class TestMetodoPagoAcciones:
         # HALLAZGO documentado: el ViewSet usa lookup_field="id_metodo_pago",
         # pero la acción monedas_info se declara con firma (self, request,
         # pk=None) → el router pasa kwarg id_metodo_pago → TypeError → 500.
-        metodo = MetodoPago.objects.create(
-            nombre_metodo="Efectivo A", tipo_metodo="EFECTIVO", empresa=empresa_a
-        )
+        metodo = MetodoPago.objects.create(nombre_metodo="Efectivo A", tipo_metodo="EFECTIVO", empresa=empresa_a)
         with pytest.raises(TypeError):
             client_a.get(f"{self.URL}{metodo.id_metodo_pago}/monedas_info/")
 
 
 # ── MonedaEmpresaActivaViewSet: filtros ──────────────────────────────────────
+
 
 class TestMonedaEmpresaActivaFiltros:
     URL = "/api/finanzas/monedas-empresa-activas/"
@@ -519,9 +547,7 @@ class TestMonedaEmpresaActivaFiltros:
     def test_filtro_activa_true_false(self, client_a, empresa_a, moneda_usd):
         # moneda_usd se crea antes que empresa_a → la señal de sync no creó la
         # fila; se garantiza aquí.
-        activa, _ = MonedaEmpresaActiva.objects.get_or_create(
-            empresa=empresa_a, moneda=moneda_usd
-        )
+        activa, _ = MonedaEmpresaActiva.objects.get_or_create(empresa=empresa_a, moneda=moneda_usd)
         activa.activa = False
         activa.save()
         resp_false = client_a.get(self.URL, {"activa": "false"})
@@ -536,6 +562,7 @@ class TestMonedaEmpresaActivaFiltros:
 
 
 # ── SesionCajaFisicaViewSet.transferir_entre_cajas ───────────────────────────
+
 
 class TestSesionCajaTransferir:
     URL = "/api/finanzas/sesiones-caja/"
@@ -552,8 +579,7 @@ class TestSesionCajaTransferir:
     def test_cajas_no_pertenecen_a_sesion_400(self, client_a, sesion, caja_virtual_a):
         resp = client_a.post(
             f"{self.URL}{sesion.id_sesion}/transferir-entre-cajas/",
-            {"caja_origen": str(caja_virtual_a.id_caja),
-             "caja_destino": str(uuid.uuid4()), "monto": "10.00"},
+            {"caja_origen": str(caja_virtual_a.id_caja), "caja_destino": str(uuid.uuid4()), "monto": "10.00"},
         )
         assert resp.status_code == 400
         assert resp.json() == {"error": "Caja origen o destino no pertenece a la sesión."}
@@ -567,6 +593,7 @@ class TestSesionCajaTransferir:
 
 
 # ── Listas con aislamiento por usuario / tenant ──────────────────────────────
+
 
 class TestListasAisladas:
     def test_cajas_usuario_solo_del_usuario(self, client_a, user_a, user_b, caja_virtual_a):
@@ -590,45 +617,38 @@ class TestListasAisladas:
         assert resultados[0]["caja_nombre"] == "Caja Principal Test"
         assert resultados[0]["puede_abrir_sesion"] is True
 
-    def test_transacciones_y_sesiones_datafono_aisladas(
-        self, client_a, client_b, datafono_a, user_a
-    ):
+    def test_transacciones_y_sesiones_datafono_aisladas(self, client_a, client_b, datafono_a, user_a):
         sesion = _sesion_datafono_abierta(datafono_a, user_a)
-        TransaccionDatafono.objects.create(
-            id_datafono=datafono_a, sesion_datafono=sesion, monto=Decimal("33.00")
-        )
+        TransaccionDatafono.objects.create(id_datafono=datafono_a, sesion_datafono=sesion, monto=Decimal("33.00"))
         resp_a = client_a.get("/api/finanzas/transacciones-datafono/")
         assert resp_a.json()["count"] == 1
         assert client_b.get("/api/finanzas/transacciones-datafono/").json()["count"] == 0
         assert client_a.get("/api/finanzas/sesiones-datafono/").json()["count"] == 1
         assert client_b.get("/api/finanzas/sesiones-datafono/").json()["count"] == 0
 
-    def test_cajas_virtuales_auto_filtradas_por_empresa(
-        self, client_a, client_b, empresa_a, moneda_usd, metodo_a
-    ):
+    def test_cajas_virtuales_auto_filtradas_por_empresa(self, client_a, client_b, empresa_a, moneda_usd, metodo_a):
         plantilla = PlantillaMaestroCajasVirtuales.objects.create(
             empresa=empresa_a, nombre="P-auto", moneda_base=moneda_usd
         )
-        CajaVirtualAuto.objects.create(
-            plantilla_maestro=plantilla, moneda=moneda_usd, metodo_pago=metodo_a
-        )
+        CajaVirtualAuto.objects.create(plantilla_maestro=plantilla, moneda=moneda_usd, metodo_pago=metodo_a)
         assert client_a.get("/api/finanzas/cajas-virtuales-auto/").json()["count"] == 1
         assert client_b.get("/api/finanzas/cajas-virtuales-auto/").json()["count"] == 0
 
-    def test_overrides_create_y_list_aislada(
-        self, client_a, client_b, caja_fisica_a, metodo_a, sucursal_a, user_a
-    ):
+    def test_overrides_create_y_list_aislada(self, client_a, client_b, caja_fisica_a, metodo_a, sucursal_a, user_a):
         # FIX (lote 2): el serializer aceptaba ids de Caja virtual (queryset
         # equivocado) y la señal override_post_save reventaba por el FK de
         # CajaVirtualAuto mal apuntado. Ahora el POST con un id de CajaFisica
         # real crea el override (201) y la señal sincroniza sin error.
-        resp = client_a.post("/api/finanzas/overrides-metodos-pago/", {
-            "caja_fisica": str(caja_fisica_a.id_caja_fisica),
-            "metodo_pago": str(metodo_a.id_metodo_pago),
-            "sucursal": str(sucursal_a.id_sucursal),
-            "deshabilitado": True,
-            "motivo": "POS dañado",
-        })
+        resp = client_a.post(
+            "/api/finanzas/overrides-metodos-pago/",
+            {
+                "caja_fisica": str(caja_fisica_a.id_caja_fisica),
+                "metodo_pago": str(metodo_a.id_metodo_pago),
+                "sucursal": str(sucursal_a.id_sucursal),
+                "deshabilitado": True,
+                "motivo": "POS dañado",
+            },
+        )
         assert resp.status_code == 201, resp.content
         assert CajaMetodoPagoOverride.objects.count() == 1
         # La lista queda acotada al tenant.

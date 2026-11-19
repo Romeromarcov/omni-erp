@@ -14,6 +14,7 @@ Cubre por la API real (router en apps/servicio_cliente/urls.py, prefijo
 
 Fixtures multi-tenant (empresa_a/b, user_a/b, moneda_usd) del conftest.
 """
+
 import uuid
 
 import pytest
@@ -61,16 +62,12 @@ def client_b(user_b):
 
 @pytest.fixture
 def categoria_a(empresa_a):
-    return CategoriaTicket.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Soporte Técnico", activo=True
-    )
+    return CategoriaTicket.objects.create(id_empresa=empresa_a, nombre_categoria="Soporte Técnico", activo=True)
 
 
 @pytest.fixture
 def categoria_b(empresa_b):
-    return CategoriaTicket.objects.create(
-        id_empresa=empresa_b, nombre_categoria="Facturación Beta", activo=True
-    )
+    return CategoriaTicket.objects.create(id_empresa=empresa_b, nombre_categoria="Facturación Beta", activo=True)
 
 
 @pytest.fixture
@@ -158,9 +155,7 @@ class TestAislamientoMultiTenant:
         assert str(articulo_a.id_articulo) not in ids
 
     def test_b_no_ve_feedback_de_a(self, client_b, empresa_a):
-        fb = FeedbackCliente.objects.create(
-            id_empresa=empresa_a, tipo_feedback="QUEJA", comentarios="queja de A"
-        )
+        fb = FeedbackCliente.objects.create(id_empresa=empresa_a, tipo_feedback="QUEJA", comentarios="queja de A")
         resp = client_b.get(f"{BASE}feedback-cliente/")
         assert resp.status_code == 200
         ids = [r["id_feedback"] for r in _results(resp)]
@@ -169,9 +164,7 @@ class TestAislamientoMultiTenant:
 
 class TestCategoriaTicketActions:
     def test_activas_filtra_inactivas(self, client_a, empresa_a, categoria_a):
-        inactiva = CategoriaTicket.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Vieja", activo=False
-        )
+        inactiva = CategoriaTicket.objects.create(id_empresa=empresa_a, nombre_categoria="Vieja", activo=False)
         resp = client_a.get(f"{BASE}categorias-ticket/activas/")
         assert resp.status_code == 200
         ids = [r["id_categoria_ticket"] for r in resp.json()]
@@ -189,9 +182,7 @@ class TestCategoriaTicketActions:
                 prioridad="MEDIA",
                 estado_ticket=estado,
             )
-        resp = client_a.get(
-            f"{BASE}categorias-ticket/{categoria_a.id_categoria_ticket}/estadisticas/"
-        )
+        resp = client_a.get(f"{BASE}categorias-ticket/{categoria_a.id_categoria_ticket}/estadisticas/")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_tickets"] == 4
@@ -225,9 +216,7 @@ class TestTicketSoporteActions:
         assert resp.status_code == 200
         assert [r["id_ticket"] for r in resp.json()] == [str(ticket_a.id_ticket)]
         # Agente sin tickets → lista vacía
-        resp2 = client_a.get(
-            f"{BASE}tickets-soporte/abiertos/", {"agente_id": str(uuid.uuid4())}
-        )
+        resp2 = client_a.get(f"{BASE}tickets-soporte/abiertos/", {"agente_id": str(uuid.uuid4())})
         assert resp2.json() == []
 
     def test_por_prioridad_400_sin_param(self, client_a):
@@ -254,9 +243,7 @@ class TestTicketSoporteActions:
         ticket_a.refresh_from_db()
         assert ticket_a.estado_ticket == "ASIGNADO"
         assert str(ticket_a.id_agente_asignado_temp) == agente
-        assert InteraccionTicket.objects.filter(
-            id_ticket=ticket_a, tipo_interaccion="ASIGNACION"
-        ).count() == 1
+        assert InteraccionTicket.objects.filter(id_ticket=ticket_a, tipo_interaccion="ASIGNACION").count() == 1
 
     def test_asignar_agente_cross_tenant_404(self, client_b, ticket_a):
         resp = client_b.post(
@@ -283,9 +270,7 @@ class TestTicketSoporteActions:
         ticket_a.refresh_from_db()
         assert ticket_a.estado_ticket == "CERRADO"
         assert ticket_a.fecha_cierre is not None
-        inter = InteraccionTicket.objects.get(
-            id_ticket=ticket_a, tipo_interaccion="CAMBIO_ESTADO"
-        )
+        inter = InteraccionTicket.objects.get(id_ticket=ticket_a, tipo_interaccion="CAMBIO_ESTADO")
         assert "ABIERTO" in inter.contenido and "CERRADO" in inter.contenido
 
     def test_escalar_sube_prioridad_y_reasigna(self, client_a, ticket_a):
@@ -339,9 +324,7 @@ class TestTicketSoporteActions:
         }
 
     def test_dashboard_filtra_por_agente(self, client_a, ticket_a):
-        resp = client_a.get(
-            f"{BASE}tickets-soporte/dashboard/", {"agente_id": str(uuid.uuid4())}
-        )
+        resp = client_a.get(f"{BASE}tickets-soporte/dashboard/", {"agente_id": str(uuid.uuid4())})
         assert resp.status_code == 200
         assert resp.json()["total_tickets"] == 0
 
@@ -409,9 +392,7 @@ class TestBaseConocimientoActions:
 
     def test_actualizar_revision(self, client_a, articulo_a):
         antes = articulo_a.fecha_ultima_revision
-        resp = client_a.post(
-            f"{BASE}articulos-conocimiento/{articulo_a.id_articulo}/actualizar_revision/"
-        )
+        resp = client_a.post(f"{BASE}articulos-conocimiento/{articulo_a.id_articulo}/actualizar_revision/")
         assert resp.status_code == 200
         articulo_a.refresh_from_db()
         assert articulo_a.fecha_ultima_revision >= antes
@@ -432,9 +413,7 @@ class TestFeedbackClienteActions:
                 calificacion=calif,
             )
         # Una queja no entra en la encuesta
-        FeedbackCliente.objects.create(
-            id_empresa=empresa_a, tipo_feedback="QUEJA", calificacion=1
-        )
+        FeedbackCliente.objects.create(id_empresa=empresa_a, tipo_feedback="QUEJA", calificacion=1)
         resp = client_a.get(f"{BASE}feedback-cliente/estadisticas_satisfaccion/")
         assert resp.status_code == 200
         data = resp.json()
@@ -460,21 +439,15 @@ class TestFeedbackClienteActions:
         assert resp.status_code == 400
 
     def test_por_tipo_ok(self, client_a, empresa_a):
-        fb = FeedbackCliente.objects.create(
-            id_empresa=empresa_a, tipo_feedback="SUGERENCIA", comentarios="mejorar UX"
-        )
+        fb = FeedbackCliente.objects.create(id_empresa=empresa_a, tipo_feedback="SUGERENCIA", comentarios="mejorar UX")
         FeedbackCliente.objects.create(id_empresa=empresa_a, tipo_feedback="QUEJA")
         resp = client_a.get(f"{BASE}feedback-cliente/por_tipo/", {"tipo": "SUGERENCIA"})
         assert resp.status_code == 200
         assert [r["id_feedback"] for r in resp.json()] == [str(fb.id_feedback)]
 
     def test_quejas_sugerencias(self, client_a, empresa_a):
-        queja = FeedbackCliente.objects.create(
-            id_empresa=empresa_a, tipo_feedback="QUEJA"
-        )
-        sugerencia = FeedbackCliente.objects.create(
-            id_empresa=empresa_a, tipo_feedback="SUGERENCIA"
-        )
+        queja = FeedbackCliente.objects.create(id_empresa=empresa_a, tipo_feedback="QUEJA")
+        sugerencia = FeedbackCliente.objects.create(id_empresa=empresa_a, tipo_feedback="SUGERENCIA")
         otro = FeedbackCliente.objects.create(id_empresa=empresa_a, tipo_feedback="OTRO")
         resp = client_a.get(f"{BASE}feedback-cliente/quejas_sugerencias/")
         assert resp.status_code == 200

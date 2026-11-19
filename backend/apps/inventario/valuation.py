@@ -136,8 +136,7 @@ def _consumir_salida(movimiento, almacen, cantidad: Decimal, metodo: str) -> Val
     if pendiente > CERO:
         unitario_faltante = promedio if (metodo == "PROMEDIO" and promedio > CERO) else respaldo
         logger.warning(
-            "Valoración SALIDA sin capas suficientes | empresa=%s producto=%s almacen=%s "
-            "faltante=%s costo=%s",
+            "Valoración SALIDA sin capas suficientes | empresa=%s producto=%s almacen=%s " "faltante=%s costo=%s",
             getattr(movimiento.id_empresa, "pk", None),
             getattr(movimiento.id_producto, "pk", None),
             getattr(almacen, "pk", None),
@@ -193,9 +192,7 @@ def valorar_movimiento(movimiento) -> ValoracionInventario | None:
 
     if tipo in TIPOS_TRANSFERENCIA:
         salida = _consumir_salida(movimiento, movimiento.id_almacen_origen, cantidad, metodo)
-        _crear_capa_entrada(
-            movimiento, movimiento.id_almacen_destino, cantidad, salida.costo_unitario, metodo
-        )
+        _crear_capa_entrada(movimiento, movimiento.id_almacen_destino, cantidad, salida.costo_unitario, metodo)
         return salida
 
     if tipo in TIPOS_AJUSTE:

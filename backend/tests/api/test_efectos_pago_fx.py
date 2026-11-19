@@ -24,16 +24,17 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def metodo(db):
-    return MetodoPago.objects.create(
-        nombre_metodo="Efectivo FX", tipo_metodo="EFECTIVO", es_generico=True
-    )
+    return MetodoPago.objects.create(nombre_metodo="Efectivo FX", tipo_metodo="EFECTIVO", es_generico=True)
 
 
 @pytest.fixture
 def moneda_ves(db):
     return Moneda.objects.create(
-        nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-        tipo_moneda="fiat", es_generica=True,
+        nombre="Bolívar",
+        codigo_iso="VES",
+        simbolo="Bs",
+        tipo_moneda="fiat",
+        es_generica=True,
     )
 
 
@@ -52,9 +53,7 @@ def _pago(empresa, moneda, metodo, usuario, monto="100.00"):
 
 
 class TestEfectosPagoFX:
-    def test_pago_en_divisa_convierte_a_moneda_base(
-        self, empresa_a, moneda_usd, moneda_ves, metodo, user_a
-    ):
+    def test_pago_en_divisa_convierte_a_moneda_base(self, empresa_a, moneda_usd, moneda_ves, metodo, user_a):
         # empresa_a base = USD. Pago de 100 VES con tasa 1 VES = 0.025 USD → 2.5 USD.
         pago = _pago(empresa_a, moneda_ves, metodo, user_a, monto="100.00")
         TasaCambio.objects.create(
@@ -75,9 +74,7 @@ class TestEfectosPagoFX:
         assert transaccion.id_moneda_base == moneda_usd
         assert transaccion.monto_base_empresa == Decimal("2.5000")
 
-    def test_pago_en_moneda_base_no_convierte(
-        self, empresa_a, moneda_usd, metodo, user_a
-    ):
+    def test_pago_en_moneda_base_no_convierte(self, empresa_a, moneda_usd, metodo, user_a):
         # Pago ya en la moneda base (USD): monto_base = monto, sin tasa requerida.
         pago = _pago(empresa_a, moneda_usd, metodo, user_a, monto="80.00")
 
@@ -86,9 +83,7 @@ class TestEfectosPagoFX:
         assert transaccion.id_moneda_base == moneda_usd
         assert transaccion.monto_base_empresa == Decimal("80.00")
 
-    def test_pago_en_divisa_sin_tasa_se_rechaza(
-        self, empresa_a, moneda_ves, metodo, user_a
-    ):
+    def test_pago_en_divisa_sin_tasa_se_rechaza(self, empresa_a, moneda_ves, metodo, user_a):
         # Sin TasaCambio VES→USD el pago se rechaza (no se asume 1:1) y nada persiste.
         pago = _pago(empresa_a, moneda_ves, metodo, user_a, monto="100.00")
 

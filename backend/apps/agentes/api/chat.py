@@ -4,6 +4,7 @@ y tool-calling para consultar datos reales del sistema.
 
 POST /api/agentes/chat/  →  recibe {messages:[{role, content}]} y devuelve SSE.
 """
+
 import json
 import logging
 from datetime import date
@@ -26,6 +27,7 @@ MAX_TOOL_ROUNDS = 5
 
 # ── Serialización segura ───────────────────────────────────────────────────────
 
+
 def _jsonable(obj):
     if isinstance(obj, Decimal):
         return str(obj)
@@ -43,14 +45,11 @@ def _jsonable(obj):
 # usar_empresa). Nunca se usa la property user.empresa (= empresas.first()), que
 # ignora el aislamiento multi-empresa.
 
+
 def _nombre_empresa(empresa) -> str:
     if empresa is None:
         return "—"
-    return (
-        getattr(empresa, "nombre_legal", None)
-        or getattr(empresa, "nombre_comercial", None)
-        or str(empresa)
-    )
+    return getattr(empresa, "nombre_legal", None) or getattr(empresa, "nombre_comercial", None) or str(empresa)
 
 
 class _ChatCtx:
@@ -64,6 +63,7 @@ class _ChatCtx:
 
 
 # ── Herramientas (datos reales, solo lectura, scoped a la empresa de trabajo) ──
+
 
 def _tool_tasa_bcv_hoy(ctx, **_):
     from apps.finanzas.models import TasaCambio
@@ -98,14 +98,9 @@ def _tool_buscar_cliente(ctx, termino="", **_):
 
     if not termino:
         return {"error": "Falta el término de búsqueda."}
-    qs = (
-        Cliente.objects.filter(id_empresa=ctx.empresa, activo=True)
-        .filter(
-            Q(razon_social__icontains=termino)
-            | Q(nombre_comercial__icontains=termino)
-            | Q(rif__icontains=termino)
-        )[:15]
-    )
+    qs = Cliente.objects.filter(id_empresa=ctx.empresa, activo=True).filter(
+        Q(razon_social__icontains=termino) | Q(nombre_comercial__icontains=termino) | Q(rif__icontains=termino)
+    )[:15]
     clientes = [
         {
             "id_cliente": str(c.id_cliente),
@@ -140,12 +135,9 @@ def _tool_listar_empresas(ctx, **_):
     """Empresas sobre las que el usuario puede trabajar + la empresa actual."""
     return {
         "empresa_actual": (
-            {"id": str(ctx.empresa.id_empresa), "nombre": _nombre_empresa(ctx.empresa)}
-            if ctx.empresa else None
+            {"id": str(ctx.empresa.id_empresa), "nombre": _nombre_empresa(ctx.empresa)} if ctx.empresa else None
         ),
-        "empresas_disponibles": [
-            {"id": str(e.id_empresa), "nombre": _nombre_empresa(e)} for e in ctx.visibles
-        ],
+        "empresas_disponibles": [{"id": str(e.id_empresa), "nombre": _nombre_empresa(e)} for e in ctx.visibles],
     }
 
 
@@ -235,6 +227,7 @@ def _dispatch_tool(name, tool_input, ctx):
 
 # ── Prompt y validación ─────────────────────────────────────────────────────────
 
+
 def _build_system_prompt(user, empresa) -> str:
     empresa_nombre = _nombre_empresa(empresa) if empresa else "la empresa actual"
     nombre = (user.get_full_name() or user.username).strip()
@@ -253,7 +246,7 @@ def _build_system_prompt(user, empresa) -> str:
         "Integraciones, Empresas y Usuarios.\n\n"
         "Estilo: responde SIEMPRE en español, claro y conciso. Usa Markdown (listas, negritas, "
         "tablas) cuando ayude. Si indicas dónde hacer algo, usa la ruta del menú (p. ej. "
-        "\"Ventas → Pedidos\"). No inventes datos: si una herramienta no devuelve algo, dilo. "
+        '"Ventas → Pedidos"). No inventes datos: si una herramienta no devuelve algo, dilo. '
         "Contexto: bolívares (VES), dólares (USD), tasa BCV, IVA e IGTF."
     )
 
@@ -312,11 +305,13 @@ class AsistenteChatView(APIView):
 
         def event_stream():
             if not gateway.disponible():
-                yield sse({
-                    "text": "⚠️ El asistente IA no está configurado en este entorno "
-                            "(falta ANTHROPIC_API_KEY). Aun así puedo orientarte: usa el menú "
-                            "lateral para navegar entre los módulos del ERP.",
-                })
+                yield sse(
+                    {
+                        "text": "⚠️ El asistente IA no está configurado en este entorno "
+                        "(falta ANTHROPIC_API_KEY). Aun así puedo orientarte: usa el menú "
+                        "lateral para navegar entre los módulos del ERP.",
+                    }
+                )
                 yield "data: [DONE]\n\n"
                 return
 
@@ -346,11 +341,13 @@ class AsistenteChatView(APIView):
                     for block in final.content:
                         if getattr(block, "type", None) == "tool_use":
                             result = _dispatch_tool(block.name, block.input, ctx)
-                            tool_results.append({
-                                "type": "tool_result",
-                                "tool_use_id": block.id,
-                                "content": json.dumps(_jsonable(result), ensure_ascii=False),
-                            })
+                            tool_results.append(
+                                {
+                                    "type": "tool_result",
+                                    "tool_use_id": block.id,
+                                    "content": json.dumps(_jsonable(result), ensure_ascii=False),
+                                }
+                            )
                     conversation.append({"role": "user", "content": tool_results})
 
                 yield "data: [DONE]\n\n"

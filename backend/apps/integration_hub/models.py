@@ -17,6 +17,7 @@ Eventos emitidos:
   - integration_hub.job_sincronizacion.completado
   - integration_hub.job_sincronizacion.fallido
 """
+
 import logging
 
 from django.conf import settings
@@ -30,11 +31,13 @@ logger = logging.getLogger(__name__)
 
 # ── Catálogo de proveedores (seed, sin id_empresa) ───────────────────────────
 
+
 class ConectorProveedor(models.Model):
     """
     Tipo de integración soportada por el sistema (Odoo, SAP, etc.).
     Se puebla con fixtures; no es editable por los tenants.
     """
+
     ESTADO_CHOICES = [
         ("activo", "Activo"),
         ("beta", "Beta"),
@@ -43,7 +46,8 @@ class ConectorProveedor(models.Model):
 
     id_proveedor = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     codigo = models.CharField(
-        max_length=50, unique=True,
+        max_length=50,
+        unique=True,
         help_text="Identificador slug del proveedor: odoo, sap_b1, shopify, etc.",
     )
     nombre = models.CharField(max_length=100)
@@ -90,6 +94,7 @@ class ConectorProveedor(models.Model):
 
 # ── Instancia de conector por empresa ────────────────────────────────────────
 
+
 class ConectorInstancia(models.Model):
     """
     Conexión configurada entre una empresa y un sistema externo.
@@ -98,6 +103,7 @@ class ConectorInstancia(models.Model):
     El campo `configuracion` usa Django's encrypted fields si está disponible,
     de lo contrario se almacena como JSON (debe asegurarse TLS en BD).
     """
+
     ESTADO_CHOICES = [
         ("configurando", "Configurando"),
         ("activo", "Activo"),
@@ -153,7 +159,8 @@ class ConectorInstancia(models.Model):
         help_text="Entidades habilitadas para sync: ['contactos', 'productos', ...]",
     )
     version_detectada = models.CharField(
-        max_length=50, blank=True,
+        max_length=50,
+        blank=True,
         help_text="Versión del sistema externo detectada al hacer test de conexión.",
     )
     activo = models.BooleanField(default=True)
@@ -179,11 +186,13 @@ class ConectorInstancia(models.Model):
 
 # ── Mapa de entidades sincronizadas ──────────────────────────────────────────
 
+
 class EntidadSincronizada(models.Model):
     """
     Registro del mapeo entre un ID externo y un ID en Omni ERP.
     Permite sincronización incremental y detección de conflictos.
     """
+
     TIPO_CHOICES = [
         ("contactos", "Contactos / Socios"),
         ("productos", "Productos"),
@@ -209,7 +218,8 @@ class EntidadSincronizada(models.Model):
     id_omni = models.CharField(max_length=255, null=True, blank=True)
     # nombre del modelo Django para facilitar lookup
     modelo_omni = models.CharField(
-        max_length=150, blank=True,
+        max_length=150,
+        blank=True,
         help_text="Ej: apps.ventas.models.Cliente",
     )
     ultimo_sync = models.DateTimeField(auto_now=True)
@@ -232,8 +242,10 @@ class EntidadSincronizada(models.Model):
 
 # ── Job de sincronización ────────────────────────────────────────────────────
 
+
 class JobSincronizacion(models.Model):
     """Representa una ejecución de sincronización (manual o automática)."""
+
     ESTADO_CHOICES = [
         ("pendiente", "Pendiente"),
         ("en_progreso", "En progreso"),
@@ -271,7 +283,8 @@ class JobSincronizacion(models.Model):
     iniciado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="jobs_sincronizacion",
         help_text="Null = iniciado por tarea automática (Celery)",
     )
@@ -300,8 +313,10 @@ class JobSincronizacion(models.Model):
 
 # ── Log detallado por registro ───────────────────────────────────────────────
 
+
 class LogDetalleSincronizacion(models.Model):
     """Log por registro individual dentro de un job de sincronización."""
+
     OPERACION_CHOICES = [
         ("crear", "Creado"),
         ("actualizar", "Actualizado"),

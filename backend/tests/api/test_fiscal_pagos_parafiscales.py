@@ -100,9 +100,7 @@ def cuenta_bancaria_a(db, empresa_a, moneda_usd):
 
 @pytest.fixture
 def metodo_pago_a(db, empresa_a):
-    return MetodoPago.objects.create(
-        empresa=empresa_a, nombre_metodo="Transferencia USD", tipo_metodo="ELECTRONICO"
-    )
+    return MetodoPago.objects.create(empresa=empresa_a, nombre_metodo="Transferencia USD", tipo_metodo="ELECTRONICO")
 
 
 @pytest.fixture
@@ -192,9 +190,7 @@ def _payload_crear(empresa, contribucion, moneda, **extra):
 
 class TestCrearPagoParafiscal:
     def test_crear_pendiente(self, client_a, empresa_a, contribucion_a, moneda_usd):
-        resp = client_a.post(
-            BASE_URL, _payload_crear(empresa_a, contribucion_a, moneda_usd), format="json"
-        )
+        resp = client_a.post(BASE_URL, _payload_crear(empresa_a, contribucion_a, moneda_usd), format="json")
         assert resp.status_code == 201, resp.data
         assert resp.data["estado"] == "pendiente"
         assert resp.data["periodo"] == "2026-05"
@@ -203,24 +199,16 @@ class TestCrearPagoParafiscal:
 
     def test_crear_con_contribucion_global(self, client_a, empresa_a, contribucion_global, moneda_usd):
         """Las contribuciones globales (empresa=None) son usables por cualquier tenant."""
-        resp = client_a.post(
-            BASE_URL, _payload_crear(empresa_a, contribucion_global, moneda_usd), format="json"
-        )
+        resp = client_a.post(BASE_URL, _payload_crear(empresa_a, contribucion_global, moneda_usd), format="json")
         assert resp.status_code == 201, resp.data
 
-    def test_crear_con_contribucion_de_otra_empresa_retorna_400(
-        self, client_a, empresa_a, contribucion_b, moneda_usd
-    ):
-        resp = client_a.post(
-            BASE_URL, _payload_crear(empresa_a, contribucion_b, moneda_usd), format="json"
-        )
+    def test_crear_con_contribucion_de_otra_empresa_retorna_400(self, client_a, empresa_a, contribucion_b, moneda_usd):
+        resp = client_a.post(BASE_URL, _payload_crear(empresa_a, contribucion_b, moneda_usd), format="json")
         assert resp.status_code == 400
 
     def test_crear_con_empresa_ajena_retorna_400(self, client_a, empresa_b, contribucion_b, moneda_usd):
         """SEC-M1 / R-CODE-1: la FK de empresa está acotada a empresas visibles."""
-        resp = client_a.post(
-            BASE_URL, _payload_crear(empresa_b, contribucion_b, moneda_usd), format="json"
-        )
+        resp = client_a.post(BASE_URL, _payload_crear(empresa_b, contribucion_b, moneda_usd), format="json")
         assert resp.status_code == 400
 
     def test_monto_cero_retorna_400(self, client_a, empresa_a, contribucion_a, moneda_usd):
@@ -294,9 +282,7 @@ class TestCrearPagoParafiscal:
         )
         resp = client_a.post(
             BASE_URL,
-            _payload_crear(
-                empresa_a, contribucion_a, moneda_usd, id_proceso_nomina=str(proceso_b.pk)
-            ),
+            _payload_crear(empresa_a, contribucion_a, moneda_usd, id_proceso_nomina=str(proceso_b.pk)),
             format="json",
         )
         assert resp.status_code == 400
@@ -320,9 +306,7 @@ class TestNoDoblePago:
     def test_doble_declaracion_mismo_periodo_retorna_400(
         self, client_a, empresa_a, contribucion_a, moneda_usd, pago_parafiscal_a
     ):
-        resp = client_a.post(
-            BASE_URL, _payload_crear(empresa_a, contribucion_a, moneda_usd), format="json"
-        )
+        resp = client_a.post(BASE_URL, _payload_crear(empresa_a, contribucion_a, moneda_usd), format="json")
         assert resp.status_code == 400
         assert "doble pago" in str(resp.data)
 
@@ -337,19 +321,13 @@ class TestNoDoblePago:
     def test_otra_contribucion_mismo_periodo_si_se_permite(
         self, client_a, empresa_a, contribucion_global, moneda_usd, pago_parafiscal_a
     ):
-        resp = client_a.post(
-            BASE_URL, _payload_crear(empresa_a, contribucion_global, moneda_usd), format="json"
-        )
+        resp = client_a.post(BASE_URL, _payload_crear(empresa_a, contribucion_global, moneda_usd), format="json")
         assert resp.status_code == 201, resp.data
 
-    def test_anular_libera_el_periodo(
-        self, client_a, empresa_a, contribucion_a, moneda_usd, pago_parafiscal_a
-    ):
+    def test_anular_libera_el_periodo(self, client_a, empresa_a, contribucion_a, moneda_usd, pago_parafiscal_a):
         resp = client_a.post(f"{BASE_URL}{pago_parafiscal_a.pk}/anular/", {}, format="json")
         assert resp.status_code == 200
-        resp = client_a.post(
-            BASE_URL, _payload_crear(empresa_a, contribucion_a, moneda_usd), format="json"
-        )
+        resp = client_a.post(BASE_URL, _payload_crear(empresa_a, contribucion_a, moneda_usd), format="json")
         assert resp.status_code == 201, resp.data
 
     def test_constraint_de_bd_es_el_backstop(self, empresa_a, contribucion_a, moneda_usd, pago_parafiscal_a):
@@ -516,17 +494,11 @@ class TestPagar:
         assert resp.status_code == 200, resp.data
 
     def test_pagar_sin_metodo_retorna_400(self, client_a, pago_parafiscal_a, caja_usd_a):
-        resp = client_a.post(
-            f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/", {"caja": str(caja_usd_a.pk)}, format="json"
-        )
+        resp = client_a.post(f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/", {"caja": str(caja_usd_a.pk)}, format="json")
         assert resp.status_code == 400
 
-    def test_pagar_metodo_privado_de_otro_tenant_retorna_404(
-        self, client_a, empresa_b, pago_parafiscal_a, caja_usd_a
-    ):
-        metodo_b = MetodoPago.objects.create(
-            empresa=empresa_b, nombre_metodo="Privado B", tipo_metodo="EFECTIVO"
-        )
+    def test_pagar_metodo_privado_de_otro_tenant_retorna_404(self, client_a, empresa_b, pago_parafiscal_a, caja_usd_a):
+        metodo_b = MetodoPago.objects.create(empresa=empresa_b, nombre_metodo="Privado B", tipo_metodo="EFECTIVO")
         resp = client_a.post(
             f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/",
             {"metodo_pago": str(metodo_b.pk), "caja": str(caja_usd_a.pk)},
@@ -591,15 +563,11 @@ class TestPagar:
         caja_b.refresh_from_db()
         assert caja_b.saldo_actual == Decimal("100.00")
 
-    def test_pagar_caja_moneda_distinta_retorna_400(
-        self, client_a, empresa_a, pago_parafiscal_a, metodo_pago_a
-    ):
+    def test_pagar_caja_moneda_distinta_retorna_400(self, client_a, empresa_a, pago_parafiscal_a, metodo_pago_a):
         from apps.finanzas.models import Moneda
 
         ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
-        caja_ves = Caja.objects.create(
-            empresa=empresa_a, nombre="Caja VES", moneda=ves, saldo_actual=Decimal("0.00")
-        )
+        caja_ves = Caja.objects.create(empresa=empresa_a, nombre="Caja VES", moneda=ves, saldo_actual=Decimal("0.00"))
         resp = client_a.post(
             f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/",
             {"metodo_pago": str(metodo_pago_a.pk), "caja": str(caja_ves.pk)},
@@ -608,12 +576,8 @@ class TestPagar:
         assert resp.status_code == 400
         assert "moneda" in str(resp.data).lower()
 
-    def test_pagar_caja_inactiva_retorna_400(
-        self, client_a, empresa_a, moneda_usd, pago_parafiscal_a, metodo_pago_a
-    ):
-        caja_inactiva = Caja.objects.create(
-            empresa=empresa_a, nombre="Caja vieja", moneda=moneda_usd, activa=False
-        )
+    def test_pagar_caja_inactiva_retorna_400(self, client_a, empresa_a, moneda_usd, pago_parafiscal_a, metodo_pago_a):
+        caja_inactiva = Caja.objects.create(empresa=empresa_a, nombre="Caja vieja", moneda=moneda_usd, activa=False)
         resp = client_a.post(
             f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/",
             {"metodo_pago": str(metodo_pago_a.pk), "caja": str(caja_inactiva.pk)},
@@ -730,9 +694,7 @@ class TestTransicionesInvalidas:
         assert pago_parafiscal_a.monto == Decimal("1234.56")
 
     def test_patch_sobre_pendiente_si_es_editable(self, client_a, pago_parafiscal_a):
-        resp = client_a.patch(
-            f"{BASE_URL}{pago_parafiscal_a.pk}/", {"monto": "1500.00"}, format="json"
-        )
+        resp = client_a.patch(f"{BASE_URL}{pago_parafiscal_a.pk}/", {"monto": "1500.00"}, format="json")
         assert resp.status_code == 200, resp.data
         pago_parafiscal_a.refresh_from_db()
         assert pago_parafiscal_a.monto == Decimal("1500.00")
@@ -760,9 +722,7 @@ class TestAislamientoTenant:
         ids = [p["id_pago_parafiscal"] for p in resp.data["results"]]
         assert str(pago_parafiscal_a.pk) not in ids
 
-    def test_usuario_b_no_puede_pagar_pago_de_empresa_a(
-        self, client_b, pago_parafiscal_a, caja_usd_a, metodo_pago_a
-    ):
+    def test_usuario_b_no_puede_pagar_pago_de_empresa_a(self, client_b, pago_parafiscal_a, caja_usd_a, metodo_pago_a):
         resp = client_b.post(
             f"{BASE_URL}{pago_parafiscal_a.pk}/pagar/",
             {"metodo_pago": str(metodo_pago_a.pk), "caja": str(caja_usd_a.pk)},
@@ -843,9 +803,7 @@ class TestIdempotencia:
         )
         assert r2.status_code == 422
 
-    def test_create_reintento_con_misma_clave_no_duplica(
-        self, client_a, empresa_a, contribucion_a, moneda_usd
-    ):
+    def test_create_reintento_con_misma_clave_no_duplica(self, client_a, empresa_a, contribucion_a, moneda_usd):
         body = _payload_crear(empresa_a, contribucion_a, moneda_usd)
         r1 = client_a.post(BASE_URL, body, format="json", HTTP_IDEMPOTENCY_KEY="parafiscal-decl-1")
         assert r1.status_code == 201, r1.data
@@ -883,9 +841,7 @@ class TestServiceDirecto:
             pagar_contribucion_parafiscal,
         )
 
-        caja_ajena = Caja.objects.create(
-            empresa=empresa_b, nombre="Caja ajena", moneda=moneda_usd
-        )
+        caja_ajena = Caja.objects.create(empresa=empresa_b, nombre="Caja ajena", moneda=moneda_usd)
         with pytest.raises(PagoParafiscalError):
             pagar_contribucion_parafiscal(
                 pago_parafiscal=pago_parafiscal_a,
@@ -917,9 +873,7 @@ class TestServiceDirecto:
                 cuenta_bancaria=cuenta_ajena,
             )
 
-    def test_pagar_metodo_inactivo_falla_en_service(
-        self, empresa_a, pago_parafiscal_a, caja_usd_a, user_a
-    ):
+    def test_pagar_metodo_inactivo_falla_en_service(self, empresa_a, pago_parafiscal_a, caja_usd_a, user_a):
         from apps.fiscal.services_parafiscales import (
             PagoParafiscalError,
             pagar_contribucion_parafiscal,
@@ -936,9 +890,7 @@ class TestServiceDirecto:
                 caja_virtual=caja_usd_a,
             )
 
-    def test_cuenta_moneda_distinta_falla_en_service(
-        self, empresa_a, pago_parafiscal_a, metodo_pago_a, user_a
-    ):
+    def test_cuenta_moneda_distinta_falla_en_service(self, empresa_a, pago_parafiscal_a, metodo_pago_a, user_a):
         from apps.finanzas.models import Moneda
         from apps.fiscal.services_parafiscales import (
             PagoParafiscalError,
@@ -961,9 +913,7 @@ class TestServiceDirecto:
                 cuenta_bancaria=cuenta_ves,
             )
 
-    def test_cuenta_inactiva_falla_en_service(
-        self, empresa_a, moneda_usd, pago_parafiscal_a, metodo_pago_a, user_a
-    ):
+    def test_cuenta_inactiva_falla_en_service(self, empresa_a, moneda_usd, pago_parafiscal_a, metodo_pago_a, user_a):
         from apps.fiscal.services_parafiscales import (
             PagoParafiscalError,
             pagar_contribucion_parafiscal,
@@ -985,18 +935,14 @@ class TestServiceDirecto:
                 cuenta_bancaria=cuenta_inactiva,
             )
 
-    def test_metodo_privado_de_otro_tenant_falla_en_service(
-        self, empresa_b, pago_parafiscal_a, caja_usd_a, user_a
-    ):
+    def test_metodo_privado_de_otro_tenant_falla_en_service(self, empresa_b, pago_parafiscal_a, caja_usd_a, user_a):
         """Defensa en profundidad: aunque la vista no filtre, el service exige tenant."""
         from apps.fiscal.services_parafiscales import (
             PagoParafiscalError,
             pagar_contribucion_parafiscal,
         )
 
-        metodo_b = MetodoPago.objects.create(
-            empresa=empresa_b, nombre_metodo="Privado B", tipo_metodo="EFECTIVO"
-        )
+        metodo_b = MetodoPago.objects.create(empresa=empresa_b, nombre_metodo="Privado B", tipo_metodo="EFECTIVO")
         with pytest.raises(PagoParafiscalError):
             pagar_contribucion_parafiscal(
                 pago_parafiscal=pago_parafiscal_a,
@@ -1084,9 +1030,7 @@ class TestSerializerYCarrera:
         assert not ser.is_valid()
         assert "contribucion" in ser.errors
 
-    def test_serializer_rechaza_proceso_nomina_ajeno(
-        self, empresa_a, empresa_b, contribucion_a, moneda_usd
-    ):
+    def test_serializer_rechaza_proceso_nomina_ajeno(self, empresa_a, empresa_b, contribucion_a, moneda_usd):
         from apps.nomina.models import PeriodoNomina, ProcesoNomina
         from apps.fiscal.serializers_parafiscales import PagoContribucionParafiscalSerializer
 
@@ -1118,9 +1062,7 @@ class TestSerializerYCarrera:
         assert not ser.is_valid()
         assert "id_proceso_nomina" in ser.errors
 
-    def test_carrera_de_doble_declaracion_retorna_400(
-        self, empresa_a, contribucion_a, moneda_usd, pago_parafiscal_a
-    ):
+    def test_carrera_de_doble_declaracion_retorna_400(self, empresa_a, contribucion_a, moneda_usd, pago_parafiscal_a):
         """
         Simula la carrera que validate() no alcanza a ver (dos POST simultáneos):
         el constraint condicional de BD dispara IntegrityError y el ViewSet lo
@@ -1150,9 +1092,7 @@ class TestSerializerYCarrera:
         # Solo la fila original sobrevive
         assert PagoContribucionParafiscal.objects.count() == 1
 
-    def test_otra_integrityerror_no_se_disfraza_de_doble_pago(
-        self, empresa_a, contribucion_a, moneda_usd
-    ):
+    def test_otra_integrityerror_no_se_disfraza_de_doble_pago(self, empresa_a, contribucion_a, moneda_usd):
         """
         Bugs lote 4 (5b): _guardar_sin_doble_pago verifica el NOMBRE del
         constraint violado — una IntegrityError DISTINTA (aquí el CHECK de
@@ -1234,8 +1174,6 @@ class TestMCPParafiscalesPendientes:
         from apps.core.models import CapabilityToken
         from apps.fiscal.mcp import fiscal_parafiscales_pendientes
 
-        token = CapabilityToken.objects.create(
-            empresa=empresa_a, nombre="tok-crm", scopes=["crm:read"], activo=True
-        )
+        token = CapabilityToken.objects.create(empresa=empresa_a, nombre="tok-crm", scopes=["crm:read"], activo=True)
         with pytest.raises(PermissionError):
             fiscal_parafiscales_pendientes(str(token.token), str(empresa_a.id_empresa))

@@ -8,6 +8,7 @@ Expone capacidades para que los agentes de IA puedan:
 
 Convención de nombres: integration_hub.<operacion>
 """
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,8 +30,7 @@ MCP_CAPABILITIES = [
     {
         "name": "integration_hub.test_conector",
         "description": (
-            "Prueba la conexión de un conector específico con el sistema externo. "
-            "Requiere el ID del conector."
+            "Prueba la conexión de un conector específico con el sistema externo. " "Requiere el ID del conector."
         ),
         "requires_capabilities": ["integration_hub.leer"],
     },
@@ -67,6 +67,7 @@ def listar_conectores(empresa_id: str) -> list[dict]:
     Capacidad MCP: integration_hub.listar_conectores
     """
     from apps.integration_hub.models import ConectorInstancia
+
     conectores = ConectorInstancia.objects.filter(
         id_empresa=empresa_id,
         activo=True,
@@ -150,9 +151,7 @@ def sincronizar(
         # sin rastro: marcarlo fallido y loguear con traza.
         logger.exception("No se pudo encolar el job de sincronización %s", job.id_job)
         job.estado = "fallido"
-        job.resumen_errores = [
-            "No se pudo encolar la tarea de sincronización (procesador de tareas no disponible)."
-        ]
+        job.resumen_errores = ["No se pudo encolar la tarea de sincronización (procesador de tareas no disponible)."]
         job.save(update_fields=["estado", "resumen_errores"])
         return {
             "success": False,

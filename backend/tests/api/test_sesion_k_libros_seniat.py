@@ -19,6 +19,7 @@ Verifica:
 - test_cerrar_periodo_idempotente(): Cerrar dos veces no falla
 - test_libro_ventas_solo_estados_validos(): Borradores NO aparecen en el libro
 """
+
 import datetime
 
 import pytest
@@ -29,6 +30,7 @@ from apps.finanzas.models import Moneda
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def client_a(user_a):
@@ -56,6 +58,7 @@ def cliente_a(db, empresa_a):
 @pytest.fixture
 def factura_emitida(db, empresa_a, cliente_a, moneda_usd):
     from apps.ventas.models import FacturaFiscal
+
     return FacturaFiscal.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_a,
@@ -74,6 +77,7 @@ def factura_emitida(db, empresa_a, cliente_a, moneda_usd):
 def factura_borrador(db, empresa_a, cliente_a, moneda_usd):
     """Esta factura NO debe aparecer en el libro (estado=BORRADOR)."""
     from apps.ventas.models import FacturaFiscal
+
     return FacturaFiscal.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_a,
@@ -101,6 +105,7 @@ def _eid(empresa):
 
 
 # ── Libro de Ventas TXT ───────────────────────────────────────────────────────
+
 
 class TestLibroVentasTXT:
     def test_libro_ventas_txt_200(self, client_a, empresa_a, factura_emitida):
@@ -162,6 +167,7 @@ class TestLibroVentasTXT:
 
 # ── Libro de Ventas PDF ───────────────────────────────────────────────────────
 
+
 class TestLibroVentasPDF:
     def test_libro_ventas_pdf_200(self, client_a, empresa_a, factura_emitida):
         resp = client_a.get(URL_VENTAS_PDF, {"empresa": _eid(empresa_a), "periodo": PERIODO})
@@ -192,6 +198,7 @@ class TestLibroVentasPDF:
 
 # ── Libro de Compras ──────────────────────────────────────────────────────────
 
+
 class TestLibroCompras:
     def test_libro_compras_txt_200(self, client_a, empresa_a):
         resp = client_a.get(URL_COMPRAS_TXT, {"empresa": _eid(empresa_a), "periodo": PERIODO})
@@ -216,6 +223,7 @@ class TestLibroCompras:
 
 
 # ── Períodos Fiscales ─────────────────────────────────────────────────────────
+
 
 class TestPeriodosFiscales:
     def test_periodos_fiscales_list_200(self, client_a, empresa_a):

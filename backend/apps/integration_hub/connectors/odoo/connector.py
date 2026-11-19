@@ -154,9 +154,7 @@ class OdooConnector(BaseConnector):
 
     # ── Contactos ─────────────────────────────────────────────────────────────
 
-    def pull_contactos(
-        self, desde: datetime | None = None, limite: int = 500
-    ) -> list[dict]:
+    def pull_contactos(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
         """
         Trae todos los socios activos de Odoo (clientes Y proveedores).
         Retorna lista de dicts normalizados al formato Omni.
@@ -198,21 +196,11 @@ class OdooConnector(BaseConnector):
             "direccion": raw.get("street") or "",
             "ciudad": raw.get("city") or "",
             "pais_codigo": (
-                country[1]
-                if isinstance(country, list) and len(country) > 1
-                else str(country)
-                if country
-                else ""
+                country[1] if isinstance(country, list) and len(country) > 1 else str(country) if country else ""
             ),
-            "pais_nombre": (
-                country[1] if isinstance(country, list) and len(country) > 1 else ""
-            ),
-            "estado_provincia": (
-                state[1] if isinstance(state, list) and len(state) > 1 else ""
-            ),
-            "empresa_padre_id": (
-                str(parent[0]) if isinstance(parent, list) and parent else ""
-            ),
+            "pais_nombre": (country[1] if isinstance(country, list) and len(country) > 1 else ""),
+            "estado_provincia": (state[1] if isinstance(state, list) and len(state) > 1 else ""),
+            "empresa_padre_id": (str(parent[0]) if isinstance(parent, list) and parent else ""),
             "website": raw.get("website") or "",
             "notas": raw.get("comment") or "",
             "activo": raw.get("active", True),
@@ -225,9 +213,7 @@ class OdooConnector(BaseConnector):
 
     # ── Productos ─────────────────────────────────────────────────────────────
 
-    def pull_productos(
-        self, desde: datetime | None = None, limite: int = 500
-    ) -> list[dict]:
+    def pull_productos(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
         """Trae productos activos de Odoo normalizados."""
         client = self._get_client()
         desde_str = desde.strftime("%Y-%m-%d %H:%M:%S") if desde else None
@@ -268,16 +254,10 @@ class OdooConnector(BaseConnector):
             "descripcion_venta": raw.get("description_sale") or "",
             "precio_venta": self._safe_decimal(raw.get("list_price")),
             "costo": self._safe_decimal(raw.get("standard_price")),
-            "categoria_id_externo": str(categ[0])
-            if isinstance(categ, list) and categ
-            else "",
-            "categoria_nombre": (
-                categ[1] if isinstance(categ, list) and len(categ) > 1 else ""
-            ),
+            "categoria_id_externo": str(categ[0]) if isinstance(categ, list) and categ else "",
+            "categoria_nombre": (categ[1] if isinstance(categ, list) and len(categ) > 1 else ""),
             "unidad_medida": (uom[1] if isinstance(uom, list) and len(uom) > 1 else ""),
-            "unidad_compra": (
-                uom_po[1] if isinstance(uom_po, list) and len(uom_po) > 1 else ""
-            ),
+            "unidad_compra": (uom_po[1] if isinstance(uom_po, list) and len(uom_po) > 1 else ""),
             "tipo": tipo_map.get(raw.get("type") or "", "almacenable"),
             "disponible_venta": raw.get("sale_ok", True),
             "disponible_compra": raw.get("purchase_ok", True),
@@ -293,9 +273,7 @@ class OdooConnector(BaseConnector):
 
     # ── Pedidos de Venta ──────────────────────────────────────────────────────
 
-    def pull_pedidos_venta(
-        self, desde: datetime | None = None, limite: int = 200
-    ) -> list[dict]:
+    def pull_pedidos_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
         """Trae pedidos de venta confirmados de Odoo."""
         client = self._get_client()
         desde_str = desde.strftime("%Y-%m-%d %H:%M:%S") if desde else None
@@ -303,9 +281,7 @@ class OdooConnector(BaseConnector):
         try:
             pedidos = client.get_pedidos_venta(desde=desde_str, limite=limite)
         except OdooCallError as exc:
-            raise ConnectorDataError(
-                f"Error leyendo pedidos de venta de Odoo: {exc}"
-            ) from exc
+            raise ConnectorDataError(f"Error leyendo pedidos de venta de Odoo: {exc}") from exc
 
         normalizados = []
         for p in pedidos:
@@ -343,38 +319,18 @@ class OdooConnector(BaseConnector):
         return {
             "id_externo": str(raw["id"]),
             "numero": raw.get("name") or "",
-            "cliente_id_externo": str(partner[0])
-            if isinstance(partner, list) and partner
-            else "",
-            "cliente_nombre": (
-                partner[1] if isinstance(partner, list) and len(partner) > 1 else ""
-            ),
-            "vendedor_nombre": (
-                user[1] if isinstance(user, list) and len(user) > 1 else ""
-            ),
+            "cliente_id_externo": str(partner[0]) if isinstance(partner, list) and partner else "",
+            "cliente_nombre": (partner[1] if isinstance(partner, list) and len(partner) > 1 else ""),
+            "vendedor_nombre": (user[1] if isinstance(user, list) and len(user) > 1 else ""),
             "fecha_pedido": (raw.get("date_order") or "")[:10],
             "estado": estado_map.get(raw.get("state") or "", raw.get("state") or ""),
-            "estado_factura": factura_map.get(
-                raw.get("invoice_status") or "", raw.get("invoice_status") or ""
-            ),
+            "estado_factura": factura_map.get(raw.get("invoice_status") or "", raw.get("invoice_status") or ""),
             "subtotal": self._safe_decimal(raw.get("amount_untaxed")),
             "impuestos": self._safe_decimal(raw.get("amount_tax")),
             "total": self._safe_decimal(raw.get("amount_total")),
-            "moneda": (
-                currency[1]
-                if isinstance(currency, list) and len(currency) > 1
-                else "USD"
-            ),
-            "lista_precios": (
-                pricelist[1]
-                if isinstance(pricelist, list) and len(pricelist) > 1
-                else ""
-            ),
-            "termino_pago": (
-                payment_term[1]
-                if isinstance(payment_term, list) and len(payment_term) > 1
-                else ""
-            ),
+            "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1 else "USD"),
+            "lista_precios": (pricelist[1] if isinstance(pricelist, list) and len(pricelist) > 1 else ""),
+            "termino_pago": (payment_term[1] if isinstance(payment_term, list) and len(payment_term) > 1 else ""),
             "fecha_modificacion_externo": (raw.get("write_date") or "")[:19],
             "_checksum": self._checksum(raw),
             "_fuente": "odoo",
@@ -382,9 +338,7 @@ class OdooConnector(BaseConnector):
 
     # ── Pedidos de Compra ─────────────────────────────────────────────────────
 
-    def pull_pedidos_compra(
-        self, desde: datetime | None = None, limite: int = 200
-    ) -> list[dict]:
+    def pull_pedidos_compra(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
         """Trae órdenes de compra confirmadas de Odoo."""
         client = self._get_client()
         desde_str = desde.strftime("%Y-%m-%d %H:%M:%S") if desde else None
@@ -392,9 +346,7 @@ class OdooConnector(BaseConnector):
         try:
             pedidos = client.get_pedidos_compra(desde=desde_str, limite=limite)
         except OdooCallError as exc:
-            raise ConnectorDataError(
-                f"Error leyendo pedidos de compra de Odoo: {exc}"
-            ) from exc
+            raise ConnectorDataError(f"Error leyendo pedidos de compra de Odoo: {exc}") from exc
 
         normalizados = []
         for p in pedidos:
@@ -414,12 +366,8 @@ class OdooConnector(BaseConnector):
         return {
             "id_externo": str(raw["id"]),
             "numero": raw.get("name") or "",
-            "proveedor_id_externo": str(partner[0])
-            if isinstance(partner, list) and partner
-            else "",
-            "proveedor_nombre": (
-                partner[1] if isinstance(partner, list) and len(partner) > 1 else ""
-            ),
+            "proveedor_id_externo": str(partner[0]) if isinstance(partner, list) and partner else "",
+            "proveedor_nombre": (partner[1] if isinstance(partner, list) and len(partner) > 1 else ""),
             "fecha_pedido": (raw.get("date_order") or "")[:10],
             "fecha_aprobacion": (raw.get("date_approve") or "")[:10],
             "estado": raw.get("state") or "",
@@ -427,11 +375,7 @@ class OdooConnector(BaseConnector):
             "subtotal": self._safe_decimal(raw.get("amount_untaxed")),
             "impuestos": self._safe_decimal(raw.get("amount_tax")),
             "total": self._safe_decimal(raw.get("amount_total")),
-            "moneda": (
-                currency[1]
-                if isinstance(currency, list) and len(currency) > 1
-                else "USD"
-            ),
+            "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1 else "USD"),
             "fecha_modificacion_externo": (raw.get("write_date") or "")[:19],
             "_checksum": self._checksum(raw),
             "_fuente": "odoo",
@@ -439,17 +383,13 @@ class OdooConnector(BaseConnector):
 
     # ── Facturas de Venta ─────────────────────────────────────────────────────
 
-    def pull_facturas_venta(
-        self, desde: datetime | None = None, limite: int = 200
-    ) -> list[dict]:
+    def pull_facturas_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
         """Trae facturas de venta publicadas de Odoo."""
         client = self._get_client()
         desde_str = desde.strftime("%Y-%m-%d %H:%M:%S") if desde else None
 
         try:
-            facturas = client.get_facturas(
-                tipo="out_invoice", desde=desde_str, limite=limite
-            )
+            facturas = client.get_facturas(tipo="out_invoice", desde=desde_str, limite=limite)
         except OdooCallError as exc:
             raise ConnectorDataError(f"Error leyendo facturas de Odoo: {exc}") from exc
 
@@ -482,26 +422,16 @@ class OdooConnector(BaseConnector):
             "numero": raw.get("name") or "",
             "referencia": raw.get("ref") or "",
             "origen_pedido": raw.get("invoice_origin") or "",
-            "cliente_id_externo": str(partner[0])
-            if isinstance(partner, list) and partner
-            else "",
-            "cliente_nombre": (
-                partner[1] if isinstance(partner, list) and len(partner) > 1 else ""
-            ),
+            "cliente_id_externo": str(partner[0]) if isinstance(partner, list) and partner else "",
+            "cliente_nombre": (partner[1] if isinstance(partner, list) and len(partner) > 1 else ""),
             "fecha_factura": (raw.get("invoice_date") or "")[:10],
             "fecha_vencimiento": (raw.get("invoice_date_due") or "")[:10],
             "subtotal": self._safe_decimal(raw.get("amount_untaxed")),
             "impuestos": self._safe_decimal(raw.get("amount_tax")),
             "total": self._safe_decimal(raw.get("amount_total")),
             "saldo_pendiente": self._safe_decimal(raw.get("amount_residual")),
-            "moneda": (
-                currency[1]
-                if isinstance(currency, list) and len(currency) > 1
-                else "USD"
-            ),
-            "estado_pago": pago_estado_map.get(
-                raw.get("payment_state") or "", raw.get("payment_state") or ""
-            ),
+            "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1 else "USD"),
+            "estado_pago": pago_estado_map.get(raw.get("payment_state") or "", raw.get("payment_state") or ""),
             "fecha_modificacion_externo": (raw.get("write_date") or "")[:19],
             "_checksum": self._checksum(raw),
             "_fuente": "odoo",
@@ -509,9 +439,7 @@ class OdooConnector(BaseConnector):
 
     # ── Pagos ─────────────────────────────────────────────────────────────────
 
-    def pull_pagos(
-        self, desde: datetime | None = None, limite: int = 300
-    ) -> list[dict]:
+    def pull_pagos(self, desde: datetime | None = None, limite: int = 300) -> list[dict]:
         """Trae pagos (inbound + outbound) de Odoo."""
         client = self._get_client()
         desde_str = desde.strftime("%Y-%m-%d") if desde else None
@@ -533,27 +461,15 @@ class OdooConnector(BaseConnector):
             "numero": raw.get("name") or "",
             "tipo": raw.get("payment_type") or "",  # inbound | outbound
             "tipo_socio": raw.get("partner_type") or "",  # customer | supplier
-            "socio_id_externo": str(partner[0])
-            if isinstance(partner, list) and partner
-            else "",
-            "socio_nombre": (
-                partner[1] if isinstance(partner, list) and len(partner) > 1 else ""
-            ),
+            "socio_id_externo": str(partner[0]) if isinstance(partner, list) and partner else "",
+            "socio_nombre": (partner[1] if isinstance(partner, list) and len(partner) > 1 else ""),
             "monto": self._safe_decimal(raw.get("amount")),
             "fecha": (raw.get("date") or "")[:10],
             "estado": raw.get("state") or "",
-            "diario": (
-                journal[1] if isinstance(journal, list) and len(journal) > 1 else ""
-            ),
-            "moneda": (
-                currency[1]
-                if isinstance(currency, list) and len(currency) > 1
-                else "USD"
-            ),
+            "diario": (journal[1] if isinstance(journal, list) and len(journal) > 1 else ""),
+            "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1 else "USD"),
             # Facturas (account.move) reconciliadas por este pago → reconciliación.
-            "facturas_externas": [
-                str(i) for i in (raw.get("reconciled_invoice_ids") or [])
-            ],
+            "facturas_externas": [str(i) for i in (raw.get("reconciled_invoice_ids") or [])],
             "referencia": raw.get("memo") or raw.get("ref") or "",
             "fecha_modificacion_externo": (raw.get("write_date") or "")[:19],
             "_checksum": self._checksum(raw),
@@ -562,18 +478,14 @@ class OdooConnector(BaseConnector):
 
     # ── Inventario ────────────────────────────────────────────────────────────
 
-    def pull_inventario(
-        self, desde: datetime | None = None, limite: int = 500
-    ) -> list[dict]:
+    def pull_inventario(self, desde: datetime | None = None, limite: int = 500) -> list[dict]:
         """Trae stock actual por producto y ubicación de Odoo."""
         client = self._get_client()
 
         try:
             quants = client.get_stock_actual(limite=limite)
         except OdooCallError as exc:
-            raise ConnectorDataError(
-                f"Error leyendo inventario de Odoo: {exc}"
-            ) from exc
+            raise ConnectorDataError(f"Error leyendo inventario de Odoo: {exc}") from exc
 
         return [self._normalizar_stock_quant(q) for q in quants]
 
@@ -584,24 +496,15 @@ class OdooConnector(BaseConnector):
 
         return {
             "id_externo": str(raw["id"]),
-            "producto_id_externo": str(product[0])
-            if isinstance(product, list) and product
-            else "",
-            "producto_nombre": (
-                product[1] if isinstance(product, list) and len(product) > 1 else ""
-            ),
-            "ubicacion_id_externo": str(location[0])
-            if isinstance(location, list) and location
-            else "",
-            "ubicacion_nombre": (
-                location[1] if isinstance(location, list) and len(location) > 1 else ""
-            ),
+            "producto_id_externo": str(product[0]) if isinstance(product, list) and product else "",
+            "producto_nombre": (product[1] if isinstance(product, list) and len(product) > 1 else ""),
+            "ubicacion_id_externo": str(location[0]) if isinstance(location, list) and location else "",
+            "ubicacion_nombre": (location[1] if isinstance(location, list) and len(location) > 1 else ""),
             "cantidad": self._safe_float(raw.get("quantity")),
             "cantidad_reservada": self._safe_float(raw.get("reserved_quantity")),
             "cantidad_disponible": max(
                 0.0,
-                self._safe_float(raw.get("quantity"))
-                - self._safe_float(raw.get("reserved_quantity")),
+                self._safe_float(raw.get("quantity")) - self._safe_float(raw.get("reserved_quantity")),
             ),
             "lote": (lot[1] if isinstance(lot, list) and len(lot) > 1 else ""),
             "_checksum": self._checksum(raw),
@@ -658,13 +561,9 @@ class OdooConnector(BaseConnector):
         try:
             return _guardar({**vals, **gps})
         except OdooCallError as exc:
-            if "partner_latitude" not in str(exc) and "partner_longitude" not in str(
-                exc
-            ):
+            if "partner_latitude" not in str(exc) and "partner_longitude" not in str(exc):
                 raise
-            logger.warning(
-                "Odoo sin campos de geolocalización: se guarda el contacto sin GPS"
-            )
+            logger.warning("Odoo sin campos de geolocalización: se guarda el contacto sin GPS")
             return _guardar(vals)
 
     def push_pedido_venta(self, datos: dict) -> str:
@@ -677,17 +576,13 @@ class OdooConnector(BaseConnector):
         ``pricelist_id``, ``fecha_entrega`` (commitment_date ISO).
         """
         if not datos.get("partner_id") or not datos.get("lineas"):
-            raise ConnectorDataError(
-                "push_pedido_venta requiere partner_id y al menos una línea"
-            )
+            raise ConnectorDataError("push_pedido_venta requiere partner_id y al menos una línea")
         vals = {
             "partner_id": int(datos["partner_id"]),
             "client_order_ref": datos.get("referencia"),
             "note": datos.get("nota"),
             "user_id": int(datos["vendedor_id"]) if datos.get("vendedor_id") else None,
-            "pricelist_id": int(datos["pricelist_id"])
-            if datos.get("pricelist_id")
-            else None,
+            "pricelist_id": int(datos["pricelist_id"]) if datos.get("pricelist_id") else None,
             "commitment_date": datos.get("fecha_entrega"),
             "order_line": [
                 (
@@ -781,9 +676,7 @@ class OdooConnector(BaseConnector):
         from django.conf import settings
 
         if not url.startswith("https://") and not getattr(settings, "DEBUG", False):
-            raise ConnectorConnectionError(
-                "La URL de Odoo debe usar https:// en producción (M-SEC-2)."
-            )
+            raise ConnectorConnectionError("La URL de Odoo debe usar https:// en producción (M-SEC-2).")
         return url
 
     def pull_cartera_vencida(self, desde=None, solo_vencidas=True) -> list[dict]:
@@ -845,9 +738,7 @@ class OdooConnector(BaseConnector):
                 fecha_vcto = None
                 if rec.get("invoice_date_due"):
                     try:
-                        fecha_vcto = datetime.strptime(
-                            rec["invoice_date_due"], "%Y-%m-%d"
-                        ).date()
+                        fecha_vcto = datetime.strptime(rec["invoice_date_due"], "%Y-%m-%d").date()
                     except Exception:
                         pass
 
@@ -867,37 +758,25 @@ class OdooConnector(BaseConnector):
 
                 resultado.append(
                     {
-                        "cliente_id": str(rec["partner_id"][0])
-                        if rec.get("partner_id")
-                        else "",
-                        "cliente_nombre": self._safe_str(
-                            rec.get("partner_id"), "partner"
-                        ),
+                        "cliente_id": str(rec["partner_id"][0]) if rec.get("partner_id") else "",
+                        "cliente_nombre": self._safe_str(rec.get("partner_id"), "partner"),
                         "orden_ref": self._safe_str(rec.get("name"), "ref"),
                         "monto_total": monto_total,
                         "monto_pendiente": monto_pendiente,
-                        "fecha_vencimiento": fecha_vcto.isoformat()
-                        if fecha_vcto
-                        else None,
+                        "fecha_vencimiento": fecha_vcto.isoformat() if fecha_vcto else None,
                         "fecha_entrega": rec.get("commitment_date"),
-                        "estado_pago": self._safe_str(
-                            rec.get("invoice_payment_state"), "estado"
-                        ),
+                        "estado_pago": self._safe_str(rec.get("invoice_payment_state"), "estado"),
                         "dias_termino": 0,
                         "dias_vencida": dias_vencida,
                         "vencida": vencida,
-                        "bucket": self._aging_bucket(dias_vencida)
-                        if dias_vencida is not None
-                        else "sin_fecha",
+                        "bucket": self._aging_bucket(dias_vencida) if dias_vencida is not None else "sin_fecha",
                     }
                 )
 
             return resultado
 
         except Exception as exc:
-            raise ConnectorConnectionError(
-                f"Error obteniendo cartera Odoo: {exc}"
-            ) from exc
+            raise ConnectorConnectionError(f"Error obteniendo cartera Odoo: {exc}") from exc
 
     def pull_pagos_cliente(self, partner_id: str) -> list[dict]:
         """Pagos normalizados de un cliente específico desde Odoo."""
@@ -946,9 +825,7 @@ class OdooConnector(BaseConnector):
             ]
 
         except Exception as exc:
-            raise ConnectorConnectionError(
-                f"Error obteniendo pagos cliente {partner_id}: {exc}"
-            ) from exc
+            raise ConnectorConnectionError(f"Error obteniendo pagos cliente {partner_id}: {exc}") from exc
 
     @staticmethod
     def _aging_bucket(dias: int) -> str:

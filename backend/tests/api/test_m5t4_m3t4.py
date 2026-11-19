@@ -4,6 +4,7 @@ Tests for:
   M3-T4: OrdenCompraViewSet /aprobar/, RecepcionMercanciaViewSet /recepcionar/,
           FacturaCompraViewSet /facturar/
 """
+
 from decimal import Decimal
 
 import pytest
@@ -174,9 +175,7 @@ class TestM5T4AjusteAsiento:
         assert movimiento.pk is not None
         assert movimiento.monto_total == Decimal("30.0000")
 
-    def test_ajuste_con_costo_y_mapeo_crea_asiento(
-        self, db, empresa_a, producto_a, almacen_a, user_a, mapeo_ajuste
-    ):
+    def test_ajuste_con_costo_y_mapeo_crea_asiento(self, db, empresa_a, producto_a, almacen_a, user_a, mapeo_ajuste):
         """Con MapeoContable configurado → asiento se crea automáticamente."""
         from apps.contabilidad.models import AsientoContable
         from apps.inventario.services import registrar_movimiento
@@ -286,9 +285,7 @@ class TestRecepcionarAction:
         assert resp.data["movimientos"] == 1
         assert resp.data["cxp_id"] is not None
 
-    def test_recepcionar_sin_items_retorna_400(
-        self, db, orden_compra_aprobada, almacen_a, client_a
-    ):
+    def test_recepcionar_sin_items_retorna_400(self, db, orden_compra_aprobada, almacen_a, client_a):
         url = "/api/compras/recepciones-mercancia/recepcionar/"
         resp = client_a.post(
             url,
@@ -297,9 +294,7 @@ class TestRecepcionarAction:
         )
         assert resp.status_code == 400
 
-    def test_recepcionar_oc_no_aprobada_retorna_400(
-        self, db, empresa_a, proveedor_a, almacen_a, producto_a, client_a
-    ):
+    def test_recepcionar_oc_no_aprobada_retorna_400(self, db, empresa_a, proveedor_a, almacen_a, producto_a, client_a):
         from apps.compras.models import OrdenCompra
 
         oc = OrdenCompra.objects.create(
@@ -320,9 +315,7 @@ class TestRecepcionarAction:
 
 
 class TestFacturarAction:
-    def test_facturar_crea_factura_compra(
-        self, db, orden_compra_aprobada, almacen_a, producto_a, user_a, client_a
-    ):
+    def test_facturar_crea_factura_compra(self, db, orden_compra_aprobada, almacen_a, producto_a, user_a, client_a):
         from apps.compras.services import registrar_recepcion
 
         recepcion_resultado = registrar_recepcion(

@@ -30,6 +30,7 @@ def empresa(db, empresa_a):
 
 def _aplicar(config, empresa):
     from apps.personalizacion.dsl import aplicar_config
+
     return aplicar_config(config, empresa)
 
 
@@ -81,15 +82,15 @@ class TestDSLEntidades:
 
     def test_aplicar_config_entidades_no_emite_advertencias(self, empresa):
         resultado = _aplicar(self.CONFIG_EQUIPOS, empresa)
-        assert not any("advertencia" in a.lower() for a in resultado.get("advertencias", [])), (
-            "aplicar_config no debe emitir advertencias para 'entidades'"
-        )
+        assert not any(
+            "advertencia" in a.lower() for a in resultado.get("advertencias", [])
+        ), "aplicar_config no debe emitir advertencias para 'entidades'"
 
     def test_aplicar_config_entidades_reporta_en_aplicadas(self, empresa):
         resultado = _aplicar(self.CONFIG_EQUIPOS, empresa)
-        assert any("entidad" in a.lower() for a in resultado["aplicadas"]), (
-            "aplicar_config debe reportar entidades en 'aplicadas'"
-        )
+        assert any(
+            "entidad" in a.lower() for a in resultado["aplicadas"]
+        ), "aplicar_config debe reportar entidades en 'aplicadas'"
 
     def test_crear_instancia_entidad_config1(self, empresa):
         """Config 1: entidad Equipo — crear y listar instancias."""
@@ -113,7 +114,9 @@ class TestDSLEntidades:
 
         _aplicar(self.CONFIG_PROYECTOS, empresa)
 
-        proyecto = crear_instancia_entidad(empresa, "Proyecto", {"titulo": "Sistema ERP", "presupuesto": 50000, "activo": True})
+        proyecto = crear_instancia_entidad(
+            empresa, "Proyecto", {"titulo": "Sistema ERP", "presupuesto": 50000, "activo": True}
+        )
         tarea = crear_instancia_entidad(empresa, "Tarea", {"descripcion": "Fase de análisis", "completada": False})
 
         assert listar_instancias_entidad(empresa, "Proyecto").count() == 1
@@ -160,9 +163,9 @@ class TestDSLEstados:
 
     def test_aplicar_config_estados_no_emite_advertencias(self, empresa):
         resultado = _aplicar(self.CONFIG_ESTADOS_PEDIDO, empresa)
-        assert not any("advertencia" in a.lower() for a in resultado.get("advertencias", [])), (
-            "aplicar_config no debe emitir advertencias para 'estados'"
-        )
+        assert not any(
+            "advertencia" in a.lower() for a in resultado.get("advertencias", [])
+        ), "aplicar_config no debe emitir advertencias para 'estados'"
 
     def test_aplicar_config_estados_config1_persiste_en_db(self, empresa):
         """Config 1: estados de Pedido — persisten en EstadoPersonalizado."""
@@ -255,9 +258,9 @@ class TestDSLReglas:
 
     def test_aplicar_config_reglas_no_emite_advertencias(self, empresa):
         resultado = _aplicar(self.CONFIG_REGLAS_PEDIDO, empresa)
-        assert not any("advertencia" in a.lower() for a in resultado.get("advertencias", [])), (
-            "aplicar_config no debe emitir advertencias para 'reglas'"
-        )
+        assert not any(
+            "advertencia" in a.lower() for a in resultado.get("advertencias", [])
+        ), "aplicar_config no debe emitir advertencias para 'reglas'"
 
     def test_ejecutar_reglas_config1_pasa(self, empresa):
         """Config 1: regla cantidad>0 — instancia válida no retorna errores."""
@@ -346,9 +349,9 @@ class TestDSLVistas:
 
     def test_aplicar_config_vistas_no_emite_advertencias(self, empresa):
         resultado = _aplicar(self.CONFIG_VISTA_CLIENTES, empresa)
-        assert not any("advertencia" in a.lower() for a in resultado.get("advertencias", [])), (
-            "aplicar_config no debe emitir advertencias para 'vistas'"
-        )
+        assert not any(
+            "advertencia" in a.lower() for a in resultado.get("advertencias", [])
+        ), "aplicar_config no debe emitir advertencias para 'vistas'"
 
     def test_aplicar_config_vistas_config1_persiste_columnas(self, empresa):
         """Config 1: vista de clientes — columnas y filtros persisten en DB."""

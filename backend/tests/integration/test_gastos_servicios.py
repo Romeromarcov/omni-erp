@@ -112,18 +112,14 @@ class TestRespaldoDocumental:
         resultado = aprobar_gasto(gasto, usuario=user_a)
         assert resultado["gasto"].sin_respaldo is False
 
-    def test_categoria_exige_factura_y_no_la_tiene_bloquea(
-        self, empresa_a, categoria_con_factura, moneda_usd, user_a
-    ):
+    def test_categoria_exige_factura_y_no_la_tiene_bloquea(self, empresa_a, categoria_con_factura, moneda_usd, user_a):
         gasto = _crear_gasto(empresa_a, categoria_con_factura, moneda_usd, tiene_factura=False)
         with pytest.raises(GastoError, match="exige factura"):
             aprobar_gasto(gasto, usuario=user_a)
         gasto.refresh_from_db()
         assert gasto.estado_gasto == "PENDIENTE_APROBACION"  # no cambió
 
-    def test_categoria_exige_factura_y_la_tiene_aprueba(
-        self, empresa_a, categoria_con_factura, moneda_usd, user_a
-    ):
+    def test_categoria_exige_factura_y_la_tiene_aprueba(self, empresa_a, categoria_con_factura, moneda_usd, user_a):
         gasto = _crear_gasto(empresa_a, categoria_con_factura, moneda_usd, tiene_factura=True)
         resultado = aprobar_gasto(gasto, usuario=user_a)
         assert resultado["gasto"].estado_gasto == "APROBADO"
@@ -204,8 +200,12 @@ class TestDetallesReconciliacion:
         from apps.contabilidad.models import PlanCuentas
 
         return PlanCuentas.objects.create(
-            id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta="Gasto Línea",
-            tipo_cuenta="GASTO", naturaleza="DEUDORA", nivel=1,
+            id_empresa=empresa,
+            codigo_cuenta=codigo,
+            nombre_cuenta="Gasto Línea",
+            tipo_cuenta="GASTO",
+            naturaleza="DEUDORA",
+            nivel=1,
         )
 
     def test_detalles_que_reconcilian_aprueban(self, empresa_a, categoria, moneda_usd, user_a):
@@ -279,8 +279,12 @@ class TestStr:
         from apps.contabilidad.models import PlanCuentas
 
         cta = PlanCuentas.objects.create(
-            id_empresa=empresa_a, codigo_cuenta="5999", nombre_cuenta="X",
-            tipo_cuenta="GASTO", naturaleza="DEUDORA", nivel=1,
+            id_empresa=empresa_a,
+            codigo_cuenta="5999",
+            nombre_cuenta="X",
+            tipo_cuenta="GASTO",
+            naturaleza="DEUDORA",
+            nivel=1,
         )
         det = DetalleGasto.objects.create(id_gasto=gasto, id_cuenta_contable=cta, monto=Decimal("12.00"))
         assert "12.00" in str(det)
@@ -288,8 +292,12 @@ class TestStr:
 
         mp = MetodoPago.objects.create(empresa=empresa_a, nombre_metodo="Efx", tipo_metodo="EFECTIVO")
         reemb = ReembolsoGasto.objects.create(
-            id_empresa=empresa_a, id_gasto=gasto, monto_reembolso=Decimal("12.00"),
-            id_moneda=moneda_usd, id_metodo_pago=mp, fecha_reembolso=timezone.now().date(),
+            id_empresa=empresa_a,
+            id_gasto=gasto,
+            monto_reembolso=Decimal("12.00"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=mp,
+            fecha_reembolso=timezone.now().date(),
             estado_reembolso="PENDIENTE",
         )
         assert "PENDIENTE" in str(reemb)
