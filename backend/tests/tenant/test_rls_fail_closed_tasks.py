@@ -13,6 +13,7 @@ Verifica bajo rol no-privilegiado (``rls_test_role``) y ``@override_settings(RLS
 
 from __future__ import annotations
 
+import ast
 from datetime import date, timedelta
 import json
 from pathlib import Path
@@ -541,3 +542,210 @@ def test_activaciones_notificaciones_eventos_y_comandos_extra(empresa_a, empresa
         restore_rls_default_after_migrate(sender=None)
     on_usuario_empresa_changed_invalidar_cache(sender=None)
     assert rls._get_current_context() == ("off", "")
+
+
+@override_settings(RLS_ENABLED=True)
+def test_http_jwt_token_obtain_y_refresh_bajo_rls(dos_sucursales, empresa_a, user_a):
+    """POST /api/auth/token/ y /api/auth/token/refresh/ funcionan con RLS_ENABLED=True y dejan fail-closed."""
+    with rls.rls_bypass():
+        user_a.set_password("TokenRlsPass#2026!")
+        user_a.save(update_fields=["password"])
+
+    rls.apply_system_default()
+    client = APIClient()
+
+    tok_resp = client.post(
+        "/api/auth/token/",
+        {"username": user_a.username, "password": "TokenRlsPass#2026!"},
+        format="json",
+    )
+    assert tok_resp.status_code == 200
+    tok_data = tok_resp.json()
+    assert "access" in tok_data
+    assert "refresh" in tok_data
+    assert rls._get_current_context() == ("off", "")
+    assert Sucursal.objects.count() == 0
+
+    ref_resp = client.post(
+        "/api/auth/token/refresh/",
+        {"refresh": tok_data["refresh"]},
+        format="json",
+    )
+    assert ref_resp.status_code == 200
+    assert "access" in ref_resp.json()
+    assert rls._get_current_context() == ("off", "")
+    assert Sucursal.objects.count() == 0
+
+
+@override_settings(RLS_ENABLED=True)
+def test_mcp_tools_nativas_y_autodescubiertas_aisladas_bajo_rls(empresa_a, empresa_b, metodo_efectivo):
+    """Tools MCP nativas y auto-descubiertas funcionan desde fail-closed, aisladas por tenant y restauran ('off', '')."""
+    from apps.core.mcp_server import (
+        omni_crear_pedido,
+        omni_get_clientes,
+        omni_get_empresas,
+        omni_get_pedidos,
+    )
+    from apps.core.models import CapabilityToken
+    from apps.finanzas.mcp import finanzas_get_metodos_pago
+    from apps.inventario.mcp import inventario_get_productos
+    from apps.tareas.mcp import tareas_crear, tareas_listar
+    from apps.ventas.models import Pedido
+    from tests.factories import ProductoFactory
+
+    with rls.rls_bypass():
+        tok_a = str(
+            CapabilityToken.objects.create(
+                empresa=empresa_a,
+                nombre="MCP RLS A",
+                scopes=[
+                    "core:read",
+                    "crm:read",
+                    "ventas:read",
+                    "ventas:write",
+                    "tareas:read",
+                    "tareas:write",
+                    "inventario:read",
+                    "finanzas:read",
+                ],
+            ).token
+        )
+        cli_a = Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente MCP Alpha", rif="J-30000001-1")
+        Cliente.objects.create(id_empresa=empresa_b, razon_social="Cliente MCP Beta", rif="J-30000002-2")
+        prod_a = ProductoFactory(id_empresa=empresa_a, nombre_producto="Producto Alpha MCP")
+        ProductoFactory(id_empresa=empresa_b, nombre_producto="Producto Beta MCP")
+        Tarea.objects.create(id_empresa=empresa_b, titulo="Tarea Ajena B")
+
+    # 1. Tools nativas desde fail-closed real
+    rls.apply_system_default()
+    assert Cliente.objects.count() == 0
+
+    empresas_res = omni_get_empresas(tok_a)
+    assert [e["id_empresa"] for e in empresas_res] == [str(empresa_a.pk)]
+    assert rls._get_current_context() == ("off", "")
+
+    clientes_res = omni_get_clientes(tok_a, str(empresa_a.pk))
+    assert [c["id_cliente"] for c in clientes_res] == [str(cli_a.pk)]
+    assert rls._get_current_context() == ("off", "")
+
+    with pytest.raises(PermissionError):
+        omni_get_clientes(tok_a, str(empresa_b.pk))
+    assert rls._get_current_context() == ("off", "")
+
+    pedido_res = omni_crear_pedido(
+        tok_a,
+        str(empresa_a.pk),
+        str(cli_a.pk),
+        [{"id_producto": str(prod_a.pk), "cantidad": 2, "precio_unitario": "12.50"}],
+    )
+    assert "id_pedido" in pedido_res
+    assert pedido_res["estado"] == "PENDIENTE"
+    assert rls._get_current_context() == ("off", "")
+    assert Pedido.objects.count() == 0
+
+    pedidos_res = omni_get_pedidos(tok_a, str(empresa_a.pk))
+    assert [p["id_pedido"] for p in pedidos_res] == [pedido_res["id_pedido"]]
+    assert rls._get_current_context() == ("off", "")
+
+    with pytest.raises(PermissionError):
+        omni_get_pedidos(tok_a, str(empresa_b.pk))
+    assert rls._get_current_context() == ("off", "")
+
+    # 2. Tools auto-descubiertas (lectura + escritura) desde fail-closed
+    rls.apply_system_default()
+    creada = tareas_crear(tok_a, str(empresa_a.pk), titulo="Tarea MCP Alpha")
+    assert creada["creada"] is True
+    assert rls._get_current_context() == ("off", "")
+    assert Tarea.objects.count() == 0
+
+    tareas_res = tareas_listar(tok_a, str(empresa_a.pk))
+    assert [t["titulo"] for t in tareas_res] == ["Tarea MCP Alpha"]
+    assert rls._get_current_context() == ("off", "")
+
+    prods_res = inventario_get_productos(tok_a, str(empresa_a.pk))
+    assert [p["nombre_producto"] for p in prods_res] == ["Producto Alpha MCP"]
+    assert rls._get_current_context() == ("off", "")
+
+    metodos_res = finanzas_get_metodos_pago(tok_a)
+    assert any(m["id_metodo_pago"] == str(metodo_efectivo.pk) for m in metodos_res)
+    assert rls._get_current_context() == ("off", "")
+
+
+def test_inventario_estatico_tools_mcp_cubiertas_por_contexto_rls():
+    """Ninguna tool MCP invoca _resolve_token sin quedar cubierta por mcp_tenant_context / rls_tenant_context."""
+    apps_dir = Path(__file__).resolve().parents[2] / "apps"
+
+    def _called_names(fn_node: ast.AST) -> set[str]:
+        names: set[str] = set()
+        for node in ast.walk(fn_node):
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    names.add(node.func.id)
+                elif isinstance(node.func, ast.Attribute):
+                    names.add(node.func.attr)
+        return names
+
+    def _with_context_names(fn_node: ast.AST) -> set[str]:
+        names: set[str] = set()
+        for node in ast.walk(fn_node):
+            if isinstance(node, ast.With):
+                for item in node.items:
+                    if isinstance(item.context_expr, ast.Call):
+                        func = item.context_expr.func
+                        if isinstance(func, ast.Name):
+                            names.add(func.id)
+                        elif isinstance(func, ast.Attribute):
+                            names.add(func.attr)
+        return names
+
+    mcp_server_path = apps_dir / "core" / "mcp_server.py"
+    server_tree = ast.parse(mcp_server_path.read_text(encoding="utf-8"))
+    server_fns = {n.name: n for n in server_tree.body if isinstance(n, ast.FunctionDef)}
+
+    assert "mcp_tenant_context" in server_fns
+    assert "rls_tenant_context" in _with_context_names(server_fns["mcp_tenant_context"])
+
+    omni_tools = [name for name in server_fns if name.startswith("omni_")]
+    assert len(omni_tools) >= 17
+    for name in omni_tools:
+        fn = server_fns[name]
+        if name == "omni_ping":
+            # Health check sin consultas ORM adicionales tras validar token.
+            assert ".objects" not in ast.get_source_segment(mcp_server_path.read_text(encoding="utf-8"), fn)
+            continue
+        assert "_resolve_token" not in _called_names(fn), f"{name} llama _resolve_token directo"
+        assert "mcp_tenant_context" in _with_context_names(fn), f"{name} sin with mcp_tenant_context(...)"
+
+    from apps.core.mcp_server import _MCP_DEFAULT_MODULE_PATHS
+
+    for mod_path in _MCP_DEFAULT_MODULE_PATHS:
+        rel = mod_path.removeprefix("apps.").replace(".", "/") + ".py"
+        file_path = apps_dir / rel
+        tree = ast.parse(file_path.read_text(encoding="utf-8"))
+        fns = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
+        assert "_ctx" in fns, f"{rel} sin helper _ctx"
+        assert "mcp_tenant_context" in _with_context_names(fns["_ctx"]), f"{rel}._ctx no delega en mcp_tenant_context"
+
+        tool_names = []
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                targets = [node.target.id]
+            else:
+                continue
+            if "MCP_TOOLS" in targets and isinstance(node.value, ast.List):
+                for elt in node.value.elts:
+                    if isinstance(elt, ast.Dict):
+                        for k, v in zip(elt.keys, elt.values):
+                            if isinstance(k, ast.Constant) and k.value == "fn" and isinstance(v, ast.Name):
+                                tool_names.append(v.id)
+        assert tool_names, f"{rel} no expone tools en MCP_TOOLS"
+        for tname in tool_names:
+            tfn = fns[tname]
+            assert "_resolve_token" not in _called_names(tfn), f"{rel}:{tname} llama _resolve_token directo"
+            assert _with_context_names(tfn) & {
+                "_ctx",
+                "mcp_tenant_context",
+                "rls_tenant_context",
+            }, f"{rel}:{tname} sin with _ctx(...) / mcp_tenant_context(...)"

@@ -224,6 +224,12 @@ class TestGuardiaEstructuralSinFugas:
 
 
 class TestCierreFugasConductual:
+    @pytest.fixture(autouse=True)
+    def _mock_rls_tenant_context(self):
+        # Test unitario puro (sin BD): aisla mcp_tenant_context igual que transaction.atomic.
+        with patch("apps.core.rls.rls_tenant_context", side_effect=lambda *_a, **_kw: nullcontext()):
+            yield
+
     def _ctx(self, scope: str, actor_uuid: str | None = None) -> dict:
         uid = actor_uuid or str(uuid.uuid4())
         return {

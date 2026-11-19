@@ -11,8 +11,9 @@ y escribe responses en stdout. Compatible con Claude Desktop y otros clientes MC
 
 El servidor SSE expone un endpoint HTTP para clientes que no soportan stdio.
 
-Nota RLS: este comando arranca el transporte MCP; el aislamiento por tenant se
-aplica en ``apps.core.mcp_server`` (``rls_bypass`` al resolver ``CapabilityToken``).
+Nota RLS: este comando arranca el transporte MCP; cada tool valida su
+``CapabilityToken`` mediante un ``rls_bypass()`` acotado y ejecuta sus consultas y
+escrituras dentro de ``mcp_tenant_context`` / ``rls_tenant_context([context["empresa_id"]])``.
 """
 
 import sys

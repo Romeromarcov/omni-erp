@@ -13,6 +13,8 @@ Herramientas expuestas:
 """
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.ventas")
@@ -26,14 +28,13 @@ _SCOPE = "ventas"
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _ctx(capability_token: str, scope: str) -> dict:
-    """Resuelve y valida token + scope. Lanza PermissionError si falla."""
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    """Resuelve y valida token/scope/tenant abriendo ``rls_tenant_context``."""
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # noqa: S101
-    return context
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -61,42 +62,39 @@ def ventas_get_cotizacion(
     """
     from apps.ventas.models import Cotizacion  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            cot = Cotizacion.objects.prefetch_related("detalles__id_producto").get(
+                pk=cotizacion_id,
+                id_empresa=empresa_id,
+            )
+        except Cotizacion.DoesNotExist:
+            return {"error": f"Cotización {cotizacion_id} no encontrada."}
 
-    try:
-        cot = Cotizacion.objects.prefetch_related("detalles__id_producto").get(
-            pk=cotizacion_id,
-            id_empresa=empresa_id,
+        logger.info(
+            "ventas_get_cotizacion | actor=%s | tenant=%s | cotizacion=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            cotizacion_id,
         )
-    except Cotizacion.DoesNotExist:
-        return {"error": f"Cotización {cotizacion_id} no encontrada."}
 
-    logger.info(
-        "ventas_get_cotizacion | actor=%s | tenant=%s | cotizacion=%s",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        cotizacion_id,
-    )
-
-    return {
-        "id_cotizacion": str(cot.id_cotizacion),
-        "numero": cot.numero_cotizacion,
-        "cliente": cot.id_cliente.razon_social,
-        "estado": cot.estado,
-        "fecha": str(cot.fecha_cotizacion),
-        "detalles": [
-            {
-                "producto": d.id_producto.nombre_producto,
-                "cantidad": float(d.cantidad),
-                # M-BUG-1: monetario como Decimal (no float).
-                "precio_unitario": d.precio_unitario,
-                "subtotal": d.subtotal,
-            }
-            for d in cot.detalles.all()
-        ],
-    }
+        return {
+            "id_cotizacion": str(cot.id_cotizacion),
+            "numero": cot.numero_cotizacion,
+            "cliente": cot.id_cliente.razon_social,
+            "estado": cot.estado,
+            "fecha": str(cot.fecha_cotizacion),
+            "detalles": [
+                {
+                    "producto": d.id_producto.nombre_producto,
+                    "cantidad": float(d.cantidad),
+                    # M-BUG-1: monetario como Decimal (no float).
+                    "precio_unitario": d.precio_unitario,
+                    "subtotal": d.subtotal,
+                }
+                for d in cot.detalles.all()
+            ],
+        }
 
 
 def ventas_get_notas_venta(
@@ -121,32 +119,29 @@ def ventas_get_notas_venta(
     """
     from apps.ventas.models import NotaVenta  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        limit = min(limit, 100)
+        qs = NotaVenta.objects.filter(id_empresa=empresa_id).select_related("id_cliente")
+        if estado:
+            qs = qs.filter(estado=estado)
 
-    limit = min(limit, 100)
-    qs = NotaVenta.objects.filter(id_empresa=empresa_id).select_related("id_cliente")
-    if estado:
-        qs = qs.filter(estado=estado)
-
-    notas = qs.order_by("-fecha_nota")[:limit]
-    logger.info(
-        "ventas_get_notas_venta | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(notas),
-    )
-    return [
-        {
-            "id_nota_venta": str(n.id_nota_venta),
-            "numero": n.numero_nota,
-            "cliente": n.id_cliente.razon_social,
-            "estado": n.estado,
-            "fecha": str(n.fecha_nota),
-        }
-        for n in notas
-    ]
+        notas = qs.order_by("-fecha_nota")[:limit]
+        logger.info(
+            "ventas_get_notas_venta | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(notas),
+        )
+        return [
+            {
+                "id_nota_venta": str(n.id_nota_venta),
+                "numero": n.numero_nota,
+                "cliente": n.id_cliente.razon_social,
+                "estado": n.estado,
+                "fecha": str(n.fecha_nota),
+            }
+            for n in notas
+        ]
 
 
 def ventas_get_facturas(
@@ -171,35 +166,32 @@ def ventas_get_facturas(
     """
     from apps.ventas.models import FacturaFiscal  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        limit = min(limit, 100)
+        qs = FacturaFiscal.objects.filter(id_empresa=empresa_id).select_related("id_cliente")
+        if estado:
+            qs = qs.filter(estado=estado)
 
-    limit = min(limit, 100)
-    qs = FacturaFiscal.objects.filter(id_empresa=empresa_id).select_related("id_cliente")
-    if estado:
-        qs = qs.filter(estado=estado)
-
-    facturas = qs.order_by("-fecha_emision")[:limit]
-    logger.info(
-        "ventas_get_facturas | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(facturas),
-    )
-    return [
-        {
-            "id_factura": str(f.id_factura),
-            "numero_factura": f.numero_factura,
-            "numero_control": f.numero_control,
-            "cliente": f.id_cliente.razon_social,
-            "estado": f.estado,
-            "fecha": str(f.fecha_emision),
-            # M-BUG-1: monetario como Decimal (no float) para no perder precisión.
-            "total": f.monto_total,
-        }
-        for f in facturas
-    ]
+        facturas = qs.order_by("-fecha_emision")[:limit]
+        logger.info(
+            "ventas_get_facturas | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(facturas),
+        )
+        return [
+            {
+                "id_factura": str(f.id_factura),
+                "numero_factura": f.numero_factura,
+                "numero_control": f.numero_control,
+                "cliente": f.id_cliente.razon_social,
+                "estado": f.estado,
+                "fecha": str(f.fecha_emision),
+                # M-BUG-1: monetario como Decimal (no float) para no perder precisión.
+                "total": f.monto_total,
+            }
+            for f in facturas
+        ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

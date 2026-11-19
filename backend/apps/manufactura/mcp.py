@@ -8,6 +8,8 @@ Herramientas expuestas:
 
 import logging
 import uuid as uuid_lib
+from collections.abc import Iterator
+from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List
 
@@ -16,13 +18,12 @@ logger = logging.getLogger("omni.mcp.manufactura")
 _SCOPE = "manufactura"
 
 
-def _ctx(capability_token: str, scope: str) -> dict:
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # noqa: S101
-    return context
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 def manufactura_calcular_mrp(
@@ -53,47 +54,44 @@ def manufactura_calcular_mrp(
     from apps.manufactura import services  # noqa: PLC0415
     from apps.manufactura.models import ListaMateriales  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            cant = Decimal(str(cantidad))
+        except InvalidOperation as exc:
+            raise ValueError("'cantidad' no es un número válido.") from exc
 
-    try:
-        cant = Decimal(str(cantidad))
-    except InvalidOperation as exc:
-        raise ValueError("'cantidad' no es un número válido.") from exc
+        # R-CODE-1: la BOM y el almacén deben pertenecer al tenant del token.
+        lista = ListaMateriales.objects.filter(pk=lista_materiales_id, empresa_id=empresa_id).first()
+        if lista is None:
+            raise ValueError("Lista de materiales no encontrada en la empresa.")
+        almacen = None
+        if almacen_id:
+            almacen = Almacen.objects.filter(pk=almacen_id, id_empresa_id=uuid_lib.UUID(empresa_id)).first()
+            if almacen is None:
+                raise ValueError("Almacén no encontrado en la empresa.")
 
-    # R-CODE-1: la BOM y el almacén deben pertenecer al tenant del token.
-    lista = ListaMateriales.objects.filter(pk=lista_materiales_id, empresa_id=empresa_id).first()
-    if lista is None:
-        raise ValueError("Lista de materiales no encontrada en la empresa.")
-    almacen = None
-    if almacen_id:
-        almacen = Almacen.objects.filter(pk=almacen_id, id_empresa_id=uuid_lib.UUID(empresa_id)).first()
-        if almacen is None:
-            raise ValueError("Almacén no encontrado en la empresa.")
-
-    faltantes = services.calcular_mrp_lista(lista, cant, almacen=almacen)
-    logger.info(
-        "manufactura_calcular_mrp | actor=%s | tenant=%s | lista=%s | cantidad=%s",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        lista_materiales_id,
-        cant,
-    )
-    return {
-        "lista_materiales_id": str(lista.pk),
-        "cantidad": str(cant),
-        "faltantes": [
-            {
-                "producto_id": f["producto_id"],
-                "producto": f["producto"],
-                "requerido": str(f["requerido"]),
-                "disponible": str(f["disponible"]),
-                "a_comprar": str(f["a_comprar"]),
-            }
-            for f in faltantes
-        ],
-    }
+        faltantes = services.calcular_mrp_lista(lista, cant, almacen=almacen)
+        logger.info(
+            "manufactura_calcular_mrp | actor=%s | tenant=%s | lista=%s | cantidad=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            lista_materiales_id,
+            cant,
+        )
+        return {
+            "lista_materiales_id": str(lista.pk),
+            "cantidad": str(cant),
+            "faltantes": [
+                {
+                    "producto_id": f["producto_id"],
+                    "producto": f["producto"],
+                    "requerido": str(f["requerido"]),
+                    "disponible": str(f["disponible"]),
+                    "a_comprar": str(f["a_comprar"]),
+                }
+                for f in faltantes
+            ],
+        }
 
 
 def manufactura_get_costeo_orden(
@@ -114,35 +112,32 @@ def manufactura_get_costeo_orden(
     from apps.manufactura import services  # noqa: PLC0415
     from apps.manufactura.models import OrdenProduccion  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        orden = OrdenProduccion.objects.filter(pk=orden_id, empresa_id=empresa_id).first()
+        if orden is None:
+            raise ValueError("Orden de producción no encontrada en la empresa.")
 
-    orden = OrdenProduccion.objects.filter(pk=orden_id, empresa_id=empresa_id).first()
-    if orden is None:
-        raise ValueError("Orden de producción no encontrada en la empresa.")
-
-    costo = services.costeo_real_orden(orden)
-    logger.info(
-        "manufactura_get_costeo_orden | actor=%s | tenant=%s | orden=%s",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        orden_id,
-    )
-    return {
-        "orden_id": str(orden.pk),
-        "estado": orden.estado,
-        "costo": {k: str(v) for k, v in costo.items()},
-        "etapas": [
-            {
-                "orden": e.orden,
-                "etapa": e.etapa.nombre,
-                "estado": e.estado,
-                "costo_mano_obra": str(e.costo_mano_obra),
-            }
-            for e in orden.etapas.select_related("etapa").order_by("orden")
-        ],
-    }
+        costo = services.costeo_real_orden(orden)
+        logger.info(
+            "manufactura_get_costeo_orden | actor=%s | tenant=%s | orden=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            orden_id,
+        )
+        return {
+            "orden_id": str(orden.pk),
+            "estado": orden.estado,
+            "costo": {k: str(v) for k, v in costo.items()},
+            "etapas": [
+                {
+                    "orden": e.orden,
+                    "etapa": e.etapa.nombre,
+                    "estado": e.estado,
+                    "costo_mano_obra": str(e.costo_mano_obra),
+                }
+                for e in orden.etapas.select_related("etapa").order_by("orden")
+            ],
+        }
 
 
 # ─────────────────────────────────────────────────────────────────────────────

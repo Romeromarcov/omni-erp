@@ -9,6 +9,8 @@ Herramientas expuestas:
 """
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from decimal import Decimal
 from typing import Any, Dict, List
 
@@ -17,13 +19,12 @@ logger = logging.getLogger("omni.mcp.finanzas")
 _SCOPE = "finanzas"
 
 
-def _ctx(capability_token: str, scope: str) -> dict:
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # noqa: S101
-    return context
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 def finanzas_get_pagos(
@@ -48,37 +49,34 @@ def finanzas_get_pagos(
     """
     from apps.finanzas.models import Pago  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        limit = min(limit, 200)
+        qs = Pago.objects.filter(
+            id_empresa=empresa_id,
+        ).select_related("id_metodo_pago", "id_moneda")
+        if tipo_documento:
+            qs = qs.filter(tipo_documento=tipo_documento)
 
-    limit = min(limit, 200)
-    qs = Pago.objects.filter(
-        id_empresa=empresa_id,
-    ).select_related("id_metodo_pago", "id_moneda")
-    if tipo_documento:
-        qs = qs.filter(tipo_documento=tipo_documento)
-
-    pagos = qs.order_by("-fecha_pago")[:limit]
-    logger.info(
-        "finanzas_get_pagos | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(pagos),
-    )
-    return [
-        {
-            "id_pago": str(p.id_pago),
-            "monto": p.monto,  # BUG-NEW-2: Decimal, no float
-            "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
-            "metodo": p.id_metodo_pago.nombre_metodo if p.id_metodo_pago else "",
-            "tipo_documento": p.tipo_documento or "",
-            "id_documento": str(p.id_documento) if p.id_documento else "",
-            "referencia": p.referencia or "",
-            "fecha": str(p.fecha_pago) if p.fecha_pago else "",
-        }
-        for p in pagos
-    ]
+        pagos = qs.order_by("-fecha_pago")[:limit]
+        logger.info(
+            "finanzas_get_pagos | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(pagos),
+        )
+        return [
+            {
+                "id_pago": str(p.id_pago),
+                "monto": p.monto,  # BUG-NEW-2: Decimal, no float
+                "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
+                "metodo": p.id_metodo_pago.nombre_metodo if p.id_metodo_pago else "",
+                "tipo_documento": p.tipo_documento or "",
+                "id_documento": str(p.id_documento) if p.id_documento else "",
+                "referencia": p.referencia or "",
+                "fecha": str(p.fecha_pago) if p.fecha_pago else "",
+            }
+            for p in pagos
+        ]
 
 
 def finanzas_get_saldo_caja(
@@ -101,33 +99,30 @@ def finanzas_get_saldo_caja(
     """
     from apps.finanzas.models import CajaFisica  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            caja = CajaFisica.objects.get(pk=caja_id, empresa_id=empresa_id)
+        except CajaFisica.DoesNotExist:
+            return {"error": f"Caja {caja_id} no encontrada."}
 
-    try:
-        caja = CajaFisica.objects.get(pk=caja_id, empresa_id=empresa_id)
-    except CajaFisica.DoesNotExist:
-        return {"error": f"Caja {caja_id} no encontrada."}
+        logger.info(
+            "finanzas_get_saldo_caja | actor=%s | tenant=%s | caja=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            caja_id,
+        )
 
-    logger.info(
-        "finanzas_get_saldo_caja | actor=%s | tenant=%s | caja=%s",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        caja_id,
-    )
+        # Obtener la sesión activa si existe
+        sesion_activa = caja.sesiones.filter(fecha_cierre__isnull=True).first()
+        saldo_apertura = sesion_activa.saldo_inicial if sesion_activa else Decimal("0")
 
-    # Obtener la sesión activa si existe
-    sesion_activa = caja.sesiones.filter(fecha_cierre__isnull=True).first()
-    saldo_apertura = sesion_activa.saldo_inicial if sesion_activa else Decimal("0")
-
-    return {
-        "caja_id": str(caja.id_caja_fisica),
-        "nombre": caja.nombre,
-        "activa": caja.activa,
-        "sesion_activa": sesion_activa is not None,
-        "saldo_apertura": saldo_apertura,
-    }
+        return {
+            "caja_id": str(caja.id_caja_fisica),
+            "nombre": caja.nombre,
+            "activa": caja.activa,
+            "sesion_activa": sesion_activa is not None,
+            "saldo_apertura": saldo_apertura,
+        }
 
 
 def finanzas_get_metodos_pago(
@@ -143,22 +138,23 @@ def finanzas_get_metodos_pago(
     """
     from apps.finanzas.models import MetodoPago  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    metodos = MetodoPago.objects.filter(activo=True).order_by("nombre_metodo")
-    logger.info(
-        "finanzas_get_metodos_pago | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(metodos),
-    )
-    return [
-        {
-            "id_metodo_pago": str(m.id_metodo_pago),
-            "nombre_metodo": m.nombre_metodo,
-            "tipo_metodo": m.tipo_metodo,
-        }
-        for m in metodos
-    ]
+    # finanzas_metodo_pago tiene null_visible=True: bajo rls_tenant_context ve filas globales (NULL) y del tenant.
+    with _ctx(capability_token, f"{_SCOPE}:read") as ctx:
+        metodos = MetodoPago.objects.filter(activo=True).order_by("nombre_metodo")
+        logger.info(
+            "finanzas_get_metodos_pago | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(metodos),
+        )
+        return [
+            {
+                "id_metodo_pago": str(m.id_metodo_pago),
+                "nombre_metodo": m.nombre_metodo,
+                "tipo_metodo": m.tipo_metodo,
+            }
+            for m in metodos
+        ]
 
 
 def finanzas_pagos_terceros_pendientes(
@@ -184,41 +180,38 @@ def finanzas_pagos_terceros_pendientes(
     """
     from apps.finanzas.models import PagoTercero  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-
-    limit = min(limit, 200)
-    pagos = (
-        PagoTercero.objects.filter(
-            id_empresa=empresa_id,
-            estado__in=["pendiente", "reintegro_pendiente"],
-            activo=True,
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        limit = min(limit, 200)
+        pagos = (
+            PagoTercero.objects.filter(
+                id_empresa=empresa_id,
+                estado__in=["pendiente", "reintegro_pendiente"],
+                activo=True,
+            )
+            .select_related("id_proveedor", "id_moneda")
+            .order_by("-fecha", "-fecha_creacion")[:limit]
         )
-        .select_related("id_proveedor", "id_moneda")
-        .order_by("-fecha", "-fecha_creacion")[:limit]
-    )
-    logger.info(
-        "finanzas_pagos_terceros_pendientes | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(pagos),
-    )
-    return [
-        {
-            "id_pago_tercero": str(p.id_pago_tercero),
-            "proveedor": p.id_proveedor.razon_social if p.id_proveedor else "",
-            "proveedor_id": str(p.id_proveedor_id) if p.id_proveedor_id else "",
-            "monto": p.monto,  # Decimal, no float (R-CODE-4)
-            "comision": p.comision if p.comision is not None else None,
-            "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
-            "referencia_zelle": p.referencia_zelle,
-            "fecha": str(p.fecha),
-            "estado": p.estado,
-            "cxc_reintegro_id": str(p.id_cxc_reintegro_id) if p.id_cxc_reintegro_id else "",
-        }
-        for p in pagos
-    ]
+        logger.info(
+            "finanzas_pagos_terceros_pendientes | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(pagos),
+        )
+        return [
+            {
+                "id_pago_tercero": str(p.id_pago_tercero),
+                "proveedor": p.id_proveedor.razon_social if p.id_proveedor else "",
+                "proveedor_id": str(p.id_proveedor_id) if p.id_proveedor_id else "",
+                "monto": p.monto,  # Decimal, no float (R-CODE-4)
+                "comision": p.comision if p.comision is not None else None,
+                "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
+                "referencia_zelle": p.referencia_zelle,
+                "fecha": str(p.fecha),
+                "estado": p.estado,
+                "cxc_reintegro_id": str(p.id_cxc_reintegro_id) if p.id_cxc_reintegro_id else "",
+            }
+            for p in pagos
+        ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

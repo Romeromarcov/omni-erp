@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 logger = logging.getLogger("omni.mcp.tesoreria")
@@ -11,13 +13,12 @@ logger = logging.getLogger("omni.mcp.tesoreria")
 _SCOPE = "tesoreria"
 
 
-def _ctx(capability_token: str, scope: str) -> dict[str, Any]:
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # nosec B101
-    return context
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 def _empresa_activa(empresa_id: str):
@@ -48,24 +49,22 @@ def tesoreria_saldos_extractos(
         serializar_consolidado,
     )
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if str(empresa_id) != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-    if cuenta_id:
-        try:
-            uuid.UUID(str(cuenta_id))
-        except (ValueError, TypeError) as exc:
-            raise ValueError("cuenta_id no es un UUID válido.") from exc
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        if cuenta_id:
+            try:
+                uuid.UUID(str(cuenta_id))
+            except (ValueError, TypeError) as exc:
+                raise ValueError("cuenta_id no es un UUID válido.") from exc
 
-    empresa = _empresa_activa(ctx["empresa_id"])
-    cons = consolidar_saldos_extractos(empresa, cuenta_id=cuenta_id)
-    logger.info(
-        "tesoreria_saldos_extractos | actor=%s | tenant=%s | cuentas=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(cons.cuentas),
-    )
-    return serializar_consolidado(cons)
+        empresa = _empresa_activa(ctx["empresa_id"])
+        cons = consolidar_saldos_extractos(empresa, cuenta_id=cuenta_id)
+        logger.info(
+            "tesoreria_saldos_extractos | actor=%s | tenant=%s | cuentas=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(cons.cuentas),
+        )
+        return serializar_consolidado(cons)
 
 
 def tesoreria_listar_extractos(
@@ -80,57 +79,55 @@ def tesoreria_listar_extractos(
     """
     from apps.tesoreria.models import ExtractoBancarioArchivo  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if str(empresa_id) != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-    if cuenta_id:
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        if cuenta_id:
+            try:
+                uuid.UUID(str(cuenta_id))
+            except (ValueError, TypeError) as exc:
+                raise ValueError("cuenta_id no es un UUID válido.") from exc
+
+        empresa = _empresa_activa(ctx["empresa_id"])
         try:
-            uuid.UUID(str(cuenta_id))
-        except (ValueError, TypeError) as exc:
-            raise ValueError("cuenta_id no es un UUID válido.") from exc
+            limite_int = int(limite)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("limite debe ser un entero válido.") from exc
+        tope = max(1, min(limite_int, 200))
+        qs = (
+            ExtractoBancarioArchivo.objects.filter(id_empresa=empresa, activo=True)
+            .select_related("id_cuenta_bancaria")
+            .order_by("-fecha_hasta", "-fecha_creacion")
+        )
+        if cuenta_id:
+            qs = qs.filter(id_cuenta_bancaria_id=uuid.UUID(str(cuenta_id)))
 
-    empresa = _empresa_activa(ctx["empresa_id"])
-    try:
-        limite_int = int(limite)
-    except (TypeError, ValueError) as exc:
-        raise ValueError("limite debe ser un entero válido.") from exc
-    tope = max(1, min(limite_int, 200))
-    qs = (
-        ExtractoBancarioArchivo.objects.filter(id_empresa=empresa, activo=True)
-        .select_related("id_cuenta_bancaria")
-        .order_by("-fecha_hasta", "-fecha_creacion")
-    )
-    if cuenta_id:
-        qs = qs.filter(id_cuenta_bancaria_id=uuid.UUID(str(cuenta_id)))
-
-    items = list(qs[:tope])
-    logger.info(
-        "tesoreria_listar_extractos | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(items),
-    )
-    return [
-        {
-            "id": str(a.id),
-            "cuenta_id": str(a.id_cuenta_bancaria_id),
-            "nombre_banco": a.id_cuenta_bancaria.nombre_banco,
-            "numero_cuenta": a.id_cuenta_bancaria.numero_cuenta,
-            "formato_banco": a.formato_banco,
-            "nombre_archivo": a.nombre_archivo,
-            "moneda": a.moneda,
-            "fecha_desde": a.fecha_desde.isoformat() if a.fecha_desde else None,
-            "fecha_hasta": a.fecha_hasta.isoformat() if a.fecha_hasta else None,
-            "saldo_inicial": f"{a.saldo_inicial:.2f}" if a.saldo_inicial is not None else None,
-            "saldo_final": f"{a.saldo_final:.2f}" if a.saldo_final is not None else None,
-            "total_lineas": a.total_lineas,
-            "lineas_nuevas": a.lineas_nuevas,
-            "lineas_duplicadas": a.lineas_duplicadas,
-            "cuadra": a.cuadra,
-            "observaciones": a.observaciones,
-        }
-        for a in items
-    ]
+        items = list(qs[:tope])
+        logger.info(
+            "tesoreria_listar_extractos | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(items),
+        )
+        return [
+            {
+                "id": str(a.id),
+                "cuenta_id": str(a.id_cuenta_bancaria_id),
+                "nombre_banco": a.id_cuenta_bancaria.nombre_banco,
+                "numero_cuenta": a.id_cuenta_bancaria.numero_cuenta,
+                "formato_banco": a.formato_banco,
+                "nombre_archivo": a.nombre_archivo,
+                "moneda": a.moneda,
+                "fecha_desde": a.fecha_desde.isoformat() if a.fecha_desde else None,
+                "fecha_hasta": a.fecha_hasta.isoformat() if a.fecha_hasta else None,
+                "saldo_inicial": f"{a.saldo_inicial:.2f}" if a.saldo_inicial is not None else None,
+                "saldo_final": f"{a.saldo_final:.2f}" if a.saldo_final is not None else None,
+                "total_lineas": a.total_lineas,
+                "lineas_nuevas": a.lineas_nuevas,
+                "lineas_duplicadas": a.lineas_duplicadas,
+                "cuadra": a.cuadra,
+                "observaciones": a.observaciones,
+            }
+            for a in items
+        ]
 
 
 def tesoreria_listar_propuestas_conciliacion(
@@ -147,72 +144,70 @@ def tesoreria_listar_propuestas_conciliacion(
     """
     from apps.tesoreria.models import PropuestaConciliacionBancaria  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if str(empresa_id) != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-    if cuenta_id:
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        if cuenta_id:
+            try:
+                uuid.UUID(str(cuenta_id))
+            except (ValueError, TypeError) as exc:
+                raise ValueError("cuenta_id no es un UUID válido.") from exc
+
+        empresa = _empresa_activa(ctx["empresa_id"])
         try:
-            uuid.UUID(str(cuenta_id))
-        except (ValueError, TypeError) as exc:
-            raise ValueError("cuenta_id no es un UUID válido.") from exc
+            limite_int = int(limite)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("limite debe ser un entero válido.") from exc
+        tope = max(1, min(limite_int, 200))
 
-    empresa = _empresa_activa(ctx["empresa_id"])
-    try:
-        limite_int = int(limite)
-    except (TypeError, ValueError) as exc:
-        raise ValueError("limite debe ser un entero válido.") from exc
-    tope = max(1, min(limite_int, 200))
-
-    qs = (
-        PropuestaConciliacionBancaria.objects.filter(
-            id_empresa=empresa, activo=True, id_movimiento_bancario__activo=True
+        qs = (
+            PropuestaConciliacionBancaria.objects.filter(
+                id_empresa=empresa, activo=True, id_movimiento_bancario__activo=True
+            )
+            .select_related("id_movimiento_bancario__id_cuenta_bancaria")
+            .order_by(
+                "-id_movimiento_bancario__fecha_mov",
+                "-id_movimiento_bancario__orden_en_archivo",
+                "-generada_en",
+            )
         )
-        .select_related("id_movimiento_bancario__id_cuenta_bancaria")
-        .order_by(
-            "-id_movimiento_bancario__fecha_mov",
-            "-id_movimiento_bancario__orden_en_archivo",
-            "-generada_en",
-        )
-    )
-    if cuenta_id:
-        qs = qs.filter(id_movimiento_bancario__id_cuenta_bancaria_id=uuid.UUID(str(cuenta_id)))
-    if estado:
-        qs = qs.filter(estado=str(estado).replace("\x00", "").strip().upper())
-    if tipo:
-        qs = qs.filter(tipo=str(tipo).replace("\x00", "").strip().upper())
+        if cuenta_id:
+            qs = qs.filter(id_movimiento_bancario__id_cuenta_bancaria_id=uuid.UUID(str(cuenta_id)))
+        if estado:
+            qs = qs.filter(estado=str(estado).replace("\x00", "").strip().upper())
+        if tipo:
+            qs = qs.filter(tipo=str(tipo).replace("\x00", "").strip().upper())
 
-    items = list(qs[:tope])
-    logger.info(
-        "tesoreria_listar_propuestas_conciliacion | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(items),
-    )
-    return [
-        {
-            "id": str(p.id),
-            "movimiento_id": str(p.id_movimiento_bancario_id),
-            "cuenta_id": str(p.id_movimiento_bancario.id_cuenta_bancaria_id),
-            "nombre_banco": p.id_movimiento_bancario.id_cuenta_bancaria.nombre_banco,
-            "fecha": p.id_movimiento_bancario.fecha_mov.isoformat(),
-            "tipo_movimiento": p.id_movimiento_bancario.tipo,
-            "monto": f"{p.id_movimiento_bancario.monto:.2f}",
-            "referencia": p.id_movimiento_bancario.referencia,
-            "descripcion": p.id_movimiento_bancario.descripcion,
-            "tipo_propuesta": p.tipo,
-            "regla": p.regla,
-            "motivo": p.motivo,
-            "fuente_pago": p.fuente_pago,
-            "id_pago_nativo": str(p.id_pago_nativo_id) if p.id_pago_nativo_id else None,
-            "pago_externo_id": p.pago_externo_id or None,
-            "pago_nombre": p.pago_nombre,
-            "pago_socio": p.pago_socio,
-            "cuenta_contable_codigo": p.cuenta_contable_codigo,
-            "puntaje": p.puntaje,
-            "estado": p.estado,
-        }
-        for p in items
-    ]
+        items = list(qs[:tope])
+        logger.info(
+            "tesoreria_listar_propuestas_conciliacion | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(items),
+        )
+        return [
+            {
+                "id": str(p.id),
+                "movimiento_id": str(p.id_movimiento_bancario_id),
+                "cuenta_id": str(p.id_movimiento_bancario.id_cuenta_bancaria_id),
+                "nombre_banco": p.id_movimiento_bancario.id_cuenta_bancaria.nombre_banco,
+                "fecha": p.id_movimiento_bancario.fecha_mov.isoformat(),
+                "tipo_movimiento": p.id_movimiento_bancario.tipo,
+                "monto": f"{p.id_movimiento_bancario.monto:.2f}",
+                "referencia": p.id_movimiento_bancario.referencia,
+                "descripcion": p.id_movimiento_bancario.descripcion,
+                "tipo_propuesta": p.tipo,
+                "regla": p.regla,
+                "motivo": p.motivo,
+                "fuente_pago": p.fuente_pago,
+                "id_pago_nativo": str(p.id_pago_nativo_id) if p.id_pago_nativo_id else None,
+                "pago_externo_id": p.pago_externo_id or None,
+                "pago_nombre": p.pago_nombre,
+                "pago_socio": p.pago_socio,
+                "cuenta_contable_codigo": p.cuenta_contable_codigo,
+                "puntaje": p.puntaje,
+                "estado": p.estado,
+            }
+            for p in items
+        ]
 
 
 def tesoreria_generar_propuestas_conciliacion(
@@ -235,52 +230,50 @@ def tesoreria_generar_propuestas_conciliacion(
         generar_propuestas_conciliacion,
     )
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:write")
-    if str(empresa_id) != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-    try:
-        cuenta_uuid = uuid.UUID(str(cuenta_id))
-    except (ValueError, TypeError) as exc:
-        raise ValueError("cuenta_id no es un UUID válido.") from exc
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        try:
+            cuenta_uuid = uuid.UUID(str(cuenta_id))
+        except (ValueError, TypeError) as exc:
+            raise ValueError("cuenta_id no es un UUID válido.") from exc
 
-    fecha_desde = None
-    fecha_hasta = None
-    try:
-        if desde:
-            fecha_desde = date.fromisoformat(str(desde).strip())
-        if hasta:
-            fecha_hasta = date.fromisoformat(str(hasta).strip())
-    except ValueError as exc:
-        raise ValueError("Las fechas desde/hasta deben usar formato ISO YYYY-MM-DD.") from exc
+        fecha_desde = None
+        fecha_hasta = None
+        try:
+            if desde:
+                fecha_desde = date.fromisoformat(str(desde).strip())
+            if hasta:
+                fecha_hasta = date.fromisoformat(str(hasta).strip())
+        except ValueError as exc:
+            raise ValueError("Las fechas desde/hasta deben usar formato ISO YYYY-MM-DD.") from exc
 
-    empresa = _empresa_activa(ctx["empresa_id"])
-    cuenta = (
-        CuentaBancariaEmpresa.objects.select_related("id_empresa", "id_moneda")
-        .filter(pk=cuenta_uuid, id_empresa=empresa, activo=True)
-        .first()
-    )
-    if cuenta is None:
-        raise ValueError("Cuenta bancaria no encontrada en esta empresa.")
-
-    try:
-        resumen = generar_propuestas_conciliacion(
-            empresa=empresa,
-            cuenta_bancaria=cuenta,
-            desde=fecha_desde,
-            hasta=fecha_hasta,
-            incluir_odoo=incluir_odoo,
+        empresa = _empresa_activa(ctx["empresa_id"])
+        cuenta = (
+            CuentaBancariaEmpresa.objects.select_related("id_empresa", "id_moneda")
+            .filter(pk=cuenta_uuid, id_empresa=empresa, activo=True)
+            .first()
         )
-    except PreconciliacionError as exc:
-        raise ValueError(str(exc)) from exc
+        if cuenta is None:
+            raise ValueError("Cuenta bancaria no encontrada en esta empresa.")
 
-    logger.info(
-        "tesoreria_generar_propuestas_conciliacion | actor=%s | tenant=%s | nuevas=%d | actualizadas=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        resumen["nuevas"],
-        resumen["actualizadas"],
-    )
-    return resumen
+        try:
+            resumen = generar_propuestas_conciliacion(
+                empresa=empresa,
+                cuenta_bancaria=cuenta,
+                desde=fecha_desde,
+                hasta=fecha_hasta,
+                incluir_odoo=incluir_odoo,
+            )
+        except PreconciliacionError as exc:
+            raise ValueError(str(exc)) from exc
+
+        logger.info(
+            "tesoreria_generar_propuestas_conciliacion | actor=%s | tenant=%s | nuevas=%d | actualizadas=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            resumen["nuevas"],
+            resumen["actualizadas"],
+        )
+        return resumen
 
 
 MCP_TOOLS: list[dict[str, Any]] = [

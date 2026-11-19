@@ -43,6 +43,8 @@ Herramientas disponibles (v1):
 import logging
 import os
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional
 
@@ -142,6 +144,25 @@ def _require_scope(context: Optional[Dict[str, Any]], scope: str) -> None:
         raise PermissionError(f"El token no tiene el scope requerido: {scope}")
 
 
+@contextmanager
+def mcp_tenant_context(
+    capability_token: str,
+    scope: str,
+    *,
+    empresa_id: Optional[str] = None,
+) -> Iterator[Dict[str, Any]]:
+    """Valida token/scope (y empresa_id opcional) y abre ``rls_tenant_context`` por la duración de la tool."""
+    from apps.core import rls  # noqa: PLC0415
+
+    context = _resolve_token(capability_token)
+    _require_scope(context, scope)
+    assert context is not None  # noqa: S101 — checked by _require_scope
+    if empresa_id is not None and str(empresa_id) != context["empresa_id"]:
+        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with rls.rls_tenant_context([context["empresa_id"]]):
+        yield context
+
+
 # ── Herramientas MCP (definidas a nivel de módulo para ser importables en tests) ─
 
 
@@ -181,30 +202,27 @@ def omni_get_empresas(capability_token: str) -> list:
     """
     from apps.core.models import Empresa  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "core:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "core:read") as context:
+        empresas = Empresa.objects.filter(
+            id_empresa=context["empresa_id"],
+            activo=True,
+        ).values("id_empresa", "nombre_comercial", "identificador_fiscal", "activo")
 
-    empresas = Empresa.objects.filter(
-        id_empresa=context["empresa_id"],
-        activo=True,
-    ).values("id_empresa", "nombre_comercial", "identificador_fiscal", "activo")
-
-    logger.info(
-        "omni_get_empresas | actor=%s | tenant=%s | count=%d",
-        context["actor_id"],
-        context["tenant_id"],
-        len(empresas),
-    )
-    return [
-        {
-            "id_empresa": str(e["id_empresa"]),
-            "nombre_comercial": e["nombre_comercial"],
-            "rif": e.get("rif", ""),
-            "activo": e["activo"],
-        }
-        for e in empresas
-    ]
+        logger.info(
+            "omni_get_empresas | actor=%s | tenant=%s | count=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            len(empresas),
+        )
+        return [
+            {
+                "id_empresa": str(e["id_empresa"]),
+                "nombre_comercial": e["nombre_comercial"],
+                "rif": e.get("rif", ""),
+                "activo": e["activo"],
+            }
+            for e in empresas
+        ]
 
 
 def omni_get_clientes(
@@ -229,42 +247,35 @@ def omni_get_clientes(
     """
     from apps.crm.models import Cliente  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "crm:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "crm:read", empresa_id=empresa_id) as context:
+        limit = min(limit, 200)  # cap duro
+        qs = Cliente.objects.filter(
+            id_empresa=empresa_id,
+            activo=True,
+        )
+        if buscar:
+            from django.db.models import Q  # noqa: PLC0415
 
-    # Verificar que el empresa_id corresponde al tenant del token
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+            qs = qs.filter(Q(razon_social__icontains=buscar) | Q(rif__icontains=buscar))
 
-    limit = min(limit, 200)  # cap duro
-    qs = Cliente.objects.filter(
-        id_empresa=empresa_id,
-        activo=True,
-    )
-    if buscar:
-        from django.db.models import Q  # noqa: PLC0415
+        clientes = qs.values("id_cliente", "razon_social", "rif", "activo")[:limit]
 
-        qs = qs.filter(Q(razon_social__icontains=buscar) | Q(rif__icontains=buscar))
-
-    clientes = qs.values("id_cliente", "razon_social", "rif", "activo")[:limit]
-
-    logger.info(
-        "omni_get_clientes | actor=%s | tenant=%s | empresa=%s | count=%d",
-        context["actor_id"],
-        context["tenant_id"],
-        empresa_id,
-        len(clientes),
-    )
-    return [
-        {
-            "id_cliente": str(c["id_cliente"]),
-            "razon_social": c["razon_social"],
-            "rif": c.get("rif", ""),
-            "activo": c["activo"],
-        }
-        for c in clientes
-    ]
+        logger.info(
+            "omni_get_clientes | actor=%s | tenant=%s | empresa=%s | count=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            empresa_id,
+            len(clientes),
+        )
+        return [
+            {
+                "id_cliente": str(c["id_cliente"]),
+                "razon_social": c["razon_social"],
+                "rif": c.get("rif", ""),
+                "activo": c["activo"],
+            }
+            for c in clientes
+        ]
 
 
 def omni_get_saldo_cliente(
@@ -287,43 +298,37 @@ def omni_get_saldo_cliente(
     """
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "cxc:read", empresa_id=empresa_id) as context:
+        # CuentaPorCobrar NO tiene campo `saldo_pendiente`: el saldo se calcula como
+        # monto - abonos (igual que calcular_aging). Estados en minúscula como en el
+        # modelo (antes filtraba "PENDIENTE"/"PARCIAL" y agregaba campos inexistentes
+        # `saldo_pendiente`/`id_cxc` → FieldError en cada llamada).
+        cxcs = list(
+            CuentaPorCobrar.objects.filter(
+                empresa_id=empresa_id,
+                cliente_id=cliente_id,
+                estado__in=["pendiente", "parcial", "vencida"],
+            ).prefetch_related("abonos")
+        )
+        total = Decimal("0")
+        for cxc in cxcs:
+            abonado = sum((a.monto for a in cxc.abonos.all()), Decimal("0"))
+            total += cxc.monto - abonado
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-
-    # CuentaPorCobrar NO tiene campo `saldo_pendiente`: el saldo se calcula como
-    # monto - abonos (igual que calcular_aging). Estados en minúscula como en el
-    # modelo (antes filtraba "PENDIENTE"/"PARCIAL" y agregaba campos inexistentes
-    # `saldo_pendiente`/`id_cxc` → FieldError en cada llamada).
-    cxcs = list(
-        CuentaPorCobrar.objects.filter(
-            empresa_id=empresa_id,
-            cliente_id=cliente_id,
-            estado__in=["pendiente", "parcial", "vencida"],
-        ).prefetch_related("abonos")
-    )
-    total = Decimal("0")
-    for cxc in cxcs:
-        abonado = sum((a.monto for a in cxc.abonos.all()), Decimal("0"))
-        total += cxc.monto - abonado
-
-    logger.info(
-        "omni_get_saldo_cliente | actor=%s | tenant=%s | cliente=%s | saldo=%s",
-        context["actor_id"],
-        context["tenant_id"],
-        cliente_id,
-        total,
-    )
-    return {
-        "cliente_id": cliente_id,
-        "empresa_id": empresa_id,
-        "total_pendiente": total,  # Decimal (R-CODE-4)
-        "cantidad_facturas": len(cxcs),
-        "moneda_base": "USD",
-    }
+        logger.info(
+            "omni_get_saldo_cliente | actor=%s | tenant=%s | cliente=%s | saldo=%s",
+            context["actor_id"],
+            context["tenant_id"],
+            cliente_id,
+            total,
+        )
+        return {
+            "cliente_id": cliente_id,
+            "empresa_id": empresa_id,
+            "total_pendiente": total,  # Decimal (R-CODE-4)
+            "cantidad_facturas": len(cxcs),
+            "moneda_base": "USD",
+        }
 
 
 def omni_get_cxc_aging(
@@ -344,33 +349,27 @@ def omni_get_cxc_aging(
     """
     from apps.cuentas_por_cobrar.services import calcular_aging  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "cxc:read", empresa_id=empresa_id) as context:
+        resultado = calcular_aging(empresa_id)
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        def fmt_bucket(b):
+            return {"count": b["count"], "total": b["total"]}  # BUG-NEW-2
 
-    resultado = calcular_aging(empresa_id)
-
-    def fmt_bucket(b):
-        return {"count": b["count"], "total": b["total"]}  # BUG-NEW-2
-
-    logger.info(
-        "omni_get_cxc_aging | actor=%s | tenant=%s | total=%s",
-        context["actor_id"],
-        context["tenant_id"],
-        resultado["total_general"],
-    )
-    return {
-        "empresa_id": empresa_id,
-        "corriente": fmt_bucket(resultado["corriente"]),
-        "dias_1_30": fmt_bucket(resultado["dias_1_30"]),
-        "dias_31_60": fmt_bucket(resultado["dias_31_60"]),
-        "dias_61_90": fmt_bucket(resultado["dias_61_90"]),
-        "dias_90_mas": fmt_bucket(resultado["dias_90_mas"]),
-        "total_general": resultado["total_general"],  # BUG-NEW-2
-    }
+        logger.info(
+            "omni_get_cxc_aging | actor=%s | tenant=%s | total=%s",
+            context["actor_id"],
+            context["tenant_id"],
+            resultado["total_general"],
+        )
+        return {
+            "empresa_id": empresa_id,
+            "corriente": fmt_bucket(resultado["corriente"]),
+            "dias_1_30": fmt_bucket(resultado["dias_1_30"]),
+            "dias_31_60": fmt_bucket(resultado["dias_31_60"]),
+            "dias_61_90": fmt_bucket(resultado["dias_61_90"]),
+            "dias_90_mas": fmt_bucket(resultado["dias_90_mas"]),
+            "total_general": resultado["total_general"],  # BUG-NEW-2
+        }
 
 
 def omni_get_stock_producto(
@@ -395,35 +394,29 @@ def omni_get_stock_producto(
     """
     from apps.inventario.models import StockActual  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "inventario:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "inventario:read", empresa_id=empresa_id) as context:
+        qs = StockActual.objects.filter(
+            id_empresa=empresa_id,
+            id_producto=producto_id,
+        ).select_related("id_almacen")
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        if almacen_id:
+            qs = qs.filter(id_almacen=almacen_id)
 
-    qs = StockActual.objects.filter(
-        id_empresa=empresa_id,
-        id_producto=producto_id,
-    ).select_related("id_almacen")
-
-    if almacen_id:
-        qs = qs.filter(id_almacen=almacen_id)
-
-    logger.info(
-        "omni_get_stock_producto | actor=%s | tenant=%s | producto=%s",
-        context["actor_id"],
-        context["tenant_id"],
-        producto_id,
-    )
-    return [
-        {
-            "almacen_id": str(s.id_almacen_id),
-            "almacen_nombre": s.id_almacen.nombre_almacen,
-            "cantidad_disponible": float(s.cantidad_disponible),
-        }
-        for s in qs
-    ]
+        logger.info(
+            "omni_get_stock_producto | actor=%s | tenant=%s | producto=%s",
+            context["actor_id"],
+            context["tenant_id"],
+            producto_id,
+        )
+        return [
+            {
+                "almacen_id": str(s.id_almacen_id),
+                "almacen_nombre": s.id_almacen.nombre_almacen,
+                "cantidad_disponible": float(s.cantidad_disponible),
+            }
+            for s in qs
+        ]
 
 
 def omni_get_ventas_resumen(
@@ -450,41 +443,35 @@ def omni_get_ventas_resumen(
 
     from apps.ventas.models import DetallePedido, Pedido  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "ventas:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "ventas:read", empresa_id=empresa_id) as context:
+        qs = Pedido.objects.filter(id_empresa=empresa_id, estado="APROBADO")
+        if fecha_desde:
+            qs = qs.filter(fecha_pedido__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_pedido__lte=fecha_hasta)
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        pedidos_ids = list(qs.values_list("id_pedido", flat=True))
+        totales = DetallePedido.objects.filter(
+            id_pedido__in=pedidos_ids,
+        ).aggregate(total=Sum("subtotal"), promedio=Avg("subtotal"))
 
-    qs = Pedido.objects.filter(id_empresa=empresa_id, estado="APROBADO")
-    if fecha_desde:
-        qs = qs.filter(fecha_pedido__gte=fecha_desde)
-    if fecha_hasta:
-        qs = qs.filter(fecha_pedido__lte=fecha_hasta)
+        # BUG-NEW-2: montos como Decimal (no float) para no perder precisión.
+        total = totales["total"] or Decimal("0")
+        promedio = totales["promedio"] or Decimal("0")
 
-    pedidos_ids = list(qs.values_list("id_pedido", flat=True))
-    totales = DetallePedido.objects.filter(
-        id_pedido__in=pedidos_ids,
-    ).aggregate(total=Sum("subtotal"), promedio=Avg("subtotal"))
-
-    # BUG-NEW-2: montos como Decimal (no float) para no perder precisión.
-    total = totales["total"] or Decimal("0")
-    promedio = totales["promedio"] or Decimal("0")
-
-    logger.info(
-        "omni_get_ventas_resumen | actor=%s | tenant=%s | pedidos=%d | total=%s",
-        context["actor_id"],
-        context["tenant_id"],
-        len(pedidos_ids),
-        total,
-    )
-    return {
-        "empresa_id": empresa_id,
-        "cantidad_pedidos": len(pedidos_ids),
-        "total_ventas": total,
-        "promedio_linea": promedio,
-    }
+        logger.info(
+            "omni_get_ventas_resumen | actor=%s | tenant=%s | pedidos=%d | total=%s",
+            context["actor_id"],
+            context["tenant_id"],
+            len(pedidos_ids),
+            total,
+        )
+        return {
+            "empresa_id": empresa_id,
+            "cantidad_pedidos": len(pedidos_ids),
+            "total_ventas": total,
+            "promedio_linea": promedio,
+        }
 
 
 def _controlled_types_crear_pedido() -> tuple[type[BaseException], ...]:
@@ -532,63 +519,57 @@ def omni_crear_pedido(
 
     from apps.ventas.models import DetallePedido, Pedido  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "ventas:write")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "ventas:write", empresa_id=empresa_id) as context:
+        if not productos:
+            raise ValueError("Se requiere al menos un producto.")
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        try:
+            with transaction.atomic():
+                # Generar número de pedido: PED-YYYYMMDD-HHMMSS
+                ts = timezone.now().strftime("%Y%m%d-%H%M%S")
+                numero_pedido = f"PED-{ts}"
 
-    if not productos:
-        raise ValueError("Se requiere al menos un producto.")
-
-    try:
-        with transaction.atomic():
-            # Generar número de pedido: PED-YYYYMMDD-HHMMSS
-            ts = timezone.now().strftime("%Y%m%d-%H%M%S")
-            numero_pedido = f"PED-{ts}"
-
-            pedido = Pedido.objects.create(
-                id_empresa_id=empresa_id,
-                id_cliente_id=cliente_id,
-                numero_pedido=numero_pedido,
-                fecha_pedido=timezone.now().date(),
-                estado="PENDIENTE",
-            )
-
-            for linea in productos:
-                cantidad = Decimal(str(linea["cantidad"]))
-                precio_unitario = Decimal(str(linea["precio_unitario"]))
-                DetallePedido.objects.create(
-                    id_pedido=pedido,
-                    id_producto_id=linea["id_producto"],
-                    cantidad=cantidad,
-                    precio_unitario=precio_unitario,
-                    subtotal=cantidad * precio_unitario,
+                pedido = Pedido.objects.create(
+                    id_empresa_id=empresa_id,
+                    id_cliente_id=cliente_id,
+                    numero_pedido=numero_pedido,
+                    fecha_pedido=timezone.now().date(),
+                    estado="PENDIENTE",
                 )
 
-        logger.info(
-            "omni_crear_pedido | actor=%s | tenant=%s | pedido=%s | lineas=%d",
-            context["actor_id"],
-            context["tenant_id"],
-            numero_pedido,
-            len(productos),
-        )
-        return {
-            "id_pedido": str(pedido.id_pedido),
-            "numero_pedido": pedido.numero_pedido,
-            "estado": pedido.estado,
-            "cantidad_lineas": len(productos),
-        }
-    except Exception as exc:
-        return {
-            "error": sanitize_mcp_error(
-                exc,
-                logger=logger,
-                tool_name="omni_crear_pedido",
-                controlled_types=_controlled_types_crear_pedido(),
+                for linea in productos:
+                    cantidad = Decimal(str(linea["cantidad"]))
+                    precio_unitario = Decimal(str(linea["precio_unitario"]))
+                    DetallePedido.objects.create(
+                        id_pedido=pedido,
+                        id_producto_id=linea["id_producto"],
+                        cantidad=cantidad,
+                        precio_unitario=precio_unitario,
+                        subtotal=cantidad * precio_unitario,
+                    )
+
+            logger.info(
+                "omni_crear_pedido | actor=%s | tenant=%s | pedido=%s | lineas=%d",
+                context["actor_id"],
+                context["tenant_id"],
+                numero_pedido,
+                len(productos),
             )
-        }
+            return {
+                "id_pedido": str(pedido.id_pedido),
+                "numero_pedido": pedido.numero_pedido,
+                "estado": pedido.estado,
+                "cantidad_lineas": len(productos),
+            }
+        except Exception as exc:
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="omni_crear_pedido",
+                    controlled_types=_controlled_types_crear_pedido(),
+                )
+            }
 
 
 def omni_get_pedidos(
@@ -613,56 +594,50 @@ def omni_get_pedidos(
     """
     from apps.ventas.models import Pedido  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "ventas:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "ventas:read", empresa_id=empresa_id) as context:
+        try:
+            limit = min(limit, 100)
+            qs = Pedido.objects.filter(id_empresa=empresa_id, activo=True).select_related("id_cliente")
+            if estado:
+                qs = qs.filter(estado=estado)
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+            pedidos = qs.order_by("-fecha_pedido")[:limit]
 
-    try:
-        limit = min(limit, 100)
-        qs = Pedido.objects.filter(id_empresa=empresa_id, activo=True).select_related("id_cliente")
-        if estado:
-            qs = qs.filter(estado=estado)
-
-        pedidos = qs.order_by("-fecha_pedido")[:limit]
-
-        logger.info(
-            "omni_get_pedidos | actor=%s | tenant=%s | empresa=%s | estado=%s | count=%d",
-            context["actor_id"],
-            context["tenant_id"],
-            empresa_id,
-            estado or "todos",
-            len(pedidos),
-        )
-        return [
-            {
-                "id_pedido": str(p.id_pedido),
-                "numero_pedido": p.numero_pedido,
-                "cliente": p.id_cliente.razon_social,
-                "fecha_pedido": str(p.fecha_pedido),
-                "estado": p.estado,
-            }
-            for p in pedidos
-        ]
-    except Exception as exc:
-        return [
-            {
-                "error": sanitize_mcp_error(
-                    exc,
-                    logger=logger,
-                    tool_name="omni_get_pedidos",
-                    controlled_types=(
-                        DomainError,
-                        ValueError,
-                        ValidationError,
-                        PermissionError,
-                        ObjectDoesNotExist,
-                    ),
-                )
-            }
-        ]
+            logger.info(
+                "omni_get_pedidos | actor=%s | tenant=%s | empresa=%s | estado=%s | count=%d",
+                context["actor_id"],
+                context["tenant_id"],
+                empresa_id,
+                estado or "todos",
+                len(pedidos),
+            )
+            return [
+                {
+                    "id_pedido": str(p.id_pedido),
+                    "numero_pedido": p.numero_pedido,
+                    "cliente": p.id_cliente.razon_social,
+                    "fecha_pedido": str(p.fecha_pedido),
+                    "estado": p.estado,
+                }
+                for p in pedidos
+            ]
+        except Exception as exc:
+            return [
+                {
+                    "error": sanitize_mcp_error(
+                        exc,
+                        logger=logger,
+                        tool_name="omni_get_pedidos",
+                        controlled_types=(
+                            DomainError,
+                            ValueError,
+                            ValidationError,
+                            PermissionError,
+                            ObjectDoesNotExist,
+                        ),
+                    )
+                }
+            ]
 
 
 def omni_registrar_movimiento_inventario(
@@ -701,76 +676,70 @@ def omni_registrar_movimiento_inventario(
         StockInsuficienteError,
     )
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "inventario:write")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "inventario:write", empresa_id=empresa_id) as context:
+        TIPOS_VALIDOS = {"ENTRADA", "SALIDA", "TRANSFERENCIA"}
+        if tipo not in TIPOS_VALIDOS:
+            return {"error": f"tipo '{tipo}' inválido. Válidos: {sorted(TIPOS_VALIDOS)}"}
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        # M-SEC-10: validar que el actor del token MCP sea un UUID de usuario real
+        # antes de usarlo como FK (evita IntegrityError opaco / inyección de FK).
+        import uuid as _uuid
 
-    TIPOS_VALIDOS = {"ENTRADA", "SALIDA", "TRANSFERENCIA"}
-    if tipo not in TIPOS_VALIDOS:
-        return {"error": f"tipo '{tipo}' inválido. Válidos: {sorted(TIPOS_VALIDOS)}"}
+        from apps.core.models import Usuarios  # noqa: PLC0415
 
-    # M-SEC-10: validar que el actor del token MCP sea un UUID de usuario real
-    # antes de usarlo como FK (evita IntegrityError opaco / inyección de FK).
-    import uuid as _uuid
+        actor_raw = context["actor_id"].replace("mcp-token:", "")
+        try:
+            _uuid.UUID(str(actor_raw))
+            actor_valido = Usuarios.objects.filter(pk=actor_raw).exists()
+        except (ValueError, TypeError):
+            actor_valido = False
+        if not actor_valido:
+            return {"error": "actor_id del token MCP no corresponde a un usuario válido."}
 
-    from apps.core.models import Usuarios  # noqa: PLC0415
-
-    actor_raw = context["actor_id"].replace("mcp-token:", "")
-    try:
-        _uuid.UUID(str(actor_raw))
-        actor_valido = Usuarios.objects.filter(pk=actor_raw).exists()
-    except (ValueError, TypeError):
-        actor_valido = False
-    if not actor_valido:
-        return {"error": "actor_id del token MCP no corresponde a un usuario válido."}
-
-    try:
-        movimiento = MovimientoInventario.objects.create(
-            id_empresa_id=empresa_id,
-            fecha_hora_movimiento=timezone.now(),
-            tipo_movimiento=tipo,
-            id_producto_id=producto_id,
-            cantidad=Decimal(cantidad),
-            id_almacen_origen_id=almacen_origen_id or None,
-            id_almacen_destino_id=almacen_destino_id or None,
-            id_usuario_registro_id=actor_raw,
-        )
-
-        logger.info(
-            "omni_registrar_movimiento_inventario | actor=%s | tenant=%s | tipo=%s | producto=%s | cantidad=%s",
-            context["actor_id"],
-            context["tenant_id"],
-            tipo,
-            producto_id,
-            cantidad,
-        )
-        return {
-            "id_movimiento": str(movimiento.id_movimiento_inventario),
-            "tipo": movimiento.tipo_movimiento,
-            "cantidad": str(movimiento.cantidad),
-            "empresa_id": empresa_id,
-        }
-    except Exception as exc:
-        return {
-            "error": sanitize_mcp_error(
-                exc,
-                logger=logger,
-                tool_name="omni_registrar_movimiento_inventario",
-                controlled_types=(
-                    DomainError,
-                    ValueError,
-                    ValidationError,
-                    PermissionError,
-                    ObjectDoesNotExist,
-                    InvalidOperation,
-                    StockInsuficienteError,
-                    MovimientoInvalidoError,
-                ),
+        try:
+            movimiento = MovimientoInventario.objects.create(
+                id_empresa_id=empresa_id,
+                fecha_hora_movimiento=timezone.now(),
+                tipo_movimiento=tipo,
+                id_producto_id=producto_id,
+                cantidad=Decimal(cantidad),
+                id_almacen_origen_id=almacen_origen_id or None,
+                id_almacen_destino_id=almacen_destino_id or None,
+                id_usuario_registro_id=actor_raw,
             )
-        }
+
+            logger.info(
+                "omni_registrar_movimiento_inventario | actor=%s | tenant=%s | tipo=%s | producto=%s | cantidad=%s",
+                context["actor_id"],
+                context["tenant_id"],
+                tipo,
+                producto_id,
+                cantidad,
+            )
+            return {
+                "id_movimiento": str(movimiento.id_movimiento_inventario),
+                "tipo": movimiento.tipo_movimiento,
+                "cantidad": str(movimiento.cantidad),
+                "empresa_id": empresa_id,
+            }
+        except Exception as exc:
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="omni_registrar_movimiento_inventario",
+                    controlled_types=(
+                        DomainError,
+                        ValueError,
+                        ValidationError,
+                        PermissionError,
+                        ObjectDoesNotExist,
+                        InvalidOperation,
+                        StockInsuficienteError,
+                        MovimientoInvalidoError,
+                    ),
+                )
+            }
 
 
 def omni_get_correlativo_fiscal(
@@ -793,59 +762,55 @@ def omni_get_correlativo_fiscal(
     """
     from apps.fiscal.models import NumeroCorrelativo  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "fiscal:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "fiscal:read", empresa_id=empresa_id) as context:
+        TIPOS_VALIDOS = {"FACTURA", "NOTA_CREDITO", "NOTA_DEBITO"}
+        if tipo_documento not in TIPOS_VALIDOS:
+            return {"error": f"tipo_documento '{tipo_documento}' inválido. Válidos: {sorted(TIPOS_VALIDOS)}"}
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-
-    TIPOS_VALIDOS = {"FACTURA", "NOTA_CREDITO", "NOTA_DEBITO"}
-    if tipo_documento not in TIPOS_VALIDOS:
-        return {"error": f"tipo_documento '{tipo_documento}' inválido. Válidos: {sorted(TIPOS_VALIDOS)}"}
-
-    try:
-        correlativo = NumeroCorrelativo.objects.get(
-            id_empresa=empresa_id,
-            tipo=tipo_documento,
-        )
-        siguiente = correlativo.numero_actual + 1
-        formateado = f"{correlativo.prefijo}{siguiente:0{correlativo.digitos}d}"
-
-        logger.info(
-            "omni_get_correlativo_fiscal | actor=%s | tenant=%s | tipo=%s | siguiente=%d",
-            context["actor_id"],
-            context["tenant_id"],
-            tipo_documento,
-            siguiente,
-        )
-        return {
-            "tipo_documento": tipo_documento,
-            "empresa_id": empresa_id,
-            "numero_actual": correlativo.numero_actual,
-            "siguiente_numero": siguiente,
-            "prefijo": correlativo.prefijo,
-            "numero_formateado": formateado,
-        }
-    except NumeroCorrelativo.DoesNotExist:
-        return {
-            "error": f"No existe configuración de correlativo para tipo '{tipo_documento}' en la empresa {empresa_id}."
-        }
-    except Exception as exc:
-        return {
-            "error": sanitize_mcp_error(
-                exc,
-                logger=logger,
-                tool_name="omni_get_correlativo_fiscal",
-                controlled_types=(
-                    DomainError,
-                    ValueError,
-                    ValidationError,
-                    PermissionError,
-                    ObjectDoesNotExist,
-                ),
+        try:
+            correlativo = NumeroCorrelativo.objects.get(
+                id_empresa=empresa_id,
+                tipo=tipo_documento,
             )
-        }
+            siguiente = correlativo.numero_actual + 1
+            formateado = f"{correlativo.prefijo}{siguiente:0{correlativo.digitos}d}"
+
+            logger.info(
+                "omni_get_correlativo_fiscal | actor=%s | tenant=%s | tipo=%s | siguiente=%d",
+                context["actor_id"],
+                context["tenant_id"],
+                tipo_documento,
+                siguiente,
+            )
+            return {
+                "tipo_documento": tipo_documento,
+                "empresa_id": empresa_id,
+                "numero_actual": correlativo.numero_actual,
+                "siguiente_numero": siguiente,
+                "prefijo": correlativo.prefijo,
+                "numero_formateado": formateado,
+            }
+        except NumeroCorrelativo.DoesNotExist:
+            return {
+                "error": (
+                    f"No existe configuración de correlativo para tipo '{tipo_documento}' en la empresa {empresa_id}."
+                )
+            }
+        except Exception as exc:
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="omni_get_correlativo_fiscal",
+                    controlled_types=(
+                        DomainError,
+                        ValueError,
+                        ValidationError,
+                        PermissionError,
+                        ObjectDoesNotExist,
+                    ),
+                )
+            }
 
 
 def omni_buscar_cliente(
@@ -870,60 +835,54 @@ def omni_buscar_cliente(
 
     from apps.crm.models import Cliente  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "crm:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "crm:read", empresa_id=empresa_id) as context:
+        try:
+            qs = Cliente.objects.filter(
+                id_empresa=empresa_id,
+                activo=True,
+            ).filter(
+                Q(razon_social__icontains=termino)
+                | Q(nombre_comercial__icontains=termino)
+                | Q(rif__icontains=termino)
+                | Q(email__icontains=termino)
+            )[:50]
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-
-    try:
-        qs = Cliente.objects.filter(
-            id_empresa=empresa_id,
-            activo=True,
-        ).filter(
-            Q(razon_social__icontains=termino)
-            | Q(nombre_comercial__icontains=termino)
-            | Q(rif__icontains=termino)
-            | Q(email__icontains=termino)
-        )[:50]
-
-        logger.info(
-            "omni_buscar_cliente | actor=%s | tenant=%s | termino=%r | count=%d",
-            context["actor_id"],
-            context["tenant_id"],
-            termino,
-            len(qs),
-        )
-        return [
-            {
-                "id_cliente": str(c.id_cliente),
-                "razon_social": c.razon_social,
-                "nombre_comercial": c.nombre_comercial or "",
-                "rif": c.rif,
-                "email": c.email or "",
-                "telefono": c.telefono or "",
-                "tipo_cliente": c.tipo_cliente,
-            }
-            for c in qs
-        ]
-    except Exception as exc:
-        return [
-            {
-                "error": sanitize_mcp_error(
-                    exc,
-                    logger=logger,
-                    tool_name="omni_buscar_cliente",
-                    controlled_types=(
-                        DomainError,
-                        ValueError,
-                        ValidationError,
-                        PermissionError,
-                        ObjectDoesNotExist,
-                    ),
-                )
-            }
-        ]
+            logger.info(
+                "omni_buscar_cliente | actor=%s | tenant=%s | termino=%r | count=%d",
+                context["actor_id"],
+                context["tenant_id"],
+                termino,
+                len(qs),
+            )
+            return [
+                {
+                    "id_cliente": str(c.id_cliente),
+                    "razon_social": c.razon_social,
+                    "nombre_comercial": c.nombre_comercial or "",
+                    "rif": c.rif,
+                    "email": c.email or "",
+                    "telefono": c.telefono or "",
+                    "tipo_cliente": c.tipo_cliente,
+                }
+                for c in qs
+            ]
+        except Exception as exc:
+            return [
+                {
+                    "error": sanitize_mcp_error(
+                        exc,
+                        logger=logger,
+                        tool_name="omni_buscar_cliente",
+                        controlled_types=(
+                            DomainError,
+                            ValueError,
+                            ValidationError,
+                            PermissionError,
+                            ObjectDoesNotExist,
+                        ),
+                    )
+                }
+            ]
 
 
 def omni_cxc_get_cartera_vencida(
@@ -944,31 +903,25 @@ def omni_cxc_get_cartera_vencida(
     Returns:
         Lista de partidas vencidas ordenadas por score DESC.
     """
-    context = _resolve_token(capability_token)
-    _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "cxc:read", empresa_id=empresa_id) as context:
+        from apps.core.models import Empresa  # noqa: PLC0415
+        from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider  # noqa: PLC0415
+        from apps.cuentas_por_cobrar.services_scoring import priorizar  # noqa: PLC0415
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        top_n = min(top_n, 50)
 
-    from apps.core.models import Empresa  # noqa: PLC0415
-    from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider  # noqa: PLC0415
-    from apps.cuentas_por_cobrar.services_scoring import priorizar  # noqa: PLC0415
+        empresa = Empresa.objects.get(pk=empresa_id)
+        provider = get_cartera_provider(empresa)
+        partidas = provider.get_partidas(solo_vencidas=True)
+        resultado = priorizar(partidas)[:top_n]
 
-    top_n = min(top_n, 50)
-
-    empresa = Empresa.objects.get(pk=empresa_id)
-    provider = get_cartera_provider(empresa)
-    partidas = provider.get_partidas(solo_vencidas=True)
-    resultado = priorizar(partidas)[:top_n]
-
-    logger.info(
-        "omni_cxc_get_cartera_vencida | actor=%s | tenant=%s | count=%d",
-        context["actor_id"],
-        context["tenant_id"],
-        len(resultado),
-    )
-    return resultado
+        logger.info(
+            "omni_cxc_get_cartera_vencida | actor=%s | tenant=%s | count=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            len(resultado),
+        )
+        return resultado
 
 
 def omni_cxc_get_aging_summary(
@@ -983,34 +936,28 @@ def omni_cxc_get_aging_summary(
     Returns:
         Dict con buckets: al_dia / 1_30 / 31_60 / 61_90 / mas_90
     """
-    context = _resolve_token(capability_token)
-    _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "cxc:read", empresa_id=empresa_id) as context:
+        from django.core.cache import cache  # noqa: PLC0415
+        from apps.core.models import Empresa  # noqa: PLC0415
+        from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider  # noqa: PLC0415
+        from apps.cuentas_por_cobrar.services_aging import calcular_aging  # noqa: PLC0415
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        cache_key = f"cxc:aging:{empresa_id}"
+        resumen = cache.get(cache_key)
 
-    from django.core.cache import cache  # noqa: PLC0415
-    from apps.core.models import Empresa  # noqa: PLC0415
-    from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider  # noqa: PLC0415
-    from apps.cuentas_por_cobrar.services_aging import calcular_aging  # noqa: PLC0415
+        if not resumen:
+            empresa = Empresa.objects.get(pk=empresa_id)
+            provider = get_cartera_provider(empresa)
+            partidas = provider.get_partidas()
+            resumen = calcular_aging(partidas)
+            cache.set(cache_key, resumen, timeout=900)
 
-    cache_key = f"cxc:aging:{empresa_id}"
-    resumen = cache.get(cache_key)
-
-    if not resumen:
-        empresa = Empresa.objects.get(pk=empresa_id)
-        provider = get_cartera_provider(empresa)
-        partidas = provider.get_partidas()
-        resumen = calcular_aging(partidas)
-        cache.set(cache_key, resumen, timeout=900)
-
-    logger.info(
-        "omni_cxc_get_aging_summary | actor=%s | tenant=%s",
-        context["actor_id"],
-        context["tenant_id"],
-    )
-    return resumen
+        logger.info(
+            "omni_cxc_get_aging_summary | actor=%s | tenant=%s",
+            context["actor_id"],
+            context["tenant_id"],
+        )
+        return resumen
 
 
 def omni_cxc_get_tasa_cambio_hoy(
@@ -1029,43 +976,40 @@ def omni_cxc_get_tasa_cambio_hoy(
     Returns:
         dict con fecha, tipo_tasa, valor_tasa o error si no hay tasa hoy.
     """
-    context = _resolve_token(capability_token)
-    _require_scope(context, "finanzas:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "finanzas:read") as context:
+        from datetime import date  # noqa: PLC0415
+        from apps.finanzas.models import TasaCambio  # noqa: PLC0415
 
-    from datetime import date  # noqa: PLC0415
-    from apps.finanzas.models import TasaCambio  # noqa: PLC0415
-
-    tasa = (
-        TasaCambio.objects.filter(
-            fecha_tasa=date.today(),
-            tipo_tasa=tipo_tasa,
-            id_moneda_origen__codigo_iso="USD",
-            id_moneda_destino__codigo_iso="VES",
+        tasa = (
+            TasaCambio.objects.filter(
+                fecha_tasa=date.today(),
+                tipo_tasa=tipo_tasa,
+                id_moneda_origen__codigo_iso="USD",
+                id_moneda_destino__codigo_iso="VES",
+            )
+            .order_by("-fecha_creacion")
+            .first()
         )
-        .order_by("-fecha_creacion")
-        .first()
-    )
 
-    if tasa is None:
+        if tasa is None:
+            return {
+                "error": f"No hay tasa {tipo_tasa} disponible para hoy ({date.today()})",
+                "fecha": str(date.today()),
+                "tipo_tasa": tipo_tasa,
+                "valor_tasa": None,
+            }
+
+        logger.info(
+            "omni_cxc_get_tasa_cambio_hoy | actor=%s | tipo=%s | tasa=%s",
+            context["actor_id"],
+            tipo_tasa,
+            tasa.valor_tasa,
+        )
         return {
-            "error": f"No hay tasa {tipo_tasa} disponible para hoy ({date.today()})",
-            "fecha": str(date.today()),
-            "tipo_tasa": tipo_tasa,
-            "valor_tasa": None,
+            "fecha": str(tasa.fecha_tasa),
+            "tipo_tasa": tasa.tipo_tasa,
+            "valor_tasa": str(tasa.valor_tasa),
         }
-
-    logger.info(
-        "omni_cxc_get_tasa_cambio_hoy | actor=%s | tipo=%s | tasa=%s",
-        context["actor_id"],
-        tipo_tasa,
-        tasa.valor_tasa,
-    )
-    return {
-        "fecha": str(tasa.fecha_tasa),
-        "tipo_tasa": tasa.tipo_tasa,
-        "valor_tasa": str(tasa.valor_tasa),
-    }
 
 
 def omni_cxc_get_acuerdos_vigentes(
@@ -1081,44 +1025,38 @@ def omni_cxc_get_acuerdos_vigentes(
     Returns:
         Lista de acuerdos con cuotas pendientes.
     """
-    context = _resolve_token(capability_token)
-    _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "cxc:read", empresa_id=empresa_id) as context:
+        from apps.cxc.models import AcuerdoPago  # noqa: PLC0415
 
-    if empresa_id != context["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+        acuerdos = AcuerdoPago.objects.filter(
+            empresa_id=empresa_id,
+            cliente_id=cliente_id,
+            estado="vigente",
+            deleted_at__isnull=True,
+        ).prefetch_related("cuotas")
 
-    from apps.cxc.models import AcuerdoPago  # noqa: PLC0415
+        resultado = []
+        for a in acuerdos:
+            pendientes = a.cuotas.filter(estado__in=["pendiente", "vencido"]).count()
+            resultado.append(
+                {
+                    "id": str(a.pk),
+                    "monto_total": str(a.monto_total),
+                    "periodicidad": a.periodicidad,
+                    "estado": a.estado,
+                    "fecha_inicio": str(a.fecha_inicio),
+                    "cuotas_pendientes": pendientes,
+                    "moneda": a.moneda_codigo,
+                }
+            )
 
-    acuerdos = AcuerdoPago.objects.filter(
-        empresa_id=empresa_id,
-        cliente_id=cliente_id,
-        estado="vigente",
-        deleted_at__isnull=True,
-    ).prefetch_related("cuotas")
-
-    resultado = []
-    for a in acuerdos:
-        pendientes = a.cuotas.filter(estado__in=["pendiente", "vencido"]).count()
-        resultado.append(
-            {
-                "id": str(a.pk),
-                "monto_total": str(a.monto_total),
-                "periodicidad": a.periodicidad,
-                "estado": a.estado,
-                "fecha_inicio": str(a.fecha_inicio),
-                "cuotas_pendientes": pendientes,
-                "moneda": a.moneda_codigo,
-            }
+        logger.info(
+            "omni_cxc_get_acuerdos_vigentes | actor=%s | cliente=%s | count=%d",
+            context["actor_id"],
+            cliente_id,
+            len(resultado),
         )
-
-    logger.info(
-        "omni_cxc_get_acuerdos_vigentes | actor=%s | cliente=%s | count=%d",
-        context["actor_id"],
-        cliente_id,
-        len(resultado),
-    )
-    return resultado
+        return resultado
 
 
 def omni_buscar_contacto(
@@ -1144,67 +1082,61 @@ def omni_buscar_contacto(
     """
     from apps.core.models import Contacto, Empresa
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, "contactos:read")
-    assert context is not None  # noqa: S101 — checked by _require_scope
+    with mcp_tenant_context(capability_token, "contactos:read", empresa_id=empresa_id) as context:
+        try:
+            empresa = Empresa.objects.get(id_empresa=empresa_id)
+        except Empresa.DoesNotExist:
+            raise PermissionError(f"Empresa {empresa_id} no encontrada.")
 
-    if str(empresa_id) != context["empresa_id"]:
-        raise PermissionError("El token no pertenece a la empresa solicitada.")
+        qs = Contacto.objects.filter(id_empresa=empresa, activo=True)
 
-    try:
-        empresa = Empresa.objects.get(id_empresa=empresa_id)
-    except Empresa.DoesNotExist:
-        raise PermissionError(f"Empresa {empresa_id} no encontrada.")
+        if query:
+            qs = qs.filter(
+                models.Q(nombre__icontains=query)
+                | models.Q(apellido__icontains=query)
+                | models.Q(nombre_comercial__icontains=query)
+                | models.Q(rif__icontains=query)
+                | models.Q(cedula__icontains=query)
+                | models.Q(email__icontains=query)
+            )
 
-    qs = Contacto.objects.filter(id_empresa=empresa, activo=True)
+        if rol:
+            campo = f"es_{rol}"
+            if hasattr(Contacto, campo):
+                qs = qs.filter(**{campo: True})
 
-    if query:
-        qs = qs.filter(
-            models.Q(nombre__icontains=query)
-            | models.Q(apellido__icontains=query)
-            | models.Q(nombre_comercial__icontains=query)
-            | models.Q(rif__icontains=query)
-            | models.Q(cedula__icontains=query)
-            | models.Q(email__icontains=query)
+        resultados = []
+        for c in qs.select_related("lista_precio")[: min(limit, 100)]:
+            resultados.append(
+                {
+                    "id_contacto": str(c.id_contacto),
+                    "nombre": str(c),
+                    "tipo_persona": c.tipo_persona,
+                    "rif": c.rif,
+                    "cedula": c.cedula,
+                    "email": c.email,
+                    "telefono": c.telefono,
+                    "roles": {
+                        "cliente": c.es_cliente,
+                        "proveedor": c.es_proveedor,
+                        "empleado": c.es_empleado,
+                        "usuario": c.es_usuario,
+                    },
+                    "tipo_credito": c.tipo_credito,
+                    "limite_credito": str(c.limite_credito),
+                    "lista_precio": c.lista_precio.codigo if c.lista_precio else None,
+                }
+            )
+
+        logger.info(
+            "omni_buscar_contacto | actor=%s | tenant=%s | query=%r | rol=%s | resultados=%d",
+            context["actor_id"],
+            context["tenant_id"],
+            query,
+            rol,
+            len(resultados),
         )
-
-    if rol:
-        campo = f"es_{rol}"
-        if hasattr(Contacto, campo):
-            qs = qs.filter(**{campo: True})
-
-    resultados = []
-    for c in qs.select_related("lista_precio")[: min(limit, 100)]:
-        resultados.append(
-            {
-                "id_contacto": str(c.id_contacto),
-                "nombre": str(c),
-                "tipo_persona": c.tipo_persona,
-                "rif": c.rif,
-                "cedula": c.cedula,
-                "email": c.email,
-                "telefono": c.telefono,
-                "roles": {
-                    "cliente": c.es_cliente,
-                    "proveedor": c.es_proveedor,
-                    "empleado": c.es_empleado,
-                    "usuario": c.es_usuario,
-                },
-                "tipo_credito": c.tipo_credito,
-                "limite_credito": str(c.limite_credito),
-                "lista_precio": c.lista_precio.codigo if c.lista_precio else None,
-            }
-        )
-
-    logger.info(
-        "omni_buscar_contacto | actor=%s | tenant=%s | query=%r | rol=%s | resultados=%d",
-        context["actor_id"],
-        context["tenant_id"],
-        query,
-        rol,
-        len(resultados),
-    )
-    return resultados
+        return resultados
 
 
 # ── Registrar herramientas con MCP cuando el SDK esté disponible ─────────────

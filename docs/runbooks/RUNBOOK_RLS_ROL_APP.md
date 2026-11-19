@@ -91,9 +91,11 @@ Una vez completada la Fase 1 (`omni_app` activo en staging/prod y
      token inválido; `bypass=True` para `es_superusuario_omni`) y lo restaura al cerrar
      la respuesta (incluyendo streams SSE). `get_empresas_visible(user)` queda memoizada
      por ciclo de request (`ContextVar`, invalidada por signals de membresía).
-   - Los flujos HTTP pre-autenticación (`login_view`, `SignupView`) y `_resolve_token`
-     de MCP establecen su contexto scoped (`rls_tenant_context` / `rls_bypass`) sin
-     abrir ventanas globales al resto de la petición.
+   - Los flujos HTTP pre-autenticación (`login_view`, `SignupView`) y el servidor MCP
+     (`apps/core/mcp_server.py` + `apps/*/mcp.py`) validan `CapabilityToken` mediante un
+     `rls_bypass()` acotado en `_resolve_token` y ejecutan cada tool dentro de
+     `mcp_tenant_context` / `rls_tenant_context([context["empresa_id"]])` sin abrir
+     ventanas globales al resto de la petición ni dejar estado residual.
    - Todas las tareas Celery (`@shared_task`), el consumidor de eventos y los
      management commands aplican explícitamente `rls_tenant_context([empresa_id])` por
      tenant o `rls_bypass()` acotado para catálogos globales/búsqueda por PK antes de
