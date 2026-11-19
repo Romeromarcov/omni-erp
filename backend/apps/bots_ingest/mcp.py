@@ -7,6 +7,8 @@ de bots de la empresa y pausar/reanudar un bot dejando trazabilidad en ``BotBita
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 logger = logging.getLogger("omni.mcp.bots_ingest")
@@ -14,13 +16,12 @@ logger = logging.getLogger("omni.mcp.bots_ingest")
 _SCOPE = "bots"
 
 
-def _ctx(capability_token: str, scope: str) -> dict[str, Any]:
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # nosec B101
-    return context
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 def _empresa_activa(empresa_id: str):
@@ -39,15 +40,13 @@ def bots_estado_flota(capability_token: str, empresa_id: str) -> dict[str, Any]:
     """
     from apps.bots_ingest.services import control  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if str(empresa_id) != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-    empresa = _empresa_activa(ctx["empresa_id"])
-    logger.info("bots_estado_flota | actor=%s | tenant=%s", ctx["actor_id"], ctx["tenant_id"])
-    return {
-        "bots": control.listar_bots(empresa),
-        "destinos": control.resumen_destinos(empresa),
-    }
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        empresa = _empresa_activa(ctx["empresa_id"])
+        logger.info("bots_estado_flota | actor=%s | tenant=%s", ctx["actor_id"], ctx["tenant_id"])
+        return {
+            "bots": control.listar_bots(empresa),
+            "destinos": control.resumen_destinos(empresa),
+        }
 
 
 def bots_cambiar_habilitado(
@@ -63,27 +62,25 @@ def bots_cambiar_habilitado(
     """
     from apps.bots_ingest.services import control  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:write")
-    if str(empresa_id) != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-    empresa = _empresa_activa(ctx["empresa_id"])
-    cambios: dict[str, Any] = {"habilitado": bool(habilitado)}
-    if mensaje is not None:
-        cambios["mensaje"] = mensaje
-    detalle = control.actualizar_bot(
-        empresa=empresa,
-        codigo=codigo_bot,
-        cambios=cambios,
-        actor=ctx["actor_id"],
-    )
-    logger.info(
-        "bots_cambiar_habilitado | actor=%s | tenant=%s | bot=%s | habilitado=%s",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        codigo_bot,
-        habilitado,
-    )
-    return detalle
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        empresa = _empresa_activa(ctx["empresa_id"])
+        cambios: dict[str, Any] = {"habilitado": bool(habilitado)}
+        if mensaje is not None:
+            cambios["mensaje"] = mensaje
+        detalle = control.actualizar_bot(
+            empresa=empresa,
+            codigo=codigo_bot,
+            cambios=cambios,
+            actor=ctx["actor_id"],
+        )
+        logger.info(
+            "bots_cambiar_habilitado | actor=%s | tenant=%s | bot=%s | habilitado=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            codigo_bot,
+            habilitado,
+        )
+        return detalle
 
 
 MCP_TOOLS: list[dict[str, Any]] = [

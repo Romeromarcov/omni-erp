@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 
+from apps.core import rls
 from apps.core.models import Empresa
 from apps.finanzas.models import Moneda
 from apps.inventario.models import CategoriaProducto, Producto, UnidadMedida
@@ -9,6 +10,10 @@ class Command(BaseCommand):
     help = "Carga datos de prueba temporales para Empresas, Monedas y Productos"
 
     def handle(self, *args, **kwargs):
+        with rls.rls_bypass():
+            self._cargar_datos()
+
+    def _cargar_datos(self):
         # Monedas - Usar get_or_create para evitar duplicados
         usd, created = Moneda.objects.get_or_create(
             codigo_iso="USD", defaults={"nombre": "Dólar", "simbolo": "$", "decimales": 2, "activo": True}

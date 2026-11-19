@@ -6,6 +6,8 @@ Herramientas expuestas:
 """
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.fiscal")
@@ -13,13 +15,12 @@ logger = logging.getLogger("omni.mcp.fiscal")
 _SCOPE = "fiscal"
 
 
-def _ctx(capability_token: str, scope: str) -> dict:
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # noqa: S101
-    return context
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 def fiscal_parafiscales_pendientes(
@@ -44,41 +45,38 @@ def fiscal_parafiscales_pendientes(
     """
     from apps.fiscal.models import PagoContribucionParafiscal  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
-
-    limit = min(limit, 200)
-    pagos = (
-        PagoContribucionParafiscal.objects.filter(
-            id_empresa=empresa_id,
-            estado="pendiente",
-            activo=True,
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        limit = min(limit, 200)
+        pagos = (
+            PagoContribucionParafiscal.objects.filter(
+                id_empresa=empresa_id,
+                estado="pendiente",
+                activo=True,
+            )
+            .select_related("contribucion", "id_moneda")
+            .order_by("periodo_año", "periodo_mes", "fecha_creacion")[:limit]
         )
-        .select_related("contribucion", "id_moneda")
-        .order_by("periodo_año", "periodo_mes", "fecha_creacion")[:limit]
-    )
-    logger.info(
-        "fiscal_parafiscales_pendientes | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"],
-        ctx["tenant_id"],
-        len(pagos),
-    )
-    return [
-        {
-            "id_pago_parafiscal": str(p.id_pago_parafiscal),
-            "contribucion_codigo": p.contribucion.codigo,
-            "contribucion_nombre": p.contribucion.nombre,
-            "contribucion_tipo": p.contribucion.tipo,
-            "periodo": p.periodo,
-            "monto": p.monto,  # Decimal, no float (R-CODE-4)
-            "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
-            "referencia": p.referencia,
-            "proceso_nomina_id": str(p.id_proceso_nomina_id) if p.id_proceso_nomina_id else "",
-            "estado": p.estado,
-        }
-        for p in pagos
-    ]
+        logger.info(
+            "fiscal_parafiscales_pendientes | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(pagos),
+        )
+        return [
+            {
+                "id_pago_parafiscal": str(p.id_pago_parafiscal),
+                "contribucion_codigo": p.contribucion.codigo,
+                "contribucion_nombre": p.contribucion.nombre,
+                "contribucion_tipo": p.contribucion.tipo,
+                "periodo": p.periodo,
+                "monto": p.monto,  # Decimal, no float (R-CODE-4)
+                "moneda": p.id_moneda.codigo_iso if p.id_moneda else "",
+                "referencia": p.referencia,
+                "proceso_nomina_id": str(p.id_proceso_nomina_id) if p.id_proceso_nomina_id else "",
+                "estado": p.estado,
+            }
+            for p in pagos
+        ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -11,6 +11,7 @@ pisa una edición. Ver ``apps/finanzas/catalogo_monedas.py``.
 
 from django.core.management.base import BaseCommand
 
+from apps.core import rls
 from apps.finanzas.catalogo_monedas import sembrar_catalogo_monedas
 
 
@@ -18,7 +19,8 @@ class Command(BaseCommand):
     help = "Siembra el catálogo base de monedas (USD, VES, EUR, USDT). Idempotente."
 
     def handle(self, *args, **options):
-        r = sembrar_catalogo_monedas()
+        with rls.rls_bypass():
+            r = sembrar_catalogo_monedas()
         self.stdout.write(
             self.style.SUCCESS(
                 f"Catálogo de monedas: {len(r.creadas)} creada(s) {r.creadas}, "

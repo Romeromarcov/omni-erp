@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -211,6 +213,27 @@ class SoftDeleteModelMixin:
         return Response(serializer.data)
 
 
+# --- Cache por ciclo de request para get_empresas_visible ---
+_empresas_visible_cache: ContextVar[dict | None] = ContextVar("omni_empresas_visible_cache", default=None)
+
+
+def iniciar_cache_empresas_visible():
+    """Activa la memoización de ``get_empresas_visible`` durante un request."""
+    return _empresas_visible_cache.set({})
+
+
+def limpiar_cache_empresas_visible(token) -> None:
+    """Restaura el estado previo del ``ContextVar`` al finalizar el request."""
+    _empresas_visible_cache.reset(token)
+
+
+def invalidar_cache_empresas_visible() -> None:
+    """Invalida la memoización activa ante cambios de Empresa o membresía."""
+    cache = _empresas_visible_cache.get()
+    if cache is not None:
+        cache.clear()
+
+
 # --- Visibilidad recursiva ---
 def get_all_subsidiarias(empresa):
     ids = set()
@@ -233,11 +256,22 @@ def get_empresas_visible(user):
         return Empresa.objects.filter(id_empresa=cap_token.empresa_id, activo=True)
     if not getattr(user, "is_authenticated", False) or not hasattr(user, "empresas"):
         return Empresa.objects.none()
-    empresas = user.empresas.all()
-    ids = set(empresas.values_list("id_empresa", flat=True))
+
+    cache = _empresas_visible_cache.get()
+    user_pk = getattr(user, "pk", None)
+    cache_key = ("user", user_pk) if cache is not None and user_pk is not None else None
+    if cache_key is not None and cache_key in cache:
+        ids_cached = cache[cache_key]
+        return Empresa.objects.filter(id_empresa__in=ids_cached) if ids_cached else Empresa.objects.none()
+
+    empresas = list(user.empresas.all())
+    ids = {e.id_empresa for e in empresas}
     for empresa in empresas:
         ids.update(get_all_subsidiarias(empresa))
-    return Empresa.objects.filter(id_empresa__in=ids)
+    ids_tuple = tuple(ids)
+    if cache is not None and cache_key is not None:
+        cache[cache_key] = ids_tuple
+    return Empresa.objects.filter(id_empresa__in=ids_tuple) if ids_tuple else Empresa.objects.none()
 
 
 def get_empresa_primaria(user):

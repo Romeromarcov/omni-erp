@@ -110,9 +110,14 @@ def _process_message(msg_value: bytes) -> None:
         logger.debug("OmniEventConsumer: sin handler para '%s'", event_type)
         return
 
+    from apps.core import rls
+
+    empresa_id = envelope.get("empresa_id") or envelope.get("tenant_id")
     for handler in handlers:
         try:
-            handler(envelope)
+            ctx = rls.rls_tenant_context([empresa_id]) if empresa_id else rls.rls_bypass()
+            with ctx:
+                handler(envelope)
         except Exception as exc:
             logger.exception(
                 "OmniEventConsumer: handler '%s' lanzó excepción para evento '%s': %s",

@@ -32,19 +32,24 @@ def generar_sugerencias_diarias(self):
 
     Solo persiste predicciones nuevas; no duplica las del mismo día.
     """
+    from apps.core import rls
     from apps.core.models import Empresa
 
-    empresas = Empresa.objects.filter(activo=True) if hasattr(Empresa, "activo") else Empresa.objects.all()
+    with rls.rls_bypass():
+        empresas = list(Empresa.objects.filter(activo=True) if hasattr(Empresa, "activo") else Empresa.objects.all())
+
     total_sugerencias = 0
 
     for empresa in empresas:
-        total_sugerencias += _generar_cobranza(empresa)
-        total_sugerencias += _generar_reorden(empresa)
+        with rls.rls_tenant_context([empresa.pk]):
+            total_sugerencias += _generar_cobranza(empresa)
+            total_sugerencias += _generar_reorden(empresa)
 
+    total_empresas = len(empresas)
     logger.info(
-        "generar_sugerencias_diarias: %d sugerencias creadas para %d empresas.", total_sugerencias, empresas.count()
+        "generar_sugerencias_diarias: %d sugerencias creadas para %d empresas.", total_sugerencias, total_empresas
     )
-    return {"total_sugerencias": total_sugerencias, "empresas": empresas.count()}
+    return {"total_sugerencias": total_sugerencias, "empresas": total_empresas}
 
 
 def _generar_cobranza(empresa) -> int:

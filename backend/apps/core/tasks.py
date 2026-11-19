@@ -3,6 +3,9 @@ Tareas Celery del módulo core.
 
 Estas tareas sirven como smoke-test del bus de mensajes y como
 utilidades transversales reutilizables por otros módulos.
+
+Nota RLS: ``ping`` y ``log_evento`` no consultan ni escriben en base de datos,
+por lo que no abren contexto RLS (``rls_tenant_context`` / ``rls_bypass``).
 """
 
 import logging

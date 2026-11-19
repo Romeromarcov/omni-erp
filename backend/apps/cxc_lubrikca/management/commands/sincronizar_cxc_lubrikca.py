@@ -25,6 +25,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **opts):
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.cxc_lubrikca.services.sync import SyncError, sincronizar_empresa
         from django.core.exceptions import ValidationError
@@ -33,7 +34,8 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Sincronizando empresa {empresa.pk} desde Odoo…")
         try:
-            counts = sincronizar_empresa(empresa, desde=opts.get("desde"))
+            with rls.rls_tenant_context([empresa.pk]):
+                counts = sincronizar_empresa(empresa, desde=opts.get("desde"))
         except SyncError as exc:
             raise CommandError(str(exc)) from exc
 
