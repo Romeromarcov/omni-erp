@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-4/P2-1/P2-5 ✅, P1-7/P2-3/P2-4 parciales; P1-5/P1-6/P2-2/P2-6/P3 abiertos |
+| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1/P2-5 ✅, P1-7/P2-3/P2-4 parciales; P2-2/P2-6/P3 abiertos |
 | **Fecha**    | 2026-06-07 (estado actualizado 2026-11-17 contra `develop @ ff2bdb6`) |
 | **Esfuerzo** | ~3–4 semanas (repartibles en paralelo) |
 | **Owner**    | equipo-backend / equipo-agentes / devops |
@@ -54,13 +54,13 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | R4 | Rotación/revocación de JWT (blacklist al logout) | ✅ **P1-4 (#84)** — blacklist + rotación verificadas (`tests/api/test_s1_seguridad.py`) |
 | R5 | 2FA/MFA para admin/superusuario Omni | ❌ (**P3-1 abierto**) |
 | R6 | Política de contraseñas + bloqueo de cuenta (django-axes) | ✅ **P1-3 (#84)** — `django-axes 8.3.1` (10 intentos, 15 min) + `PASSWORD_MIN_LENGTH=12` |
-| R7 | Permisos a nivel objeto auditados (no solo filtro de queryset) | ⚠️ (**P1-6 abierto** — pasada IDOR crítica pendiente) |
+| R7 | Permisos a nivel objeto auditados (no solo filtro de queryset) | ✅ (**P1-6 cerrado** — auditoría ViewSets/`@action`/serializers y suite anti-IDOR por PK en `tests/tenant/test_idor_endpoints_criticos.py`) |
 | R8 | Backups automáticos + prueba de restore de PostgreSQL | ⚠️✅ **P1-7 (#96)** — `backup.yml` + `restore-test.yml` + `RUNBOOK_BACKUPS.md` listos; **falta secret/bucket del owner** |
 | R9 | Idempotencia en endpoints de pago/creación (claves idempotentes) | ✅ **P1-2 (#86)** (`apps/core/idempotency.py`, `ClaveIdempotencia`) |
 | R10 | Circuit breaker / timeouts en llamadas LLM | ✅ **P2-1 (#99)** (`LLM_TIMEOUT`, `LLM_MAX_RETRIES`, `LLM_CB_UMBRAL`/`VENTANA` en `llm_gateway.py`) |
 | R11 | Observabilidad de costos LLM (tokens por tenant) | 🟡 **P2-3 parcial (#99)** — log estructurado `llm_consumo` + hook `registrar_consumo_hook`; **falta persistencia dedicada** |
 | R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ (**P2-6 abierto**) |
-| R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ⚠️ (**P1-5 abierto** — revocar UPDATE/DELETE al rol de aplicación) |
+| R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ✅ (**P1-5 cerrado** — triggers `BEFORE UPDATE OR DELETE` en PostgreSQL (`0005`/`0025`), `REVOKE UPDATE, DELETE` en `configurar_rol_rls`, API ReadOnly y Django Admin append-only) |
 | R14 | CSP a nivel Django (`django-csp`, nonce por request) | ✅ **P2-5 (#106)** (`django-csp==4.0` enforce; `tests/api/test_p25_csp.py`) |
 
 ---
@@ -194,7 +194,7 @@ confirmar pedido y conversión nota de venta → factura. Tests en
 
 **Estado — `🟢 HECHO` (PR #84):** `rest_framework_simplejwt.token_blacklist` + rotación activas (access TTL 15 min), verificadas con test de flujo real logout vía cookie httpOnly → reuso del refresh falla con 401 (`tests/api/test_s1_seguridad.py`).
 
-### P1-5 · Auditoría inmutable (R13) — `⚠️ verificar`
+### P1-5 · Auditoría inmutable (R13) — `✅`
 **Por qué:** `RegistroAuditoria` solo sirve si no puede ser editado/borrado por la propia app.
 
 **Tareas:** revocar UPDATE/DELETE sobre la tabla al rol de aplicación (regla append-only a
@@ -202,7 +202,9 @@ nivel BD); revisar que ningún ViewSet exponga edición.
 **DoD:** intento de UPDATE/DELETE sobre auditoría falla a nivel BD; test.
 **Esfuerzo:** ~0.5 día. **Owner:** equipo-backend.
 
-### P1-6 · Permisos a nivel objeto auditados (R7) — `⚠️`
+**Estado — `🟢 HECHO`:** Migraciones reversibles en PostgreSQL con trigger `BEFORE UPDATE OR DELETE` (`ERRCODE '42501'`) en `auditoria_logauditoria` (`apps/auditoria/migrations/0005_inmutabilidad_logauditoria.py`) y `registro_auditoria` (`apps/core/migrations/0025_inmutabilidad_registro_auditoria.py`); `REVOKE UPDATE, DELETE` para el rol runtime en `configurar_rol_rls.py`; `LogAuditoriaViewSet` convertido a `ReadOnlyModelViewSet`; `LogAuditoriaAdmin` y `RegistroAuditoriaAdmin` de solo lectura (`add/change/delete = False`, todos los campos `readonly_fields`). Tests en `tests/tenant/test_auditoria_inmutabilidad.py` y `tests/tenant/test_rls_rol_app.py`.
+
+### P1-6 · Permisos a nivel objeto auditados (R7) — `✅`
 **Por qué:** el filtro de queryset oculta, pero hay que confirmar que no haya IDOR en
 `retrieve`/`update`/`delete` por PK directa.
 
@@ -210,6 +212,8 @@ nivel BD); revisar que ningún ViewSet exponga edición.
 cruzado por PK; complementa P0-1.
 **DoD:** test IDOR cross-tenant verde en endpoints críticos.
 **Esfuerzo:** ~1.5 días. **Owner:** equipo-backend.
+
+**Estado — `🟢 HECHO`:** Auditoría sistemática de ViewSets, `@action(detail=True/False)` y serializers en los módulos críticos del ERP, corrigiendo brechas IDOR/objeto en `DatafonoViewSet`, `DepositoDatafonoViewSet`, `AjusteCajaBancoViewSet`, `TasaCambioOficialBCVView`, catálogos híbridos de finanzas (`_CatalogoTenantGuardMixin` en `MonedaViewSet`/`TasaCambioViewSet`/`MetodoPagoViewSet` + scoping con `get_empresas_visible`), `SucursalSerializer`, `PermisosViewSet` (`activar`/`desactivar`), `CargoViewSet`, `ResumenAsistenciaDiarioViewSet` e `InteraccionTicketViewSet`. Suite anti-IDOR por PK directo en `tests/tenant/test_idor_endpoints_criticos.py`.
 
 ### P1-7 · Backups + prueba de restore de PostgreSQL (R8) — `⚠️✅` (PR #96, falta secret owner)
 **Por qué:** no asumir que Railway lo cubre; un backup sin restore probado no es un backup.

@@ -78,6 +78,18 @@ class SucursalSerializer(BaseModelSerializer):
             "documento_json",
         ]
 
+    def validate_id_empresa(self, value):
+        from .models import Empresa
+        from .viewsets import get_empresas_visible
+
+        if not Empresa.objects.filter(id_empresa=value).exists():
+            raise serializers.ValidationError("La empresa indicada no existe.")
+        request = self.context.get("request")
+        if request is not None and getattr(request, "user", None) and request.user.is_authenticated:
+            if not get_empresas_visible(request.user).filter(id_empresa=value).exists():
+                raise serializers.ValidationError("No tiene permiso sobre la empresa indicada.")
+        return value
+
     def create(self, validated_data):
         # Extraer el UUID de empresa correctamente
         empresa_id = validated_data.pop("id_empresa", None)

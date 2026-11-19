@@ -514,6 +514,16 @@ class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet)
         self._assert_superuser()
         super().perform_destroy(instance)
 
+    @action(detail=True, methods=["post"])
+    def activar(self, request, pk=None):
+        self._assert_superuser()
+        return super().activar(request, pk=pk)
+
+    @action(detail=True, methods=["post"])
+    def desactivar(self, request, pk=None):
+        self._assert_superuser()
+        return super().desactivar(request, pk=pk)
+
 
 # ── ConfiguracionFlujoDocumentosViewSet ───────────────────────────────────────
 

@@ -219,13 +219,24 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         if not fecha:
             fecha = timezone.localdate()
 
-        # Si se especifica empleado, procesar solo ese empleado
+        # Si se especifica empleado, procesar solo ese empleado (validando alcance tenant)
         if empleado_id:
+            from apps.rrhh.models import Empleado
+
+            try:
+                existe_empleado = Empleado.objects.filter(pk=empleado_id, empresa__in=_empresas(request)).exists()
+            except (ValueError, TypeError):
+                existe_empleado = False
+            if not existe_empleado:
+                return Response({"error": "Empleado no encontrado."}, status=status.HTTP_404_NOT_FOUND)
             empleados_ids = [empleado_id]
         else:
-            # Obtener todos los empleados que tienen registros de asistencia en la fecha
+            # Obtener todos los empleados visibles de la empresa que tienen registros de asistencia en la fecha
             empleados_ids = (
-                RegistroAsistencia.objects.filter(fecha_hora_marcado__date=fecha)
+                RegistroAsistencia.objects.filter(
+                    fecha_hora_marcado__date=fecha,
+                    id_empleado__empresa__in=_empresas(request),
+                )
                 .values_list("id_empleado_id", flat=True)
                 .distinct()
             )
