@@ -68,21 +68,61 @@ cualquier momento (paso 6).
    inocuos con el rol dueño + default de conexión.
 
 7. **Producción (owner):** repetir 2–5 sobre los servicios de prod tras validar
-   staging. `RLS_ENABLED=True` (enforcement por request del middleware) es un
-   paso separado y posterior, también gobernado por CTF-012.
+   staging.
 
-## Qué NO hace este runbook
+## Fase 2 — Activar `RLS_ENABLED=True` (endurecimiento fail-closed, Plan 06 · 2.1)
 
-- No activa `RLS_ENABLED` (enforcement por request): eso se decide después de
-  validar el rol en staging/prod.
-- No cambia el default `bypass='on'` por conexión (Celery/comandos siguen
-  viendo todo); endurecerlo es el siguiente paso del CTF-012 una vez el rol
-  esté en uso.
-- No toca el rol dueño ni los datos.
+Una vez completada la Fase 1 (`omni_app` activo en staging/prod y
+`MIGRATIONS_DATABASE_URL` configurada con el rol dueño):
+
+1. **Verificar prerrequisitos**:
+   - Runtime (`web`, `worker`, `beat`) conectado como `omni_app` (`current_user = omni_app`).
+   - Web posee `MIGRATIONS_DATABASE_URL` con credenciales del rol dueño (`migrate` y
+     `configurar_rol_rls` corren con él; además los signals `pre_migrate`/`post_migrate`
+     envuelven las migraciones en `rls_bypass()` cuando `RLS_ENABLED=True`).
+
+2. **Activar `RLS_ENABLED=True`** en las variables de entorno de `web`, `worker` y `beat`:
+
+   - Conexiones nuevas (`connection_created`) y `apply_system_default()` arrancan
+     **fail-closed** (`omni.rls_bypass='off'`, `omni.rls_empresas=''`). Toda consulta
+     directa sobre tablas tenant fuera de un contexto explícito devuelve **0 filas**.
+   - `RLSContextMiddleware` resuelve usuario/visibilidad brevemente dentro de
+     `rls_bypass()`, aplica luego el contexto del tenant (fail-closed para anónimo o
+     token inválido; `bypass=True` para `es_superusuario_omni`) y lo restaura al cerrar
+     la respuesta (incluyendo streams SSE). `get_empresas_visible(user)` queda memoizada
+     por ciclo de request (`ContextVar`, invalidada por signals de membresía).
+   - Los flujos HTTP pre-autenticación (`login_view`, `SignupView`) y `_resolve_token`
+     de MCP establecen su contexto scoped (`rls_tenant_context` / `rls_bypass`) sin
+     abrir ventanas globales al resto de la petición.
+   - Todas las tareas Celery (`@shared_task`), el consumidor de eventos y los
+     management commands aplican explícitamente `rls_tenant_context([empresa_id])` por
+     tenant o `rls_bypass()` acotado para catálogos globales/búsqueda por PK antes de
+     aislar el tenant (`rls_bypass()` y `rls_tenant_context()` preservan y restauran el
+     GUC previo para soportar anidamiento seguro).
+
+3. **Validar tras el deploy** (`RLS_ENABLED=True`):
+   - `python manage.py shell -c "from apps.core import rls; from apps.crm.models import Cliente; rls.apply_system_default(); print(Cliente.objects.count())"` → debe imprimir `0`.
+   - Login (`POST /api/auth/login/`), endpoints autenticados de módulo tenant, una tarea
+     Celery periódica (`tareas.ejecutar_ciclo_todos`) y un comando (`seed_catalogo_monedas`)
+     deben completar en verde.
+
+4. **Rollback de emergencia**: fijar `RLS_ENABLED=False` en `web`, `worker` y `beat` y
+   redeploy. Devuelve el default de conexión a `bypass='on'` preservando el rol `omni_app`
+   y todas las políticas RLS en BD sin migraciones ni pérdida de datos.
+
+## Qué hace y qué NO hace este runbook
+
+- **No** elimina el rol dueño para migraciones (`MIGRATIONS_DATABASE_URL` sigue siendo
+  necesaria para `migrate` y `ALTER TABLE` / políticas RLS).
+- Con `RLS_ENABLED=False` (paso 1–7 inicial), `bypass='on'` mantiene compatibilidad total
+  durante la transición al rol `omni_app`. Activar `RLS_ENABLED=True` cierra el modo
+  fail-closed en PostgreSQL para web, Celery workers y comandos CLI.
 
 ## Referencias
 
 - `docs/ctf/CTF-012.md` (condición de cierre y estado).
+- `backend/apps/core/rls.py` (context managers `rls_bypass` / `rls_tenant_context`, GUCs, registro).
+- `backend/apps/core/signals.py` (`connection_created`, `pre_migrate`/`post_migrate`, invalidación cache).
+- `backend/apps/core/middleware.py` (`RLSContextMiddleware`).
 - `backend/apps/core/management/commands/configurar_rol_rls.py`.
-- `backend/apps/core/rls.py` (políticas, registro de tablas, exclusiones).
 - `backend/entrypoint.sh` (soporte `MIGRATIONS_DATABASE_URL`).

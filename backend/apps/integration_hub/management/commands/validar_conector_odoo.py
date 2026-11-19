@@ -26,25 +26,27 @@ class Command(BaseCommand):
         parser.add_argument("--limite", type=int, default=5, help="Máx. de partidas a mostrar.")
 
     def handle(self, *args, **opts):
+        from apps.core import rls
         from apps.integration_hub.connectors.registry import registry
         from apps.integration_hub.models import ConectorInstancia
 
         instancia = self._resolver_instancia(ConectorInstancia, opts)
 
         self.stdout.write(f"Instancia: {instancia.nombre} (empresa={instancia.id_empresa_id})")
-        connector = registry.get_connector(instancia)
+        with rls.rls_tenant_context([instancia.id_empresa_id]):
+            connector = registry.get_connector(instancia)
 
-        # 1) Conectividad
-        resultado = connector.test_connection()
-        if not resultado.success:
-            raise CommandError(f"Conexión FALLÓ: {resultado.message}")
-        self.stdout.write(self.style.SUCCESS(f"✔ Conexión OK — {resultado.message}"))
+            # 1) Conectividad
+            resultado = connector.test_connection()
+            if not resultado.success:
+                raise CommandError(f"Conexión FALLÓ: {resultado.message}")
+            self.stdout.write(self.style.SUCCESS(f"✔ Conexión OK — {resultado.message}"))
 
-        # 2) Muestra de cartera vencida
-        try:
-            partidas = connector.pull_cartera_vencida(solo_vencidas=True)
-        except Exception as exc:  # noqa: BLE001 — herramienta de diagnóstico
-            raise CommandError(f"pull_cartera_vencida falló: {type(exc).__name__}: {exc}")
+            # 2) Muestra de cartera vencida
+            try:
+                partidas = connector.pull_cartera_vencida(solo_vencidas=True)
+            except Exception as exc:  # noqa: BLE001 — herramienta de diagnóstico
+                raise CommandError(f"pull_cartera_vencida falló: {type(exc).__name__}: {exc}")
 
         total = len(partidas)
         self.stdout.write(self.style.SUCCESS(f"✔ Cartera vencida: {total} partidas."))
@@ -61,9 +63,14 @@ class Command(BaseCommand):
             )
 
     def _resolver_instancia(self, ConectorInstancia, opts):
+        from apps.core import rls
+
         if opts.get("instancia"):
             try:
-                return ConectorInstancia.objects.select_related("id_proveedor", "id_empresa").get(pk=opts["instancia"])
+                with rls.rls_bypass():
+                    return ConectorInstancia.objects.select_related("id_proveedor", "id_empresa").get(
+                        pk=opts["instancia"]
+                    )
             except ConectorInstancia.DoesNotExist:
                 raise CommandError(f"No existe instancia con id '{opts['instancia']}'.")
 
@@ -80,12 +87,13 @@ class Command(BaseCommand):
             if empresa is None:
                 raise CommandError(f"No se encontró empresa con id o RIF '{opts['empresa']}'.")
 
-        instancia = (
-            ConectorInstancia.objects.select_related("id_proveedor", "id_empresa")
-            .filter(id_empresa=empresa, id_proveedor__codigo="odoo", activo=True)
-            .order_by("-fecha_actualizacion")
-            .first()
-        )
+        with rls.rls_tenant_context([empresa.pk]):
+            instancia = (
+                ConectorInstancia.objects.select_related("id_proveedor", "id_empresa")
+                .filter(id_empresa=empresa, id_proveedor__codigo="odoo", activo=True)
+                .order_by("-fecha_actualizacion")
+                .first()
+            )
         if instancia is None:
             raise CommandError(
                 f"La empresa {empresa.pk} no tiene un conector Odoo activo. " "Córre primero configurar_conector_odoo."

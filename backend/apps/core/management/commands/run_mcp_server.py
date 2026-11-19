@@ -10,6 +10,9 @@ El servidor stdio es el modo estándar para MCP: lee requests de stdin
 y escribe responses en stdout. Compatible con Claude Desktop y otros clientes MCP.
 
 El servidor SSE expone un endpoint HTTP para clientes que no soportan stdio.
+
+Nota RLS: este comando arranca el transporte MCP; el aislamiento por tenant se
+aplica en ``apps.core.mcp_server`` (``rls_bypass`` al resolver ``CapabilityToken``).
 """
 
 import sys

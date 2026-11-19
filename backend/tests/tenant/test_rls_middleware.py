@@ -143,19 +143,20 @@ def test_resuelve_empresa_por_capability_token_y_fail_closed_si_invalido(sucursa
     from apps.core.models import CapabilityToken
 
     rls.apply_system_default()
-    tok = CapabilityToken.objects.create(
-        empresa=empresa_a,
-        nombre="Bot RLS",
-        scopes=["bots:heartbeat"],
-        creado_por=user_a,
-    )
-    tok_exp = CapabilityToken.objects.create(
-        empresa=empresa_a,
-        nombre="Bot Expirado",
-        scopes=["bots:heartbeat"],
-        expires_at=timezone.now() - timedelta(minutes=1),
-        creado_por=user_a,
-    )
+    with rls.rls_bypass():
+        tok = CapabilityToken.objects.create(
+            empresa=empresa_a,
+            nombre="Bot RLS",
+            scopes=["bots:heartbeat"],
+            creado_por=user_a,
+        )
+        tok_exp = CapabilityToken.objects.create(
+            empresa=empresa_a,
+            nombre="Bot Expirado",
+            scopes=["bots:heartbeat"],
+            expires_at=timezone.now() - timedelta(minutes=1),
+            creado_por=user_a,
+        )
 
     captured = {}
 

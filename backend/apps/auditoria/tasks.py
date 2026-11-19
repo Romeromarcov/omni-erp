@@ -57,24 +57,26 @@ def registrar_evento(
         dict con el id del log creado y un resumen de los parámetros.
     """
     from apps.auditoria.models import LogAuditoria
+    from apps.core import rls
     from apps.core.models import Empresa, Usuarios
 
     try:
-        empresa = Empresa.objects.get(pk=empresa_id)
-        usuario = Usuarios.objects.get(pk=usuario_id) if usuario_id else None
+        with rls.rls_tenant_context([empresa_id]):
+            empresa = Empresa.objects.get(pk=empresa_id)
+            usuario = Usuarios.objects.get(pk=usuario_id) if usuario_id else None
 
-        log = LogAuditoria.objects.create(
-            id_empresa=empresa,
-            id_usuario=usuario,
-            modulo=modulo,
-            tipo_accion=tipo_accion,
-            descripcion_accion=descripcion,
-            id_entidad_afectada=entidad_id,
-            nombre_entidad_afectada=nombre_entidad,
-            cambios_json=cambios,
-            direccion_ip=ip,
-            navegador_info=user_agent,
-        )
+            log = LogAuditoria.objects.create(
+                id_empresa=empresa,
+                id_usuario=usuario,
+                modulo=modulo,
+                tipo_accion=tipo_accion,
+                descripcion_accion=descripcion,
+                id_entidad_afectada=entidad_id,
+                nombre_entidad_afectada=nombre_entidad,
+                cambios_json=cambios,
+                direccion_ip=ip,
+                navegador_info=user_agent,
+            )
 
         logger.info(
             "auditoria.registrar_evento OK — empresa=%s módulo=%s accion=%s log_id=%s",

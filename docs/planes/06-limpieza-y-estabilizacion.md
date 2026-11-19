@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — Fase 0 (`0.1`–`0.4`) y Fase 1 (`1.1`–`1.3`) cerradas; Fase 3 (`3.2`–`3.6`) y Fase 4 (`4.1`–`4.3`) cerradas |
+| **Estado**   | EN CURSO — Fase 0 (`0.1`–`0.4`) y Fase 1 (`1.1`–`1.3`) cerradas; Fase 2 (`2.1` cerrada, pendientes `2.2`–`2.3` 👤); Fase 3 (`3.2`–`3.6`) y Fase 4 (`4.1`–`4.3`) cerradas |
 | **Fecha**    | 2026-11-14                                |
 | **Esfuerzo** | ~3–4 semanas, repartibles en PRs pequeños (R-PROC-2) |
 | **Owner**    | equipo-backend / devops (acciones del propietario marcadas con 👤) |
@@ -83,7 +83,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho. 👤 = requiere acción de
 
 | # | Tarea | Aceptación |
 |---|-------|------------|
-| 2.1 | ⬜ Runbook + código: rol `omni_app` (sin `SUPERUSER`/`BYPASSRLS`, no dueño), migraciones con el dueño, default de conexión `bypass='off'` con `rls_bypass()` explícito en tareas Celery y comandos | Tests: tarea/comando sin contexto no ve filas de otra empresa |
+| 2.1 | ✅ Runbook + código: rol `omni_app` (sin `SUPERUSER`/`BYPASSRLS`, no dueño), migraciones con el dueño, default de conexión `bypass='off'` (`RLS_ENABLED=True`) + context managers anidables `rls_tenant_context()`/`rls_bypass()`, login/signup, tareas Celery y comandos con contexto RLS explícito | Tests: fail-closed real, login/middleware, tareas/comandos sin contexto no ven filas de otra empresa (`test_rls_fail_closed_tasks.py`) |
 | 2.2 | 👤 Crear el rol y cambiar `DATABASE_URL` en staging (secretos) | Consulta sin contexto contra staging devuelve 0 filas |
 | 2.3 | 👤 Repetir en producción tras validar staging | Suite RLS verde con `RLS_ENABLED=True` |
 

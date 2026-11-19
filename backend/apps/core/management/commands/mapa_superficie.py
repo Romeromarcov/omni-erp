@@ -9,6 +9,9 @@ docs/audit/ que sirven de checklist de cobertura de auditoría:
 Uso:
     python manage.py mapa_superficie            # escribe los .md
     python manage.py mapa_superficie --check     # falla si están desactualizados (CI)
+
+Nota RLS: solo realiza introspección en memoria sobre el resolver URL y los
+modelos Django; no ejecuta consultas en BD (ni usa ``rls_bypass``/``rls_tenant_context``).
 """
 
 import io

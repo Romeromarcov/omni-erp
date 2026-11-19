@@ -61,36 +61,39 @@ class Command(BaseCommand):
         parser.add_argument("--test", action="store_true", help="Prueba la conexión tras crear.")
 
     def handle(self, *args, **opts):
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.integration_hub.models import ConectorInstancia, ConectorProveedor
 
         empresa = self._resolver_empresa(Empresa, opts["empresa"])
         service_account = self._leer_service_account(opts["service_account"])
-        proveedor = self._proveedor_sheets(ConectorProveedor)
-        origen = self._resolver_origen(ConectorInstancia, empresa, opts["source"])
         entidades = [e.strip() for e in opts["entidades"].split(",") if e.strip()]
 
-        configuracion = {
-            "service_account": service_account,
-            "source_instancia_id": str(origen.pk),
-            "drive_folder_id": opts["folder"],
-            "spreadsheet_id": opts["spreadsheet_id"],
-            "titulo": opts["titulo"] or f"Omni Export - {empresa.nombre_legal}",
-        }
+        with rls.rls_tenant_context([empresa.pk]):
+            proveedor = self._proveedor_sheets(ConectorProveedor)
+            origen = self._resolver_origen(ConectorInstancia, empresa, opts["source"])
 
-        with transaction.atomic():
-            instancia, creada = ConectorInstancia.objects.update_or_create(
-                id_empresa=empresa,
-                nombre=opts["nombre"],
-                defaults={
-                    "id_proveedor": proveedor,
-                    "configuracion": configuracion,
-                    "estado": "configurando",
-                    "intervalo_sync_minutos": opts["intervalo"],
-                    "entidades_activas": entidades,
-                    "activo": True,
-                },
-            )
+            configuracion = {
+                "service_account": service_account,
+                "source_instancia_id": str(origen.pk),
+                "drive_folder_id": opts["folder"],
+                "spreadsheet_id": opts["spreadsheet_id"],
+                "titulo": opts["titulo"] or f"Omni Export - {empresa.nombre_legal}",
+            }
+
+            with transaction.atomic():
+                instancia, creada = ConectorInstancia.objects.update_or_create(
+                    id_empresa=empresa,
+                    nombre=opts["nombre"],
+                    defaults={
+                        "id_proveedor": proveedor,
+                        "configuracion": configuracion,
+                        "estado": "configurando",
+                        "intervalo_sync_minutos": opts["intervalo"],
+                        "entidades_activas": entidades,
+                        "activo": True,
+                    },
+                )
 
         verbo = "creado" if creada else "actualizado"
         # NUNCA imprimir configuracion (contiene la clave del service account).
@@ -102,7 +105,8 @@ class Command(BaseCommand):
         )
 
         if opts["test"]:
-            self._probar(instancia)
+            with rls.rls_tenant_context([empresa.pk]):
+                self._probar(instancia)
 
     def _resolver_empresa(self, Empresa, valor):
         from django.core.exceptions import ValidationError

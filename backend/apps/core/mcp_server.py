@@ -97,6 +97,7 @@ def _resolve_token(capability_token: str) -> Optional[Dict[str, Any]]:
     Returns:
         dict con {tenant_id, empresa_id, actor_id, scopes} o None si inválido.
     """
+    from apps.core import rls  # noqa: PLC0415
     from apps.core.models import CapabilityToken  # noqa: PLC0415
 
     try:
@@ -106,10 +107,11 @@ def _resolve_token(capability_token: str) -> Optional[Dict[str, Any]]:
         return None
 
     try:
-        token_obj = CapabilityToken.objects.select_related("empresa").get(
-            token=capability_token,
-            activo=True,
-        )
+        with rls.rls_bypass():
+            token_obj = CapabilityToken.objects.select_related("empresa").get(
+                token=capability_token,
+                activo=True,
+            )
     except CapabilityToken.DoesNotExist:
         return None
 

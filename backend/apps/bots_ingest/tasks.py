@@ -18,12 +18,16 @@ logger = logging.getLogger(__name__)
     retry_kwargs={"max_retries": 4},
 )
 def sincronizar_odoo_task(ingesta_id: str) -> None:
+    from apps.core import rls
+
     from .models import IngestaBot
     from .services import odoo_push
 
-    ing = IngestaBot.objects.select_related("bot_usuario__usuario", "id_empresa").filter(pk=ingesta_id).first()
+    with rls.rls_bypass():
+        ing = IngestaBot.objects.select_related("bot_usuario__usuario", "id_empresa").filter(pk=ingesta_id).first()
     if ing is not None:
-        odoo_push.sincronizar(ing)
+        with rls.rls_tenant_context([ing.id_empresa_id]):
+            odoo_push.sincronizar(ing)
 
 
 def encolar_sync(ingesta_id) -> None:

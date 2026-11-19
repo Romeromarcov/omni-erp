@@ -94,6 +94,7 @@ def limpiar_archivos_huerfanos(self, empresa_id: str) -> dict:
 
     from django.conf import settings
 
+    from apps.core import rls
     from apps.core.storage import StorageService, _get_s3_client
     from apps.gestion_documental.models import Documento
 
@@ -110,7 +111,10 @@ def limpiar_archivos_huerfanos(self, empresa_id: str) -> dict:
     paginator = client.get_paginator("list_objects_v2")
     pages = paginator.paginate(Bucket=storage.bucket, Prefix=prefix)
 
-    rutas_en_db = set(Documento.objects.filter(id_empresa_id=empresa_id).values_list("ruta_almacenamiento", flat=True))
+    with rls.rls_tenant_context([empresa_id]):
+        rutas_en_db = set(
+            Documento.objects.filter(id_empresa_id=empresa_id).values_list("ruta_almacenamiento", flat=True)
+        )
 
     analizado = 0
     eliminado = 0

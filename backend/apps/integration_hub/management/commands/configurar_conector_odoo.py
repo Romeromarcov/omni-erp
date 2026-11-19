@@ -49,6 +49,7 @@ class Command(BaseCommand):
         parser.add_argument("--test", action="store_true", help="Prueba la conexión tras crear.")
 
     def handle(self, *args, **opts):
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.integration_hub.models import ConectorInstancia, ConectorProveedor
 
@@ -60,26 +61,27 @@ class Command(BaseCommand):
             )
 
         empresa = self._resolver_empresa(Empresa, opts["empresa"])
-        proveedor = self._proveedor_odoo(ConectorProveedor)
         entidades = [e.strip() for e in opts["entidades"].split(",") if e.strip()]
 
         configuracion = {"host": host, "db": opts["db"], "user": user, "api_key": api_key}
 
-        with transaction.atomic():
-            instancia, creada = ConectorInstancia.objects.update_or_create(
-                id_empresa=empresa,
-                nombre=opts["nombre"],
-                defaults={
-                    "id_proveedor": proveedor,
-                    "configuracion": configuracion,
-                    "estado": "configurando",
-                    "intervalo_sync_minutos": opts["intervalo"],
-                    "entidades_activas": entidades,
-                    "activo": True,
-                },
-            )
-            if opts["datasource_odoo"]:
-                self._set_datasource_odoo(empresa)
+        with rls.rls_tenant_context([empresa.pk]):
+            proveedor = self._proveedor_odoo(ConectorProveedor)
+            with transaction.atomic():
+                instancia, creada = ConectorInstancia.objects.update_or_create(
+                    id_empresa=empresa,
+                    nombre=opts["nombre"],
+                    defaults={
+                        "id_proveedor": proveedor,
+                        "configuracion": configuracion,
+                        "estado": "configurando",
+                        "intervalo_sync_minutos": opts["intervalo"],
+                        "entidades_activas": entidades,
+                        "activo": True,
+                    },
+                )
+                if opts["datasource_odoo"]:
+                    self._set_datasource_odoo(empresa)
 
         verbo = "creado" if creada else "actualizado"
         # NUNCA imprimir configuracion (contiene api_key).
@@ -91,7 +93,8 @@ class Command(BaseCommand):
         )
 
         if opts["test"]:
-            self._probar(instancia)
+            with rls.rls_tenant_context([empresa.pk]):
+                self._probar(instancia)
 
     def _resolver_empresa(self, Empresa, valor):
         from django.core.exceptions import ValidationError

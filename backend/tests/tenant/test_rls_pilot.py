@@ -89,8 +89,8 @@ def test_rls_bypass_context_manager(sucursales):
     assert Sucursal.objects.count() == 0
     with rls.rls_bypass():
         assert Sucursal.objects.count() == 2
-    # Al salir vuelve al default de sistema (bypass on).
-    assert Sucursal.objects.count() == 2
+    # Al salir restaura el estado GUC previo (bypass off).
+    assert Sucursal.objects.count() == 0
 
 
 # --- SQL builders -----------------------------------------------------------
