@@ -277,9 +277,11 @@ class InteraccionTicketViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         if not ticket_id or not contenido:
             return Response({"error": "ticket_id y contenido son requeridos"}, status=status.HTTP_400_BAD_REQUEST)
 
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         try:
-            ticket = TicketSoporte.objects.get(pk=ticket_id)
-        except TicketSoporte.DoesNotExist:
+            ticket = TicketSoporte.objects.get(pk=ticket_id, id_empresa__in=_empresas(request))
+        except (TicketSoporte.DoesNotExist, DjangoValidationError, ValueError, TypeError):
             return Response({"error": "Ticket no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
         interaccion = InteraccionTicket.objects.create(

@@ -116,6 +116,9 @@ class Command(BaseCommand):
                     sql.SQL(
                         "ALTER DEFAULT PRIVILEGES IN SCHEMA public " "GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {}"
                     ).format(ident),
+                    sql.SQL(
+                        "REVOKE UPDATE, DELETE ON TABLE public.auditoria_logauditoria, public.registro_auditoria FROM {}"
+                    ).format(ident),
                 ]
                 for stmt in grants:
                     cursor.execute(stmt.as_string(raw))

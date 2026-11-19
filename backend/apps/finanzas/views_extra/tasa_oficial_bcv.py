@@ -34,13 +34,25 @@ class TasaCambioOficialBCVView(APIView):
         id_empresa = request.GET.get("id_empresa")
         id_moneda_transaccion = request.GET.get("id_moneda_transaccion")
 
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from django.db.models import Q
+
+        from apps.core.viewsets import get_empresas_visible
+
+        if getattr(request.user, "es_superusuario_omni", False):
+            moneda_qs = Moneda.objects.all()
+        else:
+            moneda_qs = Moneda.objects.filter(
+                Q(es_generica=True) | Q(es_publica=True) | Q(empresa__in=get_empresas_visible(request.user))
+            )
+
         # Si no se especifica moneda_origen y moneda_destino, usar lógica de empresa y moneda de transacción
         if not moneda_origen or not moneda_destino:
             from apps.core.models import Empresa  # Ajusta el import si es necesario
 
             try:
-                empresa = Empresa.objects.get(id_empresa=id_empresa)
-            except (Empresa.DoesNotExist, ValueError, TypeError):
+                empresa = get_empresas_visible(request.user).get(id_empresa=id_empresa)
+            except (Empresa.DoesNotExist, DjangoValidationError, ValueError, TypeError):
                 return Response({"detail": "Empresa o moneda base no encontrada."}, status=404)
             # FIX: el campo del modelo es `id_moneda_base` (no `moneda_base`);
             # el AttributeError silenciado hacía que esta rama devolviera 404 siempre.
@@ -48,15 +60,15 @@ class TasaCambioOficialBCVView(APIView):
             if moneda_base is None:
                 return Response({"detail": "Empresa o moneda base no encontrada."}, status=404)
             try:
-                moneda_transaccion = Moneda.objects.get(id_moneda=id_moneda_transaccion)
-            except Moneda.DoesNotExist:
+                moneda_transaccion = moneda_qs.get(id_moneda=id_moneda_transaccion)
+            except (Moneda.DoesNotExist, DjangoValidationError, ValueError, TypeError):
                 return Response({"detail": "Moneda de transacción no encontrada."}, status=404)
             origen = moneda_base
             destino = moneda_transaccion
         else:
             try:
-                origen = Moneda.objects.get(codigo_iso=moneda_origen)
-                destino = Moneda.objects.get(codigo_iso=moneda_destino)
+                origen = moneda_qs.get(codigo_iso=moneda_origen)
+                destino = moneda_qs.get(codigo_iso=moneda_destino)
             except Moneda.DoesNotExist:
                 return Response({"detail": "Moneda no encontrada."}, status=404)
 

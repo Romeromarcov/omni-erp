@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import IdempotentCreateMixin
-from apps.core.viewsets import BaseModelViewSet
+from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 from apps.tesoreria.serializers import CajaSerializer
 
 from .models import (
@@ -275,14 +275,117 @@ from .serializers import (
 )
 
 
-class MonedaViewSet(BaseModelViewSet):
+class _CatalogoTenantGuardMixin:
+    """Restringe escritura/borrado de catálogos híbridos (globales o públicos) a superusuario/dueño."""
+
+    _guard_empresa_field: str = "empresa"
+    _guard_global_flags: tuple[str, ...] = ()
+    _guard_recurso_nombre: str = "registros"
+    _guard_auto_empresa_en_create: bool = False
+
+    def _assert_puede_escribir_catalogo(self, instance=None, data=None, prevalidate_post=False, is_create=False):
+        user = self.request.user
+        if getattr(user, "es_superusuario_omni", False):
+            return
+        from rest_framework.exceptions import PermissionDenied
+
+        emp_field = self._guard_empresa_field
+        visible_ids = set(get_empresas_visible(user).values_list("id_empresa", flat=True))
+
+        if instance is not None:
+            is_flagged = any(bool(getattr(instance, f, False)) for f in self._guard_global_flags)
+            inst_emp_id = getattr(instance, f"{emp_field}_id", None)
+            if is_flagged or inst_emp_id is None or inst_emp_id not in visible_ids:
+                raise PermissionDenied(
+                    f"No tiene permiso para modificar o eliminar {self._guard_recurso_nombre} globales, públicos o de otra empresa."
+                )
+
+        if data is not None:
+            is_flagged = any(
+                data.get(f, getattr(instance, f, False) if instance else False) in (True, "true", "True", "1", 1)
+                for f in self._guard_global_flags
+            )
+            if is_flagged:
+                raise PermissionDenied(
+                    f"Solo un superusuario Omni puede crear o marcar {self._guard_recurso_nombre} globales o públicos."
+                )
+            if prevalidate_post:
+                if emp_field in data and data.get(emp_field) is None:
+                    raise PermissionDenied(
+                        f"Solo un superusuario Omni puede crear {self._guard_recurso_nombre} globales."
+                    )
+                if is_create and self._guard_auto_empresa_en_create and not visible_ids:
+                    raise PermissionDenied(
+                        f"El usuario no tiene una empresa visible para crear {self._guard_recurso_nombre}."
+                    )
+                return
+
+            if is_create and self._guard_auto_empresa_en_create:
+                if not visible_ids:
+                    raise PermissionDenied(
+                        f"El usuario no tiene una empresa visible para crear {self._guard_recurso_nombre}."
+                    )
+                if emp_field in data:
+                    raw_emp = data.get(emp_field)
+                    emp_id = getattr(raw_emp, "pk", raw_emp)
+                    if emp_id is None or emp_id not in visible_ids:
+                        raise PermissionDenied(
+                            f"No tiene permiso para asignar {self._guard_recurso_nombre} fuera de su empresa."
+                        )
+                return
+
+            default_emp = getattr(instance, f"{emp_field}_id", None) if instance else None
+            raw_emp = data.get(emp_field, default_emp)
+            emp_id = getattr(raw_emp, "pk", raw_emp)
+            if emp_id is None or emp_id not in visible_ids:
+                raise PermissionDenied(
+                    f"Solo un superusuario Omni puede crear o asignar {self._guard_recurso_nombre} globales o de otra empresa."
+                )
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        if getattr(self, "action", None) == "create" and hasattr(request, "data"):
+            self._assert_puede_escribir_catalogo(data=request.data, prevalidate_post=True, is_create=True)
+
+    def check_object_permissions(self, request, obj):
+        from rest_framework.permissions import SAFE_METHODS
+
+        super().check_object_permissions(request, obj)
+        if request.method not in SAFE_METHODS and getattr(self, "action", None) in (
+            None,
+            "update",
+            "partial_update",
+            "destroy",
+        ):
+            data = request.data if request.method in ("PUT", "PATCH") and hasattr(request, "data") else None
+            self._assert_puede_escribir_catalogo(instance=obj, data=data, prevalidate_post=True)
+
+    def perform_create(self, serializer):
+        self._assert_puede_escribir_catalogo(data=serializer.validated_data, is_create=True)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._assert_puede_escribir_catalogo(instance=serializer.instance, data=serializer.validated_data)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._assert_puede_escribir_catalogo(instance=instance)
+        instance.delete()
+
+
+class MonedaViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
+    _guard_empresa_field = "empresa"
+    _guard_global_flags = ("es_generica", "es_publica")
+    _guard_recurso_nombre = "monedas"
+    _guard_auto_empresa_en_create = True
+
     @action(detail=False, methods=["get"], url_path="activas")
     def activas(self, request):
         user = request.user
         if getattr(user, "es_superusuario_omni", False):
             queryset = Moneda.objects.all()
         else:
-            empresas_usuario = user.empresas.all()
+            empresas_usuario = get_empresas_visible(user)
             monedas_visibles = Moneda.objects.filter(
                 models.Q(es_generica=True) | models.Q(es_publica=True) | models.Q(empresa__in=empresas_usuario)
             ).distinct()
@@ -311,7 +414,7 @@ class MonedaViewSet(BaseModelViewSet):
         # Superusuario Omni ERP ve todas
         if getattr(user, "es_superusuario_omni", False):
             return Moneda.objects.all()
-        empresas_usuario = user.empresas.all()
+        empresas_usuario = get_empresas_visible(user)
         # Monedas visibles (genéricas, públicas, propias)
         monedas_visibles = Moneda.objects.filter(
             models.Q(es_generica=True) | models.Q(es_publica=True) | models.Q(empresa__in=empresas_usuario)
@@ -319,7 +422,10 @@ class MonedaViewSet(BaseModelViewSet):
         return monedas_visibles
 
 
-class TasaCambioViewSet(BaseModelViewSet):
+class TasaCambioViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
+    _guard_empresa_field = "id_empresa"
+    _guard_global_flags = ()
+    _guard_recurso_nombre = "tasas de cambio"
     queryset = TasaCambio.objects.all()
     serializer_class = TasaCambioSerializer
 
@@ -339,7 +445,11 @@ from rest_framework.decorators import action
 from apps.core.models import Empresa
 
 
-class MetodoPagoViewSet(BaseModelViewSet):
+class MetodoPagoViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
+    _guard_empresa_field = "empresa"
+    _guard_global_flags = ("es_generico", "es_publico")
+    _guard_recurso_nombre = "métodos de pago"
+    _guard_auto_empresa_en_create = True
     # SEC-A1 (auditoría 2026-06-10): se eliminó el override de get_object que
     # bypaseaba get_queryset() para la acción `reutilizar` — permitía operar
     # métodos de pago privados de otra empresa por UUID (IDOR, CWE-639).
@@ -359,7 +469,7 @@ class MetodoPagoViewSet(BaseModelViewSet):
         user = self.request.user
         if getattr(user, "es_superusuario_omni", False):
             return MetodoPago.objects.all()
-        empresas_usuario = user.empresas.all()
+        empresas_usuario = get_empresas_visible(user)
         metodos_visibles = MetodoPago.objects.filter(
             models.Q(es_generico=True) | models.Q(es_publico=True) | models.Q(empresa__in=empresas_usuario)
         ).distinct()
@@ -579,9 +689,7 @@ class CajaViewSet(BaseModelViewSet):
         # Filtrar por empresas del usuario, salvo que sea superusuario
         user = self.request.user
         if not getattr(user, "es_superusuario_omni", False):
-            empresas_usuario = getattr(user, "empresas", None)
-            if empresas_usuario and hasattr(empresas_usuario, "all"):
-                queryset = queryset.filter(empresa__in=empresas_usuario.all())
+            queryset = queryset.filter(empresa__in=get_empresas_visible(user))
         return queryset
 
     @action(detail=True, methods=["post"], url_path="cierre")
@@ -751,7 +859,7 @@ class MonedaEmpresaActivaViewSet(BaseModelViewSet):
         qs = MonedaEmpresaActiva.objects.all()
         # Superusuario Omni ERP puede ver todas, pero aún se permite filtrar por query params
         if not getattr(user, "es_superusuario_omni", False):
-            empresas = user.empresas.all()
+            empresas = get_empresas_visible(user)
             qs = qs.filter(empresa__in=empresas)
 
         # Filtros por query params
@@ -865,10 +973,9 @@ class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
 
-        # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, "empresas", None)
-        if empresas_usuario and hasattr(empresas_usuario, "all"):
-            queryset = queryset.filter(empresa__in=empresas_usuario.all())
+        # Filtrar por empresas visibles del usuario
+        if not getattr(user, "es_superusuario_omni", False):
+            queryset = queryset.filter(empresa__in=get_empresas_visible(user))
 
         return queryset
 
@@ -892,12 +999,12 @@ class CajaVirtualAutoViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
 
-        # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, "empresas", None)
-        if empresas_usuario and hasattr(empresas_usuario, "all"):
+        # Filtrar por empresas visibles del usuario
+        if not getattr(user, "es_superusuario_omni", False):
+            empresas_visibles = get_empresas_visible(user)
             queryset = queryset.filter(
-                models.Q(caja_fisica__empresa__in=empresas_usuario.all())
-                | models.Q(plantilla_maestro__empresa__in=empresas_usuario.all())
+                models.Q(caja_fisica__empresa__in=empresas_visibles)
+                | models.Q(plantilla_maestro__empresa__in=empresas_visibles)
             )
 
         return queryset
@@ -912,10 +1019,9 @@ class CajaMetodoPagoOverrideViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
 
-        # Filtrar por empresas del usuario
-        empresas_usuario = getattr(user, "empresas", None)
-        if empresas_usuario and hasattr(empresas_usuario, "all"):
-            queryset = queryset.filter(caja_fisica__empresa__in=empresas_usuario.all())
+        # Filtrar por empresas visibles del usuario
+        if not getattr(user, "es_superusuario_omni", False):
+            queryset = queryset.filter(caja_fisica__empresa__in=get_empresas_visible(user))
 
         return queryset
 
@@ -995,9 +1101,20 @@ class DatafonoViewSet(BaseModelViewSet):
             )
 
         try:
+            from django.core.exceptions import ValidationError as DjangoValidationError
+
             from .models import TransaccionFinanciera
 
-            transaccion_financiera = TransaccionFinanciera.objects.get(id_transaccion=transaccion_financiera_id)
+            try:
+                transaccion_financiera = TransaccionFinanciera.objects.get(
+                    id_transaccion=transaccion_financiera_id,
+                    id_empresa=datafono.id_empresa,
+                )
+            except (TransaccionFinanciera.DoesNotExist, DjangoValidationError, ValueError, TypeError):
+                return Response(
+                    {"success": False, "message": "Transacción financiera no encontrada"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
             transaccion = registrar_pago_tarjeta(
                 datafono=datafono,
@@ -1013,10 +1130,6 @@ class DatafonoViewSet(BaseModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
 
-        except TransaccionFinanciera.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Transacción financiera no encontrada"}, status=status.HTTP_404_NOT_FOUND
-            )
         except ValueError:
             logger.exception("Error al registrar pago tarjeta")
             return Response(
@@ -1031,11 +1144,10 @@ class TransaccionDatafonoViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # Filtrar por empresas del usuario
+        # Filtrar por empresas visibles del usuario
         user = self.request.user
-        empresas_usuario = getattr(user, "empresas", None)
-        if empresas_usuario and hasattr(empresas_usuario, "all"):
-            queryset = queryset.filter(id_datafono__id_empresa__in=empresas_usuario.all())
+        if not getattr(user, "es_superusuario_omni", False):
+            queryset = queryset.filter(id_datafono__id_empresa__in=get_empresas_visible(user))
         return queryset
 
 
@@ -1045,11 +1157,10 @@ class SesionDatafonoViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # Filtrar por empresas del usuario
+        # Filtrar por empresas visibles del usuario
         user = self.request.user
-        empresas_usuario = getattr(user, "empresas", None)
-        if empresas_usuario and hasattr(empresas_usuario, "all"):
-            queryset = queryset.filter(datafono__id_empresa__in=empresas_usuario.all())
+        if not getattr(user, "es_superusuario_omni", False):
+            queryset = queryset.filter(datafono__id_empresa__in=get_empresas_visible(user))
         return queryset
 
 
@@ -1059,11 +1170,10 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # Filtrar por empresas del usuario
+        # Filtrar por empresas visibles del usuario
         user = self.request.user
-        empresas_usuario = getattr(user, "empresas", None)
-        if empresas_usuario and hasattr(empresas_usuario, "all"):
-            queryset = queryset.filter(datafono__id_empresa__in=empresas_usuario.all())
+        if not getattr(user, "es_superusuario_omni", False):
+            queryset = queryset.filter(datafono__id_empresa__in=get_empresas_visible(user))
         return queryset
 
     @action(detail=True, methods=["post"], url_path="conciliar")
@@ -1083,9 +1193,20 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
             )
 
         try:
+            from django.core.exceptions import ValidationError as DjangoValidationError
+
             from .models import MovimientoCajaBanco
 
-            movimiento_banco = MovimientoCajaBanco.objects.get(id_movimiento=movimiento_banco_id)
+            try:
+                movimiento_banco = MovimientoCajaBanco.objects.get(
+                    id_movimiento=movimiento_banco_id,
+                    id_empresa=deposito.datafono.id_empresa,
+                )
+            except (MovimientoCajaBanco.DoesNotExist, DjangoValidationError, ValueError, TypeError):
+                return Response(
+                    {"success": False, "message": "Movimiento bancario no encontrado"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
             deposito = conciliar_deposito_datafono(deposito, movimiento_banco, usuario)
 
@@ -1095,10 +1216,6 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
                 status=status.HTTP_200_OK,
             )
 
-        except MovimientoCajaBanco.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Movimiento bancario no encontrado"}, status=status.HTTP_404_NOT_FOUND
-            )
         except ValueError:
             logger.exception("Error al conciliar depósito")
             return Response(
@@ -1113,17 +1230,20 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
         """
         from .models import obtener_depositos_pendientes
 
+        empresas = get_empresas_visible(request.user)
         datafono_id = request.query_params.get("datafono_id")
         datafono = None
         if datafono_id:
+            from django.core.exceptions import ValidationError as DjangoValidationError
+
             try:
-                datafono = Datafono.objects.get(id_datafono=datafono_id)
-            except Datafono.DoesNotExist:
+                datafono = Datafono.objects.get(id_datafono=datafono_id, id_empresa__in=empresas)
+            except (Datafono.DoesNotExist, DjangoValidationError, ValueError, TypeError):
                 return Response(
                     {"success": False, "message": "Datafono no encontrado"}, status=status.HTTP_404_NOT_FOUND
                 )
 
-        depositos = obtener_depositos_pendientes(datafono)
+        depositos = obtener_depositos_pendientes(datafono).filter(datafono__id_empresa__in=empresas)
         serializer = self.get_serializer(depositos, many=True)
 
         return Response({"success": True, "depositos": serializer.data}, status=status.HTTP_200_OK)
@@ -1138,9 +1258,7 @@ class CajaFisicaViewSet(BaseModelViewSet):
         # Filtrar por empresas del usuario, salvo que sea superusuario
         user = self.request.user
         if not getattr(user, "es_superusuario_omni", False):
-            empresas_usuario = getattr(user, "empresas", None)
-            if empresas_usuario and hasattr(empresas_usuario, "all"):
-                queryset = queryset.filter(empresa__in=empresas_usuario.all())
+            queryset = queryset.filter(empresa__in=get_empresas_visible(user))
         return queryset
 
     # BUG-C2: aquí vivía un perform_create que trataba la CajaFisica creada

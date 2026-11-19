@@ -78,16 +78,39 @@ class SucursalSerializer(BaseModelSerializer):
             "documento_json",
         ]
 
-    def create(self, validated_data):
-        # Extraer el UUID de empresa correctamente
+    def validate_id_empresa(self, value):
+        from .models import Empresa
+        from .viewsets import get_empresas_visible
+
+        request = self.context.get("request")
+        if request is not None and getattr(request, "user", None) and request.user.is_authenticated:
+            if not get_empresas_visible(request.user).filter(id_empresa=value).exists():
+                raise serializers.ValidationError("Empresa no encontrada o sin permisos de acceso.")
+            return value
+
+        if not Empresa.objects.filter(id_empresa=value).exists():
+            raise serializers.ValidationError("Empresa no encontrada o sin permisos de acceso.")
+        return value
+
+    def _resolver_empresa(self, validated_data):
         empresa_id = validated_data.pop("id_empresa", None)
         if isinstance(empresa_id, dict):
             empresa_id = empresa_id.get("id_empresa")
+        if empresa_id is None:
+            return None
         from .models import Empresa
 
-        empresa = Empresa.objects.get(id_empresa=empresa_id)
-        sucursal = Sucursal.objects.create(id_empresa=empresa, **validated_data)
-        return sucursal
+        return Empresa.objects.get(id_empresa=empresa_id)
+
+    def create(self, validated_data):
+        empresa = self._resolver_empresa(validated_data)
+        return Sucursal.objects.create(id_empresa=empresa, **validated_data)
+
+    def update(self, instance, validated_data):
+        empresa = self._resolver_empresa(validated_data)
+        if empresa is not None:
+            instance.id_empresa = empresa
+        return super().update(instance, validated_data)
 
 
 class DepartamentoSerializer(BaseModelSerializer):

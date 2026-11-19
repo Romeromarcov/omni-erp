@@ -8,7 +8,7 @@ from .models import LogAuditoria
 from .serializers import LogAuditoriaSerializer
 
 
-class LogAuditoriaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
+class LogAuditoriaViewSet(TenantFKScopeMixin, viewsets.ReadOnlyModelViewSet):
     queryset = LogAuditoria.objects.all()
     serializer_class = LogAuditoriaSerializer
     permission_classes = [IsAuthenticated]
