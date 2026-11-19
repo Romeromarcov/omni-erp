@@ -1,4 +1,3 @@
-import uuid
 from apps.core.uuid import uuid7
 
 from django.db import models

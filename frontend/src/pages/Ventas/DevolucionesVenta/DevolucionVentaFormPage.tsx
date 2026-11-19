@@ -93,7 +93,7 @@ const DevolucionVentaFormPage: React.FC = () => {
         })),
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cargar devolucionData, sin disparar por isDirty/reset
   }, [devolucionData]);
 
   // Total en vivo calculado con decimal.js sobre los detalles observados.

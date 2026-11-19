@@ -6,9 +6,12 @@ en config/__init__.py. Todos los módulos apps.*  pueden definir un
 archivo tasks.py y sus tareas se registran automáticamente.
 """
 
+import logging
 import os
 
 from celery import Celery
+
+logger = logging.getLogger(__name__)
 
 # Asegurar que Django sepa qué settings usar antes de cargar Celery.
 # DEBE ser el dispatcher "config.settings" (no settings_dev): config/__init__.py
@@ -30,5 +33,5 @@ app.autodiscover_tasks()
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
-    """Tarea de diagnóstico — imprime la request de Celery."""
-    print(f"Request: {self.request!r}")
+    """Tarea de diagnóstico — registra la request de Celery."""
+    logger.info("Request: %r", self.request)

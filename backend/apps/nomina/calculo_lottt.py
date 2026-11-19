@@ -25,7 +25,7 @@ fórmula ARC oficial se conecta sustituyendo `calcular_islr` o pasando tramos.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 
 CENTAVO = Decimal("0.01")

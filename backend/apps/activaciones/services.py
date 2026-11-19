@@ -182,7 +182,7 @@ def sincronizar_google(evento_id) -> None:
             return
         evento.google_event_id = google_calendar.upsert(evento)
         evento.sync_error = ""
-    except Exception:  # noqa: BLE001 - el registro local ya es válido
+    except Exception:  # el registro local ya es válido
         log.exception("Sync Google Calendar falló (evento %s)", evento_id)
         evento.sync_error = "No se pudo sincronizar con Google Calendar."
     evento.save(update_fields=["google_event_id", "sync_error", "fecha_actualizacion"])

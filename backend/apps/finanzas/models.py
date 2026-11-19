@@ -1,9 +1,7 @@
-import uuid
 from apps.core.uuid import uuid7
 
-from django.conf import settings
 from django.db import models
-from django.db.models.signals import m2m_changed, post_save
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -529,7 +527,7 @@ class Datafono(models.Model):
         from django.db import transaction
         from django.utils import timezone
 
-        from .models import MovimientoCajaBanco, TransaccionDatafono
+        from .models import MovimientoCajaBanco
 
         if not self.id_cuenta_bancaria_asociada:
             raise ValueError("El datafono no tiene cuenta bancaria asociada para el cierre.")
@@ -1671,8 +1669,6 @@ def registrar_pago_tarjeta(datafono, monto, referencia, transaccion_financiera, 
     """
     from decimal import Decimal
 
-    from django.utils import timezone
-
     # Obtener o crear sesión abierta
     sesion, created = SesionDatafono.objects.get_or_create(
         datafono=datafono,
@@ -1704,9 +1700,6 @@ def cerrar_sesion_datafono(datafono, usuario_cierre):
     """
     Cierra la sesión abierta del datafono y crea un depósito consolidado.
     """
-    from decimal import Decimal
-
-    from django.utils import timezone
 
     # Obtener sesión abierta
     try:

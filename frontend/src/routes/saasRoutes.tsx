@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components -- Módulo de rutas exporta saasRoutes() junto a RequireSuperuserOmni (solo dev HMR) */
 import { lazy } from 'react';
 import { Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';

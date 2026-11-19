@@ -1,7 +1,5 @@
 from django.test import TestCase
 
-from .models import Cargo, Empleado
-
 
 class RrhhTestCase(TestCase):
     def setUp(self):

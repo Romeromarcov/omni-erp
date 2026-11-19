@@ -12,7 +12,6 @@ el comando termina con un mensaje informativo.
 import json
 import logging
 import signal
-import sys
 
 logger = logging.getLogger("omni.eventos.consumer")
 

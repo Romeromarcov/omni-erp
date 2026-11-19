@@ -704,7 +704,7 @@ class LLMGateway:
                     "latencia_ms": resultado.latencia_ms,
                 }
             )
-        except Exception:  # noqa: BLE001 — el hook jamás tumba la llamada LLM
+        except Exception:  # el hook jamás tumba la llamada LLM
             logger.exception("registrar_consumo_hook falló; el consumo quedó solo en logs")
 
 

@@ -84,7 +84,7 @@ const CajaFisicaFormPage: React.FC = () => {
         activa: cajaData.activa,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cargar cajaData, sin disparar por isDirty/reset
   }, [cajaData]);
 
   const saveMutation = useMutation({

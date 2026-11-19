@@ -443,25 +443,18 @@ jobs:
         # verificadas limpias (0 findings sobre 616 archivos) → bloqueantes.
         run: semgrep --config p/python --config p/django --config ../.semgrep.yml --severity ERROR --error apps/ config/
 
-      - name: Ruff (bugs reales — BLOQUEANTE)
+      - name: Ruff (bugs reales e imports sin usar — BLOQUEANTE)
         working-directory: backend
-        # Códigos que indican bugs, no estilo: sintaxis (E9), f-strings rotos (F63),
+        # Códigos que indican bugs o imports muertos: sintaxis (E9), f-strings rotos (F63),
         # comparaciones inválidas (F7), nombres indefinidos (F82), uso antes de
-        # asignación (F823) y redefiniciones (F811 — clases/funciones/imports
-        # duplicados, como los serializers/ViewSet de finanzas en BUG-DUP-1). Este
-        # subconjunto está limpio y bloquea para impedir regresiones.
-        run: ruff check apps/ config/ --select E9,F63,F7,F82,F823,F811
+        # asignación (F823), redefiniciones (F811 — clases/funciones/imports
+        # duplicados, como los serializers/ViewSet de finanzas en BUG-DUP-1) e
+        # imports sin usar (F401 — Plan 06 tarea 3.4). Bloqueante para impedir regresiones.
+        run: ruff check apps/ config/ --select E9,F63,F7,F82,F823,F811,F401
 
       - name: Ruff format (estilo uniforme — BLOQUEANTE)
         working-directory: backend
         run: ruff format --check apps/ config/ tests/
-
-      - name: Ruff (limpieza gradual — no bloqueante aún)
-        working-directory: backend
-        # F401 (imports sin usar): se limpia por fases; al quedar en cero, moverlo
-        # al paso bloqueante de arriba.
-        continue-on-error: true
-        run: ruff check apps/ config/ --select F401
 
       - name: Mypy (tipos — django-stubs/drf — BLOQUEANTE en módulos de dinero)
         working-directory: backend

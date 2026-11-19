@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Optional
@@ -209,7 +209,6 @@ Responde SOLO con un JSON válido:
             Lista de SugerenciaReorden, ordenada: REORDENAR → REVISAR → OK.
         """
         from django.db.models import Sum
-        from django.utils import timezone as tz
 
         from apps.inventario.models import MovimientoInventario, StockActual
 

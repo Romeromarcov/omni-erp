@@ -229,7 +229,7 @@ def omni_get_clientes(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "crm:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     # Verificar que el empresa_id corresponde al tenant del token
     if empresa_id != context["empresa_id"]:
@@ -287,7 +287,7 @@ def omni_get_saldo_cliente(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -344,7 +344,7 @@ def omni_get_cxc_aging(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -395,7 +395,7 @@ def omni_get_stock_producto(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "inventario:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -444,13 +444,13 @@ def omni_get_ventas_resumen(
     Returns:
         dict con cantidad_pedidos, total_ventas, promedio_pedido.
     """
-    from django.db.models import Avg, Count, Sum  # noqa: PLC0415
+    from django.db.models import Avg, Sum  # noqa: PLC0415
 
     from apps.ventas.models import DetallePedido, Pedido  # noqa: PLC0415
 
     context = _resolve_token(capability_token)
     _require_scope(context, "ventas:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -532,7 +532,7 @@ def omni_crear_pedido(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "ventas:write")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -613,7 +613,7 @@ def omni_get_pedidos(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "ventas:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -701,7 +701,7 @@ def omni_registrar_movimiento_inventario(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "inventario:write")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -793,7 +793,7 @@ def omni_get_correlativo_fiscal(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "fiscal:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -870,7 +870,7 @@ def omni_buscar_cliente(
 
     context = _resolve_token(capability_token)
     _require_scope(context, "crm:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -944,7 +944,7 @@ def omni_cxc_get_cartera_vencida(
     """
     context = _resolve_token(capability_token)
     _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -983,7 +983,7 @@ def omni_cxc_get_aging_summary(
     """
     context = _resolve_token(capability_token)
     _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")
@@ -1029,7 +1029,7 @@ def omni_cxc_get_tasa_cambio_hoy(
     """
     context = _resolve_token(capability_token)
     _require_scope(context, "finanzas:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     from datetime import date  # noqa: PLC0415
     from apps.finanzas.models import TasaCambio  # noqa: PLC0415
@@ -1081,7 +1081,7 @@ def omni_cxc_get_acuerdos_vigentes(
     """
     context = _resolve_token(capability_token)
     _require_scope(context, "cxc:read")
-    assert context is not None  # noqa: S101
+    assert context is not None  # noqa: S101 — checked by _require_scope
 
     if empresa_id != context["empresa_id"]:
         raise PermissionError("empresa_id no coincide con el tenant del token.")

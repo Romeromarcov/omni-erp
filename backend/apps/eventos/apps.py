@@ -6,4 +6,4 @@ class EventosConfig(AppConfig):
     verbose_name = "Eventos (Event Store)"
 
     def ready(self):
-        import apps.eventos.signals  # noqa: F401
+        import apps.eventos.signals  # noqa: F401  # side-effect: registra signals

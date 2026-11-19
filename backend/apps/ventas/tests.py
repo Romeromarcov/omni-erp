@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from apps.core.models import Empresa
 from apps.crm.models import Cliente
-from apps.ventas.models import DetalleNotaVenta, DetallePedido, NotaVenta, Pedido
+from apps.ventas.models import Pedido
 
 pytestmark = pytest.mark.django_db
 

@@ -30,7 +30,6 @@ import logging
 import mimetypes
 import os
 import uuid
-from io import BytesIO
 from typing import BinaryIO, Optional, Tuple
 
 logger = logging.getLogger(__name__)

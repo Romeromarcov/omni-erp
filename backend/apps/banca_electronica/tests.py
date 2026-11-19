@@ -1,7 +1,5 @@
 from django.test import TestCase
 
-from .models import CuentaBancariaEmpresa
-
 
 class BancaElectronicaTestCase(TestCase):
     def setUp(self):

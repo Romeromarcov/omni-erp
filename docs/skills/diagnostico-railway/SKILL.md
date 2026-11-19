@@ -52,4 +52,9 @@ Vuelve al flujo de Git (`docs/FLUJO_DE_TRABAJO.md`):
   que tenga `startCommand` de celery (no arrancar como web), `SKIP_MIGRATIONS=1`, y
   `REDIS_URL`/`DATABASE_URL` del entorno correcto. Ver `DESPLIEGUE_RAILWAY.md`.
 - `sync_tasas_ve: Monedas USD/VES no encontradas en BD` → faltan sembrar monedas USD/VES
-  (no es fallo de infra, es dato de la app).
+  (no es fallo de infra, es dato de la app). **Remediado** con el comando idempotente
+  `seed_catalogo_monedas` (Plan 06 tarea `0.2`), ejecutado en `entrypoint.sh` y en `seed_empresa_inicial`.
+- **Configuración entre servicios y entornos de PR (`H14`):** usar referencias de Railway
+  (`${{Postgres.DATABASE_URL}}`, `${{Redis.REDIS_URL}}`) en lugar de literales en
+  `omni-erp-backend`, `omni-erp-worker` y `omni-erp-beat`, mantener `DJANGO_ALLOWED_HOSTS`
+  de `staging` libre del host de producción y evitar *Sync* con entornos efímeros de PR.

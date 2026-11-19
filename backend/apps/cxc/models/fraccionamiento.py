@@ -4,8 +4,6 @@ Fraccionamiento de productos (feature-flagged).
 Solo activo si get_config('cxc.fraccionamiento.enabled') == 'true'.
 """
 
-from decimal import Decimal
-
 from django.db import models
 
 from .base import CxcBaseModel

@@ -1,4 +1,4 @@
-from .settings_base import *  # noqa: F401, F403
+from .settings_base import *  # noqa: F403
 
 DEBUG = False
 # M-SEC-14: ALLOWED_HOSTS no puede quedar vacío en producción. Fail-closed.
@@ -92,7 +92,7 @@ SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = "DENY"
 
 # Logs solo INFO en producción (no DEBUG)
-LOGGING["handlers"]["console"]["level"] = "INFO"  # type: ignore[index]  # noqa: F821
+LOGGING["handlers"]["console"]["level"] = "INFO"  # type: ignore[index]
 
 # ── Sentry (GAP-10) ─────────────────────────────────────────────────────────
 # Configurar SENTRY_DSN en el entorno de producción para habilitar el monitoreo.

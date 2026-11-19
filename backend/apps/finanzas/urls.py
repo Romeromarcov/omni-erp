@@ -5,7 +5,6 @@ from .views import (
     CajaFisicaUsuarioViewSet,
     CajaFisicaViewSet,
     CajaMetodoPagoOverrideViewSet,
-    CajaUsuarioViewSet,
     CajaViewSet,
     CajaVirtualAutoViewSet,
     CajaVirtualUsuarioViewSet,

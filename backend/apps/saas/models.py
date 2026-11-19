@@ -5,7 +5,6 @@ Plan:        Define los niveles de suscripción disponibles (FREE, STARTER, PRO,
 Suscripcion: Asocia una empresa a un plan con fechas de vigencia y estado.
 """
 
-import uuid
 from apps.core.uuid import uuid7
 
 from django.db import models

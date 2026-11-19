@@ -18,7 +18,7 @@ Uso (desde Celery task o view):
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from django.db import transaction
@@ -36,7 +36,6 @@ from apps.integration_hub.connectors.registry import registry
 if TYPE_CHECKING:
     from apps.integration_hub.models import (
         ConectorInstancia,
-        EntidadSincronizada,
         JobSincronizacion,
     )
 
@@ -64,7 +63,6 @@ class SyncEngine:
         Actualiza el estado del job en la BD conforme avanza.
         Retorna un SyncResult con los contadores finales.
         """
-        from apps.integration_hub.models import JobSincronizacion, LogDetalleSincronizacion
 
         resultado = SyncResult(tipo_entidad=job.tipo_entidad)
 

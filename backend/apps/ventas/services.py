@@ -27,7 +27,7 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 from apps.contabilidad.services import AsientoError, MapeoContableNoEncontrado, generar_asiento
-from apps.core.services import FlujoError, verificar_paso_flujo  # noqa: F401 — re-exported for callers
+from apps.core.services import FlujoError as FlujoError, verificar_paso_flujo  # re-export explícito para callers
 from apps.inventario.services import (
     MovimientoInvalidoError,
     ReservaInsuficienteError,

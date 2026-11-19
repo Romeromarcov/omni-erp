@@ -5,8 +5,7 @@ from apps.core.serializer_mixins import TenantFKScopeMixin
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.utils import timezone
-from rest_framework import status, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -60,7 +59,6 @@ class GestionCobranzaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         # Calcular score automáticamente
         from apps.cuentas_por_cobrar.services_scoring import ScoreInput, calcular_score
         from apps.cuentas_por_cobrar.services_cartera_provider import get_cartera_provider
-        from django.db.models import Count
 
         cliente_id = serializer.validated_data.get("cliente_id", "")
 

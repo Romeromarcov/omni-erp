@@ -45,6 +45,4 @@ def test_login_valid(test_user):
     assert r.status_code in (200, 403)  # 200 si tiene permisos, 403 si no
 
 
-from django.test import TestCase
-
 # Create your tests here.

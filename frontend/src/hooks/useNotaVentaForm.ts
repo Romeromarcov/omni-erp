@@ -74,7 +74,7 @@ export const useNotaVentaForm = (notaVentaId?: string) => {
         : [],
     });
     base.setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: base cambia cada render; solo rehidratar al cargar notaData
   }, [notaData, isLoadingNota]);
 
   const submitNotaVenta = async (values: NotaVentaFormInput, pagosToSend?: Pago[]) => {

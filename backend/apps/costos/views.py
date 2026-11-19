@@ -1,6 +1,3 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from . import models, serializers

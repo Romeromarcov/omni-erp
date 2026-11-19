@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from apps.core.serializer_mixins import TenantFKScopeMixin
 
 from django.db.models import Avg, Count, Q

@@ -4,7 +4,6 @@ R-CODE-1: Empresa A nunca ve datos de empresa B.
 """
 
 import pytest
-from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.core.models import Empresa, Usuarios

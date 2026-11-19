@@ -19,7 +19,7 @@ logger = logging.getLogger("apps")
 
 
 @receiver(connection_created)
-def set_default_rls_context(sender, connection, **kwargs):  # noqa: D401
+def set_default_rls_context(sender, connection, **kwargs):
     if connection.vendor != "postgresql":
         return
     try:

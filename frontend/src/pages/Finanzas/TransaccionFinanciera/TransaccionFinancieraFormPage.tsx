@@ -119,7 +119,7 @@ const TransaccionFinancieraFormPage: React.FC = () => {
       const base = monedas.find((m: MonedaEmpresaActiva) => m.es_base);
       setMonedaBase(base ? base.moneda_nombre : (monedas[0]?.moneda_nombre || ''));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: monedas se filtra cada render; observar solo monedasRaw
   }, [monedasRaw]);
 
   const { data: metodosPagoRaw = [] } = useQuery<unknown, Error, MetodoPagoEmpresaActiva[]>({

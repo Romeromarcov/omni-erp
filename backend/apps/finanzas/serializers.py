@@ -546,7 +546,7 @@ class TransaccionFinancieraSerializer(serializers.ModelSerializer):
             if empresas and empresas.exists():
                 validated_data["id_empresa"] = empresas.first()
         # Convertir id_moneda_transaccion, id_moneda_base y id_metodo_pago a instancias si vienen como UUID
-        from .models import Caja, CuentaBancariaEmpresa, MetodoPago, Moneda, MovimientoCajaBanco, TasaCambio
+        from .models import MetodoPago, Moneda, MovimientoCajaBanco, TasaCambio
 
         for moneda_field in ["id_moneda_transaccion", "id_moneda_base"]:
             moneda_value = validated_data.get(moneda_field)

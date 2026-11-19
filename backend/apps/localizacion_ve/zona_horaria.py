@@ -12,7 +12,6 @@ Uso:
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
-from typing import Optional
 
 # Venezuela Standard Time: UTC-4 (fijo, sin DST)
 VET = timezone(timedelta(hours=-4), name="VET")
@@ -93,7 +92,6 @@ def inicio_dia_vet(fecha=None) -> datetime:
     Returns:
         datetime con tz=VET al inicio del día.
     """
-    from datetime import date
 
     if fecha is None:
         hoy = ahora_vet().date()

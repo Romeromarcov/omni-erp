@@ -1,4 +1,4 @@
-from django.db.models import Count, Sum
+from django.db.models import Sum
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from rest_framework import status, viewsets
 from rest_framework.decorators import action

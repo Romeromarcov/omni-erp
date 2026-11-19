@@ -323,8 +323,6 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     # Primitiva: entidades — persiste instancias EAV y registra la definición (CTF-002)
     entidades = config.get("entidades", [])
     if entidades:
-        from .models import EntidadInstancia  # noqa: PLC0415
-
         for entidad_def in entidades:
             nombre = entidad_def.get("nombre", "")
             resultado.setdefault("entidades", {})[nombre] = {

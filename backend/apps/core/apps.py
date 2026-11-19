@@ -10,4 +10,4 @@ class CoreConfig(AppConfig):
     def ready(self):
         # Registra el signal connection_created que fija el contexto RLS por
         # defecto en cada conexión nueva (ver apps/core/signals.py).
-        from . import signals  # noqa: F401
+        from . import signals  # noqa: F401  # side-effect: registra signals

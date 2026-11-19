@@ -86,7 +86,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
         })),
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cargar notaCreditoData, sin disparar por isDirty/reset
   }, [notaCreditoData]);
 
   // Total en vivo calculado con decimal.js sobre los detalles observados.

@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from apps.core.models import Empresa, Usuarios
 from apps.finanzas.ajustes import crear_ajuste_caja_banco
-from apps.finanzas.models import Caja, CuentaBancariaEmpresa, Moneda, MovimientoCajaBanco
+from apps.finanzas.models import Caja, CuentaBancariaEmpresa, Moneda
 
 
 class AjusteCajaBancoSerializer(serializers.Serializer):

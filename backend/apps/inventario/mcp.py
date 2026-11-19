@@ -142,7 +142,7 @@ def inventario_get_alertas_stock(
     Returns:
         Lista de productos con stock bajo, incluyendo stock_actual y punto_reorden.
     """
-    from apps.inventario.models import Producto, StockActual  # noqa: PLC0415
+    from apps.inventario.models import StockActual  # noqa: PLC0415
 
     ctx = _ctx(capability_token, f"{_SCOPE}:read")
     if empresa_id != ctx["empresa_id"]:

@@ -42,7 +42,7 @@ def ejecutar_ciclo_todos(momento: str = "AUTO") -> dict[str, Any]:
         try:
             ejecutar_ciclo_empresa(str(emp_id), momento=momento)
             procesadas += 1
-        except Exception:  # noqa: BLE001
+        except Exception:  # aislamiento por empresa: un fallo no detiene el ciclo de las demás
             errores += 1
             logger.exception("Fallo en ciclo de tareas para empresa %s", emp_id)
 
