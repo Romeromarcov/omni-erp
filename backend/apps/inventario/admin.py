@@ -3,8 +3,11 @@ from django.contrib import admin
 from .models import (
     CategoriaProducto,
     ConversionUnidadMedida,
+    LoteProducto,
     MovimientoInventario,
+    MovimientoLote,
     Producto,
+    ReglaReabastecimiento,
     StockActual,
     StockConsignacionCliente,
     StockConsignacionProveedor,
@@ -52,5 +55,23 @@ class StockConsignacionClienteAdmin(admin.ModelAdmin):
 
 @admin.register(StockConsignacionProveedor)
 class StockConsignacionProveedorAdmin(admin.ModelAdmin):
+    list_display = ["__str__"]
+    search_fields = ["__str__"]
+
+
+@admin.register(ReglaReabastecimiento)
+class ReglaReabastecimientoAdmin(admin.ModelAdmin):
+    list_display = ["__str__"]
+    search_fields = ["__str__"]
+
+
+@admin.register(LoteProducto)
+class LoteProductoAdmin(admin.ModelAdmin):
+    list_display = ["__str__"]
+    search_fields = ["__str__"]
+
+
+@admin.register(MovimientoLote)
+class MovimientoLoteAdmin(admin.ModelAdmin):
     list_display = ["__str__"]
     search_fields = ["__str__"]

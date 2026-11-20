@@ -40,6 +40,27 @@ export const inventarioMaestrosKeys = {
   consignacionProveedorAll: () => ['inventario-maestros', 'consignacion-proveedor'] as const,
   consignacionProveedor: (proveedor?: string | null, estado?: string | null) =>
     ['inventario-maestros', 'consignacion-proveedor', 'list', proveedor ?? null, estado ?? null] as const,
+  reglasAll: () => ['inventario-maestros', 'reglas'] as const,
+  reglas: (almacen?: string | null, producto?: string | null) =>
+    ['inventario-maestros', 'reglas', 'list', almacen ?? null, producto ?? null] as const,
+  evaluacionReabastecimiento: (almacen?: string | null) =>
+    ['inventario-maestros', 'reglas', 'evaluacion', almacen ?? null] as const,
+  lotesAll: () => ['inventario-maestros', 'lotes'] as const,
+  lotes: (filtros?: {
+    almacen?: string | null;
+    producto?: string | null;
+    por_vencer_dias?: number | null;
+    solo_con_stock?: boolean | null;
+  }) =>
+    [
+      'inventario-maestros',
+      'lotes',
+      'list',
+      filtros?.almacen ?? null,
+      filtros?.producto ?? null,
+      filtros?.por_vencer_dias ?? null,
+      filtros?.solo_con_stock ?? null,
+    ] as const,
 };
 
 export const notasVentaKeys = {
@@ -62,6 +83,9 @@ export const pedidosKeys = {
 
 export const almacenesKeys = {
   all: () => ['almacenes'] as const,
+  stockUbicacionesAll: () => ['almacenes', 'stock-ubicaciones'] as const,
+  stockUbicaciones: (almacen?: string | null, ubicacion?: string | null, producto?: string | null) =>
+    ['almacenes', 'stock-ubicaciones', 'list', almacen ?? null, ubicacion ?? null, producto ?? null] as const,
 };
 
 export const productosKeys = {

@@ -268,6 +268,7 @@ RLS_TABLES = {
     "agentes_prediccionagente": "id_empresa_id",
     # almacenes
     "almacenes_almacen": "id_empresa_id",
+    "almacenes_stock_ubicacion": "id_empresa_id",
     "almacenes_ubicacion_almacen": "id_empresa_id",
     # auditoria
     "auditoria_logauditoria": "id_empresa_id",
@@ -384,6 +385,8 @@ RLS_TABLES = {
     # inventario
     "inventario_categoria_producto": "id_empresa_id",
     "inventario_conversion_unidad_medida": "id_empresa_id",
+    "inventario_lote_producto": "id_empresa_id",
+    "inventario_regla_reabastecimiento": "id_empresa_id",
     "inventario_requisicion_interna": "id_empresa_id",
     "inventario_stock_consignacion_cliente": "id_empresa_id",
     "inventario_stock_consignacion_proveedor": "id_empresa_id",

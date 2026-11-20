@@ -1273,6 +1273,181 @@
                 }
             ]
         },
+        "/almacenes/stock-ubicaciones/": {
+            "get": {
+                "operationId": "almacenes_stock-ubicaciones_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/StockUbicacion"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "post": {
+                "operationId": "almacenes_stock-ubicaciones_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/StockUbicacion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/StockUbicacion"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": []
+        },
+        "/almacenes/stock-ubicaciones/reservar/": {
+            "post": {
+                "operationId": "almacenes_stock-ubicaciones_reservar",
+                "description": "POST /api/almacenes/stock-ubicaciones/reservar/ — Reserva o libera stock en una ubicación.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReservarUbicacionInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/StockUbicacion"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": []
+        },
+        "/almacenes/stock-ubicaciones/transferir/": {
+            "post": {
+                "operationId": "almacenes_stock-ubicaciones_transferir",
+                "description": "POST /api/almacenes/stock-ubicaciones/transferir/ — Traslada stock entre ubicaciones del mismo almacén.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TransferirUbicacionInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/TransferirUbicacionResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": []
+        },
+        "/almacenes/stock-ubicaciones/{id_stock_ubicacion}/": {
+            "get": {
+                "operationId": "almacenes_stock-ubicaciones_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/StockUbicacion"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_stock_ubicacion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Stock por Ubicación.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/almacenes/ubicaciones-almacen/": {
             "get": {
                 "operationId": "almacenes_ubicaciones-almacen_list",
@@ -29733,6 +29908,150 @@
                 }
             ]
         },
+        "/inventario/lotes-producto/": {
+            "get": {
+                "operationId": "inventario_lotes-producto_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/LoteProducto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "post": {
+                "operationId": "inventario_lotes-producto_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LoteProducto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LoteProducto"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": []
+        },
+        "/inventario/lotes-producto/{id_lote}/": {
+            "get": {
+                "operationId": "inventario_lotes-producto_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LoteProducto"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "patch": {
+                "operationId": "inventario_lotes-producto_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LoteProducto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LoteProducto"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_lote",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Lote de Producto.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/inventario/movimientos-inventario/": {
             "get": {
                 "operationId": "inventario_movimientos-inventario_list",
@@ -30526,6 +30845,253 @@
                     "in": "path",
                     "required": true,
                     "type": "string"
+                }
+            ]
+        },
+        "/inventario/reglas-reabastecimiento/": {
+            "get": {
+                "operationId": "inventario_reglas-reabastecimiento_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ReglaReabastecimiento"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "post": {
+                "operationId": "inventario_reglas-reabastecimiento_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReglaReabastecimiento"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaReabastecimiento"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": []
+        },
+        "/inventario/reglas-reabastecimiento/evaluar/": {
+            "post": {
+                "operationId": "inventario_reglas-reabastecimiento_evaluar",
+                "description": "POST /api/inventario/reglas-reabastecimiento/evaluar/ — Evalúa déficit y cantidades sugeridas.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EvaluarReabastecimientoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EvaluarReabastecimientoResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": []
+        },
+        "/inventario/reglas-reabastecimiento/{id_regla}/": {
+            "get": {
+                "operationId": "inventario_reglas-reabastecimiento_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaReabastecimiento"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "put": {
+                "operationId": "inventario_reglas-reabastecimiento_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReglaReabastecimiento"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaReabastecimiento"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "patch": {
+                "operationId": "inventario_reglas-reabastecimiento_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReglaReabastecimiento"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaReabastecimiento"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "delete": {
+                "operationId": "inventario_reglas-reabastecimiento_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_regla",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Regla de Reabastecimiento.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/inventario/reglas-reabastecimiento/{id_regla}/generar-borrador/": {
+            "post": {
+                "operationId": "inventario_reglas-reabastecimiento_generar_borrador",
+                "description": "POST /api/inventario/reglas-reabastecimiento/{pk}/generar-borrador/ — Crea borrador según ruta.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GenerarBorradorInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/GenerarBorradorResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_regla",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Regla de Reabastecimiento.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
                 }
             ]
         },
@@ -48336,6 +48902,11 @@
                     "type": "string",
                     "x-nullable": true
                 },
+                "usa_ubicaciones": {
+                    "title": "Usa ubicaciones",
+                    "description": "Si True, habilita control de stock y transferencias por ubicación interna (opt-in).",
+                    "type": "boolean"
+                },
                 "referencia_externa": {
                     "title": "Referencia externa",
                     "type": "string",
@@ -48367,6 +48938,243 @@
                     "type": "string",
                     "format": "uuid",
                     "x-nullable": true
+                }
+            }
+        },
+        "StockUbicacion": {
+            "required": [
+                "id_almacen",
+                "id_ubicacion",
+                "id_producto"
+            ],
+            "type": "object",
+            "properties": {
+                "id_stock_ubicacion": {
+                    "title": "Id stock ubicacion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "almacen_nombre": {
+                    "title": "Almacen nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_ubicacion": {
+                    "title": "Id ubicacion",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "ubicacion_codigo": {
+                    "title": "Ubicacion codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "ubicacion_nombre": {
+                    "title": "Ubicacion nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "requiere_autorizacion": {
+                    "title": "Requiere autorizacion",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "producto_sku": {
+                    "title": "Producto sku",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cantidad_disponible": {
+                    "title": "Cantidad disponible",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "cantidad_reservada": {
+                    "title": "Cantidad reservada",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cantidad_libre": {
+                    "title": "Cantidad libre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ReservarUbicacionInput": {
+            "required": [
+                "id_almacen",
+                "id_ubicacion",
+                "id_producto",
+                "cantidad"
+            ],
+            "type": "object",
+            "properties": {
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_ubicacion": {
+                    "title": "Id ubicacion",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "liberar": {
+                    "title": "Liberar",
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "TransferirUbicacionInput": {
+            "required": [
+                "id_almacen",
+                "id_ubicacion_origen",
+                "id_ubicacion_destino",
+                "id_producto",
+                "cantidad"
+            ],
+            "type": "object",
+            "properties": {
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_ubicacion_origen": {
+                    "title": "Id ubicacion origen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_ubicacion_destino": {
+                    "title": "Id ubicacion destino",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "id_autorizado_por": {
+                    "title": "Id autorizado por",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": ""
+                }
+            }
+        },
+        "TransferirUbicacionResponse": {
+            "required": [
+                "origen",
+                "destino",
+                "id_movimiento",
+                "tipo_movimiento"
+            ],
+            "type": "object",
+            "properties": {
+                "origen": {
+                    "$ref": "#/definitions/StockUbicacion"
+                },
+                "destino": {
+                    "$ref": "#/definitions/StockUbicacion"
+                },
+                "id_movimiento": {
+                    "title": "Id movimiento",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tipo_movimiento": {
+                    "title": "Tipo movimiento",
+                    "type": "string",
+                    "minLength": 1
                 }
             }
         },
@@ -55742,7 +56550,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T08:56:19.908838-04:00"
+                    "default": "2026-11-20T10:07:32.529854-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -60958,6 +61766,117 @@
                 }
             }
         },
+        "LoteProducto": {
+            "required": [
+                "id_producto",
+                "id_almacen",
+                "numero_lote"
+            ],
+            "type": "object",
+            "properties": {
+                "id_lote": {
+                    "title": "Id lote",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "producto_sku": {
+                    "title": "Producto sku",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "almacen_nombre": {
+                    "title": "Almacen nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_lote": {
+                    "title": "Numero lote",
+                    "type": "string",
+                    "maxLength": 80,
+                    "minLength": 1
+                },
+                "fecha_fabricacion": {
+                    "title": "Fecha fabricacion",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "cantidad_disponible": {
+                    "title": "Cantidad disponible",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cantidad_reservada": {
+                    "title": "Cantidad reservada",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cantidad_libre": {
+                    "title": "Cantidad libre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
         "MovimientoInventario": {
             "required": [
                 "fecha_hora_movimiento",
@@ -61025,7 +61944,8 @@
                         "RECEPCION_COMPRA",
                         "DESPACHO_VENTA",
                         "SALIDA_INTERNA",
-                        "RESERVA_VENTA"
+                        "RESERVA_VENTA",
+                        "TRANSFERENCIA_UBICACION"
                     ]
                 },
                 "cantidad": {
@@ -61082,6 +62002,35 @@
                     "title": "Id almacen destino",
                     "type": "string",
                     "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_lote": {
+                    "title": "Id lote",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "lote_numero": {
+                    "title": "Lote numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "numero_lote": {
+                    "title": "Numero lote",
+                    "type": "string"
+                },
+                "fecha_fabricacion": {
+                    "title": "Fecha fabricacion",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date",
                     "x-nullable": true
                 },
                 "id_usuario_registro": {
@@ -61267,6 +62216,15 @@
                     "title": "Maneja seriales",
                     "type": "boolean"
                 },
+                "estrategia_salida": {
+                    "title": "Estrategia salida",
+                    "description": "Estrategia automática de descarga de lotes cuando maneja_lotes=True.",
+                    "type": "string",
+                    "enum": [
+                        "FIFO",
+                        "FEFO"
+                    ]
+                },
                 "es_vendible": {
                     "title": "Es vendible",
                     "description": "Si es False, el producto es solo-compra y no puede venderse.",
@@ -61331,6 +62289,363 @@
                 "id_configuracion_impuesto_compra_default": {
                     "title": "Id configuracion impuesto compra default",
                     "type": "integer",
+                    "x-nullable": true
+                }
+            }
+        },
+        "ReglaReabastecimiento": {
+            "required": [
+                "id_producto",
+                "id_almacen",
+                "stock_minimo",
+                "stock_maximo"
+            ],
+            "type": "object",
+            "properties": {
+                "id_regla": {
+                    "title": "Id regla",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "producto_sku": {
+                    "title": "Producto sku",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "almacen_nombre": {
+                    "title": "Almacen nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "stock_minimo": {
+                    "title": "Stock minimo",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "stock_maximo": {
+                    "title": "Stock maximo",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "cantidad_multiplo": {
+                    "title": "Cantidad multiplo",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "ruta": {
+                    "title": "Ruta",
+                    "type": "string",
+                    "enum": [
+                        "COMPRA",
+                        "MANUFACTURA",
+                        "TRANSFERENCIA"
+                    ]
+                },
+                "id_proveedor_preferido": {
+                    "title": "Id proveedor preferido",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "proveedor_nombre": {
+                    "title": "Proveedor nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "id_almacen_origen": {
+                    "title": "Id almacen origen",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "almacen_origen_nombre": {
+                    "title": "Almacen origen nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "EvaluarReabastecimientoInput": {
+            "type": "object",
+            "properties": {
+                "almacen": {
+                    "title": "Almacen",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "incluir_ok": {
+                    "title": "Incluir ok",
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "EvaluarReabastecimientoItem": {
+            "required": [
+                "id_regla",
+                "id_producto",
+                "producto_nombre",
+                "producto_sku",
+                "id_variante",
+                "id_almacen",
+                "almacen_nombre",
+                "ruta",
+                "id_proveedor_preferido",
+                "id_almacen_origen",
+                "stock_disponible",
+                "cantidad_comprometida",
+                "cantidad_en_transito",
+                "stock_libre",
+                "stock_proyectado",
+                "stock_minimo",
+                "stock_maximo",
+                "cantidad_multiplo",
+                "requiere_reabastecimiento",
+                "deficit",
+                "cantidad_sugerida"
+            ],
+            "type": "object",
+            "properties": {
+                "id_regla": {
+                    "title": "Id regla",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "producto_sku": {
+                    "title": "Producto sku",
+                    "type": "string"
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "almacen_nombre": {
+                    "title": "Almacen nombre",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "ruta": {
+                    "title": "Ruta",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "id_proveedor_preferido": {
+                    "title": "Id proveedor preferido",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_almacen_origen": {
+                    "title": "Id almacen origen",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "stock_disponible": {
+                    "title": "Stock disponible",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "cantidad_comprometida": {
+                    "title": "Cantidad comprometida",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "cantidad_en_transito": {
+                    "title": "Cantidad en transito",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "stock_libre": {
+                    "title": "Stock libre",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "stock_proyectado": {
+                    "title": "Stock proyectado",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "stock_minimo": {
+                    "title": "Stock minimo",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "stock_maximo": {
+                    "title": "Stock maximo",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "cantidad_multiplo": {
+                    "title": "Cantidad multiplo",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "requiere_reabastecimiento": {
+                    "title": "Requiere reabastecimiento",
+                    "type": "boolean"
+                },
+                "deficit": {
+                    "title": "Deficit",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "cantidad_sugerida": {
+                    "title": "Cantidad sugerida",
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "EvaluarReabastecimientoResponse": {
+            "required": [
+                "resultados"
+            ],
+            "type": "object",
+            "properties": {
+                "resultados": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EvaluarReabastecimientoItem"
+                    }
+                }
+            }
+        },
+        "GenerarBorradorInput": {
+            "type": "object",
+            "properties": {
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "fecha_necesidad": {
+                    "title": "Fecha necesidad",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                }
+            }
+        },
+        "GenerarBorradorResponse": {
+            "required": [
+                "ruta",
+                "tipo_documento",
+                "id_documento",
+                "numero",
+                "estado",
+                "cantidad"
+            ],
+            "type": "object",
+            "properties": {
+                "ruta": {
+                    "title": "Ruta",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "id_documento": {
+                    "title": "Id documento",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "numero": {
+                    "title": "Numero",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "lista_materiales_id": {
+                    "title": "Lista materiales id",
+                    "type": "string",
+                    "format": "uuid",
                     "x-nullable": true
                 }
             }

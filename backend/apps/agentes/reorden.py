@@ -210,10 +210,19 @@ Responde SOLO con un JSON válido:
         """
         from django.db.models import Sum
 
-        from apps.inventario.models import MovimientoInventario, StockActual
+        from apps.inventario.models import MovimientoInventario, ReglaReabastecimiento, StockActual
 
         hoy = hoy or date.today()
         fecha_inicio = hoy - timedelta(days=self.ventana_dias)
+
+        reglas_map: dict[tuple[str, str], ReglaReabastecimiento] = {
+            (str(r.id_producto_id), str(r.id_almacen_id)): r
+            for r in ReglaReabastecimiento.objects.filter(
+                id_empresa=self.empresa,
+                activo=True,
+                id_variante__isnull=True,
+            )
+        }
 
         # Consumo total por (producto, almacen) en ventana
         salidas_qs = (
@@ -241,9 +250,17 @@ Responde SOLO con un JSON válido:
             t0 = time.perf_counter()
             key = (str(stock.id_producto_id), str(stock.id_almacen_id))
             consumo_diario = consumo_map.get(key, Decimal("0"))
+            regla = reglas_map.get(key)
+            cantidad_minima = regla.stock_minimo if regla is not None else stock.cantidad_minima
+            cantidad_maxima = regla.stock_maximo if regla is not None else stock.cantidad_maxima
 
             if self._usar_llm:
-                s = self._analizar_llm(stock, consumo_diario)
+                s = self._analizar_llm(
+                    stock,
+                    consumo_diario,
+                    cantidad_minima=cantidad_minima,
+                    cantidad_maxima=cantidad_maxima,
+                )
             else:
                 s = _analizar_stock_fallback(
                     producto_id=str(stock.id_producto_id),
@@ -251,8 +268,8 @@ Responde SOLO con un JSON válido:
                     almacen_id=str(stock.id_almacen_id),
                     almacen_nombre=stock.id_almacen.nombre_almacen,
                     stock_disponible=stock.cantidad_disponible,
-                    cantidad_minima=stock.cantidad_minima,
-                    cantidad_maxima=stock.cantidad_maxima,
+                    cantidad_minima=cantidad_minima,
+                    cantidad_maxima=cantidad_maxima,
                     consumo_diario=consumo_diario,
                     umbral_critico=self.umbral_critico,
                     umbral_alerta=self.umbral_alerta,
@@ -299,14 +316,23 @@ Responde SOLO con un JSON válido:
             umbral_alerta=self.umbral_alerta,
         )
 
-    def _analizar_llm(self, stock, consumo_diario: Decimal) -> SugerenciaReorden:
+    def _analizar_llm(
+        self,
+        stock,
+        consumo_diario: Decimal,
+        *,
+        cantidad_minima: Optional[Decimal] = None,
+        cantidad_maxima: Optional[Decimal] = None,
+    ) -> SugerenciaReorden:
         import json
 
+        minimo_efectivo = stock.cantidad_minima if cantidad_minima is None else cantidad_minima
+        maximo_efectivo = stock.cantidad_maxima if cantidad_maxima is None else cantidad_maxima
         producto_nombre = stock.id_producto.nombre_producto
         user_msg = (
             f"Producto: {producto_nombre}\n"
             f"Stock disponible: {stock.cantidad_disponible}\n"
-            f"Stock mínimo: {stock.cantidad_minima}\n"
+            f"Stock mínimo: {minimo_efectivo}\n"
             f"Consumo diario promedio (últimos {self.ventana_dias}d): {consumo_diario:.2f}\n"
             f"Umbrales: crítico={self.umbral_critico}d, alerta={self.umbral_alerta}d"
         )
@@ -328,7 +354,7 @@ Responde SOLO con un JSON válido:
                 almacen_id=str(stock.id_almacen_id),
                 almacen_nombre=stock.id_almacen.nombre_almacen,
                 stock_disponible=stock.cantidad_disponible,
-                cantidad_minima=stock.cantidad_minima,
+                cantidad_minima=minimo_efectivo,
                 consumo_diario=consumo_diario,
                 dias_restantes=dias_r,
                 estado=estado,
@@ -344,8 +370,8 @@ Responde SOLO con un JSON válido:
                 str(stock.id_almacen_id),
                 stock.id_almacen.nombre_almacen,
                 stock.cantidad_disponible,
-                stock.cantidad_minima,
-                stock.cantidad_maxima,
+                minimo_efectivo,
+                maximo_efectivo,
                 consumo_diario,
                 self.umbral_critico,
                 self.umbral_alerta,

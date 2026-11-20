@@ -8,10 +8,15 @@ Herramientas expuestas:
 """
 
 import logging
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import timedelta
 from decimal import Decimal
 from typing import Any, Dict, List
+
+from django.db.models import F
+from django.utils import timezone
 
 logger = logging.getLogger("omni.mcp.inventario")
 
@@ -170,6 +175,159 @@ def inventario_get_alertas_stock(
         return alertas
 
 
+def _parse_uuid_mcp(raw: str, campo: str) -> uuid.UUID:
+    limpio = str(raw or "").strip()
+    if not limpio or "\x00" in limpio:
+        raise ValueError(f"El parámetro '{campo}' es inválido.")
+    try:
+        return uuid.UUID(limpio)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"El parámetro '{campo}' no es un UUID válido.") from exc
+
+
+def inventario_evaluar_reabastecimiento(
+    capability_token: str,
+    empresa_id: str,
+    almacen_id: str = "",
+    solo_requieren: bool = True,
+) -> list[dict[str, Any]] | dict[str, Any]:
+    """Evalúa las reglas activas de reabastecimiento contra el stock proyectado de la empresa.
+
+    Scope requerido: ``inventario:read``
+    """
+    from apps.almacenes.models import Almacen  # noqa: PLC0415
+    from apps.core.models import Empresa  # noqa: PLC0415
+    from apps.inventario.services_reabastecimiento import evaluar_reabastecimiento  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            emp_uuid = _parse_uuid_mcp(empresa_id, "empresa_id")
+            empresa = Empresa.objects.filter(pk=emp_uuid, activo=True).first()
+            if empresa is None:
+                raise ValueError("Empresa no encontrada o inactiva.")
+
+            almacen = None
+            if almacen_id and str(almacen_id).strip():
+                alm_uuid = _parse_uuid_mcp(almacen_id, "almacen_id")
+                almacen = Almacen.objects.filter(pk=alm_uuid, id_empresa=empresa).first()
+                if almacen is None:
+                    raise ValueError("Almacén no encontrado en la empresa.")
+
+            if not isinstance(solo_requieren, bool):
+                raise ValueError("El parámetro 'solo_requieren' debe ser booleano.")
+
+            resultados = evaluar_reabastecimiento(
+                empresa,
+                almacen=almacen,
+                incluir_ok=not solo_requieren,
+            )
+        except ValueError as exc:
+            return {"error": str(exc)}
+
+        logger.info(
+            "inventario_evaluar_reabastecimiento | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(resultados),
+        )
+        return [{k: str(v) if isinstance(v, Decimal) else v for k, v in item.items()} for item in resultados]
+
+
+def inventario_consultar_lotes(
+    capability_token: str,
+    empresa_id: str,
+    producto_id: str = "",
+    almacen_id: str = "",
+    por_vencer_dias: int | None = None,
+    solo_con_stock: bool = True,
+) -> list[dict[str, Any]] | dict[str, Any]:
+    """Lista los lotes de producto de la empresa con filtros opcionales por producto, almacén y vencimiento.
+
+    Scope requerido: ``inventario:read``
+    """
+    from apps.almacenes.models import Almacen  # noqa: PLC0415
+    from apps.core.models import Empresa  # noqa: PLC0415
+    from apps.inventario.models import LoteProducto, Producto  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            emp_uuid = _parse_uuid_mcp(empresa_id, "empresa_id")
+            empresa = Empresa.objects.filter(pk=emp_uuid, activo=True).first()
+            if empresa is None:
+                raise ValueError("Empresa no encontrada o inactiva.")
+
+            producto = None
+            if producto_id and str(producto_id).strip():
+                prod_uuid = _parse_uuid_mcp(producto_id, "producto_id")
+                producto = Producto.objects.filter(pk=prod_uuid, id_empresa=empresa).first()
+                if producto is None:
+                    raise ValueError("Producto no encontrado en la empresa.")
+
+            almacen = None
+            if almacen_id and str(almacen_id).strip():
+                alm_uuid = _parse_uuid_mcp(almacen_id, "almacen_id")
+                almacen = Almacen.objects.filter(pk=alm_uuid, id_empresa=empresa).first()
+                if almacen is None:
+                    raise ValueError("Almacén no encontrado en la empresa.")
+
+            dias_int: int | None = None
+            if por_vencer_dias is not None:
+                if isinstance(por_vencer_dias, bool):
+                    raise ValueError("El parámetro 'por_vencer_dias' debe ser un entero >= 0.")
+                try:
+                    dias_int = int(por_vencer_dias)
+                except (ValueError, TypeError) as exc:
+                    raise ValueError("El parámetro 'por_vencer_dias' debe ser un entero >= 0.") from exc
+                if dias_int < 0:
+                    raise ValueError("El parámetro 'por_vencer_dias' debe ser mayor o igual a cero.")
+
+            if not isinstance(solo_con_stock, bool):
+                raise ValueError("El parámetro 'solo_con_stock' debe ser booleano.")
+        except ValueError as exc:
+            return {"error": str(exc)}
+
+        qs = LoteProducto.objects.filter(id_empresa=empresa, activo=True).select_related(
+            "id_producto", "id_almacen", "id_variante"
+        )
+        if producto is not None:
+            qs = qs.filter(id_producto=producto)
+        if almacen is not None:
+            qs = qs.filter(id_almacen=almacen)
+        if solo_con_stock:
+            qs = qs.filter(cantidad_disponible__gt=0)
+        if dias_int is not None:
+            limite = timezone.localdate() + timedelta(days=dias_int)
+            qs = qs.filter(fecha_vencimiento__isnull=False, fecha_vencimiento__lte=limite)
+
+        lotes = list(qs.order_by(F("fecha_vencimiento").asc(nulls_last=True), "numero_lote", "pk")[:200])
+        logger.info(
+            "inventario_consultar_lotes | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(lotes),
+        )
+        return [
+            {
+                "id_lote": str(lote.id_lote),
+                "id_producto": str(lote.id_producto_id),
+                "producto_nombre": lote.id_producto.nombre_producto,
+                "sku": lote.id_producto.sku or "",
+                "id_variante": str(lote.id_variante_id) if lote.id_variante_id else None,
+                "id_almacen": str(lote.id_almacen_id),
+                "almacen_nombre": lote.id_almacen.nombre_almacen,
+                "numero_lote": lote.numero_lote,
+                "fecha_fabricacion": lote.fecha_fabricacion.isoformat() if lote.fecha_fabricacion else None,
+                "fecha_vencimiento": lote.fecha_vencimiento.isoformat() if lote.fecha_vencimiento else None,
+                "cantidad_disponible": str(lote.cantidad_disponible.quantize(Decimal("0.0001"))),
+                "cantidad_reservada": str(lote.cantidad_reservada.quantize(Decimal("0.0001"))),
+                "cantidad_libre": str(
+                    (lote.cantidad_disponible - lote.cantidad_reservada).quantize(Decimal("0.0001"))
+                ),
+            }
+            for lote in lotes
+        ]
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-discovery
 # ─────────────────────────────────────────────────────────────────────────────
@@ -188,6 +346,16 @@ MCP_TOOLS: List[Dict[str, Any]] = [
     {
         "fn": inventario_get_alertas_stock,
         "name": "inventario_get_alertas_stock",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": inventario_evaluar_reabastecimiento,
+        "name": "inventario_evaluar_reabastecimiento",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": inventario_consultar_lotes,
+        "name": "inventario_consultar_lotes",
         "scope": f"{_SCOPE}:read",
     },
 ]

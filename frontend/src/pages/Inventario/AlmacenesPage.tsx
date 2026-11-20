@@ -8,12 +8,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   Stack,
+  Switch,
   TextField,
 } from '@mui/material';
 import AddOutlined from '@mui/icons-material/AddOutlined';
 import TuneOutlined from '@mui/icons-material/TuneOutlined';
-import { PageContainer, PageHeader, DataTable } from '../../components/ui';
+import { PageContainer, PageHeader, DataTable, StatusChip } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import {
   almacenesService,
@@ -28,9 +30,15 @@ interface FormState {
   nombre_almacen: string;
   codigo_almacen: string;
   direccion: string;
+  usa_ubicaciones: boolean;
 }
 
-const FORM_VACIO: FormState = { nombre_almacen: '', codigo_almacen: '', direccion: '' };
+const FORM_VACIO: FormState = {
+  nombre_almacen: '',
+  codigo_almacen: '',
+  direccion: '',
+  usa_ubicaciones: false,
+};
 
 const AlmacenesPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -60,6 +68,7 @@ const AlmacenesPage: React.FC = () => {
       nombre_almacen: a.nombre_almacen,
       codigo_almacen: a.codigo_almacen ?? '',
       direccion: a.direccion ?? '',
+      usa_ubicaciones: Boolean(a.usa_ubicaciones),
     });
     setErrorMsg('');
     setDialogOpen(true);
@@ -93,6 +102,7 @@ const AlmacenesPage: React.FC = () => {
       nombre_almacen: form.nombre_almacen.trim(),
       codigo_almacen: form.codigo_almacen.trim(),
       direccion: form.direccion.trim() || null,
+      usa_ubicaciones: form.usa_ubicaciones,
     });
   };
 
@@ -100,6 +110,13 @@ const AlmacenesPage: React.FC = () => {
     { key: 'nombre', header: 'Nombre', render: (a) => a.nombre_almacen },
     { key: 'codigo', header: 'Código', render: (a) => a.codigo_almacen },
     { key: 'direccion', header: 'Dirección', render: (a) => a.direccion || '—' },
+    {
+      key: 'usa_ubicaciones',
+      header: 'Ubicaciones',
+      render: (a) => (
+        <StatusChip value={Boolean(a.usa_ubicaciones)} label={a.usa_ubicaciones ? 'Activas' : 'Simple'} />
+      ),
+    },
     {
       key: 'acciones',
       header: 'Acciones',
@@ -180,6 +197,15 @@ const AlmacenesPage: React.FC = () => {
               multiline
               minRows={2}
               fullWidth
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={form.usa_ubicaciones}
+                  onChange={(e) => setForm((f) => ({ ...f, usa_ubicaciones: e.target.checked }))}
+                />
+              }
+              label="Usa ubicaciones internas (opt-in)"
             />
           </Stack>
         </DialogContent>

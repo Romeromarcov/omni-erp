@@ -686,6 +686,10 @@
 | `^logs-integracion/(?P<pk>[^/.]+)/$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
 | `^logs-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
 | `^logs-integracion\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
+| `^lotes-producto/$` | LoteProductoViewSet | LoteProducto | ✅ | ✅ | IsAuthenticated |
+| `^lotes-producto/(?P<pk>[^/.]+)/$` | LoteProductoViewSet | LoteProducto | ✅ | ✅ | IsAuthenticated |
+| `^lotes-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LoteProductoViewSet | LoteProducto | ✅ | ✅ | IsAuthenticated |
+| `^lotes-producto\.(?P<format>[a-z0-9]+)/?$` | LoteProductoViewSet | LoteProducto | ✅ | ✅ | IsAuthenticated |
 | `^lotes/$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ | IsAuthenticated |
 | `^lotes/(?P<pk>[^/.]+)/$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ | IsAuthenticated |
 | `^lotes/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LoteFraccionadoViewSet | LoteFraccionado | ✅ | ✅ | IsAuthenticated |
@@ -1124,6 +1128,14 @@
 | `^registros-operacion/(?P<pk>[^/.]+)/$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
 | `^registros-operacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
 | `^registros-operacion\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento/$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento/(?P<pk>[^/.]+)/$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento/(?P<pk>[^/.]+)/generar-borrador/$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento/(?P<pk>[^/.]+)/generar-borrador\.(?P<format>[a-z0-9]+)/?$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento/evaluar/$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento/evaluar\.(?P<format>[a-z0-9]+)/?$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
+| `^reglas-reabastecimiento\.(?P<format>[a-z0-9]+)/?$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
 | `^reglas-recurrencia/$` | ReglaRecurrenciaViewSet | ReglaRecurrencia | ✅ | — | IsAuthenticated |
 | `^reglas-recurrencia/(?P<pk>[^/.]+)/$` | ReglaRecurrenciaViewSet | ReglaRecurrencia | ✅ | — | IsAuthenticated |
 | `^reglas-recurrencia/(?P<pk>[^/.]+)/activar/$` | ReglaRecurrenciaViewSet | ReglaRecurrencia | ✅ | — | IsAuthenticated |
@@ -1216,6 +1228,14 @@
 | `^stock-consignacion-proveedor/(?P<pk>[^/.]+)/$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ | IsAuthenticated |
 | `^stock-consignacion-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ | IsAuthenticated |
 | `^stock-consignacion-proveedor\.(?P<format>[a-z0-9]+)/?$` | StockConsignacionProveedorViewSet | StockConsignacionProveedor | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones/$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones/(?P<pk>[^/.]+)/$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones/reservar/$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones/reservar\.(?P<format>[a-z0-9]+)/?$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones/transferir/$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones/transferir\.(?P<format>[a-z0-9]+)/?$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
+| `^stock-ubicaciones\.(?P<format>[a-z0-9]+)/?$` | StockUbicacionViewSet | StockUbicacion | ✅ | ✅ | IsAuthenticated |
 | `^sucursales/$` | SucursalViewSet | Sucursal | ✅ | ✅ | IsAuthenticated |
 | `^sucursales/(?P<pk>[^/.]+)/$` | SucursalViewSet | Sucursal | ✅ | ✅ | IsAuthenticated |
 | `^sucursales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SucursalViewSet | Sucursal | ✅ | ✅ | IsAuthenticated |
@@ -1362,4 +1382,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 247_
+_Total ViewSets: 250_

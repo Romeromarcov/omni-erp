@@ -1,22 +1,34 @@
+from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Q
+from django.db.models import F, Q
+from django.utils import timezone
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import (
+    BaseModelViewSet,
+    EmpresaInjectMixin,
+    NulSafeFilterMixin,
+    get_empresa_primaria,
+    get_empresas_visible,
+    validar_uuid_param,
+)
 from apps.almacenes.models import Almacen
 
 from .models import (
     CategoriaProducto,
     ConversionUnidadMedida,
+    LoteProducto,
     MovimientoInventario,
     OperacionInventario,
     PasoOperacion,
     Producto,
+    ReglaReabastecimiento,
     StockActual,
     StockConsignacionCliente,
     StockConsignacionProveedor,
@@ -27,10 +39,16 @@ from .serializers import (
     CategoriaProductoSerializer,
     ConversionUnidadMedidaSerializer,
     CrearOperacionSerializer,
+    EvaluarReabastecimientoInputSerializer,
+    EvaluarReabastecimientoResponseSerializer,
+    GenerarBorradorInputSerializer,
+    GenerarBorradorResponseSerializer,
+    LoteProductoSerializer,
     MovimientoInventarioSerializer,
     OperacionInventarioSerializer,
     PasoOperacionSerializer,
     ProductoSerializer,
+    ReglaReabastecimientoSerializer,
     StockActualSerializer,
     StockConsignacionClienteSerializer,
     StockConsignacionProveedorSerializer,
@@ -62,9 +80,20 @@ class CategoriaProductoViewSet(BaseModelViewSet):
         return CategoriaProducto.objects.filter(id_empresa__in=_empresas(self.request)).order_by("nombre_categoria")
 
 
-class ProductoViewSet(BaseModelViewSet):
+class ProductoViewSet(NulSafeFilterMixin, BaseModelViewSet):
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
+    search_fields = ["nombre_producto", "sku", "descripcion", "referencia_externa"]
+    ordering_fields = [
+        "nombre_producto",
+        "sku",
+        "tipo_producto",
+        "costo_promedio",
+        "precio_venta_sugerido",
+        "estrategia_salida",
+        "activo",
+        "fecha_creacion",
+    ]
 
     def get_queryset(self):
         qs = Producto.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
@@ -189,14 +218,16 @@ class StockActualViewSet(BaseModelViewSet):
 # ── Movimientos ───────────────────────────────────────────────────────────────
 
 
-class MovimientoInventarioViewSet(BaseModelViewSet):
+class MovimientoInventarioViewSet(NulSafeFilterMixin, BaseModelViewSet):
     queryset = MovimientoInventario.objects.all()
     serializer_class = MovimientoInventarioSerializer
+    search_fields = ["id_producto__nombre_producto", "id_producto__sku", "observaciones", "tipo_movimiento"]
+    ordering_fields = ["fecha_hora_movimiento", "tipo_movimiento", "cantidad", "fecha_creacion"]
 
     def get_queryset(self):
         return (
             MovimientoInventario.objects.filter(id_empresa__in=_empresas(self.request))
-            .select_related("id_producto", "id_almacen_origen", "id_almacen_destino")
+            .select_related("id_producto", "id_almacen_origen", "id_almacen_destino", "id_lote")
             .order_by("-fecha_hora_movimiento")
         )
 
@@ -204,6 +235,7 @@ class MovimientoInventarioViewSet(BaseModelViewSet):
         from .services import MovimientoInvalidoError, StockInsuficienteError, registrar_movimiento
 
         vd = serializer.validated_data
+        lote_arg = vd.get("id_lote") or (vd.get("numero_lote") or "").strip() or None
         try:
             movimiento = registrar_movimiento(
                 empresa=vd["id_empresa"],
@@ -219,6 +251,9 @@ class MovimientoInventarioViewSet(BaseModelViewSet):
                 nombre_modelo_origen=vd.get("nombre_modelo_origen"),
                 usuario=self.request.user,
                 observaciones=vd.get("observaciones"),
+                lote=lote_arg,
+                fecha_fabricacion=vd.get("fecha_fabricacion"),
+                fecha_vencimiento=vd.get("fecha_vencimiento"),
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise ValidationError(str(exc)) from exc
@@ -495,3 +530,130 @@ class ReportesInventarioViewSet(viewsets.ViewSet):
             )
         data.sort(key=lambda d: (d["producto"], d["almacen"]))
         return Response({"valoracion": data})
+
+
+# ── Reabastecimiento y Lotes opt-in (Plan 08 §B.3) ────────────────────────────
+
+
+class ReglaReabastecimientoViewSet(NulSafeFilterMixin, EmpresaInjectMixin, BaseModelViewSet):
+    queryset = ReglaReabastecimiento.objects.all()
+    serializer_class = ReglaReabastecimientoSerializer
+    search_fields = ["id_producto__nombre_producto", "id_producto__sku", "id_almacen__nombre_almacen", "ruta"]
+    ordering_fields = ["ruta", "stock_minimo", "stock_maximo", "activo", "fecha_creacion"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        qs = ReglaReabastecimiento.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
+            "id_producto", "id_variante", "id_almacen", "id_proveedor_preferido", "id_almacen_origen"
+        )
+        almacen_id = self.request.query_params.get("almacen")
+        producto_id = self.request.query_params.get("producto")
+        if almacen_id:
+            qs = qs.filter(id_almacen_id=validar_uuid_param(almacen_id, "almacen"))
+        if producto_id:
+            qs = qs.filter(id_producto_id=validar_uuid_param(producto_id, "producto"))
+        return qs.order_by("id_producto__nombre_producto", "id_almacen__nombre_almacen", "pk")
+
+    @swagger_auto_schema(
+        request_body=EvaluarReabastecimientoInputSerializer,
+        responses={200: EvaluarReabastecimientoResponseSerializer},
+    )
+    @action(detail=False, methods=["post"], url_path="evaluar")
+    def evaluar(self, request):
+        """POST /api/inventario/reglas-reabastecimiento/evaluar/ — Evalúa déficit y cantidades sugeridas."""
+        from .services_reabastecimiento import evaluar_reabastecimiento
+
+        entrada = EvaluarReabastecimientoInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+
+        almacen = None
+        if datos.get("almacen"):
+            almacen = Almacen.objects.filter(pk=datos["almacen"], id_empresa__in=_empresas(request)).first()
+            if almacen is None:
+                return Response({"detail": "Almacén no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            empresa = almacen.id_empresa
+        else:
+            empresa = get_empresa_primaria(request.user)
+            if empresa is None:
+                raise PermissionDenied("El usuario no tiene empresa asignada.")
+
+        resultados = evaluar_reabastecimiento(
+            empresa,
+            almacen=almacen,
+            incluir_ok=datos.get("incluir_ok", False),
+        )
+        serializados = [{k: str(v) if isinstance(v, Decimal) else v for k, v in item.items()} for item in resultados]
+        return Response({"resultados": serializados}, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        request_body=GenerarBorradorInputSerializer,
+        responses={201: GenerarBorradorResponseSerializer},
+    )
+    @action(detail=True, methods=["post"], url_path="generar-borrador")
+    def generar_borrador(self, request, pk=None):
+        """POST /api/inventario/reglas-reabastecimiento/{pk}/generar-borrador/ — Crea borrador según ruta."""
+        from .services_reabastecimiento import ReabastecimientoError, generar_borrador_reabastecimiento
+
+        regla = self.get_object()
+        entrada = GenerarBorradorInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+
+        try:
+            res = generar_borrador_reabastecimiento(
+                regla,
+                usuario=request.user,
+                cantidad=datos.get("cantidad"),
+                fecha_necesidad=datos.get("fecha_necesidad"),
+            )
+        except ReabastecimientoError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+
+        return Response(res, status=status.HTTP_201_CREATED)
+
+
+class LoteProductoViewSet(NulSafeFilterMixin, EmpresaInjectMixin, BaseModelViewSet):
+    queryset = LoteProducto.objects.all()
+    serializer_class = LoteProductoSerializer
+    http_method_names = ["get", "post", "patch", "head", "options"]
+    search_fields = ["numero_lote", "id_producto__nombre_producto", "id_producto__sku", "id_almacen__nombre_almacen"]
+    ordering_fields = [
+        "numero_lote",
+        "fecha_fabricacion",
+        "fecha_vencimiento",
+        "cantidad_disponible",
+        "cantidad_reservada",
+        "fecha_creacion",
+    ]
+
+    def get_queryset(self):
+        # R-CODE-1
+        qs = LoteProducto.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
+            "id_producto", "id_almacen", "id_variante"
+        )
+        almacen_id = self.request.query_params.get("almacen")
+        producto_id = self.request.query_params.get("producto")
+        por_vencer_raw = self.request.query_params.get("por_vencer_dias")
+        solo_con_stock = self.request.query_params.get("solo_con_stock")
+
+        if almacen_id:
+            qs = qs.filter(id_almacen_id=validar_uuid_param(almacen_id, "almacen"))
+        if producto_id:
+            qs = qs.filter(id_producto_id=validar_uuid_param(producto_id, "producto"))
+        if por_vencer_raw is not None and str(por_vencer_raw).strip() != "":
+            raw_str = str(por_vencer_raw)
+            if "\x00" in raw_str:
+                raise ValidationError({"por_vencer_dias": "Parámetro inválido."})
+            try:
+                dias = int(raw_str.strip())
+            except ValueError as exc:
+                raise ValidationError({"por_vencer_dias": "Debe ser un entero mayor o igual a cero."}) from exc
+            if dias < 0:
+                raise ValidationError({"por_vencer_dias": "Debe ser un entero mayor o igual a cero."})
+            limite = timezone.localdate() + timedelta(days=dias)
+            qs = qs.filter(fecha_vencimiento__isnull=False, fecha_vencimiento__lte=limite)
+        if solo_con_stock is not None and str(solo_con_stock).strip().lower() in ("true", "1", "yes"):
+            qs = qs.filter(cantidad_disponible__gt=0)
+
+        return qs.order_by(F("fecha_vencimiento").asc(nulls_last=True), "numero_lote", "pk")

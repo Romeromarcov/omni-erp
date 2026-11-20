@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -11,9 +12,12 @@ import {
   FormControlLabel,
   MenuItem,
   Stack,
+  Tab,
+  Tabs,
   TextField,
 } from '@mui/material';
 import AddOutlined from '@mui/icons-material/AddOutlined';
+import SwapHorizOutlined from '@mui/icons-material/SwapHorizOutlined';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import {
@@ -22,8 +26,18 @@ import {
   type UbicacionAlmacenPayload,
   type TipoUbicacion,
 } from '../../services/gapsMenoresService';
-import { almacenesService, type Almacen } from '../../services/almacenesService';
+import {
+  almacenesService,
+  stockUbicacionesService,
+  type Almacen,
+  type StockUbicacion,
+  type StockUbicacionPayload,
+  type TransferirUbicacionPayload,
+  type ReservarUbicacionPayload,
+} from '../../services/almacenesService';
+import { productoInventarioService, type Producto } from '../../services/inventarioService';
 import { gapsMenoresKeys, almacenesKeys } from '../../lib/queryKeys';
+import { D } from '../../lib/decimal';
 import { mensajeDeError } from '../../utils/api';
 import { getEmpresaId } from '../../utils/empresa';
 
@@ -73,17 +87,63 @@ const FORM_VACIO: FormState = {
 };
 
 const UbicacionesAlmacenPage: React.FC = () => {
-  const queryClient = useQueryClient();
+  const [tab, setTab] = useState(0);
   const [filtroAlmacen, setFiltroAlmacen] = useState('');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editando, setEditando] = useState<UbicacionAlmacen | null>(null);
-  const [form, setForm] = useState<FormState>(FORM_VACIO);
-  const [errorMsg, setErrorMsg] = useState('');
 
   const { data: almacenes = [] } = useQuery({
     queryKey: almacenesKeys.all(),
     queryFn: () => almacenesService.getAll(),
   });
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Ubicaciones de Almacén"
+        subtitle="Ubicaciones físicas dentro de cada almacén (estanterías, picking, refrigerado…) y stock por ubicación."
+      />
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+        <Tab label="Ubicaciones" />
+        <Tab label="Stock por Ubicación" />
+      </Tabs>
+
+      {tab === 0 && (
+        <UbicacionesCrudTab
+          almacenes={almacenes}
+          filtroAlmacen={filtroAlmacen}
+          onChangeFiltroAlmacen={setFiltroAlmacen}
+        />
+      )}
+      {tab === 1 && (
+        <StockUbicacionesTab
+          almacenes={almacenes}
+          filtroAlmacen={filtroAlmacen}
+          onChangeFiltroAlmacen={setFiltroAlmacen}
+        />
+      )}
+    </PageContainer>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 0: CRUD Ubicaciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface UbicacionesCrudTabProps {
+  almacenes: Almacen[];
+  filtroAlmacen: string;
+  onChangeFiltroAlmacen: (v: string) => void;
+}
+
+const UbicacionesCrudTab: React.FC<UbicacionesCrudTabProps> = ({
+  almacenes,
+  filtroAlmacen,
+  onChangeFiltroAlmacen,
+}) => {
+  const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editando, setEditando] = useState<UbicacionAlmacen | null>(null);
+  const [form, setForm] = useState<FormState>(FORM_VACIO);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const { data: ubicaciones = [], isLoading } = useQuery({
     queryKey: gapsMenoresKeys.ubicaciones(filtroAlmacen || null),
@@ -182,6 +242,12 @@ const UbicacionesAlmacenPage: React.FC = () => {
       header: 'Tipo',
       render: (u) => TIPOS.find((t) => t.value === u.tipo_ubicacion)?.label ?? u.tipo_ubicacion,
     },
+    {
+      key: 'autorizacion',
+      header: 'Autorización',
+      render: (u) =>
+        u.requiere_autorizacion ? <Chip label="Requiere autorización" size="small" color="warning" /> : '—',
+    },
     { key: 'activo', header: 'Activa', render: (u) => <StatusChip value={u.activo} /> },
     {
       key: 'acciones',
@@ -205,38 +271,33 @@ const UbicacionesAlmacenPage: React.FC = () => {
   ];
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Ubicaciones de Almacén"
-        subtitle="Ubicaciones físicas dentro de cada almacén (estanterías, picking, refrigerado…)."
-        actions={
-          <Button variant="contained" startIcon={<AddOutlined />} onClick={abrirCrear}>
-            Nueva ubicación
-          </Button>
-        }
-      />
+    <Stack spacing={2}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} flexWrap="wrap">
+        <TextField
+          select
+          label="Almacén"
+          value={filtroAlmacen}
+          onChange={(e) => onChangeFiltroAlmacen(e.target.value)}
+          size="small"
+          sx={{ minWidth: 260 }}
+        >
+          <MenuItem value="">Todos</MenuItem>
+          {almacenes.map((a: Almacen) => (
+            <MenuItem key={a.id_almacen} value={a.id_almacen}>
+              {a.nombre_almacen}
+            </MenuItem>
+          ))}
+        </TextField>
+        <Button variant="contained" startIcon={<AddOutlined />} onClick={abrirCrear}>
+          Nueva ubicación
+        </Button>
+      </Stack>
 
       {errorMsg && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg('')}>
+        <Alert severity="error" onClose={() => setErrorMsg('')}>
           {errorMsg}
         </Alert>
       )}
-
-      <TextField
-        select
-        label="Almacén"
-        value={filtroAlmacen}
-        onChange={(e) => setFiltroAlmacen(e.target.value)}
-        size="small"
-        sx={{ mb: 2, minWidth: 260 }}
-      >
-        <MenuItem value="">Todos</MenuItem>
-        {almacenes.map((a: Almacen) => (
-          <MenuItem key={a.id_almacen} value={a.id_almacen}>
-            {a.nombre_almacen}
-          </MenuItem>
-        ))}
-      </TextField>
 
       <DataTable
         columns={columns}
@@ -374,7 +435,525 @@ const UbicacionesAlmacenPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </PageContainer>
+    </Stack>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 1: Stock por Ubicación + Transferencias + Reservas
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface StockUbicacionesTabProps {
+  almacenes: Almacen[];
+  filtroAlmacen: string;
+  onChangeFiltroAlmacen: (v: string) => void;
+}
+
+interface TransferirForm {
+  id_almacen: string;
+  id_ubicacion_origen: string;
+  id_ubicacion_destino: string;
+  id_producto: string;
+  cantidad: string;
+  observaciones: string;
+}
+
+interface CargaForm {
+  id_almacen: string;
+  id_ubicacion: string;
+  id_producto: string;
+  cantidad_disponible: string;
+}
+
+interface ReservaForm {
+  id_almacen: string;
+  id_ubicacion: string;
+  id_producto: string;
+  cantidad: string;
+  liberar: boolean;
+}
+
+const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
+  almacenes,
+  filtroAlmacen,
+  onChangeFiltroAlmacen,
+}) => {
+  const queryClient = useQueryClient();
+  const empresaId = getEmpresaId() || '';
+  const [errorMsg, setErrorMsg] = useState('');
+  const [okMsg, setOkMsg] = useState('');
+
+  const [transferirOpen, setTransferirOpen] = useState(false);
+  const [transferirForm, setTransferirForm] = useState<TransferirForm>({
+    id_almacen: filtroAlmacen,
+    id_ubicacion_origen: '',
+    id_ubicacion_destino: '',
+    id_producto: '',
+    cantidad: '1',
+    observaciones: '',
+  });
+
+  const [cargaOpen, setCargaOpen] = useState(false);
+  const [cargaForm, setCargaForm] = useState<CargaForm>({
+    id_almacen: filtroAlmacen,
+    id_ubicacion: '',
+    id_producto: '',
+    cantidad_disponible: '0',
+  });
+
+  const [reservaOpen, setReservaOpen] = useState(false);
+  const [reservaForm, setReservaForm] = useState<ReservaForm>({
+    id_almacen: '',
+    id_ubicacion: '',
+    id_producto: '',
+    cantidad: '1',
+    liberar: false,
+  });
+
+  const { data: stocks = [], isLoading } = useQuery({
+    queryKey: almacenesKeys.stockUbicaciones(filtroAlmacen || null),
+    queryFn: () => stockUbicacionesService.getAll(filtroAlmacen ? { almacen: filtroAlmacen } : undefined),
+  });
+
+  const { data: ubicaciones = [] } = useQuery({
+    queryKey: gapsMenoresKeys.ubicaciones(null),
+    queryFn: () => ubicacionesAlmacenService.getAll(),
+  });
+
+  const { data: productos = [] } = useQuery({
+    queryKey: ['productos', empresaId],
+    queryFn: () => productoInventarioService.getAll(empresaId ? { empresa: empresaId } : undefined),
+  });
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: almacenesKeys.stockUbicacionesAll() });
+
+  const almacenesConUbic = almacenes.filter((a) => Boolean(a.usa_ubicaciones));
+  const almacenSeleccionado = almacenes.find((a) => a.id_almacen === filtroAlmacen);
+
+  const crearStock = useMutation({
+    mutationFn: (payload: StockUbicacionPayload) => stockUbicacionesService.create(payload),
+    onSuccess: () => {
+      setCargaOpen(false);
+      setOkMsg('Stock inicial por ubicación registrado.');
+      invalidate();
+    },
+    onError: (e: unknown) => setErrorMsg(mensajeDeError(e, 'No se pudo registrar el stock inicial.')),
+  });
+
+  const transferir = useMutation({
+    mutationFn: (payload: TransferirUbicacionPayload) => stockUbicacionesService.transferir(payload),
+    onSuccess: () => {
+      setTransferirOpen(false);
+      setOkMsg('Transferencia entre ubicaciones registrada correctamente.');
+      invalidate();
+    },
+    onError: (e: unknown) => setErrorMsg(mensajeDeError(e, 'No se pudo completar la transferencia.')),
+  });
+
+  const reservar = useMutation({
+    mutationFn: (payload: ReservarUbicacionPayload) => stockUbicacionesService.reservar(payload),
+    onSuccess: () => {
+      setReservaOpen(false);
+      setOkMsg('Reserva por ubicación actualizada.');
+      invalidate();
+    },
+    onError: (e: unknown) => setErrorMsg(mensajeDeError(e, 'No se pudo actualizar la reserva.')),
+  });
+
+  const abrirTransferir = (fila?: StockUbicacion) => {
+    setErrorMsg('');
+    setTransferirForm({
+      id_almacen: fila?.id_almacen ?? filtroAlmacen ?? (almacenesConUbic[0]?.id_almacen || ''),
+      id_ubicacion_origen: fila?.id_ubicacion ?? '',
+      id_ubicacion_destino: '',
+      id_producto: fila?.id_producto ?? '',
+      cantidad: '1',
+      observaciones: '',
+    });
+    setTransferirOpen(true);
+  };
+
+  const abrirCarga = () => {
+    setErrorMsg('');
+    setCargaForm({
+      id_almacen: filtroAlmacen || (almacenesConUbic[0]?.id_almacen || ''),
+      id_ubicacion: '',
+      id_producto: '',
+      cantidad_disponible: '0',
+    });
+    setCargaOpen(true);
+  };
+
+  const abrirReserva = (fila: StockUbicacion) => {
+    setErrorMsg('');
+    setReservaForm({
+      id_almacen: fila.id_almacen,
+      id_ubicacion: fila.id_ubicacion,
+      id_producto: fila.id_producto,
+      cantidad: '1',
+      liberar: false,
+    });
+    setReservaOpen(true);
+  };
+
+  const handleTransferir = () => {
+    if (
+      !transferirForm.id_almacen ||
+      !transferirForm.id_ubicacion_origen ||
+      !transferirForm.id_ubicacion_destino ||
+      !transferirForm.id_producto
+    ) {
+      setErrorMsg('Complete almacén, ubicaciones origen/destino y producto.');
+      return;
+    }
+    if (transferirForm.id_ubicacion_origen === transferirForm.id_ubicacion_destino) {
+      setErrorMsg('La ubicación origen y destino deben ser distintas.');
+      return;
+    }
+    if (D(transferirForm.cantidad).lte(0)) {
+      setErrorMsg('La cantidad a transferir debe ser mayor a cero.');
+      return;
+    }
+    transferir.mutate({
+      id_almacen: transferirForm.id_almacen,
+      id_ubicacion_origen: transferirForm.id_ubicacion_origen,
+      id_ubicacion_destino: transferirForm.id_ubicacion_destino,
+      id_producto: transferirForm.id_producto,
+      cantidad: transferirForm.cantidad.trim(),
+      observaciones: transferirForm.observaciones.trim(),
+    });
+  };
+
+  const handleCarga = () => {
+    if (!cargaForm.id_almacen || !cargaForm.id_ubicacion || !cargaForm.id_producto) {
+      setErrorMsg('Complete almacén, ubicación y producto.');
+      return;
+    }
+    if (D(cargaForm.cantidad_disponible).lt(0)) {
+      setErrorMsg('La cantidad disponible no puede ser negativa.');
+      return;
+    }
+    crearStock.mutate({
+      id_almacen: cargaForm.id_almacen,
+      id_ubicacion: cargaForm.id_ubicacion,
+      id_producto: cargaForm.id_producto,
+      cantidad_disponible: cargaForm.cantidad_disponible.trim() || '0',
+    });
+  };
+
+  const handleReserva = () => {
+    if (D(reservaForm.cantidad).lte(0)) {
+      setErrorMsg('La cantidad debe ser mayor a cero.');
+      return;
+    }
+    reservar.mutate({
+      id_almacen: reservaForm.id_almacen,
+      id_ubicacion: reservaForm.id_ubicacion,
+      id_producto: reservaForm.id_producto,
+      cantidad: reservaForm.cantidad.trim(),
+      liberar: reservaForm.liberar,
+    });
+  };
+
+  const ubicacionesTransferir = ubicaciones.filter((u) => u.id_almacen === transferirForm.id_almacen);
+  const ubicacionesCarga = ubicaciones.filter((u) => u.id_almacen === cargaForm.id_almacen);
+  const ubOrigenObj = ubicaciones.find((u) => u.id_ubicacion === transferirForm.id_ubicacion_origen);
+  const ubDestinoObj = ubicaciones.find((u) => u.id_ubicacion === transferirForm.id_ubicacion_destino);
+  const requiereAutorizacionTransfer = Boolean(
+    ubOrigenObj?.requiere_autorizacion || ubDestinoObj?.requiere_autorizacion,
+  );
+
+  const columns: Column<StockUbicacion>[] = [
+    { key: 'almacen', header: 'Almacén', render: (s) => s.almacen_nombre ?? s.id_almacen },
+    {
+      key: 'ubicacion',
+      header: 'Ubicación',
+      render: (s) => (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <span>
+            {s.ubicacion_codigo ? `${s.ubicacion_codigo} · ${s.ubicacion_nombre ?? ''}` : s.id_ubicacion}
+          </span>
+          {s.requiere_autorizacion && <Chip label="Autorización" size="small" color="warning" />}
+        </Stack>
+      ),
+    },
+    {
+      key: 'producto',
+      header: 'Producto',
+      render: (s) => {
+        if (s.producto_nombre) return s.producto_sku ? `${s.producto_nombre} (${s.producto_sku})` : s.producto_nombre;
+        return productos.find((p: Producto) => p.id_producto === s.id_producto)?.nombre_producto ?? s.id_producto;
+      },
+    },
+    { key: 'disponible', header: 'Disponible', align: 'right', render: (s) => s.cantidad_disponible },
+    { key: 'reservada', header: 'Reservada', align: 'right', render: (s) => s.cantidad_reservada },
+    {
+      key: 'libre',
+      header: 'Libre',
+      align: 'right',
+      render: (s) => s.cantidad_libre ?? D(s.cantidad_disponible).minus(D(s.cantidad_reservada)).toFixed(4),
+    },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      render: (s) => (
+        <Stack direction="row" spacing={1}>
+          <Button size="small" startIcon={<SwapHorizOutlined />} onClick={() => abrirTransferir(s)}>
+            Transferir
+          </Button>
+          <Button size="small" onClick={() => abrirReserva(s)}>
+            Reservar / Liberar
+          </Button>
+        </Stack>
+      ),
+    },
+  ];
+
+  return (
+    <Stack spacing={2}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} flexWrap="wrap">
+        <TextField
+          select
+          label="Almacén"
+          value={filtroAlmacen}
+          onChange={(e) => onChangeFiltroAlmacen(e.target.value)}
+          size="small"
+          sx={{ minWidth: 260 }}
+        >
+          <MenuItem value="">Todos</MenuItem>
+          {almacenes.map((a: Almacen) => (
+            <MenuItem key={a.id_almacen} value={a.id_almacen}>
+              {a.nombre_almacen} {a.usa_ubicaciones ? '' : '(Simple)'}
+            </MenuItem>
+          ))}
+        </TextField>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<AddOutlined />} onClick={abrirCarga}>
+            Carga inicial
+          </Button>
+          <Button variant="contained" startIcon={<SwapHorizOutlined />} onClick={() => abrirTransferir()}>
+            Transferir entre ubicaciones
+          </Button>
+        </Stack>
+      </Stack>
+
+      {almacenSeleccionado && !almacenSeleccionado.usa_ubicaciones && (
+        <Alert severity="info">
+          El almacén <strong>{almacenSeleccionado.nombre_almacen}</strong> no tiene activado{' '}
+          <code>usa_ubicaciones</code>. Actívalo en Almacenes para operar stock por ubicación.
+        </Alert>
+      )}
+      {errorMsg && (
+        <Alert severity="error" onClose={() => setErrorMsg('')}>
+          {errorMsg}
+        </Alert>
+      )}
+      {okMsg && (
+        <Alert severity="success" onClose={() => setOkMsg('')}>
+          {okMsg}
+        </Alert>
+      )}
+
+      <DataTable
+        columns={columns}
+        rows={stocks}
+        getRowKey={(s) => s.id_stock_ubicacion}
+        loading={isLoading}
+        emptyMessage="Sin stock registrado por ubicación."
+      />
+
+      {/* Dialog Transferir */}
+      <Dialog open={transferirOpen} onClose={() => setTransferirOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Transferir entre ubicaciones</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {requiereAutorizacionTransfer && (
+              <Alert severity="warning">
+                Atención: una de las ubicaciones seleccionadas requiere autorización de supervisor (usuario staff o
+                autorizador de la empresa).
+              </Alert>
+            )}
+            <TextField
+              select
+              label="Almacén (con ubicaciones)"
+              value={transferirForm.id_almacen}
+              onChange={(e) =>
+                setTransferirForm((f) => ({
+                  ...f,
+                  id_almacen: e.target.value,
+                  id_ubicacion_origen: '',
+                  id_ubicacion_destino: '',
+                }))
+              }
+              fullWidth
+            >
+              {almacenesConUbic.map((a) => (
+                <MenuItem key={a.id_almacen} value={a.id_almacen}>
+                  {a.nombre_almacen}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Stack direction="row" spacing={1}>
+              <TextField
+                select
+                label="Ubicación origen"
+                value={transferirForm.id_ubicacion_origen}
+                onChange={(e) => setTransferirForm((f) => ({ ...f, id_ubicacion_origen: e.target.value }))}
+                fullWidth
+              >
+                {ubicacionesTransferir.map((u) => (
+                  <MenuItem key={u.id_ubicacion} value={u.id_ubicacion}>
+                    {u.codigo_ubicacion} — {u.nombre_ubicacion}
+                    {u.requiere_autorizacion ? ' (Requiere autorización)' : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Ubicación destino"
+                value={transferirForm.id_ubicacion_destino}
+                onChange={(e) => setTransferirForm((f) => ({ ...f, id_ubicacion_destino: e.target.value }))}
+                fullWidth
+              >
+                {ubicacionesTransferir.map((u) => (
+                  <MenuItem key={u.id_ubicacion} value={u.id_ubicacion}>
+                    {u.codigo_ubicacion} — {u.nombre_ubicacion}
+                    {u.requiere_autorizacion ? ' (Requiere autorización)' : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+            <TextField
+              select
+              label="Producto"
+              value={transferirForm.id_producto}
+              onChange={(e) => setTransferirForm((f) => ({ ...f, id_producto: e.target.value }))}
+              fullWidth
+            >
+              {productos.map((p) => (
+                <MenuItem key={p.id_producto} value={p.id_producto}>
+                  {p.nombre_producto}
+                  {p.sku ? ` (${p.sku})` : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Cantidad"
+              value={transferirForm.cantidad}
+              onChange={(e) => setTransferirForm((f) => ({ ...f, cantidad: e.target.value }))}
+              inputMode="decimal"
+              fullWidth
+            />
+            <TextField
+              label="Observaciones"
+              value={transferirForm.observaciones}
+              onChange={(e) => setTransferirForm((f) => ({ ...f, observaciones: e.target.value }))}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTransferirOpen(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleTransferir} disabled={transferir.isPending}>
+            Confirmar transferencia
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog Carga Inicial */}
+      <Dialog open={cargaOpen} onClose={() => setCargaOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Carga inicial de stock por ubicación</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              select
+              label="Almacén"
+              value={cargaForm.id_almacen}
+              onChange={(e) => setCargaForm((f) => ({ ...f, id_almacen: e.target.value, id_ubicacion: '' }))}
+              fullWidth
+            >
+              {almacenesConUbic.map((a) => (
+                <MenuItem key={a.id_almacen} value={a.id_almacen}>
+                  {a.nombre_almacen}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Ubicación"
+              value={cargaForm.id_ubicacion}
+              onChange={(e) => setCargaForm((f) => ({ ...f, id_ubicacion: e.target.value }))}
+              fullWidth
+            >
+              {ubicacionesCarga.map((u) => (
+                <MenuItem key={u.id_ubicacion} value={u.id_ubicacion}>
+                  {u.codigo_ubicacion} — {u.nombre_ubicacion}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Producto"
+              value={cargaForm.id_producto}
+              onChange={(e) => setCargaForm((f) => ({ ...f, id_producto: e.target.value }))}
+              fullWidth
+            >
+              {productos.map((p) => (
+                <MenuItem key={p.id_producto} value={p.id_producto}>
+                  {p.nombre_producto}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Cantidad disponible"
+              value={cargaForm.cantidad_disponible}
+              onChange={(e) => setCargaForm((f) => ({ ...f, cantidad_disponible: e.target.value }))}
+              inputMode="decimal"
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCargaOpen(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleCarga} disabled={crearStock.isPending}>
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog Reservar / Liberar */}
+      <Dialog open={reservaOpen} onClose={() => setReservaOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Reservar o liberar stock en ubicación</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              select
+              label="Operación"
+              value={reservaForm.liberar ? 'liberar' : 'reservar'}
+              onChange={(e) => setReservaForm((f) => ({ ...f, liberar: e.target.value === 'liberar' }))}
+              fullWidth
+            >
+              <MenuItem value="reservar">Reservar</MenuItem>
+              <MenuItem value="liberar">Liberar reserva</MenuItem>
+            </TextField>
+            <TextField
+              label="Cantidad"
+              value={reservaForm.cantidad}
+              onChange={(e) => setReservaForm((f) => ({ ...f, cantidad: e.target.value }))}
+              inputMode="decimal"
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReservaOpen(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleReserva} disabled={reservar.isPending}>
+            Aplicar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Stack>
   );
 };
 
