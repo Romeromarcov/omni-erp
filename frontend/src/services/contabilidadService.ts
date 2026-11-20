@@ -15,10 +15,14 @@
  *   GET      /contabilidad/detalles-asiento/?id_asiento=
  *   GET/POST /contabilidad/mapeos-contables/  ·  PATCH /{id}/
  *   GET      /contabilidad/mapeos-contables/tipos-asiento/
+ *   GET      /contabilidad/reportes/balance-comprobacion/
+ *   GET      /contabilidad/reportes/estado-resultados/
+ *   GET      /contabilidad/reportes/balance-general/
+ *   GET      /contabilidad/reportes/libro-mayor-auxiliar/
  *
  * Todos los montos viajan como STRING decimal (R-CODE-4) — nunca number.
  */
-import { get, patch, post } from './api';
+import { fetchBlob, get, patch, post } from './api';
 import { toList, type PaginatedResponse } from '../utils/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -200,6 +204,231 @@ export interface AsientosFiltros {
   fechaHasta?: string;
 }
 
+// ── Reportes financieros canónicos (PR-14 · Ola B2) ──────────────────────────
+
+export type TipoReporteContable =
+  | 'balance-comprobacion'
+  | 'estado-resultados'
+  | 'balance-general'
+  | 'libro-mayor-auxiliar';
+
+export type FormatoExportReporte = 'csv' | 'pdf';
+
+export interface ReporteContableMeta {
+  empresa_id: string;
+  moneda_base: string;
+  moneda_base_simbolo: string;
+  incluir_equivalentes_usd: boolean;
+  usd_disponible: boolean;
+  tasa_usd: string | null;
+  tasa_usd_inversa?: boolean;
+  usd_mensaje: string;
+}
+
+export interface BalanceComprobacionCuenta {
+  id_cuenta_contable: string;
+  id_cuenta_padre: string | null;
+  codigo_cuenta: string;
+  nombre_cuenta: string;
+  tipo_cuenta: TipoCuenta | string;
+  naturaleza: Naturaleza | string;
+  nivel: number;
+  debe_inicial: string;
+  haber_inicial: string;
+  saldo_inicial: string;
+  saldo_inicial_deudor: string;
+  saldo_inicial_acreedor: string;
+  debe: string;
+  haber: string;
+  debe_periodo: string;
+  haber_periodo: string;
+  debe_final_acum: string;
+  haber_final_acum: string;
+  saldo: string;
+  saldo_final_deudor: string;
+  saldo_final_acreedor: string;
+  debe_inicial_usd?: string | null;
+  haber_inicial_usd?: string | null;
+  saldo_inicial_usd?: string | null;
+  debe_usd?: string | null;
+  haber_usd?: string | null;
+  debe_final_acum_usd?: string | null;
+  haber_final_acum_usd?: string | null;
+  saldo_usd?: string | null;
+}
+
+export interface BalanceComprobacionReport extends ReporteContableMeta {
+  fecha_desde: string | null;
+  fecha_hasta: string | null;
+  id_diario: string | null;
+  diario_nombre: string;
+  cuentas: BalanceComprobacionCuenta[];
+  total_debe_inicial: string;
+  total_haber_inicial: string;
+  total_saldo_inicial_deudor: string;
+  total_saldo_inicial_acreedor: string;
+  total_debe: string;
+  total_haber: string;
+  total_debe_periodo: string;
+  total_haber_periodo: string;
+  total_debe_final_acum: string;
+  total_haber_final_acum: string;
+  total_saldo_final_deudor: string;
+  total_saldo_final_acreedor: string;
+  cuadrado: boolean;
+  total_debe_usd?: string | null;
+  total_haber_usd?: string | null;
+}
+
+export interface EstadoFinancieroCuenta {
+  id_cuenta_contable: string;
+  id_cuenta_padre: string | null;
+  codigo_cuenta: string;
+  nombre_cuenta: string;
+  tipo_cuenta: TipoCuenta | string;
+  naturaleza: Naturaleza | string;
+  nivel: number;
+  debe: string;
+  haber: string;
+  saldo: string;
+  saldo_usd?: string | null;
+}
+
+export interface EstadoResultadosReport extends ReporteContableMeta {
+  fecha_desde: string;
+  fecha_hasta: string;
+  ingresos: EstadoFinancieroCuenta[];
+  costos: EstadoFinancieroCuenta[];
+  gastos: EstadoFinancieroCuenta[];
+  total_ingresos: string;
+  total_costos: string;
+  total_gastos: string;
+  utilidad_bruta: string;
+  resultado_neto: string;
+  total_ingresos_usd?: string | null;
+  total_costos_usd?: string | null;
+  total_gastos_usd?: string | null;
+  utilidad_bruta_usd?: string | null;
+  resultado_neto_usd?: string | null;
+}
+
+export interface BalanceGeneralReport extends ReporteContableMeta {
+  fecha_corte: string;
+  activos: EstadoFinancieroCuenta[];
+  pasivos: EstadoFinancieroCuenta[];
+  patrimonio: EstadoFinancieroCuenta[];
+  total_activos: string;
+  total_pasivos: string;
+  total_patrimonio: string;
+  resultado_periodo: string;
+  total_pasivo_patrimonio_y_resultado: string;
+  ecuacion_cuadrada: boolean;
+  total_activos_usd?: string | null;
+  total_pasivos_usd?: string | null;
+  total_patrimonio_usd?: string | null;
+  resultado_periodo_usd?: string | null;
+  total_pasivo_patrimonio_y_resultado_usd?: string | null;
+}
+
+export interface LibroMayorMovimiento {
+  id_detalle_asiento: string;
+  id_asiento: string;
+  fecha_asiento: string;
+  numero_asiento: string;
+  descripcion_asiento: string;
+  descripcion_detalle: string;
+  id_diario: string | null;
+  diario_codigo: string;
+  diario_nombre: string;
+  id_cuenta_contable: string;
+  codigo_cuenta: string;
+  nombre_cuenta: string;
+  id_contacto: string | null;
+  contacto_nombre: string;
+  debe: string;
+  haber: string;
+  saldo_corrido: string;
+  debe_usd?: string | null;
+  haber_usd?: string | null;
+  saldo_corrido_usd?: string | null;
+}
+
+export interface LibroMayorAuxiliarReport extends ReporteContableMeta {
+  fecha_desde: string | null;
+  fecha_hasta: string | null;
+  id_cuenta_contable: string | null;
+  cuenta_label: string;
+  id_contacto: string | null;
+  contacto_label: string;
+  id_diario: string | null;
+  diario_label: string;
+  limit: number;
+  saldo_inicial: string;
+  total_debe: string;
+  total_haber: string;
+  saldo_final: string;
+  truncado: boolean;
+  movimientos: LibroMayorMovimiento[];
+  saldo_inicial_usd?: string | null;
+  total_debe_usd?: string | null;
+  total_haber_usd?: string | null;
+  saldo_final_usd?: string | null;
+}
+
+export interface ContactoContableItem {
+  id_contacto: string;
+  nombre_completo?: string;
+  nombre?: string;
+  rif?: string;
+}
+
+export interface ReporteBalanceComprobacionFiltros {
+  empresa_id: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  id_diario?: string;
+  incluir_equivalentes_usd?: boolean;
+}
+
+export interface ReporteEstadoResultadosFiltros {
+  empresa_id: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  incluir_equivalentes_usd?: boolean;
+}
+
+export interface ReporteBalanceGeneralFiltros {
+  empresa_id: string;
+  fecha_corte?: string;
+  incluir_equivalentes_usd?: boolean;
+}
+
+export interface ReporteLibroMayorFiltros {
+  empresa_id: string;
+  id_cuenta_contable?: string;
+  id_contacto?: string;
+  id_diario?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  limit?: number;
+  incluir_equivalentes_usd?: boolean;
+}
+
+function buildReporteQuery(
+  filtros: Record<string, string | number | boolean | undefined>,
+  formato?: FormatoExportReporte,
+): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filtros)) {
+    if (value === undefined || value === '' || value === false) continue;
+    params.set(key, String(value));
+  }
+  if (formato) {
+    params.set('formato', formato);
+  }
+  return params.toString();
+}
+
 const BASE = '/contabilidad';
 
 function paginada<T>(response: PaginatedResponse<T> | T[]): PaginatedResponse<T> {
@@ -329,5 +558,53 @@ export const contabilidadService = {
 
   actualizarMapeo: async (id: string, payload: Partial<MapeoContablePayload>): Promise<MapeoContable> => {
     return patch<MapeoContable>(`${BASE}/mapeos-contables/${id}/`, payload as Record<string, unknown>);
+  },
+
+  // ── Reportes financieros canónicos (PR-14 · Ola B2) ──────────────────────
+
+  getBalanceComprobacion: async (
+    filtros: ReporteBalanceComprobacionFiltros,
+  ): Promise<BalanceComprobacionReport> => {
+    const qs = buildReporteQuery({ ...filtros });
+    return get<BalanceComprobacionReport>(`${BASE}/reportes/balance-comprobacion/?${qs}`);
+  },
+
+  getEstadoResultados: async (
+    filtros: ReporteEstadoResultadosFiltros,
+  ): Promise<EstadoResultadosReport> => {
+    const qs = buildReporteQuery({ ...filtros });
+    return get<EstadoResultadosReport>(`${BASE}/reportes/estado-resultados/?${qs}`);
+  },
+
+  getBalanceGeneral: async (
+    filtros: ReporteBalanceGeneralFiltros,
+  ): Promise<BalanceGeneralReport> => {
+    const qs = buildReporteQuery({ ...filtros });
+    return get<BalanceGeneralReport>(`${BASE}/reportes/balance-general/?${qs}`);
+  },
+
+  getLibroMayorAuxiliar: async (
+    filtros: ReporteLibroMayorFiltros,
+  ): Promise<LibroMayorAuxiliarReport> => {
+    const qs = buildReporteQuery({ ...filtros });
+    return get<LibroMayorAuxiliarReport>(`${BASE}/reportes/libro-mayor-auxiliar/?${qs}`);
+  },
+
+  exportarReporteBlob: async (
+    tipo: TipoReporteContable,
+    formato: FormatoExportReporte,
+    filtros: Record<string, string | number | boolean | undefined>,
+  ): Promise<Blob> => {
+    const qs = buildReporteQuery(filtros, formato);
+    return fetchBlob(`${BASE}/reportes/${tipo}/?${qs}`, {
+      headers: { Accept: '*/*' },
+    });
+  },
+
+  getContactosSelector: async (): Promise<ContactoContableItem[]> => {
+    const response = await get<ContactoContableItem[] | PaginatedResponse<ContactoContableItem>>(
+      '/core/contactos/?page_size=200',
+    );
+    return toList<ContactoContableItem>(response);
   },
 };

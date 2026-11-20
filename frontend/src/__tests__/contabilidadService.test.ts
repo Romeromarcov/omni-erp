@@ -4,9 +4,10 @@ vi.mock('../services/api', () => ({
   get: vi.fn(),
   post: vi.fn(),
   patch: vi.fn(),
+  fetchBlob: vi.fn(),
 }));
 
-import { get, post, patch } from '../services/api';
+import { get, post, patch, fetchBlob } from '../services/api';
 import {
   contabilidadService,
   type CrearCuentaPayload,
@@ -268,5 +269,64 @@ describe('contabilidadService — diarios, reversión y períodos (Ola B1)', () 
       anio: 2025,
       cuenta_resultado_acumulado: 'cta-pat',
     });
+  });
+});
+
+describe('contabilidadService — reportes canónicos (PR-14 · Ola B2)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('consulta los 4 reportes con filtros y exporta CSV/PDF via fetchBlob', async () => {
+    vi.mocked(get).mockResolvedValue({ ok: true });
+    await contabilidadService.getBalanceComprobacion({
+      empresa_id: 'e1',
+      fecha_desde: '2026-01-01',
+      fecha_hasta: '2026-03-31',
+      id_diario: 'd1',
+      incluir_equivalentes_usd: true,
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/balance-comprobacion/?empresa_id=e1&fecha_desde=2026-01-01&fecha_hasta=2026-03-31&id_diario=d1&incluir_equivalentes_usd=true',
+    );
+
+    await contabilidadService.getEstadoResultados({
+      empresa_id: 'e1',
+      fecha_desde: '2026-01-01',
+      fecha_hasta: '2026-03-31',
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/estado-resultados/?empresa_id=e1&fecha_desde=2026-01-01&fecha_hasta=2026-03-31',
+    );
+
+    await contabilidadService.getBalanceGeneral({ empresa_id: 'e1', fecha_corte: '2026-03-31' });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/balance-general/?empresa_id=e1&fecha_corte=2026-03-31',
+    );
+
+    await contabilidadService.getLibroMayorAuxiliar({
+      empresa_id: 'e1',
+      id_cuenta_contable: 'cta-1',
+      id_contacto: 'cnt-1',
+      limit: 50,
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/libro-mayor-auxiliar/?empresa_id=e1&id_cuenta_contable=cta-1&id_contacto=cnt-1&limit=50',
+    );
+
+    const mockBlob = new Blob(['pdf']);
+    vi.mocked(fetchBlob).mockResolvedValueOnce(mockBlob);
+    const resBlob = await contabilidadService.exportarReporteBlob('balance-general', 'pdf', {
+      empresa_id: 'e1',
+      fecha_corte: '2026-03-31',
+    });
+    expect(resBlob).toBe(mockBlob);
+    expect(fetchBlob).toHaveBeenCalledWith(
+      '/contabilidad/reportes/balance-general/?empresa_id=e1&fecha_corte=2026-03-31&formato=pdf',
+      { headers: { Accept: '*/*' } },
+    );
+
+    vi.mocked(get).mockResolvedValueOnce({ results: [{ id_contacto: 'cnt-1' }] });
+    const contactos = await contabilidadService.getContactosSelector();
+    expect(get).toHaveBeenCalledWith('/core/contactos/?page_size=200');
+    expect(contactos).toHaveLength(1);
   });
 });

@@ -442,6 +442,75 @@ export const contabilidadKeys = {
   detallesAsiento: (asientoId: string) => ['contabilidad', 'asientos', 'detalles', asientoId] as const,
   mapeosAll: () => ['contabilidad', 'mapeos'] as const,
   tiposAsiento: () => ['contabilidad', 'tipos-asiento'] as const,
+  reportesAll: () => ['contabilidad', 'reportes'] as const,
+  balanceComprobacion: (filtros: {
+    empresaId: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    idDiario?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'balance-comprobacion',
+      filtros.empresaId,
+      filtros.fechaDesde ?? '',
+      filtros.fechaHasta ?? '',
+      filtros.idDiario ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  estadoResultados: (filtros: {
+    empresaId: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'estado-resultados',
+      filtros.empresaId,
+      filtros.fechaDesde ?? '',
+      filtros.fechaHasta ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  balanceGeneral: (filtros: {
+    empresaId: string;
+    fechaCorte?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'balance-general',
+      filtros.empresaId,
+      filtros.fechaCorte ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  libroMayorAuxiliar: (filtros: {
+    empresaId: string;
+    idCuenta?: string;
+    idContacto?: string;
+    idDiario?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'libro-mayor-auxiliar',
+      filtros.empresaId,
+      filtros.idCuenta ?? '',
+      filtros.idContacto ?? '',
+      filtros.idDiario ?? '',
+      filtros.fechaDesde ?? '',
+      filtros.fechaHasta ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  contactosSelector: (empresaId?: string | null) =>
+    ['contabilidad', 'reportes', 'contactos', empresaId ?? null] as const,
 };
 
 // ── Tesorería (workstream F) ──────────────────────────────────────────────────

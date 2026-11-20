@@ -8,7 +8,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B planificado |
+| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) COMPLETADO |
 | **Fecha** | 2026-11-17 (basado en símbolos verificados en `origin/develop @ ff2bdb6`) |
 | **Apps involucradas** | `finanzas`, `core`, `cuentas_por_cobrar`, `cuentas_por_pagar`, `ventas`, `compras`, `contabilidad`, `gestion_aprobaciones`, `inventario`, `almacenes`, `banca_electronica`, `tesoreria`, `integration_hub`, `agentes` |
 | **Esfuerzo estimado** | ~5–7 semanas en PRs pequeños y focales (`R-PROC-2`) |
@@ -99,7 +99,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 
 > **Regla de diseño:** cada mejora conserva los diferenciadores de Omni — modo sin fricción (`contabilidad_activa=False`), doble tasa BCV/real, capacidades AI-Native (REST + MCP) y arquitectura modular multi-tenant con RLS.
 
-### B.1 `contabilidad` — Diarios, Reversión por Contra-asiento, Cierre y Reportes Canónicos
+### B.1 `contabilidad` — Diarios, Reversión por Contra-asiento, Cierre y Reportes Canónicos ✅ COMPLETADO (`PR #300` + `PR-14`)
 
 **Estado actual verificado (`apps/contabilidad/`):** existen `PlanCuentas`, `AsientoContable`, `DetalleAsiento`, `MapeoContable`, `generar_asiento()` (`R-CODE-11`) y un `balance_comprobacion` básico en `views.py:115` que carga filas en Python y no filtra por fechas. `anular()` (`views.py:101`) muta `estado_asiento="ANULADO"` sin generar contra-asiento.
 
@@ -200,8 +200,8 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 | **Ola A1** | ✅ `feat(finanzas): modelo AsignacionPago + RLS + backfill Pago.id_contacto` (`PR #297`) | Ninguna |
 | **Ola A2** | ✅ `feat(finanzas): servicio atomico conciliacion N:M, anticipos y diferencial cambiario` (`PR #298`) | Ola A1 |
 | **Ola A3** | ✅ `feat(finanzas): API REST, MCP y UI ConciliacionContactoDialog en CxC/CxP/Tesoreria` (`PR-12`) | Ola A2 |
-| **Ola B1** | `feat(contabilidad): DiarioContable, contra-asiento, PeriodoContable y cierre ejercicio` | Ninguna (paralela a Ola A) |
-| **Ola B2** | `feat(contabilidad): reportes P&L, Balance General, Mayor Auxiliar y Balance Comprobacion PDF/CSV + USD` | Ola B1 |
+| **Ola B1** | ✅ `feat(contabilidad): DiarioContable, contra-asiento, PeriodoContable y cierre ejercicio` (`PR #300`) | Ninguna (paralela a Ola A) |
+| **Ola B2** | ✅ `feat(contabilidad): reportes P&L, Balance General, Mayor Auxiliar y Balance Comprobacion PDF/CSV + USD` (`PR-14`) | Ola B1 |
 | **Ola B3** | `feat(compras): flujo transaccional Requisicion->RFQ->Oferta->OC y reglas departamento/SLA en aprobaciones` | Ninguna |
 | **Ola B4** | `feat(inventario): ReglaReabastecimiento, LoteProducto opt-in y StockUbicacion` | Ninguna |
 | **Ola B5** | `refactor(banca): consolida CuentaBancariaEmpresa en finanzas y servicios de pagos masivos` | Ninguna |

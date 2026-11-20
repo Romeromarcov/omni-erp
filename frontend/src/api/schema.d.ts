@@ -1920,7 +1920,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Genera un balance de comprobación básico */
+        /** @description Genera un balance de comprobación básico delegando en el motor SQL canónico. */
         get: operations["contabilidad_asientos-contables_balance_comprobacion"];
         put?: never;
         post?: never;
@@ -2390,6 +2390,86 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["contabilidad_plan-cuentas_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/reportes/balance-comprobacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Balance de Comprobación canónico
+         * @description GET /api/contabilidad/reportes/balance-comprobacion/
+         */
+        get: operations["contabilidad_reportes_balance-comprobacion_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/reportes/balance-general/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Balance General canónico
+         * @description GET /api/contabilidad/reportes/balance-general/
+         */
+        get: operations["contabilidad_reportes_balance-general_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/reportes/estado-resultados/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estado de Resultados (P&L) canónico
+         * @description GET /api/contabilidad/reportes/estado-resultados/
+         */
+        get: operations["contabilidad_reportes_estado-resultados_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/reportes/libro-mayor-auxiliar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Libro Mayor Auxiliar canónico
+         * @description GET /api/contabilidad/reportes/libro-mayor-auxiliar/
+         */
+        get: operations["contabilidad_reportes_libro-mayor-auxiliar_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/control-asistencia/asignaciones-horario/": {
@@ -15504,6 +15584,643 @@ export interface components {
              */
             id_cuenta_padre?: string | null;
         };
+        BalanceComprobacionCuenta: {
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string;
+            /**
+             * Id cuenta padre
+             * Format: uuid
+             */
+            readonly id_cuenta_padre?: string | null;
+            /** Codigo cuenta */
+            readonly codigo_cuenta?: string;
+            /** Nombre cuenta */
+            readonly nombre_cuenta?: string;
+            /** Tipo cuenta */
+            readonly tipo_cuenta?: string;
+            /** Naturaleza */
+            readonly naturaleza?: string;
+            /** Nivel */
+            readonly nivel?: number;
+            /**
+             * Debe inicial
+             * Format: decimal
+             */
+            readonly debe_inicial?: string;
+            /**
+             * Haber inicial
+             * Format: decimal
+             */
+            readonly haber_inicial?: string;
+            /**
+             * Saldo inicial
+             * Format: decimal
+             */
+            readonly saldo_inicial?: string;
+            /**
+             * Saldo inicial deudor
+             * Format: decimal
+             */
+            readonly saldo_inicial_deudor?: string;
+            /**
+             * Saldo inicial acreedor
+             * Format: decimal
+             */
+            readonly saldo_inicial_acreedor?: string;
+            /**
+             * Debe
+             * Format: decimal
+             */
+            readonly debe?: string;
+            /**
+             * Haber
+             * Format: decimal
+             */
+            readonly haber?: string;
+            /**
+             * Debe periodo
+             * Format: decimal
+             */
+            readonly debe_periodo?: string;
+            /**
+             * Haber periodo
+             * Format: decimal
+             */
+            readonly haber_periodo?: string;
+            /**
+             * Debe final acum
+             * Format: decimal
+             */
+            readonly debe_final_acum?: string;
+            /**
+             * Haber final acum
+             * Format: decimal
+             */
+            readonly haber_final_acum?: string;
+            /**
+             * Saldo
+             * Format: decimal
+             */
+            readonly saldo?: string;
+            /**
+             * Saldo final deudor
+             * Format: decimal
+             */
+            readonly saldo_final_deudor?: string;
+            /**
+             * Saldo final acreedor
+             * Format: decimal
+             */
+            readonly saldo_final_acreedor?: string;
+            /**
+             * Debe inicial usd
+             * Format: decimal
+             */
+            readonly debe_inicial_usd?: string | null;
+            /**
+             * Haber inicial usd
+             * Format: decimal
+             */
+            readonly haber_inicial_usd?: string | null;
+            /**
+             * Saldo inicial usd
+             * Format: decimal
+             */
+            readonly saldo_inicial_usd?: string | null;
+            /**
+             * Debe usd
+             * Format: decimal
+             */
+            readonly debe_usd?: string | null;
+            /**
+             * Haber usd
+             * Format: decimal
+             */
+            readonly haber_usd?: string | null;
+            /**
+             * Debe final acum usd
+             * Format: decimal
+             */
+            readonly debe_final_acum_usd?: string | null;
+            /**
+             * Haber final acum usd
+             * Format: decimal
+             */
+            readonly haber_final_acum_usd?: string | null;
+            /**
+             * Saldo usd
+             * Format: decimal
+             */
+            readonly saldo_usd?: string | null;
+        };
+        BalanceComprobacionResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string | null;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string | null;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string | null;
+            /** Diario nombre */
+            readonly diario_nombre?: string;
+            readonly cuentas?: components["schemas"]["BalanceComprobacionCuenta"][];
+            /**
+             * Total debe inicial
+             * Format: decimal
+             */
+            readonly total_debe_inicial?: string;
+            /**
+             * Total haber inicial
+             * Format: decimal
+             */
+            readonly total_haber_inicial?: string;
+            /**
+             * Total saldo inicial deudor
+             * Format: decimal
+             */
+            readonly total_saldo_inicial_deudor?: string;
+            /**
+             * Total saldo inicial acreedor
+             * Format: decimal
+             */
+            readonly total_saldo_inicial_acreedor?: string;
+            /**
+             * Total debe
+             * Format: decimal
+             */
+            readonly total_debe?: string;
+            /**
+             * Total haber
+             * Format: decimal
+             */
+            readonly total_haber?: string;
+            /**
+             * Total debe periodo
+             * Format: decimal
+             */
+            readonly total_debe_periodo?: string;
+            /**
+             * Total haber periodo
+             * Format: decimal
+             */
+            readonly total_haber_periodo?: string;
+            /**
+             * Total debe final acum
+             * Format: decimal
+             */
+            readonly total_debe_final_acum?: string;
+            /**
+             * Total haber final acum
+             * Format: decimal
+             */
+            readonly total_haber_final_acum?: string;
+            /**
+             * Total saldo final deudor
+             * Format: decimal
+             */
+            readonly total_saldo_final_deudor?: string;
+            /**
+             * Total saldo final acreedor
+             * Format: decimal
+             */
+            readonly total_saldo_final_acreedor?: string;
+            /** Cuadrado */
+            readonly cuadrado?: boolean;
+            /**
+             * Total debe usd
+             * Format: decimal
+             */
+            readonly total_debe_usd?: string | null;
+            /**
+             * Total haber usd
+             * Format: decimal
+             */
+            readonly total_haber_usd?: string | null;
+        };
+        EstadoFinancieroCuenta: {
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string;
+            /**
+             * Id cuenta padre
+             * Format: uuid
+             */
+            readonly id_cuenta_padre?: string | null;
+            /** Codigo cuenta */
+            readonly codigo_cuenta?: string;
+            /** Nombre cuenta */
+            readonly nombre_cuenta?: string;
+            /** Tipo cuenta */
+            readonly tipo_cuenta?: string;
+            /** Naturaleza */
+            readonly naturaleza?: string;
+            /** Nivel */
+            readonly nivel?: number;
+            /**
+             * Debe
+             * Format: decimal
+             */
+            readonly debe?: string;
+            /**
+             * Haber
+             * Format: decimal
+             */
+            readonly haber?: string;
+            /**
+             * Saldo
+             * Format: decimal
+             */
+            readonly saldo?: string;
+            /**
+             * Saldo usd
+             * Format: decimal
+             */
+            readonly saldo_usd?: string | null;
+        };
+        BalanceGeneralResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha corte
+             * Format: date
+             */
+            readonly fecha_corte?: string;
+            readonly activos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly pasivos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly patrimonio?: components["schemas"]["EstadoFinancieroCuenta"][];
+            /**
+             * Total activos
+             * Format: decimal
+             */
+            readonly total_activos?: string;
+            /**
+             * Total pasivos
+             * Format: decimal
+             */
+            readonly total_pasivos?: string;
+            /**
+             * Total patrimonio
+             * Format: decimal
+             */
+            readonly total_patrimonio?: string;
+            /**
+             * Resultado periodo
+             * Format: decimal
+             */
+            readonly resultado_periodo?: string;
+            /**
+             * Total pasivo patrimonio y resultado
+             * Format: decimal
+             */
+            readonly total_pasivo_patrimonio_y_resultado?: string;
+            /** Ecuacion cuadrada */
+            readonly ecuacion_cuadrada?: boolean;
+            /**
+             * Total activos usd
+             * Format: decimal
+             */
+            readonly total_activos_usd?: string | null;
+            /**
+             * Total pasivos usd
+             * Format: decimal
+             */
+            readonly total_pasivos_usd?: string | null;
+            /**
+             * Total patrimonio usd
+             * Format: decimal
+             */
+            readonly total_patrimonio_usd?: string | null;
+            /**
+             * Resultado periodo usd
+             * Format: decimal
+             */
+            readonly resultado_periodo_usd?: string | null;
+            /**
+             * Total pasivo patrimonio y resultado usd
+             * Format: decimal
+             */
+            readonly total_pasivo_patrimonio_y_resultado_usd?: string | null;
+        };
+        EstadoResultadosResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string;
+            readonly ingresos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly costos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly gastos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            /**
+             * Total ingresos
+             * Format: decimal
+             */
+            readonly total_ingresos?: string;
+            /**
+             * Total costos
+             * Format: decimal
+             */
+            readonly total_costos?: string;
+            /**
+             * Total gastos
+             * Format: decimal
+             */
+            readonly total_gastos?: string;
+            /**
+             * Utilidad bruta
+             * Format: decimal
+             */
+            readonly utilidad_bruta?: string;
+            /**
+             * Resultado neto
+             * Format: decimal
+             */
+            readonly resultado_neto?: string;
+            /**
+             * Total ingresos usd
+             * Format: decimal
+             */
+            readonly total_ingresos_usd?: string | null;
+            /**
+             * Total costos usd
+             * Format: decimal
+             */
+            readonly total_costos_usd?: string | null;
+            /**
+             * Total gastos usd
+             * Format: decimal
+             */
+            readonly total_gastos_usd?: string | null;
+            /**
+             * Utilidad bruta usd
+             * Format: decimal
+             */
+            readonly utilidad_bruta_usd?: string | null;
+            /**
+             * Resultado neto usd
+             * Format: decimal
+             */
+            readonly resultado_neto_usd?: string | null;
+        };
+        LibroMayorMovimiento: {
+            /**
+             * Id detalle asiento
+             * Format: uuid
+             */
+            readonly id_detalle_asiento?: string;
+            /**
+             * Id asiento
+             * Format: uuid
+             */
+            readonly id_asiento?: string;
+            /**
+             * Fecha asiento
+             * Format: date
+             */
+            readonly fecha_asiento?: string;
+            /** Numero asiento */
+            readonly numero_asiento?: string;
+            /** Descripcion asiento */
+            readonly descripcion_asiento?: string;
+            /** Descripcion detalle */
+            readonly descripcion_detalle?: string;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string | null;
+            /** Diario codigo */
+            readonly diario_codigo?: string;
+            /** Diario nombre */
+            readonly diario_nombre?: string;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string;
+            /** Codigo cuenta */
+            readonly codigo_cuenta?: string;
+            /** Nombre cuenta */
+            readonly nombre_cuenta?: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string | null;
+            /** Contacto nombre */
+            readonly contacto_nombre?: string;
+            /**
+             * Debe
+             * Format: decimal
+             */
+            readonly debe?: string;
+            /**
+             * Haber
+             * Format: decimal
+             */
+            readonly haber?: string;
+            /**
+             * Saldo corrido
+             * Format: decimal
+             */
+            readonly saldo_corrido?: string;
+            /**
+             * Debe usd
+             * Format: decimal
+             */
+            readonly debe_usd?: string | null;
+            /**
+             * Haber usd
+             * Format: decimal
+             */
+            readonly haber_usd?: string | null;
+            /**
+             * Saldo corrido usd
+             * Format: decimal
+             */
+            readonly saldo_corrido_usd?: string | null;
+        };
+        LibroMayorAuxiliarResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string | null;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string | null;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string | null;
+            /** Cuenta label */
+            readonly cuenta_label?: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string | null;
+            /** Contacto label */
+            readonly contacto_label?: string;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string | null;
+            /** Diario label */
+            readonly diario_label?: string;
+            /** Limit */
+            readonly limit?: number;
+            /**
+             * Saldo inicial
+             * Format: decimal
+             */
+            readonly saldo_inicial?: string;
+            /**
+             * Total debe
+             * Format: decimal
+             */
+            readonly total_debe?: string;
+            /**
+             * Total haber
+             * Format: decimal
+             */
+            readonly total_haber?: string;
+            /**
+             * Saldo final
+             * Format: decimal
+             */
+            readonly saldo_final?: string;
+            /** Truncado */
+            readonly truncado?: boolean;
+            readonly movimientos?: components["schemas"]["LibroMayorMovimiento"][];
+            /**
+             * Saldo inicial usd
+             * Format: decimal
+             */
+            readonly saldo_inicial_usd?: string | null;
+            /**
+             * Total debe usd
+             * Format: decimal
+             */
+            readonly total_debe_usd?: string | null;
+            /**
+             * Total haber usd
+             * Format: decimal
+             */
+            readonly total_haber_usd?: string | null;
+            /**
+             * Saldo final usd
+             * Format: decimal
+             */
+            readonly saldo_final_usd?: string | null;
+        };
         AsignacionHorario: {
             /**
              * Id asignacion horario
@@ -17572,7 +18289,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T04:23:15.902533-04:00
+             * @default 2026-11-20T06:22:06.569888-04:00
              */
             fecha_despacho: string;
             /**
@@ -32158,6 +32875,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanCuentas"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_balance-comprobacion_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                fecha_desde?: string;
+                fecha_hasta?: string;
+                id_diario?: string;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceComprobacionResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_balance-general_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                fecha_corte?: string;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceGeneralResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_estado-resultados_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                fecha_desde?: string;
+                fecha_hasta?: string;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoResultadosResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_libro-mayor-auxiliar_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                id_cuenta_contable?: string;
+                id_contacto?: string;
+                id_diario?: string;
+                fecha_desde?: string;
+                fecha_hasta?: string;
+                limit?: number;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibroMayorAuxiliarResponse"];
                 };
             };
         };
