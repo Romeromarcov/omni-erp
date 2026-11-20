@@ -686,6 +686,22 @@
 | `^logs-integracion/(?P<pk>[^/.]+)/$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
 | `^logs-integracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
 | `^logs-integracion\.(?P<format>[a-z0-9]+)/?$` | LogIntegracionViewSet | LogIntegracion | — | ✅ | IsAuthenticated |
+| `^lotes-pago/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/anular/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/descargar/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/descargar\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/marcar-enviado/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/marcar-enviado\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/marcar-procesado/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)/marcar-procesado\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/generar-nomina/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/generar-nomina\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/generar-proveedores/$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago/generar-proveedores\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
+| `^lotes-pago\.(?P<format>[a-z0-9]+)/?$` | LotePagoBancarioViewSet | LotePagoBancario | ✅ | ✅ | IsAuthenticated |
 | `^lotes-producto/$` | LoteProductoViewSet | LoteProducto | ✅ | ✅ | IsAuthenticated |
 | `^lotes-producto/(?P<pk>[^/.]+)/$` | LoteProductoViewSet | LoteProducto | ✅ | ✅ | IsAuthenticated |
 | `^lotes-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LoteProductoViewSet | LoteProducto | ✅ | ✅ | IsAuthenticated |
@@ -1381,5 +1397,7 @@
 | `usuario_roles/` | usuario_roles_view | — | — | — | IsAuthenticated |
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
+| `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
+| `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 250_
+_Total ViewSets: 253_

@@ -774,39 +774,189 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/banca-electronica/cuentas-bancarias-empresa/": {
+    "/banca-electronica/lotes-pago/": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["banca-electronica_cuentas-bancarias-empresa_list"];
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        get: operations["banca-electronica_lotes-pago_list"];
         put?: never;
-        post: operations["banca-electronica_cuentas-bancarias-empresa_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/banca-electronica/cuentas-bancarias-empresa/{id}/": {
+    "/banca-electronica/lotes-pago/generar-nomina/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_generar_nomina"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/generar-proveedores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_generar_proveedores"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta bancaria empresa. */
-                id: number;
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
             };
             cookie?: never;
         };
-        get: operations["banca-electronica_cuentas-bancarias-empresa_read"];
-        put: operations["banca-electronica_cuentas-bancarias-empresa_update"];
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        get: operations["banca-electronica_lotes-pago_read"];
+        put?: never;
         post?: never;
-        delete: operations["banca-electronica_cuentas-bancarias-empresa_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["banca-electronica_cuentas-bancarias-empresa_partial_update"];
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/descargar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        get: operations["banca-electronica_lotes-pago_descargar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/marcar-enviado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_marcar_enviado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/marcar-procesado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_marcar_procesado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/validar-cuenta-ve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Valida estructura y prefijo SUDEBAN de 20 dígitos para cuentas bancarias VE. */
+        post: operations["banca-electronica_validar-cuenta-ve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/validar-referencia/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Detecta referencias bancarias duplicadas en pagos, extractos y lotes activos del tenant. */
+        post: operations["banca-electronica_validar-referencia_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/bots/bitacora/": {
@@ -14541,39 +14691,239 @@ export interface components {
             /** Password */
             password: string;
         };
-        CuentaBancariaEmpresaBanca: {
-            /** ID */
-            readonly id?: number;
-            /** Referencia externa */
-            referencia_externa?: string | null;
-            /** Documento json */
-            documento_json?: Record<string, never> | null;
-            /** Banco */
-            banco: string;
-            /** Numero cuenta */
-            numero_cuenta: string;
+        DetalleLotePagoBancario: {
             /**
-             * Tipo cuenta
-             * @enum {string}
+             * Id detalle
+             * Format: uuid
              */
-            tipo_cuenta: "corriente" | "ahorro";
+            readonly id_detalle?: string;
             /**
-             * Saldo actual
+             * Id lote pago
+             * Format: uuid
+             */
+            readonly id_lote_pago?: string;
+            /**
+             * Id pago
+             * Format: uuid
+             */
+            readonly id_pago?: string | null;
+            /**
+             * Id nomina
+             * Format: uuid
+             */
+            readonly id_nomina?: string | null;
+            /** Beneficiario nombre */
+            readonly beneficiario_nombre?: string;
+            /** Beneficiario identificacion */
+            readonly beneficiario_identificacion?: string;
+            /** Cuenta destino */
+            readonly cuenta_destino?: string;
+            /** Banco destino */
+            readonly banco_destino?: string;
+            /**
+             * Monto
              * Format: decimal
              */
-            saldo_actual?: string;
-            /** Activa */
-            activa?: boolean;
+            readonly monto?: string;
+            /** Referencia linea */
+            readonly referencia_linea?: string;
+            /** Concepto */
+            readonly concepto?: string;
+        };
+        LotePagoBancario: {
             /**
-             * Empresa
+             * Id lote pago
              * Format: uuid
              */
-            empresa: string;
+            readonly id_lote_pago?: string;
             /**
-             * Moneda
+             * Id empresa
              * Format: uuid
              */
-            moneda: string;
+            readonly id_empresa?: string;
+            /** Empresa nombre */
+            readonly empresa_nombre?: string;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            readonly id_cuenta_bancaria?: string;
+            /** Cuenta bancaria nombre */
+            readonly cuenta_bancaria_nombre?: string;
+            /** Cuenta bancaria numero */
+            readonly cuenta_bancaria_numero?: string;
+            /**
+             * Tipo lote
+             * @enum {string}
+             */
+            readonly tipo_lote?: "PROVEEDORES" | "NOMINA";
+            /**
+             * Formato banco
+             * @enum {string}
+             */
+            readonly formato_banco?: "BANESCO_TXT" | "MERCANTIL_TXT" | "BDV_TXT" | "GENERICO_CSV";
+            /** Referencia lote */
+            readonly referencia_lote?: string;
+            /**
+             * Fecha valor
+             * Format: date
+             */
+            readonly fecha_valor?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "BORRADOR" | "GENERADO" | "ENVIADO" | "PROCESADO" | "ANULADO";
+            /**
+             * Id proceso nomina
+             * Format: uuid
+             */
+            readonly id_proceso_nomina?: string | null;
+            /** Total registros */
+            readonly total_registros?: number;
+            /**
+             * Monto total
+             * Format: decimal
+             */
+            readonly monto_total?: string;
+            /** Sha256 archivo */
+            readonly sha256_archivo?: string;
+            /** Nombre archivo */
+            readonly nombre_archivo?: string;
+            /**
+             * Generado por
+             * Format: uuid
+             */
+            readonly generado_por?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+            readonly detalles?: components["schemas"]["DetalleLotePagoBancario"][];
+        };
+        GenerarLoteNominaInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria: string;
+            /**
+             * Id proceso nomina
+             * Format: uuid
+             */
+            id_proceso_nomina: string;
+            /**
+             * Formato banco
+             * @enum {string}
+             */
+            formato_banco: "BANESCO_TXT" | "MERCANTIL_TXT" | "BDV_TXT" | "GENERICO_CSV";
+            /**
+             * Fecha valor
+             * Format: date
+             */
+            fecha_valor: string;
+            /** Referencia lote */
+            referencia_lote?: string | null;
+            /** Cuentas empleados */
+            cuentas_empleados?: {
+                [key: string]: string;
+            };
+        };
+        GenerarLoteProveedoresInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria: string;
+            pagos_ids: string[];
+            /**
+             * Formato banco
+             * @enum {string}
+             */
+            formato_banco: "BANESCO_TXT" | "MERCANTIL_TXT" | "BDV_TXT" | "GENERICO_CSV";
+            /**
+             * Fecha valor
+             * Format: date
+             */
+            fecha_valor: string;
+            /** Referencia lote */
+            referencia_lote?: string | null;
+            /** Cuentas destino override */
+            cuentas_destino_override?: {
+                [key: string]: string;
+            };
+        };
+        ValidarCuentaVeInput: {
+            /** Numero cuenta */
+            numero_cuenta: string;
+        };
+        ValidarCuentaVeResponse: {
+            /** Valida */
+            valida: boolean;
+            /** Numero normalizado */
+            numero_normalizado: string;
+            /** Codigo banco */
+            codigo_banco: string | null;
+            /** Banco nombre */
+            banco_nombre: string | null;
+            errores: string[];
+        };
+        ValidarReferenciaInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria?: string | null;
+            /** Referencia */
+            referencia: string;
+            /**
+             * Excluir pago id
+             * Format: uuid
+             */
+            excluir_pago_id?: string | null;
+        };
+        CoincidenciaReferencia: {
+            /** Origen */
+            origen: string;
+            /** Id */
+            id: string;
+            /** Detalle */
+            detalle: string;
+        };
+        ValidarReferenciaResponse: {
+            /** Duplicada */
+            duplicada: boolean;
+            /** Referencia normalizada */
+            referencia_normalizada: string;
+            coincidencias: components["schemas"]["CoincidenciaReferencia"][];
         };
         Ingesta: {
             /**
@@ -18895,7 +19245,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T13:09:38.335562-04:00
+             * @default 2026-11-20T16:04:41.405743-04:00
              */
             fecha_despacho: string;
             /**
@@ -19583,7 +19933,7 @@ export interface components {
             readonly id_cuenta_bancaria?: string;
             /** Moneda codigo iso */
             readonly moneda_codigo_iso?: string;
-            metodos_pago: string[];
+            metodos_pago?: string[];
             monedas?: string[];
             /** Nombre banco */
             nombre_banco: string;
@@ -27487,11 +27837,6 @@ export interface components {
                 "application/json": components["schemas"]["RecursoActivacion"];
             };
         };
-        CuentaBancariaEmpresaBanca: {
-            content: {
-                "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
-            };
-        };
         BotUsuario: {
             content: {
                 "application/json": components["schemas"]["BotUsuario"];
@@ -29249,7 +29594,7 @@ export interface operations {
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_list": {
+    "banca-electronica_lotes-pago_list": {
         parameters: {
             query?: {
                 /** @description Un término de búsqueda. */
@@ -29258,6 +29603,12 @@ export interface operations {
                 ordering?: string;
                 /** @description Un número de página dentro del conjunto de resultados paginado. */
                 page?: number;
+                /** @description Filtrar lotes por UUID de empresa. */
+                empresa?: string;
+                /** @description Filtrar por tipo de lote (PROVEEDORES | NOMINA). */
+                tipo_lote?: "PROVEEDORES" | "NOMINA";
+                /** @description Filtrar por estado del lote. */
+                estado?: "BORRADOR" | "GENERADO" | "ENVIADO" | "PROCESADO" | "ANULADO";
             };
             header?: never;
             path?: never;
@@ -29276,38 +29627,65 @@ export interface operations {
                         next?: string | null;
                         /** Format: uri */
                         previous?: string | null;
-                        results: components["schemas"]["CuentaBancariaEmpresaBanca"][];
+                        results: components["schemas"]["LotePagoBancario"][];
                     };
                 };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_create": {
+    "banca-electronica_lotes-pago_generar_nomina": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["CuentaBancariaEmpresaBanca"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarLoteNominaInput"];
+            };
+        };
         responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                    "application/json": components["schemas"]["LotePagoBancario"];
                 };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_read": {
+    "banca-electronica_lotes-pago_generar_proveedores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarLoteProveedoresInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_read": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta bancaria empresa. */
-                id: number;
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
             };
             cookie?: never;
         };
@@ -29318,71 +29696,142 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                    "application/json": components["schemas"]["LotePagoBancario"];
                 };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_update": {
+    "banca-electronica_lotes-pago_anular": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta bancaria empresa. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["CuentaBancariaEmpresaBanca"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
-                };
-            };
-        };
-    };
-    "banca-electronica_cuentas-bancarias-empresa_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un valor de entero único que identifique este cuenta bancaria empresa. */
-                id: number;
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_partial_update": {
+    "banca-electronica_lotes-pago_descargar": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta bancaria empresa. */
-                id: number;
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["CuentaBancariaEmpresaBanca"];
+        requestBody?: never;
+        responses: {
+            /** @description Archivo plano/CSV del lote bancario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_marcar_enviado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_marcar_procesado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_validar-cuenta-ve_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidarCuentaVeInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidarCuentaVeResponse"];
+                };
+            };
+        };
+    };
+    "banca-electronica_validar-referencia_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidarReferenciaInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidarReferenciaResponse"];
                 };
             };
         };

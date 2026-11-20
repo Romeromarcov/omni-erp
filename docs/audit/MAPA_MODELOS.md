@@ -12,7 +12,8 @@
 | almacenes | StockUbicacion | ✅ | ✅ | — |
 | almacenes | UbicacionAlmacen | ✅ | ✅ | id_almacen+codigo_ubicacion |
 | auditoria | LogAuditoria | ✅ | ✅ | — |
-| banca_electronica | CuentaBancariaEmpresa | ✅ | — | — |
+| banca_electronica | DetalleLotePagoBancario | — | ✅ | — |
+| banca_electronica | LotePagoBancario | ✅ | ✅ | — |
 | bots_ingest | BotBitacora | ✅ | ✅ | — |
 | bots_ingest | BotLatidoDiario | ✅ | ✅ | — |
 | bots_ingest | BotRegistro | ✅ | ✅ | — |
@@ -260,4 +261,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 257_
+_Total modelos: 258_

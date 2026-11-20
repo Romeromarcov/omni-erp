@@ -718,6 +718,7 @@ MCP_AGENT_CAPABILITIES: dict = {
         "apps.despacho.mcp",
         "apps.bots_ingest.mcp",
         "apps.tesoreria.mcp",
+        "apps.banca_electronica.mcp",
         "apps.tareas.mcp",
     ],
     "scopes": {
@@ -736,6 +737,8 @@ MCP_AGENT_CAPABILITIES: dict = {
         "contabilidad:read": "Consulta de reportes contables y estados financieros",
         "tesoreria:read": "Consulta de extractos y saldos bancarios consolidados",
         "tesoreria:write": "Importación de extractos y conciliación bancaria",
+        "banca_electronica:read": "Validación bancaria VE y consulta de lotes de pago",
+        "banca_electronica:write": "Generación y transición de lotes de pago bancario VE",
         "bots:read": "Consulta de salud y bitácora de flota de bots",
         "bots:write": "Pausa, reanudación y configuración de bots",
         "tareas:read": "Consulta de proyectos, tareas operativas y resumen ejecutivo",

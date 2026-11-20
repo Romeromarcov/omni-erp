@@ -6,9 +6,9 @@ import { sufijoUnico } from './helpers/datos';
  * Flujo Banca Electrónica — Cuentas bancarias de la empresa (frontend e2e).
  *
  * Crea una cuenta bancaria 100 % vía UI desde la página de Banca Electrónica y
- * la verifica en la lista. El backend ya está operativo
- * (prefijo /api/banca-electronica/); la sesión y la empresa primaria las
- * resuelve `iniciarSesion`.
+ * la verifica en la lista. El backend ya está operativo (maestro canónico en
+ * /api/finanzas/cuentas-bancarias-empresa/ desde /banca-electronica); la
+ * sesión y la empresa primaria las resuelve `iniciarSesion`.
  */
 test.describe('Banca Electrónica: cuentas bancarias de la empresa', () => {
   test('crea una cuenta desde la UI y la ve en la lista', async ({ page }) => {

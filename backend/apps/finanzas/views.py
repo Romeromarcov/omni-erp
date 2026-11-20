@@ -1,4 +1,5 @@
 import logging
+import uuid
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.throttling import EscrituraRateThrottle
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import IdempotentCreateMixin, idempotent
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import BaseModelViewSet, NulSafeFilterMixin, get_empresas_visible, validar_uuid_param
 from apps.tesoreria.serializers import CajaSerializer
 
 from .models import (
@@ -798,11 +799,11 @@ class CajaViewSet(BaseModelViewSet):
     serializer_class = CajaSerializer
 
 
-class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
-    from rest_framework.response import Response
-
-    from .models import MovimientoCajaBanco
-    from .serializers import MovimientoCajaBancoSerializer
+class CuentaBancariaEmpresaViewSet(NulSafeFilterMixin, BaseModelViewSet):
+    queryset = CuentaBancariaEmpresa.objects.all()
+    serializer_class = CuentaBancariaEmpresaSerializer
+    search_fields = ["nombre_banco", "numero_cuenta", "tipo_cuenta"]
+    ordering_fields = ["nombre_banco", "numero_cuenta", "saldo_actual", "fecha_creacion", "activo"]
 
     @action(detail=True, methods=["get"], url_path="movimientos-cuenta-bancaria")
     def movimientos_cuenta_bancaria(self, request, pk=None):
@@ -844,14 +845,13 @@ class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
         serializer = MovimientoCajaBancoSerializer(qs, many=True)
         return Response(serializer.data)
 
-    queryset = CuentaBancariaEmpresa.objects.all()
-    serializer_class = CuentaBancariaEmpresaSerializer
-
-    def get_queryset(self):
+    def get_queryset(self) -> models.QuerySet[CuentaBancariaEmpresa]:
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
-        from apps.core.viewsets import get_empresas_visible
-
-        return CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        qs = CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        empresa_id = self.request.query_params.get("empresa")
+        if empresa_id:
+            qs = qs.filter(id_empresa_id=uuid.UUID(validar_uuid_param(empresa_id, "empresa")))
+        return qs
 
 
 class MonedaEmpresaActivaViewSet(BaseModelViewSet):
@@ -1504,12 +1504,24 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
         except ValueError as exc:
             raise serializers.ValidationError({"detail": str(exc)}) from exc
 
-    def get_queryset(self):
+    def get_queryset(self) -> models.QuerySet[Pago]:
         # R-CODE-1: usar get_empresas_visible para incluir subsidiarias y
         # garantizar aislamiento simétrico con los demás módulos.
-        from apps.core.viewsets import get_empresas_visible
+        qs: models.QuerySet[Pago] = Pago.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        tipo_op_raw = self.request.query_params.get("tipo_operacion")
+        if tipo_op_raw:
+            tipo_op = str(tipo_op_raw).replace("\x00", "").strip().upper()
+            if tipo_op:
+                valid_ops = {c[0] for c in Pago.TIPO_OPERACION_CHOICES}
+                if tipo_op not in valid_ops:
+                    raise ValidationError({"tipo_operacion": f"Tipo de operación inválido: {tipo_op!r}."})
+                qs = qs.filter(tipo_operacion=tipo_op)
 
-        return Pago.objects.filter(id_empresa__in=get_empresas_visible(self.request.user)).order_by("-fecha_pago")
+        empresa_raw = self.request.query_params.get("id_empresa") or self.request.query_params.get("empresa")
+        if empresa_raw:
+            qs = qs.filter(id_empresa_id=uuid.UUID(validar_uuid_param(empresa_raw, "id_empresa")))
+
+        return qs.order_by("-fecha_pago")
 
     @action(detail=False, methods=["get"])
     def tipos_documento(self, request):
