@@ -1209,6 +1209,7 @@ class DepositoDatafonoSerializer(serializers.ModelSerializer):
 class PagoSerializer(serializers.ModelSerializer):
     # Campos de solo lectura para mostrar información relacionada
     empresa_nombre = serializers.CharField(source="id_empresa.nombre_comercial", read_only=True)
+    contacto_nombre = serializers.CharField(source="id_contacto.nombre_completo", read_only=True, default="")
     metodo_pago_nombre = serializers.CharField(source="id_metodo_pago.nombre_metodo", read_only=True)
     moneda_codigo = serializers.CharField(source="id_moneda.codigo_iso", read_only=True)
     caja_fisica_nombre = serializers.CharField(source="id_caja_fisica.nombre", read_only=True)
@@ -1259,14 +1260,84 @@ class PagoSerializer(serializers.ModelSerializer):
                 }
         return None
 
+    @staticmethod
+    def _derivar_contacto(validated_data):
+        for field_name, rel_name in (
+            ("id_factura", "id_cliente"),
+            ("id_pedido", "id_cliente"),
+            ("id_nota_venta", "id_cliente"),
+            ("id_cxp", "id_proveedor"),
+        ):
+            doc = validated_data.get(field_name)
+            if doc is None:
+                continue
+            tercero = getattr(doc, rel_name, None)
+            if tercero is None:
+                continue
+            contacto = getattr(tercero, "contacto", None)
+            if contacto is not None:
+                return contacto
+        return None
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        from apps.core.viewsets import get_empresas_visible
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        es_super = bool(getattr(user, "es_superusuario_omni", False))
+        empresas_visibles = (
+            get_empresas_visible(user) if user is not None and getattr(user, "is_authenticated", False) else None
+        )
+
+        empresa_explicita = attrs.get("id_empresa")
+        if (
+            empresa_explicita is not None
+            and empresas_visibles is not None
+            and not es_super
+            and not empresas_visibles.filter(pk=empresa_explicita.pk).exists()
+        ):
+            raise serializers.ValidationError({"id_empresa": "No tiene permisos sobre la empresa indicada."})
+
+        empresa = empresa_explicita or getattr(self.instance, "id_empresa", None)
+        if empresa is None and empresas_visibles is not None:
+            empresa = empresas_visibles.first()
+
+        contacto = attrs["id_contacto"] if "id_contacto" in attrs else getattr(self.instance, "id_contacto", None)
+        if contacto is not None:
+            if (
+                empresas_visibles is not None
+                and not es_super
+                and not empresas_visibles.filter(pk=contacto.id_empresa_id).exists()
+            ):
+                raise serializers.ValidationError(
+                    {"id_contacto": "El contacto no pertenece a una empresa visible para el usuario."}
+                )
+            if empresa is not None and contacto.id_empresa_id != empresa.pk:
+                raise serializers.ValidationError(
+                    {"id_contacto": "El contacto debe pertenecer a la misma empresa del pago."}
+                )
+
+        return attrs
+
     def create(self, validated_data):
+        from apps.core.viewsets import get_empresas_visible
+
         # Asignar empresa automáticamente si no viene en el payload
         request = self.context.get("request")
         if request and not validated_data.get("id_empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and hasattr(empresas, "first") and empresas.exists():
-                validated_data["id_empresa"] = empresas.first()
+            user = getattr(request, "user", None)
+            if user is not None:
+                empresa = get_empresas_visible(user).first()
+                if empresa is not None:
+                    validated_data["id_empresa"] = empresa
+
+        # Auto-derivar id_contacto desde el documento relacionado si no viene en el payload
+        if not validated_data.get("id_contacto"):
+            empresa_pago = validated_data.get("id_empresa")
+            candidato = self._derivar_contacto(validated_data)
+            if candidato is not None and empresa_pago is not None and candidato.id_empresa_id == empresa_pago.pk:
+                validated_data["id_contacto"] = candidato
 
         # Asignar usuario de registro
         if request and request.user.is_authenticated:
@@ -1280,6 +1351,7 @@ class PagoSerializer(serializers.ModelSerializer):
         fields = [
             "id_pago",
             "empresa_nombre",
+            "contacto_nombre",
             "metodo_pago_nombre",
             "moneda_codigo",
             "caja_fisica_nombre",
@@ -1301,6 +1373,7 @@ class PagoSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
             "id_empresa",
+            "id_contacto",
             "id_moneda",
             "id_metodo_pago",
             "id_caja_fisica",
@@ -1324,6 +1397,7 @@ class PagoSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
             "empresa_nombre",
+            "contacto_nombre",
             "metodo_pago_nombre",
             "moneda_codigo",
             "caja_fisica_nombre",

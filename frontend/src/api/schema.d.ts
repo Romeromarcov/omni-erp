@@ -3052,11 +3052,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * @description POST /{pk}/activar/
-         *     Reactiva un registro que fue desactivado.
-         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
-         */
+        /** @description Reactiva un permiso global del sistema (solo superusuario Omni). */
         post: operations["core_permisos_activar"];
         delete?: never;
         options?: never;
@@ -3076,10 +3072,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * @description POST /{pk}/desactivar/
-         *     Desactiva (borrado lógico) un registro activo.
-         */
+        /** @description Desactiva lógicamente un permiso global del sistema (solo superusuario Omni). */
         post: operations["core_permisos_desactivar"];
         delete?: never;
         options?: never;
@@ -16967,7 +16960,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-17T08:51:04.703387-04:00
+             * @default 2026-11-19T19:17:35.353638-04:00
              */
             fecha_despacho: string;
             /**
@@ -17914,6 +17907,11 @@ export interface components {
             readonly id_pago?: string;
             /** Empresa nombre */
             readonly empresa_nombre?: string;
+            /**
+             * Contacto nombre
+             * @default
+             */
+            readonly contacto_nombre: string;
             /** Metodo pago nombre */
             readonly metodo_pago_nombre?: string;
             /** Moneda codigo */
@@ -17943,13 +17941,13 @@ export interface components {
              * Tipo documento
              * @enum {string}
              */
-            tipo_documento: "PEDIDO" | "FACTURA" | "NOTA_VENTA" | "NOTA_CREDITO_VENTA" | "CXP" | "COMPRA" | "GASTO" | "REEMBOLSO_GASTO" | "NOMINA" | "IMPUESTO" | "AJUSTE" | "TRANSFERENCIA";
+            tipo_documento: "PEDIDO" | "FACTURA" | "NOTA_VENTA" | "NOTA_CREDITO_VENTA" | "CXP" | "CXC" | "COMPRA" | "GASTO" | "REEMBOLSO_GASTO" | "NOMINA" | "IMPUESTO" | "AJUSTE" | "TRANSFERENCIA" | "ANTICIPO" | "CONCILIACION_MULTIPLE";
             /**
              * Id documento
              * Format: uuid
-             * @description ID del documento específico (pedido, cxp, etc.)
+             * @description ID del documento específico (opcional para anticipos o conciliación múltiple).
              */
-            id_documento: string;
+            id_documento?: string | null;
             /**
              * Fecha pago
              * Format: date-time
@@ -17984,6 +17982,12 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             * @description Contacto común (cliente/proveedor) propietario del pago y su saldo a favor.
+             */
+            id_contacto?: string | null;
             /**
              * Id moneda
              * Format: uuid

@@ -1459,7 +1459,7 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
                     {
                         "monto": str(pago.monto),
                         "moneda": str(pago.id_moneda),
-                        "numero_factura": str(pago.id_documento),
+                        "numero_factura": str(pago.id_documento or pago.id_pago),
                     },
                 )
             except Exception:  # noqa: BLE001

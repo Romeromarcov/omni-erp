@@ -1,9 +1,15 @@
-from apps.core.uuid import uuid7
+from decimal import Decimal
+from typing import Any
 
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+
+from apps.core.base_models import IntegrationFieldsMixin, OmniBaseModel, TenantModel
+from apps.core.uuid import uuid7
 
 
 class Moneda(models.Model):
@@ -1294,7 +1300,6 @@ def empresa_post_save_catalogo(sender, instance, created, **kwargs):
 
 
 # --- VALIDACIÓN EN EL MODELO METODOPAGO ---
-from django.core.exceptions import ValidationError
 
 
 def validar_monedas_metodopago(metodopago, monedas):
@@ -1773,6 +1778,7 @@ class Pago(models.Model):
         ("NOTA_VENTA", "Nota de Venta"),
         ("NOTA_CREDITO_VENTA", "Nota de Crédito Venta"),
         ("CXP", "Cuenta por Pagar"),
+        ("CXC", "Cuenta por Cobrar"),
         ("COMPRA", "Compra"),
         ("GASTO", "Gasto"),
         ("REEMBOLSO_GASTO", "Reembolso de Gasto"),
@@ -1780,16 +1786,30 @@ class Pago(models.Model):
         ("IMPUESTO", "Impuesto/Contribución"),
         ("AJUSTE", "Ajuste Manual"),
         ("TRANSFERENCIA", "Transferencia"),
+        ("ANTICIPO", "Anticipo / Saldo a Favor"),
+        ("CONCILIACION_MULTIPLE", "Conciliación Múltiple"),
     ]
 
     # Campos básicos
     id_pago = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="pagos")
+    id_contacto = models.ForeignKey(
+        "core.Contacto",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pagos",
+        help_text="Contacto común (cliente/proveedor) propietario del pago y su saldo a favor.",
+    )
 
     # Clasificación del pago
     tipo_operacion = models.CharField(max_length=20, choices=TIPO_OPERACION_CHOICES)
     tipo_documento = models.CharField(max_length=30, choices=TIPO_DOCUMENTO_CHOICES)
-    id_documento = models.UUIDField(help_text="ID del documento específico (pedido, cxp, etc.)")
+    id_documento = models.UUIDField(
+        null=True,
+        blank=True,
+        help_text="ID del documento específico (opcional para anticipos o conciliación múltiple).",
+    )
 
     # Información del pago
     fecha_pago = models.DateTimeField()
@@ -1903,6 +1923,7 @@ class Pago(models.Model):
             models.Index(fields=["id_empresa", "tipo_operacion", "fecha_pago"]),
             models.Index(fields=["tipo_documento", "id_documento"]),
             models.Index(fields=["id_metodo_pago", "fecha_pago"]),
+            models.Index(fields=["id_empresa", "id_contacto", "tipo_operacion"]),
         ]
 
     def __str__(self):
@@ -1914,6 +1935,23 @@ class Pago(models.Model):
         super().save(*args, **kwargs)
 
     def _validar_documento(self):
+        # R-CODE-1: validar pertenencia multi-tenant del contacto propietario del pago
+        # antes de continuar — un contacto de otro tenant falla cerrado.
+        if self.id_contacto_id is not None:
+            if self.id_empresa_id is None:
+                raise ValueError("El pago debe tener empresa asociada cuando tiene contacto.")
+            try:
+                contacto = self.id_contacto
+            except ObjectDoesNotExist as exc:
+                raise ValueError(f"Contacto {self.id_contacto_id} no existe o pertenece a otra empresa.") from exc
+            if contacto is None or contacto.id_empresa_id != self.id_empresa_id:
+                raise ValueError(
+                    f"El contacto {self.id_contacto_id} pertenece a otra empresa y no puede asociarse a este pago."
+                )
+
+        if self.tipo_documento in ("ANTICIPO", "CONCILIACION_MULTIPLE", "CXC"):
+            return
+
         # R-CODE-1: cada rama valida que el documento pertenezca a la MISMA
         # empresa del pago — un id de otro tenant cuenta como inexistente.
         """Valida que el documento referenciado existe según el tipo"""
@@ -2023,9 +2061,270 @@ class Pago(models.Model):
         return None
 
 
-# ── Pagos de terceros (Zelle) — Capa B, tropicalización VE (§6.6 Plan Maestro) ─
+class AsignacionPago(OmniBaseModel):
+    """Imputación N:M de un ``Pago`` hacia una factura u obligación abierta.
 
-from apps.core.base_models import IntegrationFieldsMixin, TenantModel  # noqa: E402
+    Patrón ``account.partial.reconcile`` (Odoo) adaptado a Omni sin ``ContentType``:
+    anclado en ``core.Contacto`` con FKs tipadas opcionales por tipo de destino y
+    ``id_documento`` sincronizado automáticamente como ``CharField(64)`` para
+    soportar tanto PKs enteras (``CuentaPorCobrar``) como UUIDs.
+    """
+
+    TIPO_DOCUMENTO_CHOICES = [
+        ("CUENTA_POR_COBRAR", "Cuenta por Cobrar"),
+        ("CUENTA_POR_PAGAR", "Cuenta por Pagar"),
+        ("FACTURA_VENTA", "Factura de Venta"),
+        ("FACTURA_COMPRA", "Factura de Compra"),
+    ]
+
+    ESTADO_CHOICES = [
+        ("ACTIVA", "Activa"),
+        ("REVERTIDA", "Revertida"),
+    ]
+
+    TIPO_DIFERENCIA_CHOICES = [
+        ("", "Sin diferencia"),
+        ("GANANCIA", "Ganancia cambiaria"),
+        ("PERDIDA", "Pérdida cambiaria"),
+    ]
+
+    id_asignacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="asignaciones_pago")
+    id_contacto = models.ForeignKey("core.Contacto", on_delete=models.PROTECT, related_name="asignaciones_pago")
+    id_pago = models.ForeignKey("Pago", on_delete=models.PROTECT, related_name="asignaciones")
+    tipo_documento = models.CharField(max_length=30, choices=TIPO_DOCUMENTO_CHOICES)
+    id_documento = models.CharField(max_length=64, blank=True, db_index=True)
+
+    # FKs tipadas opcionales (exactamente 1 poblada según tipo_documento).
+    id_cxc = models.ForeignKey(
+        "cuentas_por_cobrar.CuentaPorCobrar",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="asignaciones_pago",
+    )
+    id_cxp = models.ForeignKey(
+        "cuentas_por_pagar.CuentaPorPagar",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="asignaciones_pago",
+    )
+    id_factura_venta = models.ForeignKey(
+        "ventas.FacturaFiscal",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="asignaciones_pago",
+    )
+    id_factura_compra = models.ForeignKey(
+        "compras.FacturaCompra",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="asignaciones_pago",
+    )
+
+    # Enlaces 1:1 opcionales para sincronía exacta con aging/reportes legacy.
+    id_abono_cxc = models.OneToOneField(
+        "cuentas_por_cobrar.AbonoCxC",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asignacion_pago",
+    )
+    id_abono_cxp = models.OneToOneField(
+        "cuentas_por_pagar.AbonoCxP",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asignacion_pago",
+    )
+
+    # Montos y tasas (R-CODE-4: Decimal siempre).
+    monto_asignado_pago = models.DecimalField(max_digits=18, decimal_places=4)
+    monto_asignado_documento = models.DecimalField(max_digits=18, decimal_places=4)
+    id_moneda_documento = models.ForeignKey("Moneda", on_delete=models.PROTECT, related_name="asignaciones_pago")
+    tasa_aplicada = models.DecimalField(max_digits=18, decimal_places=8, default=Decimal("1"))
+    diferencia_cambiaria = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    tipo_diferencia = models.CharField(max_length=10, choices=TIPO_DIFERENCIA_CHOICES, blank=True, default="")
+
+    # Trazabilidad y reversión.
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default="ACTIVA")
+    fecha_aplicacion = models.DateTimeField(default=timezone.now)
+    fecha_reversion = models.DateTimeField(null=True, blank=True)
+    motivo_reversion = models.CharField(max_length=255, blank=True, default="")
+    id_asiento = models.ForeignKey(
+        "contabilidad.AsientoContable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asignaciones_pago",
+    )
+    id_asiento_reversion = models.ForeignKey(
+        "contabilidad.AsientoContable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asignaciones_pago_revertidas",
+    )
+    id_usuario_registro = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asignaciones_pago_registradas",
+    )
+    referencia_externa = models.CharField(max_length=100, blank=True, default="")
+
+    class Meta:
+        db_table = "finanzas_asignacion_pago"
+        verbose_name = "Asignación de Pago"
+        verbose_name_plural = "Asignaciones de Pago"
+        ordering = ["-fecha_aplicacion", "-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "id_contacto", "estado"]),
+            models.Index(fields=["id_empresa", "tipo_documento", "id_documento", "estado"]),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=Q(monto_asignado_pago__gt=0), name="asignacion_pago_monto_pago_gt_0"),
+            models.CheckConstraint(condition=Q(monto_asignado_documento__gt=0), name="asignacion_pago_monto_doc_gt_0"),
+            models.CheckConstraint(condition=Q(tasa_aplicada__gt=0), name="asignacion_pago_tasa_gt_0"),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        tipo_documento="CUENTA_POR_COBRAR",
+                        id_cxc__isnull=False,
+                        id_cxp__isnull=True,
+                        id_factura_venta__isnull=True,
+                        id_factura_compra__isnull=True,
+                    )
+                    | Q(
+                        tipo_documento="CUENTA_POR_PAGAR",
+                        id_cxc__isnull=True,
+                        id_cxp__isnull=False,
+                        id_factura_venta__isnull=True,
+                        id_factura_compra__isnull=True,
+                    )
+                    | Q(
+                        tipo_documento="FACTURA_VENTA",
+                        id_cxc__isnull=True,
+                        id_cxp__isnull=True,
+                        id_factura_venta__isnull=False,
+                        id_factura_compra__isnull=True,
+                    )
+                    | Q(
+                        tipo_documento="FACTURA_COMPRA",
+                        id_cxc__isnull=True,
+                        id_cxp__isnull=True,
+                        id_factura_venta__isnull=True,
+                        id_factura_compra__isnull=False,
+                    )
+                ),
+                name="asignacion_pago_fk_coherente",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Asignación {self.monto_asignado_pago} → {self.tipo_documento}:{self.id_documento} [{self.estado}]"
+
+    def _resolver_destino(self) -> tuple[Any, Any]:
+        """Valida coherencia FK ↔ tipo_documento y retorna (pk_destino, empresa_id_destino)."""
+        fk_pks: dict[str, Any] = {
+            "CUENTA_POR_COBRAR": self.id_cxc_id,
+            "CUENTA_POR_PAGAR": self.id_cxp_id,
+            "FACTURA_VENTA": self.id_factura_venta_id,
+            "FACTURA_COMPRA": self.id_factura_compra_id,
+        }
+        if self.tipo_documento not in fk_pks:
+            raise ValidationError({"tipo_documento": f"Tipo de documento inválido: {self.tipo_documento!r}."})
+
+        poblados = [tipo for tipo, pk in fk_pks.items() if pk is not None]
+        if len(poblados) != 1 or poblados[0] != self.tipo_documento:
+            raise ValidationError(
+                {
+                    "tipo_documento": (
+                        "Debe poblar exactamente la FK correspondiente a tipo_documento " f"({self.tipo_documento})."
+                    )
+                }
+            )
+
+        try:
+            if self.tipo_documento == "CUENTA_POR_COBRAR":
+                cxc = self.id_cxc
+                if cxc is None:
+                    raise ValidationError({"id_cxc": "Debe indicar una CuentaPorCobrar válida."})
+                return cxc.pk, cxc.empresa_id
+            if self.tipo_documento == "CUENTA_POR_PAGAR":
+                cxp = self.id_cxp
+                if cxp is None:
+                    raise ValidationError({"id_cxp": "Debe indicar una CuentaPorPagar válida."})
+                return cxp.pk, cxp.id_empresa_id
+            if self.tipo_documento == "FACTURA_VENTA":
+                fac_v = self.id_factura_venta
+                if fac_v is None:
+                    raise ValidationError({"id_factura_venta": "Debe indicar una FacturaFiscal válida."})
+                return fac_v.pk, fac_v.id_empresa_id
+            fac_c = self.id_factura_compra
+            if fac_c is None:
+                raise ValidationError({"id_factura_compra": "Debe indicar una FacturaCompra válida."})
+            return fac_c.pk, fac_c.id_empresa_id
+        except ObjectDoesNotExist as exc:
+            raise ValidationError({"tipo_documento": "El documento destino no existe o no es accesible."}) from exc
+
+    def _validar_y_sincronizar(self) -> None:
+        target_pk, target_empresa_id = self._resolver_destino()
+        self.id_documento = str(target_pk)
+
+        if self.id_empresa_id is None:
+            raise ValidationError({"id_empresa": "La asignación debe pertenecer a una empresa."})
+
+        if self.id_pago_id is None:
+            raise ValidationError({"id_pago": "Debe indicar un pago válido."})
+        try:
+            pago = self.id_pago
+        except ObjectDoesNotExist as exc:
+            raise ValidationError({"id_pago": "El pago no existe o no es accesible."}) from exc
+        if pago.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_pago": "El pago debe pertenecer a la misma empresa de la asignación."})
+
+        if self.id_contacto_id is None:
+            raise ValidationError({"id_contacto": "Debe indicar un contacto válido."})
+        try:
+            contacto = self.id_contacto
+        except ObjectDoesNotExist as exc:
+            raise ValidationError({"id_contacto": "El contacto no existe o no es accesible."}) from exc
+        if contacto.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_contacto": "El contacto debe pertenecer a la misma empresa de la asignación."})
+
+        if target_empresa_id is None or target_empresa_id != self.id_empresa_id:
+            raise ValidationError(
+                {"tipo_documento": "El documento destino debe pertenecer a la misma empresa de la asignación."}
+            )
+
+    def clean(self) -> None:
+        super().clean()
+        self._validar_y_sincronizar()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        update_fields = kwargs.get("update_fields")
+        campos_criticos = {
+            "id_empresa",
+            "id_contacto",
+            "id_pago",
+            "tipo_documento",
+            "id_documento",
+            "id_cxc",
+            "id_cxp",
+            "id_factura_venta",
+            "id_factura_compra",
+        }
+        if self._state.adding or update_fields is None or campos_criticos.intersection(update_fields):
+            self._validar_y_sincronizar()
+        super().save(*args, **kwargs)
+
+
+# ── Pagos de terceros (Zelle) — Capa B, tropicalización VE (§6.6 Plan Maestro) ─
 
 
 class PagoTercero(TenantModel, IntegrationFieldsMixin):

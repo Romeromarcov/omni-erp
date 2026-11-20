@@ -10390,7 +10390,7 @@
         "/core/permisos/{id_permiso}/activar/": {
             "post": {
                 "operationId": "core_permisos_activar",
-                "description": "POST /{pk}/activar/\nReactiva un registro que fue desactivado.\nBusca el objeto incluyendo inactivos (necesario para reactivar).",
+                "description": "Reactiva un permiso global del sistema (solo superusuario Omni).",
                 "parameters": [
                     {
                         "name": "data",
@@ -10427,7 +10427,7 @@
         "/core/permisos/{id_permiso}/desactivar/": {
             "post": {
                 "operationId": "core_permisos_desactivar",
-                "description": "POST /{pk}/desactivar/\nDesactiva (borrado lógico) un registro activo.",
+                "description": "Desactiva lógicamente un permiso global del sistema (solo superusuario Omni).",
                 "parameters": [
                     {
                         "name": "data",
@@ -52571,7 +52571,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-17T08:51:04.703387-04:00"
+                    "default": "2026-11-19T19:17:35.353638-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -54160,7 +54160,6 @@
             "required": [
                 "tipo_operacion",
                 "tipo_documento",
-                "id_documento",
                 "fecha_pago",
                 "monto",
                 "id_empresa",
@@ -54179,6 +54178,13 @@
                     "title": "Empresa nombre",
                     "type": "string",
                     "readOnly": true,
+                    "minLength": 1
+                },
+                "contacto_nombre": {
+                    "title": "Contacto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
                     "minLength": 1
                 },
                 "metodo_pago_nombre": {
@@ -54256,20 +54262,24 @@
                         "NOTA_VENTA",
                         "NOTA_CREDITO_VENTA",
                         "CXP",
+                        "CXC",
                         "COMPRA",
                         "GASTO",
                         "REEMBOLSO_GASTO",
                         "NOMINA",
                         "IMPUESTO",
                         "AJUSTE",
-                        "TRANSFERENCIA"
+                        "TRANSFERENCIA",
+                        "ANTICIPO",
+                        "CONCILIACION_MULTIPLE"
                     ]
                 },
                 "id_documento": {
                     "title": "Id documento",
-                    "description": "ID del documento específico (pedido, cxp, etc.)",
+                    "description": "ID del documento específico (opcional para anticipos o conciliación múltiple).",
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "x-nullable": true
                 },
                 "fecha_pago": {
                     "title": "Fecha pago",
@@ -54313,6 +54323,13 @@
                     "title": "Id empresa",
                     "type": "string",
                     "format": "uuid"
+                },
+                "id_contacto": {
+                    "title": "Id contacto",
+                    "description": "Contacto común (cliente/proveedor) propietario del pago y su saldo a favor.",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
                 },
                 "id_moneda": {
                     "title": "Id moneda",

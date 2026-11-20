@@ -207,7 +207,7 @@ def registrar_efectos_pago(pago):
         referencia_pago=pago.referencia,
         descripcion=f"Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}",
         tipo_documento_asociado=pago.tipo_documento,
-        nro_documento_asociado=str(pago.id_documento),
+        nro_documento_asociado=str(pago.id_documento or pago.id_pago),
         id_caja=pago.id_caja_virtual,
         id_cuenta_bancaria=pago.id_cuenta_bancaria,
         id_usuario_registro=pago.id_usuario_registro,
