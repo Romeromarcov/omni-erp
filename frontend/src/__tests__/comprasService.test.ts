@@ -178,4 +178,39 @@ describe('comprasService', () => {
     const res = await comprasService.getProveedores();
     expect(res).toEqual([{ id_proveedor: 'prov-1', razon_social: 'ACME C.A.' }]);
   });
+
+  it('métodos Source-to-PO invocan las rutas REST y payloads esperados', async () => {
+    vi.mocked(post)
+      .mockResolvedValueOnce({ id_requisicion: 'req-1', estado: 'PENDIENTE' })
+      .mockResolvedValueOnce({ id_requisicion: 'req-1', estado: 'APROBADA' })
+      .mockResolvedValueOnce({ id_solicitud_cotizacion: 'rfq-1', numero_solicitud: 'RFQ-1' })
+      .mockResolvedValueOnce({ id_orden_compra: 'oc-1', numero_orden: 'OC-1', estado_orden: 'BORRADOR' });
+    vi.mocked(get).mockResolvedValueOnce({ rfq_id: 'rfq-1', ofertas: [], productos: [] });
+
+    await comprasService.enviarAprobacionRequisicion('req-1');
+    await comprasService.confirmarAprobacionRequisicion('req-1');
+    await comprasService.crearRfqDesdeRequisiciones({
+      requisicion_ids: ['req-1'],
+      proveedores_ids: ['prov-1'],
+      fecha_vencimiento: '2026-12-01',
+    });
+    await comprasService.compararOfertasRfq('rfq-1');
+    await comprasService.adjudicarOferta('ofe-1', {
+      id_almacen_destino: 'alm-1',
+      rechazar_competidoras: true,
+    });
+
+    expect(post).toHaveBeenNthCalledWith(1, '/compras/requisiciones-compra/req-1/enviar-aprobacion/', {});
+    expect(post).toHaveBeenNthCalledWith(2, '/compras/requisiciones-compra/req-1/confirmar-aprobacion/', {});
+    expect(post).toHaveBeenNthCalledWith(3, '/compras/solicitudes-cotizacion/desde-requisiciones/', {
+      requisicion_ids: ['req-1'],
+      proveedores_ids: ['prov-1'],
+      fecha_vencimiento: '2026-12-01',
+    });
+    expect(get).toHaveBeenCalledWith('/compras/solicitudes-cotizacion/rfq-1/comparar-ofertas/');
+    expect(post).toHaveBeenNthCalledWith(4, '/compras/ofertas-proveedor/ofe-1/adjudicar/', {
+      id_almacen_destino: 'alm-1',
+      rechazar_competidoras: true,
+    });
+  });
 });

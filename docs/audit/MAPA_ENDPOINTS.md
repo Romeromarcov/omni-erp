@@ -810,6 +810,8 @@
 | `^notificaciones\.(?P<format>[a-z0-9]+)/?$` | NotificacionViewSet | Notificacion | ✅ | ✅ | IsAuthenticated |
 | `^ofertas-proveedor/$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
 | `^ofertas-proveedor/(?P<pk>[^/.]+)/$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
+| `^ofertas-proveedor/(?P<pk>[^/.]+)/adjudicar/$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
+| `^ofertas-proveedor/(?P<pk>[^/.]+)/adjudicar\.(?P<format>[a-z0-9]+)/?$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
 | `^ofertas-proveedor/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
 | `^ofertas-proveedor\.(?P<format>[a-z0-9]+)/?$` | OfertaProveedorViewSet | OfertaProveedor | — | ✅ | IsAuthenticated |
 | `^operaciones-cambio-divisa/$` | OperacionCambioDivisaViewSet | OperacionCambioDivisa | ✅ | ✅ | IsAuthenticated |
@@ -1138,6 +1140,10 @@
 | `^reportes/valoracion\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
 | `^requisiciones-compra/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
 | `^requisiciones-compra/(?P<pk>[^/.]+)/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^requisiciones-compra/(?P<pk>[^/.]+)/confirmar-aprobacion/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^requisiciones-compra/(?P<pk>[^/.]+)/confirmar-aprobacion\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^requisiciones-compra/(?P<pk>[^/.]+)/enviar-aprobacion/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
+| `^requisiciones-compra/(?P<pk>[^/.]+)/enviar-aprobacion\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
 | `^requisiciones-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
 | `^requisiciones-compra\.(?P<format>[a-z0-9]+)/?$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
 | `^resumenes-asistencia-diario/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
@@ -1192,7 +1198,11 @@
 | `^solicitudes-aprobacion\.(?P<format>[a-z0-9]+)/?$` | SolicitudAprobacionViewSet | SolicitudAprobacion | — | ✅ | IsAuthenticated |
 | `^solicitudes-cotizacion/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
 | `^solicitudes-cotizacion/(?P<pk>[^/.]+)/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion/(?P<pk>[^/.]+)/comparar-ofertas/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion/(?P<pk>[^/.]+)/comparar-ofertas\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
 | `^solicitudes-cotizacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion/desde-requisiciones/$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
+| `^solicitudes-cotizacion/desde-requisiciones\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
 | `^solicitudes-cotizacion\.(?P<format>[a-z0-9]+)/?$` | SolicitudCotizacionViewSet | SolicitudCotizacion | ✅ | ✅ | IsAuthenticated |
 | `^stock-actual/$` | StockActualViewSet | StockActual | ✅ | ✅ | IsAuthenticated |
 | `^stock-actual/(?P<pk>[^/.]+)/$` | StockActualViewSet | StockActual | ✅ | ✅ | IsAuthenticated |

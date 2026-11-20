@@ -1173,6 +1173,8 @@ if MCP_AVAILABLE and mcp is not None:
 
 _MCP_DEFAULT_MODULE_PATHS = [
     "apps.ventas.mcp",
+    "apps.compras.mcp",
+    "apps.gestion_aprobaciones.mcp",
     "apps.inventario.mcp",
     "apps.finanzas.mcp",
     "apps.contabilidad.mcp",

@@ -272,6 +272,8 @@ export const aprovisionamientoKeys = {
     ['aprovisionamiento', 'solicitudes', 'list', estado ?? null] as const,
   detallesSolicitud: (solicitudId: string) =>
     ['aprovisionamiento', 'solicitudes', 'detalles', solicitudId] as const,
+  compararOfertas: (solicitudId: string) =>
+    ['aprovisionamiento', 'solicitudes', 'comparar', solicitudId] as const,
   ofertasAll: () => ['aprovisionamiento', 'ofertas'] as const,
   ofertas: (solicitud?: string | null, estado?: string | null) =>
     ['aprovisionamiento', 'ofertas', 'list', solicitud ?? null, estado ?? null] as const,

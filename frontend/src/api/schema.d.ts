@@ -1573,6 +1573,26 @@ export interface paths {
         patch: operations["compras_ofertas-proveedor_partial_update"];
         trace?: never;
     };
+    "/compras/ofertas-proveedor/{id_oferta}/adjudicar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                id_oferta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /ofertas-proveedor/{pk}/adjudicar/ — Adjudica total/parcialmente la oferta a una OrdenCompra. */
+        post: operations["compras_ofertas-proveedor_adjudicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compras/ordenes-compra/": {
         parameters: {
             query?: never;
@@ -1715,6 +1735,46 @@ export interface paths {
         patch: operations["compras_requisiciones-compra_partial_update"];
         trace?: never;
     };
+    "/compras/requisiciones-compra/{id_requisicion}/confirmar-aprobacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /requisiciones-compra/{pk}/confirmar-aprobacion/ — Pasa de PENDIENTE a APROBADA tras resolver flujo. */
+        post: operations["compras_requisiciones-compra_confirmar_aprobacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/requisiciones-compra/{id_requisicion}/enviar-aprobacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /requisiciones-compra/{pk}/enviar-aprobacion/ — Envía una requisición BORRADOR a aprobación. */
+        post: operations["compras_requisiciones-compra_enviar_aprobacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compras/solicitudes-cotizacion/": {
         parameters: {
             query?: never;
@@ -1725,6 +1785,23 @@ export interface paths {
         get: operations["compras_solicitudes-cotizacion_list"];
         put?: never;
         post: operations["compras_solicitudes-cotizacion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/solicitudes-cotizacion/desde-requisiciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /solicitudes-cotizacion/desde-requisiciones/ — Consolida requisiciones APROBADA en una RFQ. */
+        post: operations["compras_solicitudes-cotizacion_desde_requisiciones"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1748,6 +1825,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["compras_solicitudes-cotizacion_partial_update"];
+        trace?: never;
+    };
+    "/compras/solicitudes-cotizacion/{id_solicitud_cotizacion}/comparar-ofertas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                id_solicitud_cotizacion: string;
+            };
+            cookie?: never;
+        };
+        /** @description GET /solicitudes-cotizacion/{pk}/comparar-ofertas/ — Matriz comparativa lado a lado. */
+        get: operations["compras_solicitudes-cotizacion_comparar_ofertas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/configuracion/catalogos-valor/": {
@@ -14922,6 +15019,60 @@ export interface components {
              */
             readonly fecha_creacion?: string;
         };
+        AdjudicacionParcialItem: {
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+        } | null;
+        AdjudicarOfertaInput: {
+            /**
+             * Id almacen destino
+             * Format: uuid
+             */
+            id_almacen_destino: string;
+            /**
+             * Rechazar competidoras
+             * @default true
+             */
+            rechazar_competidoras: boolean;
+            adjudicacion_parcial?: components["schemas"]["AdjudicacionParcialItem"][] | null;
+        };
+        AdjudicarOfertaResponse: {
+            /**
+             * Id orden compra
+             * Format: uuid
+             */
+            id_orden_compra: string;
+            /** Numero orden */
+            numero_orden: string;
+            /** Estado orden */
+            estado_orden: string;
+            /** Monto total */
+            monto_total: string;
+            /**
+             * Oferta id
+             * Format: uuid
+             */
+            oferta_id: string;
+            /** Oferta estado */
+            oferta_estado: string;
+            /**
+             * Rfq id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Rfq estado */
+            rfq_estado: string;
+            /** Lineas */
+            lineas: number;
+        };
         OrdenCompra: {
             /**
              * Id orden compra
@@ -14966,6 +15117,16 @@ export interface components {
              * Format: uuid
              */
             id_proveedor: string;
+            /**
+             * Id oferta origen
+             * Format: uuid
+             */
+            id_oferta_origen?: string | null;
+            /**
+             * Id almacen destino
+             * Format: uuid
+             */
+            id_almacen_destino?: string | null;
         };
         RecepcionMercancia: {
             /**
@@ -15081,6 +15242,8 @@ export interface components {
             estado?: "BORRADOR" | "ENVIADA" | "RESPONDIDA" | "VENCIDA" | "ANULADA";
             /** Observaciones */
             observaciones?: string | null;
+            requisiciones?: string[];
+            proveedores_invitados?: string[];
             /**
              * Fecha creacion
              * Format: date-time
@@ -15091,6 +15254,115 @@ export interface components {
              * Format: uuid
              */
             readonly id_empresa?: string;
+        };
+        CrearRfqDesdeRequisicionesInput: {
+            requisicion_ids: string[];
+            proveedores_ids: string[];
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento: string;
+            /**
+             * Numero solicitud
+             * @default
+             */
+            numero_solicitud: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        OfertaResumenComparativo: {
+            /**
+             * Id oferta
+             * Format: uuid
+             */
+            id_oferta: string;
+            /** Numero oferta */
+            numero_oferta: string;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor: string;
+            /** Proveedor nombre */
+            proveedor_nombre: string;
+            /** Estado */
+            estado: string;
+            /** Monto total */
+            monto_total: string;
+            /** Tiempo entrega */
+            tiempo_entrega: string;
+            /** Condiciones pago */
+            condiciones_pago: string;
+            /** Es mejor total */
+            es_mejor_total: boolean;
+        };
+        CotizacionComparada: {
+            /**
+             * Id oferta
+             * Format: uuid
+             */
+            id_oferta: string;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor: string;
+            /** Proveedor nombre */
+            proveedor_nombre: string;
+            /** Cantidad */
+            cantidad: string | null;
+            /** Precio unitario */
+            precio_unitario: string | null;
+            /** Subtotal */
+            subtotal: string | null;
+            /** Tiempo entrega */
+            tiempo_entrega: string | null;
+            /** Es mejor precio */
+            es_mejor_precio: boolean;
+        };
+        ProductoComparado: {
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            producto_nombre: string;
+            /** Sku */
+            sku: string;
+            /** Cantidad solicitada */
+            cantidad_solicitada: string;
+            /** Especificaciones */
+            especificaciones: string;
+            /** Mejor precio unitario */
+            mejor_precio_unitario: string | null;
+            cotizaciones: components["schemas"]["CotizacionComparada"][];
+        };
+        CompararOfertasResponse: {
+            /**
+             * Rfq id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Numero solicitud */
+            numero_solicitud: string;
+            /** Estado */
+            estado: string;
+            /** Fecha solicitud */
+            fecha_solicitud: string;
+            /** Fecha vencimiento */
+            fecha_vencimiento: string;
+            /**
+             * Mejor oferta id
+             * Format: uuid
+             */
+            mejor_oferta_id: string | null;
+            ofertas: components["schemas"]["OfertaResumenComparativo"][];
+            productos: components["schemas"]["ProductoComparado"][];
         };
         CatalogoValor: {
             /**
@@ -18289,7 +18561,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T06:22:06.569888-04:00
+             * @default 2026-11-20T07:39:40.929588-04:00
              */
             fecha_despacho: string;
             /**
@@ -20639,6 +20911,11 @@ export interface components {
              */
             id_tipo_aprobacion: string;
             /**
+             * Id departamento
+             * Format: uuid
+             */
+            id_departamento?: string | null;
+            /**
              * Rol aprobador
              * Format: uuid
              */
@@ -20648,6 +20925,18 @@ export interface components {
              * Format: uuid
              */
             id_usuario_aprobador?: string | null;
+            /** Sla horas */
+            sla_horas?: number | null;
+            /**
+             * Escalar a rol
+             * Format: uuid
+             */
+            escalar_a_rol?: string | null;
+            /**
+             * Escalar a usuario
+             * Format: uuid
+             */
+            escalar_a_usuario?: string | null;
         };
         RegistroAprobacion: {
             /**
@@ -20713,6 +21002,11 @@ export interface components {
              */
             id_tipo_aprobacion: string;
             /**
+             * Id departamento
+             * Format: uuid
+             */
+            readonly id_departamento?: string | null;
+            /**
              * Id usuario solicitante
              * Format: uuid
              */
@@ -20727,6 +21021,27 @@ export interface components {
              * Format: decimal
              */
             readonly monto?: string | null;
+            /**
+             * Fecha inicio etapa
+             * Format: date-time
+             */
+            readonly fecha_inicio_etapa?: string;
+            /** Escalada */
+            readonly escalada?: boolean;
+            /**
+             * Fecha escalacion
+             * Format: date-time
+             */
+            readonly fecha_escalacion?: string | null;
+        };
+        DecidirSolicitudInput: {
+            /** Aprobado */
+            aprobado: boolean;
+            /**
+             * Comentarios
+             * @default
+             */
+            comentarios: string;
         };
         TipoAprobacion: {
             /**
@@ -30700,6 +31015,32 @@ export interface operations {
             };
         };
     };
+    "compras_ofertas-proveedor_adjudicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                id_oferta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjudicarOfertaInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjudicarOfertaResponse"];
+                };
+            };
+        };
+    };
     "compras_ordenes-compra_list": {
         parameters: {
             query?: {
@@ -31155,6 +31496,50 @@ export interface operations {
             };
         };
     };
+    "compras_requisiciones-compra_confirmar_aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisicionCompra"];
+                };
+            };
+        };
+    };
+    "compras_requisiciones-compra_enviar_aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisicionCompra"];
+                };
+            };
+        };
+    };
     "compras_solicitudes-cotizacion_list": {
         parameters: {
             query?: {
@@ -31196,6 +31581,29 @@ export interface operations {
             cookie?: never;
         };
         requestBody: components["requestBodies"]["SolicitudCotizacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudCotizacion"];
+                };
+            };
+        };
+    };
+    "compras_solicitudes-cotizacion_desde_requisiciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearRfqDesdeRequisicionesInput"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -31289,6 +31697,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SolicitudCotizacion"];
+                };
+            };
+        };
+    };
+    "compras_solicitudes-cotizacion_comparar_ofertas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                id_solicitud_cotizacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompararOfertasResponse"];
                 };
             };
         };
@@ -45670,9 +46100,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["SolicitudAprobacion"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecidirSolicitudInput"];
+            };
+        };
         responses: {
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

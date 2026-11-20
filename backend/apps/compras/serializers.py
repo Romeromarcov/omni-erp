@@ -1,4 +1,8 @@
+from decimal import Decimal
+
 from rest_framework import serializers
+
+from apps.core.viewsets import get_empresas_visible
 
 from .models import (
     DetalleFacturaCompra,
@@ -16,12 +20,79 @@ from .models import (
 )
 
 
+def _empresas_visibles_contexto(serializer) -> set[str] | None:
+    request = serializer.context.get("request") if hasattr(serializer, "context") else None
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        return {str(pk) for pk in get_empresas_visible(user).values_list("pk", flat=True)}
+    return None
+
+
+def _validar_unicidad_empresa(modelo, campo: str, valor: str | None, visibles: set[str] | None, instance=None) -> None:
+    if not valor or not visibles:
+        return
+    emp_ids = [str(instance.id_empresa_id)] if instance is not None else list(visibles)
+    qs = modelo.objects.filter(id_empresa_id__in=emp_ids, **{campo: valor})
+    if instance is not None:
+        qs = qs.exclude(pk=instance.pk)
+    if qs.exists():
+        raise serializers.ValidationError({campo: f"Ya existe un registro con {campo} '{valor}'."})
+
+
 class OrdenCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrdenCompra
         exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_orden_compra", "fecha_creacion")
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        prov = attrs.get("id_proveedor") or getattr(self.instance, "id_proveedor", None)
+        almacen = (
+            attrs.get("id_almacen_destino")
+            if "id_almacen_destino" in attrs
+            else getattr(self.instance, "id_almacen_destino", None)
+        )
+        oferta = (
+            attrs.get("id_oferta_origen")
+            if "id_oferta_origen" in attrs
+            else getattr(self.instance, "id_oferta_origen", None)
+        )
+
+        empresa_ref = (
+            str(self.instance.id_empresa_id)
+            if self.instance is not None
+            else (str(prov.id_empresa_id) if prov is not None else None)
+        )
+        visibles = _empresas_visibles_contexto(self)
+        _validar_unicidad_empresa(
+            OrdenCompra,
+            "numero_orden",
+            attrs.get("numero_orden"),
+            visibles,
+            self.instance,
+        )
+
+        if almacen is not None:
+            alm_emp = str(almacen.id_empresa_id)
+            if visibles is not None and alm_emp not in visibles:
+                raise serializers.ValidationError({"id_almacen_destino": "Almacén destino fuera de su empresa."})
+            if empresa_ref is not None and alm_emp != empresa_ref:
+                raise serializers.ValidationError(
+                    {"id_almacen_destino": "El almacén destino no pertenece a la empresa de la orden."}
+                )
+
+        if oferta is not None:
+            ofe_emp = str(oferta.id_solicitud_cotizacion.id_empresa_id)
+            if visibles is not None and ofe_emp not in visibles:
+                raise serializers.ValidationError({"id_oferta_origen": "Oferta origen fuera de su empresa."})
+            if empresa_ref is not None and ofe_emp != empresa_ref:
+                raise serializers.ValidationError(
+                    {"id_oferta_origen": "La oferta origen no pertenece a la empresa de la orden."}
+                )
+
+        return attrs
 
 
 class DetalleOrdenCompraSerializer(serializers.ModelSerializer):
@@ -76,6 +147,17 @@ class RequisicionCompraSerializer(serializers.ModelSerializer):
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_requisicion", "fecha_creacion")
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        _validar_unicidad_empresa(
+            RequisicionCompra,
+            "numero_requisicion",
+            attrs.get("numero_requisicion"),
+            _empresas_visibles_contexto(self),
+            self.instance,
+        )
+        return attrs
+
 
 class DetalleRequisicionCompraSerializer(serializers.ModelSerializer):
     class Meta:
@@ -103,11 +185,60 @@ class SolicitudCotizacionSerializer(serializers.ModelSerializer):
             "fecha_vencimiento",
             "estado",
             "observaciones",
+            "requisiciones",
+            "proveedores_invitados",
             "fecha_creacion",
             "id_empresa",
         ]
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_solicitud_cotizacion", "fecha_creacion")
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        fecha_sol = attrs.get("fecha_solicitud", getattr(self.instance, "fecha_solicitud", None))
+        fecha_venc = attrs.get("fecha_vencimiento", getattr(self.instance, "fecha_vencimiento", None))
+        if fecha_sol and fecha_venc and fecha_venc < fecha_sol:
+            raise serializers.ValidationError(
+                {"fecha_vencimiento": "La fecha de vencimiento no puede ser anterior a la fecha de solicitud."}
+            )
+
+        visibles = _empresas_visibles_contexto(self)
+        _validar_unicidad_empresa(
+            SolicitudCotizacion,
+            "numero_solicitud",
+            attrs.get("numero_solicitud"),
+            visibles,
+            self.instance,
+        )
+        empresa_ref = str(self.instance.id_empresa_id) if self.instance is not None else None
+
+        requisiciones = attrs.get("requisiciones")
+        if requisiciones is not None:
+            for req in requisiciones:
+                req_emp = str(req.id_empresa_id)
+                if visibles is not None and req_emp not in visibles:
+                    raise serializers.ValidationError({"requisiciones": "Requisición fuera de su empresa."})
+                if empresa_ref is None:
+                    empresa_ref = req_emp
+                elif req_emp != empresa_ref:
+                    raise serializers.ValidationError(
+                        {"requisiciones": "Todas las requisiciones deben pertenecer a la misma empresa."}
+                    )
+
+        proveedores = attrs.get("proveedores_invitados")
+        if proveedores is not None:
+            for prov in proveedores:
+                prov_emp = str(prov.id_empresa_id)
+                if visibles is not None and prov_emp not in visibles:
+                    raise serializers.ValidationError({"proveedores_invitados": "Proveedor fuera de su empresa."})
+                if empresa_ref is None:
+                    empresa_ref = prov_emp
+                elif prov_emp != empresa_ref:
+                    raise serializers.ValidationError(
+                        {"proveedores_invitados": "Los proveedores invitados deben pertenecer a la misma empresa."}
+                    )
+
+        return attrs
 
 
 class DetalleSolicitudCotizacionSerializer(serializers.ModelSerializer):
@@ -194,3 +325,81 @@ class DetalleFacturaCompraSerializer(serializers.ModelSerializer):
             "total_linea",
             "observaciones",
         ]
+
+
+# ── Serializers de entrada/respuesta para acciones Source-to-PO (OpenAPI) ──────
+
+
+class CrearRfqDesdeRequisicionesInputSerializer(serializers.Serializer):
+    requisicion_ids = serializers.ListField(child=serializers.UUIDField(), allow_empty=False)
+    proveedores_ids = serializers.ListField(child=serializers.UUIDField(), allow_empty=False)
+    fecha_vencimiento = serializers.DateField()
+    numero_solicitud = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
+    observaciones = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class AdjudicacionParcialItemSerializer(serializers.Serializer):
+    id_producto = serializers.UUIDField()
+    cantidad = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal("0.0001"))
+
+
+class AdjudicarOfertaInputSerializer(serializers.Serializer):
+    id_almacen_destino = serializers.UUIDField()
+    rechazar_competidoras = serializers.BooleanField(required=False, default=True)
+    adjudicacion_parcial = AdjudicacionParcialItemSerializer(many=True, required=False, allow_null=True)
+
+
+class AdjudicarOfertaResponseSerializer(serializers.Serializer):
+    id_orden_compra = serializers.UUIDField()
+    numero_orden = serializers.CharField()
+    estado_orden = serializers.CharField()
+    monto_total = serializers.CharField()
+    oferta_id = serializers.UUIDField()
+    oferta_estado = serializers.CharField()
+    rfq_id = serializers.UUIDField()
+    rfq_estado = serializers.CharField()
+    lineas = serializers.IntegerField()
+
+
+class OfertaResumenComparativoSerializer(serializers.Serializer):
+    id_oferta = serializers.UUIDField()
+    numero_oferta = serializers.CharField()
+    id_proveedor = serializers.UUIDField()
+    proveedor_nombre = serializers.CharField()
+    estado = serializers.CharField()
+    monto_total = serializers.CharField()
+    tiempo_entrega = serializers.CharField(allow_blank=True)
+    condiciones_pago = serializers.CharField(allow_blank=True)
+    es_mejor_total = serializers.BooleanField()
+
+
+class CotizacionComparadaSerializer(serializers.Serializer):
+    id_oferta = serializers.UUIDField()
+    id_proveedor = serializers.UUIDField()
+    proveedor_nombre = serializers.CharField()
+    cantidad = serializers.CharField(allow_null=True)
+    precio_unitario = serializers.CharField(allow_null=True)
+    subtotal = serializers.CharField(allow_null=True)
+    tiempo_entrega = serializers.CharField(allow_null=True, allow_blank=True)
+    es_mejor_precio = serializers.BooleanField()
+
+
+class ProductoComparadoSerializer(serializers.Serializer):
+    id_producto = serializers.UUIDField()
+    producto_nombre = serializers.CharField()
+    sku = serializers.CharField(allow_blank=True)
+    cantidad_solicitada = serializers.CharField()
+    especificaciones = serializers.CharField(allow_blank=True)
+    mejor_precio_unitario = serializers.CharField(allow_null=True)
+    cotizaciones = CotizacionComparadaSerializer(many=True)
+
+
+class CompararOfertasResponseSerializer(serializers.Serializer):
+    rfq_id = serializers.UUIDField()
+    numero_solicitud = serializers.CharField()
+    estado = serializers.CharField()
+    fecha_solicitud = serializers.CharField()
+    fecha_vencimiento = serializers.CharField()
+    mejor_oferta_id = serializers.UUIDField(allow_null=True)
+    ofertas = OfertaResumenComparativoSerializer(many=True)
+    productos = ProductoComparadoSerializer(many=True)

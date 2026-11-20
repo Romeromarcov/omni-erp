@@ -37,6 +37,7 @@ _Total tools MCP: 17_
 | `core.ping` | apps.core.tasks |
 | `cxc_lubrikca.sync` | apps.cxc_lubrikca.tasks |
 | `cxc_lubrikca.sync_todos` | apps.cxc_lubrikca.tasks |
+| `gestion_aprobaciones.escalar_solicitudes_vencidas` | apps.gestion_aprobaciones.tasks |
 | `gestion_documental.eliminar_archivo_s3` | apps.gestion_documental.tasks |
 | `gestion_documental.limpiar_archivos_huerfanos` | apps.gestion_documental.tasks |
 | `integration_hub.ejecutar_job_sincronizacion` | apps.integration_hub.tasks |
@@ -51,7 +52,7 @@ _Total tools MCP: 17_
 | `tareas.ejecutar_ciclo_empresa` | apps.tareas.tasks |
 | `tareas.ejecutar_ciclo_todos` | apps.tareas.tasks |
 
-_Total tareas Celery: 22_
+_Total tareas Celery: 23_
 
 ## Management commands
 

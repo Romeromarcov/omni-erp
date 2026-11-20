@@ -82,3 +82,31 @@ export const facturaCompraSchema = z.object({
 });
 
 export type FacturaCompraInput = z.infer<typeof facturaCompraSchema>;
+
+// ── Source-to-PO: RFQ desde requisiciones + adjudicación ──────────────────────
+
+export const crearRfqDesdeRequisicionesSchema = z.object({
+  requisicion_ids: z.array(z.string().min(1)).min(1, 'Seleccione al menos una requisición aprobada'),
+  proveedores_ids: z.array(z.string().min(1)).min(1, 'Seleccione al menos un proveedor'),
+  fecha_vencimiento: z.string().min(1, 'La fecha de vencimiento es obligatoria'),
+  numero_solicitud: z.string().max(50, 'Máximo 50 caracteres').optional(),
+  observaciones: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
+});
+
+export type CrearRfqDesdeRequisicionesInput = z.infer<typeof crearRfqDesdeRequisicionesSchema>;
+
+export const adjudicacionParcialItemSchema = z.object({
+  id_producto: z.string().min(1, 'El producto es obligatorio'),
+  cantidad: z
+    .string()
+    .min(1, 'La cantidad es obligatoria')
+    .refine(esDecimalPositivo, { message: 'La cantidad debe ser mayor a 0' }),
+});
+
+export const adjudicarOfertaSchema = z.object({
+  id_almacen_destino: z.string().min(1, 'Seleccione el almacén destino'),
+  rechazar_competidoras: z.boolean().default(true),
+  adjudicacion_parcial: z.array(adjudicacionParcialItemSchema).nullable().optional(),
+});
+
+export type AdjudicarOfertaInput = z.infer<typeof adjudicarOfertaSchema>;

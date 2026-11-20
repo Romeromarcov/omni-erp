@@ -31,7 +31,7 @@ Las transiciones inválidas lanzan ``PagoTerceroError`` (la vista responde 400).
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from datetime import timedelta
 
@@ -83,28 +83,47 @@ def _exigir_proveedor(pago: "PagoTercero", accion: str) -> None:
         )
 
 
-@transaction.atomic
 # Supuesto de monedas: la CxP no lleva moneda propia (la hereda de su factura
 # origen); el abono se registra en la moneda del pago tercero (USD típico).
-def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = "") -> "AbonoCxP":
+def abonar_pago_tercero(pago: "PagoTercero", cxp: Any, usuario: Any, descripcion: str = "") -> "AbonoCxP":
     """
     pendiente → abonado: el cobro que entró por la cuenta del proveedor se
     aplica como pago USD a una CxP de ESE proveedor (reduce su saldo) y genera
     el asiento PAGO_TERCERO por el monto del cobro — todo o nada.
 
-    Args:
-        pago:        PagoTercero en estado ``pendiente`` con proveedor asociado.
-        cxp:         CuentaPorPagar del MISMO proveedor y la MISMA empresa.
-        usuario:     usuario que ejecuta la acción (queda en el AbonoCxP).
-        descripcion: texto opcional para el AbonoCxP.
-
-    Returns:
-        El AbonoCxP creado (vía ``registrar_abono_cxp``, que valida saldo/estado).
-
-    Raises:
-        PagoTerceroError: transición inválida, proveedor faltante o CxP ajena.
-        AsientoError:     contabilidad activa sin mapeo PAGO_TERCERO (→ 422).
+    Si existe una regla activa ``PAGO_TERCERO`` en ``gestion_aprobaciones`` y el
+    pago no cuenta con solicitud aprobada, crea la solicitud (en transacción
+    propia, patrón T03) y lanza ``PagoTerceroError``.
     """
+    from apps.gestion_aprobaciones.services import crear_solicitud, esta_aprobada, requiere_aprobacion
+
+    from .models import PagoTercero
+
+    pago_ref = PagoTercero.objects.select_related("id_empresa").get(pk=pago.pk)
+    _exigir_estado(pago_ref, "pendiente", "abonar")
+    _exigir_proveedor(pago_ref, "abonar")
+
+    # Defensa en profundidad (la vista ya acota por tenant): la CxP debe ser de
+    # la misma empresa y del mismo proveedor por cuya cuenta entró el cobro.
+    if str(cxp.id_empresa_id) != str(pago_ref.id_empresa_id):
+        raise PagoTerceroError("La CxP no pertenece a la empresa del pago de tercero.")
+    if str(cxp.id_proveedor_id) != str(pago_ref.id_proveedor_id):
+        raise PagoTerceroError("La CxP no pertenece al proveedor asociado al pago de tercero.")
+
+    if requiere_aprobacion(pago_ref.id_empresa, "PAGO_TERCERO", pago_ref.monto) and not esta_aprobada(pago_ref):
+        if usuario is None:
+            raise PagoTerceroError("Se requiere usuario solicitante para iniciar la aprobación del pago.")
+        crear_solicitud(pago_ref, pago_ref.id_empresa, usuario, "PAGO_TERCERO", pago_ref.monto)
+        raise PagoTerceroError(
+            "El pago de tercero supera el umbral y requiere aprobación. Se registró la "
+            "solicitud; un aprobador debe resolverla antes de abonar el pago."
+        )
+
+    return _ejecutar_abonar_pago_tercero(pago_ref, cxp, usuario, descripcion)
+
+
+@transaction.atomic
+def _ejecutar_abonar_pago_tercero(pago: "PagoTercero", cxp: Any, usuario: Any, descripcion: str = "") -> "AbonoCxP":
     from apps.contabilidad.services import generar_asiento_o_fallar
     from apps.cuentas_por_pagar.services import AbonoCxPError, registrar_abono_cxp
 
@@ -112,8 +131,6 @@ def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = ""
     _exigir_estado(pago, "pendiente", "abonar")
     _exigir_proveedor(pago, "abonar")
 
-    # Defensa en profundidad (la vista ya acota por tenant): la CxP debe ser de
-    # la misma empresa y del mismo proveedor por cuya cuenta entró el cobro.
     if str(cxp.id_empresa_id) != str(pago.id_empresa_id):
         raise PagoTerceroError("La CxP no pertenece a la empresa del pago de tercero.")
     if str(cxp.id_proveedor_id) != str(pago.id_proveedor_id):
@@ -143,12 +160,11 @@ def abonar_pago_tercero(pago: "PagoTercero", cxp, usuario, descripcion: str = ""
     return abono
 
 
-@transaction.atomic
 def solicitar_reintegro(
     pago: "PagoTercero",
-    usuario=None,
+    usuario: Any = None,
     comision: Decimal | None = None,
-    fecha_vencimiento=None,
+    fecha_vencimiento: Any = None,
     descripcion: str = "",
 ) -> "CuentaPorCobrar":
     """
@@ -157,20 +173,17 @@ def solicitar_reintegro(
     ``monto − comisión`` (la comisión es lo que el tercero cobra por el favor)
     y se genera el asiento PAGO_TERCERO por el neto — todo o nada.
 
-    El deudor de la CxC se identifica con el patrón ADR-009
-    (``cliente_externo_id = "proveedor:<uuid>"``), sin crear un crm.Cliente.
-
-    Raises:
-        PagoTerceroError: transición inválida, proveedor faltante o comisión
-                          inválida (negativa o ≥ monto).
-        AsientoError:     contabilidad activa sin mapeo PAGO_TERCERO (→ 422).
+    Si existe una regla activa ``PAGO_TERCERO`` en ``gestion_aprobaciones`` y el
+    pago no cuenta con solicitud aprobada, crea la solicitud (en transacción
+    propia, patrón T03) y lanza ``PagoTerceroError``.
     """
-    from apps.contabilidad.services import generar_asiento_o_fallar
-    from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+    from apps.gestion_aprobaciones.services import crear_solicitud, esta_aprobada, requiere_aprobacion
 
-    pago = _lock(pago)
-    _exigir_estado(pago, "pendiente", "solicitar reintegro de")
-    _exigir_proveedor(pago, "solicitar reintegro")
+    from .models import PagoTercero
+
+    pago_ref = PagoTercero.objects.select_related("id_empresa").get(pk=pago.pk)
+    _exigir_estado(pago_ref, "pendiente", "solicitar reintegro de")
+    _exigir_proveedor(pago_ref, "solicitar reintegro")
 
     if comision is None:
         comision_norm = Decimal("0.00")
@@ -181,8 +194,48 @@ def solicitar_reintegro(
             raise PagoTerceroError(f"Comisión inválida: {comision!r}.") from exc
     if comision_norm < 0:
         raise PagoTerceroError("La comisión no puede ser negativa.")
-    if comision_norm >= pago.monto:
-        raise PagoTerceroError(f"La comisión ({comision_norm}) debe ser menor que el monto del cobro ({pago.monto}).")
+    if comision_norm >= pago_ref.monto:
+        raise PagoTerceroError(
+            f"La comisión ({comision_norm}) debe ser menor que el monto del cobro ({pago_ref.monto})."
+        )
+
+    monto_neto = (pago_ref.monto - comision_norm).quantize(_DOS_DECIMALES)
+    if monto_neto > _MAX_MONTO_CXC:
+        raise PagoTerceroError(f"El monto del reintegro ({monto_neto}) excede el máximo soportado por CxC.")
+
+    if requiere_aprobacion(pago_ref.id_empresa, "PAGO_TERCERO", pago_ref.monto) and not esta_aprobada(pago_ref):
+        if usuario is None:
+            raise PagoTerceroError("Se requiere usuario solicitante para iniciar la aprobación del pago.")
+        crear_solicitud(pago_ref, pago_ref.id_empresa, usuario, "PAGO_TERCERO", pago_ref.monto)
+        raise PagoTerceroError(
+            "El pago de tercero supera el umbral y requiere aprobación. Se registró la "
+            "solicitud; un aprobador debe resolverla antes de solicitar el reintegro."
+        )
+
+    return _ejecutar_solicitar_reintegro(
+        pago_ref,
+        usuario=usuario,
+        comision_norm=comision_norm,
+        fecha_vencimiento=fecha_vencimiento,
+        descripcion=descripcion,
+    )
+
+
+@transaction.atomic
+def _ejecutar_solicitar_reintegro(
+    pago: "PagoTercero",
+    *,
+    usuario: Any,
+    comision_norm: Decimal,
+    fecha_vencimiento: Any,
+    descripcion: str,
+) -> "CuentaPorCobrar":
+    from apps.contabilidad.services import generar_asiento_o_fallar
+    from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
+    pago = _lock(pago)
+    _exigir_estado(pago, "pendiente", "solicitar reintegro de")
+    _exigir_proveedor(pago, "solicitar reintegro")
 
     monto_neto = (pago.monto - comision_norm).quantize(_DOS_DECIMALES)
     if monto_neto > _MAX_MONTO_CXC:

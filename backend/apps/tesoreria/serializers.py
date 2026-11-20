@@ -242,8 +242,11 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
         return transaccion
 
     def create(self, validated_data):
+        import uuid
+
         from apps.contabilidad.services import generar_asiento_o_fallar
         from apps.gastos.models import CategoriaGasto, Gasto
+        from apps.gestion_aprobaciones.services import crear_solicitud, esta_aprobada, requiere_aprobacion
 
         # CTF-013: el usuario sale del request (OperacionCambioDivisa no tiene
         # campo `usuario`; antes se leía de validated_data y quedaba None).
@@ -251,6 +254,37 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
         usuario = getattr(request, "user", None)
         if usuario is None or not usuario.is_authenticated:
             raise serializers.ValidationError({"usuario": "Se requiere un usuario autenticado."})
+
+        # Conector opt-in a gestion_aprobaciones (T03): si existe regla activa
+        # OPERACION_CAMBIO_DIVISA para la empresa y el monto_origen entra en rango,
+        # exige solicitud aprobada antes de abrir la atomicidad contable/financiera.
+        empresa = validated_data["empresa"]
+        monto_origen = Decimal(str(validated_data["monto_origen"]))
+        numero_operacion = validated_data["numero_operacion"]
+        if requiere_aprobacion(empresa, "OPERACION_CAMBIO_DIVISA", monto_origen):
+
+            class _OperacionCambioRef:
+                nombre_modelo_aprobacion = "OperacionCambioDivisa"
+
+                def __init__(self, ref_pk: uuid.UUID) -> None:
+                    self.pk = ref_pk
+
+            ref_pk = uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"omni:OperacionCambioDivisa:{empresa.pk}:{numero_operacion}",
+            )
+            doc_ref = _OperacionCambioRef(ref_pk)
+            monto_verif = monto_origen.quantize(self._DOS_DECIMALES, rounding=ROUND_HALF_UP)
+            if not esta_aprobada(doc_ref, monto_minimo_aprobado=monto_verif):
+                crear_solicitud(doc_ref, empresa, usuario, "OPERACION_CAMBIO_DIVISA", monto_origen)
+                raise serializers.ValidationError(
+                    {
+                        "detail": (
+                            "La operación de cambio de divisa supera el umbral y requiere aprobación. "
+                            "Se registró la solicitud; un aprobador debe resolverla antes de ejecutar la operación."
+                        )
+                    }
+                )
 
         # R-CODE-11: doble registro + gasto + asiento — todo o nada.
         with transaction.atomic():
