@@ -22,3 +22,18 @@ export const mapeoContableSchema = z.object({
 });
 
 export type MapeoContableInput = z.infer<typeof mapeoContableSchema>;
+
+export const diarioContableSchema = z.object({
+  codigo: z.string().min(1, 'El código es obligatorio').max(20, 'Máximo 20 caracteres'),
+  nombre: z.string().min(1, 'El nombre es obligatorio').max(120, 'Máximo 120 caracteres'),
+  tipo: z.string().min(1, 'El tipo es obligatorio'),
+  prefijo_secuencia: z.string().max(20, 'Máximo 20 caracteres').optional(),
+  siguiente_numero: z
+    .string()
+    .regex(/^\d*$/, 'Debe ser un número entero positivo')
+    .optional(),
+  cuenta_defecto_debe: z.string().optional(),
+  cuenta_defecto_haber: z.string().optional(),
+});
+
+export type DiarioContableInput = z.infer<typeof diarioContableSchema>;

@@ -9,6 +9,7 @@ vi.mock('../services/contabilidadService', () => ({
     getAsientosPaginated: vi.fn(),
     getAsiento: vi.fn(),
     getPlanCuentas: vi.fn(),
+    revertirAsiento: vi.fn(),
   },
 }));
 
@@ -183,5 +184,48 @@ describe('AsientoContableDetailPage', () => {
     );
     renderDetail();
     expect(await screen.findByText('No encontrado.')).toBeInTheDocument();
+  });
+
+  it('permite revertir un asiento APROBADO mediante diálogo de contra-asiento', async () => {
+    vi.mocked(contabilidadService.revertirAsiento).mockResolvedValue({
+      ...asiento,
+      id_asiento: 'as-rev-1',
+      numero_asiento: 'REV-20260610-AS0001',
+      asiento_revertido: 'as-1',
+    });
+    const user = userEvent.setup();
+    renderDetail();
+
+    const btnRevertir = await screen.findByRole('button', { name: /Revertir \(Contra-asiento\)/ });
+    await user.click(btnRevertir);
+    await user.type(screen.getByLabelText(/Motivo de reversión/), 'Error de monto');
+    await user.click(screen.getByRole('button', { name: 'Confirmar reversión' }));
+
+    await waitFor(() => {
+      expect(contabilidadService.revertirAsiento).toHaveBeenCalledWith('as-1', {
+        motivo: 'Error de monto',
+        fecha_reversion: null,
+      });
+    });
+    expect(await screen.findByText(/Contra-asiento REV-20260610-AS0001 generado/)).toBeInTheDocument();
+  });
+
+  it('oculta botón de reversión si ya fue revertido o es contra-asiento y muestra badges', async () => {
+    vi.mocked(contabilidadService.getAsiento).mockResolvedValue({
+      ...asiento,
+      diario_nombre: 'Diario General',
+      asiento_revertido: 'as-orig-1',
+      es_cierre: true,
+      detalles: [
+        { ...asiento.detalles[0], id_contacto: 'c-1', contacto_nombre: 'Cliente Demo' },
+        asiento.detalles[1],
+      ],
+    });
+    renderDetail();
+    expect(await screen.findByText('Contra-asiento')).toBeInTheDocument();
+    expect(screen.getByText('Cierre de ejercicio')).toBeInTheDocument();
+    expect(screen.getByText('Diario General')).toBeInTheDocument();
+    expect(screen.getByText('Cliente Demo')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Revertir \(Contra-asiento\)/ })).not.toBeInTheDocument();
   });
 });

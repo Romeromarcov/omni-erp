@@ -19,7 +19,6 @@ Anclado en ``core.Contacto`` y ``finanzas.AsignacionPago`` (patrón
 from __future__ import annotations
 
 import logging
-import uuid
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal, InvalidOperation
@@ -1478,12 +1477,6 @@ def aplicar_pago_a_documentos(
 # ── Reversión controlada con contra-asiento (R-PROD-4) ────────────────────────
 
 
-def _numero_contra_asiento(asiento_original: "AsientoContable") -> str:
-    fecha = timezone.localdate().strftime("%Y%m%d")
-    sufijo = uuid.uuid4().hex[:8].upper()
-    return f"REV-{fecha}-{sufijo}-{asiento_original.numero_asiento[:40]}"[:100]
-
-
 @transaction.atomic
 def revertir_asignacion_pago(
     asignacion: "AsignacionPago",
@@ -1493,6 +1486,7 @@ def revertir_asignacion_pago(
 ) -> "AsignacionPago":
     """Revierte una ``AsignacionPago`` activa, restaura saldos/estados y emite contra-asiento."""
     from apps.contabilidad.models import AsientoContable, DetalleAsiento
+    from apps.contabilidad.services import AsientoError, revertir_asiento
     from apps.cuentas_por_cobrar.models import AbonoCxC
     from apps.cuentas_por_pagar.models import AbonoCxP
     from apps.finanzas.models import AsignacionPago, Pago
@@ -1557,53 +1551,35 @@ def revertir_asignacion_pago(
     for asiento_orig in asientos_origen:
         if asiento_orig.estado_asiento == "ANULADO":
             continue
-        detalles = list(DetalleAsiento.objects.filter(id_asiento=asiento_orig).order_by("fecha_creacion", "pk"))
-        if not detalles:
-            raise ConciliacionContableError(
-                f"El asiento {asiento_orig.numero_asiento} no tiene detalles para revertir."
-            )
-        total_orig_debe = sum((Decimal(str(d.debe)) for d in detalles), Decimal("0.00"))
-        total_orig_haber = sum((Decimal(str(d.haber)) for d in detalles), Decimal("0.00"))
-        if total_orig_debe != total_orig_haber:
-            raise ConciliacionContableError(
-                f"El asiento {asiento_orig.numero_asiento} está descuadrado ({total_orig_debe} != {total_orig_haber})."
-            )
+        if asiento_orig.asiento_revertido_id is not None:
+            continue
 
         if asiento_orig.estado_asiento == "BORRADOR":
+            detalles = list(DetalleAsiento.objects.filter(id_asiento=asiento_orig).order_by("fecha_creacion", "pk"))
+            if not detalles:
+                raise ConciliacionContableError(
+                    f"El asiento {asiento_orig.numero_asiento} no tiene detalles para revertir."
+                )
+            total_orig_debe = sum((Decimal(str(d.debe)) for d in detalles), Decimal("0.00"))
+            total_orig_haber = sum((Decimal(str(d.haber)) for d in detalles), Decimal("0.00"))
+            if total_orig_debe != total_orig_haber:
+                raise ConciliacionContableError(
+                    f"El asiento {asiento_orig.numero_asiento} está descuadrado ({total_orig_debe} != {total_orig_haber})."
+                )
             asiento_orig.estado_asiento = "ANULADO"
             asiento_orig.save(update_fields=["estado_asiento"])
             continue
 
         if asiento_orig.estado_asiento == "APROBADO":
-            desc_contra = f"Contra-asiento reversión {asiento_orig.numero_asiento}"
-            if motivo.strip():
-                desc_contra = f"{desc_contra} — {motivo.strip()}"
-            contra = AsientoContable.objects.create(
-                id_empresa_id=empresa_id,
-                fecha_asiento=hoy,
-                numero_asiento=_numero_contra_asiento(asiento_orig),
-                descripcion=desc_contra,
-                id_documento_origen=asig_locked.id_asignacion,
-                nombre_modelo_origen="AsignacionPago",
-                estado_asiento="APROBADO",
-                id_usuario_registro=usuario,
-            )
-            total_rev_debe = Decimal("0.00")
-            total_rev_haber = Decimal("0.00")
-            for det in detalles:
-                rev_debe = Decimal(str(det.haber))
-                rev_haber = Decimal(str(det.debe))
-                DetalleAsiento.objects.create(
-                    id_asiento=contra,
-                    id_cuenta_contable=det.id_cuenta_contable,
-                    debe=rev_debe,
-                    haber=rev_haber,
-                    descripcion_detalle=f"Reversión: {det.descripcion_detalle or asiento_orig.descripcion}",
+            try:
+                contra = revertir_asiento(
+                    asiento_orig,
+                    usuario=usuario,
+                    fecha_reversion=hoy,
+                    motivo=motivo,
                 )
-                total_rev_debe += rev_debe
-                total_rev_haber += rev_haber
-            if total_rev_debe != total_rev_haber:
-                raise ConciliacionContableError("El contra-asiento de reversión quedó descuadrado.")
+            except AsientoError as exc:
+                raise ConciliacionContableError(str(exc)) from exc
             if contra_principal is None or asiento_orig.pk == asig_locked.id_asiento_id:
                 contra_principal = contra
 

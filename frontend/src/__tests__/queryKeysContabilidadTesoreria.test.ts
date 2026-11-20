@@ -14,6 +14,10 @@ describe('contabilidadKeys', () => {
     expect(contabilidadKeys.asiento('as-1').slice(0, all.length)).toEqual([...all]);
     expect(contabilidadKeys.detallesAsiento('as-1').slice(0, all.length)).toEqual([...all]);
     expect(contabilidadKeys.planCuentas()).toEqual(['contabilidad', 'plan-cuentas']);
+    expect(contabilidadKeys.diariosAll()).toEqual(['contabilidad', 'diarios']);
+    expect(contabilidadKeys.diarios('VENTAS')).toEqual(['contabilidad', 'diarios', 'list', 'VENTAS']);
+    expect(contabilidadKeys.periodosAll()).toEqual(['contabilidad', 'periodos']);
+    expect(contabilidadKeys.periodos(2026)).toEqual(['contabilidad', 'periodos', 'list', 2026]);
     expect(contabilidadKeys.mapeosAll()).toEqual(['contabilidad', 'mapeos']);
     expect(contabilidadKeys.tiposAsiento()).toEqual(['contabilidad', 'tipos-asiento']);
   });

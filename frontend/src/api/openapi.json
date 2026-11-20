@@ -6744,19 +6744,10 @@
         "/contabilidad/asientos-contables/{id_asiento}/anular/": {
             "post": {
                 "operationId": "contabilidad_asientos-contables_anular",
-                "description": "Anula un asiento contable",
-                "parameters": [
-                    {
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/AsientoContable"
-                        }
-                    }
-                ],
+                "description": "Anula un asiento contable en borrador",
+                "parameters": [],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": "",
                         "schema": {
                             "$ref": "#/definitions/AsientoContable"
@@ -6782,13 +6773,41 @@
             "post": {
                 "operationId": "contabilidad_asientos-contables_aprobar",
                 "description": "Aprueba un asiento contable",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AsientoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_asiento",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Asiento Contable.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/asientos-contables/{id_asiento}/revertir/": {
+            "post": {
+                "operationId": "contabilidad_asientos-contables_revertir",
+                "description": "Genera un contra-asiento atómico ``APROBADO`` con debe/haber invertidos.",
                 "parameters": [
                     {
                         "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/AsientoContable"
+                            "$ref": "#/definitions/RevertirAsientoInput"
                         }
                     }
                 ],
@@ -6991,6 +7010,262 @@
                     "name": "id_detalle_asiento",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este detalle asiento.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/diarios/": {
+            "get": {
+                "operationId": "contabilidad_diarios_list",
+                "description": "CRUD de diarios contables (estilo ``account.journal``) aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/DiarioContable"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "post": {
+                "operationId": "contabilidad_diarios_create",
+                "description": "CRUD de diarios contables (estilo ``account.journal``) aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/diarios/{id_diario}/": {
+            "get": {
+                "operationId": "contabilidad_diarios_read",
+                "description": "CRUD de diarios contables (estilo ``account.journal``) aislado por tenant.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "put": {
+                "operationId": "contabilidad_diarios_update",
+                "description": "CRUD de diarios contables (estilo ``account.journal``) aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "patch": {
+                "operationId": "contabilidad_diarios_partial_update",
+                "description": "CRUD de diarios contables (estilo ``account.journal``) aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "delete": {
+                "operationId": "contabilidad_diarios_delete",
+                "description": "CRUD de diarios contables (estilo ``account.journal``) aislado por tenant.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_diario",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Diario Contable.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/diarios/{id_diario}/activar/": {
+            "post": {
+                "operationId": "contabilidad_diarios_activar",
+                "description": "POST /{pk}/activar/\nReactiva un registro que fue desactivado.\nBusca el objeto incluyendo inactivos (necesario para reactivar).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_diario",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Diario Contable.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/diarios/{id_diario}/desactivar/": {
+            "post": {
+                "operationId": "contabilidad_diarios_desactivar",
+                "description": "POST /{pk}/desactivar/\nDesactiva (borrado lógico) un registro activo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DiarioContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_diario",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Diario Contable.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -7239,6 +7514,318 @@
                     "name": "id_mapeo",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Mapeo Contable.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/periodos-contables/": {
+            "get": {
+                "operationId": "contabilidad_periodos-contables_list",
+                "description": "Gestión de períodos contables mensuales y cierre de ejercicio.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PeriodoContable"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "post": {
+                "operationId": "contabilidad_periodos-contables_create",
+                "description": "Gestión de períodos contables mensuales y cierre de ejercicio.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/periodos-contables/cerrar-ejercicio/": {
+            "post": {
+                "operationId": "contabilidad_periodos-contables_cerrar_ejercicio",
+                "description": "Ejecuta el cierre anual del ejercicio contable saldando cuentas de resultado a Patrimonio.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CerrarEjercicioInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CerrarEjercicioResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/periodos-contables/cerrar/": {
+            "post": {
+                "operationId": "contabilidad_periodos-contables_cerrar_por_fecha",
+                "description": "Cierra (o crea y cierra) un período mensual ``(id_empresa, anio, mes)``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CerrarPeriodoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/periodos-contables/{id_periodo}/": {
+            "get": {
+                "operationId": "contabilidad_periodos-contables_read",
+                "description": "Gestión de períodos contables mensuales y cierre de ejercicio.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "put": {
+                "operationId": "contabilidad_periodos-contables_update",
+                "description": "Gestión de períodos contables mensuales y cierre de ejercicio.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "patch": {
+                "operationId": "contabilidad_periodos-contables_partial_update",
+                "description": "Gestión de períodos contables mensuales y cierre de ejercicio.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "delete": {
+                "operationId": "contabilidad_periodos-contables_delete",
+                "description": "Gestión de períodos contables mensuales y cierre de ejercicio.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_periodo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Período Contable.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/periodos-contables/{id_periodo}/cerrar/": {
+            "post": {
+                "operationId": "contabilidad_periodos-contables_cerrar_periodo",
+                "description": "Cierra un período contable existente.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CerrarPeriodoDetalleInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_periodo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Período Contable.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/periodos-contables/{id_periodo}/reabrir/": {
+            "post": {
+                "operationId": "contabilidad_periodos-contables_reabrir",
+                "description": "Reabre un período contable cerrado sin cierre anual activo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReabrirPeriodoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PeriodoContable"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_periodo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Período Contable.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -49362,6 +49949,19 @@
                     "title": "Id cuenta contable",
                     "type": "string",
                     "format": "uuid"
+                },
+                "id_contacto": {
+                    "title": "Id contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "contacto_nombre": {
+                    "title": "Contacto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
                 }
             }
         },
@@ -49378,7 +49978,8 @@
                 "id_asiento": {
                     "title": "Id asiento",
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "readOnly": true
                 },
                 "detalles": {
                     "type": "array",
@@ -49446,6 +50047,174 @@
                     "title": "Id empresa",
                     "type": "string",
                     "format": "uuid"
+                },
+                "id_diario": {
+                    "title": "Id diario",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "diario_nombre": {
+                    "title": "Diario nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
+                "asiento_revertido": {
+                    "title": "Asiento revertido",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "contra_asiento_id": {
+                    "title": "Contra asiento id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "es_cierre": {
+                    "title": "Es cierre",
+                    "type": "boolean",
+                    "readOnly": true
+                }
+            }
+        },
+        "RevertirAsientoInput": {
+            "type": "object",
+            "properties": {
+                "fecha_reversion": {
+                    "title": "Fecha reversion",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "motivo": {
+                    "title": "Motivo",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 255
+                }
+            }
+        },
+        "DiarioContable": {
+            "required": [
+                "id_empresa",
+                "codigo",
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_diario": {
+                    "title": "Id diario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 120,
+                    "minLength": 1
+                },
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "enum": [
+                        "VENTAS",
+                        "COMPRAS",
+                        "BANCO",
+                        "CAJA",
+                        "NOMINA",
+                        "VARIOS"
+                    ]
+                },
+                "tipo_display": {
+                    "title": "Tipo display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "prefijo_secuencia": {
+                    "title": "Prefijo secuencia",
+                    "type": "string",
+                    "maxLength": 20
+                },
+                "siguiente_numero": {
+                    "title": "Siguiente numero",
+                    "type": "integer",
+                    "maximum": 2147483647,
+                    "minimum": 0
+                },
+                "cuenta_defecto_debe": {
+                    "title": "Cuenta defecto debe",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cuenta_defecto_debe_nombre": {
+                    "title": "Cuenta defecto debe nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
+                "cuenta_defecto_haber": {
+                    "title": "Cuenta defecto haber",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cuenta_defecto_haber_nombre": {
+                    "title": "Cuenta defecto haber nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
+                "id_cuenta_bancaria": {
+                    "title": "Id cuenta bancaria",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_caja": {
+                    "title": "Id caja",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
                 }
             }
         },
@@ -49528,6 +50297,19 @@
                     "type": "string",
                     "format": "uuid"
                 },
+                "id_diario": {
+                    "title": "Id diario",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "diario_nombre": {
+                    "title": "Diario nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
                 "cuenta_debe": {
                     "title": "Cuenta debe",
                     "description": "Cuenta que va al Debe en este tipo de asiento.",
@@ -49539,6 +50321,230 @@
                     "description": "Cuenta que va al Haber en este tipo de asiento.",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "PeriodoContable": {
+            "required": [
+                "id_empresa",
+                "anio",
+                "mes"
+            ],
+            "type": "object",
+            "properties": {
+                "id_periodo": {
+                    "title": "Id periodo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "anio": {
+                    "title": "Anio",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "mes": {
+                    "title": "Mes",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "ABIERTO",
+                        "CERRADO"
+                    ],
+                    "readOnly": true
+                },
+                "estado_display": {
+                    "title": "Estado display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_cierre": {
+                    "title": "Fecha cierre",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cerrado_por": {
+                    "title": "Cerrado por",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cerrado_por_username": {
+                    "title": "Cerrado por username",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
+                "asiento_cierre": {
+                    "title": "Asiento cierre",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "asiento_cierre_numero": {
+                    "title": "Asiento cierre numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "CerrarEjercicioInput": {
+            "required": [
+                "id_empresa",
+                "anio",
+                "cuenta_resultado_acumulado"
+            ],
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "anio": {
+                    "title": "Anio",
+                    "type": "integer",
+                    "maximum": 2100,
+                    "minimum": 1900
+                },
+                "cuenta_resultado_acumulado": {
+                    "title": "Cuenta resultado acumulado",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "fecha_cierre": {
+                    "title": "Fecha cierre",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                }
+            }
+        },
+        "CerrarEjercicioResponse": {
+            "type": "object",
+            "properties": {
+                "anio": {
+                    "title": "Anio",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "asiento_cierre": {
+                    "$ref": "#/definitions/AsientoContable"
+                },
+                "resultado_ejercicio": {
+                    "title": "Resultado ejercicio",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cantidad_cuentas_saldadas": {
+                    "title": "Cantidad cuentas saldadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "periodos_cerrados": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PeriodoContable"
+                    },
+                    "readOnly": true
+                }
+            }
+        },
+        "CerrarPeriodoInput": {
+            "required": [
+                "id_empresa",
+                "anio",
+                "mes"
+            ],
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "anio": {
+                    "title": "Anio",
+                    "type": "integer",
+                    "maximum": 2100,
+                    "minimum": 1900
+                },
+                "mes": {
+                    "title": "Mes",
+                    "type": "integer",
+                    "maximum": 12,
+                    "minimum": 1
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
+                }
+            }
+        },
+        "CerrarPeriodoDetalleInput": {
+            "type": "object",
+            "properties": {
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
+                }
+            }
+        },
+        "ReabrirPeriodoInput": {
+            "type": "object",
+            "properties": {
+                "motivo": {
+                    "title": "Motivo",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
                 }
             }
         },
@@ -52904,7 +53910,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T03:04:21.520476-04:00"
+                    "default": "2026-11-20T04:23:15.902533-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

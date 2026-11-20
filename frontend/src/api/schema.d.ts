@@ -1961,7 +1961,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Anula un asiento contable */
+        /** @description Anula un asiento contable en borrador */
         post: operations["contabilidad_asientos-contables_anular"];
         delete?: never;
         options?: never;
@@ -1983,6 +1983,26 @@ export interface paths {
         put?: never;
         /** @description Aprueba un asiento contable */
         post: operations["contabilidad_asientos-contables_aprobar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/asientos-contables/{id_asiento}/revertir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                id_asiento: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Genera un contra-asiento atómico ``APROBADO`` con debe/haber invertidos. */
+        post: operations["contabilidad_asientos-contables_revertir"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2022,6 +2042,94 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["contabilidad_detalles-asiento_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/diarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        get: operations["contabilidad_diarios_list"];
+        put?: never;
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        post: operations["contabilidad_diarios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/diarios/{id_diario}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        get: operations["contabilidad_diarios_read"];
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        put: operations["contabilidad_diarios_update"];
+        post?: never;
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        delete: operations["contabilidad_diarios_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        patch: operations["contabilidad_diarios_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/diarios/{id_diario}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["contabilidad_diarios_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/diarios/{id_diario}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["contabilidad_diarios_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/contabilidad/mapeos-contables/": {
@@ -2098,6 +2206,121 @@ export interface paths {
          *     Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
          */
         patch: operations["contabilidad_mapeos-contables_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        get: operations["contabilidad_periodos-contables_list"];
+        put?: never;
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        post: operations["contabilidad_periodos-contables_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/cerrar-ejercicio/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ejecuta el cierre anual del ejercicio contable saldando cuentas de resultado a Patrimonio. */
+        post: operations["contabilidad_periodos-contables_cerrar_ejercicio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/cerrar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cierra (o crea y cierra) un período mensual ``(id_empresa, anio, mes)``. */
+        post: operations["contabilidad_periodos-contables_cerrar_por_fecha"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/{id_periodo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        get: operations["contabilidad_periodos-contables_read"];
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        put: operations["contabilidad_periodos-contables_update"];
+        post?: never;
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        delete: operations["contabilidad_periodos-contables_delete"];
+        options?: never;
+        head?: never;
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        patch: operations["contabilidad_periodos-contables_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/{id_periodo}/cerrar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cierra un período contable existente. */
+        post: operations["contabilidad_periodos-contables_cerrar_periodo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/{id_periodo}/reabrir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Reabre un período contable cerrado sin cierre anual activo. */
+        post: operations["contabilidad_periodos-contables_reabrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/contabilidad/plan-cuentas/": {
@@ -14887,13 +15110,23 @@ export interface components {
              * Format: uuid
              */
             id_cuenta_contable: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            id_contacto?: string | null;
+            /**
+             * Contacto nombre
+             * @default
+             */
+            readonly contacto_nombre: string | null;
         };
         AsientoContable: {
             /**
              * Id asiento
              * Format: uuid
              */
-            id_asiento?: string;
+            readonly id_asiento?: string;
             readonly detalles?: components["schemas"]["DetalleAsiento"][];
             /**
              * Fecha asiento
@@ -14936,6 +15169,114 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            id_diario?: string | null;
+            /**
+             * Diario nombre
+             * @default
+             */
+            readonly diario_nombre: string | null;
+            /**
+             * Asiento revertido
+             * Format: uuid
+             */
+            readonly asiento_revertido?: string | null;
+            /**
+             * Contra asiento id
+             * Format: uuid
+             */
+            readonly contra_asiento_id?: string | null;
+            /** Es cierre */
+            readonly es_cierre?: boolean;
+        };
+        RevertirAsientoInput: {
+            /**
+             * Fecha reversion
+             * Format: date
+             */
+            fecha_reversion?: string | null;
+            /**
+             * Motivo
+             * @default
+             */
+            motivo: string;
+        };
+        DiarioContable: {
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "VENTAS" | "COMPRAS" | "BANCO" | "CAJA" | "NOMINA" | "VARIOS";
+            /** Tipo display */
+            readonly tipo_display?: string;
+            /** Prefijo secuencia */
+            prefijo_secuencia?: string;
+            /** Siguiente numero */
+            siguiente_numero?: number;
+            /**
+             * Cuenta defecto debe
+             * Format: uuid
+             */
+            cuenta_defecto_debe?: string | null;
+            /**
+             * Cuenta defecto debe nombre
+             * @default
+             */
+            readonly cuenta_defecto_debe_nombre: string | null;
+            /**
+             * Cuenta defecto haber
+             * Format: uuid
+             */
+            cuenta_defecto_haber?: string | null;
+            /**
+             * Cuenta defecto haber nombre
+             * @default
+             */
+            readonly cuenta_defecto_haber_nombre: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria?: string | null;
+            /**
+             * Id caja
+             * Format: uuid
+             */
+            id_caja?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         MapeoContable: {
             /**
@@ -14972,6 +15313,16 @@ export interface components {
              */
             id_empresa: string;
             /**
+             * Id diario
+             * Format: uuid
+             */
+            id_diario?: string | null;
+            /**
+             * Diario nombre
+             * @default
+             */
+            readonly diario_nombre: string | null;
+            /**
              * Cuenta debe
              * Format: uuid
              * @description Cuenta que va al Debe en este tipo de asiento.
@@ -14983,6 +15334,135 @@ export interface components {
              * @description Cuenta que va al Haber en este tipo de asiento.
              */
             cuenta_haber: string;
+        };
+        PeriodoContable: {
+            /**
+             * Id periodo
+             * Format: uuid
+             */
+            readonly id_periodo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Anio */
+            anio: number;
+            /** Mes */
+            mes: number;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "ABIERTO" | "CERRADO";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Fecha cierre
+             * Format: date-time
+             */
+            readonly fecha_cierre?: string | null;
+            /**
+             * Cerrado por
+             * Format: uuid
+             */
+            readonly cerrado_por?: string | null;
+            /**
+             * Cerrado por username
+             * @default
+             */
+            readonly cerrado_por_username: string | null;
+            /**
+             * Asiento cierre
+             * Format: uuid
+             */
+            readonly asiento_cierre?: string | null;
+            /**
+             * Asiento cierre numero
+             * @default
+             */
+            readonly asiento_cierre_numero: string | null;
+            /** Observaciones */
+            observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        CerrarEjercicioInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Anio */
+            anio: number;
+            /**
+             * Cuenta resultado acumulado
+             * Format: uuid
+             */
+            cuenta_resultado_acumulado: string;
+            /**
+             * Fecha cierre
+             * Format: date
+             */
+            fecha_cierre?: string | null;
+        };
+        CerrarEjercicioResponse: {
+            /** Anio */
+            readonly anio?: number;
+            asiento_cierre?: components["schemas"]["AsientoContable"];
+            /**
+             * Resultado ejercicio
+             * Format: decimal
+             */
+            readonly resultado_ejercicio?: string;
+            /** Cantidad cuentas saldadas */
+            readonly cantidad_cuentas_saldadas?: number;
+            readonly periodos_cerrados?: components["schemas"]["PeriodoContable"][];
+        };
+        CerrarPeriodoInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Anio */
+            anio: number;
+            /** Mes */
+            mes: number;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        CerrarPeriodoDetalleInput: {
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        ReabrirPeriodoInput: {
+            /**
+             * Motivo
+             * @default
+             */
+            motivo: string;
         };
         PlanCuentas: {
             /**
@@ -17092,7 +17572,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T03:04:21.520476-04:00
+             * @default 2026-11-20T04:23:15.902533-04:00
              */
             fecha_despacho: string;
             /**
@@ -24818,6 +25298,11 @@ export interface components {
                 "application/json": components["schemas"]["TipoLicencia"];
             };
         };
+        PeriodoContable: {
+            content: {
+                "application/json": components["schemas"]["PeriodoContable"];
+            };
+        };
         Pedido: {
             content: {
                 "application/json": components["schemas"]["Pedido"];
@@ -25145,6 +25630,11 @@ export interface components {
         Producto: {
             content: {
                 "application/json": components["schemas"]["Producto"];
+            };
+        };
+        DiarioContable: {
+            content: {
+                "application/json": components["schemas"]["DiarioContable"];
             };
         };
         ProcesoMigracion: {
@@ -30681,9 +31171,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["AsientoContable"];
+        requestBody?: never;
         responses: {
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30703,7 +31193,33 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["AsientoContable"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsientoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_asientos-contables_revertir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                id_asiento: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertirAsientoInput"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -30849,6 +31365,188 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DetalleAsiento"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DiarioContable"][];
+                    };
+                };
+            };
+        };
+    };
+    contabilidad_diarios_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    contabilidad_diarios_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
                 };
             };
         };
@@ -31020,6 +31718,242 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MapeoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PeriodoContable"][];
+                    };
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PeriodoContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_cerrar_ejercicio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarEjercicioInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CerrarEjercicioResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_cerrar_por_fecha": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarPeriodoInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PeriodoContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "contabilidad_periodos-contables_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PeriodoContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_cerrar_periodo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarPeriodoDetalleInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_reabrir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReabrirPeriodoInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
                 };
             };
         };

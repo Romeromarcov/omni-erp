@@ -56,6 +56,8 @@
 | `^asientos-contables/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
 | `^asientos-contables/(?P<pk>[^/.]+)/aprobar/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
 | `^asientos-contables/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)/revertir/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
+| `^asientos-contables/(?P<pk>[^/.]+)/revertir\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
 | `^asientos-contables/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
 | `^asientos-contables/balance_comprobacion/$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
 | `^asientos-contables/balance_comprobacion\.(?P<format>[a-z0-9]+)/?$` | AsientoContableViewSet | AsientoContable | ✅ | ✅ | IsAuthenticated |
@@ -460,6 +462,14 @@
 | `^devoluciones-venta/(?P<pk>[^/.]+)/$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ | IsAuthenticated |
 | `^devoluciones-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ | IsAuthenticated |
 | `^devoluciones-venta\.(?P<format>[a-z0-9]+)/?$` | DevolucionVentaViewSet | DevolucionVenta | ✅ | ✅ | IsAuthenticated |
+| `^diarios/$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
+| `^diarios/(?P<pk>[^/.]+)/$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
+| `^diarios/(?P<pk>[^/.]+)/activar/$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
+| `^diarios/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
+| `^diarios/(?P<pk>[^/.]+)/desactivar/$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
+| `^diarios/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
+| `^diarios/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
+| `^diarios\.(?P<format>[a-z0-9]+)/?$` | DiarioContableViewSet | DiarioContable | ✅ | ✅ | IsAuthenticated |
 | `^direcciones-cliente/$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
 | `^direcciones-cliente/(?P<pk>[^/.]+)/$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
 | `^direcciones-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
@@ -906,6 +916,18 @@
 | `^pedidos/sincronizar\.(?P<format>[a-z0-9]+)/?$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/(?P<pk>[^/.]+)/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/(?P<pk>[^/.]+)/cerrar/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/(?P<pk>[^/.]+)/cerrar\.(?P<format>[a-z0-9]+)/?$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/(?P<pk>[^/.]+)/reabrir/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/(?P<pk>[^/.]+)/reabrir\.(?P<format>[a-z0-9]+)/?$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/cerrar-ejercicio/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/cerrar-ejercicio\.(?P<format>[a-z0-9]+)/?$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/cerrar/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables/cerrar\.(?P<format>[a-z0-9]+)/?$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
+| `^periodos-contables\.(?P<format>[a-z0-9]+)/?$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
 | `^periodos-nomina/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
 | `^periodos-nomina/(?P<pk>[^/.]+)/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
 | `^periodos-nomina/(?P<pk>[^/.]+)/cerrar/$` | PeriodoNominaViewSet | PeriodoNomina | ✅ | ✅ | IsAuthenticated |
@@ -1326,4 +1348,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 241_
+_Total ViewSets: 243_
