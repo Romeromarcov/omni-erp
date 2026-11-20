@@ -1,4 +1,5 @@
 import logging
+import uuid
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.throttling import EscrituraRateThrottle
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import IdempotentCreateMixin, idempotent
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import BaseModelViewSet, NulSafeFilterMixin, get_empresas_visible, validar_uuid_param
 from apps.tesoreria.serializers import CajaSerializer
 
 from .models import (
@@ -798,11 +799,11 @@ class CajaViewSet(BaseModelViewSet):
     serializer_class = CajaSerializer
 
 
-class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
-    from rest_framework.response import Response
-
-    from .models import MovimientoCajaBanco
-    from .serializers import MovimientoCajaBancoSerializer
+class CuentaBancariaEmpresaViewSet(NulSafeFilterMixin, BaseModelViewSet):
+    queryset = CuentaBancariaEmpresa.objects.all()
+    serializer_class = CuentaBancariaEmpresaSerializer
+    search_fields = ["nombre_banco", "numero_cuenta", "tipo_cuenta"]
+    ordering_fields = ["nombre_banco", "numero_cuenta", "saldo_actual", "fecha_creacion", "activo"]
 
     @action(detail=True, methods=["get"], url_path="movimientos-cuenta-bancaria")
     def movimientos_cuenta_bancaria(self, request, pk=None):
@@ -844,14 +845,13 @@ class CuentaBancariaEmpresaViewSet(BaseModelViewSet):
         serializer = MovimientoCajaBancoSerializer(qs, many=True)
         return Response(serializer.data)
 
-    queryset = CuentaBancariaEmpresa.objects.all()
-    serializer_class = CuentaBancariaEmpresaSerializer
-
-    def get_queryset(self):
+    def get_queryset(self) -> models.QuerySet[CuentaBancariaEmpresa]:
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
-        from apps.core.viewsets import get_empresas_visible
-
-        return CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        qs = CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        empresa_id = self.request.query_params.get("empresa")
+        if empresa_id:
+            qs = qs.filter(id_empresa_id=uuid.UUID(validar_uuid_param(empresa_id, "empresa")))
+        return qs
 
 
 class MonedaEmpresaActivaViewSet(BaseModelViewSet):

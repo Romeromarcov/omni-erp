@@ -14,7 +14,7 @@ from django.utils import timezone
 import pytest
 
 from apps.auditoria.models import LogAuditoria
-from apps.banca_electronica.models import CuentaBancariaEmpresa as CuentaBancaElectronica
+from apps.banca_electronica.models import LotePagoBancario
 from apps.compras.models import OrdenCompra
 from apps.contabilidad.models import AsientoContable
 from apps.control_asistencia.models import RegistroAsistencia, ResumenAsistenciaDiario
@@ -304,20 +304,36 @@ class TestIDORDocumentosOperativos:
             tasa_cambio=Decimal("1.10"),
             monto_destino=Decimal("110.00"),
         )
-        cta_b = CuentaBancaElectronica.objects.create(
-            empresa=empresa_b,
-            banco="Banesco B",
-            numero_cuenta=f"0134{uuid.uuid4().hex[:12]}",
-            tipo_cuenta="corriente",
-            moneda=moneda_usd,
+        cta_b = CuentaBancariaEmpresa.objects.create(
+            id_empresa=empresa_b,
+            nombre_banco="Banesco B",
+            numero_cuenta=f"0134{uuid.uuid4().hex[:16]}",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=moneda_usd,
         )
-        for url in (
-            f"/api/tesoreria/operaciones-cambio-divisa/{op_b.pk}/",
-            f"/api/banca-electronica/cuentas-bancarias-empresa/{cta_b.pk}/",
+        lote_b = LotePagoBancario.objects.create(
+            id_empresa=empresa_b,
+            id_cuenta_bancaria=cta_b,
+            tipo_lote="PROVEEDORES",
+            formato_banco="BANESCO_TXT",
+            referencia_lote=f"LOTE-B-{uuid.uuid4().hex[:6]}",
+            fecha_valor=date.today(),
+            estado="GENERADO",
+        )
+        for url, patch_payload in (
+            (f"/api/tesoreria/operaciones-cambio-divisa/{op_b.pk}/", {"banco": "hack"}),
+            (f"/api/finanzas/cuentas-bancarias-empresa/{cta_b.pk}/", {"nombre_banco": "hack"}),
         ):
             assert client_a.get(url).status_code == 404
-            assert client_a.patch(url, {"banco": "hack"}, format="json").status_code == 404
+            assert client_a.patch(url, patch_payload, format="json").status_code == 404
             assert client_a.delete(url).status_code == 404
+
+        assert client_a.get(f"/api/banca-electronica/lotes-pago/{lote_b.pk}/").status_code == 404
+        assert client_a.get(f"/api/banca-electronica/lotes-pago/{lote_b.pk}/descargar/").status_code == 404
+        assert (
+            client_a.post(f"/api/banca-electronica/lotes-pago/{lote_b.pk}/anular/", {}, format="json").status_code
+            == 404
+        )
 
     def test_idor_inventario_producto_y_kardex(self, client_a, empresa_b, moneda_usd):
         cat_b = CategoriaProducto.objects.create(id_empresa=empresa_b, nombre_categoria="Cat B")

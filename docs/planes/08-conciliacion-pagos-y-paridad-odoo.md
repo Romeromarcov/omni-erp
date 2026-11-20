@@ -8,7 +8,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) + §B.3 (`inventario` + `almacenes` Ola B4) COMPLETADO |
+| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) + §B.3 (`inventario` + `almacenes` Ola B4) + §B.4.1 (`banca_electronica` Ola B5) COMPLETADO |
 | **Fecha** | 2026-11-17 (basado en símbolos verificados en `origin/develop @ ff2bdb6`) |
 | **Apps involucradas** | `finanzas`, `core`, `cuentas_por_cobrar`, `cuentas_por_pagar`, `ventas`, `compras`, `contabilidad`, `gestion_aprobaciones`, `inventario`, `almacenes`, `banca_electronica`, `tesoreria`, `integration_hub`, `agentes` |
 | **Esfuerzo estimado** | ~5–7 semanas en PRs pequeños y focales (`R-PROC-2`) |
@@ -174,11 +174,11 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 - `docs/integracion-hub/ESTADO.md` §4.1 mantiene pendientes: (1) `facturas_compra` inbound, (2) pagos multi-factura y pagos outbound a proveedor, y (3) push outbound a Odoo (`CTF-011`).
 
 **Entregables incrementales:**
-1. **Consolidación `banca_electronica` ↔ `finanzas` ↔ `tesoreria`:**
+1. **Consolidación `banca_electronica` ↔ `finanzas` ↔ `tesoreria` (`✅ COMPLETADO` — Ola B5):**
    - Designar **`finanzas.CuentaBancariaEmpresa`** como **único maestro canónico** de cuentas bancarias de la empresa.
-   - Migrar los datos residuales de `banca_electronica_cuentabancariaempresa` hacia `finanzas_cuenta_bancaria_empresa` (migración reversible con `id_cuenta_bancaria` mapeado) y reemplazar `banca_electronica` en una capa de servicios operativos bancarios sobre `finanzas.CuentaBancariaEmpresa` y `tesoreria.ExtractoBancarioArchivo` / `PropuestaConciliacionBancaria`:
-     - Generador de archivos de lotes de pago bancario VE (proveedores / nómina) desde `Pago` / `ProcesoNomina`.
-     - Validación de referencias bancarias, detección de duplicados y puente con `tesoreria` (eliminando la tabla duplicada en una migración limpia tras migrar la UI `CuentasBancariasEmpresaPage` al endpoint canónico de `finanzas`).
+   - Migrar los datos residuales de `banca_electronica_cuentabancariaempresa` hacia `finanzas_cuenta_bancaria_empresa` (migración `0004`–`0006` con `LotePagoBancario`, `DetalleLotePagoBancario` y RLS) y reemplazar `banca_electronica` en una capa de servicios operativos bancarios sobre `finanzas.CuentaBancariaEmpresa` y `tesoreria.MovimientoBancario`:
+     - Generador de archivos de lotes de pago bancario VE (`BANESCO_TXT`, `MERCANTIL_TXT`, `BDV_TXT`, `GENERICO_CSV`) para proveedores y nómina (`Pago` / `ProcesoNomina`).
+     - Validación SUDEBAN VE 20 dígitos, detección de referencias bancarias duplicadas, herramientas MCP (`banca_validar_referencia`, `banca_listar_lotes_pago`) y UI de 3 pestañas en `CuentasBancariasEmpresaPage` sobre `/finanzas/cuentas-bancarias-empresa/`.
 2. **Integration Hub inbound — `facturas_compra` (`in_invoice`):**
    - Extender `OdooXMLRPCClient` y `OdooConnector` para traer `account.move` (`move_type='in_invoice'`) + `get_lineas_factura`.
    - Implementar `_upsert_factura_compra` en `SyncEngine` (espejo de `_upsert_factura_venta` PR `#187`): auto-crea `proveedores.Proveedor` si no existe, persiste `compras.FacturaCompra` + `DetalleFacturaCompra` (*history-only*, idempotente por `(id_empresa, numero_factura)` y `EntidadSincronizada`) y crea/vincula `CuentaPorPagar` sin duplicar.
@@ -204,7 +204,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 | **Ola B2** | ✅ `feat(contabilidad): reportes P&L, Balance General, Mayor Auxiliar y Balance Comprobacion PDF/CSV + USD` (`PR-14`) | Ola B1 |
 | **Ola B3** | ✅ `feat(compras): flujo transaccional Requisicion->RFQ->Oferta->OC y reglas departamento/SLA en aprobaciones` (`PR-15`) | Ninguna |
 | **Ola B4** | ✅ `feat(inventario): ReglaReabastecimiento, LoteProducto opt-in y StockUbicacion` (`PR-16`) | Ninguna |
-| **Ola B5** | `refactor(banca): consolida CuentaBancariaEmpresa en finanzas y servicios de pagos masivos` | Ninguna |
+| **Ola B5** | ✅ `refactor(banca): consolida CuentaBancariaEmpresa en finanzas y servicios de pagos masivos` (`PR-17`) | Ninguna |
 | **Ola B6** | `feat(hub): inbound facturas_compra + pagos multi-factura con AsignacionPago` | Ola A2 |
 | **Ola B7** | `feat(hub): cierre CTF-011 push outbound cobranza validado contra Odoo de prueba` | Ola A2 + credenciales Odoo prueba |
 

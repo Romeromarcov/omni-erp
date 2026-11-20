@@ -1,8 +1,14 @@
 from decimal import Decimal
+from typing import Any
 
 from rest_framework import serializers
 
 from apps.core.models import Sucursal
+from apps.core.serializer_mixins import (
+    empresa_efectiva_contexto,
+    empresas_visibles_contexto,
+    validar_fk_empresa,
+)
 
 # --- Sesión de Caja ---
 from .models import (
@@ -671,7 +677,7 @@ class MovimientoCajaBancoSerializer(serializers.ModelSerializer):
 
 class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
     moneda_codigo_iso = serializers.CharField(source="id_moneda.codigo_iso", read_only=True)
-    metodos_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all(), many=True)
+    metodos_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all(), many=True, required=False)
     monedas = serializers.PrimaryKeyRelatedField(queryset=Moneda.objects.all(), many=True, required=False)
 
     class Meta:
@@ -693,6 +699,92 @@ class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["moneda_codigo_iso"]
         ref_name = "CuentaBancariaEmpresaFinanzas"  # evita colisión OpenAPI con banca_electronica
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        attrs = super().validate(attrs)
+        instance = self.instance if isinstance(self.instance, CuentaBancariaEmpresa) else None
+        if instance is not None and "id_empresa" in attrs:
+            nueva_emp = attrs["id_empresa"]
+            if nueva_emp is None or nueva_emp.pk != instance.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_empresa": "No se puede cambiar la empresa de una cuenta bancaria existente."}
+                )
+
+        emp = attrs["id_empresa"] if "id_empresa" in attrs else getattr(instance, "id_empresa", None)
+        empresa_ref = str(emp.pk) if emp is not None else empresa_efectiva_contexto(self)
+        visibles = empresas_visibles_contexto(self)
+        if emp is not None and visibles is not None and str(emp.pk) not in visibles:
+            raise serializers.ValidationError({"id_empresa": "No tiene permisos sobre la empresa indicada."})
+
+        moneda = attrs["id_moneda"] if "id_moneda" in attrs else getattr(instance, "id_moneda", None)
+        if moneda is not None and not (
+            getattr(moneda, "es_generica", False)
+            or getattr(moneda, "es_publica", False)
+            or getattr(moneda, "empresa_id", None) is None
+        ):
+            validar_fk_empresa(
+                moneda,
+                "id_moneda",
+                empresa_ref,
+                visibles,
+                etiqueta="Moneda",
+                empresa_attr="empresa_id",
+            )
+
+        metodos = attrs.get("metodos_pago")
+        if metodos:
+            for metodo in metodos:
+                if not (
+                    getattr(metodo, "es_generico", False)
+                    or getattr(metodo, "es_publico", False)
+                    or getattr(metodo, "empresa_id", None) is None
+                ):
+                    validar_fk_empresa(
+                        metodo,
+                        "metodos_pago",
+                        empresa_ref,
+                        visibles,
+                        etiqueta="Método de pago",
+                        empresa_attr="empresa_id",
+                    )
+
+        monedas_extra = attrs.get("monedas")
+        if monedas_extra:
+            for mon in monedas_extra:
+                if not (
+                    getattr(mon, "es_generica", False)
+                    or getattr(mon, "es_publica", False)
+                    or getattr(mon, "empresa_id", None) is None
+                ):
+                    validar_fk_empresa(
+                        mon,
+                        "monedas",
+                        empresa_ref,
+                        visibles,
+                        etiqueta="Moneda",
+                        empresa_attr="empresa_id",
+                    )
+
+        if "numero_cuenta" in attrs:
+            numero = str(attrs["numero_cuenta"] or "").replace("\x00", "").strip()
+            if not numero:
+                raise serializers.ValidationError({"numero_cuenta": "El número de cuenta no puede estar vacío."})
+            if numero != attrs["numero_cuenta"]:
+                qs = CuentaBancariaEmpresa.objects.filter(numero_cuenta=numero)
+                if instance is not None:
+                    qs = qs.exclude(pk=instance.pk)
+                if qs.exists():
+                    raise serializers.ValidationError(
+                        {"numero_cuenta": "Ya existe una cuenta bancaria con este número."}
+                    )
+            attrs["numero_cuenta"] = numero
+
+        if "saldo_actual" in attrs and attrs["saldo_actual"] is not None:
+            saldo = attrs["saldo_actual"]
+            if isinstance(saldo, Decimal) and not saldo.is_finite():
+                raise serializers.ValidationError({"saldo_actual": "El saldo actual debe ser finito."})
+
+        return attrs
 
 
 class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):

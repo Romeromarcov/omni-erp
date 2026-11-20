@@ -273,7 +273,7 @@ RLS_TABLES = {
     # auditoria
     "auditoria_logauditoria": "id_empresa_id",
     # banca_electronica
-    "banca_electronica_cuentabancariaempresa": "empresa_id",
+    "banca_electronica_lote_pago": "id_empresa_id",
     # compras
     "compras_factura_compra": "id_empresa_id",
     "compras_requisicion_compra": "id_empresa_id",

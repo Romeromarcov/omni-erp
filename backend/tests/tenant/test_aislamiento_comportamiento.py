@@ -27,13 +27,13 @@ from rest_framework.test import APIClient
 
 from apps.almacenes.models import Almacen
 from apps.auditoria.models import LogAuditoria
-from apps.banca_electronica.models import CuentaBancariaEmpresa
+from apps.banca_electronica.models import LotePagoBancario
 from apps.compras.models import OrdenCompra
 from apps.contabilidad.models import PlanCuentas
 from apps.control_asistencia.models import HorarioTrabajo
 from apps.crm.models import Cliente
 from apps.despacho.models import Despacho
-from apps.finanzas.models import Caja, Pago
+from apps.finanzas.models import Caja, CuentaBancariaEmpresa, Pago
 from apps.gastos.models import CategoriaGasto
 from apps.gestion_aprobaciones.models import TipoAprobacion
 from apps.integracion_b2b.models import ConfiguracionIntegracion
@@ -150,13 +150,22 @@ def _build_config_integracion(empresa, label, env):
     )
 
 
-def _build_cuenta_bancaria(empresa, label, env):
-    return CuentaBancariaEmpresa.objects.create(
-        empresa=empresa,  # FK se llama `empresa`, no `id_empresa`
-        banco=f"Banco {label}",
-        numero_cuenta=f"0102-{label}-00-0000000000",
-        tipo_cuenta="corriente",
-        moneda=env.moneda,
+def _build_lote_pago_bancario(empresa, label, env):
+    cta = CuentaBancariaEmpresa.objects.create(
+        id_empresa=empresa,
+        nombre_banco=f"Banco {label}",
+        numero_cuenta=f"0102{uuid.uuid4().hex[:16]}",
+        tipo_cuenta="CORRIENTE",
+        id_moneda=env.moneda,
+    )
+    return LotePagoBancario.objects.create(
+        id_empresa=empresa,
+        id_cuenta_bancaria=cta,
+        tipo_lote="PROVEEDORES",
+        formato_banco="BANESCO_TXT",
+        referencia_lote=f"LOTE-{label}-{uuid.uuid4().hex[:6]}",
+        fecha_valor=date.today(),
+        estado="GENERADO",
     )
 
 
@@ -347,12 +356,13 @@ CASES: list[IsolationCase] = [
         "nombre_integracion",
     ),
     IsolationCase(
-        "banca_electronica.CuentaBancariaEmpresa",
-        "/api/banca-electronica/cuentas-bancarias-empresa/",
-        "id",
-        _build_cuenta_bancaria,
-        {"banco": "Hackeado"},
-        "banco",
+        "banca_electronica.LotePagoBancario",
+        "/api/banca-electronica/lotes-pago/",
+        "id_lote_pago",
+        _build_lote_pago_bancario,
+        {},
+        "referencia_lote",
+        writable=False,
     ),
     IsolationCase(
         "personalizacion.PersonalizacionConfig",

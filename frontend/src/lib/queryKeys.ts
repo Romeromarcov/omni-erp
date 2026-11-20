@@ -621,14 +621,24 @@ export const aprobacionesKeys = {
     ['aprobaciones', 'solicitudes', 'registros', solicitudId] as const,
 };
 
-// ── Banca Electrónica (cuentas bancarias de la empresa) ───────────────────────
-// Prefijo compartido `['banca-electronica', 'cuentas']` para que invalidar la
-// familia refresque la lista y el detalle a la vez tras crear/editar/eliminar.
+// ── Banca Electrónica (cuentas bancarias y lotes de pago VE) ──────────────────
+// Prefijos compartidos por familia para invalidar listas y detalles a la vez.
 export const bancaElectronicaKeys = {
   cuentasAll: () => ['banca-electronica', 'cuentas'] as const,
   cuentas: (empresaId?: string | null) =>
     ['banca-electronica', 'cuentas', 'list', empresaId ?? null] as const,
   cuenta: (id: string) => ['banca-electronica', 'cuentas', 'detail', id] as const,
+  lotesAll: () => ['banca-electronica', 'lotes'] as const,
+  lotes: (empresaId?: string | null, tipoLote?: string | null, estado?: string | null) =>
+    [
+      'banca-electronica',
+      'lotes',
+      'list',
+      empresaId ?? null,
+      tipoLote ?? null,
+      estado ?? null,
+    ] as const,
+  lote: (id: string) => ['banca-electronica', 'lotes', 'detail', id] as const,
 };
 
 // ── Migración de Datos (plantillas globales + procesos + errores) ─────────────
