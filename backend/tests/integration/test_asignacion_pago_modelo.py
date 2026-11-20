@@ -13,6 +13,8 @@ Cubre contra PostgreSQL real:
 from datetime import date, timedelta
 from decimal import Decimal
 import importlib
+import json
+from pathlib import Path
 from types import SimpleNamespace
 import uuid
 
@@ -387,6 +389,45 @@ class TestAsignacionPagoCreacionesValidas:
         asig_fc.refresh_from_db()
         assert asig_fc.activo is False
 
+    def test_update_fields_sincroniza_id_documento_en_bd(
+        self, empresa_a, contacto_cliente_a, pago_ingreso_a, cxc_a, cliente_a, factura_venta_a, moneda_usd
+    ):
+        """Regresión [B-1]: save(update_fields=...) persiste id_documento sincronizado en PostgreSQL."""
+        cxc2 = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=cliente_a,
+            monto=Decimal("90.00"),
+            fecha_emision=_hoy(),
+            fecha_vencimiento=_hoy() + timedelta(days=10),
+            estado="pendiente",
+        )
+        asig = AsignacionPago.objects.create(
+            id_empresa=empresa_a,
+            id_contacto=contacto_cliente_a,
+            id_pago=pago_ingreso_a,
+            tipo_documento="CUENTA_POR_COBRAR",
+            id_cxc=cxc_a,
+            monto_asignado_pago=Decimal("40.0000"),
+            monto_asignado_documento=Decimal("40.0000"),
+            id_moneda_documento=moneda_usd,
+        )
+        assert asig.id_documento == str(cxc_a.pk)
+
+        # Actualizar solo id_cxc con update_fields sin incluir id_documento
+        asig.id_cxc = cxc2
+        asig.save(update_fields=["id_cxc"])
+        asig.refresh_from_db()
+        assert asig.id_cxc_id == cxc2.pk
+        assert asig.id_documento == str(cxc2.pk)
+
+        # Cambiar tipo_documento + FK con update_fields como tupla
+        asig.tipo_documento = "FACTURA_VENTA"
+        asig.id_cxc = None
+        asig.id_factura_venta = factura_venta_a
+        asig.save(update_fields=("tipo_documento", "id_cxc", "id_factura_venta"))
+        asig.refresh_from_db()
+        assert asig.id_documento == str(factura_venta_a.pk)
+
     def test_validacion_modelo_rechaza_tipo_invalido_o_fk_incoherente(
         self, empresa_a, contacto_cliente_a, pago_ingreso_a, cxc_a, factura_venta_a, moneda_usd
     ):
@@ -674,6 +715,134 @@ class TestAislamientoCrossTenantModelos:
         )
         assert p_cxc.id_documento is None
         assert p_ped_vacio.id_documento is None
+
+    def test_pago_anticipo_conciliacion_cxc_rechaza_fks_documentales_cruzadas(
+        self, empresa_a, empresa_b, cliente_b, proveedor_b, moneda_usd, metodo_efectivo, factura_venta_a
+    ):
+        """Regresión [B-2]: ANTICIPO/CONCILIACION_MULTIPLE/CXC no saltan la validación de FKs documentales."""
+        from apps.fiscal.models import ContribucionParafiscal
+        from apps.gastos.models import CategoriaGasto, Gasto, ReembolsoGasto
+        from apps.nomina.models import Nomina, PeriodoNomina, ProcesoNomina
+        from apps.rrhh.models import Cargo, Empleado
+
+        fac_b = FacturaFiscal.objects.create(
+            id_empresa=empresa_b,
+            id_cliente=cliente_b,
+            numero_control="B-9001",
+            numero_factura="FB-9001",
+            fecha_emision=_hoy(),
+            id_moneda=moneda_usd,
+            monto_total=Decimal("100.0000"),
+        )
+        ped_b = Pedido.objects.create(
+            id_empresa=empresa_b, id_cliente=cliente_b, numero_pedido="PED-B-9", fecha_pedido=_hoy()
+        )
+        nv_b = NotaVenta.objects.create(
+            id_empresa=empresa_b, id_cliente=cliente_b, numero_nota="NV-B-9", fecha_nota=_hoy()
+        )
+        cxp_b = CuentaPorPagar.objects.create(
+            id_empresa=empresa_b,
+            id_proveedor=proveedor_b,
+            monto_total=Decimal("50.0000"),
+            monto_pendiente=Decimal("50.0000"),
+            fecha_emision=_hoy(),
+            fecha_vencimiento=_hoy(),
+        )
+        cat_b = CategoriaGasto.objects.create(id_empresa=empresa_b, nombre_categoria="Cat B")
+        gasto_b = Gasto.objects.create(
+            id_empresa=empresa_b,
+            fecha_gasto=_hoy(),
+            descripcion="Gasto B",
+            monto=Decimal("20.00"),
+            id_moneda=moneda_usd,
+            id_categoria_gasto=cat_b,
+        )
+        reemb_b = ReembolsoGasto.objects.create(
+            id_empresa=empresa_b,
+            id_gasto=gasto_b,
+            monto_reembolso=Decimal("20.00"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_efectivo,
+            fecha_reembolso=_hoy(),
+            estado_reembolso="PENDIENTE",
+        )
+        periodo_b = PeriodoNomina.objects.create(
+            id_empresa=empresa_b,
+            nombre_periodo="P-B",
+            fecha_inicio=_hoy(),
+            fecha_fin=_hoy(),
+            fecha_pago=_hoy(),
+            tipo_periodo="MENSUAL",
+        )
+        proc_b = ProcesoNomina.objects.create(
+            id_empresa=empresa_b,
+            id_periodo_nomina=periodo_b,
+            numero_proceso="PROC-B-1",
+            fecha_proceso=timezone.now(),
+        )
+        cargo_b = Cargo.objects.create(empresa=empresa_b, nombre="Cargo B")
+        emp_b = Empleado.objects.create(
+            empresa=empresa_b,
+            nombre="Ana",
+            apellido="Beta",
+            cedula="V-9999999",
+            cargo=cargo_b,
+            fecha_ingreso=_hoy(),
+        )
+        nom_b = Nomina.objects.create(
+            id_proceso_nomina=proc_b,
+            id_empleado=emp_b,
+            sueldo_base=Decimal("100.0000"),
+            total_neto=Decimal("100.0000"),
+            fecha_calculo=timezone.now(),
+        )
+        contrib_b = ContribucionParafiscal.objects.create(
+            nombre="Contrib B",
+            codigo="CB99",
+            tipo="OTRO",
+            porcentaje=Decimal("1.00"),
+            base_calculo="SALARIO",
+            empresa=empresa_b,
+            es_publico=False,
+        )
+
+        for tipo, fk_kwargs in (
+            ("ANTICIPO", {"id_factura": fac_b}),
+            ("CONCILIACION_MULTIPLE", {"id_cxp": cxp_b}),
+            ("CXC", {"id_pedido": ped_b}),
+            ("ANTICIPO", {"id_nota_venta": nv_b}),
+            ("ANTICIPO", {"id_gasto": gasto_b}),
+            ("ANTICIPO", {"id_reembolso_gasto": reemb_b}),
+            ("ANTICIPO", {"id_nomina": nom_b}),
+            ("ANTICIPO", {"id_contribucion": contrib_b}),
+            ("ANTICIPO", {"id_factura_id": uuid.uuid4()}),
+        ):
+            with pytest.raises(ValueError, match="no existe"):
+                Pago.objects.create(
+                    id_empresa=empresa_a,
+                    tipo_operacion="INGRESO",
+                    tipo_documento=tipo,
+                    id_documento=None,
+                    fecha_pago=timezone.now(),
+                    monto=Decimal("10.0000"),
+                    id_moneda=moneda_usd,
+                    id_metodo_pago=metodo_efectivo,
+                    **fk_kwargs,
+                )
+
+        # Factura de la misma empresa con id_documento=None debe seguir funcionando
+        pago_ok = Pago.objects.create(
+            id_empresa=empresa_a,
+            tipo_operacion="INGRESO",
+            tipo_documento="FACTURA",
+            id_documento=None,
+            id_factura=factura_venta_a,
+            fecha_pago=timezone.now(),
+            monto=Decimal("15.0000"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_efectivo,
+        )
+        assert pago_ok.id_factura_id == factura_venta_a.pk
 
 
 # ── 4. Verificación real de RLS en PostgreSQL ────────────────────────────────
@@ -1146,6 +1315,264 @@ class TestPagoAnticipoYSerializerContacto:
         )
         assert s_super_ok.is_valid(), s_super_ok.errors
         assert s_super_ok.save().id_contacto == contacto_b
+
+    def test_b2_api_anticipo_y_matriz_subsidiaria_devuelven_400_no_500(
+        self, user_a, empresa_a, empresa_b, factura_venta_a, moneda_usd, metodo_efectivo, monkeypatch
+    ):
+        """Regresión [B-2]: mezcla matriz/subsidiaria o ANTICIPO con FK ajena devuelve 400 (nunca 500)."""
+        from apps.fiscal.models import ContribucionParafiscal
+        from apps.nomina.models import Nomina, PeriodoNomina, ProcesoNomina
+        from apps.rrhh.models import Cargo, Empleado
+
+        sub = Empresa.objects.create(
+            nombre_legal="Subsidiaria B2 S.A.",
+            identificador_fiscal="J-88888881-1",
+            empresa_matriz=empresa_a,
+            id_moneda_base=moneda_usd,
+        )
+        cliente_sub = Cliente.objects.create(id_empresa=sub, razon_social="Cliente Sub", rif="J-88888882-2")
+        fac_sub = FacturaFiscal.objects.create(
+            id_empresa=sub,
+            id_cliente=cliente_sub,
+            numero_control="SUB-001",
+            numero_factura="FSUB-001",
+            fecha_emision=_hoy(),
+            id_moneda=moneda_usd,
+            monto_total=Decimal("100.0000"),
+        )
+        prov_sub = Proveedor.objects.create(id_empresa=sub, razon_social="Prov Sub", rif="J-88888883-3")
+        cxp_sub = CuentaPorPagar.objects.create(
+            id_empresa=sub,
+            id_proveedor=prov_sub,
+            monto_total=Decimal("50.0000"),
+            monto_pendiente=Decimal("50.0000"),
+            fecha_emision=_hoy(),
+            fecha_vencimiento=_hoy(),
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user_a)
+
+        # ANTICIPO de matriz con id_factura de subsidiaria -> 400
+        resp_ant_sub = client.post(
+            self.URL,
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "INGRESO",
+                "tipo_documento": "ANTICIPO",
+                "id_factura": str(fac_sub.pk),
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "25.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_efectivo.id_metodo_pago),
+            },
+            format="json",
+        )
+        assert resp_ant_sub.status_code == 400
+        assert "id_factura" in resp_ant_sub.data
+
+        # FACTURA de matriz con id_factura de subsidiaria -> 400 (antes HTTP 500)
+        resp_fac_sub = client.post(
+            self.URL,
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "INGRESO",
+                "tipo_documento": "FACTURA",
+                "id_documento": str(fac_sub.pk),
+                "id_factura": str(fac_sub.pk),
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "25.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_efectivo.id_metodo_pago),
+            },
+            format="json",
+        )
+        assert resp_fac_sub.status_code == 400
+        assert "id_factura" in resp_fac_sub.data
+
+        # CONCILIACION_MULTIPLE de matriz con id_cxp de subsidiaria -> 400
+        resp_cxp_sub = client.post(
+            self.URL,
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "EGRESO",
+                "tipo_documento": "CONCILIACION_MULTIPLE",
+                "id_cxp": str(cxp_sub.pk),
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "25.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_efectivo.id_metodo_pago),
+            },
+            format="json",
+        )
+        assert resp_cxp_sub.status_code == 400
+        assert "id_cxp" in resp_cxp_sub.data
+
+        # PATCH cambiando id_empresa a sub dejando id_factura de matriz -> 400
+        pago_matriz = Pago.objects.create(
+            id_empresa=empresa_a,
+            tipo_operacion="INGRESO",
+            tipo_documento="FACTURA",
+            id_documento=factura_venta_a.pk,
+            id_factura=factura_venta_a,
+            fecha_pago=timezone.now(),
+            monto=Decimal("20.0000"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_efectivo,
+        )
+        resp_patch = client.patch(
+            f"{self.URL}{pago_matriz.pk}/",
+            {"id_empresa": str(sub.id_empresa)},
+            format="json",
+        )
+        assert resp_patch.status_code == 400
+        assert "id_factura" in resp_patch.data
+
+        # Serializer valida también id_nomina e id_contribucion privada de otra empresa
+        periodo_b = PeriodoNomina.objects.create(
+            id_empresa=empresa_b,
+            nombre_periodo="P-B2",
+            fecha_inicio=_hoy(),
+            fecha_fin=_hoy(),
+            fecha_pago=_hoy(),
+            tipo_periodo="MENSUAL",
+        )
+        proc_b = ProcesoNomina.objects.create(
+            id_empresa=empresa_b,
+            id_periodo_nomina=periodo_b,
+            numero_proceso="PROC-B-2",
+            fecha_proceso=timezone.now(),
+        )
+        cargo_b = Cargo.objects.create(empresa=empresa_b, nombre="Cargo B2")
+        emp_b = Empleado.objects.create(
+            empresa=empresa_b,
+            nombre="Luis",
+            apellido="Beta",
+            cedula="V-8888888",
+            cargo=cargo_b,
+            fecha_ingreso=_hoy(),
+        )
+        nom_b = Nomina.objects.create(
+            id_proceso_nomina=proc_b,
+            id_empleado=emp_b,
+            sueldo_base=Decimal("100.0000"),
+            total_neto=Decimal("100.0000"),
+            fecha_calculo=timezone.now(),
+        )
+        contrib_b = ContribucionParafiscal.objects.create(
+            nombre="Contrib B2",
+            codigo="CB2",
+            tipo="OTRO",
+            porcentaje=Decimal("1.00"),
+            base_calculo="SALARIO",
+            empresa=empresa_b,
+            es_publico=False,
+        )
+
+        s_nom = PagoSerializer(
+            data={
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "EGRESO",
+                "tipo_documento": "NOMINA",
+                "id_nomina": str(nom_b.pk),
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "10.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_efectivo.id_metodo_pago),
+            },
+            context={"request": SimpleNamespace(user=user_a)},
+        )
+        assert not s_nom.is_valid()
+        assert "id_nomina" in s_nom.errors
+
+        s_contrib = PagoSerializer(
+            data={
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "EGRESO",
+                "tipo_documento": "IMPUESTO",
+                "id_contribucion": str(contrib_b.pk),
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "10.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_efectivo.id_metodo_pago),
+            },
+            context={"request": SimpleNamespace(user=user_a)},
+        )
+        assert not s_contrib.is_valid()
+        assert "id_contribucion" in s_contrib.errors
+
+        # Defensa en profundidad en PagoViewSet: si save() lanza ValueError -> 400 (no 500)
+        monkeypatch.setattr(Pago, "save", lambda self, *a, **kw: (_ for _ in ()).throw(ValueError("error dominio")))
+        resp_post_val = client.post(
+            self.URL,
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "tipo_operacion": "INGRESO",
+                "tipo_documento": "ANTICIPO",
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "10.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_efectivo.id_metodo_pago),
+            },
+            format="json",
+        )
+        assert resp_post_val.status_code == 400
+        resp_patch_val = client.patch(
+            f"{self.URL}{pago_matriz.pk}/",
+            {"referencia": "REF-X"},
+            format="json",
+        )
+        assert resp_patch_val.status_code == 400
+
+    def test_usuario_sin_empresas_visibles_falla_con_validation_error_y_no_integrity_error(
+        self, moneda_usd, metodo_efectivo
+    ):
+        from apps.core.models import Usuarios
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+
+        user_huerfano = Usuarios.objects.create_user(
+            username="sin_empresa_pago",
+            password="Password123!",
+            email="sin_empresa@test.local",
+        )
+        s_partial = PagoSerializer(
+            data={
+                "tipo_operacion": "INGRESO",
+                "tipo_documento": "ANTICIPO",
+                "fecha_pago": timezone.now().isoformat(),
+                "monto": "15.0000",
+                "id_moneda": str(moneda_usd.id_moneda),
+                "id_metodo_pago": str(metodo_efectivo.id_metodo_pago),
+            },
+            partial=True,
+            context={"request": SimpleNamespace(user=user_huerfano)},
+        )
+        assert not s_partial.is_valid()
+        assert "id_empresa" in s_partial.errors
+
+        with pytest.raises(DRFValidationError):
+            PagoSerializer(context={"request": SimpleNamespace(user=user_huerfano)}).create(
+                {
+                    "tipo_operacion": "INGRESO",
+                    "tipo_documento": "ANTICIPO",
+                    "fecha_pago": timezone.now(),
+                    "monto": Decimal("15.0000"),
+                    "id_moneda": moneda_usd,
+                    "id_metodo_pago": metodo_efectivo,
+                }
+            )
+
+    def test_b3_contacto_nombre_openapi_sin_minlength_contradictorio(self):
+        """Regresión [B-3]: contacto_nombre permite blanco y openapi.json no exige minLength=1."""
+        field = PagoSerializer().fields["contacto_nombre"]
+        assert field.allow_blank is True
+
+        openapi_path = Path(__file__).resolve().parents[3] / "frontend" / "src" / "api" / "openapi.json"
+        if openapi_path.exists():
+            schema = json.loads(openapi_path.read_text(encoding="utf-8"))
+            prop = schema["definitions"]["Pago"]["properties"]["contacto_nombre"]
+            assert prop.get("default") == ""
+            assert "minLength" not in prop
 
 
 # ── 6. Migración 0044_backfill_pago_id_contacto ──────────────────────────────

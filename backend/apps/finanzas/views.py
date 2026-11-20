@@ -1439,7 +1439,10 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
         from .services import TasaCambioError, registrar_efectos_pago
 
         with transaction.atomic():
-            pago = serializer.save()
+            try:
+                pago = serializer.save()
+            except ValueError as exc:
+                raise serializers.ValidationError({"detail": str(exc)}) from exc
             try:
                 registrar_efectos_pago(pago)
             except TasaCambioError as exc:
@@ -1464,6 +1467,12 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
                 )
             except Exception:  # noqa: BLE001
                 pass  # notificación best-effort
+
+    def perform_update(self, serializer):
+        try:
+            serializer.save()
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
 
     def get_queryset(self):
         # R-CODE-1: usar get_empresas_visible para incluir subsidiarias y

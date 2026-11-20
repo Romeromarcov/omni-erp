@@ -52571,7 +52571,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-19T19:17:35.353638-04:00"
+                    "default": "2026-11-19T20:20:48.251973-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -54184,8 +54184,7 @@
                     "title": "Contacto nombre",
                     "type": "string",
                     "readOnly": true,
-                    "default": "",
-                    "minLength": 1
+                    "default": ""
                 },
                 "metodo_pago_nombre": {
                     "title": "Metodo pago nombre",
