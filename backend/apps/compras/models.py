@@ -7,6 +7,20 @@ class OrdenCompra(models.Model):
     id_orden_compra = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_proveedor = models.ForeignKey("proveedores.Proveedor", on_delete=models.CASCADE)
+    id_oferta_origen = models.ForeignKey(
+        "OfertaProveedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ordenes_compra_generadas",
+    )
+    id_almacen_destino = models.ForeignKey(
+        "almacenes.Almacen",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ordenes_compra",
+    )
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
@@ -205,6 +219,10 @@ class SolicitudCotizacion(models.Model):
         default="BORRADOR",
     )
     observaciones = models.TextField(null=True, blank=True)
+    requisiciones = models.ManyToManyField(RequisicionCompra, blank=True, related_name="solicitudes_cotizacion")
+    proveedores_invitados = models.ManyToManyField(
+        "proveedores.Proveedor", blank=True, related_name="solicitudes_cotizacion"
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

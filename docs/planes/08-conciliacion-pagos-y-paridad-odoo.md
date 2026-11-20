@@ -8,7 +8,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) COMPLETADO |
+| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) COMPLETADO |
 | **Fecha** | 2026-11-17 (basado en símbolos verificados en `origin/develop @ ff2bdb6`) |
 | **Apps involucradas** | `finanzas`, `core`, `cuentas_por_cobrar`, `cuentas_por_pagar`, `ventas`, `compras`, `contabilidad`, `gestion_aprobaciones`, `inventario`, `almacenes`, `banca_electronica`, `tesoreria`, `integration_hub`, `agentes` |
 | **Esfuerzo estimado** | ~5–7 semanas en PRs pequeños y focales (`R-PROC-2`) |
@@ -125,7 +125,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 
 ---
 
-### B.2 `compras` + `gestion_aprobaciones` — Flujo Transaccional Source-to-PO y Reglas Avanzadas
+### B.2 `compras` + `gestion_aprobaciones` — Flujo Transaccional Source-to-PO y Reglas Avanzadas — ✅ COMPLETADO (PR-15)
 
 **Estado actual verificado:** `compras/models.py` ya define `RequisicionCompra`, `SolicitudCotizacion` (RFQ), `OfertaProveedor` y `OrdenCompra`, con CRUD/UI en `AprovisionamientoPage` (`#242`), pero `compras/services.py` solo tiene `aprobar_orden_compra`, `registrar_recepcion` y `registrar_factura_compra`. Por su lado, `gestion_aprobaciones/services.py` ya implementa `evaluar_etapas`, `crear_solicitud` y `registrar_decision` (por monto, rol o usuario), pero carece de reglas por departamento, SLA/escalación y cobertura transversal completa.
 
@@ -202,7 +202,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 | **Ola A3** | ✅ `feat(finanzas): API REST, MCP y UI ConciliacionContactoDialog en CxC/CxP/Tesoreria` (`PR-12`) | Ola A2 |
 | **Ola B1** | ✅ `feat(contabilidad): DiarioContable, contra-asiento, PeriodoContable y cierre ejercicio` (`PR #300`) | Ninguna (paralela a Ola A) |
 | **Ola B2** | ✅ `feat(contabilidad): reportes P&L, Balance General, Mayor Auxiliar y Balance Comprobacion PDF/CSV + USD` (`PR-14`) | Ola B1 |
-| **Ola B3** | `feat(compras): flujo transaccional Requisicion->RFQ->Oferta->OC y reglas departamento/SLA en aprobaciones` | Ninguna |
+| **Ola B3** | ✅ `feat(compras): flujo transaccional Requisicion->RFQ->Oferta->OC y reglas departamento/SLA en aprobaciones` (`PR-15`) | Ninguna |
 | **Ola B4** | `feat(inventario): ReglaReabastecimiento, LoteProducto opt-in y StockUbicacion` | Ninguna |
 | **Ola B5** | `refactor(banca): consolida CuentaBancariaEmpresa en finanzas y servicios de pagos masivos` | Ninguna |
 | **Ola B6** | `feat(hub): inbound facturas_compra + pagos multi-factura con AsignacionPago` | Ola A2 |

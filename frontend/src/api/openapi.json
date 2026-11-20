@@ -5154,6 +5154,43 @@
                 }
             ]
         },
+        "/compras/ofertas-proveedor/{id_oferta}/adjudicar/": {
+            "post": {
+                "operationId": "compras_ofertas-proveedor_adjudicar",
+                "description": "POST /ofertas-proveedor/{pk}/adjudicar/ — Adjudica total/parcialmente la oferta a una OrdenCompra.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AdjudicarOfertaInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AdjudicarOfertaResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_oferta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Oferta de Proveedor.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/compras/ordenes-compra/": {
             "get": {
                 "operationId": "compras_ordenes-compra_list",
@@ -5765,6 +5802,62 @@
                 }
             ]
         },
+        "/compras/requisiciones-compra/{id_requisicion}/confirmar-aprobacion/": {
+            "post": {
+                "operationId": "compras_requisiciones-compra_confirmar_aprobacion",
+                "description": "POST /requisiciones-compra/{pk}/confirmar-aprobacion/ — Pasa de PENDIENTE a APROBADA tras resolver flujo.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RequisicionCompra"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_requisicion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Requisición de Compra.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/compras/requisiciones-compra/{id_requisicion}/enviar-aprobacion/": {
+            "post": {
+                "operationId": "compras_requisiciones-compra_enviar_aprobacion",
+                "description": "POST /requisiciones-compra/{pk}/enviar-aprobacion/ — Envía una requisición BORRADOR a aprobación.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RequisicionCompra"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_requisicion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Requisición de Compra.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/compras/solicitudes-cotizacion/": {
             "get": {
                 "operationId": "compras_solicitudes-cotizacion_list",
@@ -5856,6 +5949,34 @@
             },
             "parameters": []
         },
+        "/compras/solicitudes-cotizacion/desde-requisiciones/": {
+            "post": {
+                "operationId": "compras_solicitudes-cotizacion_desde_requisiciones",
+                "description": "POST /solicitudes-cotizacion/desde-requisiciones/ — Consolida requisiciones APROBADA en una RFQ.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CrearRfqDesdeRequisicionesInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SolicitudCotizacion"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": []
+        },
         "/compras/solicitudes-cotizacion/{id_solicitud_cotizacion}/": {
             "get": {
                 "operationId": "compras_solicitudes-cotizacion_read",
@@ -5930,6 +6051,34 @@
                 "responses": {
                     "204": {
                         "description": ""
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_solicitud_cotizacion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Solicitud de Cotización.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/compras/solicitudes-cotizacion/{id_solicitud_cotizacion}/comparar-ofertas/": {
+            "get": {
+                "operationId": "compras_solicitudes-cotizacion_comparar_ofertas",
+                "description": "GET /solicitudes-cotizacion/{pk}/comparar-ofertas/ — Matriz comparativa lado a lado.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CompararOfertasResponse"
+                        }
                     }
                 },
                 "tags": [
@@ -26408,12 +26557,12 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/SolicitudAprobacion"
+                            "$ref": "#/definitions/DecidirSolicitudInput"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": "",
                         "schema": {
                             "$ref": "#/definitions/SolicitudAprobacion"
@@ -49738,6 +49887,111 @@
                 }
             }
         },
+        "AdjudicacionParcialItem": {
+            "required": [
+                "id_producto",
+                "cantidad"
+            ],
+            "type": "object",
+            "properties": {
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                }
+            },
+            "x-nullable": true
+        },
+        "AdjudicarOfertaInput": {
+            "required": [
+                "id_almacen_destino"
+            ],
+            "type": "object",
+            "properties": {
+                "id_almacen_destino": {
+                    "title": "Id almacen destino",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "rechazar_competidoras": {
+                    "title": "Rechazar competidoras",
+                    "type": "boolean",
+                    "default": true
+                },
+                "adjudicacion_parcial": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AdjudicacionParcialItem"
+                    },
+                    "x-nullable": true
+                }
+            }
+        },
+        "AdjudicarOfertaResponse": {
+            "required": [
+                "id_orden_compra",
+                "numero_orden",
+                "estado_orden",
+                "monto_total",
+                "oferta_id",
+                "oferta_estado",
+                "rfq_id",
+                "rfq_estado",
+                "lineas"
+            ],
+            "type": "object",
+            "properties": {
+                "id_orden_compra": {
+                    "title": "Id orden compra",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "numero_orden": {
+                    "title": "Numero orden",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "estado_orden": {
+                    "title": "Estado orden",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "monto_total": {
+                    "title": "Monto total",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "oferta_id": {
+                    "title": "Oferta id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "oferta_estado": {
+                    "title": "Oferta estado",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "rfq_id": {
+                    "title": "Rfq id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "rfq_estado": {
+                    "title": "Rfq estado",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "lineas": {
+                    "title": "Lineas",
+                    "type": "integer"
+                }
+            }
+        },
         "OrdenCompra": {
             "required": [
                 "numero_orden",
@@ -49812,6 +50066,18 @@
                     "title": "Id proveedor",
                     "type": "string",
                     "format": "uuid"
+                },
+                "id_oferta_origen": {
+                    "title": "Id oferta origen",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_almacen_destino": {
+                    "title": "Id almacen destino",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
                 }
             }
         },
@@ -49914,7 +50180,8 @@
                         "RECHAZADA",
                         "PROCESADA",
                         "ANULADA"
-                    ]
+                    ],
+                    "readOnly": true
                 },
                 "prioridad": {
                     "title": "Prioridad",
@@ -50001,6 +50268,22 @@
                     "type": "string",
                     "x-nullable": true
                 },
+                "requisiciones": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "uniqueItems": true
+                },
+                "proveedores_invitados": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "uniqueItems": true
+                },
                 "fecha_creacion": {
                     "title": "Fecha creacion",
                     "type": "string",
@@ -50012,6 +50295,268 @@
                     "type": "string",
                     "format": "uuid",
                     "readOnly": true
+                }
+            }
+        },
+        "CrearRfqDesdeRequisicionesInput": {
+            "required": [
+                "requisicion_ids",
+                "proveedores_ids",
+                "fecha_vencimiento"
+            ],
+            "type": "object",
+            "properties": {
+                "requisicion_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "proveedores_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date"
+                },
+                "numero_solicitud": {
+                    "title": "Numero solicitud",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 50
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": ""
+                }
+            }
+        },
+        "OfertaResumenComparativo": {
+            "required": [
+                "id_oferta",
+                "numero_oferta",
+                "id_proveedor",
+                "proveedor_nombre",
+                "estado",
+                "monto_total",
+                "tiempo_entrega",
+                "condiciones_pago",
+                "es_mejor_total"
+            ],
+            "type": "object",
+            "properties": {
+                "id_oferta": {
+                    "title": "Id oferta",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "numero_oferta": {
+                    "title": "Numero oferta",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "id_proveedor": {
+                    "title": "Id proveedor",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "proveedor_nombre": {
+                    "title": "Proveedor nombre",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "monto_total": {
+                    "title": "Monto total",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tiempo_entrega": {
+                    "title": "Tiempo entrega",
+                    "type": "string"
+                },
+                "condiciones_pago": {
+                    "title": "Condiciones pago",
+                    "type": "string"
+                },
+                "es_mejor_total": {
+                    "title": "Es mejor total",
+                    "type": "boolean"
+                }
+            }
+        },
+        "CotizacionComparada": {
+            "required": [
+                "id_oferta",
+                "id_proveedor",
+                "proveedor_nombre",
+                "cantidad",
+                "precio_unitario",
+                "subtotal",
+                "tiempo_entrega",
+                "es_mejor_precio"
+            ],
+            "type": "object",
+            "properties": {
+                "id_oferta": {
+                    "title": "Id oferta",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_proveedor": {
+                    "title": "Id proveedor",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "proveedor_nombre": {
+                    "title": "Proveedor nombre",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "precio_unitario": {
+                    "title": "Precio unitario",
+                    "type": "string",
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "subtotal": {
+                    "title": "Subtotal",
+                    "type": "string",
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "tiempo_entrega": {
+                    "title": "Tiempo entrega",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "es_mejor_precio": {
+                    "title": "Es mejor precio",
+                    "type": "boolean"
+                }
+            }
+        },
+        "ProductoComparado": {
+            "required": [
+                "id_producto",
+                "producto_nombre",
+                "sku",
+                "cantidad_solicitada",
+                "especificaciones",
+                "mejor_precio_unitario",
+                "cotizaciones"
+            ],
+            "type": "object",
+            "properties": {
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "sku": {
+                    "title": "Sku",
+                    "type": "string"
+                },
+                "cantidad_solicitada": {
+                    "title": "Cantidad solicitada",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "especificaciones": {
+                    "title": "Especificaciones",
+                    "type": "string"
+                },
+                "mejor_precio_unitario": {
+                    "title": "Mejor precio unitario",
+                    "type": "string",
+                    "minLength": 1,
+                    "x-nullable": true
+                },
+                "cotizaciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CotizacionComparada"
+                    }
+                }
+            }
+        },
+        "CompararOfertasResponse": {
+            "required": [
+                "rfq_id",
+                "numero_solicitud",
+                "estado",
+                "fecha_solicitud",
+                "fecha_vencimiento",
+                "mejor_oferta_id",
+                "ofertas",
+                "productos"
+            ],
+            "type": "object",
+            "properties": {
+                "rfq_id": {
+                    "title": "Rfq id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "numero_solicitud": {
+                    "title": "Numero solicitud",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "fecha_solicitud": {
+                    "title": "Fecha solicitud",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "mejor_oferta_id": {
+                    "title": "Mejor oferta id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "ofertas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/OfertaResumenComparativo"
+                    }
+                },
+                "productos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProductoComparado"
+                    }
                 }
             }
         },
@@ -55197,7 +55742,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T06:22:06.569888-04:00"
+                    "default": "2026-11-20T08:56:19.908838-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -59051,6 +59596,12 @@
                     "type": "string",
                     "format": "uuid"
                 },
+                "id_departamento": {
+                    "title": "Id departamento",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
                 "rol_aprobador": {
                     "title": "Rol aprobador",
                     "type": "string",
@@ -59059,6 +59610,25 @@
                 },
                 "id_usuario_aprobador": {
                     "title": "Id usuario aprobador",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "sla_horas": {
+                    "title": "Sla horas",
+                    "type": "integer",
+                    "maximum": 2147483647,
+                    "minimum": 0,
+                    "x-nullable": true
+                },
+                "escalar_a_rol": {
+                    "title": "Escalar a rol",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "escalar_a_usuario": {
+                    "title": "Escalar a usuario",
                     "type": "string",
                     "format": "uuid",
                     "x-nullable": true
@@ -59168,6 +59738,13 @@
                     "type": "string",
                     "format": "uuid"
                 },
+                "id_departamento": {
+                    "title": "Id departamento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
                 "id_usuario_solicitante": {
                     "title": "Id usuario solicitante",
                     "type": "string",
@@ -59186,6 +59763,41 @@
                     "format": "decimal",
                     "readOnly": true,
                     "x-nullable": true
+                },
+                "fecha_inicio_etapa": {
+                    "title": "Fecha inicio etapa",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "escalada": {
+                    "title": "Escalada",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_escalacion": {
+                    "title": "Fecha escalacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
+        "DecidirSolicitudInput": {
+            "required": [
+                "aprobado"
+            ],
+            "type": "object",
+            "properties": {
+                "aprobado": {
+                    "title": "Aprobado",
+                    "type": "boolean"
+                },
+                "comentarios": {
+                    "title": "Comentarios",
+                    "type": "string",
+                    "default": ""
                 }
             }
         },

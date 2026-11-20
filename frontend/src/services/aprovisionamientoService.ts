@@ -91,6 +91,8 @@ export interface SolicitudCotizacion {
   fecha_vencimiento: string;
   estado: EstadoSolicitud | string;
   observaciones: string | null;
+  requisiciones?: string[];
+  proveedores_invitados?: string[];
   fecha_creacion?: string;
 }
 

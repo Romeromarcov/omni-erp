@@ -115,7 +115,7 @@ class PagoTerceroViewSet(BaseModelViewSet):
                 descripcion=request.data.get("descripcion", ""),
             )
         except PagoTerceroError as exc:
-            raise ValidationError({"detail": str(exc)}) from exc
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         except AsientoError as exc:
             # R-CODE-11: la transacción ya fue revertida (abono + estado).
             return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -172,7 +172,7 @@ class PagoTerceroViewSet(BaseModelViewSet):
                 descripcion=request.data.get("descripcion", ""),
             )
         except PagoTerceroError as exc:
-            raise ValidationError({"detail": str(exc)}) from exc
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         except AsientoError as exc:
             return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 

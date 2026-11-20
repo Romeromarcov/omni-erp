@@ -1,6 +1,7 @@
 from apps.core.uuid import uuid7
 
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import Empresa, Roles, Usuarios
 
@@ -24,18 +25,47 @@ class TipoAprobacion(models.Model):
 class FlujoAprobacion(models.Model):
     id_flujo_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_tipo_aprobacion = models.ForeignKey(TipoAprobacion, on_delete=models.CASCADE)
+    id_departamento = models.ForeignKey(
+        "core.Departamento",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="flujos_aprobacion",
+    )
     orden_etapa = models.IntegerField()
     nombre_etapa = models.CharField(max_length=100)
     rol_aprobador = models.ForeignKey(Roles, null=True, blank=True, on_delete=models.SET_NULL)
     id_usuario_aprobador = models.ForeignKey(Usuarios, null=True, blank=True, on_delete=models.SET_NULL)
     monto_minimo = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     monto_maximo = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    sla_horas = models.PositiveIntegerField(null=True, blank=True)
+    escalar_a_rol = models.ForeignKey(
+        Roles,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="etapas_escalacion",
+    )
+    escalar_a_usuario = models.ForeignKey(
+        Usuarios,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="etapas_escalacion",
+    )
     activo = models.BooleanField(default=True)
 
 
 class SolicitudAprobacion(models.Model):
     id_solicitud_aprobacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_tipo_aprobacion = models.ForeignKey(TipoAprobacion, on_delete=models.CASCADE)
+    id_departamento = models.ForeignKey(
+        "core.Departamento",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="solicitudes_aprobacion",
+    )
     id_entidad_origen = models.UUIDField()
     nombre_modelo_origen = models.CharField(max_length=100)
     id_usuario_solicitante = models.ForeignKey(Usuarios, on_delete=models.CASCADE)
@@ -47,6 +77,9 @@ class SolicitudAprobacion(models.Model):
     # Monto del documento que originó la solicitud; permite re-evaluar qué etapas
     # aplican al avanzar entre etapas multi-nivel sin recargar el documento.
     monto = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    fecha_inicio_etapa = models.DateTimeField(default=timezone.now)
+    escalada = models.BooleanField(default=False)
+    fecha_escalacion = models.DateTimeField(null=True, blank=True)
 
 
 class RegistroAprobacion(models.Model):

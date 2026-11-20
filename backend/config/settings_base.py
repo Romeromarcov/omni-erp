@@ -646,6 +646,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": _crontab(hour=19, minute=0),
         "kwargs": {"momento": "TARDE"},
     },
+    # Escalamiento por SLA en aprobaciones pendientes — Plan 08 §B.2
+    "aprobaciones-escalar-vencidas": {
+        "task": "gestion_aprobaciones.escalar_solicitudes_vencidas",
+        "schedule": _crontab(minute=0),
+    },
 }
 
 # ─────────────────────────────────────────────────────────────────
@@ -704,6 +709,8 @@ MCP_AGENT_CAPABILITIES: dict = {
     "server_version": "0.1.0",
     "module_paths": [
         "apps.ventas.mcp",
+        "apps.compras.mcp",
+        "apps.gestion_aprobaciones.mcp",
         "apps.inventario.mcp",
         "apps.finanzas.mcp",
         "apps.contabilidad.mcp",
@@ -718,6 +725,10 @@ MCP_AGENT_CAPABILITIES: dict = {
         "crm:read": "Lectura del CRM (clientes, contactos)",
         "ventas:read": "Lectura de pedidos, cotizaciones, facturas",
         "ventas:write": "Creación y modificación de pedidos",
+        "compras:read": "Consulta de requisiciones, cotizaciones y órdenes de compra",
+        "compras:write": "Creación de requisiciones y adjudicación de ofertas",
+        "aprobaciones:read": "Consulta de solicitudes de aprobación pendientes",
+        "aprobaciones:write": "Registro de decisiones de aprobación",
         "inventario:read": "Consulta de stock y movimientos",
         "inventario:write": "Registro de movimientos de inventario",
         "finanzas:read": "Consulta de pagos, cajas, monedas",
