@@ -23,6 +23,7 @@ import {
   type Producto,
   type ProductoPayload,
   type MetodoValoracion,
+  type EstrategiaSalida,
 } from '../../services/inventarioService';
 import { fetchMonedas } from '../../services/monedas';
 import { inventarioKeys, finanzasKeys } from '../../lib/queryKeys';
@@ -41,6 +42,11 @@ const METODOS_VALORACION: { value: MetodoValoracion; label: string }[] = [
   { value: 'FIFO', label: 'FIFO' },
 ];
 
+const ESTRATEGIAS_SALIDA: { value: EstrategiaSalida; label: string }[] = [
+  { value: 'FIFO', label: 'FIFO (Primero en entrar, primero en salir)' },
+  { value: 'FEFO', label: 'FEFO (Primero en vencer, primero en salir)' },
+];
+
 interface FormState {
   nombre_producto: string;
   sku: string;
@@ -49,6 +55,7 @@ interface FormState {
   tipo_producto: string;
   maneja_lotes: boolean;
   maneja_seriales: boolean;
+  estrategia_salida: EstrategiaSalida;
   costo_promedio: string;
   precio_venta_sugerido: string;
   punto_reorden: string;
@@ -64,6 +71,7 @@ const FORM_VACIO: FormState = {
   tipo_producto: 'PRODUCTO_FISICO',
   maneja_lotes: false,
   maneja_seriales: false,
+  estrategia_salida: 'FIFO',
   costo_promedio: '0',
   precio_venta_sugerido: '0',
   punto_reorden: '',
@@ -116,6 +124,7 @@ const ProductosPage: React.FC = () => {
       tipo_producto: p.tipo_producto,
       maneja_lotes: p.maneja_lotes,
       maneja_seriales: p.maneja_seriales,
+      estrategia_salida: p.estrategia_salida ?? 'FIFO',
       costo_promedio: p.costo_promedio,
       precio_venta_sugerido: p.precio_venta_sugerido,
       punto_reorden: p.punto_reorden ?? '',
@@ -158,6 +167,7 @@ const ProductosPage: React.FC = () => {
       tipo_producto: form.tipo_producto,
       maneja_lotes: form.maneja_lotes,
       maneja_seriales: form.maneja_seriales,
+      estrategia_salida: form.estrategia_salida,
       costo_promedio: form.costo_promedio || '0',
       precio_venta_sugerido: form.precio_venta_sugerido || '0',
       punto_reorden: form.punto_reorden.trim() || null,
@@ -340,6 +350,23 @@ const ProductosPage: React.FC = () => {
               }
               label="Maneja lotes"
             />
+            {form.maneja_lotes && (
+              <TextField
+                select
+                label="Estrategia de salida de lotes"
+                value={form.estrategia_salida}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, estrategia_salida: e.target.value as EstrategiaSalida }))
+                }
+                fullWidth
+              >
+                {ESTRATEGIAS_SALIDA.map((es) => (
+                  <MenuItem key={es.value} value={es.value}>
+                    {es.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
             <FormControlLabel
               control={
                 <Checkbox

@@ -403,6 +403,8 @@ class TestMcpToolsRegistro:
             "inventario_get_productos",
             "inventario_get_stock_resumen",
             "inventario_get_alertas_stock",
+            "inventario_evaluar_reabastecimiento",
+            "inventario_consultar_lotes",
         }
         assert all(t["scope"] == "inventario:read" for t in inv_mcp.MCP_TOOLS)
 

@@ -142,6 +142,52 @@ def scope_tenant_fks(serializer, empresas_visibles, _seen=None):
             target._tenant_fk_scoped = True
 
 
+def empresas_visibles_contexto(serializer) -> set[str] | None:
+    """Retorna el conjunto de PKs de empresas visibles para el usuario del request del serializer."""
+    from apps.core.viewsets import get_empresas_visible
+
+    request = serializer.context.get("request") if hasattr(serializer, "context") else None
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        return {str(pk) for pk in get_empresas_visible(user).values_list("pk", flat=True)}
+    return None
+
+
+def empresa_efectiva_contexto(serializer, *, empresa_field: str = "id_empresa_id") -> str | None:
+    """Devuelve el UUID (str) de la empresa efectiva del serializer, alineado a EmpresaInjectMixin."""
+    from apps.core.viewsets import get_empresa_primaria
+
+    if getattr(serializer, "instance", None) is not None:
+        return str(getattr(serializer.instance, empresa_field))
+    request = serializer.context.get("request") if hasattr(serializer, "context") else None
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        primaria = get_empresa_primaria(user)
+        if primaria is None:
+            raise serializers.ValidationError({"id_empresa": "El usuario no tiene empresa asignada."})
+        return str(primaria.pk)
+    return None
+
+
+def validar_fk_empresa(
+    obj,
+    campo: str,
+    empresa_ref: str | None,
+    visibles: set[str] | None,
+    *,
+    etiqueta: str,
+    empresa_attr: str = "id_empresa_id",
+) -> None:
+    """Valida que una FK pertenezca a las empresas visibles y a la empresa efectiva del documento."""
+    if obj is None:
+        return
+    obj_emp = str(getattr(obj, empresa_attr))
+    if visibles is not None and obj_emp not in visibles:
+        raise serializers.ValidationError({campo: f"{etiqueta} fuera de su empresa."})
+    if empresa_ref is not None and obj_emp != empresa_ref:
+        raise serializers.ValidationError({campo: f"{etiqueta} no pertenece a la empresa del registro."})
+
+
 class TenantFKScopeMixin:
     """
     Mixin de ViewSet: engancha el scope de tenant en ``get_serializer``.

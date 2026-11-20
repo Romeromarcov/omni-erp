@@ -8,7 +8,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) COMPLETADO |
+| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) + §B.3 (`inventario` + `almacenes` Ola B4) COMPLETADO |
 | **Fecha** | 2026-11-17 (basado en símbolos verificados en `origin/develop @ ff2bdb6`) |
 | **Apps involucradas** | `finanzas`, `core`, `cuentas_por_cobrar`, `cuentas_por_pagar`, `ventas`, `compras`, `contabilidad`, `gestion_aprobaciones`, `inventario`, `almacenes`, `banca_electronica`, `tesoreria`, `integration_hub`, `agentes` |
 | **Esfuerzo estimado** | ~5–7 semanas en PRs pequeños y focales (`R-PROC-2`) |
@@ -145,7 +145,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 
 ---
 
-### B.3 `inventario` + `almacenes` — Reabastecimiento Automático, Lotes Opt-in y Ubicaciones
+### B.3 `inventario` + `almacenes` — Reabastecimiento Automático, Lotes Opt-in y Ubicaciones ✅ COMPLETADO (PR-16)
 
 **Estado actual verificado:** `inventario` ya tiene `ValoracionInventario` (FIFO/Promedio), COGS, `PasoOperacion`/`OperacionInventario` y `ReordenSugeridorAgent`; `almacenes` tiene `Almacen` y `UbicacionAlmacen` con CRUD/UI (`#247`), pero sin stock desagregado por ubicación ni reglas formales de reabastecimiento ni trazabilidad de lotes/vencimientos.
 
@@ -203,7 +203,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 | **Ola B1** | ✅ `feat(contabilidad): DiarioContable, contra-asiento, PeriodoContable y cierre ejercicio` (`PR #300`) | Ninguna (paralela a Ola A) |
 | **Ola B2** | ✅ `feat(contabilidad): reportes P&L, Balance General, Mayor Auxiliar y Balance Comprobacion PDF/CSV + USD` (`PR-14`) | Ola B1 |
 | **Ola B3** | ✅ `feat(compras): flujo transaccional Requisicion->RFQ->Oferta->OC y reglas departamento/SLA en aprobaciones` (`PR-15`) | Ninguna |
-| **Ola B4** | `feat(inventario): ReglaReabastecimiento, LoteProducto opt-in y StockUbicacion` | Ninguna |
+| **Ola B4** | ✅ `feat(inventario): ReglaReabastecimiento, LoteProducto opt-in y StockUbicacion` (`PR-16`) | Ninguna |
 | **Ola B5** | `refactor(banca): consolida CuentaBancariaEmpresa en finanzas y servicios de pagos masivos` | Ninguna |
 | **Ola B6** | `feat(hub): inbound facturas_compra + pagos multi-factura con AsignacionPago` | Ola A2 |
 | **Ola B7** | `feat(hub): cierre CTF-011 push outbound cobranza validado contra Odoo de prueba` | Ola A2 + credenciales Odoo prueba |

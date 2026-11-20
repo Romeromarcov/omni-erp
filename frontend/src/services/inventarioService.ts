@@ -5,6 +5,7 @@ import { toList, type PaginatedResponse } from '../utils/api';
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type MetodoValoracion = 'PROMEDIO' | 'FIFO';
+export type EstrategiaSalida = 'FIFO' | 'FEFO';
 
 export interface Producto {
   id_producto: string;
@@ -15,6 +16,7 @@ export interface Producto {
   tipo_producto: string;
   maneja_lotes: boolean;
   maneja_seriales: boolean;
+  estrategia_salida?: EstrategiaSalida;
   costo_promedio: string;
   metodo_valoracion: MetodoValoracion;
   precio_venta_sugerido: string;
@@ -41,6 +43,7 @@ export interface ProductoPayload {
   tipo_producto: string;
   maneja_lotes: boolean;
   maneja_seriales: boolean;
+  estrategia_salida?: EstrategiaSalida;
   costo_promedio: string;
   precio_venta_sugerido: string;
   punto_reorden: string | null;

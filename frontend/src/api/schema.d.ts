@@ -488,6 +488,75 @@ export interface paths {
         patch: operations["almacenes_almacenes_partial_update"];
         trace?: never;
     };
+    "/almacenes/stock-ubicaciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["almacenes_stock-ubicaciones_list"];
+        put?: never;
+        post: operations["almacenes_stock-ubicaciones_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/stock-ubicaciones/reservar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/almacenes/stock-ubicaciones/reservar/ — Reserva o libera stock en una ubicación. */
+        post: operations["almacenes_stock-ubicaciones_reservar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/stock-ubicaciones/transferir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/almacenes/stock-ubicaciones/transferir/ — Traslada stock entre ubicaciones del mismo almacén. */
+        post: operations["almacenes_stock-ubicaciones_transferir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/stock-ubicaciones/{id_stock_ubicacion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Stock por Ubicación. */
+                id_stock_ubicacion: string;
+            };
+            cookie?: never;
+        };
+        get: operations["almacenes_stock-ubicaciones_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/almacenes/ubicaciones-almacen/": {
         parameters: {
             query?: never;
@@ -8854,6 +8923,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inventario/lotes-producto/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventario_lotes-producto_list"];
+        put?: never;
+        post: operations["inventario_lotes-producto_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/lotes-producto/{id_lote}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Producto. */
+                id_lote: string;
+            };
+            cookie?: never;
+        };
+        get: operations["inventario_lotes-producto_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["inventario_lotes-producto_partial_update"];
+        trace?: never;
+    };
     "/inventario/movimientos-inventario/": {
         parameters: {
             query?: never;
@@ -8881,12 +8985,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["inventario_movimientos-inventario_read"];
-        put: operations["inventario_movimientos-inventario_update"];
+        put?: never;
         post?: never;
-        delete: operations["inventario_movimientos-inventario_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["inventario_movimientos-inventario_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/inventario/pasos-operacion/": {
@@ -9038,6 +9142,78 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["inventario_recepciones_step_confirmar_step"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventario_reglas-reabastecimiento_list"];
+        put?: never;
+        post: operations["inventario_reglas-reabastecimiento_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/evaluar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/inventario/reglas-reabastecimiento/evaluar/ — Evalúa déficit y cantidades sugeridas. */
+        post: operations["inventario_reglas-reabastecimiento_evaluar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/{id_regla}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        get: operations["inventario_reglas-reabastecimiento_read"];
+        put: operations["inventario_reglas-reabastecimiento_update"];
+        post?: never;
+        delete: operations["inventario_reglas-reabastecimiento_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["inventario_reglas-reabastecimiento_partial_update"];
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/{id_regla}/generar-borrador/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/inventario/reglas-reabastecimiento/{pk}/generar-borrador/ — Crea borrador según ruta. */
+        post: operations["inventario_reglas-reabastecimiento_generar_borrador"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14076,6 +14252,11 @@ export interface components {
             codigo_almacen: string;
             /** Direccion */
             direccion?: string | null;
+            /**
+             * Usa ubicaciones
+             * @description Si True, habilita control de stock y transferencias por ubicación interna (opt-in).
+             */
+            usa_ubicaciones?: boolean;
             /** Referencia externa */
             referencia_externa?: string | null;
             /** Documento json */
@@ -14097,6 +14278,159 @@ export interface components {
              * Format: uuid
              */
             id_sucursal?: string | null;
+        };
+        StockUbicacion: {
+            /**
+             * Id stock ubicacion
+             * Format: uuid
+             */
+            readonly id_stock_ubicacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            readonly almacen_nombre?: string;
+            /**
+             * Id ubicacion
+             * Format: uuid
+             */
+            id_ubicacion: string;
+            /** Ubicacion codigo */
+            readonly ubicacion_codigo?: string;
+            /** Ubicacion nombre */
+            readonly ubicacion_nombre?: string;
+            /** Requiere autorizacion */
+            readonly requiere_autorizacion?: boolean;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /** Producto sku */
+            readonly producto_sku?: string | null;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Cantidad disponible
+             * Format: decimal
+             */
+            cantidad_disponible?: string;
+            /**
+             * Cantidad reservada
+             * Format: decimal
+             */
+            readonly cantidad_reservada?: string;
+            /** Cantidad libre */
+            readonly cantidad_libre?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ReservarUbicacionInput: {
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /**
+             * Id ubicacion
+             * Format: uuid
+             */
+            id_ubicacion: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /**
+             * Liberar
+             * @default false
+             */
+            liberar: boolean;
+        };
+        TransferirUbicacionInput: {
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /**
+             * Id ubicacion origen
+             * Format: uuid
+             */
+            id_ubicacion_origen: string;
+            /**
+             * Id ubicacion destino
+             * Format: uuid
+             */
+            id_ubicacion_destino: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        TransferirUbicacionResponse: {
+            origen: components["schemas"]["StockUbicacion"];
+            destino: components["schemas"]["StockUbicacion"];
+            /**
+             * Id movimiento
+             * Format: uuid
+             */
+            id_movimiento: string;
+            /** Tipo movimiento */
+            tipo_movimiento: string;
         };
         UbicacionAlmacen: {
             /**
@@ -18561,7 +18895,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T08:56:19.908838-04:00
+             * @default 2026-11-20T13:09:38.335562-04:00
              */
             fecha_despacho: string;
             /**
@@ -21716,6 +22050,80 @@ export interface components {
              */
             readonly fecha_actualizacion?: string;
         };
+        LoteProducto: {
+            /**
+             * Id lote
+             * Format: uuid
+             */
+            readonly id_lote?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /** Producto sku */
+            readonly producto_sku?: string | null;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            readonly almacen_nombre?: string;
+            /** Numero lote */
+            numero_lote: string;
+            /**
+             * Fecha fabricacion
+             * Format: date
+             */
+            fecha_fabricacion?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /**
+             * Cantidad disponible
+             * Format: decimal
+             */
+            readonly cantidad_disponible?: string;
+            /**
+             * Cantidad reservada
+             * Format: decimal
+             */
+            readonly cantidad_reservada?: string;
+            /** Cantidad libre */
+            readonly cantidad_libre?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         MovimientoInventario: {
             /**
              * Id movimiento inventario
@@ -21749,7 +22157,7 @@ export interface components {
              * Tipo movimiento
              * @enum {string}
              */
-            tipo_movimiento: "ENTRADA" | "SALIDA" | "TRANSFERENCIA" | "AJUSTE" | "CONSUMO_PRODUCCION" | "RECEPCION_COMPRA" | "DESPACHO_VENTA" | "SALIDA_INTERNA" | "RESERVA_VENTA";
+            tipo_movimiento: "ENTRADA" | "SALIDA" | "TRANSFERENCIA" | "AJUSTE" | "CONSUMO_PRODUCCION" | "RECEPCION_COMPRA" | "DESPACHO_VENTA" | "SALIDA_INTERNA" | "RESERVA_VENTA" | "TRANSFERENCIA_UBICACION";
             /**
              * Cantidad
              * Format: decimal
@@ -21794,6 +22202,25 @@ export interface components {
              * Format: uuid
              */
             id_almacen_destino?: string | null;
+            /**
+             * Id lote
+             * Format: uuid
+             */
+            id_lote?: string | null;
+            /** Lote numero */
+            readonly lote_numero?: string | null;
+            /** Numero lote */
+            numero_lote?: string;
+            /**
+             * Fecha fabricacion
+             * Format: date
+             */
+            fecha_fabricacion?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
             /**
              * Id usuario registro
              * Format: uuid
@@ -21906,6 +22333,12 @@ export interface components {
             /** Maneja seriales */
             maneja_seriales?: boolean;
             /**
+             * Estrategia salida
+             * @description Estrategia automática de descarga de lotes cuando maneja_lotes=True.
+             * @enum {string}
+             */
+            estrategia_salida?: "FIFO" | "FEFO";
+            /**
              * Es vendible
              * @description Si es False, el producto es solo-compra y no puede venderse.
              */
@@ -21961,6 +22394,201 @@ export interface components {
             id_configuracion_impuesto_venta_default?: number | null;
             /** Id configuracion impuesto compra default */
             id_configuracion_impuesto_compra_default?: number | null;
+        };
+        ReglaReabastecimiento: {
+            /**
+             * Id regla
+             * Format: uuid
+             */
+            readonly id_regla?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /** Producto sku */
+            readonly producto_sku?: string | null;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            readonly almacen_nombre?: string;
+            /**
+             * Stock minimo
+             * Format: decimal
+             */
+            stock_minimo: string;
+            /**
+             * Stock maximo
+             * Format: decimal
+             */
+            stock_maximo: string;
+            /**
+             * Cantidad multiplo
+             * Format: decimal
+             */
+            cantidad_multiplo?: string;
+            /**
+             * Ruta
+             * @enum {string}
+             */
+            ruta?: "COMPRA" | "MANUFACTURA" | "TRANSFERENCIA";
+            /**
+             * Id proveedor preferido
+             * Format: uuid
+             */
+            id_proveedor_preferido?: string | null;
+            /** Proveedor nombre */
+            readonly proveedor_nombre?: string | null;
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen?: string | null;
+            /** Almacen origen nombre */
+            readonly almacen_origen_nombre?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        EvaluarReabastecimientoInput: {
+            /**
+             * Almacen
+             * Format: uuid
+             */
+            almacen?: string | null;
+            /**
+             * Incluir ok
+             * @default false
+             */
+            incluir_ok: boolean;
+        };
+        EvaluarReabastecimientoItem: {
+            /**
+             * Id regla
+             * Format: uuid
+             */
+            id_regla: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            producto_nombre: string;
+            /** Producto sku */
+            producto_sku: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante: string | null;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            almacen_nombre: string;
+            /** Ruta */
+            ruta: string;
+            /**
+             * Id proveedor preferido
+             * Format: uuid
+             */
+            id_proveedor_preferido: string | null;
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen: string | null;
+            /** Stock disponible */
+            stock_disponible: string;
+            /** Cantidad comprometida */
+            cantidad_comprometida: string;
+            /** Cantidad en transito */
+            cantidad_en_transito: string;
+            /** Stock libre */
+            stock_libre: string;
+            /** Stock proyectado */
+            stock_proyectado: string;
+            /** Stock minimo */
+            stock_minimo: string;
+            /** Stock maximo */
+            stock_maximo: string;
+            /** Cantidad multiplo */
+            cantidad_multiplo: string;
+            /** Requiere reabastecimiento */
+            requiere_reabastecimiento: boolean;
+            /** Deficit */
+            deficit: string;
+            /** Cantidad sugerida */
+            cantidad_sugerida: string;
+        };
+        EvaluarReabastecimientoResponse: {
+            resultados: components["schemas"]["EvaluarReabastecimientoItem"][];
+        };
+        GenerarBorradorInput: {
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad?: string | null;
+            /**
+             * Fecha necesidad
+             * Format: date
+             */
+            fecha_necesidad?: string | null;
+        };
+        GenerarBorradorResponse: {
+            /** Ruta */
+            ruta: string;
+            /** Tipo documento */
+            tipo_documento: string;
+            /**
+             * Id documento
+             * Format: uuid
+             */
+            id_documento: string;
+            /** Numero */
+            numero: string;
+            /** Estado */
+            estado: string;
+            /** Cantidad */
+            cantidad: string;
+            /**
+             * Lista materiales id
+             * Format: uuid
+             */
+            lista_materiales_id?: string | null;
         };
         StockActual: {
             /**
@@ -26390,11 +27018,6 @@ export interface components {
                 "application/json": components["schemas"]["HorarioTrabajo"];
             };
         };
-        MovimientoInventario: {
-            content: {
-                "application/json": components["schemas"]["MovimientoInventario"];
-            };
-        };
         Plan: {
             content: {
                 "application/json": components["schemas"]["Plan"];
@@ -26403,6 +27026,11 @@ export interface components {
         Empresa: {
             content: {
                 "application/json": components["schemas"]["Empresa"];
+            };
+        };
+        ReglaReabastecimiento: {
+            content: {
+                "application/json": components["schemas"]["ReglaReabastecimiento"];
             };
         };
         VentaFraccionada: {
@@ -27122,6 +27750,11 @@ export interface components {
         OperacionInventario: {
             content: {
                 "application/json": components["schemas"]["OperacionInventario"];
+            };
+        };
+        LoteProducto: {
+            content: {
+                "application/json": components["schemas"]["LoteProducto"];
             };
         };
         StockActual: {
@@ -28153,6 +28786,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Almacen"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["StockUbicacion"][];
+                    };
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockUbicacion"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockUbicacion"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_reservar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReservarUbicacionInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockUbicacion"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_transferir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferirUbicacionInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferirUbicacionResponse"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Stock por Ubicación. */
+                id_stock_ubicacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockUbicacion"];
                 };
             };
         };
@@ -48238,6 +48995,102 @@ export interface operations {
             };
         };
     };
+    "inventario_lotes-producto_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["LoteProducto"][];
+                    };
+                };
+            };
+        };
+    };
+    "inventario_lotes-producto_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LoteProducto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteProducto"];
+                };
+            };
+        };
+    };
+    "inventario_lotes-producto_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Producto. */
+                id_lote: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteProducto"];
+                };
+            };
+        };
+    };
+    "inventario_lotes-producto_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lote de Producto. */
+                id_lote: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LoteProducto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteProducto"];
+                };
+            };
+        };
+    };
     "inventario_movimientos-inventario_list": {
         parameters: {
             query?: {
@@ -48278,7 +49131,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MovimientoInventario"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -48301,70 +49158,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MovimientoInventario"];
-                };
-            };
-        };
-    };
-    "inventario_movimientos-inventario_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
-                id_movimiento_inventario: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MovimientoInventario"];
-                };
-            };
-        };
-    };
-    "inventario_movimientos-inventario_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
-                id_movimiento_inventario: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "inventario_movimientos-inventario_partial_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
-                id_movimiento_inventario: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
         responses: {
             200: {
                 headers: {
@@ -48826,6 +49619,193 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ReglaReabastecimiento"][];
+                    };
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaReabastecimiento"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_evaluar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluarReabastecimientoInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluarReabastecimientoResponse"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaReabastecimiento"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaReabastecimiento"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_generar_borrador": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarBorradorInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerarBorradorResponse"];
                 };
             };
         };

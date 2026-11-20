@@ -1,7 +1,9 @@
+import uuid
 from contextvars import ContextVar
 
 from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
@@ -16,6 +18,32 @@ from .serializers import (
     SucursalSerializer,
     UsuariosSerializer,
 )
+
+
+class NulSafeFilterMixin:
+    """Rechaza bytes NUL en query params (``?search=``, ``?ordering=``, etc.) con HTTP 400."""
+
+    def filter_queryset(self, queryset):
+        request = getattr(self, "request", None)
+        if request is not None:
+            for key, values in request.query_params.lists():
+                if "\x00" in str(key):
+                    raise ValidationError({"error": "Parámetro de consulta inválido."})
+                for val in values:
+                    if isinstance(val, str) and "\x00" in val:
+                        raise ValidationError({key: "Parámetro de consulta inválido."})
+        return super().filter_queryset(queryset)
+
+
+def validar_uuid_param(valor: str, campo: str) -> str:
+    """Valida que un query param sea un UUID válido (sin NUL); si no, lanza ValidationError (400)."""
+    if "\x00" in str(valor):
+        raise ValidationError({campo: "Parámetro inválido."})
+    limpio = str(valor).strip()
+    try:
+        return str(uuid.UUID(limpio))
+    except (ValueError, TypeError) as exc:
+        raise ValidationError({campo: f"'{valor}' no es un UUID válido."}) from exc
 
 
 class BaseModelViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):

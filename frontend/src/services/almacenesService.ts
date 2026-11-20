@@ -6,6 +6,7 @@ export interface Almacen {
   nombre_almacen: string;
   codigo_almacen?: string | null;
   direccion?: string | null;
+  usa_ubicaciones?: boolean;
   activo?: boolean;
   id_empresa: string;
 }
@@ -19,6 +20,62 @@ export interface AlmacenPayload {
   nombre_almacen: string;
   codigo_almacen: string;
   direccion: string | null;
+  usa_ubicaciones?: boolean;
+}
+
+export interface StockUbicacion {
+  id_stock_ubicacion: string;
+  id_empresa: string;
+  id_almacen: string;
+  almacen_nombre?: string;
+  id_ubicacion: string;
+  ubicacion_codigo?: string;
+  ubicacion_nombre?: string;
+  requiere_autorizacion?: boolean;
+  id_producto: string;
+  producto_nombre?: string;
+  producto_sku?: string | null;
+  id_variante: string | null;
+  cantidad_disponible: string;
+  cantidad_reservada: string;
+  cantidad_libre?: string;
+  activo: boolean;
+  fecha_creacion?: string;
+  fecha_actualizacion?: string;
+}
+
+export interface StockUbicacionPayload {
+  id_almacen: string;
+  id_ubicacion: string;
+  id_producto: string;
+  id_variante?: string | null;
+  cantidad_disponible: string;
+}
+
+export interface TransferirUbicacionPayload {
+  id_almacen: string;
+  id_ubicacion_origen: string;
+  id_ubicacion_destino: string;
+  id_producto: string;
+  id_variante?: string | null;
+  cantidad: string;
+  observaciones?: string;
+}
+
+export interface TransferirUbicacionResponse {
+  origen: StockUbicacion;
+  destino: StockUbicacion;
+  id_movimiento: string;
+  tipo_movimiento: string;
+}
+
+export interface ReservarUbicacionPayload {
+  id_almacen: string;
+  id_ubicacion: string;
+  id_producto: string;
+  id_variante?: string | null;
+  cantidad: string;
+  liberar?: boolean;
 }
 
 export const almacenesService = {
@@ -47,4 +104,35 @@ export const almacenesService = {
   remove: async (id: string): Promise<void> => {
     await del<void>(`/almacenes/almacenes/${id}/`);
   },
+};
+
+const BASE_STOCK_UBIC = '/almacenes/stock-ubicaciones/';
+
+export const stockUbicacionesService = {
+  getAll: async (params?: { almacen?: string; ubicacion?: string; producto?: string }): Promise<StockUbicacion[]> => {
+    const qs = new URLSearchParams();
+    if (params?.almacen) qs.set('almacen', params.almacen);
+    if (params?.ubicacion) qs.set('ubicacion', params.ubicacion);
+    if (params?.producto) qs.set('producto', params.producto);
+    const query = qs.toString();
+    const response = await get<PaginatedResponse<StockUbicacion> | StockUbicacion[]>(
+      `${BASE_STOCK_UBIC}${query ? `?${query}` : ''}`,
+    );
+    return toList<StockUbicacion>(response);
+  },
+
+  create: async (payload: StockUbicacionPayload): Promise<StockUbicacion> =>
+    post<StockUbicacion>(BASE_STOCK_UBIC, payload as unknown as Record<string, unknown>),
+
+  transferir: async (payload: TransferirUbicacionPayload): Promise<TransferirUbicacionResponse> =>
+    post<TransferirUbicacionResponse>(
+      `${BASE_STOCK_UBIC}transferir/`,
+      payload as unknown as Record<string, unknown>,
+    ),
+
+  reservar: async (payload: ReservarUbicacionPayload): Promise<StockUbicacion> =>
+    post<StockUbicacion>(
+      `${BASE_STOCK_UBIC}reservar/`,
+      payload as unknown as Record<string, unknown>,
+    ),
 };

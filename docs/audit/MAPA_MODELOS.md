@@ -9,6 +9,7 @@
 | agentes | ConfigAgente | ✅ | ✅ | id_empresa+agente |
 | agentes | PrediccionAgente | ✅ | ✅ | — |
 | almacenes | Almacen | ✅ | ✅ | id_empresa+codigo_almacen |
+| almacenes | StockUbicacion | ✅ | ✅ | — |
 | almacenes | UbicacionAlmacen | ✅ | ✅ | id_almacen+codigo_ubicacion |
 | auditoria | LogAuditoria | ✅ | ✅ | — |
 | banca_electronica | CuentaBancariaEmpresa | ✅ | — | — |
@@ -157,12 +158,15 @@
 | inventario | CategoriaProducto | ✅ | ✅ | — |
 | inventario | ConversionUnidadMedida | ✅ | ✅ | id_producto+id_unidad_origen+id_unidad_destino |
 | inventario | DetalleRequisicion | — | ✅ | id_requisicion+id_producto |
+| inventario | LoteProducto | ✅ | ✅ | — |
 | inventario | MovimientoInventario | ✅ | ✅ | — |
+| inventario | MovimientoLote | — | ✅ | — |
 | inventario | OperacionInventario | ✅ | ✅ | id_empresa+numero |
 | inventario | OperacionInventarioLinea | — | ✅ | — |
 | inventario | OperacionInventarioPaso | — | ✅ | id_operacion+secuencia |
 | inventario | PasoOperacion | ✅ | ✅ | id_almacen+tipo_operacion+secuencia; id_almacen+tipo_operacion+nombre_paso |
 | inventario | Producto | ✅ | ✅ | id_empresa+sku |
+| inventario | ReglaReabastecimiento | ✅ | ✅ | — |
 | inventario | RequisicionInterna | ✅ | ✅ | id_empresa+numero_requisicion |
 | inventario | StockActual | ✅ | ✅ | id_producto+id_variante+id_almacen |
 | inventario | StockConsignacionCliente | ✅ | ✅ | — |
@@ -256,4 +260,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 253_
+_Total modelos: 257_

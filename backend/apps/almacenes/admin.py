@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Almacen, UbicacionAlmacen
+from .models import Almacen, StockUbicacion, UbicacionAlmacen
 
 # Register your models here.
 admin.site.register(Almacen)
@@ -10,5 +10,11 @@ admin.site.register(Almacen)
 
 @admin.register(UbicacionAlmacen)
 class UbicacionAlmacenAdmin(admin.ModelAdmin):
+    list_display = ["__str__"]
+    search_fields = ["__str__"]
+
+
+@admin.register(StockUbicacion)
+class StockUbicacionAdmin(admin.ModelAdmin):
     list_display = ["__str__"]
     search_fields = ["__str__"]
