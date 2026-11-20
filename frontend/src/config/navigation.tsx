@@ -196,7 +196,9 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       icon: <MenuBookOutlined />,
       items: [
         { label: 'Plan de Cuentas', path: '/contabilidad/plan-cuentas' },
+        { label: 'Diarios Contables', path: '/contabilidad/diarios' },
         { label: 'Asientos Contables', path: '/contabilidad/asientos' },
+        { label: 'Períodos y Cierre', path: '/contabilidad/periodos' },
         { label: 'Mapeos Contables', path: '/contabilidad/mapeos' },
       ],
     },

@@ -423,6 +423,10 @@ export const costosKeys = {
 // invalidar la familia completa tras crear cuentas, asientos o mapeos.
 export const contabilidadKeys = {
   planCuentas: () => ['contabilidad', 'plan-cuentas'] as const,
+  diariosAll: () => ['contabilidad', 'diarios'] as const,
+  diarios: (tipo?: string | null) => ['contabilidad', 'diarios', 'list', tipo ?? null] as const,
+  periodosAll: () => ['contabilidad', 'periodos'] as const,
+  periodos: (anio?: number | null) => ['contabilidad', 'periodos', 'list', anio ?? null] as const,
   asientosAll: () => ['contabilidad', 'asientos'] as const,
   asientos: (page?: number, filtros?: { estado?: string; fechaDesde?: string; fechaHasta?: string }) =>
     [

@@ -37,7 +37,9 @@
 | connect | Toque | ✅ | ✅ | — |
 | contabilidad | AsientoContable | ✅ | ✅ | id_empresa+numero_asiento |
 | contabilidad | DetalleAsiento | — | ✅ | — |
+| contabilidad | DiarioContable | ✅ | ✅ | id_empresa+codigo |
 | contabilidad | MapeoContable | ✅ | ✅ | id_empresa+tipo_asiento |
+| contabilidad | PeriodoContable | ✅ | ✅ | id_empresa+anio+mes |
 | contabilidad | PlanCuentas | ✅ | ✅ | id_empresa+codigo_cuenta |
 | control_asistencia | AsignacionHorario | — | ✅ | — |
 | control_asistencia | HorarioTrabajo | ✅ | ✅ | — |
@@ -254,4 +256,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 251_
+_Total modelos: 253_

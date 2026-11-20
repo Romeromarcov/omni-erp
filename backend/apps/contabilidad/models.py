@@ -1,6 +1,10 @@
-from apps.core.uuid import uuid7
+from typing import Any
 
 from django.db import models
+from django.db.models import Q
+
+from apps.core.base_models import OmniBaseModel
+from apps.core.uuid import uuid7
 
 
 class PlanCuentas(models.Model):
@@ -31,13 +35,80 @@ class PlanCuentas(models.Model):
         verbose_name_plural = "Planes de Cuentas"
         unique_together = [["id_empresa", "codigo_cuenta"]]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.nombre_cuenta)
+
+
+class DiarioContable(OmniBaseModel):
+    """Diario contable por empresa (patrón ``account.journal`` de Odoo)."""
+
+    TIPO_CHOICES = [
+        ("VENTAS", "Ventas"),
+        ("COMPRAS", "Compras"),
+        ("BANCO", "Banco"),
+        ("CAJA", "Caja"),
+        ("NOMINA", "Nómina"),
+        ("VARIOS", "Varios"),
+    ]
+
+    id_diario = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="diarios_contables")
+    codigo = models.CharField(max_length=20)
+    nombre = models.CharField(max_length=120)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="VARIOS")
+    prefijo_secuencia = models.CharField(max_length=20, blank=True, default="")
+    siguiente_numero = models.PositiveIntegerField(default=1)
+    cuenta_defecto_debe = models.ForeignKey(
+        "PlanCuentas", on_delete=models.SET_NULL, null=True, blank=True, related_name="diarios_debe"
+    )
+    cuenta_defecto_haber = models.ForeignKey(
+        "PlanCuentas", on_delete=models.SET_NULL, null=True, blank=True, related_name="diarios_haber"
+    )
+    id_cuenta_bancaria = models.ForeignKey(
+        "finanzas.CuentaBancariaEmpresa",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="diarios_contables",
+    )
+    id_caja = models.ForeignKey(
+        "finanzas.Caja",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="diarios_contables",
+    )
+
+    class Meta:
+        db_table = "contabilidad_diario"
+        verbose_name = "Diario Contable"
+        verbose_name_plural = "Diarios Contables"
+        unique_together = [["id_empresa", "codigo"]]
+        indexes = [models.Index(fields=["id_empresa", "tipo", "activo"])]
+        ordering = ["codigo"]
+
+    def __str__(self) -> str:
+        return f"{self.codigo} — {self.nombre}"
 
 
 class AsientoContable(models.Model):
     id_asiento = models.UUIDField(primary_key=True, default=uuid7)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
+    id_diario = models.ForeignKey(
+        "DiarioContable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asientos",
+    )
+    asiento_revertido = models.OneToOneField(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contra_asiento",
+    )
+    es_cierre = models.BooleanField(default=False)
     fecha_asiento = models.DateField()
     numero_asiento = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -66,7 +137,7 @@ class AsientoContable(models.Model):
         verbose_name_plural = "Asientos Contables"
         unique_together = [["id_empresa", "numero_asiento"]]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.numero_asiento)
 
 
@@ -74,12 +145,22 @@ class DetalleAsiento(models.Model):
     id_detalle_asiento = models.UUIDField(primary_key=True, default=uuid7)
     id_asiento = models.ForeignKey("AsientoContable", on_delete=models.CASCADE)
     id_cuenta_contable = models.ForeignKey("PlanCuentas", on_delete=models.CASCADE)
+    id_contacto = models.ForeignKey(
+        "core.Contacto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="detalles_asiento",
+    )
     debe = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
     haber = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
     descripcion_detalle = models.TextField(null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    class Meta:
+        indexes = [models.Index(fields=["id_cuenta_contable", "id_contacto"])]
+
+    def __str__(self) -> str:
         return str(self.id_asiento)
 
 
@@ -113,6 +194,13 @@ class MapeoContable(models.Model):
     id_mapeo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="mapeos_contables")
     tipo_asiento = models.CharField(max_length=30, choices=TIPOS_ASIENTO)
+    id_diario = models.ForeignKey(
+        "DiarioContable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mapeos",
+    )
     cuenta_debe = models.ForeignKey(
         "PlanCuentas",
         on_delete=models.PROTECT,
@@ -137,5 +225,60 @@ class MapeoContable(models.Model):
         verbose_name = "Mapeo Contable"
         verbose_name_plural = "Mapeos Contables"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.get_tipo_asiento_display()} — {self.id_empresa}"
+
+
+class PeriodoContable(OmniBaseModel):
+    """Período contable mensual por empresa y enlace al cierre anual."""
+
+    ESTADO_CHOICES = [
+        ("ABIERTO", "Abierto"),
+        ("CERRADO", "Cerrado"),
+    ]
+
+    id_periodo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="periodos_contables")
+    anio = models.PositiveSmallIntegerField()
+    mes = models.PositiveSmallIntegerField()
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default="ABIERTO")
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    cerrado_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="periodos_contables_cerrados",
+    )
+    asiento_cierre = models.ForeignKey(
+        "AsientoContable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="periodos_cerrados",
+    )
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "contabilidad_periodo_contable"
+        verbose_name = "Período Contable"
+        verbose_name_plural = "Períodos Contables"
+        unique_together = [["id_empresa", "anio", "mes"]]
+        constraints = [
+            models.CheckConstraint(condition=Q(mes__gte=1, mes__lte=12), name="contabilidad_periodo_mes_1_12"),
+        ]
+        ordering = ["-anio", "-mes"]
+
+    @classmethod
+    def esta_cerrado(cls, empresa: Any, anio: int, mes: int) -> bool:
+        """Retorna True si el período contable activo está cerrado para la empresa."""
+        return cls.objects.filter(
+            id_empresa=empresa,
+            anio=anio,
+            mes=mes,
+            activo=True,
+            estado="CERRADO",
+        ).exists()
+
+    def __str__(self) -> str:
+        return f"{self.anio:04d}-{self.mes:02d} ({self.estado})"

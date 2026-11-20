@@ -281,7 +281,9 @@ RLS_TABLES = {
     "configuracion_motor_parametro_sistema": "id_empresa_id",
     # contabilidad
     "contabilidad_asiento_contable": "id_empresa_id",
+    "contabilidad_diario": "id_empresa_id",
     "contabilidad_mapeo_contable": "id_empresa_id",
+    "contabilidad_periodo_contable": "id_empresa_id",
     "contabilidad_plan_cuentas": "id_empresa_id",
     # control_asistencia
     "control_asistencia_horariotrabajo": "id_empresa_id",
