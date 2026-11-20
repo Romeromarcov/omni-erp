@@ -25,6 +25,7 @@ from .views import (
     TransaccionFinancieraViewSet,
 )
 from .views_ajustes import AjusteCajaBancoViewSet
+from .views_conciliacion_pagos import AsignacionPagoViewSet, EstadoConciliacionContactoView
 from .views_extra.tasa_oficial_bcv import TasaCambioOficialBCVView
 from .views_libro_caja import LibroMaestroCajaView
 from .views_pagos_terceros import PagoTerceroViewSet
@@ -55,6 +56,7 @@ router.register(r"overrides-metodos-pago", CajaMetodoPagoOverrideViewSet)
 router.register(r"sesiones-caja", SesionCajaFisicaViewSet)
 router.register(r"pagos", PagoViewSet)
 router.register(r"pagos-terceros", PagoTerceroViewSet)
+router.register(r"asignaciones-pago", AsignacionPagoViewSet, basename="asignaciones-pago")
 
 # Aliases for frontend compatibility
 router.register(r"cuentas-bancarias", CuentaBancariaEmpresaViewSet, basename="cuentas-bancarias")
@@ -66,4 +68,9 @@ urlpatterns = [
     path("tasa-oficial-bcv/", TasaCambioOficialBCVView.as_view(), name="tasa-oficial-bcv"),
     # Capa B §6.8: libro maestro de caja (solo lectura, consolidado multimoneda)
     path("libro-maestro-caja/", LibroMaestroCajaView.as_view(), name="libro-maestro-caja"),
+    path(
+        "contactos/<uuid:id_contacto>/estado-conciliacion/",
+        EstadoConciliacionContactoView.as_view(),
+        name="contacto-estado-conciliacion",
+    ),
 ]

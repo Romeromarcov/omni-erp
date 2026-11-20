@@ -553,6 +553,8 @@
       "errorCerrar": "Error al cerrar la conciliación",
       "movConciliados": "Conciliados",
       "movPendientes": "Pendientes",
+      "conciliarPorContacto": "Conciliar por contacto",
+      "conciliarPago": "Conciliar",
       "movimientosCuenta": "Movimientos de la cuenta"
     },
     "cambioDivisa": {

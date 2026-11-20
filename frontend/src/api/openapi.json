@@ -17043,6 +17043,204 @@
             },
             "parameters": []
         },
+        "/finanzas/asignaciones-pago/": {
+            "get": {
+                "operationId": "finanzas_asignaciones-pago_list",
+                "description": "Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "pago",
+                        "in": "query",
+                        "description": "Filtrar por UUID de Pago.",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "contacto",
+                        "in": "query",
+                        "description": "Filtrar por UUID de core.Contacto.",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "tipo_documento",
+                        "in": "query",
+                        "description": "Filtrar por tipo de documento destino.",
+                        "type": "string",
+                        "enum": [
+                            "CUENTA_POR_COBRAR",
+                            "CUENTA_POR_PAGAR",
+                            "FACTURA_COMPRA",
+                            "FACTURA_VENTA"
+                        ]
+                    },
+                    {
+                        "name": "id_documento",
+                        "in": "query",
+                        "description": "Filtrar por identificador del documento destino.",
+                        "type": "string"
+                    },
+                    {
+                        "name": "estado",
+                        "in": "query",
+                        "description": "Filtrar por estado (ACTIVA | REVERTIDA).",
+                        "type": "string",
+                        "enum": [
+                            "ACTIVA",
+                            "REVERTIDA"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/AsignacionPago"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "finanzas"
+                ]
+            },
+            "post": {
+                "operationId": "finanzas_asignaciones-pago_create",
+                "description": "Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CrearAsignacionPagoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConciliarDocumentosResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "finanzas"
+                ]
+            },
+            "parameters": []
+        },
+        "/finanzas/asignaciones-pago/{id_asignacion}/": {
+            "get": {
+                "operationId": "finanzas_asignaciones-pago_read",
+                "description": "Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AsignacionPago"
+                        }
+                    }
+                },
+                "tags": [
+                    "finanzas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_asignacion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Asignación de Pago.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/finanzas/asignaciones-pago/{id_asignacion}/revertir/": {
+            "post": {
+                "operationId": "finanzas_asignaciones-pago_revertir",
+                "description": "Revierte una asignación activa, restaura saldos y emite contra-asiento.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RevertirAsignacionInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/AsignacionPago"
+                        }
+                    }
+                },
+                "tags": [
+                    "finanzas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_asignacion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Asignación de Pago.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/finanzas/cajas-fisicas-usuario/": {
             "get": {
                 "operationId": "finanzas_cajas-fisicas-usuario_list",
@@ -18390,6 +18588,43 @@
                     "required": true,
                     "type": "string",
                     "format": "uuid"
+                }
+            ]
+        },
+        "/finanzas/contactos/{id_contacto}/estado-conciliacion/": {
+            "get": {
+                "operationId": "finanzas_contactos_estado-conciliacion_list",
+                "description": "Estado unificado de pagos disponibles, obligaciones abiertas y asignaciones de un contacto.",
+                "parameters": [
+                    {
+                        "name": "tipo_operacion",
+                        "in": "query",
+                        "description": "Filtra pagos y obligaciones compatibles (INGRESO | EGRESO).",
+                        "type": "string",
+                        "enum": [
+                            "INGRESO",
+                            "EGRESO"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EstadoConciliacionContactoResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "finanzas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_contacto",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
                 }
             ]
         },
@@ -21582,6 +21817,84 @@
                 "responses": {
                     "204": {
                         "description": ""
+                    }
+                },
+                "tags": [
+                    "finanzas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_pago",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Pago.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/finanzas/pagos/{id_pago}/conciliar-documentos/": {
+            "post": {
+                "operationId": "finanzas_pagos_conciliar_documentos",
+                "description": "Aplica un ``Pago`` a 1..N documentos abiertos en una transacción atómica.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ConciliarDocumentosInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConciliarDocumentosResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "finanzas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_pago",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Pago.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/finanzas/pagos/{id_pago}/sugerir-distribucion/": {
+            "get": {
+                "operationId": "finanzas_pagos_sugerir_distribucion",
+                "description": "Propone distribución FIFO determinística del saldo disponible del pago.",
+                "parameters": [
+                    {
+                        "name": "tipo_documento",
+                        "in": "query",
+                        "description": "Opcional: restringe sugerencia FIFO a un tipo de documento.",
+                        "type": "string",
+                        "enum": [
+                            "CUENTA_POR_COBRAR",
+                            "FACTURA_VENTA",
+                            "CUENTA_POR_PAGAR",
+                            "FACTURA_COMPRA"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SugerirDistribucionResponse"
+                        }
                     }
                 },
                 "tags": [
@@ -51294,6 +51607,19 @@
                     "type": "string",
                     "format": "uuid"
                 },
+                "proveedor_nombre": {
+                    "title": "Proveedor nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": ""
+                },
+                "contacto_id": {
+                    "title": "Contacto id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
                 "id_factura_compra": {
                     "title": "Id factura compra",
                     "type": "string",
@@ -52371,6 +52697,13 @@
                     "readOnly": true,
                     "minLength": 1
                 },
+                "contacto_id": {
+                    "title": "Contacto id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
                 "saldo_pendiente": {
                     "title": "Saldo pendiente",
                     "type": "string",
@@ -52571,7 +52904,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-19T20:20:48.251973-04:00"
+                    "default": "2026-11-20T03:04:21.520476-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -52686,6 +53019,353 @@
                     "type": "string",
                     "format": "date-time",
                     "readOnly": true
+                }
+            }
+        },
+        "AsignacionPago": {
+            "type": "object",
+            "properties": {
+                "id_asignacion": {
+                    "title": "Id asignacion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_contacto": {
+                    "title": "Id contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "contacto_nombre": {
+                    "title": "Contacto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": ""
+                },
+                "id_pago": {
+                    "title": "Id pago",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "pago_referencia": {
+                    "title": "Pago referencia",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "enum": [
+                        "CUENTA_POR_COBRAR",
+                        "CUENTA_POR_PAGAR",
+                        "FACTURA_VENTA",
+                        "FACTURA_COMPRA"
+                    ],
+                    "readOnly": true
+                },
+                "id_documento": {
+                    "title": "Id documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_cxc": {
+                    "title": "Id cxc",
+                    "type": "integer",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_cxp": {
+                    "title": "Id cxp",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_factura_venta": {
+                    "title": "Id factura venta",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_factura_compra": {
+                    "title": "Id factura compra",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_abono_cxc": {
+                    "title": "Id abono cxc",
+                    "type": "integer",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_abono_cxp": {
+                    "title": "Id abono cxp",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "monto_asignado_pago": {
+                    "title": "Monto asignado pago",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "monto_asignado_documento": {
+                    "title": "Monto asignado documento",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "id_moneda_documento": {
+                    "title": "Id moneda documento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "moneda_documento_codigo": {
+                    "title": "Moneda documento codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": ""
+                },
+                "tasa_aplicada": {
+                    "title": "Tasa aplicada",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "diferencia_cambiaria": {
+                    "title": "Diferencia cambiaria",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "tipo_diferencia": {
+                    "title": "Tipo diferencia",
+                    "type": "string",
+                    "enum": [
+                        "",
+                        "GANANCIA",
+                        "PERDIDA"
+                    ],
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "ACTIVA",
+                        "REVERTIDA"
+                    ],
+                    "readOnly": true
+                },
+                "fecha_aplicacion": {
+                    "title": "Fecha aplicacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_reversion": {
+                    "title": "Fecha reversion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "motivo_reversion": {
+                    "title": "Motivo reversion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_asiento": {
+                    "title": "Id asiento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_asiento_reversion": {
+                    "title": "Id asiento reversion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_usuario_registro": {
+                    "title": "Id usuario registro",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "referencia_externa": {
+                    "title": "Referencia externa",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "LineaConciliacionInput": {
+            "required": [
+                "tipo_documento",
+                "id_documento",
+                "monto_asignado_pago"
+            ],
+            "type": "object",
+            "properties": {
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "enum": [
+                        "CUENTA_POR_COBRAR",
+                        "CUENTA_POR_PAGAR",
+                        "FACTURA_VENTA",
+                        "FACTURA_COMPRA"
+                    ]
+                },
+                "id_documento": {
+                    "title": "Id documento",
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 1
+                },
+                "monto_asignado_pago": {
+                    "title": "Monto asignado pago",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "monto_asignado_documento": {
+                    "title": "Monto asignado documento",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "tasa_aplicada": {
+                    "title": "Tasa aplicada",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "tasa_original": {
+                    "title": "Tasa original",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "tasa_liquidacion": {
+                    "title": "Tasa liquidacion",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "moneda_documento": {
+                    "title": "Moneda documento",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 36,
+                    "x-nullable": true
+                },
+                "referencia_externa": {
+                    "title": "Referencia externa",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 100
+                }
+            }
+        },
+        "CrearAsignacionPagoInput": {
+            "required": [
+                "asignaciones",
+                "pago"
+            ],
+            "type": "object",
+            "properties": {
+                "asignaciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LineaConciliacionInput"
+                    }
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 255
+                },
+                "generar_asiento": {
+                    "title": "Generar asiento",
+                    "type": "boolean",
+                    "default": true
+                },
+                "pago": {
+                    "title": "Pago",
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
+        "ConciliarDocumentosResponse": {
+            "type": "object",
+            "properties": {
+                "pago_id": {
+                    "title": "Pago id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "saldo_disponible": {
+                    "title": "Saldo disponible",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "asignaciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AsignacionPago"
+                    },
+                    "readOnly": true
+                }
+            }
+        },
+        "RevertirAsignacionInput": {
+            "type": "object",
+            "properties": {
+                "motivo": {
+                    "title": "Motivo",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 255
                 }
             }
         },
@@ -53122,6 +53802,241 @@
                         "format": "uuid"
                     },
                     "uniqueItems": true
+                }
+            }
+        },
+        "ContactoResumenConciliacion": {
+            "type": "object",
+            "properties": {
+                "id_contacto": {
+                    "title": "Id contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "rif": {
+                    "title": "Rif",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": ""
+                },
+                "es_cliente": {
+                    "title": "Es cliente",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "es_proveedor": {
+                    "title": "Es proveedor",
+                    "type": "boolean",
+                    "readOnly": true
+                }
+            }
+        },
+        "SaldoMonedaConciliacion": {
+            "type": "object",
+            "properties": {
+                "moneda_id": {
+                    "title": "Moneda id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "codigo_iso": {
+                    "title": "Codigo iso",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "simbolo": {
+                    "title": "Simbolo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "INGRESO": {
+                    "title": "Ingreso",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "EGRESO": {
+                    "title": "Egreso",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cantidad_pagos": {
+                    "title": "Cantidad pagos",
+                    "type": "integer",
+                    "readOnly": true
+                }
+            }
+        },
+        "SaldoAFavorResumen": {
+            "type": "object",
+            "properties": {
+                "total_por_moneda": {
+                    "title": "Total por moneda",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/SaldoMonedaConciliacion"
+                    },
+                    "readOnly": true
+                },
+                "total_pagos_con_saldo": {
+                    "title": "Total pagos con saldo",
+                    "type": "integer",
+                    "readOnly": true
+                }
+            }
+        },
+        "PagoDisponibleConciliacion": {
+            "type": "object",
+            "properties": {
+                "id_pago": {
+                    "title": "Id pago",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "fecha_pago": {
+                    "title": "Fecha pago",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "tipo_operacion": {
+                    "title": "Tipo operacion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "monto": {
+                    "title": "Monto",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_disponible": {
+                    "title": "Saldo disponible",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "moneda_codigo": {
+                    "title": "Moneda codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "referencia": {
+                    "title": "Referencia",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": ""
+                },
+                "tasa": {
+                    "title": "Tasa",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
+        "ObligacionAbiertaConciliacion": {
+            "type": "object",
+            "properties": {
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_documento": {
+                    "title": "Id documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_documento": {
+                    "title": "Numero documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_emision": {
+                    "title": "Fecha emision",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "monto_total": {
+                    "title": "Monto total",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_pendiente": {
+                    "title": "Saldo pendiente",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "moneda_codigo": {
+                    "title": "Moneda codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                }
+            }
+        },
+        "EstadoConciliacionContactoResponse": {
+            "type": "object",
+            "properties": {
+                "contacto": {
+                    "$ref": "#/definitions/ContactoResumenConciliacion"
+                },
+                "saldo_a_favor": {
+                    "$ref": "#/definitions/SaldoAFavorResumen"
+                },
+                "pagos_disponibles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PagoDisponibleConciliacion"
+                    },
+                    "readOnly": true
+                },
+                "obligaciones_abiertas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ObligacionAbiertaConciliacion"
+                    },
+                    "readOnly": true
+                },
+                "asignaciones_activas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AsignacionPago"
+                    },
+                    "readOnly": true
                 }
             }
         },
@@ -54434,6 +55349,174 @@
                     "type": "string",
                     "format": "uuid",
                     "x-nullable": true
+                }
+            }
+        },
+        "ConciliarDocumentosInput": {
+            "required": [
+                "asignaciones"
+            ],
+            "type": "object",
+            "properties": {
+                "asignaciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LineaConciliacionInput"
+                    }
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 255
+                },
+                "generar_asiento": {
+                    "title": "Generar asiento",
+                    "type": "boolean",
+                    "default": true
+                }
+            }
+        },
+        "PropuestaDistribucionItem": {
+            "type": "object",
+            "properties": {
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_documento": {
+                    "title": "Id documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "referencia": {
+                    "title": "Referencia",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": ""
+                },
+                "fecha_emision": {
+                    "title": "Fecha emision",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "moneda_documento": {
+                    "title": "Moneda documento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "moneda_documento_codigo": {
+                    "title": "Moneda documento codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "saldo_pendiente_documento": {
+                    "title": "Saldo pendiente documento",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "tasa_aplicada": {
+                    "title": "Tasa aplicada",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "monto_asignado_pago": {
+                    "title": "Monto asignado pago",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "monto_asignado_documento": {
+                    "title": "Monto asignado documento",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
+        "OmitidaSinTasa": {
+            "type": "object",
+            "properties": {
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_documento": {
+                    "title": "Id documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_codigo": {
+                    "title": "Moneda codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "motivo": {
+                    "title": "Motivo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                }
+            }
+        },
+        "SugerirDistribucionResponse": {
+            "type": "object",
+            "properties": {
+                "pago_id": {
+                    "title": "Pago id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "saldo_disponible": {
+                    "title": "Saldo disponible",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "propuestas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PropuestaDistribucionItem"
+                    },
+                    "readOnly": true
+                },
+                "total_a_aplicar": {
+                    "title": "Total a aplicar",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_a_favor_resultante": {
+                    "title": "Saldo a favor resultante",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "omitidas_sin_tasa": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/OmitidaSinTasa"
+                    },
+                    "readOnly": true
                 }
             }
         },
@@ -61971,6 +63054,13 @@
                 },
                 "id_pago_conciliado": {
                     "title": "Id pago conciliado",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "pago_contacto_id": {
+                    "title": "Pago contacto id",
                     "type": "string",
                     "format": "uuid",
                     "readOnly": true,

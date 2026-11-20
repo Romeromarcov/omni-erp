@@ -1324,6 +1324,16 @@ class PagoSerializer(serializers.ModelSerializer):
                     {"id_contacto": "El contacto debe pertenecer a la misma empresa del pago."}
                 )
 
+        if (
+            self.instance is not None
+            and "id_contacto" in attrs
+            and (contacto.pk if contacto is not None else None) != self.instance.id_contacto_id
+            and self.instance.asignaciones.filter(estado="ACTIVA", activo=True).exists()
+        ):
+            raise serializers.ValidationError(
+                {"id_contacto": "No se puede cambiar el contacto de un pago que ya tiene asignaciones activas."}
+            )
+
         # R-CODE-1: toda FK documental poblada (o preservada en instance durante PATCH/PUT)
         # debe pertenecer a la empresa resuelta del pago; evita ValueError -> HTTP 500
         # cuando un usuario de matriz envía documentos de una subsidiaria visible.

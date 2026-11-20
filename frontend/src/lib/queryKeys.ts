@@ -231,6 +231,18 @@ export const finanzasKeys = {
   },
   metodosPagoEmpresaActivas: (empresaId?: string | null) =>
     ['finanzas', 'metodos-pago-empresa-activas', empresaId ?? null] as const,
+  conciliacionContactoAll: () => ['finanzas', 'conciliacion-contacto'] as const,
+  conciliacionContacto: (
+    contactoId: string,
+    tipoOperacion?: 'INGRESO' | 'EGRESO' | '' | null,
+  ) =>
+    [
+      'finanzas',
+      'conciliacion-contacto',
+      contactoId,
+      tipoOperacion || null,
+    ] as const,
+  asignacionesPagoAll: () => ['finanzas', 'asignaciones-pago'] as const,
 };
 
 // ── Compras (workstream F) ────────────────────────────────────────────────────

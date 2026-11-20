@@ -6,12 +6,16 @@ Herramientas expuestas:
   finanzas_get_saldo_caja              — saldo actual de una caja física
   finanzas_get_metodos_pago            — lista métodos de pago disponibles
   finanzas_pagos_terceros_pendientes   — pagos de terceros (Zelle) por gestionar
+  finanzas_get_saldos_favor_contacto   — saldos a favor / anticipos de un contacto
+  finanzas_conciliar_pago_multiple     — aplica un pago a 1..N documentos en lote atómico
+  finanzas_revertir_asignacion_pago    — revierte una asignación activa con contra-asiento
 """
 
 import logging
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.finanzas")
@@ -214,6 +218,222 @@ def finanzas_pagos_terceros_pendientes(
         ]
 
 
+def _parse_decimal_mcp(valor: Any, campo: str) -> Decimal:
+    if valor is None or isinstance(valor, bool):
+        raise ValueError(f"El campo '{campo}' debe ser numérico.")
+    try:
+        dec = valor if isinstance(valor, Decimal) else Decimal(str(valor).strip())
+    except (InvalidOperation, ValueError, TypeError) as exc:
+        raise ValueError(f"Valor numérico inválido para '{campo}': {valor!r}.") from exc
+    if not dec.is_finite():
+        raise ValueError(f"El valor de '{campo}' debe ser finito.")
+    return dec
+
+
+def finanzas_get_saldos_favor_contacto(
+    capability_token: str,
+    empresa_id: str,
+    contacto_id: str,
+    tipo_operacion: str = "",
+) -> dict:
+    """
+    Consulta los saldos a favor / anticipos disponibles de un ``core.Contacto``.
+
+    Scope requerido: ``finanzas:read``
+    """
+    from apps.core.models import Contacto, Empresa  # noqa: PLC0415
+    from apps.finanzas.services_conciliacion_pagos import (  # noqa: PLC0415
+        ConciliacionPagoError,
+        saldo_a_favor_contacto,
+    )
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            contacto_uuid = uuid.UUID(str(contacto_id))
+        except (ValueError, TypeError):
+            return {"error": f"contacto_id inválido: {contacto_id!r}."}
+
+        empresa = Empresa.objects.filter(id_empresa=empresa_id, activo=True).first()
+        if empresa is None:
+            return {"error": "Empresa no encontrada o inactiva."}
+
+        contacto = Contacto.objects.filter(pk=contacto_uuid, id_empresa=empresa).first()
+        if contacto is None:
+            return {"error": f"Contacto {contacto_id} no encontrado en la empresa."}
+
+        tipo_op = tipo_operacion.strip() if tipo_operacion else None
+        try:
+            resumen = saldo_a_favor_contacto(empresa, contacto, tipo_operacion=tipo_op)
+        except ConciliacionPagoError as exc:
+            return {"error": str(exc)}
+
+        pagos_serializados = [
+            {
+                **p,
+                "fecha_pago": p["fecha_pago"].isoformat()
+                if hasattr(p["fecha_pago"], "isoformat")
+                else str(p["fecha_pago"]),
+            }
+            for p in resumen["pagos_con_saldo"]
+        ]
+        logger.info(
+            "finanzas_get_saldos_favor_contacto | actor=%s | tenant=%s | contacto=%s | pagos=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            contacto_id,
+            len(pagos_serializados),
+        )
+        return {
+            "empresa_id": resumen["empresa_id"],
+            "contacto_id": resumen["contacto_id"],
+            "tipo_operacion": resumen["tipo_operacion"],
+            "total_por_moneda": resumen["total_por_moneda"],
+            "por_operacion": resumen["por_operacion"],
+            "pagos_con_saldo": pagos_serializados,
+        }
+
+
+def finanzas_conciliar_pago_multiple(
+    capability_token: str,
+    empresa_id: str,
+    pago_id: str,
+    asignaciones: list[dict],
+    descripcion: str = "",
+) -> dict:
+    """
+    Aplica un ``Pago`` a 1..N facturas/obligaciones del mismo ``core.Contacto``.
+
+    Scope requerido: ``finanzas:write``
+    """
+    from apps.finanzas.models import Pago  # noqa: PLC0415
+    from apps.finanzas.services_conciliacion_pagos import (  # noqa: PLC0415
+        ConciliacionPagoError,
+        aplicar_pago_a_documentos,
+        saldo_disponible_pago,
+    )
+
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        try:
+            pago_uuid = uuid.UUID(str(pago_id))
+        except (ValueError, TypeError):
+            return {"error": f"pago_id inválido: {pago_id!r}."}
+
+        if not isinstance(asignaciones, list) or not asignaciones:
+            return {"error": "Debe indicar una lista no vacía de asignaciones."}
+
+        pago = (
+            Pago.objects.select_related("id_empresa", "id_contacto", "id_moneda")
+            .filter(pk=pago_uuid, id_empresa=empresa_id)
+            .first()
+        )
+        if pago is None:
+            return {"error": f"Pago {pago_id} no encontrado en la empresa."}
+
+        items_parseados: list[dict[str, Any]] = []
+        try:
+            for idx, item in enumerate(asignaciones):
+                if not isinstance(item, dict):
+                    return {"error": f"El elemento {idx} de asignaciones debe ser un objeto."}
+                normalizado = dict(item)
+                normalizado["monto_asignado_pago"] = _parse_decimal_mcp(
+                    item.get("monto_asignado_pago"),
+                    "monto_asignado_pago",
+                )
+                for campo_opt in ("monto_asignado_documento", "tasa_aplicada", "tasa_original", "tasa_liquidacion"):
+                    if item.get(campo_opt) not in (None, ""):
+                        normalizado[campo_opt] = _parse_decimal_mcp(item.get(campo_opt), campo_opt)
+                items_parseados.append(normalizado)
+        except ValueError as exc:
+            return {"error": str(exc)}
+
+        try:
+            creadas = aplicar_pago_a_documentos(
+                pago,
+                items_parseados,
+                descripcion=descripcion,
+            )
+        except ConciliacionPagoError as exc:
+            return {"error": str(exc)}
+
+        saldo_restante = saldo_disponible_pago(pago)
+        logger.info(
+            "finanzas_conciliar_pago_multiple | actor=%s | tenant=%s | pago=%s | creadas=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            pago_id,
+            len(creadas),
+        )
+        return {
+            "pago_id": str(pago.pk),
+            "asignaciones_creadas": [
+                {
+                    "id_asignacion": str(a.pk),
+                    "tipo_documento": a.tipo_documento,
+                    "id_documento": a.id_documento,
+                    "monto_asignado_pago": a.monto_asignado_pago,
+                    "monto_asignado_documento": a.monto_asignado_documento,
+                    "diferencia_cambiaria": a.diferencia_cambiaria,
+                    "tipo_diferencia": a.tipo_diferencia,
+                    "estado": a.estado,
+                }
+                for a in creadas
+            ],
+            "saldo_disponible": saldo_restante,
+        }
+
+
+def finanzas_revertir_asignacion_pago(
+    capability_token: str,
+    empresa_id: str,
+    asignacion_id: str,
+    motivo: str | None = "",
+) -> dict:
+    """
+    Revierte una ``AsignacionPago`` activa, restaura saldos y emite contra-asiento.
+
+    Scope requerido: ``finanzas:write``
+    """
+    from apps.finanzas.models import AsignacionPago  # noqa: PLC0415
+    from apps.finanzas.services_conciliacion_pagos import (  # noqa: PLC0415
+        ConciliacionPagoError,
+        revertir_asignacion_pago,
+        saldo_disponible_pago,
+    )
+
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        try:
+            asig_uuid = uuid.UUID(str(asignacion_id))
+        except (ValueError, TypeError):
+            return {"error": f"asignacion_id inválido: {asignacion_id!r}."}
+
+        asignacion = (
+            AsignacionPago.objects.select_related("id_pago").filter(pk=asig_uuid, id_empresa=empresa_id).first()
+        )
+        if asignacion is None:
+            return {"error": f"AsignacionPago {asignacion_id} no encontrada en la empresa."}
+
+        try:
+            revertida = revertir_asignacion_pago(asignacion, motivo=str(motivo or ""))
+        except ConciliacionPagoError as exc:
+            return {"error": str(exc)}
+
+        saldo_pago = saldo_disponible_pago(revertida.id_pago)
+        logger.info(
+            "finanzas_revertir_asignacion_pago | actor=%s | tenant=%s | asignacion=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            asignacion_id,
+        )
+        return {
+            "id_asignacion": str(revertida.pk),
+            "estado": revertida.estado,
+            "pago_id": str(revertida.id_pago_id),
+            "saldo_disponible_pago": saldo_pago,
+            "fecha_reversion": revertida.fecha_reversion.isoformat() if revertida.fecha_reversion else None,
+            "motivo_reversion": revertida.motivo_reversion,
+        }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-discovery
 # ─────────────────────────────────────────────────────────────────────────────
@@ -238,5 +458,20 @@ MCP_TOOLS: List[Dict[str, Any]] = [
         "fn": finanzas_pagos_terceros_pendientes,
         "name": "finanzas_pagos_terceros_pendientes",
         "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": finanzas_get_saldos_favor_contacto,
+        "name": "finanzas_get_saldos_favor_contacto",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": finanzas_conciliar_pago_multiple,
+        "name": "finanzas_conciliar_pago_multiple",
+        "scope": f"{_SCOPE}:write",
+    },
+    {
+        "fn": finanzas_revertir_asignacion_pago,
+        "name": "finanzas_revertir_asignacion_pago",
+        "scope": f"{_SCOPE}:write",
     },
 ]
