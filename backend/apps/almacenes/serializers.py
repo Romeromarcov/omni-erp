@@ -32,6 +32,12 @@ class AlmacenSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        if self.instance is not None and "id_empresa" in attrs:
+            nueva_emp = attrs["id_empresa"]
+            if nueva_emp is None or nueva_emp.pk != self.instance.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_empresa": "No se puede cambiar la empresa de un almacén existente."}
+                )
         emp = attrs["id_empresa"] if "id_empresa" in attrs else getattr(self.instance, "id_empresa", None)
         empresa_ref = str(emp.pk) if emp is not None else empresa_efectiva_contexto(self)
         visibles = empresas_visibles_contexto(self)
@@ -81,6 +87,12 @@ class UbicacionAlmacenSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        if self.instance is not None and "id_empresa" in attrs:
+            nueva_emp = attrs["id_empresa"]
+            if nueva_emp is None or nueva_emp.pk != self.instance.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_empresa": "No se puede cambiar la empresa de una ubicación existente."}
+                )
         emp = attrs["id_empresa"] if "id_empresa" in attrs else getattr(self.instance, "id_empresa", None)
         empresa_ref = str(emp.pk) if emp is not None else empresa_efectiva_contexto(self)
         visibles = empresas_visibles_contexto(self)
@@ -88,6 +100,15 @@ class UbicacionAlmacenSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"id_empresa": "Empresa fuera de su alcance."})
 
         almacen = attrs["id_almacen"] if "id_almacen" in attrs else getattr(self.instance, "id_almacen", None)
+        if (
+            self.instance is not None
+            and "id_almacen" in attrs
+            and (almacen is None or almacen.pk != self.instance.id_almacen_id)
+            and StockUbicacion.objects.filter(id_ubicacion=self.instance).exists()
+        ):
+            raise serializers.ValidationError(
+                {"id_almacen": "No se puede cambiar el almacén de una ubicación que ya posee stock registrado."}
+            )
         validar_fk_empresa(almacen, "id_almacen", empresa_ref, visibles, etiqueta="Almacén")
 
         codigo = attrs.get("codigo_ubicacion", getattr(self.instance, "codigo_ubicacion", None))
@@ -204,7 +225,6 @@ class TransferirUbicacionInputSerializer(serializers.Serializer):
     id_producto = serializers.UUIDField()
     id_variante = serializers.UUIDField(required=False, allow_null=True)
     cantidad = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal("0.0001"))
-    id_autorizado_por = serializers.UUIDField(required=False, allow_null=True)
     observaciones = serializers.CharField(required=False, allow_blank=True, default="")
 
 

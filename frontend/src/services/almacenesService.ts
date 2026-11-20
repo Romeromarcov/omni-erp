@@ -59,7 +59,6 @@ export interface TransferirUbicacionPayload {
   id_producto: string;
   id_variante?: string | null;
   cantidad: string;
-  id_autorizado_por?: string | null;
   observaciones?: string;
 }
 

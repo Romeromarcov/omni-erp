@@ -338,6 +338,85 @@ describe('UbicacionesAlmacenPage Stock por Ubicación y Autorización', () => {
     });
   });
 
+  it('conserva id_variante, resuelve fallback de almacén con || y rechaza inputs no numéricos', async () => {
+    const stockConVariante = { ...stockUbic1, id_stock_ubicacion: 'su-var', id_variante: 'var-1' };
+    vi.mocked(get).mockImplementation(async (url: string) => {
+      if (url.startsWith('/almacenes/almacenes/')) return { results: [almSimple, almZonificado] };
+      if (url.startsWith('/almacenes/ubicaciones-almacen/')) return { results: [ubicPick, ubicCuarentena] };
+      if (url.startsWith('/almacenes/stock-ubicaciones/')) return { results: [stockConVariante] };
+      if (url.startsWith('/inventario/productos/')) return { results: [producto1] };
+      return { results: [] };
+    });
+    vi.mocked(post).mockResolvedValue(stockConVariante);
+
+    wrap(<UbicacionesAlmacenPage />);
+    fireEvent.click(await screen.findByRole('tab', { name: 'Stock por Ubicación' }));
+    expect(await screen.findByText(/Resina Epóxica/)).toBeInTheDocument();
+
+    // Transferir global con filtroAlmacen === '' selecciona almZonificado (el primer almacén con usa_ubicaciones=true)
+    fireEvent.click(screen.getByRole('button', { name: /Transferir entre ubicaciones/i }));
+    const dialogGlobal = await screen.findByRole('dialog');
+    expect(within(dialogGlobal).getByLabelText(/Almacén \(con ubicaciones\)/i)).toHaveTextContent('Almacén Zonificado');
+    fireEvent.click(within(dialogGlobal).getByRole('button', { name: /Cancelar/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // Carga inicial rechaza 'abc' sin llamar a post
+    fireEvent.click(screen.getByRole('button', { name: /Carga inicial/i }));
+    const dialogCarga = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialogCarga).getByLabelText(/^Ubicación$/i));
+    fireEvent.click(await screen.findByRole('option', { name: /A-01 — Picking A1/i }));
+    fireEvent.mouseDown(within(dialogCarga).getByLabelText(/^Producto$/i));
+    fireEvent.click(await screen.findByRole('option', { name: /Resina Epóxica/i }));
+    fireEvent.change(within(dialogCarga).getByLabelText(/Cantidad disponible/i), { target: { value: 'abc' } });
+    fireEvent.click(within(dialogCarga).getByRole('button', { name: /^Guardar$/i }));
+    expect(await screen.findByText(/cantidad disponible numérica/i)).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+    fireEvent.click(within(dialogCarga).getByRole('button', { name: /Cancelar/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // Transferir desde fila con id_variante: valida 'abc' y propaga id_variante al enviar valor válido
+    fireEvent.click(screen.getByRole('button', { name: /^Transferir$/i }));
+    const dialogT = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialogT).getByLabelText(/Ubicación destino/i));
+    fireEvent.click(await screen.findByRole('option', { name: /C-01 — Bóveda Cuarentena/i }));
+    fireEvent.change(within(dialogT).getByLabelText(/^Cantidad$/i), { target: { value: 'abc' } });
+    fireEvent.click(within(dialogT).getByRole('button', { name: /Confirmar transferencia/i }));
+    expect(await screen.findByText(/cantidad numérica válida/i)).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialogT).getByLabelText(/^Cantidad$/i), { target: { value: '3' } });
+    fireEvent.click(within(dialogT).getByRole('button', { name: /Confirmar transferencia/i }));
+    await waitFor(() => {
+      expect(post).toHaveBeenCalledWith(
+        '/almacenes/stock-ubicaciones/transferir/',
+        expect.objectContaining({
+          id_variante: 'var-1',
+          cantidad: '3',
+        })
+      );
+    });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // Reservar desde fila con id_variante: rechaza 'abc' y propaga id_variante al corregir
+    fireEvent.click(screen.getByRole('button', { name: /Reservar \/ Liberar/i }));
+    const dialogR = await screen.findByRole('dialog');
+    fireEvent.change(within(dialogR).getByLabelText(/^Cantidad$/i), { target: { value: 'abc' } });
+    fireEvent.click(within(dialogR).getByRole('button', { name: /Aplicar/i }));
+    expect(await screen.findByText(/cantidad numérica válida/i)).toBeInTheDocument();
+
+    fireEvent.change(within(dialogR).getByLabelText(/^Cantidad$/i), { target: { value: '2' } });
+    fireEvent.click(within(dialogR).getByRole('button', { name: /Aplicar/i }));
+    await waitFor(() => {
+      expect(post).toHaveBeenCalledWith(
+        '/almacenes/stock-ubicaciones/reservar/',
+        expect.objectContaining({
+          id_variante: 'var-1',
+          cantidad: '2',
+        })
+      );
+    });
+  });
+
   it('muestra alerta informativa cuando el almacén seleccionado no tiene usa_ubicaciones', async () => {
     vi.mocked(get).mockImplementation(async (url: string) => {
       if (url.startsWith('/almacenes/almacenes/')) return { results: [almSimple] };
@@ -487,6 +566,17 @@ describe('InventarioMaestrosPage Tabs Reabastecimiento y Lotes', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Generar borrador/i }));
     expect(await screen.findByText(/REQ-0099/)).toBeInTheDocument();
+
+    // ReglasReabastecimiento rechaza texto no numérico ('abc') sin llamar a post
+    fireEvent.click(screen.getByRole('button', { name: /Nueva regla/i }));
+    const dialogRegla = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialogRegla).getByLabelText(/Producto/i));
+    fireEvent.click(await screen.findByRole('option', { name: /Resina Epóxica/i }));
+    fireEvent.mouseDown(within(dialogRegla).getByLabelText(/Almacén/i));
+    fireEvent.click(await screen.findByRole('option', { name: /Almacén Zonificado/i }));
+    fireEvent.change(within(dialogRegla).getByLabelText(/Stock mínimo/i), { target: { value: 'abc' } });
+    fireEvent.click(within(dialogRegla).getByRole('button', { name: /^Guardar$/i }));
+    expect(await screen.findByText(/valores numéricos válidos/i)).toBeInTheDocument();
   });
 
   it('Tab Lotes muestra badges de vencimiento y filtra Por vencer <= 30d', async () => {

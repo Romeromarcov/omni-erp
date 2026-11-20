@@ -70,6 +70,19 @@ def _validar_contexto_ubicacion(
         raise UbicacionOperacionError("La variante no pertenece al producto indicado.")
 
 
+def _es_supervisor_valido(user, empresa) -> bool:
+    """Valida si ``user`` está activo y facultado para autorizar traslados restringidos en ``empresa``."""
+    if user is None or not getattr(user, "is_active", False):
+        return False
+    if getattr(user, "es_superusuario_omni", False) or getattr(user, "is_superuser", False):
+        return True
+    if getattr(user, "is_staff", False):
+        from apps.core.viewsets import get_empresas_visible  # noqa: PLC0415
+
+        return get_empresas_visible(user).filter(pk=empresa.pk).exists()
+    return False
+
+
 @transaction.atomic
 def transferir_entre_ubicaciones(
     *,
@@ -85,8 +98,8 @@ def transferir_entre_ubicaciones(
     observaciones: str = "",
 ) -> tuple[StockUbicacion, StockUbicacion, MovimientoInventario]:
     """Transfiere stock entre dos ubicaciones de un mismo almacén con ``usa_ubicaciones=True``."""
-    if usuario is None:
-        raise UbicacionOperacionError("El usuario solicitante es obligatorio.")
+    if usuario is None or not getattr(usuario, "is_active", False):
+        raise UbicacionOperacionError("El usuario solicitante es obligatorio y debe estar activo.")
 
     _validar_contexto_ubicacion(
         empresa=empresa,
@@ -109,21 +122,12 @@ def transferir_entre_ubicaciones(
 
     cantidad_dec = _parse_decimal_positivo(cantidad, "cantidad")
 
-    if ubicacion_origen.requiere_autorizacion or ubicacion_destino.requiere_autorizacion:
-        if autorizado_por is not None:
-            autorizado_valido = (
-                autorizado_por.empresas.filter(pk=empresa.pk).exists()
-                or getattr(autorizado_por, "is_staff", False)
-                or getattr(autorizado_por, "is_superuser", False)
-            )
-            if not autorizado_valido:
-                raise AutorizacionUbicacionError(
-                    "El usuario autorizador no pertenece a la empresa ni tiene permisos de supervisor."
-                )
-        elif not (getattr(usuario, "is_staff", False) or getattr(usuario, "is_superuser", False)):
-            raise AutorizacionUbicacionError(
-                "Una de las ubicaciones requiere autorización de supervisor (autorizado_por o usuario staff)."
-            )
+    requiere_aut = bool(ubicacion_origen.requiere_autorizacion or ubicacion_destino.requiere_autorizacion)
+    autorizador = autorizado_por if autorizado_por is not None else usuario
+    if requiere_aut and not _es_supervisor_valido(autorizador, empresa):
+        raise AutorizacionUbicacionError(
+            "Una de las ubicaciones requiere autorización de un supervisor activo (usuario staff de la empresa o superusuario)."
+        )
 
     orig_obj = StockUbicacion.objects.filter(
         id_empresa=empresa,
@@ -171,6 +175,9 @@ def transferir_entre_ubicaciones(
 
     obs_limpia = (observaciones or "").strip()
     traza = f"Ubicación {ubicacion_origen.codigo_ubicacion} -> {ubicacion_destino.codigo_ubicacion}"
+    if requiere_aut:
+        nombre_aut = getattr(autorizador, "username", None) or str(autorizador.pk)
+        traza = f"{traza} (autorizado por {nombre_aut})"
     obs_final = f"{traza} | {obs_limpia}" if obs_limpia else traza
     movimiento = registrar_movimiento(
         empresa=empresa,

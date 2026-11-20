@@ -1,11 +1,9 @@
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
-from apps.core.models import Usuarios
 from apps.core.viewsets import (
     BaseModelViewSet,
     EmpresaInjectMixin,
@@ -131,12 +129,6 @@ class StockUbicacionViewSet(NulSafeFilterMixin, EmpresaInjectMixin, BaseModelVie
         if orig_ub is None or dest_ub is None:
             return Response({"detail": "Ubicación origen o destino no encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
-        autorizado_por = None
-        if datos.get("id_autorizado_por"):
-            autorizado_por = Usuarios.objects.filter(pk=datos["id_autorizado_por"]).first()
-            if autorizado_por is None:
-                raise ValidationError({"id_autorizado_por": "Usuario autorizador no encontrado."})
-
         try:
             orig, dest, mov = transferir_entre_ubicaciones(
                 empresa=almacen.id_empresa,
@@ -147,7 +139,7 @@ class StockUbicacionViewSet(NulSafeFilterMixin, EmpresaInjectMixin, BaseModelVie
                 variante=variante,
                 cantidad=datos["cantidad"],
                 usuario=request.user,
-                autorizado_por=autorizado_por,
+                autorizado_por=None,
                 observaciones=datos.get("observaciones", ""),
             )
         except AutorizacionUbicacionError as exc:

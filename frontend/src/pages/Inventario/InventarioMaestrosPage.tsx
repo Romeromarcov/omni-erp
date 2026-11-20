@@ -52,7 +52,7 @@ import { clientesService } from '../../services/clientesService';
 import { proveedoresService } from '../../services/proveedoresService';
 import { fetchMonedas } from '../../services/monedas';
 import { inventarioMaestrosKeys, finanzasKeys, almacenesKeys } from '../../lib/queryKeys';
-import { D } from '../../lib/decimal';
+import { D, parseDecimalStrict } from '../../lib/decimal';
 import { getEmpresaId } from '../../utils/empresa';
 import { mensajeDeError } from '../../utils/api';
 
@@ -1356,9 +1356,13 @@ const ReabastecimientoTab: React.FC = () => {
       setErrorMsg('Seleccione producto y almacén.');
       return;
     }
-    const minD = D(form.stock_minimo);
-    const maxD = D(form.stock_maximo);
-    const multD = D(form.cantidad_multiplo);
+    const minD = parseDecimalStrict(form.stock_minimo);
+    const maxD = parseDecimalStrict(form.stock_maximo);
+    const multD = parseDecimalStrict(form.cantidad_multiplo);
+    if (!minD || !maxD || !multD) {
+      setErrorMsg('Ingrese valores numéricos válidos para mínimo, máximo y múltiplo.');
+      return;
+    }
     if (minD.lt(0) || maxD.lt(minD) || multD.lte(0)) {
       setErrorMsg('Verifique que mínimo >= 0, máximo >= mínimo y múltiplo > 0.');
       return;

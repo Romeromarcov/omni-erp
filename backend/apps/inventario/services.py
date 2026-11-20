@@ -218,6 +218,8 @@ def _resolver_y_acreditar_lote(
         raise MovimientoInvalidoError(
             "El producto maneja lotes: debe especificar 'lote' o 'numero_lote' para esta operación."
         )
+    if fecha_fabricacion is not None and fecha_vencimiento is not None and fecha_vencimiento < fecha_fabricacion:
+        raise MovimientoInvalidoError("La fecha de vencimiento del lote no puede ser anterior a la de fabricación.")
     if isinstance(lote, LoteProducto):
         variante_id = variante.pk if variante is not None else None
         if (
@@ -247,6 +249,29 @@ def _resolver_y_acreditar_lote(
         lote_obj = LoteProducto.objects.select_for_update().get(pk=lote_obj.pk)
     else:
         raise MovimientoInvalidoError("Parámetro 'lote' inválido.")
+
+    if (
+        fecha_fabricacion is not None
+        and lote_obj.fecha_fabricacion is not None
+        and lote_obj.fecha_fabricacion != fecha_fabricacion
+    ):
+        raise MovimientoInvalidoError(
+            f"El lote '{lote_obj.numero_lote}' ya tiene fecha de fabricación "
+            f"{lote_obj.fecha_fabricacion} y no coincide con {fecha_fabricacion}."
+        )
+    if (
+        fecha_vencimiento is not None
+        and lote_obj.fecha_vencimiento is not None
+        and lote_obj.fecha_vencimiento != fecha_vencimiento
+    ):
+        raise MovimientoInvalidoError(
+            f"El lote '{lote_obj.numero_lote}' ya tiene fecha de vencimiento "
+            f"{lote_obj.fecha_vencimiento} y no coincide con {fecha_vencimiento}."
+        )
+    fab_final = lote_obj.fecha_fabricacion if lote_obj.fecha_fabricacion is not None else fecha_fabricacion
+    ven_final = lote_obj.fecha_vencimiento if lote_obj.fecha_vencimiento is not None else fecha_vencimiento
+    if fab_final is not None and ven_final is not None and ven_final < fab_final:
+        raise MovimientoInvalidoError("La fecha de vencimiento del lote no puede ser anterior a la de fabricación.")
 
     lote_obj.cantidad_disponible += cantidad
     update_fields = ["cantidad_disponible", "fecha_actualizacion"]

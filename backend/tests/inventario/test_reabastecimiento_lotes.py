@@ -979,10 +979,15 @@ class TestAislamientoRLSMatrizYMCPInventarioB4:
                     cur.execute("RESET ROLE")
 
     def test_mcp_tools_registradas_scopes_rls_y_decimal_sin_floats(self, setup_inv_a, empresa_b):
+        from apps.core.mcp_server import mcp
+
         s = setup_inv_a
         nombres = {t["name"] for t in INVENTARIO_MCP_TOOLS}
         assert {"inventario_evaluar_reabastecimiento", "inventario_consultar_lotes"}.issubset(nombres)
         assert {"inventario_evaluar_reabastecimiento", "inventario_consultar_lotes"}.issubset(CORE_MCP_TOOLS.keys())
+        registradas_fastmcp = {t.name for t in mcp._tool_manager.list_tools()}
+        assert "inventario_evaluar_reabastecimiento" in registradas_fastmcp
+        assert "inventario_consultar_lotes" in registradas_fastmcp
 
         ReglaReabastecimiento.objects.create(
             id_empresa=s.empresa,
@@ -1600,3 +1605,231 @@ class TestCoberturaRamasReabastecimientoLotesYMCP:
             s.empresa.save(update_fields=["activo"])
             assert "error" in inventario_evaluar_reabastecimiento(tok_read, emp_id)
             assert "error" in inventario_consultar_lotes(tok_read, emp_id)
+
+    def test_correcciones_revision_pr16_ronda2(self, client_a, setup_inv_a, empresa_b, user_b):
+        from unittest.mock import patch
+
+        from django.db import IntegrityError
+
+        from apps.compras.models import RequisicionCompra
+        from apps.finanzas.models import Moneda
+        from apps.fiscal.models import ConfiguracionImpuesto, Impuesto
+
+        s = setup_inv_a
+
+        # [BLOQUEANTE #2] ProductoSerializer inmutabilidad id_empresa + validación FKs + ?empresa=bad-uuid -> 400
+        cat_b = CategoriaProductoFactory(id_empresa=empresa_b, nombre_categoria="Cat B")
+        um_b = UnidadMedidaFactory(id_empresa=empresa_b, nombre="UniB", abreviatura="UB")
+        mon_b = Moneda.objects.create(
+            nombre="Moneda Privada B",
+            codigo_iso=f"PB{uuid.uuid4().hex[:3].upper()}",
+            es_generica=False,
+            es_publica=False,
+            empresa=empresa_b,
+        )
+        imp = Impuesto.objects.create(
+            nombre="Imp Test",
+            codigo=f"IMP-{uuid.uuid4().hex[:6]}",
+            tipo="IVA",
+            alicuota=Decimal("16.00"),
+            es_generico=True,
+        )
+        cfg_imp_b = ConfiguracionImpuesto.objects.create(
+            empresa=empresa_b,
+            impuesto=imp,
+            fecha_inicio=date.today(),
+        )
+        assert (
+            client_a.patch(
+                f"/api/inventario/productos/{s.prod_compra.pk}/",
+                {"id_empresa": str(empresa_b.pk)},
+                format="json",
+            ).status_code
+            == 400
+        )
+        for campo, val in (
+            ("id_categoria", str(cat_b.pk)),
+            ("id_unidad_medida_base", str(um_b.pk)),
+            ("id_moneda_precio", str(mon_b.pk)),
+            ("id_configuracion_impuesto_venta_default", str(cfg_imp_b.pk)),
+        ):
+            r_fk = client_a.patch(f"/api/inventario/productos/{s.prod_compra.pk}/", {campo: val}, format="json")
+            assert r_fk.status_code == 400, f"{campo} debió rechazarse con 400"
+        assert client_a.get("/api/inventario/productos/?empresa=bad-uuid").status_code == 400
+
+        # [BLOQUEANTE #2] MovimientoInventarioViewSet inmutable (405 en PATCH/PUT/DELETE)
+        t0 = timezone.now()
+        mov = registrar_movimiento(
+            empresa=s.empresa,
+            fecha_hora_movimiento=t0,
+            tipo_movimiento="ENTRADA",
+            producto=s.prod_compra,
+            cantidad=Decimal("5.0000"),
+            almacen_destino=s.alm_principal,
+            usuario=s.user,
+            costo_unitario=Decimal("10.00"),
+        )
+        assert (
+            client_a.patch(
+                f"/api/inventario/movimientos-inventario/{mov.pk}/", {"cantidad": "99"}, format="json"
+            ).status_code
+            == 405
+        )
+        assert (
+            client_a.put(
+                f"/api/inventario/movimientos-inventario/{mov.pk}/", {"cantidad": "99"}, format="json"
+            ).status_code
+            == 405
+        )
+        assert client_a.delete(f"/api/inventario/movimientos-inventario/{mov.pk}/").status_code == 405
+
+        # [BLOQUEANTE #3] LoteProductoViewSet PATCH prohíbe mutar producto/variante/almacen y desactivar con stock
+        lote_con_stock = LoteProducto.objects.create(
+            id_empresa=s.empresa,
+            id_producto=s.prod_lote_fifo,
+            id_almacen=s.alm_principal,
+            numero_lote="PATCH-LOCK-1",
+            cantidad_disponible=Decimal("4.0000"),
+            cantidad_reservada=Decimal("0.0000"),
+        )
+        var_fifo = VarianteProducto.objects.create(id_producto=s.prod_lote_fifo, codigo_variante="VP", sku="VP-1")
+        for patch_data in (
+            {"id_producto": str(s.prod_lote_fefo.pk)},
+            {"id_variante": str(var_fifo.pk)},
+            {"id_almacen": str(s.alm_secundario.pk)},
+            {"activo": False},
+        ):
+            assert (
+                client_a.patch(
+                    f"/api/inventario/lotes-producto/{lote_con_stock.pk}/", patch_data, format="json"
+                ).status_code
+                == 400
+            )
+        lote_cero = LoteProducto.objects.create(
+            id_empresa=s.empresa,
+            id_producto=s.prod_lote_fifo,
+            id_almacen=s.alm_principal,
+            numero_lote="PATCH-CERO-0",
+            cantidad_disponible=Decimal("0.0000"),
+            cantidad_reservada=Decimal("0.0000"),
+        )
+        assert (
+            client_a.patch(
+                f"/api/inventario/lotes-producto/{lote_cero.pk}/", {"activo": False}, format="json"
+            ).status_code
+            == 200
+        )
+
+        # [MENOR #5] Coherencia de fechas y max_length=80 en ENTRADA de lotes (API + servicio)
+        assert (
+            client_a.post(
+                "/api/inventario/movimientos-inventario/",
+                {
+                    "id_empresa": str(s.empresa.id_empresa),
+                    "id_producto": str(s.prod_lote_fifo.id_producto),
+                    "id_almacen_destino": str(s.alm_principal.id_almacen),
+                    "tipo_movimiento": "ENTRADA",
+                    "cantidad": "1.0000",
+                    "costo_unitario_movimiento": "20.00",
+                    "fecha_hora_movimiento": t0.isoformat(),
+                    "numero_lote": "L" * 81,
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_a.post(
+                "/api/inventario/movimientos-inventario/",
+                {
+                    "id_empresa": str(s.empresa.id_empresa),
+                    "id_producto": str(s.prod_lote_fifo.id_producto),
+                    "id_almacen_destino": str(s.alm_principal.id_almacen),
+                    "tipo_movimiento": "ENTRADA",
+                    "cantidad": "1.0000",
+                    "costo_unitario_movimiento": "20.00",
+                    "fecha_hora_movimiento": t0.isoformat(),
+                    "numero_lote": "FECHAS-COH-ERR",
+                    "fecha_fabricacion": date.today().isoformat(),
+                    "fecha_vencimiento": (date.today() - timedelta(days=2)).isoformat(),
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+        with pytest.raises(MovimientoInvalidoError, match="anterior a la de fabricación"):
+            registrar_movimiento(
+                empresa=s.empresa,
+                fecha_hora_movimiento=t0,
+                tipo_movimiento="ENTRADA",
+                producto=s.prod_lote_fifo,
+                cantidad=Decimal("2.0000"),
+                almacen_destino=s.alm_principal,
+                usuario=s.user,
+                costo_unitario=Decimal("20.00"),
+                lote="SVC-COH-1",
+                fecha_fabricacion=date(2026, 6, 10),
+                fecha_vencimiento=date(2026, 6, 1),
+            )
+        registrar_movimiento(
+            empresa=s.empresa,
+            fecha_hora_movimiento=t0,
+            tipo_movimiento="ENTRADA",
+            producto=s.prod_lote_fifo,
+            cantidad=Decimal("2.0000"),
+            almacen_destino=s.alm_principal,
+            usuario=s.user,
+            costo_unitario=Decimal("20.00"),
+            lote="SVC-COH-2",
+            fecha_fabricacion=date(2026, 5, 1),
+            fecha_vencimiento=date(2026, 12, 1),
+        )
+        with pytest.raises(MovimientoInvalidoError, match="fecha de vencimiento"):
+            registrar_movimiento(
+                empresa=s.empresa,
+                fecha_hora_movimiento=t0,
+                tipo_movimiento="ENTRADA",
+                producto=s.prod_lote_fifo,
+                cantidad=Decimal("1.0000"),
+                almacen_destino=s.alm_principal,
+                usuario=s.user,
+                costo_unitario=Decimal("20.00"),
+                lote="SVC-COH-2",
+                fecha_vencimiento=date(2027, 1, 15),
+            )
+
+        # [MENOR #6] Overflow en por_vencer_dias -> 400/error; usuario ajeno/inactivo y reintento IntegrityError
+        assert client_a.get("/api/inventario/lotes-producto/?por_vencer_dias=9999999999").status_code == 400
+        tok_read = _token(s.empresa, ["inventario:read"])
+        with override_settings(RLS_ENABLED=True):
+            assert "error" in inventario_consultar_lotes(
+                tok_read, str(s.empresa.id_empresa), por_vencer_dias=9999999999
+            )
+
+        regla = ReglaReabastecimiento.objects.create(
+            id_empresa=s.empresa,
+            id_producto=s.prod_compra,
+            id_almacen=s.alm_principal,
+            stock_minimo=Decimal("5"),
+            stock_maximo=Decimal("10"),
+            ruta="COMPRA",
+        )
+        with pytest.raises(ReabastecimientoError, match="no tiene permisos"):
+            generar_borrador_reabastecimiento(regla, usuario=user_b, cantidad=Decimal("2"))
+        inactivo = UsuariosFactory(empresa=s.empresa, is_active=False)
+        with pytest.raises(ReabastecimientoError, match="activo"):
+            generar_borrador_reabastecimiento(regla, usuario=inactivo, cantidad=Decimal("2"))
+
+        orig_create = RequisicionCompra.objects.create
+        llamadas = {"n": 0}
+
+        def _create_con_colision(*args, **kwargs):
+            llamadas["n"] += 1
+            if llamadas["n"] == 1:
+                raise IntegrityError("colisión concurrente simulada")
+            return orig_create(*args, **kwargs)
+
+        with patch.object(RequisicionCompra.objects, "create", side_effect=_create_con_colision):
+            res_retry = generar_borrador_reabastecimiento(regla, usuario=s.user, cantidad=Decimal("2"))
+        assert res_retry["estado"] == "BORRADOR"
+        assert llamadas["n"] == 2

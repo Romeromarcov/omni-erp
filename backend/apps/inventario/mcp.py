@@ -190,7 +190,7 @@ def inventario_evaluar_reabastecimiento(
     empresa_id: str,
     almacen_id: str = "",
     solo_requieren: bool = True,
-) -> list[dict[str, Any]] | dict[str, Any]:
+) -> Any:
     """Evalúa las reglas activas de reabastecimiento contra el stock proyectado de la empresa.
 
     Scope requerido: ``inventario:read``
@@ -240,7 +240,7 @@ def inventario_consultar_lotes(
     almacen_id: str = "",
     por_vencer_dias: int | None = None,
     solo_con_stock: bool = True,
-) -> list[dict[str, Any]] | dict[str, Any]:
+) -> Any:
     """Lista los lotes de producto de la empresa con filtros opcionales por producto, almacén y vencimiento.
 
     Scope requerido: ``inventario:read``
@@ -271,6 +271,7 @@ def inventario_consultar_lotes(
                     raise ValueError("Almacén no encontrado en la empresa.")
 
             dias_int: int | None = None
+            limite = None
             if por_vencer_dias is not None:
                 if isinstance(por_vencer_dias, bool):
                     raise ValueError("El parámetro 'por_vencer_dias' debe ser un entero >= 0.")
@@ -278,12 +279,16 @@ def inventario_consultar_lotes(
                     dias_int = int(por_vencer_dias)
                 except (ValueError, TypeError) as exc:
                     raise ValueError("El parámetro 'por_vencer_dias' debe ser un entero >= 0.") from exc
-                if dias_int < 0:
-                    raise ValueError("El parámetro 'por_vencer_dias' debe ser mayor o igual a cero.")
+                if dias_int < 0 or dias_int > 36500:
+                    raise ValueError("El parámetro 'por_vencer_dias' debe estar entre 0 y 36500.")
+                try:
+                    limite = timezone.localdate() + timedelta(days=dias_int)
+                except (OverflowError, ValueError) as exc:
+                    raise ValueError("El parámetro 'por_vencer_dias' está fuera de rango.") from exc
 
             if not isinstance(solo_con_stock, bool):
                 raise ValueError("El parámetro 'solo_con_stock' debe ser booleano.")
-        except ValueError as exc:
+        except (ValueError, OverflowError) as exc:
             return {"error": str(exc)}
 
         qs = LoteProducto.objects.filter(id_empresa=empresa, activo=True).select_related(
@@ -295,8 +300,7 @@ def inventario_consultar_lotes(
             qs = qs.filter(id_almacen=almacen)
         if solo_con_stock:
             qs = qs.filter(cantidad_disponible__gt=0)
-        if dias_int is not None:
-            limite = timezone.localdate() + timedelta(days=dias_int)
+        if limite is not None:
             qs = qs.filter(fecha_vencimiento__isnull=False, fecha_vencimiento__lte=limite)
 
         lotes = list(qs.order_by(F("fecha_vencimiento").asc(nulls_last=True), "numero_lote", "pk")[:200])

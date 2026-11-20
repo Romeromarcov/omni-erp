@@ -8985,12 +8985,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["inventario_movimientos-inventario_read"];
-        put: operations["inventario_movimientos-inventario_update"];
+        put?: never;
         post?: never;
-        delete: operations["inventario_movimientos-inventario_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["inventario_movimientos-inventario_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/inventario/pasos-operacion/": {
@@ -14416,11 +14416,6 @@ export interface components {
              */
             cantidad: string;
             /**
-             * Id autorizado por
-             * Format: uuid
-             */
-            id_autorizado_por?: string | null;
-            /**
              * Observaciones
              * @default
              */
@@ -18900,7 +18895,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T10:07:32.529854-04:00
+             * @default 2026-11-20T13:09:38.335562-04:00
              */
             fecha_despacho: string;
             /**
@@ -27021,11 +27016,6 @@ export interface components {
         HorarioTrabajo: {
             content: {
                 "application/json": components["schemas"]["HorarioTrabajo"];
-            };
-        };
-        MovimientoInventario: {
-            content: {
-                "application/json": components["schemas"]["MovimientoInventario"];
             };
         };
         Plan: {
@@ -49141,7 +49131,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MovimientoInventario"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -49164,70 +49158,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MovimientoInventario"];
-                };
-            };
-        };
-    };
-    "inventario_movimientos-inventario_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
-                id_movimiento_inventario: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MovimientoInventario"];
-                };
-            };
-        };
-    };
-    "inventario_movimientos-inventario_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
-                id_movimiento_inventario: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "inventario_movimientos-inventario_partial_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
-                id_movimiento_inventario: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
         responses: {
             200: {
                 headers: {

@@ -30160,69 +30160,6 @@
                     "inventario"
                 ]
             },
-            "put": {
-                "operationId": "inventario_movimientos-inventario_update",
-                "description": "",
-                "parameters": [
-                    {
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/MovimientoInventario"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "schema": {
-                            "$ref": "#/definitions/MovimientoInventario"
-                        }
-                    }
-                },
-                "tags": [
-                    "inventario"
-                ]
-            },
-            "patch": {
-                "operationId": "inventario_movimientos-inventario_partial_update",
-                "description": "",
-                "parameters": [
-                    {
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/MovimientoInventario"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "schema": {
-                            "$ref": "#/definitions/MovimientoInventario"
-                        }
-                    }
-                },
-                "tags": [
-                    "inventario"
-                ]
-            },
-            "delete": {
-                "operationId": "inventario_movimientos-inventario_delete",
-                "description": "",
-                "parameters": [],
-                "responses": {
-                    "204": {
-                        "description": ""
-                    }
-                },
-                "tags": [
-                    "inventario"
-                ]
-            },
             "parameters": [
                 {
                     "name": "id_movimiento_inventario",
@@ -49138,12 +49075,6 @@
                     "type": "string",
                     "format": "decimal"
                 },
-                "id_autorizado_por": {
-                    "title": "Id autorizado por",
-                    "type": "string",
-                    "format": "uuid",
-                    "x-nullable": true
-                },
                 "observaciones": {
                     "title": "Observaciones",
                     "type": "string",
@@ -56550,7 +56481,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T10:07:32.529854-04:00"
+                    "default": "2026-11-20T13:09:38.335562-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -62019,7 +61950,8 @@
                 },
                 "numero_lote": {
                     "title": "Numero lote",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 80
                 },
                 "fecha_fabricacion": {
                     "title": "Fecha fabricacion",

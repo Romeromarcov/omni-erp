@@ -27,6 +27,22 @@ export const D = (x: DecimalInput): Decimal => {
   }
 };
 
+/**
+ * Parsea un input textual estricto como Decimal finito; retorna `null` ante cadenas
+ * vacías o no numéricas (p. ej. 'abc'), evitando convertirlas silenciosamente en 0.
+ */
+export const parseDecimalStrict = (valor: string | null | undefined): Decimal | null => {
+  if (valor === null || valor === undefined) return null;
+  const limpio = valor.trim();
+  if (!limpio) return null;
+  try {
+    const d = new Decimal(limpio);
+    return d.isFinite() ? d : null;
+  } catch {
+    return null;
+  }
+};
+
 /** Suma una lista de valores con precisión decimal. */
 export function sumDecimals(values: DecimalInput[]): Decimal {
   return values.reduce<Decimal>((acc, v) => acc.plus(D(v)), new Decimal(0));

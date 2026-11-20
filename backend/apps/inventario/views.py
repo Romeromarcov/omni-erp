@@ -101,7 +101,7 @@ class ProductoViewSet(NulSafeFilterMixin, BaseModelViewSet):
         )
         empresa_id = self.request.query_params.get("empresa")
         if empresa_id:
-            qs = qs.filter(id_empresa=empresa_id)
+            qs = qs.filter(id_empresa=validar_uuid_param(empresa_id, "empresa"))
         return qs
 
     @action(detail=True, methods=["get"], url_path="kardex")
@@ -221,6 +221,7 @@ class StockActualViewSet(BaseModelViewSet):
 class MovimientoInventarioViewSet(NulSafeFilterMixin, BaseModelViewSet):
     queryset = MovimientoInventario.objects.all()
     serializer_class = MovimientoInventarioSerializer
+    http_method_names = ["get", "post", "head", "options"]
     search_fields = ["id_producto__nombre_producto", "id_producto__sku", "observaciones", "tipo_movimiento"]
     ordering_fields = ["fecha_hora_movimiento", "tipo_movimiento", "cantidad", "fecha_creacion"]
 
@@ -648,10 +649,13 @@ class LoteProductoViewSet(NulSafeFilterMixin, EmpresaInjectMixin, BaseModelViewS
             try:
                 dias = int(raw_str.strip())
             except ValueError as exc:
-                raise ValidationError({"por_vencer_dias": "Debe ser un entero mayor o igual a cero."}) from exc
-            if dias < 0:
-                raise ValidationError({"por_vencer_dias": "Debe ser un entero mayor o igual a cero."})
-            limite = timezone.localdate() + timedelta(days=dias)
+                raise ValidationError({"por_vencer_dias": "Debe ser un entero entre 0 y 36500."}) from exc
+            if dias < 0 or dias > 36500:
+                raise ValidationError({"por_vencer_dias": "Debe ser un entero entre 0 y 36500."})
+            try:
+                limite = timezone.localdate() + timedelta(days=dias)
+            except (OverflowError, ValueError) as exc:
+                raise ValidationError({"por_vencer_dias": "Valor fuera de rango permitido."}) from exc
             qs = qs.filter(fecha_vencimiento__isnull=False, fecha_vencimiento__lte=limite)
         if solo_con_stock is not None and str(solo_con_stock).strip().lower() in ("true", "1", "yes"):
             qs = qs.filter(cantidad_disponible__gt=0)

@@ -103,6 +103,63 @@ class ProductoSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["fecha_creacion", "fecha_actualizacion"]
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        visibles = empresas_visibles_contexto(self)
+        if self.instance is not None and "id_empresa" in attrs:
+            nueva_emp = attrs["id_empresa"]
+            if nueva_emp is None or nueva_emp.pk != self.instance.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_empresa": "No se puede cambiar la empresa de un producto existente."}
+                )
+
+        emp = attrs["id_empresa"] if "id_empresa" in attrs else getattr(self.instance, "id_empresa", None)
+        empresa_ref = str(emp.pk) if emp is not None else empresa_efectiva_contexto(self)
+        if emp is not None and visibles is not None and str(emp.pk) not in visibles:
+            raise serializers.ValidationError({"id_empresa": "Empresa fuera de su alcance."})
+
+        categoria = attrs["id_categoria"] if "id_categoria" in attrs else getattr(self.instance, "id_categoria", None)
+        unidad = (
+            attrs["id_unidad_medida_base"]
+            if "id_unidad_medida_base" in attrs
+            else getattr(self.instance, "id_unidad_medida_base", None)
+        )
+        validar_fk_empresa(categoria, "id_categoria", empresa_ref, visibles, etiqueta="Categoría")
+        validar_fk_empresa(unidad, "id_unidad_medida_base", empresa_ref, visibles, etiqueta="Unidad de medida base")
+
+        moneda = (
+            attrs["id_moneda_precio"]
+            if "id_moneda_precio" in attrs
+            else getattr(self.instance, "id_moneda_precio", None)
+        )
+        if (
+            moneda is not None
+            and not getattr(moneda, "es_generica", False)
+            and not getattr(moneda, "es_publica", False)
+            and getattr(moneda, "empresa_id", None) is not None
+        ):
+            validar_fk_empresa(
+                moneda,
+                "id_moneda_precio",
+                empresa_ref,
+                visibles,
+                etiqueta="Moneda",
+                empresa_attr="empresa_id",
+            )
+
+        for campo, etiqueta in (
+            ("id_configuracion_impuesto_venta_default", "Configuración de impuesto de venta"),
+            ("id_configuracion_impuesto_compra_default", "Configuración de impuesto de compra"),
+        ):
+            imp = attrs[campo] if campo in attrs else getattr(self.instance, campo, None)
+            if (
+                imp is not None
+                and not getattr(imp, "es_generica", False)
+                and getattr(imp, "empresa_id", None) is not None
+            ):
+                validar_fk_empresa(imp, campo, empresa_ref, visibles, etiqueta=etiqueta, empresa_attr="empresa_id")
+        return attrs
+
 
 class VarianteProductoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -155,7 +212,7 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
     )
     id_lote = serializers.PrimaryKeyRelatedField(queryset=LoteProducto.objects.all(), required=False, allow_null=True)
     lote_numero = serializers.CharField(source="id_lote.numero_lote", read_only=True, allow_null=True)
-    numero_lote = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    numero_lote = serializers.CharField(required=False, allow_blank=True, max_length=80, write_only=True)
     fecha_fabricacion = serializers.DateField(required=False, allow_null=True, write_only=True)
     fecha_vencimiento = serializers.DateField(required=False, allow_null=True, write_only=True)
 
@@ -232,6 +289,12 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"numero_lote": "El numero_lote no coincide con el id_lote seleccionado."}
                 )
+        fecha_fab = attrs.get("fecha_fabricacion")
+        fecha_ven = attrs.get("fecha_vencimiento")
+        if fecha_fab is not None and fecha_ven is not None and fecha_ven < fecha_fab:
+            raise serializers.ValidationError(
+                {"fecha_vencimiento": "La fecha de vencimiento no puede ser anterior a la de fabricación."}
+            )
         return attrs
 
 
@@ -560,6 +623,33 @@ class LoteProductoSerializer(serializers.ModelSerializer):
         attrs = super().validate(attrs)
         visibles = empresas_visibles_contexto(self)
         empresa_ref = empresa_efectiva_contexto(self)
+
+        if self.instance is not None:
+            if "id_producto" in attrs and getattr(attrs["id_producto"], "pk", None) != self.instance.id_producto_id:
+                raise serializers.ValidationError(
+                    {"id_producto": "No se puede cambiar el producto de un lote existente."}
+                )
+            if "id_variante" in attrs:
+                nueva_var = attrs["id_variante"].pk if attrs["id_variante"] is not None else None
+                if nueva_var != self.instance.id_variante_id:
+                    raise serializers.ValidationError(
+                        {"id_variante": "No se puede cambiar la variante de un lote existente."}
+                    )
+            if "id_almacen" in attrs and getattr(attrs["id_almacen"], "pk", None) != self.instance.id_almacen_id:
+                raise serializers.ValidationError(
+                    {"id_almacen": "No se puede cambiar el almacén de un lote existente."}
+                )
+            if (
+                "activo" in attrs
+                and not attrs["activo"]
+                and (
+                    (self.instance.cantidad_disponible or Decimal("0")) > 0
+                    or (self.instance.cantidad_reservada or Decimal("0")) > 0
+                )
+            ):
+                raise serializers.ValidationError(
+                    {"activo": "No se puede desactivar un lote con cantidad disponible o reservada."}
+                )
 
         producto = attrs["id_producto"] if "id_producto" in attrs else getattr(self.instance, "id_producto", None)
         variante = attrs["id_variante"] if "id_variante" in attrs else getattr(self.instance, "id_variante", None)

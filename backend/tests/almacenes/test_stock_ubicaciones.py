@@ -225,7 +225,37 @@ class TestServiciosStockUbicacion:
                 usuario=s.user,
             )
 
-        # Supervisor de otra empresa -> bloqueado
+        # Auto-aprobación o supervisor sin privilegios (is_staff=False) -> bloqueado
+        regular_otro = UsuariosFactory(empresa=s.empresa, is_staff=False)
+        for cand in (s.user, regular_otro):
+            with pytest.raises(AutorizacionUbicacionError):
+                transferir_entre_ubicaciones(
+                    empresa=s.empresa,
+                    almacen=s.alm_ubic,
+                    ubicacion_origen=s.u_pick,
+                    ubicacion_destino=s.u_res,
+                    producto=s.producto,
+                    cantidad=Decimal("3.0000"),
+                    usuario=s.user,
+                    autorizado_por=cand,
+                )
+
+        # Supervisor staff inactivo o de otra empresa -> bloqueado
+        staff_inactivo = UsuariosFactory(empresa=s.empresa, is_staff=True, is_active=False)
+        with pytest.raises(AutorizacionUbicacionError):
+            transferir_entre_ubicaciones(
+                empresa=s.empresa,
+                almacen=s.alm_ubic,
+                ubicacion_origen=s.u_pick,
+                ubicacion_destino=s.u_res,
+                producto=s.producto,
+                cantidad=Decimal("3.0000"),
+                usuario=s.user,
+                autorizado_por=staff_inactivo,
+            )
+
+        user_b.is_staff = True
+        user_b.save(update_fields=["is_staff"])
         with pytest.raises(AutorizacionUbicacionError):
             transferir_entre_ubicaciones(
                 empresa=s.empresa,
@@ -238,9 +268,9 @@ class TestServiciosStockUbicacion:
                 autorizado_por=user_b,
             )
 
-        # Supervisor de la misma empresa -> permitido
-        supervisor = UsuariosFactory(empresa=s.empresa, is_staff=False)
-        orig, dest, _ = transferir_entre_ubicaciones(
+        # Supervisor staff activo de la misma empresa -> permitido con traza en observaciones
+        supervisor = UsuariosFactory(empresa=s.empresa, is_staff=True, is_active=True)
+        orig, dest, mov_sup = transferir_entre_ubicaciones(
             empresa=s.empresa,
             almacen=s.alm_ubic,
             ubicacion_origen=s.u_pick,
@@ -252,10 +282,11 @@ class TestServiciosStockUbicacion:
         )
         assert dest.cantidad_disponible == Decimal("3.0000")
         assert orig.cantidad_disponible == Decimal("7.0000")
+        assert f"(autorizado por {supervisor.username})" in mov_sup.observaciones
 
-        # Origen restringido con usuario staff -> permitido sin autorizado_por explícito
-        staff_user = UsuariosFactory(empresa=s.empresa, is_staff=True)
-        dest_after, orig_after, _ = transferir_entre_ubicaciones(
+        # Origen restringido con usuario staff -> permitido sin autorizado_por explícito + traza
+        staff_user = UsuariosFactory(empresa=s.empresa, is_staff=True, is_active=True)
+        dest_after, orig_after, mov_staff = transferir_entre_ubicaciones(
             empresa=s.empresa,
             almacen=s.alm_ubic,
             ubicacion_origen=s.u_res,
@@ -266,6 +297,7 @@ class TestServiciosStockUbicacion:
         )
         assert dest_after.cantidad_disponible == Decimal("2.0000")
         assert orig_after.cantidad_disponible == Decimal("8.0000")
+        assert f"(autorizado por {staff_user.username})" in mov_staff.observaciones
 
     def test_reservar_y_liberar_ubicacion(self, setup_alm_a):
         s = setup_alm_a
@@ -387,7 +419,9 @@ class TestAPIRestStockUbicaciones:
         )
         assert r_var.status_code == 201, r_var.content
 
-        # Transferencia hacia ubicación con requiere_autorizacion sin autorizado -> 403
+        # Transferencia hacia ubicación con requiere_autorizacion como usuario regular
+        # (incluso intentando suplantar id_autorizado_por en el JSON) -> 403
+        staff_user = UsuariosFactory(empresa=s.empresa, is_staff=True, is_active=True)
         r_403 = client_a.post(
             f"{base}transferir/",
             {
@@ -396,14 +430,16 @@ class TestAPIRestStockUbicaciones:
                 "id_ubicacion_destino": str(s.u_res.id_ubicacion),
                 "id_producto": str(s.producto.id_producto),
                 "cantidad": "4.0000",
+                "id_autorizado_por": str(staff_user.pk),
             },
             format="json",
         )
         assert r_403.status_code == 403
 
-        # Transferencia autorizada con id_autorizado_por -> 200
-        supervisor = UsuariosFactory(empresa=s.empresa)
-        r_200 = client_a.post(
+        # Transferencia realizada por usuario staff autenticado -> 200 y traza en observaciones
+        client_staff = APIClient()
+        client_staff.force_authenticate(user=staff_user)
+        r_200 = client_staff.post(
             f"{base}transferir/",
             {
                 "id_almacen": str(s.alm_ubic.id_almacen),
@@ -411,7 +447,6 @@ class TestAPIRestStockUbicaciones:
                 "id_ubicacion_destino": str(s.u_res.id_ubicacion),
                 "id_producto": str(s.producto.id_producto),
                 "cantidad": "4.0000",
-                "id_autorizado_por": str(supervisor.pk),
                 "observaciones": "Ingreso a cuarentena",
             },
             format="json",
@@ -419,6 +454,8 @@ class TestAPIRestStockUbicaciones:
         assert r_200.status_code == 200, r_200.content
         assert r_200.json()["tipo_movimiento"] == "TRANSFERENCIA_UBICACION"
         assert r_200.json()["destino"]["cantidad_disponible"] == "4.0000"
+        mov_aut = MovimientoInventario.objects.get(pk=r_200.json()["id_movimiento"])
+        assert f"(autorizado por {staff_user.username})" in mov_aut.observaciones
 
         # Reservar y liberar via API
         r_res = client_a.post(
@@ -448,7 +485,9 @@ class TestAPIRestStockUbicaciones:
 
 @pytest.mark.tenant
 class TestAislamientoRLSMatrizStockUbicacion:
-    def test_idor_cross_tenant_y_matriz_subsidiaria(self, client_a, client_b, setup_alm_a, empresa_b, user_a):
+    def test_idor_cross_tenant_y_matriz_subsidiaria(
+        self, client_a, client_b, setup_alm_a, empresa_b, user_a, user_b, moneda_usd
+    ):
         s = setup_alm_a
         su_a = StockUbicacion.objects.create(
             id_empresa=s.empresa,
@@ -520,6 +559,66 @@ class TestAislamientoRLSMatrizStockUbicacion:
             format="json",
         )
         assert r_mix.status_code == 400
+
+        # is_staff de otra empresa ajena (empresa_b) NO puede transferir sobre ubicación restringida de empresa_a
+        user_b.is_staff = True
+        user_b.save(update_fields=["is_staff"])
+        assert (
+            client_b.post(
+                "/api/almacenes/stock-ubicaciones/transferir/",
+                {
+                    "id_almacen": str(s.alm_ubic.id_almacen),
+                    "id_ubicacion_origen": str(s.u_pick.id_ubicacion),
+                    "id_ubicacion_destino": str(s.u_res.id_ubicacion),
+                    "id_producto": str(s.producto.id_producto),
+                    "cantidad": "1",
+                },
+                format="json",
+            ).status_code
+            == 404
+        )
+
+        # is_staff de Matriz SÍ puede autorizar transferencia en almacén de Subsidiaria -> 200
+        u_sub_res = UbicacionAlmacen.objects.create(
+            id_empresa=sub,
+            id_almacen=alm_sub,
+            codigo_ubicacion="SUB-RES",
+            nombre_ubicacion="Sub Restringida",
+            tipo_ubicacion="CUARENTENA",
+            requiere_autorizacion=True,
+        )
+        u_sub_un = UnidadMedidaFactory(id_empresa=sub)
+        cat_sub = CategoriaProductoFactory(id_empresa=sub)
+        prod_sub = ProductoFactory(
+            id_empresa=sub,
+            id_unidad_medida_base=u_sub_un,
+            id_categoria=cat_sub,
+            id_moneda_precio=moneda_usd,
+        )
+        StockUbicacion.objects.create(
+            id_empresa=sub,
+            id_almacen=alm_sub,
+            id_ubicacion=u_sub,
+            id_producto=prod_sub,
+            cantidad_disponible=Decimal("6.0000"),
+        )
+        matriz_staff = UsuariosFactory(empresa=s.empresa, is_staff=True, is_active=True)
+        client_ms = APIClient()
+        client_ms.force_authenticate(user=matriz_staff)
+        r_ms = client_ms.post(
+            "/api/almacenes/stock-ubicaciones/transferir/",
+            {
+                "id_almacen": str(alm_sub.id_almacen),
+                "id_ubicacion_origen": str(u_sub.id_ubicacion),
+                "id_ubicacion_destino": str(u_sub_res.id_ubicacion),
+                "id_producto": str(prod_sub.id_producto),
+                "cantidad": "2.0000",
+            },
+            format="json",
+        )
+        assert r_ms.status_code == 200, r_ms.content
+        mov_ms = MovimientoInventario.objects.get(pk=r_ms.json()["id_movimiento"])
+        assert f"(autorizado por {matriz_staff.username})" in mov_ms.observaciones
 
     def test_rls_postgresql_en_stock_ubicacion(self, rls_test_role, setup_alm_a, empresa_b, moneda_usd):
         s = setup_alm_a
@@ -607,6 +706,7 @@ class TestCoberturaRamasStockUbicaciones:
                 )
 
         # No existe stock en ubicación destino -> error tanto en transferir como en reservar
+        staff_aut = UsuariosFactory(empresa=s.empresa, is_staff=True, is_active=True)
         with pytest.raises(UbicacionOperacionError, match="Sin existencias"):
             transferir_entre_ubicaciones(
                 empresa=s.empresa,
@@ -616,7 +716,7 @@ class TestCoberturaRamasStockUbicaciones:
                 producto=s.producto,
                 cantidad=Decimal("1"),
                 usuario=s.user,
-                autorizado_por=s.user,
+                autorizado_por=staff_aut,
             )
         with pytest.raises(UbicacionOperacionError, match="No existe stock"):
             reservar_ubicacion(
@@ -681,7 +781,7 @@ class TestCoberturaRamasStockUbicaciones:
         assert dest.activo is True
         assert dest.cantidad_disponible == Decimal("2.0000")
 
-    def test_ramas_edge_api_almacenes_y_stock_ubicaciones(self, client_a, setup_alm_a):
+    def test_ramas_edge_api_almacenes_y_stock_ubicaciones(self, client_a, setup_alm_a, empresa_b):
         import uuid
 
         s = setup_alm_a
@@ -846,7 +946,7 @@ class TestCoberturaRamasStockUbicaciones:
             == 400
         )
 
-        # Producto / variante no encontrados en transferir -> 404; id_autorizado_por inexistente -> 400
+        # Producto / variante no encontrados en transferir -> 404
         assert (
             client_a.post(
                 f"{base}transferir/",
@@ -876,21 +976,6 @@ class TestCoberturaRamasStockUbicaciones:
             ).status_code
             == 404
         )
-        assert (
-            client_a.post(
-                f"{base}transferir/",
-                {
-                    "id_almacen": str(s.alm_ubic.id_almacen),
-                    "id_ubicacion_origen": str(s.u_pick.id_ubicacion),
-                    "id_ubicacion_destino": str(s.u_res.id_ubicacion),
-                    "id_producto": str(s.producto.id_producto),
-                    "cantidad": "1",
-                    "id_autorizado_por": str(uuid.uuid4()),
-                },
-                format="json",
-            ).status_code
-            == 400
-        )
 
         # UbicacionAlmacen CRUD PATCH y duplicado PATCH
         r_ub = client_a.post(
@@ -918,6 +1003,55 @@ class TestCoberturaRamasStockUbicaciones:
             client_a.patch(
                 f"/api/almacenes/ubicaciones-almacen/{ub_id}/",
                 {"codigo_ubicacion": s.u_pick.codigo_ubicacion},
+                format="json",
+            ).status_code
+            == 400
+        )
+
+        # [BLOQUEANTE #2] AlmacenSerializer y UbicacionAlmacenSerializer bloquean cambio de id_empresa en PATCH
+        assert (
+            client_a.patch(
+                f"/api/almacenes/almacenes/{s.alm_ubic.id_almacen}/",
+                {"id_empresa": str(empresa_b.id_empresa)},
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_a.patch(
+                f"/api/almacenes/ubicaciones-almacen/{ub_id}/",
+                {"id_empresa": str(empresa_b.id_empresa)},
+                format="json",
+            ).status_code
+            == 400
+        )
+        # UbicacionAlmacen sin stock sí permite cambiar de almacén; con StockUbicacion registrado -> 400
+        assert (
+            client_a.patch(
+                f"/api/almacenes/ubicaciones-almacen/{ub_id}/",
+                {"id_almacen": str(s.alm_simple.id_almacen)},
+                format="json",
+            ).status_code
+            == 200
+        )
+        ub_con_stock = UbicacionAlmacen.objects.create(
+            id_empresa=s.empresa,
+            id_almacen=s.alm_ubic,
+            codigo_ubicacion="STK-99",
+            nombre_ubicacion="Con Stock",
+            tipo_ubicacion="ESTANTERIA",
+        )
+        StockUbicacion.objects.create(
+            id_empresa=s.empresa,
+            id_almacen=s.alm_ubic,
+            id_ubicacion=ub_con_stock,
+            id_producto=s.producto,
+            cantidad_disponible=Decimal("1.0000"),
+        )
+        assert (
+            client_a.patch(
+                f"/api/almacenes/ubicaciones-almacen/{ub_con_stock.id_ubicacion}/",
+                {"id_almacen": str(s.alm_simple.id_almacen)},
                 format="json",
             ).status_code
             == 400

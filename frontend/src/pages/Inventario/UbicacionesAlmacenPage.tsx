@@ -37,7 +37,7 @@ import {
 } from '../../services/almacenesService';
 import { productoInventarioService, type Producto } from '../../services/inventarioService';
 import { gapsMenoresKeys, almacenesKeys } from '../../lib/queryKeys';
-import { D } from '../../lib/decimal';
+import { D, parseDecimalStrict } from '../../lib/decimal';
 import { mensajeDeError } from '../../utils/api';
 import { getEmpresaId } from '../../utils/empresa';
 
@@ -454,6 +454,7 @@ interface TransferirForm {
   id_ubicacion_origen: string;
   id_ubicacion_destino: string;
   id_producto: string;
+  id_variante: string | null;
   cantidad: string;
   observaciones: string;
 }
@@ -469,6 +470,7 @@ interface ReservaForm {
   id_almacen: string;
   id_ubicacion: string;
   id_producto: string;
+  id_variante: string | null;
   cantidad: string;
   liberar: boolean;
 }
@@ -489,6 +491,7 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
     id_ubicacion_origen: '',
     id_ubicacion_destino: '',
     id_producto: '',
+    id_variante: null,
     cantidad: '1',
     observaciones: '',
   });
@@ -506,6 +509,7 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
     id_almacen: '',
     id_ubicacion: '',
     id_producto: '',
+    id_variante: null,
     cantidad: '1',
     liberar: false,
   });
@@ -564,10 +568,11 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
   const abrirTransferir = (fila?: StockUbicacion) => {
     setErrorMsg('');
     setTransferirForm({
-      id_almacen: fila?.id_almacen ?? filtroAlmacen ?? (almacenesConUbic[0]?.id_almacen || ''),
-      id_ubicacion_origen: fila?.id_ubicacion ?? '',
+      id_almacen: fila?.id_almacen || filtroAlmacen || almacenesConUbic[0]?.id_almacen || '',
+      id_ubicacion_origen: fila?.id_ubicacion || '',
       id_ubicacion_destino: '',
-      id_producto: fila?.id_producto ?? '',
+      id_producto: fila?.id_producto || '',
+      id_variante: fila?.id_variante ?? null,
       cantidad: '1',
       observaciones: '',
     });
@@ -591,6 +596,7 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
       id_almacen: fila.id_almacen,
       id_ubicacion: fila.id_ubicacion,
       id_producto: fila.id_producto,
+      id_variante: fila.id_variante ?? null,
       cantidad: '1',
       liberar: false,
     });
@@ -611,8 +617,9 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
       setErrorMsg('La ubicación origen y destino deben ser distintas.');
       return;
     }
-    if (D(transferirForm.cantidad).lte(0)) {
-      setErrorMsg('La cantidad a transferir debe ser mayor a cero.');
+    const cantidadDec = parseDecimalStrict(transferirForm.cantidad);
+    if (!cantidadDec || cantidadDec.lte(0)) {
+      setErrorMsg('Ingrese una cantidad numérica válida mayor a cero.');
       return;
     }
     transferir.mutate({
@@ -620,6 +627,7 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
       id_ubicacion_origen: transferirForm.id_ubicacion_origen,
       id_ubicacion_destino: transferirForm.id_ubicacion_destino,
       id_producto: transferirForm.id_producto,
+      ...(transferirForm.id_variante ? { id_variante: transferirForm.id_variante } : {}),
       cantidad: transferirForm.cantidad.trim(),
       observaciones: transferirForm.observaciones.trim(),
     });
@@ -630,27 +638,30 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
       setErrorMsg('Complete almacén, ubicación y producto.');
       return;
     }
-    if (D(cargaForm.cantidad_disponible).lt(0)) {
-      setErrorMsg('La cantidad disponible no puede ser negativa.');
+    const dispDec = parseDecimalStrict(cargaForm.cantidad_disponible);
+    if (!dispDec || dispDec.lt(0)) {
+      setErrorMsg('Ingrese una cantidad disponible numérica mayor o igual a cero.');
       return;
     }
     crearStock.mutate({
       id_almacen: cargaForm.id_almacen,
       id_ubicacion: cargaForm.id_ubicacion,
       id_producto: cargaForm.id_producto,
-      cantidad_disponible: cargaForm.cantidad_disponible.trim() || '0',
+      cantidad_disponible: cargaForm.cantidad_disponible.trim(),
     });
   };
 
   const handleReserva = () => {
-    if (D(reservaForm.cantidad).lte(0)) {
-      setErrorMsg('La cantidad debe ser mayor a cero.');
+    const cantDec = parseDecimalStrict(reservaForm.cantidad);
+    if (!cantDec || cantDec.lte(0)) {
+      setErrorMsg('Ingrese una cantidad numérica válida mayor a cero.');
       return;
     }
     reservar.mutate({
       id_almacen: reservaForm.id_almacen,
       id_ubicacion: reservaForm.id_ubicacion,
       id_producto: reservaForm.id_producto,
+      ...(reservaForm.id_variante ? { id_variante: reservaForm.id_variante } : {}),
       cantidad: reservaForm.cantidad.trim(),
       liberar: reservaForm.liberar,
     });
@@ -770,8 +781,8 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
           <Stack spacing={2} sx={{ mt: 1 }}>
             {requiereAutorizacionTransfer && (
               <Alert severity="warning">
-                Atención: una de las ubicaciones seleccionadas requiere autorización de supervisor (usuario staff o
-                autorizador de la empresa).
+                Atención: una de las ubicaciones seleccionadas requiere autorización de supervisor (usuario staff de la
+                empresa o superusuario).
               </Alert>
             )}
             <TextField
@@ -784,6 +795,7 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
                   id_almacen: e.target.value,
                   id_ubicacion_origen: '',
                   id_ubicacion_destino: '',
+                  id_variante: null,
                 }))
               }
               fullWidth
@@ -828,7 +840,7 @@ const StockUbicacionesTab: React.FC<StockUbicacionesTabProps> = ({
               select
               label="Producto"
               value={transferirForm.id_producto}
-              onChange={(e) => setTransferirForm((f) => ({ ...f, id_producto: e.target.value }))}
+              onChange={(e) => setTransferirForm((f) => ({ ...f, id_producto: e.target.value, id_variante: null }))}
               fullWidth
             >
               {productos.map((p) => (

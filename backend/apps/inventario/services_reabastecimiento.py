@@ -199,8 +199,8 @@ def generar_borrador_reabastecimiento(
     fecha_necesidad=None,
 ) -> dict[str, Any]:
     """Genera un borrador de RequisicionCompra, OrdenProduccion o Transferencia según ``regla.ruta``."""
-    if usuario is None:
-        raise ReabastecimientoError("El usuario solicitante es obligatorio.")
+    if usuario is None or not getattr(usuario, "is_active", False):
+        raise ReabastecimientoError("El usuario solicitante es obligatorio y debe estar activo.")
 
     regla_locked = (
         ReglaReabastecimiento.objects.select_for_update(of=("self",))
@@ -213,6 +213,14 @@ def generar_borrador_reabastecimiento(
         raise ReabastecimientoError("La regla de reabastecimiento está inactiva.")
 
     empresa = regla_locked.id_empresa
+    from apps.core.viewsets import get_empresas_visible  # noqa: PLC0415
+
+    if not (
+        getattr(usuario, "es_superusuario_omni", False)
+        or getattr(usuario, "is_superuser", False)
+        or get_empresas_visible(usuario).filter(pk=empresa.pk).exists()
+    ):
+        raise ReabastecimientoError("El usuario no tiene permisos para generar borradores en esta empresa.")
     producto = regla_locked.id_producto
     almacen = regla_locked.id_almacen
 
@@ -241,19 +249,29 @@ def generar_borrador_reabastecimiento(
         if not producto.es_comprable:
             raise ReabastecimientoError("El producto no está habilitado para compras (es_comprable=False).")
 
-        numero_req = _generar_numero_requisicion_unico(empresa)
-        req = RequisicionCompra.objects.create(
-            id_empresa=empresa,
-            numero_requisicion=numero_req,
-            fecha_requisicion=hoy,
-            fecha_necesidad=fecha_nec_parsed or hoy,
-            id_solicitante=usuario,
-            estado="BORRADOR",
-            justificacion=(
-                f"Reabastecimiento automático regla {regla_locked.id_regla}: "
-                f"{producto.nombre_producto} en {almacen.nombre_almacen}"
-            ),
-        )
+        req = None
+        for intento in range(5):
+            numero_req = _generar_numero_requisicion_unico(empresa)
+            try:
+                with transaction.atomic():
+                    req = RequisicionCompra.objects.create(
+                        id_empresa=empresa,
+                        numero_requisicion=numero_req,
+                        fecha_requisicion=hoy,
+                        fecha_necesidad=fecha_nec_parsed or hoy,
+                        id_solicitante=usuario,
+                        estado="BORRADOR",
+                        justificacion=(
+                            f"Reabastecimiento automático regla {regla_locked.id_regla}: "
+                            f"{producto.nombre_producto} en {almacen.nombre_almacen}"
+                        ),
+                    )
+                break
+            except IntegrityError as exc:
+                if intento == 4:
+                    raise ReabastecimientoError("No se pudo generar un número único de requisición.") from exc
+                continue
+        assert req is not None  # noqa: S101 — garantizado por el loop
         DetalleRequisicionCompra.objects.create(
             id_requisicion=req,
             id_producto=producto,
