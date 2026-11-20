@@ -70,6 +70,12 @@
 | `^asignaciones-horario/por_empleado/$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
 | `^asignaciones-horario/por_empleado\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
 | `^asignaciones-horario\.(?P<format>[a-z0-9]+)/?$` | AsignacionHorarioViewSet | AsignacionHorario | — | ✅ | IsAuthenticated |
+| `^asignaciones-pago/$` | AsignacionPagoViewSet | AsignacionPago | ✅ | ✅ | IsAuthenticated |
+| `^asignaciones-pago/(?P<pk>[^/.]+)/$` | AsignacionPagoViewSet | AsignacionPago | ✅ | ✅ | IsAuthenticated |
+| `^asignaciones-pago/(?P<pk>[^/.]+)/revertir/$` | AsignacionPagoViewSet | AsignacionPago | ✅ | ✅ | IsAuthenticated |
+| `^asignaciones-pago/(?P<pk>[^/.]+)/revertir\.(?P<format>[a-z0-9]+)/?$` | AsignacionPagoViewSet | AsignacionPago | ✅ | ✅ | IsAuthenticated |
+| `^asignaciones-pago/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AsignacionPagoViewSet | AsignacionPago | ✅ | ✅ | IsAuthenticated |
+| `^asignaciones-pago\.(?P<format>[a-z0-9]+)/?$` | AsignacionPagoViewSet | AsignacionPago | ✅ | ✅ | IsAuthenticated |
 | `^bandeja/$` | BandejaFacturacionViewSet | BandejaFacturacion | ✅ | ✅ | IsAuthenticated |
 | `^bandeja/(?P<pk>[^/.]+)/$` | BandejaFacturacionViewSet | BandejaFacturacion | ✅ | ✅ | IsAuthenticated |
 | `^bandeja/(?P<pk>[^/.]+)/confirmar/$` | BandejaFacturacionViewSet | BandejaFacturacion | ✅ | ✅ | IsAuthenticated |
@@ -858,8 +864,12 @@
 | `^pagos/(?P<pk>[^/.]+)/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)/activar/$` | PagoLubrikcaViewSet | PagoLubrikca | ✅ | — | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | PagoLubrikcaViewSet | PagoLubrikca | ✅ | — | IsAuthenticated |
+| `^pagos/(?P<pk>[^/.]+)/conciliar-documentos/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/(?P<pk>[^/.]+)/conciliar-documentos\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)/desactivar/$` | PagoLubrikcaViewSet | PagoLubrikca | ✅ | — | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PagoLubrikcaViewSet | PagoLubrikca | ✅ | — | IsAuthenticated |
+| `^pagos/(?P<pk>[^/.]+)/sugerir-distribucion/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^pagos/(?P<pk>[^/.]+)/sugerir-distribucion\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PagoLubrikcaViewSet | PagoLubrikca | ✅ | — | IsAuthenticated |
 | `^pagos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
 | `^pagos/tipos_documento/$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
@@ -1292,6 +1302,7 @@
 | `cartera/dashboard/` | CarteraDashboardView | — | — | — | IsAuthenticated |
 | `chat/` | AsistenteChatView | — | — | — | IsAuthenticated |
 | `configuracion/` | ConfiguracionSeguimientoView | — | — | — | PermisoTareas |
+| `contactos/<uuid:id_contacto>/estado-conciliacion/` | EstadoConciliacionContactoView | — | — | — | IsAuthenticated |
 | `dashboard/kpis/` | dashboard_kpis_view | — | — | — | IsAuthenticated |
 | `dashboard/stats/` | dashboard_stats_view | — | — | — | IsAuthenticated |
 | `destinos/` | BotDestinosView | — | — | — | PuedePanelBots |
@@ -1315,4 +1326,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 239_
+_Total ViewSets: 241_

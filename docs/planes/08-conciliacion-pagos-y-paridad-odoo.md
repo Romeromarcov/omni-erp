@@ -8,7 +8,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | PLANIFICADO — listo para ejecución autónoma por PRs focales hacia `develop` |
+| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B planificado |
 | **Fecha** | 2026-11-17 (basado en símbolos verificados en `origin/develop @ ff2bdb6`) |
 | **Apps involucradas** | `finanzas`, `core`, `cuentas_por_cobrar`, `cuentas_por_pagar`, `ventas`, `compras`, `contabilidad`, `gestion_aprobaciones`, `inventario`, `almacenes`, `banca_electronica`, `tesoreria`, `integration_hub`, `agentes` |
 | **Esfuerzo estimado** | ~5–7 semanas en PRs pequeños y focales (`R-PROC-2`) |
@@ -197,9 +197,9 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 
 | Ola | PRs focales sugeridos | Dependencia previa |
 |---|---|---|
-| **Ola A1** | `feat(finanzas): modelo AsignacionPago + RLS + backfill Pago.id_contacto` | Ninguna |
-| **Ola A2** | `feat(finanzas): servicio atomico conciliacion N:M, anticipos y diferencial cambiario` | Ola A1 |
-| **Ola A3** | `feat(finanzas): API REST, MCP y UI ConciliacionContactoDialog en CxC/CxP/Tesoreria` | Ola A2 |
+| **Ola A1** | ✅ `feat(finanzas): modelo AsignacionPago + RLS + backfill Pago.id_contacto` (`PR #297`) | Ninguna |
+| **Ola A2** | ✅ `feat(finanzas): servicio atomico conciliacion N:M, anticipos y diferencial cambiario` (`PR #298`) | Ola A1 |
+| **Ola A3** | ✅ `feat(finanzas): API REST, MCP y UI ConciliacionContactoDialog en CxC/CxP/Tesoreria` (`PR-12`) | Ola A2 |
 | **Ola B1** | `feat(contabilidad): DiarioContable, contra-asiento, PeriodoContable y cierre ejercicio` | Ninguna (paralela a Ola A) |
 | **Ola B2** | `feat(contabilidad): reportes P&L, Balance General, Mayor Auxiliar y Balance Comprobacion PDF/CSV + USD` | Ola B1 |
 | **Ola B3** | `feat(compras): flujo transaccional Requisicion->RFQ->Oferta->OC y reglas departamento/SLA en aprobaciones` | Ninguna |

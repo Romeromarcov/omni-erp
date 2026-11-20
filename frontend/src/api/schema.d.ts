@@ -5248,6 +5248,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/finanzas/asignaciones-pago/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``. */
+        get: operations["finanzas_asignaciones-pago_list"];
+        put?: never;
+        /** @description Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``. */
+        post: operations["finanzas_asignaciones-pago_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/asignaciones-pago/{id_asignacion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        /** @description Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``. */
+        get: operations["finanzas_asignaciones-pago_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/asignaciones-pago/{id_asignacion}/revertir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Revierte una asignación activa, restaura saldos y emite contra-asiento. */
+        post: operations["finanzas_asignaciones-pago_revertir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/finanzas/cajas-fisicas-usuario/": {
         parameters: {
             query?: never;
@@ -5612,6 +5670,25 @@ export interface paths {
          *     Permite filtrar por fecha, tipo, moneda, concepto, referencia, usuario.
          */
         get: operations["finanzas_cajas_movimientos_caja_banco"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/contactos/{id_contacto}/estado-conciliacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_contacto: string;
+            };
+            cookie?: never;
+        };
+        /** @description Estado unificado de pagos disponibles, obligaciones abiertas y asignaciones de un contacto. */
+        get: operations["finanzas_contactos_estado-conciliacion_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6468,6 +6545,46 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["finanzas_pagos_partial_update"];
+        trace?: never;
+    };
+    "/finanzas/pagos/{id_pago}/conciliar-documentos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Aplica un ``Pago`` a 1..N documentos abiertos en una transacción atómica. */
+        post: operations["finanzas_pagos_conciliar_documentos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/pagos/{id_pago}/sugerir-distribucion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        /** @description Propone distribución FIFO determinística del saldo disponible del pago. */
+        get: operations["finanzas_pagos_sugerir_distribucion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/finanzas/plantillas-maestro-cajas/": {
@@ -16163,6 +16280,16 @@ export interface components {
              */
             id_proveedor: string;
             /**
+             * Proveedor nombre
+             * @default
+             */
+            readonly proveedor_nombre: string;
+            /**
+             * Contacto id
+             * Format: uuid
+             */
+            readonly contacto_id?: string | null;
+            /**
              * Id factura compra
              * Format: uuid
              */
@@ -16835,6 +16962,11 @@ export interface components {
             readonly cliente_nombre?: string;
             /** Cliente ref */
             readonly cliente_ref?: string;
+            /**
+             * Contacto id
+             * Format: uuid
+             */
+            readonly contacto_id?: string | null;
             /** Saldo pendiente */
             readonly saldo_pendiente?: string;
             /**
@@ -16960,7 +17092,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-19T20:20:48.251973-04:00
+             * @default 2026-11-20T01:16:11.228312-04:00
              */
             fecha_despacho: string;
             /**
@@ -17037,6 +17169,231 @@ export interface components {
              * @description Fecha y hora de la última modificación del registro.
              */
             readonly fecha_actualizacion?: string;
+        };
+        AsignacionPago: {
+            /**
+             * Id asignacion
+             * Format: uuid
+             */
+            readonly id_asignacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string;
+            /**
+             * Contacto nombre
+             * @default
+             */
+            readonly contacto_nombre: string;
+            /**
+             * Id pago
+             * Format: uuid
+             */
+            readonly id_pago?: string;
+            /**
+             * Pago referencia
+             * @default
+             */
+            readonly pago_referencia: string | null;
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            readonly tipo_documento?: "CUENTA_POR_COBRAR" | "CUENTA_POR_PAGAR" | "FACTURA_VENTA" | "FACTURA_COMPRA";
+            /** Id documento */
+            readonly id_documento?: string;
+            /** Id cxc */
+            readonly id_cxc?: number | null;
+            /**
+             * Id cxp
+             * Format: uuid
+             */
+            readonly id_cxp?: string | null;
+            /**
+             * Id factura venta
+             * Format: uuid
+             */
+            readonly id_factura_venta?: string | null;
+            /**
+             * Id factura compra
+             * Format: uuid
+             */
+            readonly id_factura_compra?: string | null;
+            /** Id abono cxc */
+            readonly id_abono_cxc?: number | null;
+            /**
+             * Id abono cxp
+             * Format: uuid
+             */
+            readonly id_abono_cxp?: string | null;
+            /**
+             * Monto asignado pago
+             * Format: decimal
+             */
+            readonly monto_asignado_pago?: string;
+            /**
+             * Monto asignado documento
+             * Format: decimal
+             */
+            readonly monto_asignado_documento?: string;
+            /**
+             * Id moneda documento
+             * Format: uuid
+             */
+            readonly id_moneda_documento?: string;
+            /**
+             * Moneda documento codigo
+             * @default
+             */
+            readonly moneda_documento_codigo: string;
+            /**
+             * Tasa aplicada
+             * Format: decimal
+             */
+            readonly tasa_aplicada?: string;
+            /**
+             * Diferencia cambiaria
+             * Format: decimal
+             */
+            readonly diferencia_cambiaria?: string;
+            /**
+             * Tipo diferencia
+             * @enum {string}
+             */
+            readonly tipo_diferencia?: "" | "GANANCIA" | "PERDIDA";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "ACTIVA" | "REVERTIDA";
+            /**
+             * Fecha aplicacion
+             * Format: date-time
+             */
+            readonly fecha_aplicacion?: string;
+            /**
+             * Fecha reversion
+             * Format: date-time
+             */
+            readonly fecha_reversion?: string | null;
+            /** Motivo reversion */
+            readonly motivo_reversion?: string;
+            /**
+             * Id asiento
+             * Format: uuid
+             */
+            readonly id_asiento?: string | null;
+            /**
+             * Id asiento reversion
+             * Format: uuid
+             */
+            readonly id_asiento_reversion?: string | null;
+            /**
+             * Id usuario registro
+             * Format: uuid
+             */
+            readonly id_usuario_registro?: string | null;
+            /** Referencia externa */
+            readonly referencia_externa?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+        };
+        LineaConciliacionInput: {
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            tipo_documento: "CUENTA_POR_COBRAR" | "CUENTA_POR_PAGAR" | "FACTURA_VENTA" | "FACTURA_COMPRA";
+            /** Id documento */
+            id_documento: string;
+            /**
+             * Monto asignado pago
+             * Format: decimal
+             */
+            monto_asignado_pago: string;
+            /**
+             * Monto asignado documento
+             * Format: decimal
+             */
+            monto_asignado_documento?: string | null;
+            /**
+             * Tasa aplicada
+             * Format: decimal
+             */
+            tasa_aplicada?: string | null;
+            /**
+             * Tasa original
+             * Format: decimal
+             */
+            tasa_original?: string | null;
+            /**
+             * Tasa liquidacion
+             * Format: decimal
+             */
+            tasa_liquidacion?: string | null;
+            /**
+             * Moneda documento
+             * @default
+             */
+            moneda_documento: string | null;
+            /**
+             * Referencia externa
+             * @default
+             */
+            referencia_externa: string;
+        };
+        CrearAsignacionPagoInput: {
+            asignaciones: components["schemas"]["LineaConciliacionInput"][];
+            /**
+             * Descripcion
+             * @default
+             */
+            descripcion: string;
+            /**
+             * Generar asiento
+             * @default true
+             */
+            generar_asiento: boolean;
+            /**
+             * Pago
+             * Format: uuid
+             */
+            pago: string;
+        };
+        ConciliarDocumentosResponse: {
+            /**
+             * Pago id
+             * Format: uuid
+             */
+            readonly pago_id?: string;
+            /**
+             * Saldo disponible
+             * Format: decimal
+             */
+            readonly saldo_disponible?: string;
+            readonly asignaciones?: components["schemas"]["AsignacionPago"][];
+        };
+        RevertirAsignacionInput: {
+            /**
+             * Motivo
+             * @default
+             */
+            motivo: string;
         };
         CajaFisicaUsuario: {
             /**
@@ -17290,6 +17647,130 @@ export interface components {
             plantilla_maestro?: string | null;
             /** @description Métodos de pago permitidos para esta caja virtual. */
             metodos_pago?: string[];
+        };
+        ContactoResumenConciliacion: {
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string;
+            /** Nombre */
+            readonly nombre?: string;
+            /**
+             * Rif
+             * @default
+             */
+            readonly rif: string;
+            /** Es cliente */
+            readonly es_cliente?: boolean;
+            /** Es proveedor */
+            readonly es_proveedor?: boolean;
+        };
+        SaldoMonedaConciliacion: {
+            /**
+             * Moneda id
+             * Format: uuid
+             */
+            readonly moneda_id?: string;
+            /** Codigo iso */
+            readonly codigo_iso?: string;
+            /** Simbolo */
+            readonly simbolo?: string;
+            /**
+             * Ingreso
+             * Format: decimal
+             */
+            readonly INGRESO?: string;
+            /**
+             * Egreso
+             * Format: decimal
+             */
+            readonly EGRESO?: string;
+            /** Cantidad pagos */
+            readonly cantidad_pagos?: number;
+        };
+        SaldoAFavorResumen: {
+            /** Total por moneda */
+            readonly total_por_moneda?: {
+                [key: string]: components["schemas"]["SaldoMonedaConciliacion"];
+            };
+            /** Total pagos con saldo */
+            readonly total_pagos_con_saldo?: number;
+        };
+        PagoDisponibleConciliacion: {
+            /**
+             * Id pago
+             * Format: uuid
+             */
+            readonly id_pago?: string;
+            /**
+             * Fecha pago
+             * Format: date-time
+             */
+            readonly fecha_pago?: string;
+            /** Tipo operacion */
+            readonly tipo_operacion?: string;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            readonly monto?: string;
+            /**
+             * Saldo disponible
+             * Format: decimal
+             */
+            readonly saldo_disponible?: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /**
+             * Referencia
+             * @default
+             */
+            readonly referencia: string;
+            /**
+             * Tasa
+             * Format: decimal
+             */
+            readonly tasa?: string;
+        };
+        ObligacionAbiertaConciliacion: {
+            /** Tipo documento */
+            readonly tipo_documento?: string;
+            /** Id documento */
+            readonly id_documento?: string;
+            /** Numero documento */
+            readonly numero_documento?: string;
+            /**
+             * Fecha emision
+             * Format: date
+             */
+            readonly fecha_emision?: string;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            readonly fecha_vencimiento?: string;
+            /**
+             * Monto total
+             * Format: decimal
+             */
+            readonly monto_total?: string;
+            /**
+             * Saldo pendiente
+             * Format: decimal
+             */
+            readonly saldo_pendiente?: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /** Estado */
+            readonly estado?: string;
+        };
+        EstadoConciliacionContactoResponse: {
+            contacto?: components["schemas"]["ContactoResumenConciliacion"];
+            saldo_a_favor?: components["schemas"]["SaldoAFavorResumen"];
+            readonly pagos_disponibles?: components["schemas"]["PagoDisponibleConciliacion"][];
+            readonly obligaciones_abiertas?: components["schemas"]["ObligacionAbiertaConciliacion"][];
+            readonly asignaciones_activas?: components["schemas"]["AsignacionPago"][];
         };
         CuentaBancariaEmpresaFinanzas: {
             /**
@@ -18076,6 +18557,101 @@ export interface components {
              * Format: uuid
              */
             id_usuario_registro?: string | null;
+        };
+        ConciliarDocumentosInput: {
+            asignaciones: components["schemas"]["LineaConciliacionInput"][];
+            /**
+             * Descripcion
+             * @default
+             */
+            descripcion: string;
+            /**
+             * Generar asiento
+             * @default true
+             */
+            generar_asiento: boolean;
+        };
+        PropuestaDistribucionItem: {
+            /** Tipo documento */
+            readonly tipo_documento?: string;
+            /** Id documento */
+            readonly id_documento?: string;
+            /**
+             * Referencia
+             * @default
+             */
+            readonly referencia: string;
+            /**
+             * Fecha emision
+             * Format: date
+             */
+            readonly fecha_emision?: string;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            readonly fecha_vencimiento?: string;
+            /**
+             * Moneda documento
+             * Format: uuid
+             */
+            readonly moneda_documento?: string;
+            /** Moneda documento codigo */
+            readonly moneda_documento_codigo?: string;
+            /**
+             * Saldo pendiente documento
+             * Format: decimal
+             */
+            readonly saldo_pendiente_documento?: string;
+            /**
+             * Tasa aplicada
+             * Format: decimal
+             */
+            readonly tasa_aplicada?: string;
+            /**
+             * Monto asignado pago
+             * Format: decimal
+             */
+            readonly monto_asignado_pago?: string;
+            /**
+             * Monto asignado documento
+             * Format: decimal
+             */
+            readonly monto_asignado_documento?: string;
+        };
+        OmitidaSinTasa: {
+            /** Tipo documento */
+            readonly tipo_documento?: string;
+            /** Id documento */
+            readonly id_documento?: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /** Motivo */
+            readonly motivo?: string;
+        };
+        SugerirDistribucionResponse: {
+            /**
+             * Pago id
+             * Format: uuid
+             */
+            readonly pago_id?: string;
+            /**
+             * Saldo disponible
+             * Format: decimal
+             */
+            readonly saldo_disponible?: string;
+            readonly propuestas?: components["schemas"]["PropuestaDistribucionItem"][];
+            /**
+             * Total a aplicar
+             * Format: decimal
+             */
+            readonly total_a_aplicar?: string;
+            /**
+             * Saldo a favor resultante
+             * Format: decimal
+             */
+            readonly saldo_a_favor_resultante?: string;
+            readonly omitidas_sin_tasa?: components["schemas"]["OmitidaSinTasa"][];
         };
         PlantillaMaestroCajasVirtuales: {
             /**
@@ -22691,6 +23267,11 @@ export interface components {
              * Format: uuid
              */
             readonly id_pago_conciliado?: string | null;
+            /**
+             * Pago contacto id
+             * Format: uuid
+             */
+            readonly pago_contacto_id?: string | null;
             /**
              * Huella
              * @default
@@ -37237,6 +37818,120 @@ export interface operations {
             };
         };
     };
+    "finanzas_asignaciones-pago_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description Filtrar por UUID de Pago. */
+                pago?: string;
+                /** @description Filtrar por UUID de core.Contacto. */
+                contacto?: string;
+                /** @description Filtrar por tipo de documento destino. */
+                tipo_documento?: "CUENTA_POR_COBRAR" | "CUENTA_POR_PAGAR" | "FACTURA_COMPRA" | "FACTURA_VENTA";
+                /** @description Filtrar por identificador del documento destino. */
+                id_documento?: string;
+                /** @description Filtrar por estado (ACTIVA | REVERTIDA). */
+                estado?: "ACTIVA" | "REVERTIDA";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["AsignacionPago"][];
+                    };
+                };
+            };
+        };
+    };
+    "finanzas_asignaciones-pago_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearAsignacionPagoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliarDocumentosResponse"];
+                };
+            };
+        };
+    };
+    "finanzas_asignaciones-pago_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsignacionPago"];
+                };
+            };
+        };
+    };
+    "finanzas_asignaciones-pago_revertir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertirAsignacionInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsignacionPago"];
+                };
+            };
+        };
+    };
     "finanzas_cajas-fisicas-usuario_list": {
         parameters: {
             query?: {
@@ -38165,6 +38860,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CajaTesoreria"];
+                };
+            };
+        };
+    };
+    "finanzas_contactos_estado-conciliacion_list": {
+        parameters: {
+            query?: {
+                /** @description Filtra pagos y obligaciones compatibles (INGRESO | EGRESO). */
+                tipo_operacion?: "INGRESO" | "EGRESO";
+            };
+            header?: never;
+            path: {
+                id_contacto: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoConciliacionContactoResponse"];
                 };
             };
         };
@@ -40449,6 +41168,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Pago"];
+                };
+            };
+        };
+    };
+    finanzas_pagos_conciliar_documentos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConciliarDocumentosInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliarDocumentosResponse"];
+                };
+            };
+        };
+    };
+    finanzas_pagos_sugerir_distribucion: {
+        parameters: {
+            query?: {
+                /** @description Opcional: restringe sugerencia FIFO a un tipo de documento. */
+                tipo_documento?: "CUENTA_POR_COBRAR" | "FACTURA_VENTA" | "CUENTA_POR_PAGAR" | "FACTURA_COMPRA";
+            };
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SugerirDistribucionResponse"];
                 };
             };
         };

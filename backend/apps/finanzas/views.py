@@ -3,15 +3,25 @@ from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.throttling import EscrituraRateThrottle
 
 from django.db import models
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from .serializers_conciliacion_pagos import (
+    AsignacionPagoSerializer,
+    ConciliarDocumentosInputSerializer,
+    ConciliarDocumentosResponseSerializer,
+    SugerirDistribucionResponseSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
 from apps.core.exceptions import domain_error_response
-from apps.core.idempotency import IdempotentCreateMixin
+from apps.core.idempotency import IdempotentCreateMixin, idempotent
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 from apps.tesoreria.serializers import CajaSerializer
 
@@ -1494,3 +1504,82 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
         from .models import Pago
 
         return Response([{"value": choice[0], "label": choice[1]} for choice in Pago.TIPO_OPERACION_CHOICES])
+
+    @swagger_auto_schema(
+        request_body=ConciliarDocumentosInputSerializer,
+        responses={200: ConciliarDocumentosResponseSerializer},
+    )
+    @idempotent("finanzas:pago-conciliar")
+    @action(detail=True, methods=["post"], url_path="conciliar-documentos")
+    def conciliar_documentos(self, request, pk=None):
+        """Aplica un ``Pago`` a 1..N documentos abiertos en una transacción atómica."""
+        from .services_conciliacion_pagos import (
+            ConciliacionPagoError,
+            aplicar_pago_a_documentos,
+            saldo_disponible_pago,
+        )
+        from .views_conciliacion_pagos import _responder_error_conciliacion
+
+        pago = self.get_object()
+        input_ser = ConciliarDocumentosInputSerializer(data=request.data)
+        input_ser.is_valid(raise_exception=True)
+        datos = input_ser.validated_data
+
+        try:
+            creadas = aplicar_pago_a_documentos(
+                pago,
+                datos["asignaciones"],
+                usuario=request.user,
+                generar_asiento=bool(datos.get("generar_asiento", True)),
+                descripcion=str(datos.get("descripcion") or ""),
+            )
+        except ConciliacionPagoError as exc:
+            return _responder_error_conciliacion(exc)
+
+        return Response(
+            {
+                "pago_id": str(pago.pk),
+                "saldo_disponible": str(saldo_disponible_pago(pago)),
+                "asignaciones": AsignacionPagoSerializer(creadas, many=True).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "tipo_documento",
+                openapi.IN_QUERY,
+                description="Opcional: restringe sugerencia FIFO a un tipo de documento.",
+                type=openapi.TYPE_STRING,
+                enum=["CUENTA_POR_COBRAR", "FACTURA_VENTA", "CUENTA_POR_PAGAR", "FACTURA_COMPRA"],
+            ),
+        ],
+        responses={200: SugerirDistribucionResponseSerializer},
+    )
+    @action(detail=True, methods=["get"], url_path="sugerir-distribucion")
+    def sugerir_distribucion(self, request, pk=None):
+        """Propone distribución FIFO determinística del saldo disponible del pago."""
+        from .services_conciliacion_pagos import (
+            TIPOS_DOCUMENTO_VALIDOS,
+            ConciliacionPagoError,
+            sugerir_distribucion_fifo,
+        )
+        from .views_conciliacion_pagos import _responder_error_conciliacion
+
+        pago = self.get_object()
+        tipo_doc_raw = request.query_params.get("tipo_documento")
+        tipo_doc: str | None = None
+        if tipo_doc_raw is not None:
+            tipo_limpio = str(tipo_doc_raw).replace("\x00", "").strip()
+            if tipo_limpio:
+                if tipo_limpio not in TIPOS_DOCUMENTO_VALIDOS:
+                    raise ValidationError({"tipo_documento": f"Tipo de documento inválido: {tipo_limpio!r}."})
+                tipo_doc = tipo_limpio
+
+        try:
+            propuesta = sugerir_distribucion_fifo(pago, tipo_documento=tipo_doc)
+        except ConciliacionPagoError as exc:
+            return _responder_error_conciliacion(exc)
+
+        return Response(SugerirDistribucionResponseSerializer(propuesta).data, status=status.HTTP_200_OK)

@@ -33,6 +33,7 @@ export interface MovimientoBancario {
   referencia: string;
   estado: EstadoMovBancario | string;
   id_pago_conciliado: string | null;
+  pago_contacto_id?: string | null;
   origen: 'CSV' | 'MANUAL' | 'API' | string;
   fecha_creacion: string;
 }

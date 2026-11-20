@@ -313,7 +313,12 @@ class MovimientoBancarioViewSet(ActiveFilterMixin, BaseModelViewSet):
 
     def get_queryset(self):
         empresas = _empresas(self.request)
-        qs = super().get_queryset().filter(id_empresa__in=empresas).select_related("id_cuenta_bancaria", "id_empresa")
+        qs = (
+            super()
+            .get_queryset()
+            .filter(id_empresa__in=empresas)
+            .select_related("id_cuenta_bancaria", "id_empresa", "id_pago_conciliado")
+        )
         empresa_id = self.request.query_params.get("empresa")
         cuenta_id = self.request.query_params.get("cuenta")
         estado = self.request.query_params.get("estado")

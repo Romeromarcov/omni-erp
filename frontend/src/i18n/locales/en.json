@@ -534,6 +534,8 @@
       "errorCerrar": "Error closing the reconciliation",
       "movConciliados": "Matched",
       "movPendientes": "Pending",
+      "conciliarPorContacto": "Reconcile by contact",
+      "conciliarPago": "Reconcile",
       "movimientosCuenta": "Account transactions"
     },
     "cambioDivisa": {

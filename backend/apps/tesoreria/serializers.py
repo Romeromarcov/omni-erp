@@ -404,6 +404,12 @@ class SaldosConsolidadosResponseSerializer(serializers.Serializer):
 
 
 class MovimientoBancarioSerializer(serializers.ModelSerializer):
+    pago_contacto_id = serializers.UUIDField(
+        source="id_pago_conciliado.id_contacto_id",
+        read_only=True,
+        allow_null=True,
+        default=None,
+    )
     _CAMPOS_INMUTABLES_CONTABLE = (
         "id_empresa",
         "id_cuenta_bancaria",
@@ -428,6 +434,7 @@ class MovimientoBancarioSerializer(serializers.ModelSerializer):
             "referencia",
             "estado",
             "id_pago_conciliado",
+            "pago_contacto_id",
             "huella",
             "saldo_posterior",
             "orden_en_archivo",
@@ -444,6 +451,7 @@ class MovimientoBancarioSerializer(serializers.ModelSerializer):
             "id_archivo_extracto",
             "estado",
             "id_pago_conciliado",
+            "pago_contacto_id",
             "huella",
             "saldo_posterior",
             "orden_en_archivo",

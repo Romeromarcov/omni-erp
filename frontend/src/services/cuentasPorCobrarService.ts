@@ -9,6 +9,7 @@ export interface CuentaPorCobrar {
   cliente: string | null;
   cliente_nombre: string | null;
   cliente_ref: string | null;
+  contacto_id?: string | null;
   /** Montos como string decimal — nunca number (R-CODE-4). */
   monto: string;
   saldo_pendiente: string;
