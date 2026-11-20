@@ -21,8 +21,8 @@ from __future__ import annotations
 import logging
 import uuid
 from collections.abc import Mapping, Sequence
-from datetime import date
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from datetime import date, datetime
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -95,9 +95,19 @@ def _parse_tasa_opcional(valor: Any, campo: str) -> Decimal | None:
     return _parse_decimal_positivo(valor, campo)
 
 
+def _tolerancia_redondeo_moneda(*, misma_moneda: bool, tasa_aplicada: Decimal) -> Decimal:
+    """Retorna 0 en misma moneda y tolerancia proporcional a 0.0001*tasa en multimoneda."""
+    if misma_moneda:
+        return Decimal("0")
+    tolerancia_tasa = (Decimal("0.0001") * tasa_aplicada).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+    return max(_TOLERANCIA_REDONDEO, tolerancia_tasa)
+
+
 def _fecha_local_pago(pago: "Pago") -> date:
     """Retorna la fecha del pago en la zona horaria del proyecto."""
     fecha_dt = pago.fecha_pago
+    if isinstance(fecha_dt, date) and not isinstance(fecha_dt, datetime):
+        return fecha_dt
     if timezone.is_aware(fecha_dt):
         return timezone.localdate(fecha_dt)
     return fecha_dt.date()
@@ -155,6 +165,7 @@ def _resolver_contacto_documento(empresa: "Empresa", documento: Any) -> "Contact
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
     from apps.cuentas_por_pagar.models import CuentaPorPagar
     from apps.integration_hub.models import EntidadSincronizada
+    from apps.proveedores.models import Proveedor
     from apps.ventas.models import FacturaFiscal
 
     doc_empresa_id = _extraer_empresa_id(documento)
@@ -169,9 +180,25 @@ def _resolver_contacto_documento(empresa: "Empresa", documento: Any) -> "Contact
         if not externo_id:
             raise ConciliacionPagoError("La CuentaPorCobrar no tiene cliente ni identificador externo.")
 
-        mapping = (
+        if externo_id.startswith("proveedor:"):
+            raw_prov_id = externo_id[len("proveedor:") :].strip()
+            try:
+                prov_uuid = UUID(raw_prov_id)
+            except (ValueError, TypeError) as exc:
+                raise ConciliacionPagoError(f"Identificador de proveedor externo inválido: '{externo_id}'.") from exc
+            proveedor = Proveedor.objects.select_related("contacto").filter(pk=prov_uuid).first()
+            if proveedor is None:
+                raise ConciliacionPagoError(f"El Proveedor referenciado por '{externo_id}' no existe.")
+            if proveedor.id_empresa_id != empresa.pk:
+                raise ConciliacionTenantError("El proveedor de reintegro pertenece a otra empresa.")
+            if not proveedor.activo:
+                raise ConciliacionPagoError(f"El proveedor '{proveedor.razon_social}' está inactivo.")
+            return _resolver_contacto_tercero(empresa.pk, proveedor, "proveedor", "CuentaPorCobrar")
+
+        mappings = list(
             EntidadSincronizada.objects.filter(
                 id_instancia__id_empresa=empresa,
+                id_instancia__activo=True,
                 tipo_entidad="contactos",
                 id_externo=externo_id,
                 activo=True,
@@ -179,18 +206,26 @@ def _resolver_contacto_documento(empresa: "Empresa", documento: Any) -> "Contact
             )
             .exclude(id_omni="")
             .order_by("-ultimo_sync")
-            .first()
         )
-        if mapping is None or not mapping.id_omni:
+        if not mappings:
             raise ConciliacionPagoError(f"No existe Contacto sincronizado para el deudor externo '{externo_id}'.")
 
-        try:
-            contacto_uuid = UUID(str(mapping.id_omni))
-        except (ValueError, TypeError) as exc:
-            raise ConciliacionPagoError(
-                f"Identificador de contacto sincronizado inválido para '{externo_id}'."
-            ) from exc
+        contacto_uuids: set[UUID] = set()
+        for mapping in mappings:
+            try:
+                contacto_uuids.add(UUID(str(mapping.id_omni)))
+            except (ValueError, TypeError) as exc:
+                raise ConciliacionPagoError(
+                    f"Identificador de contacto sincronizado inválido para '{externo_id}'."
+                ) from exc
 
+        if len(contacto_uuids) > 1:
+            raise ConciliacionPagoError(
+                f"Mapeo ambiguo para el deudor externo '{externo_id}': "
+                "múltiples instancias activas apuntan a contactos distintos."
+            )
+
+        contacto_uuid = next(iter(contacto_uuids))
         contacto = Contacto.objects.filter(pk=contacto_uuid).first()
         if contacto is None:
             raise ConciliacionPagoError(f"El Contacto mapeado para '{externo_id}' no existe.")
@@ -524,9 +559,12 @@ def sugerir_distribucion_fifo(pago: "Pago", *, tipo_documento: str | None = None
     candidatos: list[tuple[tuple[date, date, str], str, str, str, date, date, "Moneda", Decimal]] = []
 
     if "CUENTA_POR_COBRAR" in tipos_buscar:
-        externo_ids = list(
+        from apps.proveedores.models import Proveedor
+
+        candidatos_ext = list(
             EntidadSincronizada.objects.filter(
                 id_instancia__id_empresa=empresa,
+                id_instancia__activo=True,
                 tipo_entidad="contactos",
                 id_omni=str(contacto.pk),
                 activo=True,
@@ -534,9 +572,34 @@ def sugerir_distribucion_fifo(pago: "Pago", *, tipo_documento: str | None = None
             .exclude(id_externo="")
             .values_list("id_externo", flat=True)
         )
+        externo_ids_buscar: list[str] = []
+        if candidatos_ext:
+            conflicting = set(
+                EntidadSincronizada.objects.filter(
+                    id_instancia__id_empresa=empresa,
+                    id_instancia__activo=True,
+                    tipo_entidad="contactos",
+                    id_externo__in=candidatos_ext,
+                    activo=True,
+                    id_omni__isnull=False,
+                )
+                .exclude(id_omni="")
+                .exclude(id_omni=str(contacto.pk))
+                .values_list("id_externo", flat=True)
+            )
+            externo_ids_buscar = [eid for eid in candidatos_ext if eid not in conflicting]
+
+        prov_ids = list(
+            Proveedor.objects.filter(id_empresa_id=empresa_id, contacto=contacto, activo=True).values_list(
+                "pk", flat=True
+            )
+        )
+        for prov_pk in prov_ids:
+            externo_ids_buscar.append(f"proveedor:{prov_pk}")
+
         filtro_contacto = Q(cliente__contacto_id=contacto.pk, cliente__id_empresa_id=empresa_id)
-        if externo_ids:
-            filtro_contacto |= Q(cliente__isnull=True, cliente_externo_id__in=externo_ids)
+        if externo_ids_buscar:
+            filtro_contacto |= Q(cliente__isnull=True, cliente_externo_id__in=externo_ids_buscar)
         cxc_qs = (
             CuentaPorCobrar.objects.filter(
                 empresa_id=empresa_id,
@@ -718,24 +781,29 @@ def sugerir_distribucion_fifo(pago: "Pago", *, tipo_documento: str | None = None
             continue
 
         quant_doc = _DOS_DECIMALES if tipo_doc == "CUENTA_POR_COBRAR" else _CUATRO_DECIMALES
+        misma_moneda = moneda_doc.pk == pago.id_moneda_id
+        tolerancia = _tolerancia_redondeo_moneda(misma_moneda=misma_moneda, tasa_aplicada=tasa_aplicada)
 
-        if moneda_doc.pk == pago.id_moneda_id:
-            monto_aplicar_pago = min(restante_pago, saldo_doc).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
-            if tipo_doc == "CUENTA_POR_COBRAR":
-                monto_aplicar_pago = monto_aplicar_pago.quantize(_DOS_DECIMALES, rounding=ROUND_HALF_UP)
-            monto_aplicar_doc = monto_aplicar_pago.quantize(quant_doc, rounding=ROUND_HALF_UP)
+        if misma_moneda:
+            tope_linea = min(restante_pago, saldo_doc)
+            quant_pago_misma = _DOS_DECIMALES if tipo_doc == "CUENTA_POR_COBRAR" else _CUATRO_DECIMALES
+            monto_aplicar_pago = tope_linea.quantize(quant_pago_misma, rounding=ROUND_DOWN)
+            monto_aplicar_doc = monto_aplicar_pago.quantize(quant_doc, rounding=ROUND_DOWN)
         else:
-            necesario_pago = (saldo_doc / tasa_aplicada).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
-            if restante_pago >= necesario_pago and necesario_pago > Decimal("0"):
+            necesario_pago = max(
+                _CUATRO_DECIMALES,
+                (saldo_doc / tasa_aplicada).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP),
+            )
+            if restante_pago >= necesario_pago:
                 monto_aplicar_pago = necesario_pago
                 monto_aplicar_doc = saldo_doc.quantize(quant_doc, rounding=ROUND_HALF_UP)
-                if abs(monto_aplicar_doc - (monto_aplicar_pago * tasa_aplicada)) > _TOLERANCIA_REDONDEO:
+                if abs(monto_aplicar_doc - (monto_aplicar_pago * tasa_aplicada)) > tolerancia:
                     monto_aplicar_doc = min(
                         saldo_doc,
                         (monto_aplicar_pago * tasa_aplicada).quantize(quant_doc, rounding=ROUND_HALF_UP),
                     )
             else:
-                monto_aplicar_pago = restante_pago
+                monto_aplicar_pago = restante_pago.quantize(_CUATRO_DECIMALES, rounding=ROUND_DOWN)
                 monto_aplicar_doc = min(
                     saldo_doc,
                     (monto_aplicar_pago * tasa_aplicada).quantize(quant_doc, rounding=ROUND_HALF_UP),
@@ -763,7 +831,11 @@ def sugerir_distribucion_fifo(pago: "Pago", *, tipo_documento: str | None = None
             }
         )
 
-    saldo_resultante = max(_CERO, (disponible - total_a_aplicar).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP))
+    saldo_resultante = (disponible - total_a_aplicar).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+    if saldo_resultante < Decimal("0"):
+        raise ConciliacionPagoError(
+            f"La distribución FIFO excede el saldo disponible del pago ({total_a_aplicar} > {disponible})."
+        )
     return {
         "pago_id": str(pago.pk),
         "saldo_disponible": disponible,
@@ -887,6 +959,14 @@ def _calcular_diferencial_cambiario(
     tasa_liquidacion_raw: Any,
 ) -> tuple[Decimal, str]:
     """Calcula monto y signo del diferencial cambiario (``GANANCIA`` / ``PERDIDA``)."""
+    moneda_funcional_id = empresa.id_moneda_base_id or empresa.id_moneda_pais_id
+    if (
+        moneda_funcional_id is not None
+        and moneda_doc.pk == moneda_funcional_id
+        and pago.id_moneda_id == moneda_funcional_id
+    ):
+        return _CERO, ""
+
     tasa_orig = _parse_tasa_opcional(tasa_original_raw, "tasa_original")
     tasa_liq = _parse_tasa_opcional(tasa_liquidacion_raw, "tasa_liquidacion")
 
@@ -918,11 +998,8 @@ def _calcular_diferencial_cambiario(
     if delta == Decimal("0"):
         return _CERO, ""
 
-    if moneda_doc.pk != pago.id_moneda_id and empresa.id_moneda_pais_id is not None:
-        if moneda_doc.pk == empresa.id_moneda_pais_id and pago.id_moneda_id != empresa.id_moneda_pais_id:
-            monto_base_calculo = monto_asignado_pago
-        else:
-            monto_base_calculo = monto_asignado_documento
+    if moneda_doc.pk != pago.id_moneda_id and moneda_funcional_id is not None and moneda_doc.pk == moneda_funcional_id:
+        monto_base_calculo = monto_asignado_pago
     else:
         monto_base_calculo = monto_asignado_documento
 
@@ -936,6 +1013,53 @@ def _calcular_diferencial_cambiario(
         tipo_diferencia = "PERDIDA" if delta > Decimal("0") else "GANANCIA"
 
     return diferencia, tipo_diferencia
+
+
+def _resolver_monto_asiento_moneda_base(
+    *,
+    empresa: "Empresa",
+    tipo_asiento: str,
+    pago: "Pago",
+    moneda_doc: "Moneda",
+    monto_pago: Decimal,
+    monto_doc: Decimal,
+    fecha_ref: date,
+) -> Decimal | None:
+    """Convierte el monto del asiento principal a ``empresa.id_moneda_base``."""
+    from apps.contabilidad.models import MapeoContable
+    from apps.finanzas.services import TasaCambioError, convertir_monto
+
+    moneda_base = empresa.id_moneda_base
+    if moneda_base is None or pago.id_moneda_id == moneda_base.pk:
+        return monto_pago
+    if moneda_doc.pk == moneda_base.pk:
+        return monto_doc
+    try:
+        return convertir_monto(
+            monto_pago,
+            pago.id_moneda,
+            moneda_base,
+            empresa=empresa,
+            fecha=fecha_ref,
+        )
+    except TasaCambioError as exc:
+        tiene_mapeo = MapeoContable.objects.filter(
+            id_empresa=empresa,
+            tipo_asiento=tipo_asiento,
+            activo=True,
+        ).exists()
+        if getattr(empresa, "contabilidad_activa", False) or tiene_mapeo:
+            raise ConciliacionContableError(
+                f"No se pudo convertir el monto del asiento {tipo_asiento} a moneda base "
+                f"{moneda_base.codigo_iso}: {exc}"
+            ) from exc
+        logger.warning(
+            "Asiento %s omitido por falta de tasa hacia moneda base (%s -> %s) en modo sin fricción.",
+            tipo_asiento,
+            pago.id_moneda.codigo_iso,
+            moneda_base.codigo_iso,
+        )
+        return None
 
 
 # ── Operación principal: aplicar_pago_a_documentos ────────────────────────────
@@ -1086,6 +1210,12 @@ def aplicar_pago_a_documentos(
             raise ConciliacionPagoError("La tasa aplicada debe ser mayor a cero.")
 
         quant_doc = _DOS_DECIMALES if tipo_doc == "CUENTA_POR_COBRAR" else _CUATRO_DECIMALES
+        misma_moneda = moneda_doc.pk == pago_locked.id_moneda_id
+        tolerancia = _tolerancia_redondeo_moneda(misma_moneda=misma_moneda, tasa_aplicada=tasa_aplicada)
+        if misma_moneda and tipo_doc == "CUENTA_POR_COBRAR" and monto_pago != monto_pago.quantize(_DOS_DECIMALES):
+            raise ConciliacionPagoError(
+                "Para CUENTA_POR_COBRAR el monto_asignado_documento debe ser múltiplo exacto de 0.01."
+            )
         esperado_raw = monto_pago * tasa_aplicada
         monto_doc_raw = item.get("monto_asignado_documento")
 
@@ -1093,7 +1223,13 @@ def aplicar_pago_a_documentos(
             monto_doc = esperado_raw.quantize(quant_doc, rounding=ROUND_HALF_UP)
         else:
             monto_doc_parsed = _parse_decimal_positivo(monto_doc_raw, "monto_asignado_documento")
-            if abs(monto_doc_parsed - esperado_raw) > _TOLERANCIA_REDONDEO:
+            if misma_moneda:
+                if monto_doc_parsed != monto_pago:
+                    raise ConciliacionPagoError(
+                        f"En la misma moneda, monto_asignado_documento ({monto_doc_parsed}) "
+                        f"debe coincidir exactamente con monto_asignado_pago ({monto_pago})."
+                    )
+            elif abs(monto_doc_parsed - esperado_raw) > tolerancia:
                 raise ConciliacionPagoError(
                     f"El monto_asignado_documento ({monto_doc_parsed}) difiere de "
                     f"monto_asignado_pago * tasa_aplicada ({esperado_raw.quantize(quant_doc, rounding=ROUND_HALF_UP)})."
@@ -1196,20 +1332,34 @@ def aplicar_pago_a_documentos(
 
         if generar_asiento:
             try:
-                asiento, _err = generar_asiento_o_fallar(
-                    tipo_asiento,
-                    asignacion,
-                    empresa,
-                    monto=asignacion.monto_asignado_pago,
-                    usuario=usuario,
+                monto_asiento = _resolver_monto_asiento_moneda_base(
+                    empresa=empresa,
+                    tipo_asiento=tipo_asiento,
+                    pago=pago_locked,
+                    moneda_doc=moneda_doc,
+                    monto_pago=asignacion.monto_asignado_pago,
+                    monto_doc=asignacion.monto_asignado_documento,
+                    fecha_ref=fecha_ref_pago,
                 )
-                if diferencia > Decimal("0") and tipo_diferencia in ("GANANCIA", "PERDIDA"):
+                asiento = None
+                if monto_asiento is not None:
+                    asiento, _err = generar_asiento_o_fallar(
+                        tipo_asiento,
+                        asignacion,
+                        empresa,
+                        monto=monto_asiento,
+                        usuario=usuario,
+                    )
+                diferencia_asiento = Decimal(str(asignacion.diferencia_cambiaria)).quantize(
+                    _DOS_DECIMALES, rounding=ROUND_HALF_UP
+                )
+                if diferencia_asiento > Decimal("0.00") and tipo_diferencia in ("GANANCIA", "PERDIDA"):
                     tipo_dif_asiento = "GANANCIA_CAMBIARIA" if tipo_diferencia == "GANANCIA" else "PERDIDA_CAMBIARIA"
                     generar_asiento_o_fallar(
                         tipo_dif_asiento,
                         asignacion,
                         empresa,
-                        monto=asignacion.diferencia_cambiaria,
+                        monto=diferencia_asiento,
                         usuario=usuario,
                     )
             except AsientoError as exc:

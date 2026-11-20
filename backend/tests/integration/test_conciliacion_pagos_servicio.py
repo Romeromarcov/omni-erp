@@ -857,10 +857,14 @@ class TestMultimonedaYDiferencialCambiario:
         contacto_cliente_a,
         contacto_proveedor_a,
         moneda_usd,
+        moneda_ves,
         metodo_efectivo,
         user_a,
     ):
-        # INGRESO: Factura tasa_cambio=36, Pago tasa=40 -> delta=+4 -> GANANCIA 400
+        empresa_a.id_moneda_base = moneda_ves
+        empresa_a.save(update_fields=["id_moneda_base"])
+
+        # INGRESO: Factura USD tasa_cambio=36, Pago USD tasa=40 (empresa base VES) -> delta=+4 -> GANANCIA 400
         fac_gan = _crear_factura_venta(
             empresa_a,
             cliente_a,
@@ -885,7 +889,7 @@ class TestMultimonedaYDiferencialCambiario:
         assert asig_ing_gan.tipo_diferencia == "GANANCIA"
         assert asig_ing_gan.diferencia_cambiaria == Decimal("400.0000")
 
-        # INGRESO: CxC tasa_orig=40, tasa_liq=36 -> delta=-4 -> PERDIDA 400
+        # INGRESO: CxC USD tasa_orig=40, tasa_liq=36 -> delta=-4 -> PERDIDA 400
         cxc_perd = CuentaPorCobrar.objects.create(
             empresa=empresa_a,
             cliente=cliente_a,
@@ -904,6 +908,7 @@ class TestMultimonedaYDiferencialCambiario:
                     "tipo_documento": "CUENTA_POR_COBRAR",
                     "id_documento": cxc_perd.pk,
                     "monto_asignado_pago": "100.00",
+                    "moneda_documento": "USD",
                     "tasa_original": "40",
                     "tasa_liquidacion": "36",
                 }
@@ -913,7 +918,7 @@ class TestMultimonedaYDiferencialCambiario:
         assert asig_ing_perd.tipo_diferencia == "PERDIDA"
         assert asig_ing_perd.diferencia_cambiaria == Decimal("400.0000")
 
-        # EGRESO: CxP tasa_orig=36, tasa_liq=40 -> delta=+4 -> PERDIDA 400
+        # EGRESO: CxP USD tasa_orig=36, tasa_liq=40 -> delta=+4 -> PERDIDA 400
         cxp_perd = CuentaPorPagar.objects.create(
             id_empresa=empresa_a,
             id_proveedor=proveedor_a,
@@ -938,6 +943,7 @@ class TestMultimonedaYDiferencialCambiario:
                     "tipo_documento": "CUENTA_POR_PAGAR",
                     "id_documento": cxp_perd.pk,
                     "monto_asignado_pago": "100.00",
+                    "moneda_documento": "USD",
                     "tasa_original": "36",
                     "tasa_liquidacion": "40",
                 }
@@ -947,7 +953,7 @@ class TestMultimonedaYDiferencialCambiario:
         assert asig_eg_perd.tipo_diferencia == "PERDIDA"
         assert asig_eg_perd.diferencia_cambiaria == Decimal("400.0000")
 
-        # EGRESO: FacturaCompra tasa_orig=40, tasa_liq=36 -> delta=-4 -> GANANCIA 400
+        # EGRESO: FacturaCompra USD tasa_orig=40, tasa_liq=36 -> delta=-4 -> GANANCIA 400
         fc_gan = _crear_factura_compra(empresa_a, proveedor_a, numero="FC-DIF-G", monto_total=Decimal("100.0000"))
         pago_eg_gan = _crear_pago(
             empresa_a,
@@ -964,6 +970,7 @@ class TestMultimonedaYDiferencialCambiario:
                     "tipo_documento": "FACTURA_COMPRA",
                     "id_documento": fc_gan.pk,
                     "monto_asignado_pago": "100.00",
+                    "moneda_documento": "USD",
                     "tasa_original": "40",
                     "tasa_liquidacion": "36",
                 }
@@ -990,6 +997,7 @@ class TestMultimonedaYDiferencialCambiario:
                         "tipo_documento": "FACTURA_COMPRA",
                         "id_documento": fc_bad.pk,
                         "monto_asignado_pago": "10.00",
+                        "moneda_documento": "USD",
                         "tasa_original": "0",
                         "tasa_liquidacion": "40",
                     }
@@ -1003,11 +1011,20 @@ class TestMultimonedaYDiferencialCambiario:
 
 class TestContabilidadYReversion:
     def test_contabilidad_activa_con_mapeo_genera_asientos_y_reversion_contra_asiento_cuadrado(
-        self, empresa_a, cliente_a, contacto_cliente_a, moneda_usd, metodo_efectivo, user_a
+        self, empresa_a, cliente_a, contacto_cliente_a, moneda_usd, moneda_ves, metodo_efectivo, user_a
     ):
         empresa_a.contabilidad_activa = True
         empresa_a.contabilidad_auto_aprobar = True
-        empresa_a.save(update_fields=["contabilidad_activa", "contabilidad_auto_aprobar"])
+        empresa_a.id_moneda_base = moneda_ves
+        empresa_a.save(update_fields=["contabilidad_activa", "contabilidad_auto_aprobar", "id_moneda_base"])
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("40.00000000"),
+            fecha_tasa=_hoy(),
+        )
         _configurar_mapeos_conciliacion(empresa_a)
 
         cxc_vencida = CuentaPorCobrar.objects.create(
@@ -1037,6 +1054,7 @@ class TestContabilidadYReversion:
                     "tipo_documento": "CUENTA_POR_COBRAR",
                     "id_documento": cxc_vencida.pk,
                     "monto_asignado_pago": "100.00",
+                    "moneda_documento": "USD",
                     "tasa_original": "36",
                     "tasa_liquidacion": "40",
                 },
@@ -1044,6 +1062,7 @@ class TestContabilidadYReversion:
                     "tipo_documento": "CUENTA_POR_COBRAR",
                     "id_documento": cxc_vigente.pk,
                     "monto_asignado_pago": "200.00",
+                    "moneda_documento": "USD",
                 },
             ],
             usuario=user_a,
@@ -1052,6 +1071,13 @@ class TestContabilidadYReversion:
         asig_vig = asigs[1]
         assert asig_venc.id_asiento is not None
         assert asig_venc.id_asiento.estado_asiento == "APROBADO"
+        assert DetalleAsiento.objects.filter(id_asiento=asig_venc.id_asiento).first().debe in (
+            Decimal("4000.00"),
+            Decimal("0.00"),
+        )
+        assert sum(d.debe for d in DetalleAsiento.objects.filter(id_asiento=asig_venc.id_asiento)) == Decimal(
+            "4000.00"
+        )
 
         # 2 asientos para asig_venc (PAGO_CXC + GANANCIA_CAMBIARIA) + 1 para asig_vig
         asientos_venc = AsientoContable.objects.filter(
@@ -1931,6 +1957,8 @@ class TestSeguridadAdr009YConcurrencia:
         empresa_a.id_moneda_base = moneda_orig_emp
         empresa_a.save(update_fields=["id_moneda_base"])
 
+        empresa_a.id_moneda_base = moneda_ves
+        empresa_a.save(update_fields=["id_moneda_base"])
         fv_fx_solo_liq = _crear_factura_venta(
             empresa_a,
             cliente_a,
@@ -1977,7 +2005,9 @@ class TestSeguridadAdr009YConcurrencia:
         assert asig_liq[1].diferencia_cambiaria == Decimal("20.0000")
         assert asig_liq[2].diferencia_cambiaria == Decimal("0.0000")
 
-        # Moneda doc == id_moneda_pais (VES) pagada en USD -> base de cálculo es monto_asignado_pago
+        # Moneda doc == id_moneda_pais (VES) con moneda_base=None fallback a VES -> base de cálculo es monto_asignado_pago
+        empresa_a.id_moneda_base = None
+        empresa_a.save(update_fields=["id_moneda_base"])
         cxc_ves_pais = CuentaPorCobrar.objects.create(
             empresa=empresa_a,
             cliente=cliente_a,
@@ -2001,6 +2031,8 @@ class TestSeguridadAdr009YConcurrencia:
             usuario=user_a,
         )[0]
         assert asig_pais.diferencia_cambiaria == Decimal("20.0000")
+        empresa_a.id_moneda_base = moneda_orig_emp
+        empresa_a.save(update_fields=["id_moneda_base"])
 
         # FIFO omitiendo obligación ya saldada con abono pero aún en estado parcial + contacto inactivo
         cxc_llena = CuentaPorCobrar.objects.create(
@@ -2144,6 +2176,551 @@ class TestSeguridadAdr009YConcurrencia:
         asig_pre.save(update_fields=["id_asiento"])
         asig_rev_ret = revertir_asignacion_pago(asig_pre, usuario=user_a, motivo="Anulado previo")
         assert asig_rev_ret.id_asiento_reversion is None
+
+
+# ── 8. Regresión auditoría QA/Seguridad (B-1 .. B-4 y mejoras #5/#6) ──────────
+
+
+class TestRegresionAuditoriaB1B4:
+    def test_b1_fifo_round_down_cxc_4dp_y_tasa_alta_aplicables_end_to_end(
+        self, empresa_a, cliente_a, contacto_cliente_a, moneda_usd, moneda_ves, metodo_efectivo, user_a
+    ):
+        # 1) Remanente 4dp tras FacturaFiscal (27.0270) seguido de CxC 2dp -> ROUND_DOWN a 27.02 (<= 100.0000)
+        fac = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_usd,
+            numero="FV-B1-4DP",
+            monto_total=Decimal("72.9730"),
+            fecha_vencimiento=_hoy() + timedelta(days=1),
+        )
+        cxc = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=cliente_a,
+            monto=Decimal("50.00"),
+            fecha_emision=_hoy(),
+            fecha_vencimiento=_hoy() + timedelta(days=2),
+            estado="pendiente",
+        )
+        pago = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("100.0000"), contacto=contacto_cliente_a
+        )
+
+        fifo = sugerir_distribucion_fifo(pago)
+        assert fifo["total_a_aplicar"] == Decimal("99.9930")
+        assert fifo["saldo_a_favor_resultante"] == Decimal("0.0070")
+        assert fifo["propuestas"][0]["monto_asignado_pago"] == Decimal("72.9730")
+        assert fifo["propuestas"][1]["monto_asignado_pago"] == Decimal("27.02")
+
+        creadas = aplicar_pago_a_documentos(pago, fifo["propuestas"], usuario=user_a)
+        assert len(creadas) == 2
+        fac.refresh_from_db()
+        cxc.refresh_from_db()
+        assert fac.estado == "PAGADA"
+        assert cxc.estado == "parcial"
+        assert saldo_disponible_pago(pago) == Decimal("0.0070")
+
+        # 2) Tasa alta USD->VES (tasa = 600): Factura 100 VES + centavo 0.01 VES aplicables directo tras FIFO
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("600.00000000"),
+            fecha_tasa=_hoy(),
+        )
+        fv_ves = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_ves,
+            numero="FV-B1-600",
+            monto_total=Decimal("100.0000"),
+            fecha_vencimiento=_hoy() + timedelta(days=1),
+        )
+        fv_cent = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_ves,
+            numero="FV-B1-CENT",
+            monto_total=Decimal("0.0100"),
+            fecha_vencimiento=_hoy() + timedelta(days=2),
+        )
+        pago_usd = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("1.0000"), contacto=contacto_cliente_a
+        )
+        fifo_600 = sugerir_distribucion_fifo(pago_usd, tipo_documento="FACTURA_VENTA")
+        assert [p["id_documento"] for p in fifo_600["propuestas"]] == [str(fv_ves.pk), str(fv_cent.pk)]
+        assert fifo_600["propuestas"][0]["monto_asignado_pago"] == Decimal("0.1667")
+        assert fifo_600["propuestas"][0]["monto_asignado_documento"] == Decimal("100.0000")
+        assert fifo_600["propuestas"][1]["monto_asignado_pago"] == Decimal("0.0001")
+        assert fifo_600["propuestas"][1]["monto_asignado_documento"] == Decimal("0.0100")
+
+        asigs_600 = aplicar_pago_a_documentos(pago_usd, fifo_600["propuestas"], usuario=user_a)
+        assert len(asigs_600) == 2
+        fv_ves.refresh_from_db()
+        fv_cent.refresh_from_db()
+        assert fv_ves.estado == "PAGADA"
+        assert fv_cent.estado == "PAGADA"
+
+    def test_b2_asiento_moneda_base_diferencial_ves_y_cero_fantasma(
+        self, empresa_a, cliente_a, contacto_cliente_a, moneda_usd, moneda_ves, moneda_eur, metodo_efectivo, user_a
+    ):
+        empresa_a.contabilidad_activa = True
+        empresa_a.contabilidad_auto_aprobar = True
+        empresa_a.id_moneda_base = moneda_usd
+        empresa_a.id_moneda_pais = None
+        empresa_a.save(
+            update_fields=["contabilidad_activa", "contabilidad_auto_aprobar", "id_moneda_base", "id_moneda_pais"]
+        )
+        _configurar_mapeos_conciliacion(empresa_a)
+
+        # 1) Empresa base USD: factura 100 USD pagada con 4000 VES a tasa 0.025 -> asiento principal = 100.00 USD
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_ves,
+            id_moneda_destino=moneda_usd,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("0.02500000"),
+            fecha_tasa=_hoy(),
+        )
+        fv_usd = _crear_factura_venta(
+            empresa_a, cliente_a, moneda_usd, numero="FV-B2-BASEUSD", monto_total=Decimal("100.0000")
+        )
+        pago_ves = _crear_pago(
+            empresa_a, moneda_ves, metodo_efectivo, monto=Decimal("4000.0000"), contacto=contacto_cliente_a
+        )
+        asig_base = aplicar_pago_a_documentos(
+            pago_ves,
+            [{"tipo_documento": "FACTURA_VENTA", "id_documento": fv_usd.pk, "monto_asignado_pago": "4000.00"}],
+            usuario=user_a,
+        )[0]
+        assert sum(d.debe for d in DetalleAsiento.objects.filter(id_asiento=asig_base.id_asiento)) == Decimal("100.00")
+
+        # 2) Empresa base VES con id_moneda_pais=None:
+        #    - Factura 4000 VES pagada con 100 USD (tasa_orig=36, tasa_liq=40) -> diferencial = 400.0000 VES (no 16000)
+        #    - Factura 4000 VES (tasa 36) pagada con 4000 VES (tasa 40) -> diferencial = 0.0000 (ambas moneda funcional)
+        empresa_a.id_moneda_base = moneda_ves
+        empresa_a.id_moneda_pais = None
+        empresa_a.save(update_fields=["id_moneda_base", "id_moneda_pais"])
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("40.00000000"),
+            fecha_tasa=_hoy(),
+        )
+        fv_ves_div = _crear_factura_venta(
+            empresa_a, cliente_a, moneda_ves, numero="FV-B2-DIV", monto_total=Decimal("4000.0000")
+        )
+        pago_usd = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("100.0000"), contacto=contacto_cliente_a
+        )
+        asig_div = aplicar_pago_a_documentos(
+            pago_usd,
+            [
+                {
+                    "tipo_documento": "FACTURA_VENTA",
+                    "id_documento": fv_ves_div.pk,
+                    "monto_asignado_pago": "100.00",
+                    "tasa_original": "36",
+                    "tasa_liquidacion": "40",
+                }
+            ],
+            usuario=user_a,
+        )[0]
+        assert asig_div.diferencia_cambiaria == Decimal("400.0000")
+        assert asig_div.tipo_diferencia == "GANANCIA"
+
+        fv_func = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_ves,
+            numero="FV-B2-FUNC",
+            monto_total=Decimal("4000.0000"),
+            tasa_cambio=Decimal("36.0000"),
+        )
+        pago_func = _crear_pago(
+            empresa_a,
+            moneda_ves,
+            metodo_efectivo,
+            monto=Decimal("4000.0000"),
+            tasa=Decimal("40.0000"),
+            contacto=contacto_cliente_a,
+        )
+        asig_func = aplicar_pago_a_documentos(
+            pago_func,
+            [{"tipo_documento": "FACTURA_VENTA", "id_documento": fv_func.pk, "monto_asignado_pago": "4000.00"}],
+            usuario=user_a,
+        )[0]
+        assert asig_func.diferencia_cambiaria == Decimal("0.0000")
+        assert asig_func.tipo_diferencia == ""
+
+        # 3) Diferencial 0.0040 (< 0.01 tras cuantizar a 2dp) NO genera asiento fantasma en 0.00
+        fv_fantasma = _crear_factura_venta(
+            empresa_a, cliente_a, moneda_usd, numero="FV-B2-0040", monto_total=Decimal("1.0000")
+        )
+        pago_fant = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("1.0000"), contacto=contacto_cliente_a
+        )
+        asig_fant = aplicar_pago_a_documentos(
+            pago_fant,
+            [
+                {
+                    "tipo_documento": "FACTURA_VENTA",
+                    "id_documento": fv_fantasma.pk,
+                    "monto_asignado_pago": "1.00",
+                    "tasa_original": "40.0000",
+                    "tasa_liquidacion": "40.0040",
+                }
+            ],
+            usuario=user_a,
+        )[0]
+        assert asig_fant.diferencia_cambiaria == Decimal("0.0040")
+        asientos_fant = AsientoContable.objects.filter(
+            id_empresa=empresa_a,
+            id_documento_origen=asig_fant.id_asignacion,
+            nombre_modelo_origen="AsignacionPago",
+        )
+        assert asientos_fant.count() == 1
+        assert asientos_fant.first().pk == asig_fant.id_asiento_id
+
+        # 4) Tercera divisa (pago EUR -> doc GBP? EUR->GBP no, pago EUR -> doc EUR? pago EUR -> doc USD con base VES sin tasa EUR->VES)
+        #    Falta tasa hacia moneda_base con contabilidad_activa=True -> ConciliacionContableError (rollback)
+        fv_eur_sin_tasa = _crear_factura_venta(
+            empresa_a, cliente_a, moneda_usd, numero="FV-B2-NOTASA", monto_total=Decimal("10.0000")
+        )
+        pago_eur = _crear_pago(
+            empresa_a, moneda_eur, metodo_efectivo, monto=Decimal("10.0000"), contacto=contacto_cliente_a
+        )
+        with pytest.raises(ConciliacionContableError, match="moneda base"):
+            aplicar_pago_a_documentos(
+                pago_eur,
+                [
+                    {
+                        "tipo_documento": "FACTURA_VENTA",
+                        "id_documento": fv_eur_sin_tasa.pk,
+                        "monto_asignado_pago": "10.00",
+                        "tasa_aplicada": "1.0",
+                    }
+                ],
+                usuario=user_a,
+            )
+
+        # Modo sin fricción (contabilidad_activa=False y sin mapeo para esa operación) tolera ausencia de tasa hacia moneda_base
+        empresa_a.contabilidad_activa = False
+        empresa_a.save(update_fields=["contabilidad_activa"])
+        MapeoContable.objects.filter(id_empresa=empresa_a, tipo_asiento="PAGO_CXC").update(activo=False)
+        asig_fric = aplicar_pago_a_documentos(
+            pago_eur,
+            [
+                {
+                    "tipo_documento": "FACTURA_VENTA",
+                    "id_documento": fv_eur_sin_tasa.pk,
+                    "monto_asignado_pago": "5.00",
+                    "tasa_aplicada": "1.0",
+                }
+            ],
+            usuario=user_a,
+        )[0]
+        assert asig_fric.id_asiento is None
+
+        # tasa_liquidacion sin tasa_original en CxC multimoneda -> (0, ""), y delta == 0 -> (0, "")
+        pago_usd_extra_b2 = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("50.0000"), contacto=contacto_cliente_a
+        )
+        cxc_sin_orig = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=cliente_a,
+            monto=Decimal("20.00"),
+            fecha_emision=_hoy(),
+            fecha_vencimiento=_hoy() + timedelta(days=5),
+        )
+        asig_delta_0 = aplicar_pago_a_documentos(
+            pago_usd_extra_b2,
+            [
+                {
+                    "tipo_documento": "CUENTA_POR_COBRAR",
+                    "id_documento": cxc_sin_orig.pk,
+                    "monto_asignado_pago": "5.00",
+                    "moneda_documento": "USD",
+                    "tasa_liquidacion": "40",
+                },
+                {
+                    "tipo_documento": "CUENTA_POR_COBRAR",
+                    "id_documento": cxc_sin_orig.pk,
+                    "monto_asignado_pago": "5.00",
+                    "moneda_documento": "USD",
+                    "tasa_original": "40",
+                    "tasa_liquidacion": "40",
+                },
+            ],
+            usuario=user_a,
+        )
+        assert asig_delta_0[0].diferencia_cambiaria == Decimal("0.0000")
+        assert asig_delta_0[1].diferencia_cambiaria == Decimal("0.0000")
+
+        # CxC multimoneda con monto aplicado que redondea a 0.00 -> rechazado (> 0)
+        pago_ves_tiny = _crear_pago(
+            empresa_a, moneda_ves, metodo_efectivo, monto=Decimal("10.0000"), contacto=contacto_cliente_a
+        )
+        with pytest.raises(ConciliacionPagoError, match="mayor a cero"):
+            aplicar_pago_a_documentos(
+                pago_ves_tiny,
+                [
+                    {
+                        "tipo_documento": "CUENTA_POR_COBRAR",
+                        "id_documento": cxc_sin_orig.pk,
+                        "monto_asignado_pago": "0.01",
+                        "moneda_documento": "USD",
+                        "tasa_aplicada": "0.025",
+                    }
+                ],
+                usuario=user_a,
+            )
+
+    def test_b3_misma_moneda_tolerancia_cero_rechaza_descuadre_centavo(
+        self, empresa_a, cliente_a, contacto_cliente_a, moneda_usd, metodo_efectivo, user_a
+    ):
+        fac = _crear_factura_venta(
+            empresa_a, cliente_a, moneda_usd, numero="FV-B3-EXACT", monto_total=Decimal("50.0100")
+        )
+        pago = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("50.0000"), contacto=contacto_cliente_a
+        )
+        with pytest.raises(ConciliacionPagoError, match="misma moneda"):
+            aplicar_pago_a_documentos(
+                pago,
+                [
+                    {
+                        "tipo_documento": "FACTURA_VENTA",
+                        "id_documento": fac.pk,
+                        "monto_asignado_pago": "50.00",
+                        "monto_asignado_documento": "50.01",
+                    }
+                ],
+                usuario=user_a,
+            )
+
+        # También rechaza >2dp en CxC en la misma moneda incluso si se omite monto_asignado_documento
+        cxc = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=cliente_a,
+            monto=Decimal("20.00"),
+            fecha_emision=_hoy(),
+            fecha_vencimiento=_hoy() + timedelta(days=5),
+        )
+        with pytest.raises(ConciliacionPagoError, match="0.01"):
+            aplicar_pago_a_documentos(
+                pago,
+                [{"tipo_documento": "CUENTA_POR_COBRAR", "id_documento": cxc.pk, "monto_asignado_pago": "10.1234"}],
+                usuario=user_a,
+            )
+
+    def test_b4_adr009_instancia_inactiva_y_ambiguedad_y_mejoras_5_6(
+        self,
+        empresa_a,
+        empresa_b,
+        cliente_a,
+        proveedor_a,
+        contacto_cliente_a,
+        contacto_cliente_a2,
+        contacto_proveedor_a,
+        contacto_b,
+        moneda_usd,
+        metodo_efectivo,
+        user_a,
+    ):
+        from apps.finanzas.services_conciliacion_pagos import _fecha_local_pago, _resolver_contacto_documento
+        from apps.finanzas.services_pagos_terceros import PREFIJO_DEUDOR_PROVEEDOR
+
+        # #5: _fecha_local_pago soporta date plano
+        hoy = _hoy()
+        assert _fecha_local_pago(SimpleNamespace(fecha_pago=hoy)) == hoy  # type: ignore[arg-type]
+
+        # B-4a: Instancia inactiva más reciente ignorada frente a instancia activa
+        prov_conn = ConectorProveedor.objects.create(
+            codigo=f"odoo-b4-{uuid.uuid4().hex[:6]}", nombre="Odoo B4", capacidades=["contactos"]
+        )
+        inst_activa_1 = ConectorInstancia.objects.create(
+            id_empresa=empresa_a, id_proveedor=prov_conn, nombre="Odoo Activa 1", estado="activo", activo=True
+        )
+        inst_activa_2 = ConectorInstancia.objects.create(
+            id_empresa=empresa_a, id_proveedor=prov_conn, nombre="Odoo Activa 2", estado="activo", activo=True
+        )
+        inst_inactiva = ConectorInstancia.objects.create(
+            id_empresa=empresa_a, id_proveedor=prov_conn, nombre="Odoo Inactiva", estado="inactivo", activo=False
+        )
+        EntidadSincronizada.objects.create(
+            id_instancia=inst_activa_1,
+            tipo_entidad="contactos",
+            id_externo="ext-secuestro",
+            id_omni=str(contacto_cliente_a.pk),
+            modelo_omni="apps.core.models.Contacto",
+            activo=True,
+        )
+        EntidadSincronizada.objects.create(
+            id_instancia=inst_inactiva,
+            tipo_entidad="contactos",
+            id_externo="ext-secuestro",
+            id_omni=str(contacto_cliente_a2.pk),
+            modelo_omni="apps.core.models.Contacto",
+            activo=True,
+        )
+        cxc_segura = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=None,
+            cliente_externo_id="ext-secuestro",
+            monto=Decimal("30.00"),
+            fecha_emision=hoy,
+            fecha_vencimiento=hoy + timedelta(days=3),
+        )
+        assert _resolver_contacto_documento(empresa_a, cxc_segura).pk == contacto_cliente_a.pk
+
+        # Solo instancia inactiva -> falla cerrado
+        EntidadSincronizada.objects.create(
+            id_instancia=inst_inactiva,
+            tipo_entidad="contactos",
+            id_externo="ext-solo-inactiva",
+            id_omni=str(contacto_cliente_a.pk),
+            modelo_omni="apps.core.models.Contacto",
+            activo=True,
+        )
+        cxc_solo_inact = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=None,
+            cliente_externo_id="ext-solo-inactiva",
+            monto=Decimal("20.00"),
+            fecha_emision=hoy,
+            fecha_vencimiento=hoy + timedelta(days=3),
+        )
+        with pytest.raises(ConciliacionPagoError, match="No existe Contacto sincronizado"):
+            _resolver_contacto_documento(empresa_a, cxc_solo_inact)
+
+        # B-4b: Dos instancias activas -> mismo Contacto OK; distinto Contacto -> ambiguo
+        EntidadSincronizada.objects.create(
+            id_instancia=inst_activa_2,
+            tipo_entidad="contactos",
+            id_externo="ext-secuestro",
+            id_omni=str(contacto_cliente_a.pk),
+            modelo_omni="apps.core.models.Contacto",
+            activo=True,
+        )
+        assert _resolver_contacto_documento(empresa_a, cxc_segura).pk == contacto_cliente_a.pk
+
+        EntidadSincronizada.objects.create(
+            id_instancia=inst_activa_1,
+            tipo_entidad="contactos",
+            id_externo="ext-ambiguo",
+            id_omni=str(contacto_cliente_a.pk),
+            modelo_omni="apps.core.models.Contacto",
+            activo=True,
+        )
+        EntidadSincronizada.objects.create(
+            id_instancia=inst_activa_2,
+            tipo_entidad="contactos",
+            id_externo="ext-ambiguo",
+            id_omni=str(contacto_cliente_a2.pk),
+            modelo_omni="apps.core.models.Contacto",
+            activo=True,
+        )
+        cxc_amb = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=None,
+            cliente_externo_id="ext-ambiguo",
+            monto=Decimal("25.00"),
+            fecha_emision=hoy,
+            fecha_vencimiento=hoy + timedelta(days=3),
+        )
+        with pytest.raises(ConciliacionPagoError, match="ambiguo"):
+            _resolver_contacto_documento(empresa_a, cxc_amb)
+
+        # #6: CxC de reintegro PagoTercero ("proveedor:<uuid>") resuelve y concilia vía FIFO y aplicar_pago
+        cxc_reint = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=None,
+            cliente_externo_id=f"{PREFIJO_DEUDOR_PROVEEDOR}{proveedor_a.pk}",
+            cliente_externo_nombre=proveedor_a.razon_social,
+            monto=Decimal("75.00"),
+            fecha_emision=hoy,
+            fecha_vencimiento=hoy + timedelta(days=5),
+            estado="pendiente",
+            tipo_operacion="REINTEGRO_PAGO_TERCERO",
+        )
+        assert _resolver_contacto_documento(empresa_a, cxc_reint).pk == contacto_proveedor_a.pk
+        pago_reint = _crear_pago(
+            empresa_a,
+            moneda_usd,
+            metodo_efectivo,
+            monto=Decimal("75.0000"),
+            tipo_operacion="INGRESO",
+            contacto=contacto_proveedor_a,
+        )
+        fifo_reint = sugerir_distribucion_fifo(pago_reint, tipo_documento="CUENTA_POR_COBRAR")
+        assert [p["id_documento"] for p in fifo_reint["propuestas"]] == [str(cxc_reint.pk)]
+        aplicar_pago_a_documentos(pago_reint, fifo_reint["propuestas"], usuario=user_a)
+        cxc_reint.refresh_from_db()
+        assert cxc_reint.estado == "pagada"
+
+        cxc_reint_bad = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=None,
+            cliente_externo_id="proveedor:no-uuid",
+            monto=Decimal("10.00"),
+            fecha_emision=hoy,
+            fecha_vencimiento=hoy + timedelta(days=2),
+        )
+        with pytest.raises(ConciliacionPagoError):
+            _resolver_contacto_documento(empresa_a, cxc_reint_bad)
+
+        cxc_reint_missing = CuentaPorCobrar.objects.create(
+            empresa=empresa_a,
+            cliente=None,
+            cliente_externo_id=f"proveedor:{uuid.uuid4()}",
+            monto=Decimal("10.00"),
+            fecha_emision=hoy,
+            fecha_vencimiento=hoy + timedelta(days=2),
+        )
+        with pytest.raises(ConciliacionPagoError):
+            _resolver_contacto_documento(empresa_a, cxc_reint_missing)
+
+        # Proveedor cross-tenant y proveedor inactivo rechazados
+        prov_b = Proveedor.objects.create(
+            id_empresa=empresa_b, razon_social="Prov B", rif="J-98880001-1", contacto=contacto_b
+        )
+        with pytest.raises(ConciliacionTenantError, match="otra empresa"):
+            _resolver_contacto_documento(
+                empresa_a,
+                CuentaPorCobrar.objects.create(
+                    empresa=empresa_a,
+                    cliente=None,
+                    cliente_externo_id=f"{PREFIJO_DEUDOR_PROVEEDOR}{prov_b.pk}",
+                    monto=Decimal("10.00"),
+                    fecha_emision=hoy,
+                    fecha_vencimiento=hoy + timedelta(days=2),
+                ),
+            )
+        proveedor_a.activo = False
+        proveedor_a.save(update_fields=["activo"])
+        with pytest.raises(ConciliacionPagoError, match="inactivo"):
+            _resolver_contacto_documento(empresa_a, cxc_reint)
+        proveedor_a.activo = True
+        proveedor_a.save(update_fields=["activo"])
+
+        # FIFO excluye external ID ambiguo entre instancias activas
+        pago_fifo_amb = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("50.0000"), contacto=contacto_cliente_a
+        )
+        fifo_excl = sugerir_distribucion_fifo(pago_fifo_amb, tipo_documento="CUENTA_POR_COBRAR")
+        assert str(cxc_amb.pk) not in [p["id_documento"] for p in fifo_excl["propuestas"]]
+
+        # Contacto sincronizado inactivo en EntidadSincronizada -> ConciliacionPagoError
+        contacto_cliente_a.activo = False
+        contacto_cliente_a.save(update_fields=["activo"])
+        with pytest.raises(ConciliacionPagoError, match="inactivo"):
+            _resolver_contacto_documento(empresa_a, cxc_segura)
+        contacto_cliente_a.activo = True
+        contacto_cliente_a.save(update_fields=["activo"])
 
 
 @pytest.mark.django_db(transaction=True)
