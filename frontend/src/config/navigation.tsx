@@ -199,6 +199,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Diarios Contables', path: '/contabilidad/diarios' },
         { label: 'Asientos Contables', path: '/contabilidad/asientos' },
         { label: 'Períodos y Cierre', path: '/contabilidad/periodos' },
+        { label: 'Reportes Financieros', path: '/contabilidad/reportes' },
         { label: 'Mapeos Contables', path: '/contabilidad/mapeos' },
       ],
     },

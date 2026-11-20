@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from decimal import Decimal
 from typing import Any
 
 from django.db.models import QuerySet
@@ -40,6 +39,8 @@ from .services import (
     reabrir_periodo_contable,
     revertir_asiento,
 )
+from .services_reportes import generar_balance_comprobacion
+from .views_reportes import serializar_reporte_json
 
 
 def _empresas(request: Request) -> Any:
@@ -323,7 +324,7 @@ class AsientoContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.M
 
     @action(detail=False, methods=["get"])
     def balance_comprobacion(self, request: Request) -> Response:
-        """Genera un balance de comprobación básico"""
+        """Genera un balance de comprobación básico delegando en el motor SQL canónico."""
         empresa_id = request.query_params.get("empresa_id")
         if not empresa_id:
             return Response({"error": "Debe especificar el ID de la empresa"}, status=status.HTTP_400_BAD_REQUEST)
@@ -335,45 +336,12 @@ class AsientoContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.M
             return Response({"error": "ID de empresa inválido."}, status=status.HTTP_400_BAD_REQUEST)
 
         # H-SEC-10: la empresa solicitada debe estar entre las visibles del usuario.
-        if not _empresas(request).filter(pk=empresa_uuid).exists():
+        empresa = _empresas(request).filter(pk=empresa_uuid).first()
+        if empresa is None:
             return Response({"error": "Empresa no encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Obtener asientos aprobados
-        asientos_aprobados = AsientoContable.objects.filter(id_empresa=empresa_uuid, estado_asiento="APROBADO")
-
-        # Obtener detalles de esos asientos
-        detalles = DetalleAsiento.objects.filter(id_asiento__in=asientos_aprobados).select_related(
-            "id_cuenta_contable"
-        )
-
-        # Agrupar por cuenta
-        cuentas_balance: dict[str, dict[str, Any]] = {}
-        for detalle in detalles:
-            cuenta_id = str(detalle.id_cuenta_contable.id_cuenta_contable)
-            if cuenta_id not in cuentas_balance:
-                cuentas_balance[cuenta_id] = {
-                    "codigo_cuenta": detalle.id_cuenta_contable.codigo_cuenta,
-                    "nombre_cuenta": detalle.id_cuenta_contable.nombre_cuenta,
-                    "tipo_cuenta": detalle.id_cuenta_contable.tipo_cuenta,
-                    "debe": Decimal(0),
-                    "haber": Decimal(0),
-                }
-
-            cuentas_balance[cuenta_id]["debe"] += detalle.debe
-            cuentas_balance[cuenta_id]["haber"] += detalle.haber
-
-        # Calcular saldos
-        for cuenta in cuentas_balance.values():
-            cuenta["saldo"] = cuenta["debe"] - cuenta["haber"]
-
-        return Response(
-            {
-                "empresa_id": str(empresa_uuid),
-                "cuentas": list(cuentas_balance.values()),
-                "total_debe": sum((c["debe"] for c in cuentas_balance.values()), Decimal(0)),
-                "total_haber": sum((c["haber"] for c in cuentas_balance.values()), Decimal(0)),
-            }
-        )
+        reporte = generar_balance_comprobacion(empresa)
+        return Response(serializar_reporte_json(reporte))
 
 
 class DetalleAsientoViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.ModelViewSet):

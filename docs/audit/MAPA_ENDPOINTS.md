@@ -1339,6 +1339,10 @@
 | `periodos-fiscales/<int:año>/<int:mes>/cerrar/` | CerrarPeriodoFiscalView | — | — | — | IsAuthenticated |
 | `pull/` | SyncPullView | — | — | — | IsAuthenticated |
 | `push/ventas/` | SyncPushVentasView | — | — | — | IsAuthenticated |
+| `reportes/balance-comprobacion/` | ReporteBalanceComprobacionView | — | — | — | IsAuthenticated |
+| `reportes/balance-general/` | ReporteBalanceGeneralView | — | — | — | IsAuthenticated |
+| `reportes/estado-resultados/` | ReporteEstadoResultadosView | — | — | — | IsAuthenticated |
+| `reportes/libro-mayor-auxiliar/` | ReporteLibroMayorAuxiliarView | — | — | — | IsAuthenticated |
 | `resumen/` | ResumenEjecutivoTareasView | — | — | — | PermisoTareas |
 | `seguimiento/ejecutar/` | EjecutarSeguimientoView | — | — | — | PermisoTareas |
 | `signup/` | SignupView | — | — | — | AllowAny |
@@ -1348,4 +1352,4 @@
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 243_
+_Total ViewSets: 247_

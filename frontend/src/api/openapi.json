@@ -6587,7 +6587,7 @@
         "/contabilidad/asientos-contables/balance_comprobacion/": {
             "get": {
                 "operationId": "contabilidad_asientos-contables_balance_comprobacion",
-                "description": "Genera un balance de comprobación básico",
+                "description": "Genera un balance de comprobación básico delegando en el motor SQL canónico.",
                 "parameters": [
                     {
                         "name": "search",
@@ -8145,6 +8145,270 @@
                     "format": "uuid"
                 }
             ]
+        },
+        "/contabilidad/reportes/balance-comprobacion/": {
+            "get": {
+                "operationId": "contabilidad_reportes_balance-comprobacion_list",
+                "summary": "Balance de Comprobación canónico",
+                "description": "GET /api/contabilidad/reportes/balance-comprobacion/",
+                "parameters": [
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa (requerido).",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "fecha_desde",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "fecha_hasta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "id_diario",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "incluir_equivalentes_usd",
+                        "in": "query",
+                        "description": "Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "name": "formato",
+                        "in": "query",
+                        "description": "Formato de salida: json (default), csv o pdf.",
+                        "type": "string",
+                        "enum": [
+                            "json",
+                            "csv",
+                            "pdf"
+                        ],
+                        "default": "json"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/BalanceComprobacionResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/reportes/balance-general/": {
+            "get": {
+                "operationId": "contabilidad_reportes_balance-general_list",
+                "summary": "Balance General canónico",
+                "description": "GET /api/contabilidad/reportes/balance-general/",
+                "parameters": [
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa (requerido).",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "fecha_corte",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "incluir_equivalentes_usd",
+                        "in": "query",
+                        "description": "Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "name": "formato",
+                        "in": "query",
+                        "description": "Formato de salida: json (default), csv o pdf.",
+                        "type": "string",
+                        "enum": [
+                            "json",
+                            "csv",
+                            "pdf"
+                        ],
+                        "default": "json"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/BalanceGeneralResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/reportes/estado-resultados/": {
+            "get": {
+                "operationId": "contabilidad_reportes_estado-resultados_list",
+                "summary": "Estado de Resultados (P&L) canónico",
+                "description": "GET /api/contabilidad/reportes/estado-resultados/",
+                "parameters": [
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa (requerido).",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "fecha_desde",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "fecha_hasta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "incluir_equivalentes_usd",
+                        "in": "query",
+                        "description": "Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "name": "formato",
+                        "in": "query",
+                        "description": "Formato de salida: json (default), csv o pdf.",
+                        "type": "string",
+                        "enum": [
+                            "json",
+                            "csv",
+                            "pdf"
+                        ],
+                        "default": "json"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EstadoResultadosResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/reportes/libro-mayor-auxiliar/": {
+            "get": {
+                "operationId": "contabilidad_reportes_libro-mayor-auxiliar_list",
+                "summary": "Libro Mayor Auxiliar canónico",
+                "description": "GET /api/contabilidad/reportes/libro-mayor-auxiliar/",
+                "parameters": [
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa (requerido).",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "id_cuenta_contable",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "id_contacto",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "id_diario",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "fecha_desde",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "fecha_hasta",
+                        "in": "query",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 1000
+                    },
+                    {
+                        "name": "incluir_equivalentes_usd",
+                        "in": "query",
+                        "description": "Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "name": "formato",
+                        "in": "query",
+                        "description": "Formato de salida: json (default), csv o pdf.",
+                        "type": "string",
+                        "enum": [
+                            "json",
+                            "csv",
+                            "pdf"
+                        ],
+                        "default": "json"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LibroMayorAuxiliarResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
         },
         "/control-asistencia/asignaciones-horario/": {
             "get": {
@@ -50625,6 +50889,1029 @@
                 }
             }
         },
+        "BalanceComprobacionCuenta": {
+            "type": "object",
+            "properties": {
+                "id_cuenta_contable": {
+                    "title": "Id cuenta contable",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_cuenta_padre": {
+                    "title": "Id cuenta padre",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "codigo_cuenta": {
+                    "title": "Codigo cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nombre_cuenta": {
+                    "title": "Nombre cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo_cuenta": {
+                    "title": "Tipo cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "naturaleza": {
+                    "title": "Naturaleza",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nivel": {
+                    "title": "Nivel",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "debe_inicial": {
+                    "title": "Debe inicial",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "haber_inicial": {
+                    "title": "Haber inicial",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_inicial": {
+                    "title": "Saldo inicial",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_inicial_deudor": {
+                    "title": "Saldo inicial deudor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_inicial_acreedor": {
+                    "title": "Saldo inicial acreedor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "debe": {
+                    "title": "Debe",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "haber": {
+                    "title": "Haber",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "debe_periodo": {
+                    "title": "Debe periodo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "haber_periodo": {
+                    "title": "Haber periodo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "debe_final_acum": {
+                    "title": "Debe final acum",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "haber_final_acum": {
+                    "title": "Haber final acum",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo": {
+                    "title": "Saldo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_final_deudor": {
+                    "title": "Saldo final deudor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_final_acreedor": {
+                    "title": "Saldo final acreedor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "debe_inicial_usd": {
+                    "title": "Debe inicial usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "haber_inicial_usd": {
+                    "title": "Haber inicial usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "saldo_inicial_usd": {
+                    "title": "Saldo inicial usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "debe_usd": {
+                    "title": "Debe usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "haber_usd": {
+                    "title": "Haber usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "debe_final_acum_usd": {
+                    "title": "Debe final acum usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "haber_final_acum_usd": {
+                    "title": "Haber final acum usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "saldo_usd": {
+                    "title": "Saldo usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
+        "BalanceComprobacionResponse": {
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "title": "Empresa id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "moneda_base": {
+                    "title": "Moneda base",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_base_simbolo": {
+                    "title": "Moneda base simbolo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "incluir_equivalentes_usd": {
+                    "title": "Incluir equivalentes usd",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_disponible": {
+                    "title": "Usd disponible",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "tasa_usd": {
+                    "title": "Tasa usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "tasa_usd_inversa": {
+                    "title": "Tasa usd inversa",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_mensaje": {
+                    "title": "Usd mensaje",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "fecha_desde": {
+                    "title": "Fecha desde",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_hasta": {
+                    "title": "Fecha hasta",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_diario": {
+                    "title": "Id diario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "diario_nombre": {
+                    "title": "Diario nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "cuentas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BalanceComprobacionCuenta"
+                    },
+                    "readOnly": true
+                },
+                "total_debe_inicial": {
+                    "title": "Total debe inicial",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_haber_inicial": {
+                    "title": "Total haber inicial",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_saldo_inicial_deudor": {
+                    "title": "Total saldo inicial deudor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_saldo_inicial_acreedor": {
+                    "title": "Total saldo inicial acreedor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_debe": {
+                    "title": "Total debe",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_haber": {
+                    "title": "Total haber",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_debe_periodo": {
+                    "title": "Total debe periodo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_haber_periodo": {
+                    "title": "Total haber periodo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_debe_final_acum": {
+                    "title": "Total debe final acum",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_haber_final_acum": {
+                    "title": "Total haber final acum",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_saldo_final_deudor": {
+                    "title": "Total saldo final deudor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_saldo_final_acreedor": {
+                    "title": "Total saldo final acreedor",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cuadrado": {
+                    "title": "Cuadrado",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "total_debe_usd": {
+                    "title": "Total debe usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_haber_usd": {
+                    "title": "Total haber usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
+        "EstadoFinancieroCuenta": {
+            "type": "object",
+            "properties": {
+                "id_cuenta_contable": {
+                    "title": "Id cuenta contable",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_cuenta_padre": {
+                    "title": "Id cuenta padre",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "codigo_cuenta": {
+                    "title": "Codigo cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nombre_cuenta": {
+                    "title": "Nombre cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo_cuenta": {
+                    "title": "Tipo cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "naturaleza": {
+                    "title": "Naturaleza",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nivel": {
+                    "title": "Nivel",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "debe": {
+                    "title": "Debe",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "haber": {
+                    "title": "Haber",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo": {
+                    "title": "Saldo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_usd": {
+                    "title": "Saldo usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
+        "BalanceGeneralResponse": {
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "title": "Empresa id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "moneda_base": {
+                    "title": "Moneda base",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_base_simbolo": {
+                    "title": "Moneda base simbolo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "incluir_equivalentes_usd": {
+                    "title": "Incluir equivalentes usd",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_disponible": {
+                    "title": "Usd disponible",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "tasa_usd": {
+                    "title": "Tasa usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "tasa_usd_inversa": {
+                    "title": "Tasa usd inversa",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_mensaje": {
+                    "title": "Usd mensaje",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "fecha_corte": {
+                    "title": "Fecha corte",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "activos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EstadoFinancieroCuenta"
+                    },
+                    "readOnly": true
+                },
+                "pasivos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EstadoFinancieroCuenta"
+                    },
+                    "readOnly": true
+                },
+                "patrimonio": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EstadoFinancieroCuenta"
+                    },
+                    "readOnly": true
+                },
+                "total_activos": {
+                    "title": "Total activos",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_pasivos": {
+                    "title": "Total pasivos",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_patrimonio": {
+                    "title": "Total patrimonio",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "resultado_periodo": {
+                    "title": "Resultado periodo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_pasivo_patrimonio_y_resultado": {
+                    "title": "Total pasivo patrimonio y resultado",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "ecuacion_cuadrada": {
+                    "title": "Ecuacion cuadrada",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "total_activos_usd": {
+                    "title": "Total activos usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_pasivos_usd": {
+                    "title": "Total pasivos usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_patrimonio_usd": {
+                    "title": "Total patrimonio usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "resultado_periodo_usd": {
+                    "title": "Resultado periodo usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_pasivo_patrimonio_y_resultado_usd": {
+                    "title": "Total pasivo patrimonio y resultado usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
+        "EstadoResultadosResponse": {
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "title": "Empresa id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "moneda_base": {
+                    "title": "Moneda base",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_base_simbolo": {
+                    "title": "Moneda base simbolo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "incluir_equivalentes_usd": {
+                    "title": "Incluir equivalentes usd",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_disponible": {
+                    "title": "Usd disponible",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "tasa_usd": {
+                    "title": "Tasa usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "tasa_usd_inversa": {
+                    "title": "Tasa usd inversa",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_mensaje": {
+                    "title": "Usd mensaje",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "fecha_desde": {
+                    "title": "Fecha desde",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "fecha_hasta": {
+                    "title": "Fecha hasta",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "ingresos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EstadoFinancieroCuenta"
+                    },
+                    "readOnly": true
+                },
+                "costos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EstadoFinancieroCuenta"
+                    },
+                    "readOnly": true
+                },
+                "gastos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EstadoFinancieroCuenta"
+                    },
+                    "readOnly": true
+                },
+                "total_ingresos": {
+                    "title": "Total ingresos",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_costos": {
+                    "title": "Total costos",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_gastos": {
+                    "title": "Total gastos",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "utilidad_bruta": {
+                    "title": "Utilidad bruta",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "resultado_neto": {
+                    "title": "Resultado neto",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_ingresos_usd": {
+                    "title": "Total ingresos usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_costos_usd": {
+                    "title": "Total costos usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_gastos_usd": {
+                    "title": "Total gastos usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "utilidad_bruta_usd": {
+                    "title": "Utilidad bruta usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "resultado_neto_usd": {
+                    "title": "Resultado neto usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
+        "LibroMayorMovimiento": {
+            "type": "object",
+            "properties": {
+                "id_detalle_asiento": {
+                    "title": "Id detalle asiento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_asiento": {
+                    "title": "Id asiento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "fecha_asiento": {
+                    "title": "Fecha asiento",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "numero_asiento": {
+                    "title": "Numero asiento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "descripcion_asiento": {
+                    "title": "Descripcion asiento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "descripcion_detalle": {
+                    "title": "Descripcion detalle",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "id_diario": {
+                    "title": "Id diario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "diario_codigo": {
+                    "title": "Diario codigo",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "diario_nombre": {
+                    "title": "Diario nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "id_cuenta_contable": {
+                    "title": "Id cuenta contable",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "codigo_cuenta": {
+                    "title": "Codigo cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nombre_cuenta": {
+                    "title": "Nombre cuenta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_contacto": {
+                    "title": "Id contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "contacto_nombre": {
+                    "title": "Contacto nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "debe": {
+                    "title": "Debe",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "haber": {
+                    "title": "Haber",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_corrido": {
+                    "title": "Saldo corrido",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "debe_usd": {
+                    "title": "Debe usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "haber_usd": {
+                    "title": "Haber usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "saldo_corrido_usd": {
+                    "title": "Saldo corrido usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
+        "LibroMayorAuxiliarResponse": {
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "title": "Empresa id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "moneda_base": {
+                    "title": "Moneda base",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_base_simbolo": {
+                    "title": "Moneda base simbolo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "incluir_equivalentes_usd": {
+                    "title": "Incluir equivalentes usd",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_disponible": {
+                    "title": "Usd disponible",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "tasa_usd": {
+                    "title": "Tasa usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "tasa_usd_inversa": {
+                    "title": "Tasa usd inversa",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "usd_mensaje": {
+                    "title": "Usd mensaje",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "fecha_desde": {
+                    "title": "Fecha desde",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_hasta": {
+                    "title": "Fecha hasta",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_cuenta_contable": {
+                    "title": "Id cuenta contable",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cuenta_label": {
+                    "title": "Cuenta label",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "id_contacto": {
+                    "title": "Id contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "contacto_label": {
+                    "title": "Contacto label",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "id_diario": {
+                    "title": "Id diario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "diario_label": {
+                    "title": "Diario label",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "limit": {
+                    "title": "Limit",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "saldo_inicial": {
+                    "title": "Saldo inicial",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_debe": {
+                    "title": "Total debe",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "total_haber": {
+                    "title": "Total haber",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "saldo_final": {
+                    "title": "Saldo final",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "truncado": {
+                    "title": "Truncado",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "movimientos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LibroMayorMovimiento"
+                    },
+                    "readOnly": true
+                },
+                "saldo_inicial_usd": {
+                    "title": "Saldo inicial usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_debe_usd": {
+                    "title": "Total debe usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_haber_usd": {
+                    "title": "Total haber usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "saldo_final_usd": {
+                    "title": "Saldo final usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                }
+            }
+        },
         "AsignacionHorario": {
             "required": [
                 "fecha_inicio",
@@ -53910,7 +55197,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T04:23:15.902533-04:00"
+                    "default": "2026-11-20T06:22:06.569888-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
