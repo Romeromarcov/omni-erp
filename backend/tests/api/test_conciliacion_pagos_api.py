@@ -655,3 +655,85 @@ class TestConciliacionPagosAPIFlujoCompleto:
         assert r_mov.status_code == 200
         items_mov = r_mov.data["results"] if "results" in r_mov.data else r_mov.data
         assert items_mov[0]["pago_contacto_id"] == str(contacto.pk)
+
+    def test_pago_viewset_search_ordering_y_acciones_sin_field_error_500(
+        self, client_a, empresa_a, moneda_usd, metodo_efectivo
+    ):
+        """[B-1] Evita HTTP 500 FieldError('razon_social') al usar ?search= en PagoViewSet y acciones."""
+        contacto = _crear_contacto(empresa_a, nombre="Distribuidora Sur C.A.", rif="J-70112233-4")
+        cliente = Cliente.objects.create(
+            id_empresa=empresa_a,
+            razon_social=contacto.nombre,
+            rif=contacto.rif,
+            contacto=contacto,
+        )
+        fv = _crear_factura_venta(
+            empresa_a,
+            cliente,
+            moneda_usd,
+            numero="FV-SRCH-01",
+            monto_total=Decimal("80.0000"),
+        )
+        pago = Pago.objects.create(
+            id_empresa=empresa_a,
+            id_contacto=contacto,
+            tipo_operacion="INGRESO",
+            tipo_documento="ANTICIPO",
+            fecha_pago=timezone.now(),
+            monto=Decimal("80.0000"),
+            id_moneda=moneda_usd,
+            id_metodo_pago=metodo_efectivo,
+            referencia="TRF-SUR-99",
+            observaciones="Nota especial @pago #1",
+        )
+
+        # Búsqueda por texto libre, RIF, UUID y caracteres especiales sobre /api/finanzas/pagos/
+        r_txt = client_a.get("/api/finanzas/pagos/?search=Distribuidora&ordering=-fecha_pago")
+        assert r_txt.status_code == 200, r_txt.content
+        items_txt = r_txt.data["results"] if "results" in r_txt.data else r_txt.data
+        assert [p["id_pago"] for p in items_txt] == [str(pago.pk)]
+
+        r_rif = client_a.get("/api/finanzas/pagos/?search=J-70112233-4")
+        assert r_rif.status_code == 200
+        assert client_a.get(f"/api/finanzas/pagos/?search={uuid.uuid4()}").status_code == 200
+        assert client_a.get("/api/finanzas/pagos/?search=@pago%20%231").status_code == 200
+
+        # NUL byte en ?search= -> 400 controlado (nunca 500 DataError/FieldError)
+        assert client_a.get("/api/finanzas/pagos/?search=abc%00def").status_code == 400
+
+        # Las acciones detail-route de PagoViewSet ejecutan get_object() -> filter_queryset() -> SearchFilter
+        r_fifo_search = client_a.get(f"/api/finanzas/pagos/{pago.pk}/sugerir-distribucion/?search=TRF-SUR-99")
+        assert r_fifo_search.status_code == 200, r_fifo_search.content
+        assert (
+            client_a.get(f"/api/finanzas/pagos/{pago.pk}/sugerir-distribucion/?search=@pago%20%231").status_code == 200
+        )
+        assert client_a.get(f"/api/finanzas/pagos/{pago.pk}/sugerir-distribucion/?search=%00").status_code == 400
+
+        assert (
+            client_a.post(
+                f"/api/finanzas/pagos/{pago.pk}/conciliar-documentos/?search=%00",
+                {
+                    "asignaciones": [
+                        {"tipo_documento": "FACTURA_VENTA", "id_documento": str(fv.pk), "monto_asignado_pago": "10.00"}
+                    ],
+                    "generar_asiento": False,
+                },
+                format="json",
+                HTTP_IDEMPOTENCY_KEY="srch-nul-1",
+            ).status_code
+            == 400
+        )
+
+        r_conc_search = client_a.post(
+            f"/api/finanzas/pagos/{pago.pk}/conciliar-documentos/?search=Distribuidora",
+            {
+                "asignaciones": [
+                    {"tipo_documento": "FACTURA_VENTA", "id_documento": str(fv.pk), "monto_asignado_pago": "30.00"}
+                ],
+                "generar_asiento": False,
+            },
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="srch-ok-1",
+        )
+        assert r_conc_search.status_code == 200, r_conc_search.content
+        assert Decimal(r_conc_search.data["saldo_disponible"]) == Decimal("50.0000")

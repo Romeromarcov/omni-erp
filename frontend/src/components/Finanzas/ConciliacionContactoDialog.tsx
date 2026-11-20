@@ -125,8 +125,9 @@ function ConciliacionContactoDialogContent({
   const [motivosReversion, setMotivosReversion] = useState<Map<string, string>>(() => new Map());
   const [errorGeneral, setErrorGeneral] = useState('');
 
-  // Clave idempotente por intento actual: reintentos idénticos mantienen la misma clave.
-  const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
+  // Clave idempotente por intento actual: reintentos idénticos mantienen la misma clave;
+  // cualquier edición de pago, montos o descripción la resetea.
+  const idempotencyKeyRef = useRef<string | null>(null);
   const revertKeysRef = useRef<Map<string, string>>(new Map());
 
   const {
@@ -246,7 +247,7 @@ function ConciliacionContactoDialogContent({
       setTasasFifoMap(nextTasas);
       setOmitidasSinTasa(res.omitidas_sin_tasa);
       setErrorGeneral('');
-      idempotencyKeyRef.current = newIdempotencyKey();
+      idempotencyKeyRef.current = null;
       if (res.propuestas.length === 0) {
         snackbar.info('No se encontraron documentos elegibles para distribución automática.');
       } else {
@@ -280,7 +281,7 @@ function ConciliacionContactoDialogContent({
       setDescripcion('');
       setOmitidasSinTasa([]);
       setErrorGeneral('');
-      idempotencyKeyRef.current = newIdempotencyKey();
+      idempotencyKeyRef.current = null;
       invalidarRelacionados();
       snackbar.success(`Conciliación aplicada (${res.asignaciones.length} asignación(es)).`);
       onSuccess?.();
@@ -311,12 +312,12 @@ function ConciliacionContactoDialogContent({
     setTasasFifoMap(new Map());
     setOmitidasSinTasa([]);
     setErrorGeneral('');
-    idempotencyKeyRef.current = newIdempotencyKey();
+    idempotencyKeyRef.current = null;
   };
 
   const handleMontoChange = (docKey: string, value: string) => {
     setErrorGeneral('');
-    idempotencyKeyRef.current = newIdempotencyKey();
+    idempotencyKeyRef.current = null;
     setMontosMap((prev) => {
       const next = new Map(prev);
       if (value.trim() === '') {
@@ -328,17 +329,27 @@ function ConciliacionContactoDialogContent({
     });
   };
 
+  const handleDescripcionChange = (value: string) => {
+    setErrorGeneral('');
+    idempotencyKeyRef.current = null;
+    setDescripcion(value);
+  };
+
   const handleAplicarConciliacion = () => {
     if (!pagoActivo || analisisLineas.lineasValidas.length === 0) return;
+    const attemptKey = idempotencyKeyRef.current ?? newIdempotencyKey();
+    idempotencyKeyRef.current = attemptKey;
     conciliarMutation.mutate({
       idPago: pagoActivo.id_pago,
       asignaciones: analisisLineas.lineasValidas,
       descripcion,
-      key: idempotencyKeyRef.current,
+      key: attemptKey,
     });
   };
 
   const handleMotivoChange = (idAsignacion: string, value: string) => {
+    setErrorGeneral('');
+    revertKeysRef.current.delete(idAsignacion);
     setMotivosReversion((prev) => {
       const next = new Map(prev);
       next.set(idAsignacion, value);
@@ -580,7 +591,7 @@ function ConciliacionContactoDialogContent({
                   fullWidth
                   label="Descripción o nota de conciliación (opcional)"
                   value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
+                  onChange={(e) => handleDescripcionChange(e.target.value)}
                 />
               </Stack>
             )}

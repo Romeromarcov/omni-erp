@@ -386,7 +386,7 @@ def finanzas_revertir_asignacion_pago(
     capability_token: str,
     empresa_id: str,
     asignacion_id: str,
-    motivo: str = "",
+    motivo: str | None = "",
 ) -> dict:
     """
     Revierte una ``AsignacionPago`` activa, restaura saldos y emite contra-asiento.
@@ -413,7 +413,7 @@ def finanzas_revertir_asignacion_pago(
             return {"error": f"AsignacionPago {asignacion_id} no encontrada en la empresa."}
 
         try:
-            revertida = revertir_asignacion_pago(asignacion, motivo=motivo)
+            revertida = revertir_asignacion_pago(asignacion, motivo=str(motivo or ""))
         except ConciliacionPagoError as exc:
             return {"error": str(exc)}
 

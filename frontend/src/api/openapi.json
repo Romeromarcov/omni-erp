@@ -52904,7 +52904,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T01:16:11.228312-04:00"
+                    "default": "2026-11-20T03:04:21.520476-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

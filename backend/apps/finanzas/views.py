@@ -1438,6 +1438,26 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
     # P1-1: techo estricto para escritura de pagos (scope 'escritura');
     # los GET siguen bajo los throttles globales anon/user.
     throttle_classes = [*BaseModelViewSet.throttle_classes, EscrituraRateThrottle]
+    search_fields = [
+        "referencia",
+        "observaciones",
+        "tipo_documento",
+        "id_contacto__nombre",
+        "id_contacto__rif",
+    ]
+    ordering_fields = [
+        "fecha_pago",
+        "fecha_creacion",
+        "monto",
+        "tipo_operacion",
+        "tipo_documento",
+    ]
+
+    def filter_queryset(self, queryset):
+        search_param = self.request.query_params.get("search")
+        if search_param and "\x00" in search_param:
+            raise ValidationError({"search": "Parámetro de búsqueda inválido."})
+        return super().filter_queryset(queryset)
 
     def perform_create(self, serializer):
         # BUG-C2: los side-effects financieros (TransaccionFinanciera +

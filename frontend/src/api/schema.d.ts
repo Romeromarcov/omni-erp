@@ -17092,7 +17092,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T01:16:11.228312-04:00
+             * @default 2026-11-20T03:04:21.520476-04:00
              */
             fecha_despacho: string;
             /**

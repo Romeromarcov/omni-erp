@@ -289,4 +289,82 @@ describe('ConciliacionContactoDialog', () => {
     expect(typeof idempKey).toBe('string');
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
+
+  it('reúsa Idempotency-Key en reintento idéntico y la regenera al editar descripción o motivo', async () => {
+    const user = userEvent.setup();
+    mockedService.conciliarPagoDocumentos
+      .mockRejectedValueOnce(new Error('Fallo temporal de red 1'))
+      .mockRejectedValueOnce(new Error('Fallo temporal de red 2'))
+      .mockResolvedValue({
+        pago_id: ESTADO_MOCK.pagos_disponibles[0].id_pago,
+        saldo_disponible: '0.2500',
+        asignaciones: ESTADO_MOCK.asignaciones_activas,
+      });
+
+    renderDialog();
+    await screen.findByText('FV-0001');
+
+    await user.type(screen.getByLabelText('Monto para FV-0001'), '0.10');
+    await user.type(
+      screen.getByLabelText(/descripción o nota de conciliación/i),
+      'Intento 1',
+    );
+    const aplicarBtn = screen.getByRole('button', { name: /aplicar conciliación/i });
+
+    // 1er intento falla -> clave K1
+    await user.click(aplicarBtn);
+    await waitFor(() => {
+      expect(mockedService.conciliarPagoDocumentos).toHaveBeenCalledTimes(1);
+    });
+    const key1 = mockedService.conciliarPagoDocumentos.mock.calls[0][2];
+
+    // Reintento sin cambios -> reutiliza K1
+    await user.click(aplicarBtn);
+    await waitFor(() => {
+      expect(mockedService.conciliarPagoDocumentos).toHaveBeenCalledTimes(2);
+    });
+    const key2 = mockedService.conciliarPagoDocumentos.mock.calls[1][2];
+    expect(key2).toBe(key1);
+
+    // Editar SOLO descripción (sin tocar montos) y volver a enviar -> regenera clave K3 != K1
+    await user.type(
+      screen.getByLabelText(/descripción o nota de conciliación/i),
+      ' editado',
+    );
+    await user.click(aplicarBtn);
+    await waitFor(() => {
+      expect(mockedService.conciliarPagoDocumentos).toHaveBeenCalledTimes(3);
+    });
+    const key3 = mockedService.conciliarPagoDocumentos.mock.calls[2][2];
+    expect(key3).not.toBe(key1);
+
+    // En pestaña Activas: fallo en revertir -> reintento mantiene clave; editar motivo regenera clave
+    mockedService.revertirAsignacionPago
+      .mockRejectedValueOnce(new Error('Timeout al revertir'))
+      .mockResolvedValue({
+        ...ESTADO_MOCK.asignaciones_activas[0],
+        estado: 'REVERTIDA',
+      });
+
+    await user.click(screen.getByRole('tab', { name: /asignaciones activas \(1\)/i }));
+    const motivoInput = await screen.findByLabelText(
+      'Motivo reversión 55555555-5555-5555-5555-555555555555',
+    );
+    const revertirBtn = screen.getByRole('button', { name: /revertir/i });
+
+    await user.type(motivoInput, 'Motivo inicial');
+    await user.click(revertirBtn);
+    await waitFor(() => {
+      expect(mockedService.revertirAsignacionPago).toHaveBeenCalledTimes(1);
+    });
+    const revKey1 = mockedService.revertirAsignacionPago.mock.calls[0][2];
+
+    await user.type(motivoInput, ' corregido');
+    await user.click(revertirBtn);
+    await waitFor(() => {
+      expect(mockedService.revertirAsignacionPago).toHaveBeenCalledTimes(2);
+    });
+    const revKey2 = mockedService.revertirAsignacionPago.mock.calls[1][2];
+    expect(revKey2).not.toBe(revKey1);
+  });
 });

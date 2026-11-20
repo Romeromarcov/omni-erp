@@ -419,6 +419,19 @@ class TestConciliacionPagosMCP:
         assert "error" in finanzas_revertir_asignacion_pago(tok_write, emp_id, "no-uuid")
         assert "error" in finanzas_revertir_asignacion_pago(tok_write, emp_id, str(escenario_b["asig_b"].pk))
         assert "error" in finanzas_revertir_asignacion_pago(tok_write, emp_id, asig_id, motivo="doble")
+
+        # [O-3] Llamada Python directa con motivo=None no debe romper .strip() ni fallar tipo
+        res_conc2 = finanzas_conciliar_pago_multiple(
+            tok_write,
+            emp_id,
+            str(pago.pk),
+            [{"tipo_documento": "FACTURA_VENTA", "id_documento": str(fv1.pk), "monto_asignado_pago": "20.00"}],
+        )
+        asig2_id = res_conc2["asignaciones_creadas"][0]["id_asignacion"]
+        res_rev_none = finanzas_revertir_asignacion_pago(tok_write, emp_id, asig2_id, motivo=None)
+        assert res_rev_none["estado"] == "REVERTIDA"
+        assert res_rev_none["motivo_reversion"] == ""
+
         with pytest.raises(PermissionError):
             finanzas_get_saldos_favor_contacto(tok_read, str(uuid.uuid4()), str(contacto.pk))
         empresa_a.activo = False
