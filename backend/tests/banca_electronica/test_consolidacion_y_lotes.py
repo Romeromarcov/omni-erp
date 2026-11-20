@@ -239,7 +239,7 @@ def test_migracion_0004_copia_cuentas_sin_duplicar_y_reversa_limpia():
                 empresa=emp,
                 banco="Banco de Venezuela",
                 numero_cuenta=cta_corr_num,
-                tipo_cuenta="corriente",
+                tipo_cuenta="CORRIENTE ",
                 moneda=moneda,
                 saldo_actual=Decimal("1250.25"),
                 activa=True,
@@ -284,7 +284,7 @@ def test_migracion_0004_copia_cuentas_sin_duplicar_y_reversa_limpia():
         executor.migrate([("banca_electronica", "0004_migrar_cuentas_a_finanzas")])
     finally:
         executor = MigrationExecutor(connection)
-        executor.migrate([("banca_electronica", "0006_rls_lote_pago")])
+        executor.migrate(executor.loader.graph.leaf_nodes())
 
 
 # ── 2. Validador SUDEBAN VE ──────────────────────────────────────────────────
@@ -1021,6 +1021,11 @@ def test_mcp_banca_electronica_registro_y_ejecucion(empresa_a, empresa_b):
     with pytest.raises(PermissionError):
         banca_listar_lotes_pago(str(tok_read.token), str(empresa_b.pk))
 
+    # Denegar bytes NUL en parámetros MCP sin tocar PostgreSQL
+    assert "error" in banca_validar_referencia(str(tok_read.token), str(empresa_a.pk), "", "REF\x00BAD")
+    assert "error" in banca_listar_lotes_pago(str(tok_read.token), str(empresa_a.pk), tipo_lote="PROV\x00")
+    assert "error" in banca_listar_lotes_pago(str(tok_read.token), str(empresa_a.pk), estado="GEN\x00")
+
     # Cuenta inexistente / ajena y consulta global sin cuenta_bancaria_id
     res_err = banca_validar_referencia(str(tok_read.token), str(empresa_a.pk), str(uuid.uuid4()), "REF-MCP-1")
     assert "error" in res_err
@@ -1635,3 +1640,159 @@ def test_serializers_y_endpoints_cobertura_borde(empresa_a, empresa_b, user_a):
         ).status_code
         == 400
     )
+
+
+def test_ronda2_race_referencia_cero_oraculo_y_filtros_pagos(empresa_a, empresa_b, user_a):
+    from unittest.mock import patch
+
+    moneda = _mk_moneda_global("USD")
+    metodo = _mk_metodo()
+    cta_a = _mk_cuenta(empresa_a, moneda)
+    cta_b = _mk_cuenta(empresa_b, moneda)
+    _, pago_a = _mk_proveedor_y_pago(empresa_a, moneda, metodo, cta_a, referencia="REF-RACE-1")
+    _, pago_a2 = _mk_proveedor_y_pago(empresa_a, moneda, metodo, cta_a, referencia="REF-RACE-2")
+    _, pago_ing = _mk_proveedor_y_pago(
+        empresa_a, moneda, metodo, cta_a, tipo_operacion="INGRESO", referencia="REF-ING-1"
+    )
+    _, pago_b = _mk_proveedor_y_pago(empresa_b, moneda, metodo, cta_b, referencia="REF-RACE-B")
+    proc_b = ProcesoNomina.objects.create(
+        id_empresa=empresa_b,
+        id_periodo_nomina=PeriodoNomina.objects.create(
+            id_empresa=empresa_b,
+            nombre_periodo="Nom R2 B",
+            tipo_periodo="QUINCENAL",
+            fecha_inicio=date.today(),
+            fecha_fin=date.today(),
+            fecha_pago=date.today(),
+        ),
+        numero_proceso="PROC-R2-B",
+        fecha_proceso=timezone.now(),
+        estado="COMPLETADO",
+    )
+
+    client = _client_para(user_a)
+
+    # [BLOQUEANTE #1] Race condition en unicidad (id_empresa, referencia_lote)
+    lote_existente = generar_lote_pagos_proveedores(
+        empresa=empresa_a,
+        cuenta_bancaria=cta_a,
+        pagos_ids=[pago_a.pk],
+        formato_banco="BANESCO_TXT",
+        fecha_valor=date.today(),
+        usuario=user_a,
+        referencia_lote="LOTE-RACE-EXISTE",
+    )
+
+    # 1a) Colisión concurrente con referencia explícita -> BancaElectronicaError / REST 400 (no 500)
+    with patch(
+        "apps.banca_electronica.services._resolver_referencia_lote", return_value=lote_existente.referencia_lote
+    ):
+        resp_dup = client.post(
+            "/api/banca-electronica/lotes-pago/generar-proveedores/",
+            {
+                "id_cuenta_bancaria": str(cta_a.pk),
+                "pagos_ids": [str(pago_a2.pk)],
+                "formato_banco": "BANESCO_TXT",
+                "fecha_valor": "2026-11-20",
+                "referencia_lote": "LOTE-RACE-EXISTE",
+            },
+            format="json",
+        )
+    assert resp_dup.status_code == 400
+
+    # 1b) Colisión concurrente con referencia autogenerada -> reintenta y crea exitosamente
+    ref_retry = f"LOTE-RETRY-{uuid.uuid4().hex[:8].upper()}"
+    with patch(
+        "apps.banca_electronica.services._resolver_referencia_lote",
+        side_effect=[lote_existente.referencia_lote, ref_retry],
+    ):
+        lote_retry = generar_lote_pagos_proveedores(
+            empresa=empresa_a,
+            cuenta_bancaria=cta_a,
+            pagos_ids=[pago_a2.pk],
+            formato_banco="BANESCO_TXT",
+            fecha_valor=date.today(),
+            usuario=user_a,
+        )
+    assert lote_retry.referencia_lote == ref_retry
+    assert lote_retry.total_registros == 1
+
+    # 1c) Agota 5 reintentos autogenerados -> BancaElectronicaError limpia
+    _, pago_a3 = _mk_proveedor_y_pago(empresa_a, moneda, metodo, cta_a, referencia="REF-RACE-3")
+    with patch(
+        "apps.banca_electronica.services._resolver_referencia_lote",
+        side_effect=[lote_existente.referencia_lote] * 5,
+    ):
+        with pytest.raises(BancaElectronicaError, match="reintentos"):
+            generar_lote_pagos_proveedores(
+                empresa=empresa_a,
+                cuenta_bancaria=cta_a,
+                pagos_ids=[pago_a3.pk],
+                formato_banco="BANESCO_TXT",
+                fecha_valor=date.today(),
+                usuario=user_a,
+            )
+
+    # [BLOQUEANTE #2] Cero oráculo de existencia cross-tenant en validar-referencia y lotes
+    r_excluir_ajeno = client.post(
+        "/api/banca-electronica/validar-referencia/",
+        {"id_empresa": str(empresa_a.pk), "referencia": "REF-RACE-1", "excluir_pago_id": str(pago_b.pk)},
+        format="json",
+    )
+    r_excluir_random = client.post(
+        "/api/banca-electronica/validar-referencia/",
+        {"id_empresa": str(empresa_a.pk), "referencia": "REF-RACE-1", "excluir_pago_id": str(uuid.uuid4())},
+        format="json",
+    )
+    assert r_excluir_ajeno.status_code == 400
+    assert r_excluir_random.status_code == 400
+    assert r_excluir_ajeno.data == r_excluir_random.data
+
+    r_cta_ajena = client.post(
+        "/api/banca-electronica/validar-referencia/",
+        {"id_cuenta_bancaria": str(cta_b.pk), "referencia": "REF-RACE-B"},
+        format="json",
+    )
+    r_cta_random = client.post(
+        "/api/banca-electronica/validar-referencia/",
+        {"id_cuenta_bancaria": str(uuid.uuid4()), "referencia": "REF-RACE-B"},
+        format="json",
+    )
+    assert r_cta_ajena.status_code == 400
+    assert r_cta_random.status_code == 400
+    assert r_cta_ajena.data == r_cta_random.data
+
+    r_proc_ajeno = client.post(
+        "/api/banca-electronica/lotes-pago/generar-nomina/",
+        {
+            "id_cuenta_bancaria": str(cta_a.pk),
+            "id_proceso_nomina": str(proc_b.pk),
+            "formato_banco": "BANESCO_TXT",
+            "fecha_valor": "2026-11-20",
+        },
+        format="json",
+    )
+    r_proc_random = client.post(
+        "/api/banca-electronica/lotes-pago/generar-nomina/",
+        {
+            "id_cuenta_bancaria": str(cta_a.pk),
+            "id_proceso_nomina": str(uuid.uuid4()),
+            "formato_banco": "BANESCO_TXT",
+            "fecha_valor": "2026-11-20",
+        },
+        format="json",
+    )
+    assert r_proc_ajeno.status_code == 400
+    assert r_proc_random.status_code == 400
+    assert r_proc_ajeno.data == r_proc_random.data
+
+    # [MENOR #3] PagoViewSet ?tipo_operacion= y ?id_empresa=
+    r_pagos_egreso = client.get(f"/api/finanzas/pagos/?tipo_operacion=EGRESO&id_empresa={empresa_a.pk}")
+    assert r_pagos_egreso.status_code == 200
+    ids_ret = {row["id_pago"] for row in r_pagos_egreso.data["results"]}
+    assert str(pago_a.pk) in ids_ret
+    assert str(pago_ing.pk) not in ids_ret
+    assert str(pago_b.pk) not in ids_ret
+    assert client.get(f"/api/finanzas/pagos/?empresa={empresa_b.pk}").data["count"] == 0
+    assert client.get("/api/finanzas/pagos/?tipo_operacion=OTRO").status_code == 400
+    assert client.get("/api/finanzas/pagos/?id_empresa=no-uuid").status_code == 400

@@ -10,11 +10,10 @@ from apps.core.rls import build_disable_rls_sql, build_enable_rls_sql
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("banca_electronica", "0004_migrar_cuentas_a_finanzas"),
-        ("core", "0025_inmutabilidad_registro_auditoria"),
-        ("finanzas", "0044_backfill_pago_id_contacto"),
+        ("core", "0023_rls_lote3_core"),
+        ("finanzas", "0035_add_ordering_caja_cuentabancaria"),
         ("nomina", "0004_rls_lote3_nomina"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -94,9 +93,7 @@ class Migration(migrations.Migration):
                 ("total_registros", models.PositiveIntegerField(default=0)),
                 (
                     "monto_total",
-                    models.DecimalField(
-                        decimal_places=2, default=Decimal("0.00"), max_digits=18
-                    ),
+                    models.DecimalField(decimal_places=2, default=Decimal("0.00"), max_digits=18),
                 ),
                 ("contenido_archivo", models.TextField(blank=True, default="")),
                 (
@@ -225,9 +222,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="lotepagobancario",
-            index=models.Index(
-                fields=["id_empresa", "estado"], name="banca_elect_id_empr_38f5fa_idx"
-            ),
+            index=models.Index(fields=["id_empresa", "estado"], name="banca_elect_id_empr_38f5fa_idx"),
         ),
         migrations.AddIndex(
             model_name="lotepagobancario",
@@ -252,15 +247,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="detallelotepagobancario",
-            index=models.Index(
-                fields=["id_lote_pago"], name="banca_elect_id_lote_86770e_idx"
-            ),
+            index=models.Index(fields=["id_lote_pago"], name="banca_elect_id_lote_86770e_idx"),
         ),
         migrations.AddIndex(
             model_name="detallelotepagobancario",
-            index=models.Index(
-                fields=["referencia_linea"], name="banca_elect_referen_b55b35_idx"
-            ),
+            index=models.Index(fields=["referencia_linea"], name="banca_elect_referen_b55b35_idx"),
         ),
         migrations.AddConstraint(
             model_name="detallelotepagobancario",

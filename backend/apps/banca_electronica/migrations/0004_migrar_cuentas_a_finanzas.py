@@ -15,7 +15,8 @@ def migrar_cuentas_a_finanzas(apps, schema_editor):
         for row in BancaCuenta.objects.using(alias).all().order_by("pk"):
             if FinanzasCuenta.objects.using(alias).filter(numero_cuenta=row.numero_cuenta).exists():
                 continue
-            tipo_cuenta = "CORRIENTE" if row.tipo_cuenta == "corriente" else "AHORRO"
+            tipo_norm = (row.tipo_cuenta or "").strip().upper()
+            tipo_cuenta = tipo_norm if tipo_norm in {"CORRIENTE", "AHORRO", "CREDITO"} else "AHORRO"
             FinanzasCuenta.objects.using(alias).create(
                 id_cuenta_bancaria=uuid7(),
                 id_empresa_id=row.empresa_id,
@@ -31,7 +32,7 @@ def migrar_cuentas_a_finanzas(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("banca_electronica", "0003_rls_lote3_banca_electronica"),
-        ("finanzas", "0044_backfill_pago_id_contacto"),
+        ("finanzas", "0035_add_ordering_caja_cuentabancaria"),
     ]
 
     operations = [

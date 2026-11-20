@@ -164,6 +164,8 @@ const CuentasBancariasEmpresaPage: React.FC = () => {
     enabled: loteProvOpen,
   });
 
+  const pagosEgresoDisponibles = pagosEgreso.filter((p) => p.tipo_operacion === 'EGRESO');
+
   const { data: procesosNominaRes } = useQuery({
     queryKey: ['nomina', 'procesos', 'list', empresaId],
     queryFn: () => nominaService.getProcesosPaginated(),
@@ -514,7 +516,7 @@ const CuentasBancariasEmpresaPage: React.FC = () => {
         }
       />
 
-      {errorMsg && (
+      {errorMsg && !dialogOpen && !loteProvOpen && !loteNomOpen && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg('')}>
           {errorMsg}
         </Alert>
@@ -648,6 +650,11 @@ const CuentasBancariasEmpresaPage: React.FC = () => {
         <DialogTitle>{editando ? 'Editar cuenta' : 'Nueva cuenta'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            {errorMsg && (
+              <Alert severity="error" onClose={() => setErrorMsg('')}>
+                {errorMsg}
+              </Alert>
+            )}
             <TextField
               label="Banco"
               value={form.nombre_banco}
@@ -722,6 +729,11 @@ const CuentasBancariasEmpresaPage: React.FC = () => {
         <DialogTitle>Generar Lote de Pago a Proveedores</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            {errorMsg && (
+              <Alert severity="error" onClose={() => setErrorMsg('')}>
+                {errorMsg}
+              </Alert>
+            )}
             <TextField
               select
               label="Cuenta origen"
@@ -766,12 +778,12 @@ const CuentasBancariasEmpresaPage: React.FC = () => {
             </Stack>
             <Typography variant="subtitle2">Pagos EGRESO disponibles</Typography>
             <Stack spacing={1} sx={{ maxHeight: 240, overflowY: 'auto' }}>
-              {pagosEgreso.length === 0 ? (
+              {pagosEgresoDisponibles.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
                   Sin pagos EGRESO disponibles.
                 </Typography>
               ) : (
-                pagosEgreso.map((p) => {
+                pagosEgresoDisponibles.map((p) => {
                   const pid = p.id_pago || '';
                   if (!pid) return null;
                   const checked = pagosSeleccionados.has(pid);
@@ -831,6 +843,11 @@ const CuentasBancariasEmpresaPage: React.FC = () => {
         <DialogTitle>Generar Lote de Pago de Nómina</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            {errorMsg && (
+              <Alert severity="error" onClose={() => setErrorMsg('')}>
+                {errorMsg}
+              </Alert>
+            )}
             <TextField
               select
               label="Cuenta origen"

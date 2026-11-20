@@ -4,7 +4,6 @@ from apps.core.models import Empresa
 from apps.core.serializer_mixins import (
     empresa_efectiva_contexto,
     empresas_visibles_contexto,
-    validar_fk_empresa,
 )
 from apps.finanzas.models import CuentaBancariaEmpresa, Pago
 from apps.nomina.models import Nomina, ProcesoNomina
@@ -73,35 +72,46 @@ class LotePagoBancarioSerializer(serializers.ModelSerializer):
         return obj.id_empresa.nombre_comercial or obj.id_empresa.nombre_legal
 
 
+_MSG_EMPRESA_INVALIDA = "La empresa indicada no existe o no tiene acceso a ella."
+_MSG_CUENTA_INVALIDA = "La cuenta bancaria no existe o no pertenece a su empresa."
+_MSG_PROCESO_INVALIDO = "El proceso de nómina no existe o no pertenece a su empresa."
+_MSG_EXCLUIR_PAGO_INVALIDO = "El pago a excluir no existe o no pertenece a su empresa."
+
+
 def _resolver_empresa_y_cuenta(
     serializer: serializers.Serializer,
     id_empresa_val,
     id_cuenta_val,
 ) -> tuple[Empresa, CuentaBancariaEmpresa, str, set[str] | None]:
     visibles = empresas_visibles_contexto(serializer)
-    cuenta = CuentaBancariaEmpresa.objects.select_related("id_empresa").filter(pk=id_cuenta_val).first()
-    if cuenta is None:
-        raise serializers.ValidationError({"id_cuenta_bancaria": "La cuenta bancaria no existe."})
 
     if id_empresa_val is not None:
-        emp = Empresa.objects.filter(pk=id_empresa_val, activo=True).first()
-        if emp is None or (visibles is not None and str(emp.pk) not in visibles):
-            raise serializers.ValidationError({"id_empresa": "No tiene acceso a la empresa especificada."})
+        emp_qs = Empresa.objects.filter(pk=id_empresa_val, activo=True)
+        if visibles is not None:
+            emp_qs = emp_qs.filter(pk__in=visibles)
+        emp = emp_qs.first()
+        if emp is None:
+            raise serializers.ValidationError({"id_empresa": _MSG_EMPRESA_INVALIDA})
         empresa_ref = str(emp.pk)
-        validar_fk_empresa(cuenta, "id_cuenta_bancaria", empresa_ref, visibles, etiqueta="la cuenta bancaria")
+        cta_qs = CuentaBancariaEmpresa.objects.select_related("id_empresa").filter(
+            pk=id_cuenta_val,
+            id_empresa_id=emp.pk,
+        )
+        if visibles is not None:
+            cta_qs = cta_qs.filter(id_empresa_id__in=visibles)
+        cuenta = cta_qs.first()
+        if cuenta is None:
+            raise serializers.ValidationError({"id_cuenta_bancaria": _MSG_CUENTA_INVALIDA})
         return emp, cuenta, empresa_ref, visibles
 
-    if visibles is not None and str(cuenta.id_empresa_id) not in visibles:
-        validar_fk_empresa(
-            cuenta,
-            "id_cuenta_bancaria",
-            empresa_efectiva_contexto(serializer),
-            visibles,
-            etiqueta="la cuenta bancaria",
-        )
+    cta_qs = CuentaBancariaEmpresa.objects.select_related("id_empresa").filter(pk=id_cuenta_val)
+    if visibles is not None:
+        cta_qs = cta_qs.filter(id_empresa_id__in=visibles)
+    cuenta = cta_qs.first()
+    if cuenta is None:
+        raise serializers.ValidationError({"id_cuenta_bancaria": _MSG_CUENTA_INVALIDA})
     emp = cuenta.id_empresa
     empresa_ref = str(emp.pk)
-    validar_fk_empresa(cuenta, "id_cuenta_bancaria", empresa_ref, visibles, etiqueta="la cuenta bancaria")
     return emp, cuenta, empresa_ref, visibles
 
 
@@ -127,14 +137,16 @@ class GenerarLoteProveedoresInputSerializer(serializers.Serializer):
         )
 
         pagos_ids = [str(pid) for pid in attrs["pagos_ids"]]
-        pagos_db = Pago.objects.filter(pk__in=pagos_ids)
-        pagos_map = {str(p.pk): p for p in pagos_db}
+        pagos_qs = Pago.objects.filter(pk__in=pagos_ids, id_empresa_id=emp.pk)
+        if visibles is not None:
+            pagos_qs = pagos_qs.filter(id_empresa_id__in=visibles)
+        pagos_map = {str(p.pk): p for p in pagos_qs}
 
         for pid in pagos_ids:
-            pago = pagos_map.get(pid)
-            if pago is None:
-                raise serializers.ValidationError({"pagos_ids": f"El pago {pid} no existe."})
-            validar_fk_empresa(pago, "pagos_ids", empresa_ref, visibles, etiqueta=f"el pago {pid}")
+            if pid not in pagos_map:
+                raise serializers.ValidationError(
+                    {"pagos_ids": f"El pago {pid} no existe o no pertenece a su empresa."}
+                )
 
         overrides = attrs.get("cuentas_destino_override") or {}
         pagos_set = set(pagos_ids)
@@ -170,16 +182,12 @@ class GenerarLoteNominaInputSerializer(serializers.Serializer):
             attrs["id_cuenta_bancaria"],
         )
 
-        proceso = ProcesoNomina.objects.filter(pk=attrs["id_proceso_nomina"]).first()
+        proc_qs = ProcesoNomina.objects.filter(pk=attrs["id_proceso_nomina"], id_empresa_id=emp.pk)
+        if visibles is not None:
+            proc_qs = proc_qs.filter(id_empresa_id__in=visibles)
+        proceso = proc_qs.first()
         if proceso is None:
-            raise serializers.ValidationError({"id_proceso_nomina": "El proceso de nómina no existe."})
-        validar_fk_empresa(
-            proceso,
-            "id_proceso_nomina",
-            empresa_ref,
-            visibles,
-            etiqueta="el proceso de nómina",
-        )
+            raise serializers.ValidationError({"id_proceso_nomina": _MSG_PROCESO_INVALIDO})
 
         cuentas_empleados = attrs.get("cuentas_empleados") or {}
         if cuentas_empleados:
@@ -210,60 +218,47 @@ class ValidarReferenciaInputSerializer(serializers.Serializer):
     def validate(self, attrs: dict) -> dict:
         visibles = empresas_visibles_contexto(self)
         cuenta = None
-        if attrs.get("id_cuenta_bancaria") is not None:
-            cuenta = (
-                CuentaBancariaEmpresa.objects.select_related("id_empresa")
-                .filter(pk=attrs["id_cuenta_bancaria"])
-                .first()
-            )
-            if cuenta is None:
-                raise serializers.ValidationError({"id_cuenta_bancaria": "La cuenta bancaria no existe."})
 
         if attrs.get("id_empresa") is not None:
-            emp = Empresa.objects.filter(pk=attrs["id_empresa"], activo=True).first()
-            if emp is None or (visibles is not None and str(emp.pk) not in visibles):
-                raise serializers.ValidationError({"id_empresa": "No tiene acceso a la empresa especificada."})
-            if cuenta is not None:
-                validar_fk_empresa(
-                    cuenta,
-                    "id_cuenta_bancaria",
-                    str(emp.pk),
-                    visibles,
-                    etiqueta="la cuenta bancaria",
+            emp_qs = Empresa.objects.filter(pk=attrs["id_empresa"], activo=True)
+            if visibles is not None:
+                emp_qs = emp_qs.filter(pk__in=visibles)
+            emp = emp_qs.first()
+            if emp is None:
+                raise serializers.ValidationError({"id_empresa": _MSG_EMPRESA_INVALIDA})
+            if attrs.get("id_cuenta_bancaria") is not None:
+                cta_qs = CuentaBancariaEmpresa.objects.select_related("id_empresa").filter(
+                    pk=attrs["id_cuenta_bancaria"],
+                    id_empresa_id=emp.pk,
                 )
-        elif cuenta is not None:
-            if visibles is not None and str(cuenta.id_empresa_id) not in visibles:
-                validar_fk_empresa(
-                    cuenta,
-                    "id_cuenta_bancaria",
-                    empresa_efectiva_contexto(self),
-                    visibles,
-                    etiqueta="la cuenta bancaria",
-                )
+                if visibles is not None:
+                    cta_qs = cta_qs.filter(id_empresa_id__in=visibles)
+                cuenta = cta_qs.first()
+                if cuenta is None:
+                    raise serializers.ValidationError({"id_cuenta_bancaria": _MSG_CUENTA_INVALIDA})
+        elif attrs.get("id_cuenta_bancaria") is not None:
+            cta_qs = CuentaBancariaEmpresa.objects.select_related("id_empresa").filter(pk=attrs["id_cuenta_bancaria"])
+            if visibles is not None:
+                cta_qs = cta_qs.filter(id_empresa_id__in=visibles)
+            cuenta = cta_qs.first()
+            if cuenta is None:
+                raise serializers.ValidationError({"id_cuenta_bancaria": _MSG_CUENTA_INVALIDA})
             emp = cuenta.id_empresa
-            validar_fk_empresa(
-                cuenta,
-                "id_cuenta_bancaria",
-                str(emp.pk),
-                visibles,
-                etiqueta="la cuenta bancaria",
-            )
         else:
             empresa_ref = empresa_efectiva_contexto(self)
-            emp = Empresa.objects.filter(pk=empresa_ref, activo=True).first() if empresa_ref else None
-            if emp is None or (visibles is not None and str(emp.pk) not in visibles):
-                raise serializers.ValidationError({"id_empresa": "No se pudo determinar la empresa."})
+            emp_qs = Empresa.objects.filter(pk=empresa_ref, activo=True) if empresa_ref else Empresa.objects.none()
+            if visibles is not None:
+                emp_qs = emp_qs.filter(pk__in=visibles)
+            emp = emp_qs.first()
+            if emp is None:
+                raise serializers.ValidationError({"id_empresa": _MSG_EMPRESA_INVALIDA})
 
         if attrs.get("excluir_pago_id") is not None:
-            pago = Pago.objects.filter(pk=attrs["excluir_pago_id"]).first()
-            if pago is not None:
-                validar_fk_empresa(
-                    pago,
-                    "excluir_pago_id",
-                    str(emp.pk),
-                    visibles,
-                    etiqueta="el pago excluido",
-                )
+            pago_qs = Pago.objects.filter(pk=attrs["excluir_pago_id"], id_empresa_id=emp.pk)
+            if visibles is not None:
+                pago_qs = pago_qs.filter(id_empresa_id__in=visibles)
+            if pago_qs.first() is None:
+                raise serializers.ValidationError({"excluir_pago_id": _MSG_EXCLUIR_PAGO_INVALIDO})
 
         attrs["empresa"] = emp
         attrs["cuenta_bancaria"] = cuenta

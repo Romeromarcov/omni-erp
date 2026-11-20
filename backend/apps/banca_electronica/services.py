@@ -9,7 +9,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from uuid import UUID
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 
 from apps.core.models import Empresa, Usuarios
@@ -116,14 +116,18 @@ def validar_referencia_bancaria(
     if not ref_norm:
         raise BancaElectronicaError("La referencia bancaria es obligatoria.")
 
-    empresa_id = empresa.pk if isinstance(empresa, Empresa) else empresa
-    cuenta_id = cuenta_bancaria.pk if isinstance(cuenta_bancaria, CuentaBancariaEmpresa) else cuenta_bancaria
+    empresa_uuid = empresa.pk if isinstance(empresa, Empresa) else UUID(str(empresa))
+    cuenta_uuid = (
+        cuenta_bancaria.pk
+        if isinstance(cuenta_bancaria, CuentaBancariaEmpresa)
+        else (UUID(str(cuenta_bancaria)) if cuenta_bancaria is not None else None)
+    )
 
     coincidencias: list[dict[str, str]] = []
 
-    pagos_qs = Pago.objects.filter(id_empresa_id=empresa_id, referencia__iexact=ref_norm)
-    if cuenta_id is not None:
-        pagos_qs = pagos_qs.filter(Q(id_cuenta_bancaria_id=cuenta_id) | Q(banco_destino_id=cuenta_id))
+    pagos_qs = Pago.objects.filter(id_empresa_id=empresa_uuid, referencia__iexact=ref_norm)
+    if cuenta_uuid is not None:
+        pagos_qs = pagos_qs.filter(Q(id_cuenta_bancaria_id=cuenta_uuid) | Q(banco_destino_id=cuenta_uuid))
     if excluir_pago_id is not None:
         pagos_qs = pagos_qs.exclude(pk=excluir_pago_id)
     for pago in pagos_qs.only("id_pago", "tipo_operacion", "referencia", "fecha_pago", "monto"):
@@ -136,9 +140,9 @@ def validar_referencia_bancaria(
             }
         )
 
-    movs_qs = MovimientoBancario.objects.filter(id_empresa_id=empresa_id, activo=True, referencia__iexact=ref_norm)
-    if cuenta_id is not None:
-        movs_qs = movs_qs.filter(id_cuenta_bancaria_id=cuenta_id)
+    movs_qs = MovimientoBancario.objects.filter(id_empresa_id=empresa_uuid, activo=True, referencia__iexact=ref_norm)
+    if cuenta_uuid is not None:
+        movs_qs = movs_qs.filter(id_cuenta_bancaria_id=cuenta_uuid)
     for mov in movs_qs.only("id", "tipo", "referencia", "fecha_mov", "monto"):
         coincidencias.append(
             {
@@ -151,13 +155,13 @@ def validar_referencia_bancaria(
     detalles_qs = (
         DetalleLotePagoBancario.objects.select_related("id_lote_pago")
         .filter(
-            id_lote_pago__id_empresa_id=empresa_id,
+            id_lote_pago__id_empresa_id=empresa_uuid,
             referencia_linea__iexact=ref_norm,
         )
         .exclude(id_lote_pago__estado="ANULADO")
     )
-    if cuenta_id is not None:
-        detalles_qs = detalles_qs.filter(id_lote_pago__id_cuenta_bancaria_id=cuenta_id)
+    if cuenta_uuid is not None:
+        detalles_qs = detalles_qs.filter(id_lote_pago__id_cuenta_bancaria_id=cuenta_uuid)
     for det in detalles_qs:
         coincidencias.append(
             {
@@ -370,7 +374,7 @@ def _resolver_proveedor_de_pago(pago: Pago, empresa: Empresa) -> Proveedor | Non
         if prov is not None and prov.id_empresa_id == empresa.pk:
             return prov
 
-    if pago.id_cxp_id is not None and getattr(pago.id_cxp, "id_proveedor", None) is not None:
+    if pago.id_cxp is not None and getattr(pago.id_cxp, "id_proveedor", None) is not None:
         prov = pago.id_cxp.id_proveedor
         if prov.id_empresa_id == empresa.pk:
             return prov
@@ -391,6 +395,78 @@ def _resolver_proveedor_de_pago(pago: Pago, empresa: Empresa) -> Proveedor | Non
             if prov is not None and prov.id_empresa_id == empresa.pk:
                 return prov
     return None
+
+
+def _crear_lote_con_reintento(
+    *,
+    empresa: Empresa,
+    cuenta: CuentaBancariaEmpresa,
+    tipo_lote: str,
+    formato_banco: str,
+    prefijo_ref: str,
+    referencia_explicita: str | None,
+    fecha_valor: date,
+    detalles_data: list[dict],
+    monto_total: Decimal,
+    usuario: Usuarios | None,
+    proceso_nomina: ProcesoNomina | None = None,
+) -> LotePagoBancario:
+    """Persiste ``LotePagoBancario`` y sus detalles protegiendo colisiones de ``referencia_lote``."""
+    es_explicita = bool(referencia_explicita is not None and str(referencia_explicita).strip())
+    max_intentos = 1 if es_explicita else 5
+
+    for intento in range(max_intentos):
+        ref_lote = _resolver_referencia_lote(
+            empresa,
+            prefijo_ref,
+            fecha_valor,
+            referencia_explicita if es_explicita else None,
+        )
+        contenido = _formatear_archivo_lote(
+            formato_banco=formato_banco,
+            tipo_lote=tipo_lote,
+            referencia_lote=ref_lote,
+            fecha_valor=fecha_valor,
+            cuenta_origen=cuenta.numero_cuenta,
+            detalles=detalles_data,
+            monto_total=monto_total,
+        )
+        sha256_archivo = hashlib.sha256(contenido.encode("utf-8")).hexdigest()
+        nombre_archivo = _nombre_archivo_seguro(ref_lote, formato_banco)
+
+        try:
+            with transaction.atomic():
+                lote = LotePagoBancario.objects.create(
+                    id_empresa=empresa,
+                    id_cuenta_bancaria=cuenta,
+                    tipo_lote=tipo_lote,
+                    formato_banco=formato_banco,
+                    referencia_lote=ref_lote,
+                    fecha_valor=fecha_valor,
+                    estado="GENERADO",
+                    id_proceso_nomina=proceso_nomina,
+                    total_registros=len(detalles_data),
+                    monto_total=monto_total,
+                    contenido_archivo=contenido,
+                    sha256_archivo=sha256_archivo,
+                    nombre_archivo=nombre_archivo,
+                    generado_por=usuario,
+                )
+                DetalleLotePagoBancario.objects.bulk_create(
+                    [DetalleLotePagoBancario(id_lote_pago=lote, **item) for item in detalles_data]
+                )
+                return lote
+        except IntegrityError as exc:
+            if es_explicita:
+                raise BancaElectronicaError(
+                    f"Ya existe un lote de pago con referencia '{ref_lote}' en la empresa."
+                ) from exc
+            if intento == max_intentos - 1:
+                raise BancaElectronicaError(
+                    "No se pudo generar una referencia única para el lote tras varios reintentos."
+                ) from exc
+
+    raise BancaElectronicaError("No se pudo crear el lote de pago bancario.")
 
 
 @transaction.atomic
@@ -510,38 +586,18 @@ def generar_lote_pagos_proveedores(
         )
         monto_total += monto_q
 
-    ref_lote = _resolver_referencia_lote(empresa, "LOTE-PROV", fecha_valor, referencia_lote)
-    contenido = _formatear_archivo_lote(
-        formato_banco=formato_banco,
-        tipo_lote="PROVEEDORES",
-        referencia_lote=ref_lote,
-        fecha_valor=fecha_valor,
-        cuenta_origen=cuenta.numero_cuenta,
-        detalles=detalles_data,
-        monto_total=monto_total,
-    )
-    sha256_archivo = hashlib.sha256(contenido.encode("utf-8")).hexdigest()
-    nombre_archivo = _nombre_archivo_seguro(ref_lote, formato_banco)
-
-    lote = LotePagoBancario.objects.create(
-        id_empresa=empresa,
-        id_cuenta_bancaria=cuenta,
+    return _crear_lote_con_reintento(
+        empresa=empresa,
+        cuenta=cuenta,
         tipo_lote="PROVEEDORES",
         formato_banco=formato_banco,
-        referencia_lote=ref_lote,
+        prefijo_ref="LOTE-PROV",
+        referencia_explicita=referencia_lote,
         fecha_valor=fecha_valor,
-        estado="GENERADO",
-        total_registros=len(detalles_data),
+        detalles_data=detalles_data,
         monto_total=monto_total,
-        contenido_archivo=contenido,
-        sha256_archivo=sha256_archivo,
-        nombre_archivo=nombre_archivo,
-        generado_por=usuario,
+        usuario=usuario,
     )
-    DetalleLotePagoBancario.objects.bulk_create(
-        [DetalleLotePagoBancario(id_lote_pago=lote, **item) for item in detalles_data]
-    )
-    return lote
 
 
 @transaction.atomic
@@ -636,39 +692,19 @@ def generar_lote_pagos_nomina(
     if not detalles_data:
         raise BancaElectronicaError("No se generaron líneas válidas para el lote de nómina.")
 
-    ref_lote = _resolver_referencia_lote(empresa, "LOTE-NOM", fecha_valor, referencia_lote)
-    contenido = _formatear_archivo_lote(
-        formato_banco=formato_banco,
-        tipo_lote="NOMINA",
-        referencia_lote=ref_lote,
-        fecha_valor=fecha_valor,
-        cuenta_origen=cuenta.numero_cuenta,
-        detalles=detalles_data,
-        monto_total=monto_total,
-    )
-    sha256_archivo = hashlib.sha256(contenido.encode("utf-8")).hexdigest()
-    nombre_archivo = _nombre_archivo_seguro(ref_lote, formato_banco)
-
-    lote = LotePagoBancario.objects.create(
-        id_empresa=empresa,
-        id_cuenta_bancaria=cuenta,
+    return _crear_lote_con_reintento(
+        empresa=empresa,
+        cuenta=cuenta,
         tipo_lote="NOMINA",
         formato_banco=formato_banco,
-        referencia_lote=ref_lote,
+        prefijo_ref="LOTE-NOM",
+        referencia_explicita=referencia_lote,
         fecha_valor=fecha_valor,
-        estado="GENERADO",
-        id_proceso_nomina=proceso,
-        total_registros=len(detalles_data),
+        detalles_data=detalles_data,
         monto_total=monto_total,
-        contenido_archivo=contenido,
-        sha256_archivo=sha256_archivo,
-        nombre_archivo=nombre_archivo,
-        generado_por=usuario,
+        usuario=usuario,
+        proceso_nomina=proceso,
     )
-    DetalleLotePagoBancario.objects.bulk_create(
-        [DetalleLotePagoBancario(id_lote_pago=lote, **item) for item in detalles_data]
-    )
-    return lote
 
 
 @transaction.atomic

@@ -1504,12 +1504,24 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
         except ValueError as exc:
             raise serializers.ValidationError({"detail": str(exc)}) from exc
 
-    def get_queryset(self):
+    def get_queryset(self) -> models.QuerySet[Pago]:
         # R-CODE-1: usar get_empresas_visible para incluir subsidiarias y
         # garantizar aislamiento simétrico con los demás módulos.
-        from apps.core.viewsets import get_empresas_visible
+        qs: models.QuerySet[Pago] = Pago.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        tipo_op_raw = self.request.query_params.get("tipo_operacion")
+        if tipo_op_raw:
+            tipo_op = str(tipo_op_raw).replace("\x00", "").strip().upper()
+            if tipo_op:
+                valid_ops = {c[0] for c in Pago.TIPO_OPERACION_CHOICES}
+                if tipo_op not in valid_ops:
+                    raise ValidationError({"tipo_operacion": f"Tipo de operación inválido: {tipo_op!r}."})
+                qs = qs.filter(tipo_operacion=tipo_op)
 
-        return Pago.objects.filter(id_empresa__in=get_empresas_visible(self.request.user)).order_by("-fecha_pago")
+        empresa_raw = self.request.query_params.get("id_empresa") or self.request.query_params.get("empresa")
+        if empresa_raw:
+            qs = qs.filter(id_empresa_id=uuid.UUID(validar_uuid_param(empresa_raw, "id_empresa")))
+
+        return qs.order_by("-fecha_pago")
 
     @action(detail=False, methods=["get"])
     def tipos_documento(self, request):

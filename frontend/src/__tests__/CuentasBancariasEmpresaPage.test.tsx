@@ -46,7 +46,7 @@ const loteApi = {
   monto_total: '250.50',
   sha256_archivo: 'abc123',
   nombre_archivo: 'lote_banesco.txt',
-  generado_por: 1,
+  generado_por: 'user-1',
   activo: true,
   fecha_creacion: '2026-11-20T12:00:00Z',
   fecha_actualizacion: '2026-11-20T12:00:00Z',
@@ -75,7 +75,20 @@ describe('CuentasBancariasEmpresaPage', () => {
       }
       if (url.startsWith('/finanzas/pagos')) {
         return Promise.resolve([
-          { id_pago: 'pago-1', referencia: 'PAG-001', monto: '250.50', moneda_codigo: 'USD' },
+          {
+            id_pago: 'pago-1',
+            tipo_operacion: 'EGRESO',
+            referencia: 'PAG-001',
+            monto: '250.50',
+            moneda_codigo: 'USD',
+          },
+          {
+            id_pago: 'pago-ing',
+            tipo_operacion: 'INGRESO',
+            referencia: 'ING-SKIP',
+            monto: '100.00',
+            moneda_codigo: 'USD',
+          },
         ]);
       }
       if (url.startsWith('/nomina/procesos-nomina')) {
@@ -191,6 +204,7 @@ describe('CuentasBancariasEmpresaPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Generar Lote Proveedores' }));
     expect(await screen.findByText('Generar Lote de Pago a Proveedores')).toBeInTheDocument();
     const pagoCheckbox = await screen.findByLabelText(/PAG-001/);
+    expect(screen.queryByLabelText(/ING-SKIP/)).not.toBeInTheDocument();
     fireEvent.click(pagoCheckbox);
     fireEvent.click(screen.getByRole('button', { name: 'Generar Lote' }));
 

@@ -40,19 +40,21 @@ def banca_validar_referencia(
     from apps.finanzas.models import CuentaBancariaEmpresa  # noqa: PLC0415
 
     with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
-        uuid.UUID(str(empresa_id))
+        empresa_uuid = uuid.UUID(str(empresa_id))
+        if "\x00" in (referencia or ""):
+            return {"error": "Referencia bancaria inválida: contiene bytes NUL."}
         cuenta = None
         if cuenta_bancaria_id:
             cuenta_uuid = uuid.UUID(str(cuenta_bancaria_id))
             cuenta = CuentaBancariaEmpresa.objects.filter(
                 pk=cuenta_uuid,
-                id_empresa_id=empresa_id,
+                id_empresa_id=empresa_uuid,
             ).first()
             if cuenta is None:
                 return {"error": f"Cuenta bancaria {cuenta_bancaria_id} no encontrada en la empresa {empresa_id}."}
 
         resultado = validar_referencia_bancaria(
-            empresa=empresa_id,
+            empresa=empresa_uuid,
             cuenta_bancaria=cuenta,
             referencia=referencia,
         )
@@ -80,10 +82,12 @@ def banca_listar_lotes_pago(
     from apps.banca_electronica.models import LotePagoBancario  # noqa: PLC0415
 
     with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
-        uuid.UUID(str(empresa_id))
+        empresa_uuid = uuid.UUID(str(empresa_id))
+        if "\x00" in (tipo_lote or "") or "\x00" in (estado or ""):
+            return {"error": "Filtro inválido: contiene bytes NUL."}
         limit_norm = max(1, min(int(limit), 200))
         qs = LotePagoBancario.objects.select_related("id_cuenta_bancaria").filter(
-            id_empresa_id=empresa_id,
+            id_empresa_id=empresa_uuid,
         )
         if tipo_lote:
             qs = qs.filter(tipo_lote=tipo_lote.strip())

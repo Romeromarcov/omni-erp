@@ -1696,29 +1696,33 @@ class TestMigracionBackfillPagoContacto:
         # Ejecutar migración real 0044 (reverse -> 0043 -> forward -> 0044)
         executor = MigrationExecutor(connection)
         executor.migrate([("finanzas", "0043_rls_asignacion_pago")])
-        executor = MigrationExecutor(connection)
-        executor.migrate([("finanzas", "0044_backfill_pago_id_contacto")])
+        try:
+            executor = MigrationExecutor(connection)
+            executor.migrate([("finanzas", "0044_backfill_pago_id_contacto")])
 
-        p_fac.refresh_from_db()
-        p_ped.refresh_from_db()
-        p_nv.refresh_from_db()
-        p_cxp.refresh_from_db()
-        p_cruzado.refresh_from_db()
-        p_preservado.refresh_from_db()
+            p_fac.refresh_from_db()
+            p_ped.refresh_from_db()
+            p_nv.refresh_from_db()
+            p_cxp.refresh_from_db()
+            p_cruzado.refresh_from_db()
+            p_preservado.refresh_from_db()
 
-        assert p_fac.id_contacto_id == contacto_cliente_a.pk
-        assert p_ped.id_contacto_id == contacto_cliente_a.pk
-        assert p_nv.id_contacto_id == contacto_cliente_a.pk
-        assert p_cxp.id_contacto_id == contacto_proveedor_a.pk
-        assert p_cruzado.id_contacto_id is None
-        assert p_preservado.id_contacto_id == otro_contacto_a.pk
+            assert p_fac.id_contacto_id == contacto_cliente_a.pk
+            assert p_ped.id_contacto_id == contacto_cliente_a.pk
+            assert p_nv.id_contacto_id == contacto_cliente_a.pk
+            assert p_cxp.id_contacto_id == contacto_proveedor_a.pk
+            assert p_cruzado.id_contacto_id is None
+            assert p_preservado.id_contacto_id == otro_contacto_a.pk
 
-        # Idempotencia: segunda corrida no altera nada
-        mod = importlib.import_module("apps.finanzas.migrations.0044_backfill_pago_id_contacto")
-        from django.apps import apps as django_apps
+            # Idempotencia: segunda corrida no altera nada
+            mod = importlib.import_module("apps.finanzas.migrations.0044_backfill_pago_id_contacto")
+            from django.apps import apps as django_apps
 
-        with connection.schema_editor() as editor:
-            mod.backfill_pago_id_contacto(django_apps, editor)
+            with connection.schema_editor() as editor:
+                mod.backfill_pago_id_contacto(django_apps, editor)
 
-        p_preservado.refresh_from_db()
-        assert p_preservado.id_contacto_id == otro_contacto_a.pk
+            p_preservado.refresh_from_db()
+            assert p_preservado.id_contacto_id == otro_contacto_a.pk
+        finally:
+            executor = MigrationExecutor(connection)
+            executor.migrate(executor.loader.graph.leaf_nodes())

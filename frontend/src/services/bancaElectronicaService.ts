@@ -71,7 +71,7 @@ export interface LotePagoBancario {
   monto_total: string;
   sha256_archivo: string;
   nombre_archivo: string;
-  generado_por: number | null;
+  generado_por: string | null;
   activo: boolean;
   fecha_creacion: string;
   fecha_actualizacion: string;
