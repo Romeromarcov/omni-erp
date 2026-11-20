@@ -94,6 +94,7 @@
 | cxc_lubrikca | Vinculacion | ✅ | ✅ | — |
 | despacho | Despacho | ✅ | ✅ | id_empresa+numero_despacho |
 | despacho | DetalleDespacho | — | ✅ | — |
+| finanzas | AsignacionPago | ✅ | ✅ | — |
 | finanzas | Caja | ✅ | ✅ | — |
 | finanzas | CajaFisica | ✅ | ✅ | — |
 | finanzas | CajaFisicaUsuario | — | ✅ | usuario+caja_fisica |
@@ -253,4 +254,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 250_
+_Total modelos: 251_

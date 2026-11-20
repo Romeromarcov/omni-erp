@@ -337,6 +337,7 @@ RLS_TABLES = {
     # despacho
     "despacho_despacho": "id_empresa_id",
     # finanzas
+    "finanzas_asignacion_pago": "id_empresa_id",
     "finanzas_caja_fisica": "empresa_id",
     "finanzas_caja_virtual": "empresa_id",
     "finanzas_cuenta_bancaria_empresa": "id_empresa_id",
