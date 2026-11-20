@@ -945,6 +945,88 @@ def _validar_estado_abierto_documento(tipo_doc: str, doc: Any) -> None:
             raise ConciliacionPagoError("La FacturaCompra está inactiva y no puede conciliarse.")
 
 
+def _es_ratio_cercano_a_local(tasa_eval: Decimal, ext_por_base: Decimal) -> bool:
+    """Retorna True si ``tasa_eval`` sigue convención ``ext/base`` en vez de ``base/ext``."""
+    base_por_ext = Decimal("1") / ext_por_base
+    rel_local = max(tasa_eval / ext_por_base, ext_por_base / tasa_eval)
+    rel_base = max(tasa_eval / base_por_ext, base_por_ext / tasa_eval)
+    return rel_local < rel_base
+
+
+def _consultar_ratio_bd_local_por_base(
+    *,
+    empresa: "Empresa",
+    moneda_base: "Moneda",
+    moneda_ext: "Moneda",
+    tasa_eval: Decimal,
+    fecha_ref: date,
+) -> bool | None:
+    """Consulta ``TasaCambio`` en ambas direcciones para inferir si ``tasa_eval`` es ``ext/base``."""
+    from apps.finanzas.services import TasaCambioError, obtener_tasa_cambio
+
+    for origen, destino, invertir in ((moneda_base, moneda_ext, False), (moneda_ext, moneda_base, True)):
+        try:
+            tasa_obj = obtener_tasa_cambio(origen, destino, empresa=empresa, fecha=fecha_ref)
+        except TasaCambioError:
+            continue
+        val = Decimal(str(tasa_obj.valor_tasa))
+        if val > Decimal("0"):
+            ext_por_base = (Decimal("1") / val) if invertir else val
+            return _es_ratio_cercano_a_local(tasa_eval, ext_por_base)
+    return None
+
+
+def _tasa_es_local_por_base(
+    *,
+    empresa: "Empresa",
+    moneda_doc: "Moneda",
+    moneda_pago: "Moneda",
+    monto_doc: Decimal,
+    monto_pago: Decimal,
+    tasa_eval: Decimal,
+    fecha_ref: date,
+) -> bool:
+    """Determina si las tasas de diferencial expresan ``moneda_local / moneda_base``."""
+    moneda_base = empresa.id_moneda_base
+    if moneda_base is None:
+        return False
+
+    moneda_pais = empresa.id_moneda_pais
+    if moneda_pais is not None:
+        if moneda_pais.pk == moneda_base.pk:
+            return False
+        if moneda_doc.pk != moneda_pais.pk and moneda_pago.pk != moneda_pais.pk:
+            return False
+
+    if moneda_doc.pk == moneda_base.pk and moneda_pago.pk != moneda_base.pk and monto_doc > Decimal("0"):
+        return _es_ratio_cercano_a_local(tasa_eval, monto_pago / monto_doc)
+    if moneda_pago.pk == moneda_base.pk and moneda_doc.pk != moneda_base.pk and monto_pago > Decimal("0"):
+        return _es_ratio_cercano_a_local(tasa_eval, monto_doc / monto_pago)
+
+    moneda_ref = moneda_pais if (moneda_pais is not None and moneda_pais.pk != moneda_base.pk) else moneda_doc
+    if moneda_ref.pk != moneda_base.pk and (moneda_pais is not None or moneda_doc.pk == moneda_pago.pk):
+        inferido_bd = _consultar_ratio_bd_local_por_base(
+            empresa=empresa,
+            moneda_base=moneda_base,
+            moneda_ext=moneda_ref,
+            tasa_eval=tasa_eval,
+            fecha_ref=fecha_ref,
+        )
+        if inferido_bd is not None:
+            return inferido_bd
+        if moneda_pais is not None:
+            return True
+        base_iso = (moneda_base.codigo_iso or "").upper()
+        ref_iso = (moneda_ref.codigo_iso or "").upper()
+        return (
+            base_iso in ("USD", "EUR", "GBP", "CHF")
+            and ref_iso not in ("USD", "EUR", "GBP", "CHF")
+            and tasa_eval >= Decimal("1")
+        )
+
+    return False
+
+
 def _calcular_diferencial_cambiario(
     *,
     tipo_operacion: str,
@@ -957,8 +1039,10 @@ def _calcular_diferencial_cambiario(
     monto_asignado_documento: Decimal,
     tasa_original_raw: Any,
     tasa_liquidacion_raw: Any,
+    fecha_ref: date,
 ) -> tuple[Decimal, str]:
-    """Calcula monto y signo del diferencial cambiario (``GANANCIA`` / ``PERDIDA``)."""
+    """Calcula monto y signo del diferencial cambiario (``GANANCIA`` / ``PERDIDA``) en moneda base."""
+    moneda_base = empresa.id_moneda_base
     moneda_funcional_id = empresa.id_moneda_base_id or empresa.id_moneda_pais_id
     if (
         moneda_funcional_id is not None
@@ -970,47 +1054,58 @@ def _calcular_diferencial_cambiario(
     tasa_orig = _parse_tasa_opcional(tasa_original_raw, "tasa_original")
     tasa_liq = _parse_tasa_opcional(tasa_liquidacion_raw, "tasa_liquidacion")
 
-    if tasa_orig is None and tasa_liq is None:
-        if tipo_doc == "FACTURA_VENTA" and moneda_doc.pk == pago.id_moneda_id:
-            tasa_orig_eff = Decimal(str(documento.tasa_cambio))
-            tasa_liq_eff = Decimal(str(pago.tasa))
-        else:
-            return _CERO, ""
-    elif tasa_orig is not None and tasa_liq is not None:
+    if tasa_orig is not None and tasa_liq is not None:
         tasa_orig_eff = tasa_orig
         tasa_liq_eff = tasa_liq
-    elif tasa_orig is None and tasa_liq is not None:
-        if tipo_doc == "FACTURA_VENTA" and moneda_doc.pk == pago.id_moneda_id:
-            tasa_orig_eff = Decimal(str(documento.tasa_cambio))
-            tasa_liq_eff = tasa_liq
-        else:
-            return _CERO, ""
-    else:
-        if tasa_orig is None:
-            return _CERO, ""
+    elif tasa_orig is not None:
         tasa_orig_eff = tasa_orig
         tasa_liq_eff = Decimal(str(pago.tasa))
+    elif tipo_doc == "FACTURA_VENTA" and moneda_doc.pk == pago.id_moneda_id:
+        tasa_orig_eff = Decimal(str(documento.tasa_cambio))
+        tasa_liq_eff = tasa_liq if tasa_liq is not None else Decimal(str(pago.tasa))
+    else:
+        return _CERO, ""
 
     if tasa_orig_eff <= Decimal("0") or tasa_liq_eff <= Decimal("0"):
         raise ConciliacionPagoError("Las tasas de cambio para diferencial cambiario deben ser mayores a cero.")
 
-    delta = tasa_liq_eff - tasa_orig_eff
-    if delta == Decimal("0"):
-        return _CERO, ""
+    es_local_por_base = _tasa_es_local_por_base(
+        empresa=empresa,
+        moneda_doc=moneda_doc,
+        moneda_pago=pago.id_moneda,
+        monto_doc=monto_asignado_documento,
+        monto_pago=monto_asignado_pago,
+        tasa_eval=tasa_liq_eff,
+        fecha_ref=fecha_ref,
+    )
 
-    if moneda_doc.pk != pago.id_moneda_id and moneda_funcional_id is not None and moneda_doc.pk == moneda_funcional_id:
-        monto_base_calculo = monto_asignado_pago
+    if es_local_por_base and moneda_base is not None:
+        if moneda_doc.pk == moneda_base.pk and pago.id_moneda_id != moneda_base.pk:
+            valor_orig_base = monto_asignado_documento
+            valor_liq_base = monto_asignado_pago / tasa_liq_eff
+        elif moneda_doc.pk != moneda_base.pk and pago.id_moneda_id == moneda_base.pk:
+            valor_orig_base = monto_asignado_documento / tasa_orig_eff
+            valor_liq_base = monto_asignado_pago
+        else:
+            valor_orig_base = monto_asignado_documento / tasa_orig_eff
+            valor_liq_base = monto_asignado_documento / tasa_liq_eff
     else:
-        monto_base_calculo = monto_asignado_documento
+        if moneda_funcional_id is not None and moneda_doc.pk == moneda_funcional_id:
+            monto_divisa = monto_asignado_pago
+        else:
+            monto_divisa = monto_asignado_documento
+        valor_orig_base = monto_divisa * tasa_orig_eff
+        valor_liq_base = monto_divisa * tasa_liq_eff
 
-    diferencia = (monto_base_calculo * abs(delta)).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+    delta_base = valor_liq_base - valor_orig_base
+    diferencia = abs(delta_base).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
     if diferencia <= Decimal("0"):
         return _CERO, ""
 
     if tipo_operacion == "INGRESO":
-        tipo_diferencia = "GANANCIA" if delta > Decimal("0") else "PERDIDA"
+        tipo_diferencia = "GANANCIA" if delta_base > Decimal("0") else "PERDIDA"
     else:
-        tipo_diferencia = "PERDIDA" if delta > Decimal("0") else "GANANCIA"
+        tipo_diferencia = "PERDIDA" if delta_base > Decimal("0") else "GANANCIA"
 
     return diferencia, tipo_diferencia
 
@@ -1259,6 +1354,7 @@ def aplicar_pago_a_documentos(
             monto_asignado_documento=monto_doc,
             tasa_original_raw=item.get("tasa_original"),
             tasa_liquidacion_raw=item.get("tasa_liquidacion"),
+            fecha_ref=fecha_ref_pago,
         )
 
         nuevo_saldo_doc = saldo_doc_actual - monto_doc

@@ -2479,6 +2479,211 @@ class TestRegresionAuditoriaB1B4:
                 usuario=user_a,
             )
 
+    @pytest.mark.parametrize("usar_moneda_pais", [True, False])
+    def test_b2_ronda2_base_usd_tres_cruces_con_y_sin_moneda_pais(
+        self,
+        usar_moneda_pais,
+        empresa_a,
+        cliente_a,
+        proveedor_a,
+        contacto_cliente_a,
+        contacto_proveedor_a,
+        moneda_usd,
+        moneda_ves,
+        metodo_efectivo,
+        user_a,
+    ):
+        empresa_a.contabilidad_activa = True
+        empresa_a.contabilidad_auto_aprobar = True
+        empresa_a.id_moneda_base = moneda_usd
+        empresa_a.id_moneda_pais = moneda_ves if usar_moneda_pais else None
+        empresa_a.save(
+            update_fields=["contabilidad_activa", "contabilidad_auto_aprobar", "id_moneda_base", "id_moneda_pais"]
+        )
+        _configurar_mapeos_conciliacion(empresa_a)
+
+        # Antes de crear TasaCambio: cruce VES/VES en history-only verifica fallback sin fila TasaCambio
+        fv_sin_tc = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_ves,
+            numero=f"FV-R2-NOTC-{int(usar_moneda_pais)}",
+            monto_total=Decimal("4000.0000"),
+            tasa_cambio=Decimal("36.0000"),
+        )
+        pago_sin_tc = _crear_pago(
+            empresa_a,
+            moneda_ves,
+            metodo_efectivo,
+            monto=Decimal("4000.0000"),
+            tasa=Decimal("40.0000"),
+            contacto=contacto_cliente_a,
+        )
+        asig_sin_tc = aplicar_pago_a_documentos(
+            pago_sin_tc,
+            [{"tipo_documento": "FACTURA_VENTA", "id_documento": fv_sin_tc.pk, "monto_asignado_pago": "4000.00"}],
+            usuario=user_a,
+            generar_asiento=False,
+        )[0]
+        assert asig_sin_tc.diferencia_cambiaria == Decimal("11.1111")
+        assert asig_sin_tc.tipo_diferencia == "PERDIDA"
+
+        # Tasas vigentes de conversión VES <-> USD (= 40 Bs/USD -> 0.025 USD/Bs)
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_ves,
+            id_moneda_destino=moneda_usd,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("0.02500000"),
+            fecha_tasa=_hoy(),
+        )
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("40.00000000"),
+            fecha_tasa=_hoy(),
+        )
+
+        # 1) Cruce VES/VES (INGRESO): 4000 VES nacida a 36 (=111.1111 USD), cobrada a 40 (=100 USD) -> PERDIDA 11.1111 USD
+        fv_ves_ves = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_ves,
+            numero=f"FV-R2-VV-{int(usar_moneda_pais)}",
+            monto_total=Decimal("4000.0000"),
+            tasa_cambio=Decimal("36.0000"),
+        )
+        pago_ves_ves = _crear_pago(
+            empresa_a,
+            moneda_ves,
+            metodo_efectivo,
+            monto=Decimal("4000.0000"),
+            tasa=Decimal("40.0000"),
+            contacto=contacto_cliente_a,
+        )
+        asig_vv = aplicar_pago_a_documentos(
+            pago_ves_ves,
+            [{"tipo_documento": "FACTURA_VENTA", "id_documento": fv_ves_ves.pk, "monto_asignado_pago": "4000.00"}],
+            usuario=user_a,
+        )[0]
+        assert asig_vv.diferencia_cambiaria == Decimal("11.1111")
+        assert asig_vv.tipo_diferencia == "PERDIDA"
+        asientos_vv = AsientoContable.objects.filter(
+            id_empresa=empresa_a, id_documento_origen=asig_vv.id_asignacion, nombre_modelo_origen="AsignacionPago"
+        )
+        assert asientos_vv.count() == 2
+        assert sum(d.debe for d in DetalleAsiento.objects.filter(id_asiento=asig_vv.id_asiento)) == Decimal("100.00")
+        ast_fx_vv = asientos_vv.exclude(pk=asig_vv.id_asiento_id).first()
+        assert ast_fx_vv is not None
+        assert ast_fx_vv.numero_asiento.startswith("AST-PERD-")
+        assert sum(d.debe for d in DetalleAsiento.objects.filter(id_asiento=ast_fx_vv)) == Decimal("11.11")
+
+        # 1b) Cruce VES/VES (EGRESO): CxP 4000 VES a 36 pagada a 40 -> GANANCIA 11.1111 USD
+        cxp_vv = CuentaPorPagar.objects.create(
+            id_empresa=empresa_a,
+            id_proveedor=proveedor_a,
+            monto_total=Decimal("4000.0000"),
+            monto_pendiente=Decimal("4000.0000"),
+            fecha_emision=_hoy(),
+            fecha_vencimiento=_hoy() + timedelta(days=5),
+            estado="PENDIENTE",
+        )
+        pago_eg_vv = _crear_pago(
+            empresa_a,
+            moneda_ves,
+            metodo_efectivo,
+            monto=Decimal("4000.0000"),
+            tipo_operacion="EGRESO",
+            tasa=Decimal("40.0000"),
+            contacto=contacto_proveedor_a,
+        )
+        asig_eg_vv = aplicar_pago_a_documentos(
+            pago_eg_vv,
+            [
+                {
+                    "tipo_documento": "CUENTA_POR_PAGAR",
+                    "id_documento": cxp_vv.pk,
+                    "monto_asignado_pago": "4000.00",
+                    "moneda_documento": "VES",
+                    "tasa_original": "36",
+                    "tasa_liquidacion": "40",
+                }
+            ],
+            usuario=user_a,
+        )[0]
+        assert asig_eg_vv.diferencia_cambiaria == Decimal("11.1111")
+        assert asig_eg_vv.tipo_diferencia == "GANANCIA"
+
+        # 2) Cruce doc USD / pago VES en base USD: 100 USD liquidados con 4000 VES a tasa 40 -> 0.0000 USD, solo AST-PAGO 100.00 USD
+        fv_usd_ves = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_usd,
+            numero=f"FV-R2-UV-{int(usar_moneda_pais)}",
+            monto_total=Decimal("100.0000"),
+        )
+        pago_uv = _crear_pago(
+            empresa_a, moneda_ves, metodo_efectivo, monto=Decimal("4000.0000"), contacto=contacto_cliente_a
+        )
+        asig_uv = aplicar_pago_a_documentos(
+            pago_uv,
+            [
+                {
+                    "tipo_documento": "FACTURA_VENTA",
+                    "id_documento": fv_usd_ves.pk,
+                    "monto_asignado_pago": "4000.00",
+                    "tasa_original": "36",
+                    "tasa_liquidacion": "40",
+                }
+            ],
+            usuario=user_a,
+        )[0]
+        assert asig_uv.diferencia_cambiaria == Decimal("0.0000")
+        assert asig_uv.tipo_diferencia == ""
+        asientos_uv = AsientoContable.objects.filter(
+            id_empresa=empresa_a, id_documento_origen=asig_uv.id_asignacion, nombre_modelo_origen="AsignacionPago"
+        )
+        assert asientos_uv.count() == 1
+        assert sum(d.debe for d in DetalleAsiento.objects.filter(id_asiento=asig_uv.id_asiento)) == Decimal("100.00")
+
+        # 3) Cruce doc VES / pago USD en base USD: 4000 VES nacida a 36 (=111.1111 USD) saldada con 100 USD a 40 -> PERDIDA 11.1111 USD
+        fv_ves_usd = _crear_factura_venta(
+            empresa_a,
+            cliente_a,
+            moneda_ves,
+            numero=f"FV-R2-VU-{int(usar_moneda_pais)}",
+            monto_total=Decimal("4000.0000"),
+        )
+        pago_vu = _crear_pago(
+            empresa_a, moneda_usd, metodo_efectivo, monto=Decimal("100.0000"), contacto=contacto_cliente_a
+        )
+        asig_vu = aplicar_pago_a_documentos(
+            pago_vu,
+            [
+                {
+                    "tipo_documento": "FACTURA_VENTA",
+                    "id_documento": fv_ves_usd.pk,
+                    "monto_asignado_pago": "100.00",
+                    "tasa_original": "36",
+                    "tasa_liquidacion": "40",
+                }
+            ],
+            usuario=user_a,
+        )[0]
+        assert asig_vu.diferencia_cambiaria == Decimal("11.1111")
+        assert asig_vu.tipo_diferencia == "PERDIDA"
+        asientos_vu = AsientoContable.objects.filter(
+            id_empresa=empresa_a, id_documento_origen=asig_vu.id_asignacion, nombre_modelo_origen="AsignacionPago"
+        )
+        assert asientos_vu.count() == 2
+        assert sum(d.debe for d in DetalleAsiento.objects.filter(id_asiento=asig_vu.id_asiento)) == Decimal("100.00")
+        ast_fx_vu = asientos_vu.exclude(pk=asig_vu.id_asiento_id).first()
+        assert ast_fx_vu is not None
+        assert ast_fx_vu.numero_asiento.startswith("AST-PERD-")
+        assert sum(d.debe for d in DetalleAsiento.objects.filter(id_asiento=ast_fx_vu)) == Decimal("11.11")
+
     def test_b3_misma_moneda_tolerancia_cero_rechaza_descuadre_centavo(
         self, empresa_a, cliente_a, contacto_cliente_a, moneda_usd, metodo_efectivo, user_a
     ):
