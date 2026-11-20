@@ -15191,7 +15191,7 @@ export interface components {
              * Estado
              * @enum {string}
              */
-            estado?: "BORRADOR" | "PENDIENTE" | "APROBADA" | "RECHAZADA" | "PROCESADA" | "ANULADA";
+            readonly estado?: "BORRADOR" | "PENDIENTE" | "APROBADA" | "RECHAZADA" | "PROCESADA" | "ANULADA";
             /**
              * Prioridad
              * @enum {string}
@@ -18561,7 +18561,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T07:39:40.929588-04:00
+             * @default 2026-11-20T08:56:19.908838-04:00
              */
             fecha_despacho: string;
             /**

@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from apps.core.viewsets import get_empresas_visible
+from apps.core.viewsets import get_empresa_primaria, get_empresas_visible
 
 from .models import (
     DetalleFacturaCompra,
@@ -28,11 +28,47 @@ def _empresas_visibles_contexto(serializer) -> set[str] | None:
     return None
 
 
-def _validar_unicidad_empresa(modelo, campo: str, valor: str | None, visibles: set[str] | None, instance=None) -> None:
-    if not valor or not visibles:
+def _empresa_efectiva_contexto(serializer) -> str | None:
+    """Devuelve el UUID (str) de la empresa efectiva del serializer, alineado a EmpresaInjectMixin."""
+    if getattr(serializer, "instance", None) is not None:
+        return str(serializer.instance.id_empresa_id)
+    request = serializer.context.get("request") if hasattr(serializer, "context") else None
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        primaria = get_empresa_primaria(user)
+        if primaria is None:
+            raise serializers.ValidationError({"id_empresa": "El usuario no tiene empresa asignada."})
+        return str(primaria.pk)
+    return None
+
+
+def _validar_fk_empresa(
+    obj,
+    campo: str,
+    empresa_ref: str | None,
+    visibles: set[str] | None,
+    *,
+    etiqueta: str,
+) -> None:
+    if obj is None:
         return
-    emp_ids = [str(instance.id_empresa_id)] if instance is not None else list(visibles)
-    qs = modelo.objects.filter(id_empresa_id__in=emp_ids, **{campo: valor})
+    obj_emp = str(obj.id_empresa_id)
+    if visibles is not None and obj_emp not in visibles:
+        raise serializers.ValidationError({campo: f"{etiqueta} fuera de su empresa."})
+    if empresa_ref is not None and obj_emp != empresa_ref:
+        raise serializers.ValidationError({campo: f"{etiqueta} no pertenece a la empresa del documento."})
+
+
+def _validar_unicidad_empresa(
+    modelo,
+    campo: str,
+    valor: str | None,
+    empresa_ref: str | None,
+    instance=None,
+) -> None:
+    if not valor or not empresa_ref:
+        return
+    qs = modelo.objects.filter(id_empresa_id=empresa_ref, **{campo: valor})
     if instance is not None:
         qs = qs.exclude(pk=instance.pk)
     if qs.exists():
@@ -48,49 +84,40 @@ class OrdenCompraSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        prov = attrs.get("id_proveedor") or getattr(self.instance, "id_proveedor", None)
+        prov = attrs["id_proveedor"] if "id_proveedor" in attrs else getattr(self.instance, "id_proveedor", None)
         almacen = (
-            attrs.get("id_almacen_destino")
+            attrs["id_almacen_destino"]
             if "id_almacen_destino" in attrs
             else getattr(self.instance, "id_almacen_destino", None)
         )
         oferta = (
-            attrs.get("id_oferta_origen")
+            attrs["id_oferta_origen"]
             if "id_oferta_origen" in attrs
             else getattr(self.instance, "id_oferta_origen", None)
         )
 
-        empresa_ref = (
-            str(self.instance.id_empresa_id)
-            if self.instance is not None
-            else (str(prov.id_empresa_id) if prov is not None else None)
-        )
         visibles = _empresas_visibles_contexto(self)
+        empresa_ref = _empresa_efectiva_contexto(self)
+        if empresa_ref is None and prov is not None:
+            empresa_ref = str(prov.id_empresa_id)
+
         _validar_unicidad_empresa(
             OrdenCompra,
             "numero_orden",
             attrs.get("numero_orden"),
-            visibles,
+            empresa_ref,
             self.instance,
         )
-
-        if almacen is not None:
-            alm_emp = str(almacen.id_empresa_id)
-            if visibles is not None and alm_emp not in visibles:
-                raise serializers.ValidationError({"id_almacen_destino": "Almacén destino fuera de su empresa."})
-            if empresa_ref is not None and alm_emp != empresa_ref:
-                raise serializers.ValidationError(
-                    {"id_almacen_destino": "El almacén destino no pertenece a la empresa de la orden."}
-                )
-
+        _validar_fk_empresa(prov, "id_proveedor", empresa_ref, visibles, etiqueta="Proveedor")
+        _validar_fk_empresa(almacen, "id_almacen_destino", empresa_ref, visibles, etiqueta="Almacén destino")
         if oferta is not None:
-            ofe_emp = str(oferta.id_solicitud_cotizacion.id_empresa_id)
-            if visibles is not None and ofe_emp not in visibles:
-                raise serializers.ValidationError({"id_oferta_origen": "Oferta origen fuera de su empresa."})
-            if empresa_ref is not None and ofe_emp != empresa_ref:
-                raise serializers.ValidationError(
-                    {"id_oferta_origen": "La oferta origen no pertenece a la empresa de la orden."}
-                )
+            _validar_fk_empresa(
+                oferta.id_solicitud_cotizacion,
+                "id_oferta_origen",
+                empresa_ref,
+                visibles,
+                etiqueta="Oferta origen",
+            )
 
         return attrs
 
@@ -145,17 +172,34 @@ class RequisicionCompraSerializer(serializers.ModelSerializer):
             "id_empresa",
         ]
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
-        read_only_fields = ("id_empresa", "id_requisicion", "fecha_creacion")
+        # [B-4]: estado solo transiciona via enviar-aprobacion / confirmar-aprobacion.
+        read_only_fields = ("id_empresa", "id_requisicion", "estado", "fecha_creacion")
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        visibles = _empresas_visibles_contexto(self)
+        empresa_ref = _empresa_efectiva_contexto(self)
         _validar_unicidad_empresa(
             RequisicionCompra,
             "numero_requisicion",
             attrs.get("numero_requisicion"),
-            _empresas_visibles_contexto(self),
+            empresa_ref,
             self.instance,
         )
+        dep = (
+            attrs["id_departamento"] if "id_departamento" in attrs else getattr(self.instance, "id_departamento", None)
+        )
+        _validar_fk_empresa(dep, "id_departamento", empresa_ref, visibles, etiqueta="Departamento")
+        sol = attrs["id_solicitante"] if "id_solicitante" in attrs else getattr(self.instance, "id_solicitante", None)
+        if (
+            sol is not None
+            and empresa_ref is not None
+            and not getattr(sol, "es_superusuario_omni", False)
+            and not sol.empresas.filter(pk=empresa_ref).exists()
+        ):
+            raise serializers.ValidationError(
+                {"id_solicitante": "El usuario solicitante no pertenece a la empresa de la requisición."}
+            )
         return attrs
 
 
@@ -172,6 +216,16 @@ class DetalleRequisicionCompraSerializer(serializers.ModelSerializer):
             "justificacion",
             "observaciones",
         ]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        req = attrs["id_requisicion"] if "id_requisicion" in attrs else getattr(self.instance, "id_requisicion", None)
+        prod = attrs["id_producto"] if "id_producto" in attrs else getattr(self.instance, "id_producto", None)
+        visibles = _empresas_visibles_contexto(self)
+        empresa_ref = str(req.id_empresa_id) if req is not None else None
+        _validar_fk_empresa(req, "id_requisicion", None, visibles, etiqueta="Requisición")
+        _validar_fk_empresa(prod, "id_producto", empresa_ref, visibles, etiqueta="Producto")
+        return attrs
 
 
 class SolicitudCotizacionSerializer(serializers.ModelSerializer):
@@ -203,14 +257,14 @@ class SolicitudCotizacionSerializer(serializers.ModelSerializer):
             )
 
         visibles = _empresas_visibles_contexto(self)
+        empresa_ref = _empresa_efectiva_contexto(self)
         _validar_unicidad_empresa(
             SolicitudCotizacion,
             "numero_solicitud",
             attrs.get("numero_solicitud"),
-            visibles,
+            empresa_ref,
             self.instance,
         )
-        empresa_ref = str(self.instance.id_empresa_id) if self.instance is not None else None
 
         requisiciones = attrs.get("requisiciones")
         if requisiciones is not None:
@@ -222,7 +276,7 @@ class SolicitudCotizacionSerializer(serializers.ModelSerializer):
                     empresa_ref = req_emp
                 elif req_emp != empresa_ref:
                     raise serializers.ValidationError(
-                        {"requisiciones": "Todas las requisiciones deben pertenecer a la misma empresa."}
+                        {"requisiciones": "Todas las requisiciones deben pertenecer a la empresa de la solicitud."}
                     )
 
         proveedores = attrs.get("proveedores_invitados")
@@ -235,7 +289,9 @@ class SolicitudCotizacionSerializer(serializers.ModelSerializer):
                     empresa_ref = prov_emp
                 elif prov_emp != empresa_ref:
                     raise serializers.ValidationError(
-                        {"proveedores_invitados": "Los proveedores invitados deben pertenecer a la misma empresa."}
+                        {
+                            "proveedores_invitados": "Los proveedores invitados deben pertenecer a la empresa de la solicitud."
+                        }
                     )
 
         return attrs

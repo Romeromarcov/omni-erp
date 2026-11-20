@@ -265,27 +265,76 @@ class TestConectoresOptInAprobaciones:
             "metodo_pago_destino": str(metodo_efectivo.id_metodo_pago),
             "observaciones": "Venta opt-in",
         }
+        payload_bajo = {
+            **payload,
+            "numero_operacion": "CAM-BAJO-001",
+            "monto_origen": "100.0000",
+            "monto_destino": "3650.0000",
+        }
+        r_bajo = client_a.post("/api/tesoreria/operaciones-cambio-divisa/", payload_bajo, format="json")
+        assert r_bajo.status_code == 201, r_bajo.json()
+        op_bajo_id = r_bajo.json()["id"]
+
+        # [B-2.1] Operación ya ejecutada es inmutable vía PATCH y PUT (bloquea evasión sobre umbral)
+        r_patch = client_a.patch(
+            f"/api/tesoreria/operaciones-cambio-divisa/{op_bajo_id}/",
+            {"monto_origen": "9000.0000", "monto_destino": "328500.0000"},
+            format="json",
+        )
+        assert r_patch.status_code == 400
+        r_put = client_a.put(
+            f"/api/tesoreria/operaciones-cambio-divisa/{op_bajo_id}/",
+            {**payload_bajo, "monto_origen": "9000.0000"},
+            format="json",
+        )
+        assert r_put.status_code == 400
+
         r_block = client_a.post("/api/tesoreria/operaciones-cambio-divisa/", payload, format="json")
         assert r_block.status_code == 400
         assert "requiere aprobación" in str(r_block.json()["detail"])
-        assert OperacionCambioDivisa.objects.count() == 0
+        assert OperacionCambioDivisa.objects.count() == 1
 
-        ref_uuid = uuid.uuid5(
-            uuid.NAMESPACE_URL,
-            f"omni:OperacionCambioDivisa:{empresa_a.pk}:CAM-OPT-001",
+        firma_op = "|".join(
+            [
+                "omni:OperacionCambioDivisa",
+                str(empresa_a.pk),
+                "CAM-OPT-001",
+                "VENTA",
+                str(moneda_usd.id_moneda),
+                str(moneda_ves.id_moneda),
+                "600.0000",
+                "36.500000",
+                "21900.0000",
+                "0.0000",
+            ]
         )
+        ref_uuid = uuid.uuid5(uuid.NAMESPACE_URL, firma_op)
         sol = SolicitudAprobacion.objects.get(id_entidad_origen=ref_uuid, nombre_modelo_origen="OperacionCambioDivisa")
         registrar_decision(sol, user_a, aprobado=True)
 
-        # Si el cliente intenta subir el monto después de aprobar 600 → bloquea por monto_minimo_aprobado
-        payload_tamper = dict(payload, monto_origen="900.0000", monto_destino="32850.0000")
-        r_tamper = client_a.post("/api/tesoreria/operaciones-cambio-divisa/", payload_tamper, format="json")
-        assert r_tamper.status_code == 400
+        # [B-2.2] Alterar monto_origen, monto_destino, moneda_destino, tasa_cambio o comision tras aprobar bloquea
+        moneda_eur = Moneda.objects.create(
+            tipo_moneda="fiat", codigo_iso="EUR", nombre="Euro", simbolo="€", es_generica=True, es_publica=True
+        )
+        for cambios in (
+            {"monto_origen": "900.0000", "monto_destino": "32850.0000"},
+            {"monto_destino": "99999.0000"},
+            {"moneda_destino": str(moneda_eur.id_moneda)},
+            {"tasa_cambio": "99.000000"},
+            {"comision": "25.0000"},
+        ):
+            r_tamper = client_a.post(
+                "/api/tesoreria/operaciones-cambio-divisa/",
+                {**payload, **cambios},
+                format="json",
+            )
+            assert r_tamper.status_code == 400, cambios
 
-        # Con el monto aprobado ejecuta atómicamente (201)
-        r_ok = client_a.post("/api/tesoreria/operaciones-cambio-divisa/", payload, format="json")
+        # Representación decimal equivalente (600.00 == 600.0000, comision 0 == 0.0000) coincide con la firma aprobada
+        payload_equiv = dict(payload, monto_origen="600.00", tasa_cambio="36.5", monto_destino="21900", comision="0")
+        r_ok = client_a.post("/api/tesoreria/operaciones-cambio-divisa/", payload_equiv, format="json")
         assert r_ok.status_code == 201, r_ok.json()
-        assert OperacionCambioDivisa.objects.count() == 1
+        assert OperacionCambioDivisa.objects.count() == 2
 
 
 @pytest.mark.tenant
@@ -597,6 +646,9 @@ class TestComprasYAprobacionesMCP:
             tok_c_write, emp_id, str(oferta.pk), str(alm.pk), adjudicacion_parcial=["bad"]
         )  # type: ignore[list-item]
         assert "error" in aprobaciones_pendientes(tok_a_read, emp_id, limit=True)  # type: ignore[arg-type]
+        # [M-1] codigo_tipo con byte NUL devuelve {"error": ...} controlado, nunca ValueError crudo
+        res_nul = aprobaciones_pendientes(tok_a_read, emp_id, codigo_tipo="a\x00b")
+        assert isinstance(res_nul, dict) and "error" in res_nul
         assert "error" in aprobaciones_decidir(tok_a_write, emp_id, "no-uuid", str(user_a.pk), True)
         assert "error" in aprobaciones_decidir(tok_a_write, emp_id, sol_id, str(user_a.pk), "yes")  # type: ignore[arg-type]
         assert "error" in aprobaciones_decidir(tok_a_write, emp_id, str(uuid.uuid4()), str(user_a.pk), True)

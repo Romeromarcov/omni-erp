@@ -147,8 +147,14 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
         ]
 
     _DOS_DECIMALES = Decimal("0.01")
+    _CUATRO_DECIMALES = Decimal("0.0001")
+    _SEIS_DECIMALES = Decimal("0.000001")
 
     def validate(self, attrs):
+        if self.instance is not None:
+            raise serializers.ValidationError(
+                {"detail": "Las operaciones de cambio de divisa ejecutadas son inmutables y no pueden modificarse."}
+            )
         # finanzas.TransaccionFinanciera exige id_metodo_pago (NOT NULL): sin
         # método de pago el doble registro es imposible — se rechaza con 400.
         if not attrs.get("metodo_pago_origen"):
@@ -160,6 +166,11 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
                 {"metodo_pago_destino": "Requerido: el ingreso genera una TransaccionFinanciera."}
             )
         return attrs
+
+    def update(self, instance, validated_data):
+        raise serializers.ValidationError(
+            {"detail": "Las operaciones de cambio de divisa ejecutadas son inmutables y no pueden modificarse."}
+        )
 
     def _monto_base_empresa(self, operacion, monto, moneda):
         """Convierte `monto` (Decimal, en `moneda`) a la moneda base de la empresa."""
@@ -269,10 +280,31 @@ class OperacionCambioDivisaSerializer(serializers.ModelSerializer):
                 def __init__(self, ref_pk: uuid.UUID) -> None:
                     self.pk = ref_pk
 
-            ref_pk = uuid.uuid5(
-                uuid.NAMESPACE_URL,
-                f"omni:OperacionCambioDivisa:{empresa.pk}:{numero_operacion}",
+            comision_dec = Decimal(str(validated_data.get("comision") or "0")).quantize(
+                self._CUATRO_DECIMALES, rounding=ROUND_HALF_UP
             )
+            tasa_dec = Decimal(str(validated_data["tasa_cambio"])).quantize(
+                self._SEIS_DECIMALES, rounding=ROUND_HALF_UP
+            )
+            monto_dest_dec = Decimal(str(validated_data["monto_destino"])).quantize(
+                self._CUATRO_DECIMALES, rounding=ROUND_HALF_UP
+            )
+            monto_orig_dec = monto_origen.quantize(self._CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+            firma_op = "|".join(
+                [
+                    "omni:OperacionCambioDivisa",
+                    str(empresa.pk),
+                    str(numero_operacion),
+                    str(validated_data["tipo_operacion"]),
+                    str(validated_data["moneda_origen"].pk),
+                    str(validated_data["moneda_destino"].pk),
+                    str(monto_orig_dec),
+                    str(tasa_dec),
+                    str(monto_dest_dec),
+                    str(comision_dec),
+                ]
+            )
+            ref_pk = uuid.uuid5(uuid.NAMESPACE_URL, firma_op)
             doc_ref = _OperacionCambioRef(ref_pk)
             monto_verif = monto_origen.quantize(self._DOS_DECIMALES, rounding=ROUND_HALF_UP)
             if not esta_aprobada(doc_ref, monto_minimo_aprobado=monto_verif):

@@ -54,6 +54,10 @@ def aprobaciones_pendientes(
             if isinstance(limit, bool):
                 raise ValueError("El parámetro 'limit' debe ser entero.")
             limite_int = min(max(int(limit), 1), 200)
+            codigo_limpio = str(codigo_tipo or "")
+            if "\x00" in codigo_limpio:
+                raise ValueError("El parámetro 'codigo_tipo' es inválido.")
+            codigo_limpio = codigo_limpio.strip()
         except (ValueError, TypeError) as exc:
             return {"error": str(exc)}
 
@@ -65,8 +69,8 @@ def aprobaciones_pendientes(
             .select_related("id_tipo_aprobacion", "etapa_actual_flujo", "id_departamento", "id_usuario_solicitante")
             .order_by("fecha_inicio_etapa", "pk")
         )
-        if codigo_tipo and codigo_tipo.strip():
-            qs = qs.filter(id_tipo_aprobacion__codigo_tipo=codigo_tipo.strip())
+        if codigo_limpio:
+            qs = qs.filter(id_tipo_aprobacion__codigo_tipo=codigo_limpio)
         if solo_escaladas:
             qs = qs.filter(escalada=True)
 

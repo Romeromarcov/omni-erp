@@ -583,3 +583,48 @@ class TestAprobacionesRestAPIAvanzada:
         )
         res_err = escalar_solicitudes_vencidas()
         assert res_err["errores"] >= 1
+
+    def test_patch_flujo_cambiando_solo_tipo_a_subsidiaria_bloquea_corrupcion_fk(
+        self, client_a, empresa_a, moneda_usd, user_a
+    ):
+        """[B-1] PATCH cambiando solo id_tipo_aprobacion a subsidiaria debe rechazar FKs heredados de Matriz."""
+        from apps.core.models import Empresa
+
+        sub = Empresa.objects.create(
+            nombre_legal="Subsidiaria Aprob S.A.",
+            identificador_fiscal="J-77700011-2",
+            id_moneda_base=moneda_usd,
+            empresa_matriz=empresa_a,
+        )
+        dep_m = Departamento.objects.create(id_empresa=empresa_a, nombre_departamento="Compras Matriz")
+        rol_m = Roles.objects.create(id_empresa=empresa_a, nombre_rol="Rol Matriz")
+        tipo_m = TipoAprobacion.objects.create(
+            id_empresa=empresa_a, codigo_tipo="OC_MATRIZ", nombre_tipo="OC M", modulo_origen="compras"
+        )
+        tipo_s = TipoAprobacion.objects.create(
+            id_empresa=sub, codigo_tipo="OC_SUB", nombre_tipo="OC S", modulo_origen="compras"
+        )
+
+        # Cada uno de los 5 FKs de Matriz debe bloquear al intentar mover la etapa a tipo_sub via PATCH
+        for campo, fk_obj in (
+            ("id_departamento", dep_m),
+            ("rol_aprobador", rol_m),
+            ("escalar_a_rol", rol_m),
+            ("id_usuario_aprobador", user_a),
+            ("escalar_a_usuario", user_a),
+        ):
+            flujo = FlujoAprobacion.objects.create(
+                id_tipo_aprobacion=tipo_m,
+                orden_etapa=10,
+                nombre_etapa=f"Etapa {campo}",
+                **{campo: fk_obj},
+            )
+            r_patch = client_a.patch(
+                f"/api/gestion-aprobaciones/flujos-aprobacion/{flujo.pk}/",
+                {"id_tipo_aprobacion": str(tipo_s.pk)},
+                format="json",
+            )
+            assert r_patch.status_code == 400, (campo, r_patch.json())
+            assert campo in r_patch.json()
+            flujo.refresh_from_db()
+            assert flujo.id_tipo_aprobacion_id == tipo_m.pk

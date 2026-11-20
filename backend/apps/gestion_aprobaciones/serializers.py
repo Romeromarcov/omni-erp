@@ -47,19 +47,23 @@ class FlujoAprobacionSerializer(BaseModelSerializer):
             return attrs
 
         empresa_id = tipo.id_empresa_id
-        departamento = attrs.get("id_departamento")
+        departamento = (
+            attrs["id_departamento"] if "id_departamento" in attrs else getattr(self.instance, "id_departamento", None)
+        )
         if departamento is not None and str(departamento.id_empresa_id) != str(empresa_id):
             raise serializers.ValidationError(
                 {"id_departamento": "El departamento no pertenece a la empresa del tipo de aprobación."}
             )
 
-        rol = attrs.get("rol_aprobador")
+        rol = attrs["rol_aprobador"] if "rol_aprobador" in attrs else getattr(self.instance, "rol_aprobador", None)
         if rol is not None and rol.id_empresa_id is not None and str(rol.id_empresa_id) != str(empresa_id):
             raise serializers.ValidationError(
                 {"rol_aprobador": "El rol aprobador no pertenece a la empresa del tipo de aprobación."}
             )
 
-        escalar_rol = attrs.get("escalar_a_rol")
+        escalar_rol = (
+            attrs["escalar_a_rol"] if "escalar_a_rol" in attrs else getattr(self.instance, "escalar_a_rol", None)
+        )
         if (
             escalar_rol is not None
             and escalar_rol.id_empresa_id is not None
@@ -69,13 +73,21 @@ class FlujoAprobacionSerializer(BaseModelSerializer):
                 {"escalar_a_rol": "El rol de escalación no pertenece a la empresa del tipo de aprobación."}
             )
 
-        usuario = attrs.get("id_usuario_aprobador")
+        usuario = (
+            attrs["id_usuario_aprobador"]
+            if "id_usuario_aprobador" in attrs
+            else getattr(self.instance, "id_usuario_aprobador", None)
+        )
         if usuario is not None and not usuario.empresas.filter(pk=empresa_id).exists():
             raise serializers.ValidationError(
                 {"id_usuario_aprobador": "El usuario aprobador no pertenece a la empresa del tipo de aprobación."}
             )
 
-        escalar_usuario = attrs.get("escalar_a_usuario")
+        escalar_usuario = (
+            attrs["escalar_a_usuario"]
+            if "escalar_a_usuario" in attrs
+            else getattr(self.instance, "escalar_a_usuario", None)
+        )
         if escalar_usuario is not None and not escalar_usuario.empresas.filter(pk=empresa_id).exists():
             raise serializers.ValidationError(
                 {"escalar_a_usuario": "El usuario de escalación no pertenece a la empresa del tipo de aprobación."}

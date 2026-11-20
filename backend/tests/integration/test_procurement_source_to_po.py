@@ -25,6 +25,7 @@ from apps.compras.models import (
     OfertaProveedor,
     OrdenCompra,
     RequisicionCompra,
+    SolicitudCotizacion,
 )
 from apps.compras.services import CompraError
 from apps.compras.services_procurement import (
@@ -898,3 +899,263 @@ class TestSourceToPORestAPI:
             ).status_code
             == 400
         )
+
+
+class TestMatrizSubsidiariaYEstadoReadOnly:
+    def test_blindaje_matriz_subsidiaria_y_estado_requisicion_read_only(
+        self, client_a, empresa_a, user_a, moneda_usd, almacen_a, proveedor_1, productos_a
+    ):
+        """[B-3] & [B-4] Regresiones Matriz ↔ Subsidiaria y read_only_fields en RequisicionCompra."""
+        from apps.core.models import Empresa, Usuarios
+        from apps.core.viewsets import get_empresa_primaria
+
+        prod_1, _p2, _p3 = productos_a
+        hoy = _hoy()
+        sub = Empresa.objects.create(
+            nombre_legal="Subsidiaria Alpha S.A.",
+            identificador_fiscal="J-77777777-1",
+            id_moneda_base=moneda_usd,
+            empresa_matriz=empresa_a,
+        )
+        assert get_empresa_primaria(user_a) == empresa_a
+
+        prov_sub = Proveedor.objects.create(id_empresa=sub, razon_social="Prov Sub", rif="J-77700001-1")
+        alm_sub = Almacen.objects.create(id_empresa=sub, nombre_almacen="Alm Sub", codigo_almacen="ALM-SUB")
+        dep_sub = Departamento.objects.create(id_empresa=sub, nombre_departamento="Dep Sub")
+        u_sub = Usuarios.objects.create_user(username="solo_sub_req", password="x")
+        u_sub.empresas.add(sub)
+
+        unidad_s = UnidadMedida.objects.create(id_empresa=sub, nombre="Und Sub", abreviatura="US", tipo="CANTIDAD")
+        cat_s = CategoriaProducto.objects.create(id_empresa=sub, nombre_categoria="Cat Sub")
+        prod_sub = Producto.objects.create(
+            id_empresa=sub,
+            nombre_producto="Prod Sub",
+            sku="SUB-001",
+            id_unidad_medida_base=unidad_s,
+            id_categoria=cat_s,
+            id_moneda_precio=moneda_usd,
+        )
+        req_sub = _crear_req(sub, u_sub, "REQ-MATSUB-NUM", prod_sub, "2", "10", estado="APROBADA")
+        rfq_sub = SolicitudCotizacion.objects.create(
+            id_empresa=sub,
+            numero_solicitud="RFQ-MATSUB-NUM",
+            fecha_solicitud=hoy,
+            fecha_vencimiento=hoy + timedelta(days=5),
+            estado="ENVIADA",
+        )
+        of_sub = OfertaProveedor.objects.create(
+            id_solicitud_cotizacion=rfq_sub,
+            id_proveedor=prov_sub,
+            numero_oferta="OF-SUB-1",
+            fecha_oferta=hoy,
+            fecha_vencimiento=hoy + timedelta(days=4),
+            estado="RECIBIDA",
+        )
+
+        # Regla activa REQUISICION_COMPRA
+        tipo = TipoAprobacion.objects.create(
+            id_empresa=empresa_a,
+            codigo_tipo="REQUISICION_COMPRA",
+            nombre_tipo="Req Gate",
+            modulo_origen="compras",
+            activo=True,
+        )
+        FlujoAprobacion.objects.create(
+            id_tipo_aprobacion=tipo,
+            orden_etapa=1,
+            nombre_etapa="Director",
+            id_usuario_aprobador=user_a,
+            monto_minimo=Decimal("1.00"),
+            activo=True,
+        )
+
+        # [B-4] POST/PATCH intentando inyectar estado=APROBADA no puede saltar REQUISICION_COMPRA
+        r_req_bypass = client_a.post(
+            "/api/compras/requisiciones-compra/",
+            {
+                "id_solicitante": str(user_a.pk),
+                "numero_requisicion": "REQ-MATSUB-NUM",  # mismo numero que en Sub -> no debe dar falso 400 ([B-3.3])
+                "fecha_requisicion": hoy.isoformat(),
+                "fecha_necesidad": (hoy + timedelta(days=5)).isoformat(),
+                "estado": "APROBADA",
+                "justificacion": "Intento bypass",
+            },
+            format="json",
+        )
+        assert r_req_bypass.status_code == 201, r_req_bypass.json()
+        assert r_req_bypass.json()["estado"] == "BORRADOR"
+        req_m_id = r_req_bypass.json()["id_requisicion"]
+
+        r_req_patch_est = client_a.patch(
+            f"/api/compras/requisiciones-compra/{req_m_id}/",
+            {"estado": "APROBADA"},
+            format="json",
+        )
+        assert r_req_patch_est.status_code == 200
+        assert r_req_patch_est.json()["estado"] == "BORRADOR"
+
+        assert (
+            client_a.post(
+                "/api/compras/solicitudes-cotizacion/desde-requisiciones/",
+                {
+                    "requisicion_ids": [req_m_id],
+                    "proveedores_ids": [str(proveedor_1.pk)],
+                    "fecha_vencimiento": (hoy + timedelta(days=3)).isoformat(),
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+
+        # RequisicionCompra con departamento/solicitante de Sub -> 400
+        assert (
+            client_a.post(
+                "/api/compras/requisiciones-compra/",
+                {
+                    "id_solicitante": str(user_a.pk),
+                    "id_departamento": str(dep_sub.pk),
+                    "numero_requisicion": "REQ-DEP-SUB",
+                    "fecha_requisicion": hoy.isoformat(),
+                    "fecha_necesidad": (hoy + timedelta(days=3)).isoformat(),
+                    "justificacion": "Cross dep",
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_a.post(
+                "/api/compras/requisiciones-compra/",
+                {
+                    "id_solicitante": str(u_sub.pk),
+                    "numero_requisicion": "REQ-USR-SUB",
+                    "fecha_requisicion": hoy.isoformat(),
+                    "fecha_necesidad": (hoy + timedelta(days=3)).isoformat(),
+                    "justificacion": "Cross user",
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+
+        # [B-3.4] DetalleRequisicionCompra no acepta producto de Sub en requisicion de Matriz
+        r_det_sub = client_a.post(
+            "/api/compras/detalles-requisicion-compra/",
+            {
+                "id_requisicion": req_m_id,
+                "id_producto": str(prod_sub.pk),
+                "cantidad_solicitada": "3.0000",
+            },
+            format="json",
+        )
+        assert r_det_sub.status_code == 400
+        assert "id_producto" in r_det_sub.json()
+
+        # Defensa en crear_rfq_desde_requisiciones si hubiera detalle con producto ajeno
+        req_m_obj = RequisicionCompra.objects.get(pk=req_m_id)
+        req_m_obj.estado = "APROBADA"
+        req_m_obj.save(update_fields=["estado"])
+        DetalleRequisicionCompra.objects.create(
+            id_requisicion=req_m_obj, id_producto=prod_sub, cantidad_solicitada=Decimal("1.0000")
+        )
+        with pytest.raises(CompraError, match="pertenecer a la empresa"):
+            crear_rfq_desde_requisiciones(empresa_a, [req_m_obj.pk], [proveedor_1.pk], hoy + timedelta(days=3))
+
+        # [B-3.1] OrdenCompraSerializer: POST con prov_sub -> 400; PATCH cambiando a prov_sub/alm_sub/of_sub -> 400
+        assert (
+            client_a.post(
+                "/api/compras/ordenes-compra/",
+                {
+                    "id_proveedor": str(prov_sub.pk),
+                    "numero_orden": "OC-SUB-IN-M",
+                    "fecha_orden": hoy.isoformat(),
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+        OrdenCompra.objects.create(
+            id_empresa=sub, id_proveedor=prov_sub, numero_orden="OC-MATSUB-NUM", fecha_orden=hoy
+        )
+        r_oc_m = client_a.post(
+            "/api/compras/ordenes-compra/",
+            {
+                "id_proveedor": str(proveedor_1.pk),
+                "id_almacen_destino": str(almacen_a.pk),
+                "numero_orden": "OC-MATSUB-NUM",  # mismo número que en Sub -> permitido ([B-3.3])
+                "fecha_orden": hoy.isoformat(),
+            },
+            format="json",
+        )
+        assert r_oc_m.status_code == 201, r_oc_m.json()
+        oc_m_id = r_oc_m.json()["id_orden_compra"]
+
+        for campo, val in (
+            ("id_proveedor", str(prov_sub.pk)),
+            ("id_almacen_destino", str(alm_sub.pk)),
+            ("id_oferta_origen", str(of_sub.pk)),
+        ):
+            r_p = client_a.patch(
+                f"/api/compras/ordenes-compra/{oc_m_id}/",
+                {campo: val},
+                format="json",
+            )
+            assert r_p.status_code == 400, (campo, r_p.json())
+
+        # [B-3.2] SolicitudCotizacionSerializer: POST/PATCH con req_sub/prov_sub -> 400, mismo número que Sub -> 201
+        assert (
+            client_a.post(
+                "/api/compras/solicitudes-cotizacion/",
+                {
+                    "numero_solicitud": "RFQ-MATSUB-NUM",
+                    "fecha_solicitud": hoy.isoformat(),
+                    "fecha_vencimiento": (hoy + timedelta(days=3)).isoformat(),
+                    "requisiciones": [str(req_sub.pk)],
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_a.post(
+                "/api/compras/solicitudes-cotizacion/",
+                {
+                    "numero_solicitud": "RFQ-MATSUB-NUM",
+                    "fecha_solicitud": hoy.isoformat(),
+                    "fecha_vencimiento": (hoy + timedelta(days=3)).isoformat(),
+                    "proveedores_invitados": [str(prov_sub.pk)],
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+        r_sc_m = client_a.post(
+            "/api/compras/solicitudes-cotizacion/",
+            {
+                "numero_solicitud": "RFQ-MATSUB-NUM",  # mismo número que rfq_sub -> permitido ([B-3.3])
+                "fecha_solicitud": hoy.isoformat(),
+                "fecha_vencimiento": (hoy + timedelta(days=3)).isoformat(),
+                "requisiciones": [req_m_id],
+                "proveedores_invitados": [str(proveedor_1.pk)],
+            },
+            format="json",
+        )
+        assert r_sc_m.status_code == 201, r_sc_m.json()
+        sc_m_id = r_sc_m.json()["id_solicitud_cotizacion"]
+        assert (
+            client_a.patch(
+                f"/api/compras/solicitudes-cotizacion/{sc_m_id}/",
+                {"requisiciones": [str(req_sub.pk)]},
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_a.patch(
+                f"/api/compras/solicitudes-cotizacion/{sc_m_id}/",
+                {"proveedores_invitados": [str(prov_sub.pk)]},
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert prod_1 is not None

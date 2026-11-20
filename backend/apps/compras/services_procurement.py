@@ -174,6 +174,8 @@ def crear_rfq_desde_requisiciones(
 
     consolidado: dict[str, dict[str, Any]] = {}
     for det in detalles:
+        if str(det.id_producto.id_empresa_id) != str(empresa.pk):
+            raise CompraError("Todos los productos de las requisiciones deben pertenecer a la empresa.")
         prod_id = str(det.id_producto_id)
         if prod_id not in consolidado:
             consolidado[prod_id] = {

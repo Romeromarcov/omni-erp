@@ -50180,7 +50180,8 @@
                         "RECHAZADA",
                         "PROCESADA",
                         "ANULADA"
-                    ]
+                    ],
+                    "readOnly": true
                 },
                 "prioridad": {
                     "title": "Prioridad",
@@ -55741,7 +55742,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T07:39:40.929588-04:00"
+                    "default": "2026-11-20T08:56:19.908838-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
