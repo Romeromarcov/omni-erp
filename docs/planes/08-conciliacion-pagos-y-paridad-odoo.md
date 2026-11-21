@@ -8,7 +8,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) + §B.3 (`inventario` + `almacenes` Ola B4) + §B.4.1 (`banca_electronica` Ola B5) + §B.4.2–§B.4.3 (`integration_hub` Ola B6) COMPLETADO |
+| **Estado** | **100 % ✅ COMPLETADO** — Bloque A (`PR #297`, `PR #298`, Ola A3) + Bloque B §B.1 (`PR #300`, `PR-14`) + §B.2 (`PR-15`) + §B.3 (`PR-16`) + §B.4.1 (`PR-17`) + §B.4.2–§B.4.3 (`PR #305`, Ola B6) + §B.4.4 (`PR-19`, Ola B7 / cierre `CTF-011`) COMPLETADOS |
 | **Fecha** | 2026-11-17 (basado en símbolos verificados en `origin/develop @ ff2bdb6`) |
 | **Apps involucradas** | `finanzas`, `core`, `cuentas_por_cobrar`, `cuentas_por_pagar`, `ventas`, `compras`, `contabilidad`, `gestion_aprobaciones`, `inventario`, `almacenes`, `banca_electronica`, `tesoreria`, `integration_hub`, `agentes` |
 | **Esfuerzo estimado** | ~5–7 semanas en PRs pequeños y focales (`R-PROC-2`) |
@@ -187,9 +187,9 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
    - `OdooXMLRPCClient.get_pagos` resuelve dinámicamente campos de `account.payment` vía `fields_get` (compatible con Odoo 18 donde `ref` fue removido y reemplazado por `memo`/`payment_reference`, incluyendo `move_id` y `reconciled_bill_ids`), y `get_reconciliaciones_pagos` lee en lote `account.move.line` + `account.partial.reconcile` (cero N+1).
    - `aplicar_pago_a_documentos(..., modo_historico_externo=True, generar_asiento=False)` permite conciliar documentos históricos ya saldados o parciales respetando el tope `monto_total - asignaciones_activas` sin duplicar `AbonoCxC`/`AbonoCxP` ni generar asientos.
    - `SyncEngine._upsert_pago` soporta cobros `inbound/customer` (`INGRESO`) y pagos `outbound/supplier` (`EGRESO`) en 0 (anticipo/`ANTICIPO`), 1 (`FACTURA`/`CXP`/`COMPRA`) o N (`CONCILIACION_MULTIPLE`) facturas usando `finanzas.AsignacionPago`, dejando sobrantes como saldo a favor del `core.Contacto`.
-4. **Cierre de `CTF-011` — Outbound `push` a Odoo validado contra instancia de prueba:**
-   - Unificar y completar el `push` bidireccional en `Integration Hub` (complementando la capa opt-in de `bots_ingest/services/odoo_push.py`) para pagos/abonos de cobranza (`cxc` / `cuentas_por_cobrar` → `account.payment` / reconciliación en Odoo) con `Idempotency-Key`, credencial `write_user` de mínimo privilegio, modo borrador/confirmado configurable y pruebas de integración contra el Odoo de prueba.
-   - Al verificar en vivo contra Odoo de prueba con CI verde, actualizar [`CTF-011`](../ctf/CTF-011.md) a `CERRADO`.
+4. **Cierre de `CTF-011` — Outbound `push` a Odoo validado contra instancia de prueba (`✅ COMPLETADO` — Ola B7 / PR-19):**
+   - Implementado `push` outbound y `bidireccional` en `SyncEngine` (`PUSH_METHODS`: `pagos`, `gestiones_cobranza`, `contactos`, `productos`) y `OdooConnector` (`push_pago_cobranza` en modo `borrador` o `confirmado` con `action_post` + `reconcile()`, `push_gestion_cobranza` con escape HTML y tag idempotente en `mail.message`).
+   - Guardia opt-in `push_habilitado=False`, simetría fail-closed `write_user` ↔ `write_api_key`, sanitización `R-CODE-8`, `Idempotency-Key`, paridad REST+MCP (`push-cobranza` + `MCP_TOOLS`) y UI en `EditarConectorModal` / `ConectorDetallePage`. Validado en vivo contra Odoo QA y cerrado [`CTF-011`](../ctf/CTF-011.md).
 
 ---
 
@@ -206,6 +206,6 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 | **Ola B4** | ✅ `feat(inventario): ReglaReabastecimiento, LoteProducto opt-in y StockUbicacion` (`PR-16`) | Ninguna |
 | **Ola B5** | ✅ `refactor(banca): consolida CuentaBancariaEmpresa en finanzas y servicios de pagos masivos` (`PR-17`) | Ninguna |
 | **Ola B6** | ✅ `feat(hub): inbound facturas_compra + pagos multi-factura con AsignacionPago` | Ola A2 |
-| **Ola B7** | `feat(hub): cierre CTF-011 push outbound cobranza validado contra Odoo de prueba` | Ola A2 + credenciales Odoo prueba |
+| **Ola B7** | ✅ `feat(hub): cierre CTF-011 push outbound cobranza validado contra Odoo de prueba` (`PR-19`, Plan 08 al `100 % ✅`) | Ola A2 + credenciales Odoo prueba |
 
 Cada PR pasa el gate completo de [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md) (`check`, `makemigrations --check --dry-run`, `mapa_superficie --check`, tests con aislamiento multi-tenant + RLS y `diff-cover ≥95%`, `tsc -b`, `npm run lint`, `check:api-drift`, Vitest/Playwright) y recibe dictamen **`APROBADO`** de revisor independiente (`QA + Seguridad`) antes de `ready` y merge a `develop`.

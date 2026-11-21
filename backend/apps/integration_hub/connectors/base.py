@@ -181,6 +181,14 @@ class BaseConnector(ABC):
         """Crea un pago (cliente o proveedor) en borrador en el sistema externo. Retorna su ID externo."""
         raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de pagos")
 
+    def push_pago_cobranza(self, datos: dict) -> str:
+        """Crea (y opcionalmente confirma/concilia) un pago de cobranza en el sistema externo."""
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de pagos de cobranza")
+
+    def push_gestion_cobranza(self, datos: dict) -> str:
+        """Publica una gestión de cobranza en el sistema externo. Retorna su ID externo."""
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de gestiones de cobranza")
+
     def push_entidades(self, tipo_entidad: str, registros: list[dict]) -> "SyncResult":
         """
         Exporta un lote de registros canónicos al sistema externo de destino.

@@ -30,10 +30,12 @@ Configuración opcional:
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING
+from decimal import Decimal, InvalidOperation
+from typing import TYPE_CHECKING, Any
 
 from apps.integration_hub.connectors.base import (
     BaseConnector,
@@ -46,6 +48,7 @@ from apps.integration_hub.connectors.odoo.client import (
     OdooCallError,
     OdooXMLRPCClient,
     normalize_odoo_host,
+    sanitizar_error_odoo,
 )
 
 if TYPE_CHECKING:
@@ -72,12 +75,23 @@ class OdooConnector(BaseConnector):
         "facturas_venta",
         "facturas_compra",
         "pagos",
+        "gestiones_cobranza",
         "inventario",
     ]
 
     def __init__(self, instancia: "ConectorInstancia"):
         super().__init__(instancia)
         self._client: OdooXMLRPCClient | None = None
+        self._write_client: OdooXMLRPCClient | None = None
+        self._model_fields_cache: dict[str, set[str]] = {}
+
+    def _sanitizar_error_externo(self, exc: BaseException | str) -> str:
+        """Enmascara credenciales y trazas sensibles en errores de Odoo (R-CODE-8)."""
+        cfg = getattr(self, "_config", None) or {}
+        secretos = [
+            str(cfg.get(k) or "") for k in ("api_key", "write_api_key", "password", "token", "secret") if cfg.get(k)
+        ]
+        return sanitizar_error_odoo(exc, secrets=secretos)
 
     def _get_client(self) -> OdooXMLRPCClient:
         """Retorna o crea el cliente XML-RPC. Reconecta si es necesario."""
@@ -107,9 +121,77 @@ class OdooConnector(BaseConnector):
         try:
             self._client = OdooXMLRPCClient(host, db, user, api_key, timeout)
         except OdooAuthError as exc:
-            raise ConnectorConnectionError(str(exc)) from exc
+            raise ConnectorConnectionError(self._sanitizar_error_externo(exc)) from exc
 
         return self._client
+
+    def _get_write_client(self) -> OdooXMLRPCClient:
+        """Retorna cliente XML-RPC para escrituras outbound (fail-closed, R-CODE-8).
+
+        - Exige ``push_habilitado=True`` en la configuración del conector.
+        - Si existen ``write_user`` o ``write_api_key``, exige simetría estricta;
+          si falta alguno, falla cerrado sin caer a las credenciales principales.
+        - Si ninguno fue configurado y ``push_habilitado=True``, usa ``_get_client()``.
+        """
+        cfg = getattr(self, "_config", None) or {}
+        if not cfg.get("push_habilitado", False):
+            raise ConnectorConnectionError("Push outbound deshabilitado en este conector (push_habilitado=False).")
+
+        write_user = str(cfg.get("write_user") or "").strip()
+        write_key = str(cfg.get("write_api_key") or "").strip()
+
+        if bool(write_user) != bool(write_key):
+            raise ConnectorConnectionError(
+                "Configuración de escritura incompleta: debe definir tanto 'write_user' como 'write_api_key'."
+            )
+
+        if write_user and write_key:
+            write_client = getattr(self, "_write_client", None)
+            if write_client is not None:
+                try:
+                    if write_client.ping():
+                        return write_client
+                    logger.warning("OdooConnector: ping cliente de escritura fallido — reconectando")
+                except Exception:
+                    pass
+                self._write_client = None
+
+            host = cfg.get("host", "")
+            db = cfg.get("db", "")
+            timeout = int(cfg.get("timeout", 30))
+            if not host:
+                raise ConnectorConnectionError("La configuración del conector Odoo está incompleta: falta 'host'.")
+            try:
+                self._write_client = OdooXMLRPCClient(host, db, write_user, write_key, timeout)
+            except OdooAuthError as exc:
+                raise ConnectorConnectionError(self._sanitizar_error_externo(exc)) from None
+            return self._write_client
+
+        return self._get_client()
+
+    def _get_model_fields(self, client: Any, model_name: str) -> set[str]:
+        """Detecta y cachea los campos disponibles de un modelo Odoo (compatible v8–v18+)."""
+        cache = getattr(self, "_model_fields_cache", None)
+        if cache is None:
+            cache = {}
+            self._model_fields_cache = cache
+        cache_key = f"{id(client)}:{model_name}"
+        if cache_key in cache:
+            return cache[cache_key]
+
+        campos: set[str] | None = None
+        if hasattr(client, "_get_model_fields"):
+            cand = client._get_model_fields(model_name)
+            if isinstance(cand, (set, list, tuple, frozenset)):
+                campos = {str(k) for k in cand}
+        if campos is None:
+            try:
+                resp = client.call(model_name, "fields_get", [[]], {"attributes": ["string"]})
+                campos = {str(k) for k in resp.keys()} if isinstance(resp, dict) else set()
+            except Exception:
+                campos = set()
+        cache[cache_key] = campos
+        return campos
 
     # ── Conexión ──────────────────────────────────────────────────────────────
 
@@ -615,7 +697,11 @@ class OdooConnector(BaseConnector):
         Si datos tiene 'id_externo', actualiza; si no, crea.
         Retorna el ID externo del socio creado/actualizado.
         """
-        client = self._get_client()
+        client = (
+            self._get_write_client()
+            if (getattr(self, "_config", None) or {}).get("push_habilitado")
+            else self._get_client()
+        )
         id_externo = datos.get("id_externo")
 
         # Mapear campos Omni → Odoo
@@ -720,9 +806,280 @@ class OdooConnector(BaseConnector):
         }
         return str(self._get_client().crear_pago(vals))
 
+    def _detectar_campo_ref_pago(self, client: Any) -> str:
+        """Detecta el campo de memo/referencia de ``account.payment`` (v18: memo; <18: payment_reference/ref)."""
+        campos = self._get_model_fields(client, "account.payment")
+        for candidato in ("memo", "payment_reference", "ref"):
+            if candidato in campos:
+                return candidato
+        return "memo"
+
+    def _conciliar_pago_con_facturas(self, client: Any, pago_id: int, facturas_odoo_ids: list[int]) -> None:
+        """Concilia líneas abiertas receivable/payable del asiento del pago contra las facturas indicadas."""
+        aml_fields = self._get_model_fields(client, "account.move.line")
+        if "account_internal_type" in aml_fields and "account_type" not in aml_fields:
+            tipo_cond: list[Any] = ["account_internal_type", "in", ["receivable", "payable"]]
+        else:
+            tipo_cond = ["account_type", "in", ["asset_receivable", "liability_payable"]]
+
+        pay_rows = client.call("account.payment", "read", [[pago_id]], {"fields": ["id", "move_id"]}) or []
+        pay_move_id = None
+        if pay_rows and isinstance(pay_rows[0], dict):
+            pay_move_id = OdooXMLRPCClient._m2o_id(pay_rows[0].get("move_id"))
+
+        if pay_move_id is not None:
+            pay_domain: list[Any] = [["move_id", "=", pay_move_id], tipo_cond, ["reconciled", "=", False]]
+        else:
+            pay_domain = [["payment_id", "=", pago_id], tipo_cond, ["reconciled", "=", False]]
+
+        pay_line_ids = client.call("account.move.line", "search", [pay_domain]) or []
+        inv_line_ids = (
+            client.call(
+                "account.move.line",
+                "search",
+                [
+                    [
+                        ["move_id", "in", facturas_odoo_ids],
+                        ["parent_state", "=", "posted"],
+                        tipo_cond,
+                        ["reconciled", "=", False],
+                    ]
+                ],
+            )
+            or []
+        )
+
+        if pay_line_ids and inv_line_ids:
+            line_ids = [int(lid) for lid in list(pay_line_ids) + list(inv_line_ids)]
+            client.call("account.move.line", "reconcile", [line_ids])
+        else:
+            logger.warning(
+                "push_pago_cobranza: sin líneas abiertas para conciliar pago=%s facturas=%s",
+                pago_id,
+                facturas_odoo_ids,
+            )
+
+    def push_pago_cobranza(self, datos: dict) -> str:
+        """Crea un pago de cobranza en Odoo de forma idempotente (borrador o confirmado+conciliado)."""
+        partner_raw = datos.get("partner_id")
+        if not partner_raw or isinstance(partner_raw, bool):
+            raise ConnectorDataError("push_pago_cobranza requiere partner_id válido.")
+        try:
+            partner_id = int(partner_raw)
+        except (TypeError, ValueError) as exc:
+            raise ConnectorDataError("push_pago_cobranza: partner_id inválido.") from exc
+        if partner_id <= 0:
+            raise ConnectorDataError("push_pago_cobranza: partner_id debe ser mayor que cero.")
+
+        monto_raw = datos.get("monto") if datos.get("monto") is not None else datos.get("amount")
+        if monto_raw in (None, "", False):
+            raise ConnectorDataError("push_pago_cobranza requiere monto.")
+        try:
+            monto_dec = Decimal(str(monto_raw).strip())
+        except (InvalidOperation, ValueError, TypeError) as exc:
+            raise ConnectorDataError("push_pago_cobranza: monto inválido.") from exc
+        if not monto_dec.is_finite() or monto_dec <= Decimal("0"):
+            raise ConnectorDataError("push_pago_cobranza: el monto debe ser mayor que cero.")
+
+        cfg = getattr(self, "_config", None) or {}
+        journal_raw = datos.get("journal_id") or cfg.get("diario_pagos_default_id")
+        if not journal_raw or isinstance(journal_raw, bool):
+            raise ConnectorDataError(
+                "push_pago_cobranza requiere journal_id o diario_pagos_default_id en el conector."
+            )
+        try:
+            journal_id = int(journal_raw)
+        except (TypeError, ValueError) as exc:
+            raise ConnectorDataError("push_pago_cobranza: journal_id inválido.") from exc
+        if journal_id <= 0:
+            raise ConnectorDataError("push_pago_cobranza: journal_id debe ser mayor que cero.")
+
+        modo = str(datos.get("push_modo_pago") or cfg.get("push_modo_pago") or "borrador").strip().lower()
+        if modo not in ("borrador", "confirmado"):
+            raise ConnectorDataError(f"push_modo_pago inválido: '{modo}'. Use 'borrador' o 'confirmado'.")
+
+        facturas_raw = datos.get("facturas_odoo_ids") or []
+        facturas_odoo_ids: list[int] = []
+        for fid in facturas_raw:
+            if fid in (None, "", False) or isinstance(fid, bool):
+                continue
+            try:
+                fid_int = int(fid)
+            except (TypeError, ValueError) as exc:
+                raise ConnectorDataError(f"push_pago_cobranza: factura_odoo_id inválido ({fid!r}).") from exc
+            if fid_int > 0 and fid_int not in facturas_odoo_ids:
+                facturas_odoo_ids.append(fid_int)
+
+        tipo = str(datos.get("tipo") or "cliente").strip().lower()
+        es_cliente = tipo in ("cliente", "inbound", "customer")
+        fecha = str(datos.get("fecha") or "")[:10]
+
+        raw_key = str(datos.get("idempotency_key") or datos.get("id_omni") or "").strip()
+        if not raw_key:
+            seed = f"{partner_id}:{monto_dec}:{fecha}:{tipo}:{','.join(map(str, sorted(facturas_odoo_ids)))}"
+            raw_key = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
+        tag = f"[OMNI:{raw_key}]"
+        referencia_txt = str(datos.get("referencia") or datos.get("memo") or "").strip()
+        memo_final = f"{tag} {referencia_txt}".strip() if tag not in referencia_txt else referencia_txt
+
+        client = self._get_write_client()
+        try:
+            campo_ref = self._detectar_campo_ref_pago(client)
+            previos = client.call(
+                "account.payment",
+                "search",
+                [[[campo_ref, "ilike", tag]]],
+                {"limit": 1},
+            )
+            if previos:
+                existente = previos[0]
+                pago_existente_id = int(existente["id"]) if isinstance(existente, dict) else int(existente)
+                return str(pago_existente_id)
+
+            moneda_id = datos.get("moneda_id")
+            if not moneda_id and datos.get("moneda"):
+                codigo_mon = str(datos["moneda"]).strip().upper()
+                for cur in client.get_monedas() or []:
+                    if str(cur.get("name") or "").strip().upper() == codigo_mon:
+                        moneda_id = cur.get("id")
+                        break
+
+            vals: dict[str, Any] = {
+                "partner_id": partner_id,
+                # Conversión intencional en la frontera XML-RPC hacia Odoo (amount es Float).
+                "amount": float(monto_dec),
+                "payment_type": "inbound" if es_cliente else "outbound",
+                "partner_type": "customer" if es_cliente else "supplier",
+                "journal_id": journal_id,
+                campo_ref: memo_final,
+            }
+            if fecha:
+                vals["date"] = fecha
+            if moneda_id:
+                vals["currency_id"] = int(moneda_id)
+
+            created = client.call("account.payment", "create", [vals])
+            pago_id = int(created[0]) if isinstance(created, list) else int(created)
+
+            if modo == "confirmado":
+                client.call("account.payment", "action_post", [[pago_id]])
+                if facturas_odoo_ids:
+                    self._conciliar_pago_con_facturas(client, pago_id, facturas_odoo_ids)
+
+            return str(pago_id)
+        except OdooAuthError as exc:
+            raise ConnectorConnectionError(self._sanitizar_error_externo(exc)) from None
+        except OdooCallError as exc:
+            raise ConnectorDataError(self._sanitizar_error_externo(exc)) from None
+
+    def push_gestion_cobranza(self, datos: dict) -> str:
+        """Publica una gestión de cobranza en Odoo (account.move o res.partner) de forma idempotente y XSS-safe."""
+        factura_id = datos.get("factura_odoo_id")
+        partner_id = datos.get("partner_id")
+
+        if factura_id not in (None, "", False) and not isinstance(factura_id, bool):
+            try:
+                res_id = int(factura_id)
+            except (TypeError, ValueError) as exc:
+                raise ConnectorDataError("push_gestion_cobranza: factura_odoo_id inválido.") from exc
+            model = "account.move"
+        elif partner_id not in (None, "", False) and not isinstance(partner_id, bool):
+            try:
+                res_id = int(partner_id)
+            except (TypeError, ValueError) as exc:
+                raise ConnectorDataError("push_gestion_cobranza: partner_id inválido.") from exc
+            model = "res.partner"
+        else:
+            raise ConnectorDataError("push_gestion_cobranza requiere 'factura_odoo_id' o 'partner_id'.")
+
+        if res_id <= 0:
+            raise ConnectorDataError("push_gestion_cobranza: el ID destino en Odoo debe ser mayor que cero.")
+
+        raw_key = str(datos.get("idempotency_key") or datos.get("id_omni") or "").strip()
+        if not raw_key:
+            seed = "|".join(
+                [
+                    model,
+                    str(res_id),
+                    str(datos.get("fecha_gestion") or ""),
+                    str(datos.get("canal") or ""),
+                    str(datos.get("resultado") or ""),
+                    str(datos.get("notas") or ""),
+                ]
+            )
+            raw_key = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
+        tag = f"[OMNI-GESTION:{raw_key}]"
+
+        canal_esc = html.escape(str(datos.get("canal") or ""), quote=True)
+        resultado_esc = html.escape(str(datos.get("resultado") or ""), quote=True)
+        notas_esc = html.escape(str(datos.get("notas") or ""), quote=True)
+        orden_ref_esc = html.escape(str(datos.get("orden_ref") or ""), quote=True)
+        cliente_esc = html.escape(str(datos.get("cliente_nombre") or ""), quote=True)
+        fecha_esc = html.escape(str(datos.get("fecha_gestion") or ""), quote=True)
+        proxima_esc = html.escape(str(datos.get("proxima_accion") or ""), quote=True)
+        tag_esc = html.escape(tag, quote=True)
+
+        partes_html = [
+            f"<p><strong>Gestión de Cobranza ({canal_esc or 'N/A'})</strong> — Resultado: <em>{resultado_esc or 'N/A'}</em></p>",
+        ]
+        detalles = []
+        if cliente_esc:
+            detalles.append(f"<li><strong>Cliente:</strong> {cliente_esc}</li>")
+        if orden_ref_esc:
+            detalles.append(f"<li><strong>Referencia:</strong> {orden_ref_esc}</li>")
+        if fecha_esc:
+            detalles.append(f"<li><strong>Fecha gestión:</strong> {fecha_esc}</li>")
+        if proxima_esc:
+            detalles.append(f"<li><strong>Próxima acción:</strong> {proxima_esc}</li>")
+        if notas_esc:
+            detalles.append(f"<li><strong>Notas:</strong> {notas_esc}</li>")
+        if detalles:
+            partes_html.append(f"<ul>{''.join(detalles)}</ul>")
+        partes_html.append(f"<p><small>{tag_esc}</small></p>")
+        body_html = "".join(partes_html)
+
+        client = self._get_write_client()
+        try:
+            previos = client.call(
+                "mail.message",
+                "search",
+                [[["model", "=", model], ["res_id", "=", res_id], ["body", "ilike", tag]]],
+                {"limit": 1},
+            )
+            if previos:
+                existente = previos[0]
+                msg_id = int(existente["id"]) if isinstance(existente, dict) else int(existente)
+                return str(msg_id)
+
+            posted = client.call(
+                model,
+                "message_post",
+                [[res_id]],
+                {
+                    "body": body_html,
+                    "message_type": "comment",
+                    "subtype_xmlid": "mail.mt_note",
+                },
+            )
+            if isinstance(posted, dict):
+                msg_id = int(posted["id"])
+            elif isinstance(posted, list):
+                msg_id = int(posted[0])
+            else:
+                msg_id = int(posted)
+            return str(msg_id)
+        except OdooAuthError as exc:
+            raise ConnectorConnectionError(self._sanitizar_error_externo(exc)) from None
+        except OdooCallError as exc:
+            raise ConnectorDataError(self._sanitizar_error_externo(exc)) from None
+
     def push_producto(self, datos: dict) -> str:
         """Crea o actualiza un producto en Odoo."""
-        client = self._get_client()
+        client = (
+            self._get_write_client()
+            if (getattr(self, "_config", None) or {}).get("push_habilitado")
+            else self._get_client()
+        )
         id_externo = datos.get("id_externo")
 
         vals = {}

@@ -8,6 +8,7 @@ externo. Celery corre EAGER (conftest), pero las acciones se mockean para no
 depender del SyncEngine real.
 """
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -430,3 +431,102 @@ def test_lista_proveedores_activos(empresa_a, user_a):
     resp = _client(user_a).get("/api/integration-hub/proveedores/")
     assert resp.status_code == 200
     assert any(p["codigo"] == "odoo" for p in resp.data)
+
+
+def test_post_put_patch_no_exponen_secretos_plaintext(empresa_a, user_a):
+    """R-CODE-8: POST, PUT y PATCH jamás deben exponer configuracion ni secretos en respuesta."""
+    prov = _proveedor()
+    secret_read = "ci-only-dummy-key-read-123"
+    secret_write = "ci-only-dummy-key-write-456"
+    secret_pass = "ci-only-dummy-key-pass-789"
+
+    resp_post = _client(user_a).post(
+        "/api/integration-hub/instancias/",
+        {
+            "id_proveedor": str(prov.pk),
+            "nombre": "Odoo Seguro",
+            "configuracion": {
+                "host": "https://seguro.odoo.com",
+                "user": "reader@seguro.com",
+                "api_key": secret_read,
+                "write_user": "writer@seguro.com",
+                "write_api_key": secret_write,
+                "password": secret_pass,
+                "push_habilitado": True,
+            },
+            "entidades_activas": ["pagos"],
+        },
+        format="json",
+    )
+    assert resp_post.status_code == 201, resp_post.data
+
+    inst_id = resp_post.data["id_conector"]
+    resp_put = _client(user_a).put(
+        f"/api/integration-hub/instancias/{inst_id}/",
+        {
+            "id_proveedor": str(prov.pk),
+            "nombre": "Odoo Seguro PUT",
+            "configuracion": {
+                "host": "https://seguro-put.odoo.com",
+                "user": "reader@seguro.com",
+                "api_key": "ci-only-dummy-key-read-put-999",
+                "write_user": "writer@seguro.com",
+                "write_api_key": "ci-only-dummy-key-write-put-999",
+            },
+            "entidades_activas": ["pagos"],
+        },
+        format="json",
+    )
+    assert resp_put.status_code == 200, resp_put.data
+
+    resp_patch = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst_id}/",
+        {
+            "configuracion": {
+                "host": "https://seguro-patch.odoo.com",
+                "user": "reader@seguro.com",
+                "api_key": "ci-only-dummy-key-read-patch-000",
+            }
+        },
+        format="json",
+    )
+    assert resp_patch.status_code == 200, resp_patch.data
+
+    for resp, forbidden_vals in (
+        (resp_post, (secret_read, secret_write, secret_pass)),
+        (resp_put, ("ci-only-dummy-key-read-put-999", "ci-only-dummy-key-write-put-999")),
+        (resp_patch, ("ci-only-dummy-key-read-patch-000", "ci-only-dummy-key-write-put-999")),
+    ):
+        assert "configuracion" not in resp.data
+        assert "configuracion_publica" in resp.data
+        pub = resp.data["configuracion_publica"]
+        for secret_key in ("api_key", "write_api_key", "password", "service_account"):
+            assert secret_key not in pub
+        dumped = json.dumps(resp.data, default=str)
+        for secret_val in forbidden_vals:
+            assert secret_val not in dumped
+            assert secret_val not in resp.content.decode("utf-8")
+
+
+def test_post_patch_rechazan_espacios_en_blanco_en_credenciales(empresa_a, user_a):
+    """Espacios en blanco en host/user/api_key deben rechazarse en creación y edición."""
+    prov = _proveedor()
+    for bad_cfg in (
+        {"host": "   ", "user": "u", "api_key": "k"},
+        {"host": "https://h.odoo.com", "user": "   ", "api_key": "k"},
+        {"host": "https://h.odoo.com", "user": "u", "api_key": "   "},
+    ):
+        resp = _client(user_a).post(
+            "/api/integration-hub/instancias/",
+            {"id_proveedor": str(prov.pk), "nombre": "Blank cfg", "configuracion": bad_cfg},
+            format="json",
+        )
+        assert resp.status_code == 400
+
+    inst = _instancia(empresa_a)
+    resp_patch = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst.pk}/",
+        {"configuracion": {"host": "   ", "user": "u"}},
+        format="json",
+    )
+    assert resp_patch.status_code == 400

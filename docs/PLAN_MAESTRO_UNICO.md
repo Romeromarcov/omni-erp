@@ -369,7 +369,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 
 > Inventario estático actualizado el **2026-11-17** en [`docs/tech-debt/INVENTORY.md`](tech-debt/INVENTORY.md).
 > CTFs abiertos en [`docs/ctf/`](ctf/) (**fechas `Vence` intocadas por Plan 06 D3**): **CTF-008** (offline),
-> **CTF-010** (firma de apps), **CTF-011** (push Odoo), **CTF-012** (RLS en entornos reales; 11 CTFs cerrados).
+> **CTF-010** (firma de apps), **CTF-012** (RLS en entornos reales; 12 CTFs cerrados, incl. **CTF-011** push Odoo).
 
 - **Plan 06 (Fases 1–4 restantes):** auditar 38 respuestas `Response({...str(e|exc|err)...})` en 15 archivos (Tarea 1.1), activar rol no-dueño `omni_app` con `bypass='off'` (Fase 2 / CTF-012), migrar a `ruff` y limpiar 201 `# noqa` / 40 `eslint-disable` (Tareas 3.3–3.4), segunda pasada Decimal FE (Tarea 4.2) y ajustes Railway del owner (Tarea 4.3). *(Tareas `1.3` pines/Dependabot/audits nocturnos y `3.6` Actions Node 24 cerradas en PR `#289`.)*
 - **Seguridad residual (Plan 05):** `P1-5` (auditoría inmutable BD), `P1-6` (pasada IDOR), `P1-7` (cargar secrets backup owner), `P2-2` (agentes síncronos en vistas → Celery), `P2-3` (persistencia dedicada de costos LLM), `P2-4` (cacheo consultas calientes + N+1), `P2-6` (OpenTelemetry).

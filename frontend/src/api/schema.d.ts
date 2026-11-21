@@ -8588,13 +8588,13 @@ export interface paths {
         };
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         get: operations["integration-hub_instancias_list"];
         put?: never;
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         post: operations["integration-hub_instancias_create"];
         delete?: never;
@@ -8614,25 +8614,25 @@ export interface paths {
         };
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         get: operations["integration-hub_instancias_read"];
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         put: operations["integration-hub_instancias_update"];
         post?: never;
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         delete: operations["integration-hub_instancias_delete"];
         options?: never;
         head?: never;
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         patch: operations["integration-hub_instancias_partial_update"];
         trace?: never;
@@ -8720,6 +8720,29 @@ export interface paths {
         get: operations["integration-hub_instancias_preview_data"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration-hub/instancias/{id}/push-cobranza/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Dispara un push outbound de cobranza (pagos y/o gestiones de cobranza)
+         *     hacia el sistema externo. Requiere ``push_habilitado=True``.
+         *     Soporta cabecera ``Idempotency-Key`` para evitar ejecuciones duplicadas.
+         */
+        post: operations["integration-hub_instancias_push_cobranza"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19250,7 +19273,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T18:33:27.977502-04:00
+             * @default 2026-11-21T00:00:55.472667-04:00
              */
             fecha_despacho: string;
             /**
@@ -22053,6 +22076,11 @@ export interface components {
         };
         ConectorInstanciaCreate: {
             /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
              * Id proveedor
              * Format: uuid
              */
@@ -22080,6 +22108,28 @@ export interface components {
             entidades_activas?: Record<string, never>;
             /** Activo */
             activo?: boolean;
+        };
+        PushCobranzaInput: {
+            /**
+             * Tipo
+             * @default todos
+             * @enum {string}
+             */
+            tipo: "pagos" | "gestiones_cobranza" | "todos";
+            /** @default [] */
+            ids: string[];
+            /**
+             * Push modo pago
+             * @enum {string|null}
+             */
+            push_modo_pago?: "borrador" | "confirmado" | null;
+            /** Journal id */
+            journal_id?: number | null;
+            /**
+             * Sync completo
+             * @default false
+             */
+            sync_completo: boolean;
         };
         JobSincronizacion: {
             /**
@@ -22142,6 +22192,41 @@ export interface components {
             readonly iniciado_por_nombre?: string;
             /** Parametros */
             parametros?: Record<string, never>;
+        };
+        PushCobranzaResponse: {
+            /** Mensaje */
+            mensaje: string;
+            /**
+             * Job id
+             * Format: uuid
+             */
+            job_id?: string | null;
+            jobs: components["schemas"]["JobSincronizacion"][];
+        };
+        JobSincronizacionTrigger: {
+            /**
+             * Tipo entidad
+             * @enum {string}
+             */
+            tipo_entidad: "contactos" | "productos" | "pedidos_venta" | "pedidos_compra" | "facturas_venta" | "facturas_compra" | "pagos" | "gestiones_cobranza" | "inventario";
+            /**
+             * Direccion
+             * @default inbound
+             * @enum {string}
+             */
+            direccion: "inbound" | "outbound" | "bidireccional";
+            /**
+             * Sync completo
+             * @description True = ignorar último sync, traer todos los registros.
+             * @default false
+             */
+            sync_completo: boolean;
+            /**
+             * Desde
+             * Format: date
+             * @description Fecha ISO desde la cual sincronizar (opcional).
+             */
+            desde?: string | null;
         };
         ConectorProveedor: {
             /**
@@ -48556,7 +48641,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstanciaCreate"];
+                    "application/json": components["schemas"]["ConectorInstancia"];
                 };
             };
         };
@@ -48598,7 +48683,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstanciaCreate"];
+                    "application/json": components["schemas"]["ConectorInstancia"];
                 };
             };
         };
@@ -48638,7 +48723,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstanciaCreate"];
+                    "application/json": components["schemas"]["ConectorInstancia"];
                 };
             };
         };
@@ -48729,6 +48814,31 @@ export interface operations {
             };
         };
     };
+    "integration-hub_instancias_push_cobranza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushCobranzaInput"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushCobranzaResponse"];
+                };
+            };
+        };
+    };
     "integration-hub_instancias_trigger_sync": {
         parameters: {
             query?: never;
@@ -48738,14 +48848,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["ConectorInstancia"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobSincronizacionTrigger"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstancia"];
+                    "application/json": components["schemas"]["JobSincronizacion"];
                 };
             };
         };

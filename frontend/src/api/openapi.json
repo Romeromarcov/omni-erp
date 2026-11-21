@@ -28789,7 +28789,7 @@
         "/integration-hub/instancias/": {
             "get": {
                 "operationId": "integration-hub_instancias_list",
-                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, jobs, entidades.",
+                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, push-cobranza, jobs, entidades.",
                 "parameters": [
                     {
                         "name": "search",
@@ -28852,7 +28852,7 @@
             },
             "post": {
                 "operationId": "integration-hub_instancias_create",
-                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, jobs, entidades.",
+                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, push-cobranza, jobs, entidades.",
                 "parameters": [
                     {
                         "name": "data",
@@ -28867,7 +28867,7 @@
                     "201": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/ConectorInstanciaCreate"
+                            "$ref": "#/definitions/ConectorInstancia"
                         }
                     }
                 },
@@ -28880,7 +28880,7 @@
         "/integration-hub/instancias/{id}/": {
             "get": {
                 "operationId": "integration-hub_instancias_read",
-                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, jobs, entidades.",
+                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, push-cobranza, jobs, entidades.",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -28896,7 +28896,7 @@
             },
             "put": {
                 "operationId": "integration-hub_instancias_update",
-                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, jobs, entidades.",
+                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, push-cobranza, jobs, entidades.",
                 "parameters": [
                     {
                         "name": "data",
@@ -28911,7 +28911,7 @@
                     "200": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/ConectorInstanciaCreate"
+                            "$ref": "#/definitions/ConectorInstancia"
                         }
                     }
                 },
@@ -28921,7 +28921,7 @@
             },
             "patch": {
                 "operationId": "integration-hub_instancias_partial_update",
-                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, jobs, entidades.",
+                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, push-cobranza, jobs, entidades.",
                 "parameters": [
                     {
                         "name": "data",
@@ -28936,7 +28936,7 @@
                     "200": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/ConectorInstanciaCreate"
+                            "$ref": "#/definitions/ConectorInstancia"
                         }
                     }
                 },
@@ -28946,7 +28946,7 @@
             },
             "delete": {
                 "operationId": "integration-hub_instancias_delete",
-                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, jobs, entidades.",
+                "description": "CRUD de conectores configurados por empresa.\nAcciones adicionales: test, sync, push-cobranza, jobs, entidades.",
                 "parameters": [],
                 "responses": {
                     "204": {
@@ -29092,6 +29092,41 @@
                 }
             ]
         },
+        "/integration-hub/instancias/{id}/push-cobranza/": {
+            "post": {
+                "operationId": "integration-hub_instancias_push_cobranza",
+                "description": "Dispara un push outbound de cobranza (pagos y/o gestiones de cobranza)\nhacia el sistema externo. Requiere ``push_habilitado=True``.\nSoporta cabecera ``Idempotency-Key`` para evitar ejecuciones duplicadas.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PushCobranzaInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PushCobranzaResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "integration-hub"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
         "/integration-hub/instancias/{id}/sync/": {
             "post": {
                 "operationId": "integration-hub_instancias_trigger_sync",
@@ -29102,15 +29137,15 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ConectorInstancia"
+                            "$ref": "#/definitions/JobSincronizacionTrigger"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
+                    "202": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/ConectorInstancia"
+                            "$ref": "#/definitions/JobSincronizacion"
                         }
                     }
                 },
@@ -57058,7 +57093,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T18:33:27.977502-04:00"
+                    "default": "2026-11-21T00:00:55.472667-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -61698,6 +61733,11 @@
             ],
             "type": "object",
             "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
                 "id_proveedor": {
                     "title": "Id proveedor",
                     "type": "string",
@@ -61737,6 +61777,49 @@
                 "activo": {
                     "title": "Activo",
                     "type": "boolean"
+                }
+            }
+        },
+        "PushCobranzaInput": {
+            "type": "object",
+            "properties": {
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "enum": [
+                        "pagos",
+                        "gestiones_cobranza",
+                        "todos"
+                    ],
+                    "default": "todos"
+                },
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "default": []
+                },
+                "push_modo_pago": {
+                    "title": "Push modo pago",
+                    "type": "string",
+                    "enum": [
+                        "borrador",
+                        "confirmado"
+                    ],
+                    "x-nullable": true
+                },
+                "journal_id": {
+                    "title": "Journal id",
+                    "type": "integer",
+                    "minimum": 1,
+                    "x-nullable": true
+                },
+                "sync_completo": {
+                    "title": "Sync completo",
+                    "type": "boolean",
+                    "default": false
                 }
             }
         },
@@ -61862,6 +61945,78 @@
                 "parametros": {
                     "title": "Parametros",
                     "type": "object"
+                }
+            }
+        },
+        "PushCobranzaResponse": {
+            "required": [
+                "mensaje",
+                "jobs"
+            ],
+            "type": "object",
+            "properties": {
+                "mensaje": {
+                    "title": "Mensaje",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "job_id": {
+                    "title": "Job id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "jobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/JobSincronizacion"
+                    }
+                }
+            }
+        },
+        "JobSincronizacionTrigger": {
+            "required": [
+                "tipo_entidad"
+            ],
+            "type": "object",
+            "properties": {
+                "tipo_entidad": {
+                    "title": "Tipo entidad",
+                    "type": "string",
+                    "enum": [
+                        "contactos",
+                        "productos",
+                        "pedidos_venta",
+                        "pedidos_compra",
+                        "facturas_venta",
+                        "facturas_compra",
+                        "pagos",
+                        "gestiones_cobranza",
+                        "inventario"
+                    ]
+                },
+                "direccion": {
+                    "title": "Direccion",
+                    "type": "string",
+                    "enum": [
+                        "inbound",
+                        "outbound",
+                        "bidireccional"
+                    ],
+                    "default": "inbound"
+                },
+                "sync_completo": {
+                    "title": "Sync completo",
+                    "description": "True = ignorar último sync, traer todos los registros.",
+                    "type": "boolean",
+                    "default": false
+                },
+                "desde": {
+                    "title": "Desde",
+                    "description": "Fecha ISO desde la cual sincronizar (opcional).",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
                 }
             }
         },

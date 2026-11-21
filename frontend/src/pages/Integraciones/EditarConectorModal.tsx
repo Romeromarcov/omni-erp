@@ -9,19 +9,24 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControlLabel,
   FormGroup,
   IconButton,
   MenuItem,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   actualizarConector,
+  etiquetaEntidad,
+  type ConectorConfiguracionApi,
   type ConectorInstancia,
   type ConectorInstanciaUpdate,
+  type PushModoPago,
 } from '../../services/integrationHubService';
 
 interface Props {
@@ -40,12 +45,16 @@ const INTERVALOS = [
   { value: 1440, label: 'Diario' },
 ];
 
+const MODOS_PAGO: { value: PushModoPago; label: string }[] = [
+  { value: 'borrador', label: 'Borrador (recomendado para revisión en Odoo)' },
+  { value: 'confirmado', label: 'Confirmado (publicar y conciliar automáticamente)' },
+];
+
 /**
  * Modal de edición de un conector existente. Para conectores tipo Odoo/API
- * permite cambiar host, base de datos, usuario y (opcionalmente) la API key.
- * La API key se deja en blanco para conservar la guardada (el backend nunca la
- * devuelve por seguridad). Para Google Sheets solo se editan nombre, entidades
- * e intervalo (las credenciales se gestionan recreando el conector).
+ * permite cambiar host, base de datos, usuario, API key y configuración opt-in
+ * de push outbound (push_habilitado, push_modo_pago, write_user, write_api_key,
+ * diario_pagos_default_id). Los secretos se dejan en blanco para conservar los guardados.
  */
 const EditarConectorModal: React.FC<Props> = ({ conector, onClose }) => {
   const qc = useQueryClient();
@@ -58,6 +67,12 @@ const EditarConectorModal: React.FC<Props> = ({ conector, onClose }) => {
     db: cfg.db ?? '',
     user: cfg.user ?? '',
     api_key: '', // en blanco = conservar la actual
+    push_habilitado: Boolean(cfg.push_habilitado ?? false),
+    push_modo_pago: (cfg.push_modo_pago ?? 'borrador') as PushModoPago,
+    write_user: cfg.write_user ?? '',
+    write_api_key: '', // en blanco = conservar la actual
+    diario_pagos_default_id:
+      cfg.diario_pagos_default_id != null ? String(cfg.diario_pagos_default_id) : '',
     entidades_activas: [...conector.entidades_activas],
     intervalo_sync_minutos: conector.intervalo_sync_minutos,
   });
@@ -71,15 +86,25 @@ const EditarConectorModal: React.FC<Props> = ({ conector, onClose }) => {
         intervalo_sync_minutos: form.intervalo_sync_minutos,
       };
       if (!esSheets) {
-        const configuracion: ConectorInstanciaUpdate['configuracion'] = {
+        const diarioParsed = form.diario_pagos_default_id.trim()
+          ? Number(form.diario_pagos_default_id.trim())
+          : null;
+        const configuracion: Partial<ConectorConfiguracionApi> = {
           host: form.host,
           db: form.db || undefined,
           user: form.user,
+          push_habilitado: form.push_habilitado,
+          push_modo_pago: form.push_modo_pago,
+          write_user: form.write_user.trim(),
+          diario_pagos_default_id: diarioParsed,
         };
-        // Solo enviar api_key si el usuario escribió una nueva; en blanco se
-        // conserva la existente (el backend ignora secretos vacíos).
+        // Solo enviar secretos si el usuario escribió un valor nuevo; en blanco se
+        // conserva el existente (el backend ignora secretos vacíos).
         if (form.api_key.trim()) {
-          (configuracion as { api_key?: string }).api_key = form.api_key;
+          configuracion.api_key = form.api_key;
+        }
+        if (form.write_api_key.trim()) {
+          configuracion.write_api_key = form.write_api_key;
         }
         data.configuracion = configuracion;
       }
@@ -107,7 +132,17 @@ const EditarConectorModal: React.FC<Props> = ({ conector, onClose }) => {
         : [...f.entidades_activas, e],
     }));
 
-  const apiValido = esSheets ? !!form.nombre : !!form.nombre && !!form.host && !!form.user;
+  const hasWriteUser = form.write_user.trim().length > 0;
+  const hasWriteKey = form.write_api_key.trim().length > 0 || Boolean(cfg.tiene_write_api_key);
+  const writePairAsymmetric = !esSheets && hasWriteUser !== hasWriteKey;
+
+  const diarioTrim = form.diario_pagos_default_id.trim();
+  const diarioValido =
+    diarioTrim === '' || (Number.isInteger(Number(diarioTrim)) && Number(diarioTrim) > 0);
+
+  const apiValido = esSheets
+    ? !!form.nombre
+    : !!form.nombre && !!form.host && !!form.user && diarioValido && !writePairAsymmetric;
 
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
@@ -161,6 +196,83 @@ const EditarConectorModal: React.FC<Props> = ({ conector, onClose }) => {
                 onChange={e => setForm(f => ({ ...f, api_key: e.target.value }))}
                 fullWidth
               />
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
+                  Push Outbound (Omni → Externo)
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.push_habilitado}
+                      onChange={e => setForm(f => ({ ...f, push_habilitado: e.target.checked }))}
+                    />
+                  }
+                  label="Habilitar push outbound"
+                />
+              </Box>
+
+              <TextField
+                label="Modo de pago outbound"
+                select
+                value={form.push_modo_pago}
+                onChange={e => setForm(f => ({ ...f, push_modo_pago: e.target.value as PushModoPago }))}
+                fullWidth
+              >
+                {MODOS_PAGO.map(opt => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                label="Usuario de escritura (opcional)"
+                placeholder="escritura@empresa.com"
+                helperText="Credencial dedicada de mínimo privilegio (requiere Write API Key)."
+                value={form.write_user}
+                onChange={e => setForm(f => ({ ...f, write_user: e.target.value }))}
+                fullWidth
+              />
+
+              <TextField
+                label="Write API Key"
+                type="password"
+                placeholder={
+                  cfg.tiene_write_api_key
+                    ? 'Configurada — dejar vacío para mantener'
+                    : '••••••••  (opcional)'
+                }
+                helperText={
+                  cfg.tiene_write_api_key
+                    ? 'Configurada — dejar vacío para mantener la credencial de escritura.'
+                    : 'Opcional si no usas usuario dedicado de escritura.'
+                }
+                value={form.write_api_key}
+                onChange={e => setForm(f => ({ ...f, write_api_key: e.target.value }))}
+                fullWidth
+              />
+
+              {writePairAsymmetric && (
+                <Alert severity="warning">
+                  Configura tanto el usuario de escritura como la Write API Key (deben ir juntos).
+                </Alert>
+              )}
+
+              <TextField
+                label="ID diario de pagos por defecto (opcional)"
+                type="number"
+                slotProps={{ htmlInput: { min: 1 } }}
+                error={!diarioValido}
+                helperText={
+                  diarioValido
+                    ? 'ID numérico de account.journal en Odoo para pagos outbound.'
+                    : 'Debe ser un entero positivo.'
+                }
+                value={form.diario_pagos_default_id}
+                onChange={e => setForm(f => ({ ...f, diario_pagos_default_id: e.target.value }))}
+                fullWidth
+              />
             </>
           )}
 
@@ -185,7 +297,7 @@ const EditarConectorModal: React.FC<Props> = ({ conector, onClose }) => {
                       onChange={() => toggleEntidad(cap)}
                     />
                   }
-                  label={cap}
+                  label={etiquetaEntidad(cap)}
                 />
               ))}
             </FormGroup>

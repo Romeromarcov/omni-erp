@@ -143,13 +143,22 @@ class TestInstanciasCRUD:
     def test_detalle_no_expone_api_key(self, client_a, instancia):
         resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/")
         assert resp.status_code == 200
-        assert resp.data["configuracion_publica"] == {
+        cfg_pub = resp.data["configuracion_publica"]
+        assert cfg_pub == {
             "host": "fake.local",
             "db": "",
             "user": "u",
             "timeout": 30,
+            "push_habilitado": False,
+            "push_modo_pago": "borrador",
+            "write_user": "",
+            "tiene_write_api_key": False,
+            "diario_pagos_default_id": None,
         }
-        assert "api_key" not in str(resp.data)
+        assert "api_key" not in cfg_pub
+        assert "write_api_key" not in cfg_pub
+        assert "password" not in cfg_pub
+        assert "service_account" not in cfg_pub
 
     def test_aislamiento_empresa_b_no_ve_instancia_de_a(self, client_b, instancia):
         resp = client_b.get(f"{BASE}/instancias/")
