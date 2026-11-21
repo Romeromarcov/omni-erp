@@ -313,7 +313,9 @@ class SolicitudCotizacionViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseMo
 
     def get_queryset(self):
         # R-CODE-1
-        qs = SolicitudCotizacion.objects.filter(id_empresa__in=_empresas(self.request))
+        qs = SolicitudCotizacion.objects.filter(id_empresa__in=_empresas(self.request)).prefetch_related(
+            "requisiciones", "proveedores_invitados"
+        )
         estado = self.request.query_params.get("estado")
         if estado:
             qs = qs.filter(estado=estado.replace("\x00", "").strip())

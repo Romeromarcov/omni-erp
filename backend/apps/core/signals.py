@@ -57,23 +57,40 @@ def restore_rls_default_after_migrate(sender, using=DEFAULT_DB_ALIAS, **kwargs):
     rls.apply_system_default(using=db_alias)
 
 
-def _invalidar_cache_visibilidad(**kwargs) -> None:
+def _invalidar_cache_visibilidad(*, user_pk=None, invalidate_tree: bool = False) -> None:
     from .viewsets import invalidar_cache_empresas_visible
 
-    invalidar_cache_empresas_visible()
+    invalidar_cache_empresas_visible(user_pk=user_pk, invalidate_tree=invalidate_tree)
 
 
 @receiver([post_save, post_delete], sender="core.Empresa")
 def on_empresa_changed_invalidar_cache(sender, **kwargs):
-    _invalidar_cache_visibilidad()
+    _invalidar_cache_visibilidad(invalidate_tree=True)
+
+
+@receiver([post_save, post_delete], sender="core.Usuarios")
+def on_usuario_changed_invalidar_cache(sender, instance=None, update_fields=None, **kwargs):
+    if update_fields is not None and set(update_fields).issubset({"last_login", "fecha_ultimo_login"}):
+        return
+    user_pk = getattr(instance, "pk", None)
+    _invalidar_cache_visibilidad(user_pk=user_pk, invalidate_tree=user_pk is None)
 
 
 @receiver([post_save, post_delete], sender=Usuarios.empresas.through)
-def on_usuario_empresa_changed_invalidar_cache(sender, **kwargs):
-    _invalidar_cache_visibilidad()
+def on_usuario_empresa_changed_invalidar_cache(sender, instance=None, **kwargs):
+    user_pk = getattr(instance, "usuarios_id", None)
+    _invalidar_cache_visibilidad(user_pk=user_pk, invalidate_tree=user_pk is None)
 
 
 @receiver(m2m_changed, sender=Usuarios.empresas.through)
-def on_usuario_empresas_m2m_invalidar_cache(sender, action, **kwargs):
-    if action in ("post_add", "post_remove", "post_clear"):
-        _invalidar_cache_visibilidad()
+def on_usuario_empresas_m2m_invalidar_cache(sender, action, instance=None, reverse=False, pk_set=None, **kwargs):
+    if action not in ("post_add", "post_remove", "post_clear"):
+        return
+    if not reverse and isinstance(instance, Usuarios):
+        _invalidar_cache_visibilidad(user_pk=instance.pk)
+        return
+    if pk_set:
+        for uid in pk_set:
+            _invalidar_cache_visibilidad(user_pk=uid)
+        return
+    _invalidar_cache_visibilidad(invalidate_tree=True)

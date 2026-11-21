@@ -68,7 +68,9 @@ class SesionCajaFisicaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
         from apps.core.viewsets import get_empresas_visible
 
-        return SesionCajaFisica.objects.filter(empresa__in=get_empresas_visible(self.request.user))
+        return SesionCajaFisica.objects.filter(empresa__in=get_empresas_visible(self.request.user)).select_related(
+            "usuario", "caja_fisica", "sucursal", "empresa"
+        )
 
     def perform_create(self, serializer):
         """
@@ -253,7 +255,9 @@ class MetodoPagoEmpresaActivaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         # R-CODE-1: SIEMPRE acotar al tenant; los query params solo estrechan
         # (antes filtraban opcionalmente → fuga cross-tenant sin ?empresa=).
-        qs = MetodoPagoEmpresaActiva.objects.filter(empresa__in=get_empresas_visible(self.request.user))
+        qs = MetodoPagoEmpresaActiva.objects.filter(
+            empresa__in=get_empresas_visible(self.request.user)
+        ).select_related("metodo_pago", "empresa")
         empresa = self.request.query_params.get("empresa")
         metodo_pago = self.request.query_params.get("metodo_pago")
         if empresa:
@@ -403,12 +407,10 @@ class MonedaViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
             if not empresas_usuario.exists():
                 queryset = monedas_visibles
             else:
+                from .cache import obtener_monedas_activas_ids
+
                 empresa = empresas_usuario.first()
-                activas_ids = set(
-                    MonedaEmpresaActiva.objects.filter(empresa=empresa, activa=True).values_list(
-                        "moneda_id", flat=True
-                    )
-                )
+                activas_ids = set(obtener_monedas_activas_ids(empresa.pk))
                 queryset = monedas_visibles.filter(id_moneda__in=activas_ids)
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -448,7 +450,7 @@ class TasaCambioViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
 
         return TasaCambio.objects.filter(
             Q(id_empresa__isnull=True) | Q(id_empresa__in=get_empresas_visible(self.request.user))
-        )
+        ).select_related("id_moneda_origen", "id_moneda_destino", "id_usuario_registro")
 
 
 from rest_framework.decorators import action
@@ -479,11 +481,16 @@ class MetodoPagoViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
         """
         user = self.request.user
         if getattr(user, "es_superusuario_omni", False):
-            return MetodoPago.objects.all()
+            return MetodoPago.objects.select_related("empresa").prefetch_related("monedas")
         empresas_usuario = get_empresas_visible(user)
-        metodos_visibles = MetodoPago.objects.filter(
-            models.Q(es_generico=True) | models.Q(es_publico=True) | models.Q(empresa__in=empresas_usuario)
-        ).distinct()
+        metodos_visibles = (
+            MetodoPago.objects.filter(
+                models.Q(es_generico=True) | models.Q(es_publico=True) | models.Q(empresa__in=empresas_usuario)
+            )
+            .select_related("empresa")
+            .prefetch_related("monedas")
+            .distinct()
+        )
         return metodos_visibles
 
     @action(detail=False, methods=["get"], url_path="buscar_reutilizar")
@@ -527,6 +534,13 @@ class MetodoPagoViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
         page = self.paginate_queryset(queryset)
         serializer_context = self.get_serializer_context()
         serializer_context["id_empresa_actual"] = id_empresa_actual
+        if id_empresa_actual:
+            from .cache import obtener_metodos_pago_empresa_nombres
+
+            metodos_por_tipo: dict[str, list[str]] = {}
+            for tipo, nombre in obtener_metodos_pago_empresa_nombres(uuid.UUID(str(id_empresa_actual))):
+                metodos_por_tipo.setdefault(tipo, []).append(nombre)
+            serializer_context["metodos_empresa_por_tipo"] = metodos_por_tipo
         if page is not None:
             serializer = MetodoPagoReutilizableSerializer(page, many=True, context=serializer_context)
             return self.get_paginated_response(serializer.data)
@@ -673,7 +687,14 @@ class TransaccionFinancieraViewSet(BaseModelViewSet):
         from apps.core.viewsets import get_empresas_visible
 
         empresas = get_empresas_visible(self.request.user)
-        qs = TransaccionFinanciera.objects.filter(id_empresa__in=empresas)
+        qs = TransaccionFinanciera.objects.filter(id_empresa__in=empresas).select_related(
+            "id_empresa",
+            "id_usuario_registro",
+            "id_moneda_transaccion",
+            "id_moneda_base",
+            "id_moneda_pais_empresa",
+            "id_metodo_pago",
+        )
         id_empresa = self.request.query_params.get("id_empresa")
         if id_empresa:
             qs = qs.filter(id_empresa=id_empresa)
@@ -688,11 +709,15 @@ class MovimientoCajaBancoViewSet(BaseModelViewSet):
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
         from apps.core.viewsets import get_empresas_visible
 
-        return MovimientoCajaBanco.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        return MovimientoCajaBanco.objects.filter(
+            id_empresa__in=get_empresas_visible(self.request.user)
+        ).select_related("id_moneda", "id_caja", "id_caja__sucursal", "id_caja__empresa", "id_usuario_registro")
 
 
 class CajaViewSet(BaseModelViewSet):
-    queryset = Caja.objects.select_related("moneda", "empresa", "sucursal", "caja_fisica")
+    queryset = Caja.objects.select_related("moneda", "empresa", "sucursal", "caja_fisica").prefetch_related(
+        "metodos_pago"
+    )
     serializer_class = CajaSerializer
 
     def get_queryset(self):
@@ -763,7 +788,9 @@ class CajaViewSet(BaseModelViewSet):
         # H-SEC-8: get_object() aplica el filtro de tenant del ViewSet → 404
         # si la caja es de otra empresa. No usar pk crudo.
         caja = self.get_object()
-        qs = MovimientoCajaBanco.objects.filter(id_caja=caja)
+        qs = MovimientoCajaBanco.objects.filter(id_caja=caja).select_related(
+            "id_moneda", "id_caja", "id_caja__sucursal", "id_caja__empresa", "id_usuario_registro"
+        )
         # Filtros opcionales
         fecha_inicio = request.query_params.get("fecha_inicio")
         fecha_fin = request.query_params.get("fecha_fin")
@@ -795,9 +822,6 @@ class CajaViewSet(BaseModelViewSet):
         serializer = MovimientoCajaBancoSerializer(qs, many=True)
         return Response(serializer.data)
 
-    queryset = Caja.objects.all()
-    serializer_class = CajaSerializer
-
 
 class CuentaBancariaEmpresaViewSet(NulSafeFilterMixin, BaseModelViewSet):
     queryset = CuentaBancariaEmpresa.objects.all()
@@ -814,7 +838,9 @@ class CuentaBancariaEmpresaViewSet(NulSafeFilterMixin, BaseModelViewSet):
         # H-SEC-8: get_object() aplica el filtro de tenant del ViewSet → 404
         # si la cuenta es de otra empresa. No usar pk crudo.
         cuenta = self.get_object()
-        qs = MovimientoCajaBanco.objects.filter(id_cuenta_bancaria=cuenta)
+        qs = MovimientoCajaBanco.objects.filter(id_cuenta_bancaria=cuenta).select_related(
+            "id_moneda", "id_caja", "id_caja__sucursal", "id_caja__empresa", "id_usuario_registro"
+        )
         # Filtros opcionales
         fecha_inicio = request.query_params.get("fecha_inicio")
         fecha_fin = request.query_params.get("fecha_fin")
@@ -847,7 +873,11 @@ class CuentaBancariaEmpresaViewSet(NulSafeFilterMixin, BaseModelViewSet):
 
     def get_queryset(self) -> models.QuerySet[CuentaBancariaEmpresa]:
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
-        qs = CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        qs = (
+            CuentaBancariaEmpresa.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+            .select_related("id_moneda")
+            .prefetch_related("metodos_pago", "monedas")
+        )
         empresa_id = self.request.query_params.get("empresa")
         if empresa_id:
             qs = qs.filter(id_empresa_id=uuid.UUID(validar_uuid_param(empresa_id, "empresa")))
@@ -866,7 +896,7 @@ class MonedaEmpresaActivaViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = MonedaEmpresaActiva.objects.all()
+        qs = MonedaEmpresaActiva.objects.select_related("empresa", "moneda")
         # Superusuario Omni ERP puede ver todas, pero aún se permite filtrar por query params
         if not getattr(user, "es_superusuario_omni", False):
             empresas = get_empresas_visible(user)
@@ -897,7 +927,9 @@ class CajaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         """
         Filtra las cajas asignadas al usuario actual.
         """
-        return CajaUsuario.objects.filter(usuario=self.request.user).select_related("caja")
+        return CajaUsuario.objects.filter(usuario=self.request.user).select_related(
+            "caja", "caja__moneda", "caja__sucursal"
+        )
 
     @action(detail=True, methods=["post"], url_path="crear-caja-virtual")
     def crear_caja_virtual(self, request, pk=None):
@@ -958,7 +990,9 @@ class CajaVirtualUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         """
         Filtra las cajas virtuales asignadas al usuario actual.
         """
-        return CajaVirtualUsuario.objects.filter(usuario=self.request.user).select_related("caja_virtual")
+        return CajaVirtualUsuario.objects.filter(usuario=self.request.user).select_related(
+            "caja_virtual", "caja_virtual__moneda", "caja_virtual__sucursal"
+        )
 
 
 # ViewSet para CajaFisicaUsuario
@@ -971,7 +1005,9 @@ class CajaFisicaUsuarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         """
         Filtra las cajas físicas asignadas al usuario actual.
         """
-        return CajaFisicaUsuario.objects.filter(usuario=self.request.user).select_related("caja_fisica")
+        return CajaFisicaUsuario.objects.filter(usuario=self.request.user).select_related(
+            "caja_fisica", "caja_fisica__sucursal"
+        )
 
 
 class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
@@ -980,7 +1016,12 @@ class PlantillaMaestroCajasVirtualesViewSet(BaseModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("empresa", "creada_por", "moneda_base")
+            .prefetch_related("metodos_pago_base")
+        )
         user = self.request.user
 
         # Filtrar por empresas visibles del usuario
@@ -1006,7 +1047,11 @@ class CajaVirtualAutoViewSet(BaseModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("caja_fisica", "empleado", "plantilla_maestro", "moneda", "metodo_pago")
+        )
         user = self.request.user
 
         # Filtrar por empresas visibles del usuario
@@ -1026,7 +1071,7 @@ class CajaMetodoPagoOverrideViewSet(BaseModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().select_related("sucursal", "metodo_pago", "creado_por", "caja_fisica")
         user = self.request.user
 
         # Filtrar por empresas visibles del usuario
@@ -1049,7 +1094,11 @@ class DatafonoViewSet(BaseModelViewSet):
         # R-CODE-1: SIEMPRE acotar al tenant del usuario; los query params solo
         # estrechan dentro de las empresas visibles (antes filtraban de forma
         # opcional → fuga cross-tenant si no se pasaba id_empresa).
-        queryset = Datafono.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        queryset = (
+            Datafono.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+            .select_related("id_empresa", "id_sucursal", "id_caja_fisica", "id_cuenta_bancaria_asociada")
+            .prefetch_related("metodos_pago", "monedas")
+        )
         id_empresa = self.request.query_params.get("id_empresa")
         id_caja_fisica = self.request.query_params.get("id_caja_fisica")
         if id_empresa:
@@ -1153,7 +1202,7 @@ class TransaccionDatafonoViewSet(BaseModelViewSet):
     serializer_class = TransaccionDatafonoSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().select_related("id_datafono", "id_usuario_registro", "sesion_datafono")
         # Filtrar por empresas visibles del usuario
         user = self.request.user
         if not getattr(user, "es_superusuario_omni", False):
@@ -1166,7 +1215,12 @@ class SesionDatafonoViewSet(BaseModelViewSet):
     serializer_class = SesionDatafonoSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("datafono", "usuario_apertura")
+            .annotate(_cantidad_transacciones=models.Count("transacciones_datafono"))
+        )
         # Filtrar por empresas visibles del usuario
         user = self.request.user
         if not getattr(user, "es_superusuario_omni", False):
@@ -1179,7 +1233,11 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
     serializer_class = DepositoDatafonoSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("datafono", "sesion_datafono", "usuario_envio", "usuario_conciliacion", "movimiento_banco")
+        )
         # Filtrar por empresas visibles del usuario
         user = self.request.user
         if not getattr(user, "es_superusuario_omni", False):
@@ -1253,7 +1311,11 @@ class DepositoDatafonoViewSet(BaseModelViewSet):
                     {"success": False, "message": "Datafono no encontrado"}, status=status.HTTP_404_NOT_FOUND
                 )
 
-        depositos = obtener_depositos_pendientes(datafono).filter(datafono__id_empresa__in=empresas)
+        depositos = (
+            obtener_depositos_pendientes(datafono)
+            .filter(datafono__id_empresa__in=empresas)
+            .select_related("datafono", "sesion_datafono", "usuario_envio", "usuario_conciliacion", "movimiento_banco")
+        )
         serializer = self.get_serializer(depositos, many=True)
 
         return Response({"success": True, "depositos": serializer.data}, status=status.HTTP_200_OK)
@@ -1264,7 +1326,30 @@ class CajaFisicaViewSet(BaseModelViewSet):
     serializer_class = CajaFisicaSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("empresa", "sucursal")
+            .prefetch_related(
+                models.Prefetch(
+                    "cajas_virtuales",
+                    queryset=Caja.objects.select_related(
+                        "empresa", "sucursal", "moneda", "caja_fisica"
+                    ).prefetch_related("metodos_pago"),
+                ),
+                models.Prefetch(
+                    "datafonos",
+                    queryset=Datafono.objects.select_related(
+                        "id_empresa", "id_sucursal", "id_caja_fisica", "id_cuenta_bancaria_asociada"
+                    ).prefetch_related("metodos_pago", "monedas"),
+                ),
+                models.Prefetch(
+                    "sesiones",
+                    queryset=SesionCajaFisica.objects.filter(estado="ABIERTA").select_related("usuario"),
+                    to_attr="_prefetched_sesiones_abiertas",
+                ),
+            )
+        )
         # Filtrar por empresas del usuario, salvo que sea superusuario
         user = self.request.user
         if not getattr(user, "es_superusuario_omni", False):
@@ -1507,7 +1592,29 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
     def get_queryset(self) -> models.QuerySet[Pago]:
         # R-CODE-1: usar get_empresas_visible para incluir subsidiarias y
         # garantizar aislamiento simétrico con los demás módulos.
-        qs: models.QuerySet[Pago] = Pago.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        qs: models.QuerySet[Pago] = Pago.objects.filter(
+            id_empresa__in=get_empresas_visible(self.request.user)
+        ).select_related(
+            "id_empresa",
+            "id_contacto",
+            "id_metodo_pago",
+            "id_moneda",
+            "id_caja_fisica",
+            "id_caja_virtual",
+            "id_cuenta_bancaria",
+            "id_datafono",
+            "banco_destino",
+            "id_usuario_registro",
+            "id_transaccion_financiera",
+            "id_pedido__id_cliente",
+            "id_nota_venta",
+            "id_factura",
+            "id_cxp__id_proveedor",
+            "id_gasto",
+            "id_reembolso_gasto",
+            "id_nomina",
+            "id_contribucion",
+        )
         tipo_op_raw = self.request.query_params.get("tipo_operacion")
         if tipo_op_raw:
             tipo_op = str(tipo_op_raw).replace("\x00", "").strip().upper()

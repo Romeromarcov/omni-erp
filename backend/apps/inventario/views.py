@@ -1,7 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import F, Q
+from django.db.models import F, Prefetch, Q
 from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
@@ -315,11 +315,16 @@ class _OperacionInventarioBaseViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1
+        from .models import OperacionInventarioLinea
+
         return (
             OperacionInventario.objects.filter(
                 id_empresa__in=_empresas(self.request), tipo_operacion=self.tipo_operacion
             )
-            .prefetch_related("pasos", "lineas")
+            .prefetch_related(
+                "pasos",
+                Prefetch("lineas", queryset=OperacionInventarioLinea.objects.select_related("id_producto")),
+            )
             .order_by("-fecha")
         )
 

@@ -384,6 +384,9 @@ class CajaFisica(models.Model):
     @property
     def sesion_activa(self):
         """Retorna la sesión activa de esta caja física, si existe"""
+        prefetched = getattr(self, "_prefetched_sesiones_abiertas", None)
+        if prefetched is not None:
+            return prefetched[0] if prefetched else None
         return self.sesiones.filter(estado="ABIERTA").first()
 
     @property

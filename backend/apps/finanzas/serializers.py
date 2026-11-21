@@ -419,9 +419,15 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
             return s
 
         nombre_actual = normalizar(obj.nombre_metodo)
-        metodos_empresa = MetodoPago.objects.filter(empresa=id_empresa_actual, tipo_metodo=obj.tipo_metodo)
-        for mp in metodos_empresa:
-            nombre_db = normalizar(mp.nombre_metodo)
+        metodos_por_tipo = self.context.get("metodos_empresa_por_tipo")
+        if metodos_por_tipo is not None:
+            nombres_empresa = metodos_por_tipo.get(obj.tipo_metodo, ())
+        else:
+            nombres_empresa = MetodoPago.objects.filter(
+                empresa=id_empresa_actual, tipo_metodo=obj.tipo_metodo
+            ).values_list("nombre_metodo", flat=True)
+        for nombre_metodo_db in nombres_empresa:
+            nombre_db = normalizar(nombre_metodo_db)
             sim = ratio(nombre_actual, nombre_db)
             dist = Levenshtein.distance(nombre_actual, nombre_db)
             if sim >= 55 or dist <= 3 or nombre_actual in nombre_db or nombre_db in nombre_actual:
@@ -1208,6 +1214,9 @@ class SesionDatafonoSerializer(serializers.ModelSerializer):
     cantidad_transacciones = serializers.SerializerMethodField()
 
     def get_cantidad_transacciones(self, obj):
+        anotado = getattr(obj, "_cantidad_transacciones", None)
+        if anotado is not None:
+            return anotado
         return obj.transacciones_datafono.count()
 
     class Meta:

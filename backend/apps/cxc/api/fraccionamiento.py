@@ -14,17 +14,12 @@ from apps.core.viewsets import get_empresas_visible
 
 def _fraccionamiento_enabled(empresa) -> bool:
     """Verifica si el módulo de fraccionamiento está habilitado para el tenant."""
-    from apps.configuracion_motor.models import ParametroSistema
-
-    try:
-        param = ParametroSistema.objects.get(
-            id_empresa=empresa,
-            codigo_parametro="cxc.fraccionamiento.enabled",
-            activo=True,
-        )
-        return param.valor_parametro.strip().lower() in ("true", "1", "yes")
-    except ParametroSistema.DoesNotExist:
+    if empresa is None:
         return False
+    from apps.configuracion_motor.services import obtener_parametro
+
+    valor = obtener_parametro("cxc.fraccionamiento.enabled", empresa=empresa)
+    return (valor or "").lower() in ("true", "1", "yes")
 
 
 class LoteFraccionadoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):

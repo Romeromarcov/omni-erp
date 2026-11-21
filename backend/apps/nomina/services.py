@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
@@ -43,14 +44,10 @@ PARAM_VALOR_UT = "nomina.valor_ut"
 PARAM_APLICA_ISLR = "nomina.aplica_islr"
 
 
-def _leer_parametro(empresa, codigo: str) -> str | None:
-    from apps.configuracion_motor.models import ParametroSistema  # noqa: PLC0415
+def _leer_parametro(empresa: Any, codigo: str) -> str | None:
+    from apps.configuracion_motor.services import obtener_parametro  # noqa: PLC0415
 
-    try:
-        param = ParametroSistema.objects.get(id_empresa=empresa, codigo_parametro=codigo, activo=True)
-    except ParametroSistema.DoesNotExist:
-        return None
-    return param.valor_parametro.strip()
+    return obtener_parametro(codigo, empresa=empresa, default=None)
 
 
 def _parametro_decimal(empresa, codigo: str, default: Decimal) -> Decimal:

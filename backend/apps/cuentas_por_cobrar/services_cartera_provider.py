@@ -18,20 +18,13 @@ logger = logging.getLogger(__name__)
 
 def _get_datasource_config(empresa) -> str:
     """
-    Lee configuracion_motor.ParametroSistema para el datasource de CxC.
+    Lee configuracion_motor.ParametroSistema para el datasource de CxC (cacheado).
     Por defecto: 'native'.
     """
-    from apps.configuracion_motor.models import ParametroSistema
+    from apps.configuracion_motor.services import obtener_parametro
 
-    try:
-        param = ParametroSistema.objects.get(
-            id_empresa=empresa,
-            codigo_parametro="cxc.datasource",
-            activo=True,
-        )
-        return param.valor_parametro.strip().lower()
-    except ParametroSistema.DoesNotExist:
-        return "native"
+    valor = obtener_parametro("cxc.datasource", empresa=empresa, default="native")
+    return (valor or "native").lower()
 
 
 def get_cartera_provider(empresa) -> "CarteraProvider":

@@ -46,19 +46,22 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
     Raises:
         TasaCambioError si no se encuentra ninguna tasa.
     """
-    from .models import Moneda, TasaCambio
+    from .cache import normalizar_empresa_uuid, obtener_moneda_por_iso, obtener_tasa_cambio_cacheada
+    from .models import TasaCambio
 
-    # Resolver monedas por ISO si se pasan como strings
+    empresa_id = normalizar_empresa_uuid(empresa)
+
+    # Resolver monedas por ISO si se pasan como strings (con caché por scope/empresa)
     if isinstance(moneda_origen, str):
-        try:
-            moneda_origen = Moneda.objects.get(codigo_iso=moneda_origen)
-        except Moneda.DoesNotExist:
+        moneda_origen_resuelta = obtener_moneda_por_iso(moneda_origen, empresa_id=empresa_id)
+        if moneda_origen_resuelta is None:
             raise TasaCambioError(f"Moneda '{moneda_origen}' no encontrada.")
+        moneda_origen = moneda_origen_resuelta
     if isinstance(moneda_destino, str):
-        try:
-            moneda_destino = Moneda.objects.get(codigo_iso=moneda_destino)
-        except Moneda.DoesNotExist:
+        moneda_destino_resuelta = obtener_moneda_por_iso(moneda_destino, empresa_id=empresa_id)
+        if moneda_destino_resuelta is None:
             raise TasaCambioError(f"Moneda '{moneda_destino}' no encontrada.")
+        moneda_destino = moneda_destino_resuelta
 
     # Misma moneda — tasa identidad (usamos un stub no persistente)
     if moneda_origen.pk == moneda_destino.pk:
@@ -77,44 +80,14 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
         # 20:00 Caracas (= 00:00 UTC) y podía no encontrar tasa para "hoy".
         fecha = timezone.localdate()
 
-    base_qs = TasaCambio.objects.filter(
-        id_moneda_origen=moneda_origen,
-        id_moneda_destino=moneda_destino,
-        fecha_tasa=fecha,
+    tasa_cacheada = obtener_tasa_cambio_cacheada(
+        moneda_origen,
+        moneda_destino,
+        empresa_id=empresa_id,
+        fecha=fecha,
     )
-
-    # 1. Tasa empresa-específica (fecha exacta)
-    if empresa is not None:
-        empresa_qs = base_qs.filter(id_empresa=empresa)
-        for tipo in _TIPO_TASA_PRIORIDAD:
-            tasa = empresa_qs.filter(tipo_tasa=tipo).order_by("-fecha_creacion").first()
-            if tasa:
-                return tasa
-
-    # 2. Tasa global OFICIAL_BCV (fecha exacta)
-    tasa = base_qs.filter(id_empresa=None, tipo_tasa="OFICIAL_BCV").order_by("-fecha_creacion").first()
-    if tasa:
-        return tasa
-
-    # 3. Tasa más reciente disponible (últimos 30 días)
-    from datetime import timedelta
-
-    fecha_limite = fecha - timedelta(days=30)
-    recientes_qs = TasaCambio.objects.filter(
-        id_moneda_origen=moneda_origen,
-        id_moneda_destino=moneda_destino,
-        fecha_tasa__gte=fecha_limite,
-        fecha_tasa__lte=fecha,
-    ).order_by("-fecha_tasa", "-fecha_creacion")
-
-    if empresa is not None:
-        tasa = recientes_qs.filter(id_empresa=empresa).first()
-        if tasa:
-            return tasa
-
-    tasa = recientes_qs.filter(id_empresa=None).first()
-    if tasa:
-        return tasa
+    if tasa_cacheada is not None:
+        return tasa_cacheada
 
     raise TasaCambioError(
         f"No hay tasa de cambio disponible entre {moneda_origen.codigo_iso} "

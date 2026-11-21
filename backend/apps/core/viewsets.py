@@ -241,8 +241,11 @@ class SoftDeleteModelMixin:
         return Response(serializer.data)
 
 
-# --- Cache por ciclo de request para get_empresas_visible ---
+# --- Cache por ciclo de request + distribuido para get_empresas_visible ---
 _empresas_visible_cache: ContextVar[dict | None] = ContextVar("omni_empresas_visible_cache", default=None)
+
+CACHE_NS_EMPRESA_TREE = "core.empresa_tree"
+CACHE_NS_USER_EMPRESAS = "core.user_empresas"
 
 
 def iniciar_cache_empresas_visible():
@@ -255,25 +258,54 @@ def limpiar_cache_empresas_visible(token) -> None:
     _empresas_visible_cache.reset(token)
 
 
-def invalidar_cache_empresas_visible() -> None:
-    """Invalida la memoización activa ante cambios de Empresa o membresía."""
-    cache = _empresas_visible_cache.get()
-    if cache is not None:
-        cache.clear()
+def invalidar_cache_empresas_visible(user_pk=None, *, invalidate_tree: bool = False) -> None:
+    """Invalida la memoización activa y la versión distribuida en ``CACHES``."""
+    from .cache_utils import GLOBAL_TENANT_KEY, bump_namespace_version
+
+    l1_cache = _empresas_visible_cache.get()
+    if l1_cache is not None:
+        l1_cache.clear()
+
+    if invalidate_tree or user_pk is None:
+        bump_namespace_version(CACHE_NS_EMPRESA_TREE, GLOBAL_TENANT_KEY)
+    if user_pk is not None:
+        bump_namespace_version(CACHE_NS_USER_EMPRESAS, f"user:{user_pk}")
 
 
-# --- Visibilidad recursiva ---
+def _puede_usar_cache_distribuida_empresas() -> bool:
+    """Con RLS activo solo usa caché L2 bajo ``rls_bypass`` para evitar entradas parciales."""
+    from django.conf import settings
+
+    if not getattr(settings, "RLS_ENABLED", False):
+        return True
+    from . import rls
+
+    bypass, _ = rls._get_current_context()
+    return bypass == "on"
+
+
+# --- Visibilidad recursiva (BFS por niveles, O(profundidad) queries) ---
+def get_all_subsidiarias_ids(raiz_ids) -> set[uuid.UUID]:
+    """Retorna los UUIDs de todas las subsidiarias descendientes vía BFS por niveles."""
+    visitados: set[uuid.UUID] = set(raiz_ids)
+    frontera: set[uuid.UUID] = set(raiz_ids)
+    subsidiarias: set[uuid.UUID] = set()
+    while frontera:
+        hijas = set(Empresa.objects.filter(empresa_matriz_id__in=frontera).values_list("id_empresa", flat=True))
+        nuevas = hijas - visitados
+        if not nuevas:
+            break
+        subsidiarias.update(nuevas)
+        visitados.update(nuevas)
+        frontera = nuevas
+    return subsidiarias
+
+
 def get_all_subsidiarias(empresa):
-    ids = set()
-
-    def collect(e):
-        for sub in e.subsidiarias.all():
-            if sub.id_empresa not in ids:
-                ids.add(sub.id_empresa)
-                collect(sub)
-
-    collect(empresa)
-    return ids
+    emp_id = getattr(empresa, "id_empresa", None) or getattr(empresa, "pk", empresa)
+    if emp_id is None:
+        return set()
+    return get_all_subsidiarias_ids([emp_id])
 
 
 def get_empresas_visible(user):
@@ -285,20 +317,37 @@ def get_empresas_visible(user):
     if not getattr(user, "is_authenticated", False) or not hasattr(user, "empresas"):
         return Empresa.objects.none()
 
-    cache = _empresas_visible_cache.get()
+    l1_cache = _empresas_visible_cache.get()
     user_pk = getattr(user, "pk", None)
-    cache_key = ("user", user_pk) if cache is not None and user_pk is not None else None
-    if cache_key is not None and cache_key in cache:
-        ids_cached = cache[cache_key]
+    cache_key = ("user", user_pk) if l1_cache is not None and user_pk is not None else None
+    if cache_key is not None and cache_key in l1_cache:
+        ids_cached = l1_cache[cache_key]
         return Empresa.objects.filter(id_empresa__in=ids_cached) if ids_cached else Empresa.objects.none()
 
-    empresas = list(user.empresas.all())
-    ids = {e.id_empresa for e in empresas}
-    for empresa in empresas:
-        ids.update(get_all_subsidiarias(empresa))
-    ids_tuple = tuple(ids)
-    if cache is not None and cache_key is not None:
-        cache[cache_key] = ids_tuple
+    def _compute_visible_ids() -> tuple[uuid.UUID, ...]:
+        directas = tuple(user.empresas.values_list("id_empresa", flat=True))
+        if not directas:
+            return ()
+        ids = set(directas)
+        ids.update(get_all_subsidiarias_ids(directas))
+        return tuple(ids)
+
+    if user_pk is not None and _puede_usar_cache_distribuida_empresas():
+        from .cache_utils import DEFAULT_CACHE_TIMEOUT, GLOBAL_TENANT_KEY, get_cached_or_set, get_namespace_version
+
+        tree_version = get_namespace_version(CACHE_NS_EMPRESA_TREE, GLOBAL_TENANT_KEY)
+        ids_tuple = get_cached_or_set(
+            CACHE_NS_USER_EMPRESAS,
+            f"user:{user_pk}",
+            f"visible:tree-{tree_version}",
+            _compute_visible_ids,
+            timeout=DEFAULT_CACHE_TIMEOUT,
+        )
+    else:
+        ids_tuple = _compute_visible_ids()
+
+    if l1_cache is not None and cache_key is not None:
+        l1_cache[cache_key] = ids_tuple
     return Empresa.objects.filter(id_empresa__in=ids_tuple) if ids_tuple else Empresa.objects.none()
 
 
