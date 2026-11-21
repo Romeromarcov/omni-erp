@@ -9744,6 +9744,26 @@ export interface paths {
         patch: operations["inventario_variantes-producto_partial_update"];
         trace?: never;
     };
+    "/localizacion/estado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estado de localización de dos capas de la empresa
+         * @description GET /api/localizacion/estado/ — Estado de localización y puertos de una empresa.
+         */
+        get: operations["localizacion_estado_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/manufactura/centros-trabajo/": {
         parameters: {
             query?: never;
@@ -19573,7 +19593,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T04:35:43.420157-04:00
+             * @default 2026-11-21T12:20:59.517772-04:00
              */
             fecha_despacho: string;
             /**
@@ -23631,6 +23651,33 @@ export interface components {
              * Format: uuid
              */
             id_producto: string;
+        };
+        PuertoLocalizacionEstado: {
+            /** Clase */
+            readonly clase?: string;
+            /** Es noop */
+            readonly es_noop?: boolean;
+            /** Activo */
+            readonly activo?: boolean;
+        };
+        EstadoLocalizacionResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Pais codigo iso */
+            readonly pais_codigo_iso?: string | null;
+            /** Pais normalizado */
+            readonly pais_normalizado?: string | null;
+            /** Localizacion legal activa */
+            readonly localizacion_legal_activa?: boolean;
+            /** Localizacion mercado activa */
+            readonly localizacion_mercado_activa?: boolean;
+            /** Puertos */
+            readonly puertos?: {
+                [key: string]: components["schemas"]["PuertoLocalizacionEstado"];
+            };
         };
         CentroTrabajo: {
             /**
@@ -51591,6 +51638,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VarianteProducto"];
+                };
+            };
+        };
+    };
+    localizacion_estado_list: {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoLocalizacionResponse"];
                 };
             };
         };

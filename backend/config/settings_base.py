@@ -729,6 +729,7 @@ MCP_AGENT_CAPABILITIES: dict = {
         "apps.integration_hub.mcp",
         "apps.tareas.mcp",
         "apps.agentes.mcp",
+        "apps.localizacion.mcp",
     ],
     "scopes": {
         "core:read": "Lectura de empresas y clientes",
@@ -758,6 +759,7 @@ MCP_AGENT_CAPABILITIES: dict = {
         "agentes:write": "Disparo asíncrono de análisis de agentes IA",
         "fiscal:read": "Consulta de correlativos fiscales",
         "fiscal:write": "Emisión de documentos fiscales",
+        "localizacion:read": "Consulta de estado y puertos de localización por empresa",
         "manufactura:read": "Consulta de OF, costeo real y MRP",
         "despacho:read": "Consulta de despachos/entregas pendientes",
         "*": "Acceso completo (solo uso interno)",

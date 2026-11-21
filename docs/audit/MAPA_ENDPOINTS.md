@@ -1387,6 +1387,7 @@
 | `dashboard/stats/` | dashboard_stats_view | — | — | — | IsAuthenticated |
 | `destinos/` | BotDestinosView | — | — | — | PuedePanelBots |
 | `dispositivos/accion/` | dispositivo_accion_view | — | — | — | IsAuthenticated |
+| `estado/` | EstadoLocalizacionView | — | — | — | IsAuthenticated |
 | `heartbeat/` | BotHeartbeatView | — | — | — | PuedeEnviarLatido |
 | `libro-compras-pdf/` | LibroComprasPDFView | — | — | — | IsAuthenticated |
 | `libro-compras/` | LibroComprasView | — | — | — | IsAuthenticated |
@@ -1412,4 +1413,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 255_
+_Total ViewSets: 256_

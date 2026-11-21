@@ -32518,6 +32518,35 @@
                 }
             ]
         },
+        "/localizacion/estado/": {
+            "get": {
+                "operationId": "localizacion_estado_list",
+                "summary": "Estado de localización de dos capas de la empresa",
+                "description": "GET /api/localizacion/estado/ — Estado de localización y puertos de una empresa.",
+                "parameters": [
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa visible (obligatorio para superusuarios Omni sin empresa propia).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EstadoLocalizacionResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "localizacion"
+                ]
+            },
+            "parameters": []
+        },
         "/manufactura/centros-trabajo/": {
             "get": {
                 "operationId": "manufactura_centros-trabajo_list",
@@ -57742,7 +57771,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T04:35:43.420157-04:00"
+                    "default": "2026-11-21T12:20:59.517772-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -64371,6 +64400,68 @@
                     "title": "Id producto",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "PuertoLocalizacionEstado": {
+            "type": "object",
+            "properties": {
+                "clase": {
+                    "title": "Clase",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "es_noop": {
+                    "title": "Es noop",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true
+                }
+            }
+        },
+        "EstadoLocalizacionResponse": {
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "title": "Empresa id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "pais_codigo_iso": {
+                    "title": "Pais codigo iso",
+                    "type": "string",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "pais_normalizado": {
+                    "title": "Pais normalizado",
+                    "type": "string",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "localizacion_legal_activa": {
+                    "title": "Localizacion legal activa",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "localizacion_mercado_activa": {
+                    "title": "Localizacion mercado activa",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "puertos": {
+                    "title": "Puertos",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/PuertoLocalizacionEstado"
+                    },
+                    "readOnly": true
                 }
             }
         },
