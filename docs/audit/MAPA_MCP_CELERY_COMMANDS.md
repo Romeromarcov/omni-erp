@@ -29,6 +29,7 @@ _Total tools MCP: 17_
 | Tarea | Módulo |
 |---|---|
 | `activaciones.sincronizar_google` | apps.activaciones.tasks |
+| `agentes.ejecutar_analisis_agente` | apps.agentes.tasks |
 | `agentes.generar_sugerencias_diarias` | apps.agentes.tasks |
 | `auditoria.registrar_evento` | apps.auditoria.tasks |
 | `bots_ingest.sincronizar_odoo` | apps.bots_ingest.tasks |
@@ -52,7 +53,7 @@ _Total tools MCP: 17_
 | `tareas.ejecutar_ciclo_empresa` | apps.tareas.tasks |
 | `tareas.ejecutar_ciclo_todos` | apps.tareas.tasks |
 
-_Total tareas Celery: 23_
+_Total tareas Celery: 24_
 
 ## Management commands
 

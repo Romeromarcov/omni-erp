@@ -7,6 +7,7 @@
 | activaciones | RecursoActivacion | ✅ | ✅ | — |
 | activaciones | UsoRecursoEvento | ✅ | ✅ | — |
 | agentes | ConfigAgente | ✅ | ✅ | id_empresa+agente |
+| agentes | EjecucionAgente | ✅ | ✅ | — |
 | agentes | PrediccionAgente | ✅ | ✅ | — |
 | almacenes | Almacen | ✅ | ✅ | id_empresa+codigo_almacen |
 | almacenes | StockUbicacion | ✅ | ✅ | — |
@@ -261,4 +262,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 258_
+_Total modelos: 259_

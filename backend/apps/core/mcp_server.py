@@ -1187,6 +1187,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.banca_electronica.mcp",
     "apps.integration_hub.mcp",
     "apps.tareas.mcp",
+    "apps.agentes.mcp",
 ]
 
 

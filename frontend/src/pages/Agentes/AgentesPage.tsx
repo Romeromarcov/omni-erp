@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -22,6 +22,7 @@ import {
   AGENTES,
   RESULTADOS_HUMANOS,
   type Agente,
+  type EjecucionAgente,
   type ResultadoHumano,
   type PrediccionAgente,
 } from '../../services/agentesService';
@@ -43,13 +44,28 @@ const RESULTADO_LABEL = new Map<string, string>([
   ['rechazada', 'Rechazada'],
 ]);
 
+const ESTADO_EJECUCION_LABEL = new Map<string, string>([
+  ['pendiente', 'Pendiente'],
+  ['ejecutando', 'Ejecutando'],
+  ['completado', 'Completado'],
+  ['fallido', 'Fallido'],
+]);
+
 const labelAgente = (a: string): string => AGENTE_LABEL.get(a) ?? a;
 const labelResultado = (r: string): string => RESULTADO_LABEL.get(r) ?? r;
+const labelEstadoEjecucion = (e: string): string => ESTADO_EJECUCION_LABEL.get(e) ?? e;
 
 const RESULTADO_COLOR: Record<string, 'warning' | 'success' | 'error' | 'default'> = {
   pendiente: 'warning',
   aceptada: 'success',
   rechazada: 'error',
+};
+
+const ESTADO_EJECUCION_COLOR: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+  pendiente: 'warning',
+  ejecutando: 'info',
+  completado: 'success',
+  fallido: 'error',
 };
 
 function formatConfianza(c: number): string {
@@ -58,7 +74,11 @@ function formatConfianza(c: number): string {
 
 // ── Página ──────────────────────────────────────────────────────────────────
 
-const AgentesPage: React.FC = () => {
+export interface AgentesPageProps {
+  pollIntervalMs?: number;
+}
+
+const AgentesPage: React.FC<AgentesPageProps> = ({ pollIntervalMs = 1000 }) => {
   const queryClient = useQueryClient();
   const [filtroAgente, setFiltroAgente] = useState<Agente | ''>('');
   const [filtroResultado, setFiltroResultado] = useState<ResultadoHumano | ''>('');
@@ -176,7 +196,11 @@ const AgentesPage: React.FC = () => {
         </Alert>
       )}
 
-      <PanelAnalisis onError={setErrorMsg} onAnalisis={invalidarPredicciones} />
+      <PanelAnalisis
+        pollIntervalMs={pollIntervalMs}
+        onError={setErrorMsg}
+        onAnalisis={invalidarPredicciones}
+      />
 
       <MetricasClasificadorSection />
 
@@ -228,69 +252,92 @@ const AgentesPage: React.FC = () => {
   );
 };
 
-// ── Panel de análisis (dispara los agentes) ──────────────────────────────────
+// ── Panel de análisis (encola y realiza polling de ejecuciones) ───────────────
 
 interface PanelAnalisisProps {
+  pollIntervalMs: number;
   onError: (msg: string) => void;
   onAnalisis: () => void;
 }
 
-const PanelAnalisis: React.FC<PanelAnalisisProps> = ({ onError, onAnalisis }) => {
+const PanelAnalisis: React.FC<PanelAnalisisProps> = ({ pollIntervalMs, onError, onAnalisis }) => {
   const [resultado, setResultado] = useState<string>('');
   const [gastoId, setGastoId] = useState('');
   const [aplicarGasto, setAplicarGasto] = useState(false);
+  const [agenteActivo, setAgenteActivo] = useState<Agente | null>(null);
+  const [ejecucionActual, setEjecucionActual] = useState<EjecucionAgente<unknown> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const mostrar = (titulo: string, data: unknown) => {
     setResultado(`${titulo}\n\n${JSON.stringify(data, null, 2)}`);
   };
 
-  const cobranza = useMutation({
-    mutationFn: () => prediccionesService.analizarCobranza(),
-    onSuccess: (d) => {
-      mostrar('Análisis de cobranza', d);
-      onAnalisis();
-    },
-    onError: (e: unknown) => onError(mensajeDeError(e, 'No se pudo analizar la cobranza.')),
-  });
+  const ejecutarEnSegundoPlano = async <T,>(
+    agente: Agente,
+    titulo: string,
+    mensajeFalloFallback: string,
+    disparar: () => Promise<EjecucionAgente<T>>,
+  ) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-  const reorden = useMutation({
-    mutationFn: () => prediccionesService.analizarReorden(),
-    onSuccess: (d) => {
-      mostrar('Análisis de reorden', d);
-      onAnalisis();
-    },
-    onError: (e: unknown) => onError(mensajeDeError(e, 'No se pudo analizar el reorden.')),
-  });
+    setAgenteActivo(agente);
+    setEjecucionActual(null);
+    onError('');
 
-  const personalizacion = useMutation({
-    mutationFn: () => prediccionesService.analizarPersonalizacion(),
-    onSuccess: (d) => {
-      mostrar('Análisis de personalización', d);
-      onAnalisis();
-    },
-    onError: (e: unknown) =>
-      onError(mensajeDeError(e, 'No se pudo analizar la personalización.')),
-  });
+    try {
+      const inicial = await disparar();
+      if (controller.signal.aborted) return;
+      setEjecucionActual(inicial);
 
-  const clasificar = useMutation({
-    mutationFn: () =>
-      prediccionesService.clasificarGasto({ gasto_id: gastoId.trim(), aplicar: aplicarGasto }),
-    onSuccess: (d) => {
-      mostrar('Clasificación de gasto', d);
-      onAnalisis();
-    },
-    onError: (e: unknown) => onError(mensajeDeError(e, 'No se pudo clasificar el gasto.')),
-  });
+      const finalEj = await prediccionesService.esperarEjecucion<T>(inicial, {
+        intervalMs: pollIntervalMs,
+        signal: controller.signal,
+        onEstado: (ej) => {
+          if (!controller.signal.aborted) setEjecucionActual(ej);
+        },
+      });
+      if (controller.signal.aborted) return;
 
-  const ocupado =
-    cobranza.isPending || reorden.isPending || personalizacion.isPending || clasificar.isPending;
+      if (finalEj.estado === 'fallido') {
+        onError(finalEj.mensaje_error || mensajeFalloFallback);
+        return;
+      }
+
+      mostrar(titulo, finalEj.resultado);
+      onAnalisis();
+    } catch (e: unknown) {
+      if (controller.signal.aborted || (e instanceof DOMException && e.name === 'AbortError')) {
+        return;
+      }
+      onError(mensajeDeError(e, mensajeFalloFallback));
+    } finally {
+      if (!controller.signal.aborted) {
+        setAgenteActivo(null);
+      }
+    }
+  };
+
+  const ocupado = agenteActivo !== null;
 
   const handleClasificar = () => {
     if (!gastoId.trim()) {
       onError('Indique el ID del gasto a clasificar.');
       return;
     }
-    clasificar.mutate();
+    void ejecutarEnSegundoPlano(
+      'clasificador_gastos',
+      'Clasificación de gasto',
+      'No se pudo clasificar el gasto.',
+      () => prediccionesService.clasificarGasto({ gasto_id: gastoId.trim(), aplicar: aplicarGasto }),
+    );
   };
 
   return (
@@ -304,24 +351,51 @@ const PanelAnalisis: React.FC<PanelAnalisisProps> = ({ onError, onAnalisis }) =>
           <Button
             variant="contained"
             disabled={ocupado}
-            onClick={() => cobranza.mutate()}
-            startIcon={cobranza.isPending ? <CircularProgress size={16} /> : undefined}
+            onClick={() =>
+              void ejecutarEnSegundoPlano(
+                'cobranza_estratega',
+                'Análisis de cobranza',
+                'No se pudo analizar la cobranza.',
+                () => prediccionesService.analizarCobranza(),
+              )
+            }
+            startIcon={
+              agenteActivo === 'cobranza_estratega' ? <CircularProgress size={16} /> : undefined
+            }
           >
             Analizar cobranza
           </Button>
           <Button
             variant="contained"
             disabled={ocupado}
-            onClick={() => reorden.mutate()}
-            startIcon={reorden.isPending ? <CircularProgress size={16} /> : undefined}
+            onClick={() =>
+              void ejecutarEnSegundoPlano(
+                'reorden_sugeridor',
+                'Análisis de reorden',
+                'No se pudo analizar el reorden.',
+                () => prediccionesService.analizarReorden(),
+              )
+            }
+            startIcon={
+              agenteActivo === 'reorden_sugeridor' ? <CircularProgress size={16} /> : undefined
+            }
           >
             Analizar reorden
           </Button>
           <Button
             variant="contained"
             disabled={ocupado}
-            onClick={() => personalizacion.mutate()}
-            startIcon={personalizacion.isPending ? <CircularProgress size={16} /> : undefined}
+            onClick={() =>
+              void ejecutarEnSegundoPlano(
+                'personalizacion_capa2',
+                'Análisis de personalización',
+                'No se pudo analizar la personalización.',
+                () => prediccionesService.analizarPersonalizacion(),
+              )
+            }
+            startIcon={
+              agenteActivo === 'personalizacion_capa2' ? <CircularProgress size={16} /> : undefined
+            }
           >
             Analizar personalización
           </Button>
@@ -355,11 +429,32 @@ const PanelAnalisis: React.FC<PanelAnalisisProps> = ({ onError, onAnalisis }) =>
             variant="outlined"
             disabled={ocupado}
             onClick={handleClasificar}
-            startIcon={clasificar.isPending ? <CircularProgress size={16} /> : undefined}
+            startIcon={
+              agenteActivo === 'clasificador_gastos' ? <CircularProgress size={16} /> : undefined
+            }
           >
             Clasificar
           </Button>
         </Stack>
+
+        {ejecucionActual && (
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            sx={{ mt: 2 }}
+            data-testid="estado-ejecucion-agente"
+          >
+            <Typography variant="body2" color="text.secondary">
+              Ejecución {labelAgente(ejecucionActual.agente)}:
+            </Typography>
+            <StatusChip
+              value={ejecucionActual.estado}
+              label={labelEstadoEjecucion(ejecucionActual.estado)}
+              colorMap={ESTADO_EJECUCION_COLOR}
+            />
+          </Stack>
+        )}
 
         {resultado && (
           <Paper
@@ -410,13 +505,29 @@ const MetricasClasificadorSection: React.FC = () => {
         ) : (
           <Stack direction="row" spacing={4} flexWrap="wrap" useFlexGap>
             <Metrica label="Total" valor={String(data.total)} />
-            <Metrica label="Evaluadas" valor={String(data.evaluadas)} />
-            <Metrica label="Precisión" valor={`${Math.round(data.precision * 100)}%`} />
+            <Metrica label="Evaluadas" valor={String(data.evaluadas ?? 0)} />
+            <Metrica
+              label="Precisión"
+              valor={
+                data.precision !== null && data.precision !== undefined
+                  ? `${Math.round(data.precision * 100)}%`
+                  : '—'
+              }
+            />
             <Metrica
               label="Confianza promedio"
-              valor={`${Math.round(data.confianza_promedio * 100)}%`}
+              valor={
+                data.confianza_promedio !== null && data.confianza_promedio !== undefined
+                  ? `${Math.round(data.confianza_promedio * 100)}%`
+                  : '—'
+              }
             />
-            <Metrica label="Latencia promedio" valor={`${data.latencia_promedio_ms} ms`} />
+            <Metrica
+              label="Latencia promedio"
+              valor={
+                data.latencia_promedio_ms !== undefined ? `${data.latencia_promedio_ms} ms` : '—'
+              }
+            />
           </Stack>
         )}
       </CardContent>

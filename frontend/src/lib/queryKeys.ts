@@ -692,6 +692,10 @@ export const agentesKeys = {
   predicciones: (agente?: string | null, resultado?: string | null) =>
     ['agentes', 'predicciones', 'list', agente ?? null, resultado ?? null] as const,
   prediccionesAll: () => ['agentes', 'predicciones'] as const,
+  ejecuciones: (agente?: string | null, estado?: string | null) =>
+    ['agentes', 'ejecuciones', 'list', agente ?? null, estado ?? null] as const,
+  ejecucionesAll: () => ['agentes', 'ejecuciones'] as const,
+  ejecucion: (id: string) => ['agentes', 'ejecuciones', 'detail', id] as const,
   sugerenciasActivas: (limite?: number | null) =>
     ['agentes', 'sugerencias-activas', limite ?? null] as const,
   metricasClasificador: () => ['agentes', 'metricas-clasificador'] as const,

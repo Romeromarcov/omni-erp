@@ -488,6 +488,10 @@
 | `^documentos/subir/$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
 | `^documentos/subir\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
 | `^documentos\.(?P<format>[a-z0-9]+)/?$` | DocumentoViewSet | Documento | ✅ | ✅ | IsAuthenticated |
+| `^ejecuciones/$` | EjecucionAgenteViewSet | EjecucionAgente | ✅ | ✅ | IsAuthenticated |
+| `^ejecuciones/(?P<pk>[0-9a-fA-F-]{36})/$` | EjecucionAgenteViewSet | EjecucionAgente | ✅ | ✅ | IsAuthenticated |
+| `^ejecuciones/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | EjecucionAgenteViewSet | EjecucionAgente | ✅ | ✅ | IsAuthenticated |
+| `^ejecuciones\.(?P<format>[a-z0-9]+)/?$` | EjecucionAgenteViewSet | EjecucionAgente | ✅ | ✅ | IsAuthenticated |
 | `^empleados/$` | EmpleadoViewSet | Empleado | ✅ | ✅ | IsAuthenticated |
 | `^empleados/(?P<pk>[^/.]+)/$` | EmpleadoViewSet | Empleado | ✅ | ✅ | IsAuthenticated |
 | `^empleados/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EmpleadoViewSet | Empleado | ✅ | ✅ | IsAuthenticated |
@@ -1009,12 +1013,12 @@
 | `^precios-lista/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
 | `^precios-lista\.(?P<format>[a-z0-9]+)/?$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
 | `^predicciones/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
-| `^predicciones/(?P<pk>[^/.]+)/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
-| `^predicciones/(?P<pk>[^/.]+)/evaluar/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
-| `^predicciones/(?P<pk>[^/.]+)/evaluar\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
-| `^predicciones/(?P<pk>[^/.]+)/responder/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
-| `^predicciones/(?P<pk>[^/.]+)/responder\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
-| `^predicciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[0-9a-fA-F-]{36})/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[0-9a-fA-F-]{36})/evaluar/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[0-9a-fA-F-]{36})/evaluar\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[0-9a-fA-F-]{36})/responder/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[0-9a-fA-F-]{36})/responder\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/analizar-cobranza/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/analizar-cobranza\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/analizar-personalizacion/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
@@ -1402,4 +1406,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 253_
+_Total ViewSets: 254_

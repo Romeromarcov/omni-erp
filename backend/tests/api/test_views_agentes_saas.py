@@ -385,34 +385,55 @@ class TestPrediccionAgenteViewSet:
 @pytest.mark.django_db
 class TestAgentesAccionesAnalizar:
     """
-    Las acciones analizar-* consultan tablas de negocio (CxC, StockActual, etc.).
-    Sin datos de negocio retornan listas vacías — suficiente para probar que
-    el endpoint funciona correctamente y aplica aislamiento multi-tenant.
+    Las acciones analizar-* encolan la ejecución en Celery (HTTP 202 Accepted)
+    y en modo eager tras commit ejecutan contra tablas de negocio con aislamiento multi-tenant.
     """
 
-    def test_analizar_cobranza_sin_datos_retorna_lista_vacia(self, client_a, empresa_a):
-        r = client_a.post("/api/agentes/predicciones/analizar-cobranza/", {"persistir": False}, format="json")
-        assert r.status_code == 200
-        assert "sugerencias" in r.data
-        assert isinstance(r.data["sugerencias"], list)
-        assert r.data["total"] == len(r.data["sugerencias"])
+    def test_analizar_cobranza_sin_datos_retorna_lista_vacia(
+        self, client_a, empresa_a, django_capture_on_commit_callbacks
+    ):
+        from apps.agentes.models import EjecucionAgente
 
-    def test_analizar_reorden_sin_datos_retorna_lista_vacia(self, client_a, empresa_a):
-        r = client_a.post(
-            "/api/agentes/predicciones/analizar-reorden/",
-            {"solo_alertas": True, "persistir": False},
-            format="json",
-        )
-        assert r.status_code == 200
-        assert "sugerencias" in r.data
-        assert isinstance(r.data["sugerencias"], list)
+        with django_capture_on_commit_callbacks(execute=True):
+            r = client_a.post("/api/agentes/predicciones/analizar-cobranza/", {"persistir": False}, format="json")
+        assert r.status_code == 202
+        assert r.data["agente"] == "cobranza_estratega"
+        ej = EjecucionAgente.objects.get(pk=r.data["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert "sugerencias" in ej.resultado
+        assert isinstance(ej.resultado["sugerencias"], list)
+        assert ej.resultado["total"] == len(ej.resultado["sugerencias"])
 
-    def test_analizar_personalizacion_sin_datos_ok(self, client_a, empresa_a):
-        r = client_a.post("/api/agentes/predicciones/analizar-personalizacion/", format="json")
-        assert r.status_code == 200
-        assert "flujo_documentos" in r.data
-        assert "listas_precios" in r.data
-        assert "credito_clientes" in r.data
+    def test_analizar_reorden_sin_datos_retorna_lista_vacia(
+        self, client_a, empresa_a, django_capture_on_commit_callbacks
+    ):
+        from apps.agentes.models import EjecucionAgente
+
+        with django_capture_on_commit_callbacks(execute=True):
+            r = client_a.post(
+                "/api/agentes/predicciones/analizar-reorden/",
+                {"solo_alertas": True, "persistir": False},
+                format="json",
+            )
+        assert r.status_code == 202
+        assert r.data["agente"] == "reorden_sugeridor"
+        ej = EjecucionAgente.objects.get(pk=r.data["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert "sugerencias" in ej.resultado
+        assert isinstance(ej.resultado["sugerencias"], list)
+
+    def test_analizar_personalizacion_sin_datos_ok(self, client_a, empresa_a, django_capture_on_commit_callbacks):
+        from apps.agentes.models import EjecucionAgente
+
+        with django_capture_on_commit_callbacks(execute=True):
+            r = client_a.post("/api/agentes/predicciones/analizar-personalizacion/", format="json")
+        assert r.status_code == 202
+        assert r.data["agente"] == "personalizacion_capa2"
+        ej = EjecucionAgente.objects.get(pk=r.data["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert "flujo_documentos" in ej.resultado
+        assert "listas_precios" in ej.resultado
+        assert "credito_clientes" in ej.resultado
 
     def test_analizar_cobranza_requiere_autenticacion(self):
         c = APIClient()

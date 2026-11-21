@@ -121,3 +121,66 @@ class PrediccionAgente(models.Model):
 
     def __str__(self):
         return f"{self.agente}:{self.categoria_predicha}({self.confianza:.0%})"
+
+
+class EjecucionAgente(models.Model):
+    """
+    Registro de una ejecución asíncrona de un agente IA vía Celery (Plan 05 P2-2).
+
+    Permite encolar análisis fuera del request HTTP (`HTTP 202 Accepted`),
+    consultar su progreso (`pendiente` → `ejecutando` → `completado` | `fallido`)
+    y recuperar el resultado estructurado o un error saneado (R-CODE-8).
+    """
+
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente"),
+        ("ejecutando", "Ejecutando"),
+        ("completado", "Completado"),
+        ("fallido", "Fallido"),
+    ]
+
+    id_ejecucion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="ejecuciones_agentes",
+        db_index=True,
+    )
+    agente = models.CharField(
+        max_length=50,
+        choices=PrediccionAgente.AGENTE_CHOICES,
+        db_index=True,
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default="pendiente",
+        db_index=True,
+    )
+    celery_task_id = models.CharField(max_length=255, blank=True, db_index=True)
+    parametros = models.JSONField(default=dict, blank=True)
+    resultado = models.JSONField(default=dict, blank=True)
+    mensaje_error = models.TextField(blank=True)
+    iniciado_por = models.ForeignKey(
+        "core.Usuarios",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ejecuciones_agentes",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha_inicio = models.DateTimeField(null=True, blank=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "agentes_ejecucion_agente"
+        verbose_name = "Ejecución de Agente"
+        verbose_name_plural = "Ejecuciones de Agentes"
+        ordering = ["-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "-fecha_creacion"]),
+            models.Index(fields=["id_empresa", "agente", "estado"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.agente} [{self.estado}] ({self.id_ejecucion})"

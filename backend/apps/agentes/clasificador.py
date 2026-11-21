@@ -40,6 +40,7 @@ class ResultadoClasificacion:
     alternativas: list[dict] = field(default_factory=list)
     modelo_llm: str = "fallback"
     latencia_ms: int = 0
+    prediccion_id: Optional[str] = None
 
 
 # ── Reglas de fallback (sin LLM) ─────────────────────────────────────────────
@@ -256,7 +257,7 @@ Responde SOLO con un JSON válido con esta estructura exacta:
         resultado.latencia_ms = int((time.perf_counter() - t0) * 1000)
 
         if persistir:
-            self._persistir(descripcion, monto, resultado)
+            resultado.prediccion_id = self._persistir(descripcion, monto, resultado)
 
         logger.info(
             "clasificar_gasto | empresa=%s | categoria=%s | confianza=%.2f | modelo=%s | ms=%d",
@@ -325,11 +326,11 @@ Responde SOLO con un JSON válido con esta estructura exacta:
         descripcion: str,
         monto: Optional[Decimal],
         resultado: ResultadoClasificacion,
-    ) -> None:
+    ) -> Optional[str]:
         try:
             from .models import PrediccionAgente
 
-            PrediccionAgente.objects.create(
+            prediccion = PrediccionAgente.objects.create(
                 id_empresa=self.empresa,
                 agente=self.AGENTE_ID,
                 input_texto=descripcion,
@@ -341,8 +342,10 @@ Responde SOLO con un JSON válido con esta estructura exacta:
                 modelo_llm=resultado.modelo_llm,
                 latencia_ms=resultado.latencia_ms,
             )
+            return str(prediccion.pk)
         except Exception as exc:
             logger.error("Error persistiendo prediccion: %s", exc)
+            return None
 
     # ── Métricas ──────────────────────────────────────────────────────────────
 

@@ -30,7 +30,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.agentes.base import OmniAgente, Prediccion, ResultadoAccion
-from apps.agentes.models import ConfigAgente, PrediccionAgente
+from apps.agentes.models import ConfigAgente, EjecucionAgente, PrediccionAgente
 
 pytestmark = pytest.mark.django_db
 
@@ -327,65 +327,99 @@ def client_sin_empresa(db):
 
 
 class TestAnalizarCobranzaView:
-    def test_cartera_vacia_200(self, client_a):
-        resp = client_a.post(URL_BASE + "analizar-cobranza/", {}, format="json")
-        assert resp.status_code == 200
-        assert resp.json() == {"sugerencias": [], "total": 0}
+    def test_cartera_vacia_202(self, client_a, django_capture_on_commit_callbacks):
+        with django_capture_on_commit_callbacks(execute=True):
+            resp = client_a.post(URL_BASE + "analizar-cobranza/", {}, format="json")
+        assert resp.status_code == 202
+        body = resp.json()
+        assert body["agente"] == "cobranza_estratega"
+        ej = EjecucionAgente.objects.get(pk=body["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert ej.resultado == {"sugerencias": [], "total": 0}
 
     def test_sin_empresa_403(self, client_sin_empresa):
         resp = client_sin_empresa.post(URL_BASE + "analizar-cobranza/", {}, format="json")
         assert resp.status_code == 403
 
-    def test_error_de_agente_500_sin_filtrar_detalle(self, client_a):
+    def test_error_de_agente_en_worker_falla_sin_filtrar_detalle(self, client_a, django_capture_on_commit_callbacks):
         with patch(
             "apps.agentes.cobranza.CobranzaEstrategaAgent.analizar",
             side_effect=RuntimeError("detalle interno secreto"),
         ):
+            with django_capture_on_commit_callbacks(execute=True):
+                resp = client_a.post(URL_BASE + "analizar-cobranza/", {}, format="json")
+        assert resp.status_code == 202
+        ej = EjecucionAgente.objects.get(pk=resp.json()["id_ejecucion"])
+        assert ej.estado == "fallido"
+        assert "secreto" not in ej.mensaje_error  # R-CODE-8
+        assert ej.mensaje_error == "No se pudo completar el análisis del agente."
+
+    @pytest.mark.django_db(transaction=True)
+    def test_error_al_encolar_503_sin_filtrar_detalle(self, client_a):
+        with patch(
+            "apps.agentes.tasks.ejecutar_analisis_agente.delay",
+            side_effect=RuntimeError("redis password=secreto"),
+        ):
             resp = client_a.post(URL_BASE + "analizar-cobranza/", {}, format="json")
-        assert resp.status_code == 500
+        assert resp.status_code == 503
         body = resp.json()
         assert body["code"] == "agente_error"
         assert "secreto" not in json.dumps(body)  # R-CODE-8
 
 
 class TestAnalizarReordenView:
-    def test_sin_stock_200_vacio(self, client_a):
-        resp = client_a.post(URL_BASE + "analizar-reorden/", {}, format="json")
-        assert resp.status_code == 200
-        assert resp.json() == {"sugerencias": [], "total": 0}
+    def test_sin_stock_202_vacio(self, client_a, django_capture_on_commit_callbacks):
+        with django_capture_on_commit_callbacks(execute=True):
+            resp = client_a.post(URL_BASE + "analizar-reorden/", {}, format="json")
+        assert resp.status_code == 202
+        body = resp.json()
+        assert body["agente"] == "reorden_sugeridor"
+        ej = EjecucionAgente.objects.get(pk=body["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert ej.resultado == {"sugerencias": [], "total": 0}
 
     def test_sin_empresa_403(self, client_sin_empresa):
         resp = client_sin_empresa.post(URL_BASE + "analizar-reorden/", {}, format="json")
         assert resp.status_code == 403
 
-    def test_error_de_agente_500(self, client_a):
+    def test_error_de_agente_falla_sin_filtrar(self, client_a, django_capture_on_commit_callbacks):
         with patch(
             "apps.agentes.reorden.ReordenSugeridorAgent.analizar",
-            side_effect=RuntimeError("x"),
+            side_effect=RuntimeError("secreto interno"),
         ):
-            resp = client_a.post(URL_BASE + "analizar-reorden/", {}, format="json")
-        assert resp.status_code == 500
-        assert resp.json()["code"] == "agente_error"
+            with django_capture_on_commit_callbacks(execute=True):
+                resp = client_a.post(URL_BASE + "analizar-reorden/", {}, format="json")
+        assert resp.status_code == 202
+        ej = EjecucionAgente.objects.get(pk=resp.json()["id_ejecucion"])
+        assert ej.estado == "fallido"
+        assert "secreto" not in ej.mensaje_error
 
 
 class TestAnalizarPersonalizacionView:
-    def test_empresa_nueva_200(self, client_a):
-        resp = client_a.post(URL_BASE + "analizar-personalizacion/", {}, format="json")
-        assert resp.status_code == 200
+    def test_empresa_nueva_202(self, client_a, django_capture_on_commit_callbacks):
+        with django_capture_on_commit_callbacks(execute=True):
+            resp = client_a.post(URL_BASE + "analizar-personalizacion/", {}, format="json")
+        assert resp.status_code == 202
         body = resp.json()
-        assert set(body.keys()) == {"flujo_documentos", "listas_precios", "credito_clientes"}
+        assert body["agente"] == "personalizacion_capa2"
+        ej = EjecucionAgente.objects.get(pk=body["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert set(ej.resultado.keys()) == {"flujo_documentos", "listas_precios", "credito_clientes"}
 
     def test_sin_empresa_403(self, client_sin_empresa):
         resp = client_sin_empresa.post(URL_BASE + "analizar-personalizacion/", {}, format="json")
         assert resp.status_code == 403
 
-    def test_error_de_agente_500(self, client_a):
+    def test_error_de_agente_falla_en_worker(self, client_a, django_capture_on_commit_callbacks):
         with patch(
             "apps.agentes.personalizacion_agente.PersonalizacionCapa2Agent.analizar",
             side_effect=RuntimeError("x"),
         ):
-            resp = client_a.post(URL_BASE + "analizar-personalizacion/", {}, format="json")
-        assert resp.status_code == 500
+            with django_capture_on_commit_callbacks(execute=True):
+                resp = client_a.post(URL_BASE + "analizar-personalizacion/", {}, format="json")
+        assert resp.status_code == 202
+        ej = EjecucionAgente.objects.get(pk=resp.json()["id_ejecucion"])
+        assert ej.estado == "fallido"
 
 
 class TestClasificarGastoView:
@@ -421,29 +455,36 @@ class TestClasificarGastoView:
         resp = c.post(URL_BASE + "clasificar-gasto/", {"gasto_id": str(gasto.id_gasto)}, format="json")
         assert resp.status_code == 404
 
-    def test_clasifica_sin_aplicar(self, client_a, gasto):
-        resp = client_a.post(
-            URL_BASE + "clasificar-gasto/",
-            {"gasto_id": str(gasto.id_gasto), "aplicar": False},
-            format="json",
-        )
-        assert resp.status_code == 200
-        body = resp.json()
+    def test_clasifica_sin_aplicar(self, client_a, gasto, django_capture_on_commit_callbacks):
+        with django_capture_on_commit_callbacks(execute=True):
+            resp = client_a.post(
+                URL_BASE + "clasificar-gasto/",
+                {"gasto_id": str(gasto.id_gasto), "aplicar": False},
+                format="json",
+            )
+        assert resp.status_code == 202
+        ej = EjecucionAgente.objects.get(pk=resp.json()["id_ejecucion"])
+        assert ej.agente == "clasificador_gastos"
+        assert ej.estado == "completado"
+        body = ej.resultado
         assert body["categoria"] == "alimentacion"  # fallback por keywords
         assert body["aplicado"] is False
         assert body["categoria_id"] is None
         assert body["prediccion_id"] is not None
 
-    def test_clasifica_y_aplica_crea_categoria(self, client_a, gasto):
+    def test_clasifica_y_aplica_crea_categoria(self, client_a, gasto, django_capture_on_commit_callbacks):
         from apps.gastos.models import CategoriaGasto
 
-        resp = client_a.post(
-            URL_BASE + "clasificar-gasto/",
-            {"gasto_id": str(gasto.id_gasto), "aplicar": True},
-            format="json",
-        )
-        assert resp.status_code == 200
-        body = resp.json()
+        with django_capture_on_commit_callbacks(execute=True):
+            resp = client_a.post(
+                URL_BASE + "clasificar-gasto/",
+                {"gasto_id": str(gasto.id_gasto), "aplicar": True},
+                format="json",
+            )
+        assert resp.status_code == 202
+        ej = EjecucionAgente.objects.get(pk=resp.json()["id_ejecucion"])
+        assert ej.estado == "completado"
+        body = ej.resultado
         assert body["aplicado"] is True
 
         gasto.refresh_from_db()
@@ -454,13 +495,16 @@ class TestClasificarGastoView:
         assert pred.resultado_humano == "aceptada"
         assert pred.categoria_correcta == "alimentacion"
 
-    def test_error_de_agente_500(self, client_a, gasto):
+    def test_error_de_agente_falla_en_worker(self, client_a, gasto, django_capture_on_commit_callbacks):
         with patch(
             "apps.agentes.clasificador.ClasificadorGastos.clasificar",
             side_effect=RuntimeError("x"),
         ):
-            resp = client_a.post(URL_BASE + "clasificar-gasto/", {"gasto_id": str(gasto.id_gasto)}, format="json")
-        assert resp.status_code == 500
+            with django_capture_on_commit_callbacks(execute=True):
+                resp = client_a.post(URL_BASE + "clasificar-gasto/", {"gasto_id": str(gasto.id_gasto)}, format="json")
+        assert resp.status_code == 202
+        ej = EjecucionAgente.objects.get(pk=resp.json()["id_ejecucion"])
+        assert ej.estado == "fallido"
 
 
 class TestMetricasYEvaluar:

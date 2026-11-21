@@ -265,6 +265,7 @@ RLS_TABLES = {
     # Lote 3 (CTF-012) — resto de tablas tenant, por app.
     # agentes
     "agentes_config_agente": "id_empresa_id",
+    "agentes_ejecucion_agente": "id_empresa_id",
     "agentes_prediccionagente": "id_empresa_id",
     # almacenes
     "almacenes_almacen": "id_empresa_id",
