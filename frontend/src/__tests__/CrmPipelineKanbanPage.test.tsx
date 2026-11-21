@@ -405,4 +405,114 @@ describe('CrmPipelineKanbanPage', () => {
       descripcion: 'Reabierta',
     });
   });
+
+  it('muestra alerta de error cuando leadsQuery falla y no renderiza columnas vacías falsas', async () => {
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/crm/pipelines/')) {
+        return Promise.resolve([pipelineMock]);
+      }
+      if (url.startsWith('/crm/leads/')) {
+        return Promise.reject(new Error('Fallo de red cargando leads'));
+      }
+      return Promise.resolve([]);
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('Fallo de red cargando leads')).toBeInTheDocument();
+    expect(screen.queryByText('Sin leads en esta etapa.')).not.toBeInTheDocument();
+  });
+
+  it('reinicia el borrador del formulario de actividad al cerrar el detalle o cambiar de lead', async () => {
+    const leadSegundo = {
+      ...leadMock,
+      id_lead: 'lead-2',
+      nombre: 'Luis',
+      apellido: 'Rojas',
+      empresa_nombre: 'Rojas Imports',
+    };
+    mockApiDefault({ leads: [leadMock, leadSegundo], actividades: [] });
+
+    renderPage();
+    await screen.findByText('Ana Martínez');
+    await screen.findByText('Luis Rojas');
+
+    const botonesDetalle = screen.getAllByRole('button', { name: 'Detalle' });
+    fireEvent.click(botonesDetalle[0]);
+    expect(
+      await screen.findByRole('button', { name: 'Registrar actividad' }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/^Asunto/), { target: { value: 'Borrador lead 1' } });
+    fireEvent.change(screen.getByLabelText(/^Descripción/), { target: { value: 'Nota sin guardar' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Registrar actividad' })).not.toBeInTheDocument(),
+    );
+
+    // Abrir el segundo lead debe iniciar con el formulario completamente vacío
+    fireEvent.click(screen.getAllByRole('button', { name: 'Detalle' })[1]);
+    expect(
+      await screen.findByRole('button', { name: 'Registrar actividad' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Asunto/)).toHaveValue('');
+    expect(screen.getByLabelText(/^Descripción/)).toHaveValue('');
+  });
+
+  it('recorre todas las páginas DRF cuando el pipeline supera 20 leads y advierte si queda truncado', async () => {
+    const leadPag2 = {
+      ...leadMock,
+      id_lead: 'lead-21',
+      nombre: 'María',
+      apellido: 'Cárdenas',
+      empresa_nombre: 'Cárdenas C.A.',
+    };
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/crm/pipelines/')) {
+        return Promise.resolve([pipelineMock]);
+      }
+      if (url.includes('page=2')) {
+        return Promise.resolve({
+          count: 21,
+          next: null,
+          previous: '/crm/leads/?pipeline=pipe-1',
+          results: [leadPag2],
+        });
+      }
+      if (url.startsWith('/crm/leads/')) {
+        return Promise.resolve({
+          count: 21,
+          next: '/crm/leads/?pipeline=pipe-1&page=2',
+          previous: null,
+          results: [leadMock],
+        });
+      }
+      return Promise.resolve([]);
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('Ana Martínez')).toBeInTheDocument();
+    expect(await screen.findByText('María Cárdenas')).toBeInTheDocument();
+    expect(get).toHaveBeenCalledWith(expect.stringContaining('page=2'));
+
+    // Si el límite de páginas no alcanza para `next`, reporta truncado y alerta en el Kanban
+    const todosLeads = await crmCrmService.getLeads({ empresa: 'emp-1', pipeline: 'pipe-1' });
+    expect(todosLeads).toHaveLength(2);
+    const truncadoRes = await crmCrmService.getLeadsKanban({ empresa: 'emp-1', pipeline: 'pipe-1' }, 1);
+    expect(truncadoRes.truncado).toBe(true);
+    expect(truncadoRes.total).toBe(21);
+
+    const spyKanban = vi.spyOn(crmCrmService, 'getLeadsKanban').mockResolvedValueOnce({
+      items: [leadMock],
+      total: 520,
+      truncado: true,
+    });
+    renderPage();
+    expect(
+      await screen.findByText(/Se muestran los primeros 1 de 520 leads del pipeline/i),
+    ).toBeInTheDocument();
+    spyKanban.mockRestore();
+  });
 });

@@ -51,6 +51,7 @@ from .services import (
     mover_lead_etapa,
     registrar_actividad_crm,
     reordenar_etapas_pipeline,
+    validar_sin_nul_recursivo,
 )
 
 
@@ -170,8 +171,25 @@ def _django_validation_a_drf(exc: DjangoValidationError) -> ValidationError:
     return ValidationError({"detail": exc.messages})
 
 
+def _validar_param_texto(valor: str | None, campo: str) -> str | None:
+    if valor is None:
+        return None
+    try:
+        validar_sin_nul_recursivo(valor, campo)
+    except DjangoValidationError as exc:
+        raise ValidationError({campo: "Parámetro de consulta inválido."}) from exc
+    return valor
+
+
 class _BaseCrmConnectViewSet(NulSafeFilterMixin, SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet):
     """Mixin base para los ViewSets de CRM ligero (NUL-safe, UUID-safe, soft-delete)."""
+
+    def initial(self, request: Request, *args: Any, **kwargs: Any) -> None:
+        super().initial(request, *args, **kwargs)
+        for key, values in request.query_params.lists():
+            _validar_param_texto(str(key), "error")
+            for val in values:
+                _validar_param_texto(val, str(key))
 
     def _validar_lookup_uuid(self) -> None:
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -385,6 +403,31 @@ class EtapaViewSet(_BaseCrmConnectViewSet):
         self._guardar_validado(instancia)
 
 
+def _annotar_leads_queryset(qs: Any) -> Any:
+    ahora = timezone.now()
+    return qs.select_related("pipeline", "etapa", "propietario", "tarjeta", "perfil", "contacto").annotate(
+        actividades_pendientes_count=Count(
+            "actividades",
+            filter=Q(actividades__activo=True, actividades__completada=False),
+            distinct=True,
+        ),
+        actividades_vencidas_count=Count(
+            "actividades",
+            filter=Q(
+                actividades__activo=True,
+                actividades__completada=False,
+                actividades__fecha_vencimiento__lt=ahora,
+            ),
+            distinct=True,
+        ),
+    )
+
+
+def _lead_serializable(lead_pk: Any, user: Any) -> Lead | None:
+    """Recupera un ``Lead`` anotado por PK y empresa visible sin depender de ``query_params``."""
+    return _annotar_leads_queryset(Lead.objects.filter(pk=lead_pk, id_empresa__in=get_empresas_visible(user))).first()
+
+
 class LeadViewSet(_BaseCrmConnectViewSet):
     """CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``."""
 
@@ -404,29 +447,7 @@ class LeadViewSet(_BaseCrmConnectViewSet):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Lead.objects.none()
-        ahora = timezone.now()
-        qs = (
-            super()
-            .get_queryset()
-            .filter(id_empresa__in=_empresas(self.request))
-            .select_related("pipeline", "etapa", "propietario", "tarjeta", "perfil", "contacto")
-            .annotate(
-                actividades_pendientes_count=Count(
-                    "actividades",
-                    filter=Q(actividades__activo=True, actividades__completada=False),
-                    distinct=True,
-                ),
-                actividades_vencidas_count=Count(
-                    "actividades",
-                    filter=Q(
-                        actividades__activo=True,
-                        actividades__completada=False,
-                        actividades__fecha_vencimiento__lt=ahora,
-                    ),
-                    distinct=True,
-                ),
-            )
-        )
+        qs = _annotar_leads_queryset(super().get_queryset().filter(id_empresa__in=_empresas(self.request)))
         params = self.request.query_params
         empresa_param = params.get("empresa") or params.get("empresa_id")
         if empresa_param:
@@ -441,7 +462,8 @@ class LeadViewSet(_BaseCrmConnectViewSet):
                 qs = qs.filter(**{field_name: validar_uuid_param(val, param_name)})
         fuente = params.get("fuente")
         if fuente:
-            qs = qs.filter(fuente=fuente.strip().upper())
+            fuente_limpia = _validar_param_texto(fuente, "fuente") or ""
+            qs = qs.filter(fuente=fuente_limpia.strip().upper())
         return qs
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
@@ -482,7 +504,7 @@ class LeadViewSet(_BaseCrmConnectViewSet):
         except IntegrityError as exc:
             raise ValidationError({"detail": "No se pudo crear el lead por restricción de integridad."}) from exc
 
-        lead_refrescado = self.get_queryset().filter(pk=lead.pk).first() or lead
+        lead_refrescado = _lead_serializable(lead.pk, request.user) or lead
         out = self.get_serializer(lead_refrescado)
         headers = self.get_success_headers(out.data)
         return Response(out.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -519,7 +541,7 @@ class LeadViewSet(_BaseCrmConnectViewSet):
         except (CrmError, DjangoValidationError) as exc:
             return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="error")
 
-        lead_refrescado = self.get_queryset().filter(pk=lead_actualizado.pk).first() or lead_actualizado
+        lead_refrescado = _lead_serializable(lead_actualizado.pk, request.user) or lead_actualizado
         return Response(
             LeadSerializer(lead_refrescado, context=self.get_serializer_context()).data,
             status=status.HTTP_200_OK,
@@ -563,10 +585,12 @@ class ActividadViewSet(_BaseCrmConnectViewSet):
             qs = qs.filter(asignado_a_id=validar_uuid_param(asignado_param, "asignado_a"))
         tipo_param = params.get("tipo")
         if tipo_param:
-            qs = qs.filter(tipo=tipo_param.strip().upper())
+            tipo_limpio = _validar_param_texto(tipo_param, "tipo") or ""
+            qs = qs.filter(tipo=tipo_limpio.strip().upper())
         completada_param = params.get("completada")
         if completada_param is not None and completada_param != "":
-            low = completada_param.strip().lower()
+            comp_limpio = _validar_param_texto(completada_param, "completada") or ""
+            low = comp_limpio.strip().lower()
             if low in ("true", "1", "yes"):
                 qs = qs.filter(completada=True)
             elif low in ("false", "0", "no"):

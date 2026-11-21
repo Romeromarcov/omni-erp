@@ -859,6 +859,76 @@ class TestCrmKanbanActividadesAPI:
         act_ser = ActividadSerializer(act_a).data
         assert act_ser["asignado_a_nombre"] == ""
 
+        # Hallazgos Ronda 1 (#1 y #4):
+        # 1) NUL en filtros (?fuente=, ?tipo= en activar) + ?empresa=invalid en POST sin evaluación post-commit
+        assert client_a.get("/api/crm/leads/?fuente=a%00b").status_code == 400
+        leads_antes = Lead.objects.filter(id_empresa=empresa_a).count()
+        assert (
+            client_a.post(
+                "/api/crm/leads/?fuente=a%00b",
+                {"id_empresa": str(empresa_a.pk), "nombre": "NoDebeCrearse"},
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert Lead.objects.filter(id_empresa=empresa_a).count() == leads_antes
+
+        r_post_invalid_q = client_a.post(
+            "/api/crm/leads/?empresa=invalid",
+            {"id_empresa": str(empresa_a.pk), "nombre": "LeadConQueryIrrelevante"},
+            format="json",
+        )
+        assert r_post_invalid_q.status_code == 201
+        assert r_post_invalid_q.data["actividades_pendientes"] == 0
+        assert r_post_invalid_q.data["actividades_vencidas"] == 0
+
+        assert (
+            client_a.post(
+                f"/api/crm/actividades/{act_a.pk}/activar/?tipo=a%00b",
+                {},
+                format="json",
+            ).status_code
+            == 400
+        )
+
+        # 4) PATCH/POST rechazando pipeline/etapa/lead con activo=False
+        pipe_inactivo = Pipeline.objects.create(id_empresa=empresa_a, nombre="Pipe Inactivo", activo=False)
+        etapa_inactiva = Etapa.objects.create(
+            id_empresa=empresa_a, pipeline=pipe_a, nombre="Etapa Inactiva", orden=99, activo=False
+        )
+        lead_inactivo = Lead.objects.create(
+            id_empresa=empresa_a,
+            nombre="Lead Inactivo",
+            pipeline=pipe_a,
+            etapa=etapa_a,
+            propietario=user_a,
+            activo=False,
+        )
+        assert (
+            client_a.patch(
+                f"/api/crm/leads/{lead_a.pk}/",
+                {"pipeline": str(pipe_inactivo.pk)},
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_a.patch(
+                f"/api/crm/leads/{lead_a.pk}/",
+                {"etapa": str(etapa_inactiva.pk)},
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_a.patch(
+                f"/api/crm/actividades/{act_a.pk}/",
+                {"lead": str(lead_inactivo.pk)},
+                format="json",
+            ).status_code
+            == 400
+        )
+
     def test_viewsets_swagger_fake_view_y_usuario_sin_empresa(self, empresa_a):
         for vs_cls in (PipelineViewSet, EtapaViewSet, LeadViewSet, ActividadViewSet):
             vs = vs_cls()
@@ -1065,6 +1135,22 @@ class TestCrmMcpTools:
                     res_err = crm_mcp.crm_crear_lead(tok_write_a, nombre="Fallo")
                 assert "secret" not in res_err["error"]
                 assert "DETAIL" not in res_err["error"]
+
+                # Token cuyo creado_por está inactivo NO debe asignarlo como creador de la actividad
+                user_inactivo = Usuarios.objects.create_user(
+                    username="crm_mcp_inactivo",
+                    password=None,
+                    is_active=False,
+                )
+                user_inactivo.empresas.add(empresa_a)
+                tok_creador_inactivo = _token(empresa_a, ["crm:write"], creado_por=user_inactivo)
+                act_sin_creador = crm_mcp.crm_registrar_actividad(
+                    tok_creador_inactivo,
+                    lead_id=lead_id,
+                    asunto="Sin creador inactivo",
+                )
+                assert act_sin_creador["asunto"] == "Sin creador inactivo"
+                assert Actividad.objects.get(pk=act_sin_creador["id_actividad"]).creado_por is None
         finally:
             rls.apply_system_default()
             if rls_test_role is not None:

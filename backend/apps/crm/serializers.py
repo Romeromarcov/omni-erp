@@ -323,6 +323,11 @@ class LeadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):
 
         empresa = inst.id_empresa if inst is not None else attrs.get("id_empresa") or _empresa_desde_contexto(self)
 
+        if "pipeline" in attrs and attrs["pipeline"] is not None and not attrs["pipeline"].activo:
+            raise serializers.ValidationError({"pipeline": "El pipeline seleccionado está inactivo."})
+        if "etapa" in attrs and attrs["etapa"] is not None and not attrs["etapa"].activo:
+            raise serializers.ValidationError({"etapa": "La etapa seleccionada está inactiva."})
+
         etapa = attrs.get("etapa") or (inst.etapa if inst is not None else None)
         pipeline = attrs.get("pipeline") or (inst.pipeline if inst is not None else None)
         if inst is None and pipeline is None and etapa is not None:
@@ -472,6 +477,8 @@ class ActividadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):
             raise serializers.ValidationError({"id_empresa": "La empresa de la actividad es inmutable."})
 
         lead = attrs.get("lead") or (inst.lead if inst is not None else None)
+        if "lead" in attrs and attrs["lead"] is not None and not attrs["lead"].activo:
+            raise serializers.ValidationError({"lead": "El lead seleccionado está inactivo."})
         empresa = (
             inst.id_empresa
             if inst is not None

@@ -50,6 +50,14 @@ export interface CreateActividadPayload {
   tarea?: string | null;
 }
 
+export interface LeadsKanbanPageResult {
+  items: CrmLead[];
+  total: number;
+  truncado: boolean;
+}
+
+const MAX_PAGINAS_KANBAN = 25;
+
 function buildQuery(entries: Array<[string, string | boolean | undefined | null]>): string {
   const qs = new URLSearchParams();
   for (const [key, val] of entries) {
@@ -60,13 +68,35 @@ function buildQuery(entries: Array<[string, string | boolean | undefined | null]
   return encoded ? `?${encoded}` : '';
 }
 
+async function fetchTodasPaginas<T>(
+  endpoint: string,
+  maxPaginas = MAX_PAGINAS_KANBAN,
+): Promise<{ items: T[]; total: number; truncado: boolean }> {
+  const sep = endpoint.includes('?') ? '&' : '?';
+  const acumulado: T[] = [];
+  let total: number | null = null;
+
+  for (let page = 1; page <= maxPaginas; page++) {
+    const url = page === 1 ? endpoint : `${endpoint}${sep}page=${page}`;
+    const raw = await get<PaginatedResponse<T> | T[]>(url);
+    acumulado.push(...toList<T>(raw));
+    if (!Array.isArray(raw) && typeof raw.count === 'number') {
+      total = raw.count;
+    }
+    const next = Array.isArray(raw) ? null : (raw.next ?? null);
+    if (!next) {
+      return { items: acumulado, total: total ?? acumulado.length, truncado: false };
+    }
+  }
+
+  return { items: acumulado, total: total ?? acumulado.length, truncado: true };
+}
+
 export const crmCrmService = {
   getPipelines: async (empresaId?: string | null): Promise<CrmPipeline[]> => {
     const query = buildQuery([['empresa', empresaId]]);
-    const raw = await get<PaginatedResponse<CrmPipeline> | CrmPipeline[]>(
-      `/crm/pipelines/${query}`,
-    );
-    return toList<CrmPipeline>(raw);
+    const { items } = await fetchTodasPaginas<CrmPipeline>(`/crm/pipelines/${query}`);
+    return items;
   },
 
   asegurarPipelinePredeterminado: async (empresaId?: string | null): Promise<CrmPipeline> => {
@@ -85,12 +115,32 @@ export const crmCrmService = {
       ['empresa', params?.empresa],
       ['pipeline', params?.pipeline],
     ]);
-    const raw = await get<PaginatedResponse<CrmEtapa> | CrmEtapa[]>(`/crm/etapas/${query}`);
-    return toList<CrmEtapa>(raw);
+    const { items } = await fetchTodasPaginas<CrmEtapa>(`/crm/etapas/${query}`);
+    return items;
   },
 
   createEtapa: async (payload: CreateEtapaPayload): Promise<CrmEtapa> =>
     post<CrmEtapa>('/crm/etapas/', payload as unknown as Record<string, unknown>),
+
+  getLeadsKanban: async (
+    params?: {
+      empresa?: string | null;
+      pipeline?: string | null;
+      etapa?: string | null;
+      fuente?: string | null;
+      search?: string | null;
+    },
+    maxPaginas = MAX_PAGINAS_KANBAN,
+  ): Promise<LeadsKanbanPageResult> => {
+    const query = buildQuery([
+      ['empresa', params?.empresa],
+      ['pipeline', params?.pipeline],
+      ['etapa', params?.etapa],
+      ['fuente', params?.fuente],
+      ['search', params?.search],
+    ]);
+    return fetchTodasPaginas<CrmLead>(`/crm/leads/${query}`, maxPaginas);
+  },
 
   getLeads: async (params?: {
     empresa?: string | null;
@@ -99,15 +149,8 @@ export const crmCrmService = {
     fuente?: string | null;
     search?: string | null;
   }): Promise<CrmLead[]> => {
-    const query = buildQuery([
-      ['empresa', params?.empresa],
-      ['pipeline', params?.pipeline],
-      ['etapa', params?.etapa],
-      ['fuente', params?.fuente],
-      ['search', params?.search],
-    ]);
-    const raw = await get<PaginatedResponse<CrmLead> | CrmLead[]>(`/crm/leads/${query}`);
-    return toList<CrmLead>(raw);
+    const { items } = await crmCrmService.getLeadsKanban(params);
+    return items;
   },
 
   createLead: async (payload: CreateLeadPayload): Promise<CrmLead> =>
@@ -131,10 +174,8 @@ export const crmCrmService = {
       ['completada', params?.completada ?? undefined],
       ['tipo', params?.tipo],
     ]);
-    const raw = await get<PaginatedResponse<CrmActividad> | CrmActividad[]>(
-      `/crm/actividades/${query}`,
-    );
-    return toList<CrmActividad>(raw);
+    const { items } = await fetchTodasPaginas<CrmActividad>(`/crm/actividades/${query}`);
+    return items;
   },
 
   createActividad: async (payload: CreateActividadPayload): Promise<CrmActividad> =>

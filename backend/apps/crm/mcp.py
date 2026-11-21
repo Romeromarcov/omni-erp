@@ -463,6 +463,7 @@ def crm_registrar_actividad(
             token_obj.creado_por
             if token_obj is not None
             and token_obj.creado_por is not None
+            and token_obj.creado_por.is_active
             and token_obj.creado_por.empresas.filter(pk=empresa.pk).exists()
             else None
         )

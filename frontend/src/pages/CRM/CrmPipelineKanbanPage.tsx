@@ -145,7 +145,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
       search: busqueda.trim() || null,
     }),
     queryFn: () =>
-      crmCrmService.getLeads({
+      crmCrmService.getLeadsKanban({
         empresa: empresaId,
         pipeline: pipelineActivoId,
         fuente: fuenteFiltro || undefined,
@@ -154,7 +154,9 @@ const CrmPipelineKanbanPage: React.FC = () => {
     enabled: Boolean(pipelineActivoId),
   });
 
-  const leads = useMemo(() => leadsQuery.data ?? [], [leadsQuery.data]);
+  const leads = useMemo(() => leadsQuery.data?.items ?? [], [leadsQuery.data]);
+  const leadsTruncados = Boolean(leadsQuery.data?.truncado);
+  const leadsTotal = leadsQuery.data?.total ?? leads.length;
 
   const leadDetalle: CrmLead | null = useMemo(() => {
     if (!leadDetalleId) return null;
@@ -286,6 +288,18 @@ const CrmPipelineKanbanPage: React.FC = () => {
     },
   });
 
+  function abrirDetalleLead(id: string) {
+    setActividadForm(ACTIVIDAD_FORM_VACIO);
+    setActividadError('');
+    setLeadDetalleId(id);
+  }
+
+  function cerrarDetalleLead() {
+    setActividadForm(ACTIVIDAD_FORM_VACIO);
+    setActividadError('');
+    setLeadDetalleId(null);
+  }
+
   function abrirNuevoLead() {
     const primeraAbierta =
       etapasOrdenadas.find((e) => e.tipo === 'ABIERTA')?.id_etapa ??
@@ -351,7 +365,10 @@ const CrmPipelineKanbanPage: React.FC = () => {
             size="small"
             label="Pipeline"
             value={pipelineActivoId}
-            onChange={(ev) => setPipelineSelId(ev.target.value)}
+            onChange={(ev) => {
+              cerrarDetalleLead();
+              setPipelineSelId(ev.target.value);
+            }}
             sx={{ minWidth: 220 }}
             disabled={pipelines.length === 0}
           >
@@ -421,15 +438,25 @@ const CrmPipelineKanbanPage: React.FC = () => {
             Inicializar pipeline predeterminado
           </Button>
         </Paper>
+      ) : leadsQuery.isError ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {mensajeDeError(leadsQuery.error, 'No se pudieron cargar los leads del pipeline.')}
+        </Alert>
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: 2,
-            alignItems: 'start',
-          }}
-        >
+        <>
+          {leadsTruncados && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {`Se muestran los primeros ${leads.length} de ${leadsTotal} leads del pipeline. Usa los filtros para acotar la búsqueda.`}
+            </Alert>
+          )}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 2,
+              alignItems: 'start',
+            }}
+          >
           {etapasOrdenadas.map((etapa) => {
             const etapaId = etapa.id_etapa ?? '';
             const tarjetas = leadsPorEtapa.get(etapaId) ?? [];
@@ -512,10 +539,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
                                 variant="body2"
                                 fontWeight={700}
                                 sx={{ cursor: 'pointer' }}
-                                onClick={() => {
-                                  setActividadError('');
-                                  setLeadDetalleId(leadId);
-                                }}
+                                onClick={() => abrirDetalleLead(leadId)}
                               >
                                 {nombreCompleto}
                               </Typography>
@@ -582,10 +606,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
                               </TextField>
                               <Button
                                 size="small"
-                                onClick={() => {
-                                  setActividadError('');
-                                  setLeadDetalleId(leadId);
-                                }}
+                                onClick={() => abrirDetalleLead(leadId)}
                               >
                                 Detalle
                               </Button>
@@ -599,7 +620,8 @@ const CrmPipelineKanbanPage: React.FC = () => {
               </Paper>
             );
           })}
-        </Box>
+          </Box>
+        </>
       )}
 
       {/* Diálogo Nuevo Lead Manual */}
@@ -707,7 +729,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
       <Drawer
         anchor="right"
         open={Boolean(leadDetalle)}
-        onClose={() => setLeadDetalleId(null)}
+        onClose={cerrarDetalleLead}
         PaperProps={{ sx: { width: { xs: '100%', sm: 440 }, p: 2.5 } }}
       >
         {leadDetalle && (
@@ -725,7 +747,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
               </Box>
               <IconButton
                 aria-label="Cerrar detalle"
-                onClick={() => setLeadDetalleId(null)}
+                onClick={cerrarDetalleLead}
               >
                 <CloseOutlined />
               </IconButton>
