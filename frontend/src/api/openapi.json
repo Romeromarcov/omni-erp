@@ -7310,6 +7310,290 @@
                 }
             ]
         },
+        "/connect/perfiles/": {
+            "get": {
+                "operationId": "connect_perfiles_list",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Perfil"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "post": {
+                "operationId": "connect_perfiles_create",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Perfil"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Perfil"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": []
+        },
+        "/connect/perfiles/mi-perfil/": {
+            "get": {
+                "operationId": "connect_perfiles_mi-perfil_read",
+                "summary": "Obtiene el perfil Connect propio del usuario autenticado",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa visible activa (opcional).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MiPerfil"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin acceso"
+                    },
+                    "404": {
+                        "description": "Perfil no configurado"
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "patch": {
+                "operationId": "connect_perfiles_mi-perfil_partial_update",
+                "summary": "Crea o actualiza el perfil Connect propio del usuario autenticado",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MiPerfil"
+                        }
+                    },
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa visible activa (opcional).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MiPerfil"
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MiPerfil"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "403": {
+                        "description": "Sin acceso"
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": []
+        },
+        "/connect/perfiles/{id_perfil}/": {
+            "get": {
+                "operationId": "connect_perfiles_read",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Perfil"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "put": {
+                "operationId": "connect_perfiles_update",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Perfil"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Perfil"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "patch": {
+                "operationId": "connect_perfiles_partial_update",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Perfil"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Perfil"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "delete": {
+                "operationId": "connect_perfiles_delete",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_perfil",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Perfil Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/contabilidad/asientos-contables/": {
             "get": {
                 "operationId": "contabilidad_asientos-contables_list",
@@ -38616,6 +38900,158 @@
                 }
             ]
         },
+        "/public/connect/{slug}/": {
+            "get": {
+                "operationId": "public_connect_read",
+                "summary": "Detalle público del perfil Connect y registro de toque",
+                "description": "GET /api/public/connect/<slug>/ — Perfil digital público y registro de toque.",
+                "parameters": [
+                    {
+                        "name": "uid",
+                        "in": "query",
+                        "description": "UID hexadecimal de la tarjeta NFC física (opcional).",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "origen",
+                        "in": "query",
+                        "description": "Origen de visita pública: NFC, QR o ENLACE (opcional).",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PublicPerfil"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos"
+                    },
+                    "404": {
+                        "description": "Perfil no encontrado"
+                    }
+                },
+                "tags": [
+                    "public"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "slug",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/public/connect/{slug}/leads/": {
+            "post": {
+                "operationId": "public_connect_leads_create",
+                "summary": "Captura pública de lead desde perfil Omni Connect",
+                "description": "POST /api/public/connect/<slug>/leads/ — Captura pública de lead con consentimiento.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PublicLeadCreate"
+                        }
+                    },
+                    {
+                        "name": "uid",
+                        "in": "query",
+                        "description": "UID hexadecimal de la tarjeta NFC física (opcional).",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "origen",
+                        "in": "query",
+                        "description": "Origen de visita pública: NFC, QR o ENLACE (opcional).",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PublicLeadCreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos o consentimiento inválidos"
+                    },
+                    "404": {
+                        "description": "Perfil no encontrado"
+                    },
+                    "429": {
+                        "description": "Límite de envíos excedido"
+                    }
+                },
+                "tags": [
+                    "public"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "slug",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/public/connect/{slug}/vcard/": {
+            "get": {
+                "operationId": "public_connect_vcard_list",
+                "summary": "Descarga de archivo vCard (.vcf) del perfil público",
+                "description": "GET /api/public/connect/<slug>/vcard/ — Descarga de contacto vCard RFC 6350.",
+                "parameters": [
+                    {
+                        "name": "uid",
+                        "in": "query",
+                        "description": "UID hexadecimal de la tarjeta NFC física (opcional).",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Archivo vCard RFC 6350",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos"
+                    },
+                    "404": {
+                        "description": "Perfil no encontrado"
+                    }
+                },
+                "produces": [
+                    "application/json",
+                    "text/vcard"
+                ],
+                "tags": [
+                    "public"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "slug",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
         "/rrhh/beneficios-empleado/": {
             "get": {
                 "operationId": "rrhh_beneficios-empleado_list",
@@ -52745,6 +53181,189 @@
                 }
             }
         },
+        "Perfil": {
+            "required": [
+                "slug",
+                "nombre_publico"
+            ],
+            "type": "object",
+            "properties": {
+                "id_perfil": {
+                    "title": "Id perfil",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "usuario": {
+                    "title": "Usuario",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "slug": {
+                    "title": "Slug",
+                    "type": "string",
+                    "maxLength": 60,
+                    "minLength": 1
+                },
+                "nombre_publico": {
+                    "title": "Nombre publico",
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 1
+                },
+                "cargo": {
+                    "title": "Cargo",
+                    "type": "string",
+                    "maxLength": 150
+                },
+                "bio": {
+                    "title": "Bio",
+                    "type": "string"
+                },
+                "telefono_publico": {
+                    "title": "Telefono publico",
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "email_publico": {
+                    "title": "Email publico",
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                },
+                "tema": {
+                    "title": "Tema",
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 1
+                },
+                "botones": {
+                    "title": "Botones",
+                    "type": "object"
+                },
+                "plantilla_bloqueada": {
+                    "title": "Plantilla bloqueada",
+                    "type": "boolean"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "MiPerfil": {
+            "required": [
+                "slug",
+                "nombre_publico"
+            ],
+            "type": "object",
+            "properties": {
+                "id_perfil": {
+                    "title": "Id perfil",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "usuario": {
+                    "title": "Usuario",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "slug": {
+                    "title": "Slug",
+                    "type": "string",
+                    "maxLength": 60,
+                    "minLength": 1
+                },
+                "nombre_publico": {
+                    "title": "Nombre publico",
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 1
+                },
+                "cargo": {
+                    "title": "Cargo",
+                    "type": "string",
+                    "maxLength": 150
+                },
+                "bio": {
+                    "title": "Bio",
+                    "type": "string"
+                },
+                "telefono_publico": {
+                    "title": "Telefono publico",
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "email_publico": {
+                    "title": "Email publico",
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                },
+                "tema": {
+                    "title": "Tema",
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 1
+                },
+                "botones": {
+                    "title": "Botones",
+                    "type": "object"
+                },
+                "plantilla_bloqueada": {
+                    "title": "Plantilla bloqueada",
+                    "type": "boolean"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
         "DetalleAsiento": {
             "required": [
                 "id_asiento",
@@ -57771,7 +58390,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T12:20:59.517772-04:00"
+                    "default": "2026-11-21T15:12:57.966915-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -66233,6 +66852,217 @@
                     "type": "string",
                     "format": "uuid",
                     "x-nullable": true
+                }
+            }
+        },
+        "ConnectBoton": {
+            "type": "object",
+            "properties": {
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "etiqueta": {
+                    "title": "Etiqueta",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "valor": {
+                    "title": "Valor",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                }
+            }
+        },
+        "PublicPerfil": {
+            "type": "object",
+            "properties": {
+                "slug": {
+                    "title": "Slug",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nombre_publico": {
+                    "title": "Nombre publico",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "cargo": {
+                    "title": "Cargo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "bio": {
+                    "title": "Bio",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "telefono_publico": {
+                    "title": "Telefono publico",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "email_publico": {
+                    "title": "Email publico",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tema": {
+                    "title": "Tema",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "botones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConnectBoton"
+                    },
+                    "readOnly": true
+                },
+                "empresa_nombre": {
+                    "title": "Empresa nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "acepta_leads": {
+                    "title": "Acepta leads",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "consentimiento_texto": {
+                    "title": "Consentimiento texto",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                }
+            }
+        },
+        "PublicLeadCreate": {
+            "required": [
+                "nombre",
+                "consentimiento_aceptado",
+                "consentimiento_texto"
+            ],
+            "type": "object",
+            "properties": {
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 1
+                },
+                "apellido": {
+                    "title": "Apellido",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 150
+                },
+                "empresa_nombre": {
+                    "title": "Empresa nombre",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 255
+                },
+                "email": {
+                    "title": "Email",
+                    "type": "string",
+                    "format": "email",
+                    "default": "",
+                    "maxLength": 254
+                },
+                "telefono": {
+                    "title": "Telefono",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 50
+                },
+                "mensaje": {
+                    "title": "Mensaje",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 2000
+                },
+                "fuente": {
+                    "title": "Fuente",
+                    "type": "string",
+                    "enum": [
+                        "NFC",
+                        "QR",
+                        "ENLACE"
+                    ],
+                    "default": ""
+                },
+                "origen": {
+                    "title": "Origen",
+                    "type": "string",
+                    "enum": [
+                        "NFC",
+                        "QR",
+                        "ENLACE"
+                    ],
+                    "default": ""
+                },
+                "uid": {
+                    "title": "Uid",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 32
+                },
+                "uid_chip": {
+                    "title": "Uid chip",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 32
+                },
+                "consentimiento_aceptado": {
+                    "title": "Consentimiento aceptado",
+                    "type": "boolean"
+                },
+                "consentimiento_texto": {
+                    "title": "Consentimiento texto",
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                },
+                "website": {
+                    "title": "Website",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
+                },
+                "company_url": {
+                    "title": "Company url",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
+                }
+            }
+        },
+        "PublicLeadCreateResponse": {
+            "type": "object",
+            "properties": {
+                "ok": {
+                    "title": "Ok",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "mensaje": {
+                    "title": "Mensaje",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
                 }
             }
         },

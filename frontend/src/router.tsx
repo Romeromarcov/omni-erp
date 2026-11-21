@@ -15,6 +15,7 @@ import { fiscalRoutes } from './routes/fiscalRoutes';
 import { cxcRoutes } from './routes/cxcRoutes';
 import { cxcLubrikcaRoutes } from './routes/cxcLubrikcaRoutes';
 import { crmRoutes } from './routes/crmRoutes';
+import { connectRoutes } from './routes/connectRoutes';
 import { servicioClienteRoutes } from './routes/servicioClienteRoutes';
 import { gestionDocumentalRoutes } from './routes/gestionDocumentalRoutes';
 import { proveedoresRoutes } from './routes/proveedoresRoutes';
@@ -42,8 +43,9 @@ import { isModuleEnabled, isCxcLubrikcaVisible } from './config/appProfile';
 import { getEmpresaId } from './utils/empresa';
 
 const PosPage = lazy(() => import('./pages/Ventas/POS/PosPage'));
+const PublicConnectCardPage = lazy(() => import('./pages/Connect/PublicConnectCardPage'));
 
-export default function AppRouter() {
+function AuthenticatedApp() {
   const { token, isLoading, user } = useAuth();
   // CxC Lubrikca solo se monta para empresas habilitadas o el admin del sistema
   // (además del gate de build). Evita el acceso por URL directa desde otras empresas.
@@ -61,6 +63,69 @@ export default function AppRouter() {
     );
   }
 
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/" element={<LoginPage />} />
+
+      {/* POS de mostrador (sub-fase 1.G): pantalla completa, sin AppLayout. */}
+      {token && isModuleEnabled('ventas') && (
+        <Route
+          path="/pos"
+          element={
+            <Suspense fallback={<div>Cargando…</div>}>
+              <PosPage />
+            </Suspense>
+          }
+        />
+      )}
+
+      {token && (
+        <Route element={<AppLayout />}>
+          {coreRoutes()}
+          {isModuleEnabled('ventas') ? ventasRoutes() : null}
+          {finanzasRoutes()}
+          {configuracionRoutes()}
+          {integracionesRoutes()}
+          {isModuleEnabled('inventario') ? inventarioRoutes() : null}
+          {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
+          {cxcRoutes()}
+          {cxcLubrikcaOn ? cxcLubrikcaRoutes() : null}
+          {crmRoutes()}
+          {isModuleEnabled('connect') ? connectRoutes() : null}
+          {servicioClienteRoutes()}
+          {gestionDocumentalRoutes()}
+          {proveedoresRoutes()}
+          {gastosRoutes()}
+          {despachoRoutes()}
+          {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
+          {costosRoutes()}
+          {isModuleEnabled('compras') ? comprasRoutes() : null}
+          {isModuleEnabled('rrhh') ? rrhhRoutes() : null}
+          {controlAsistenciaRoutes()}
+          {isModuleEnabled('contabilidad') ? contabilidadRoutes() : null}
+          {isModuleEnabled('tesoreria') ? tesoreriaRoutes() : null}
+          {isModuleEnabled('escaner') ? escanerRoutes() : null}
+          {saasRoutes()}
+          {aprobacionesRoutes()}
+          {notificacionesRoutes()}
+          {bancaElectronicaRoutes()}
+          {migracionDatosRoutes()}
+          {integracionB2bRoutes()}
+          {agentesRoutes()}
+          {isModuleEnabled('activaciones') ? activacionesRoutes() : null}
+          {isModuleEnabled('tareas') ? tareasRoutes() : null}
+          {personalizacionRoutes()}
+        </Route>
+      )}
+
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
+  );
+}
+
+export default function AppRouter() {
   // Router adaptativo: rutas limpias en web, hash routing en shells nativos
   // (Electron file:// / Capacitor) donde la recarga por ruta no resuelve.
   const Router = shouldUseHashRouter() ? HashRouter : BrowserRouter;
@@ -68,61 +133,15 @@ export default function AppRouter() {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/" element={<LoginPage />} />
-
-        {/* POS de mostrador (sub-fase 1.G): pantalla completa, sin AppLayout. */}
-        {token && isModuleEnabled('ventas') && (
-          <Route
-            path="/pos"
-            element={
-              <Suspense fallback={<div>Cargando…</div>}>
-                <PosPage />
-              </Suspense>
-            }
-          />
-        )}
-
-        {token && (
-          <Route element={<AppLayout />}>
-            {coreRoutes()}
-            {isModuleEnabled('ventas') ? ventasRoutes() : null}
-            {finanzasRoutes()}
-            {configuracionRoutes()}
-            {integracionesRoutes()}
-            {isModuleEnabled('inventario') ? inventarioRoutes() : null}
-            {isModuleEnabled('fiscal') ? fiscalRoutes() : null}
-            {cxcRoutes()}
-            {cxcLubrikcaOn ? cxcLubrikcaRoutes() : null}
-            {crmRoutes()}
-            {servicioClienteRoutes()}
-            {gestionDocumentalRoutes()}
-            {proveedoresRoutes()}
-            {gastosRoutes()}
-            {despachoRoutes()}
-            {isModuleEnabled('manufactura') ? manufacturaRoutes() : null}
-            {costosRoutes()}
-            {isModuleEnabled('compras') ? comprasRoutes() : null}
-            {isModuleEnabled('rrhh') ? rrhhRoutes() : null}
-            {controlAsistenciaRoutes()}
-            {isModuleEnabled('contabilidad') ? contabilidadRoutes() : null}
-            {isModuleEnabled('tesoreria') ? tesoreriaRoutes() : null}
-            {isModuleEnabled('escaner') ? escanerRoutes() : null}
-            {saasRoutes()}
-            {aprobacionesRoutes()}
-            {notificacionesRoutes()}
-            {bancaElectronicaRoutes()}
-            {migracionDatosRoutes()}
-            {integracionB2bRoutes()}
-            {agentesRoutes()}
-            {isModuleEnabled('activaciones') ? activacionesRoutes() : null}
-            {isModuleEnabled('tareas') ? tareasRoutes() : null}
-            {personalizacionRoutes()}
-          </Route>
-        )}
-
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route
+          path="/c/:slug"
+          element={
+            <Suspense fallback={<div>Cargando…</div>}>
+              <PublicConnectCardPage />
+            </Suspense>
+          }
+        />
+        <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </Router>
   );

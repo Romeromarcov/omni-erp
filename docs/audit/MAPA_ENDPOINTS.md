@@ -4,6 +4,9 @@
 |---|---|---|---|---|---|
 | `` | APIRootView | — | — | — | IsAuthenticated |
 | `<drf_format_suffix:format>` | APIRootView | — | — | — | IsAuthenticated |
+| `<str:slug>/` | PublicPerfilDetailView | — | — | — | AllowAny |
+| `<str:slug>/leads/` | PublicLeadCreateView | — | — | — | AllowAny |
+| `<str:slug>/vcard/` | PublicPerfilVCardView | — | — | — | AllowAny |
 | `^abonos-cxc/$` | AbonoCxCViewSet | AbonoCxC | — | ✅ | IsAuthenticated |
 | `^abonos-cxc/(?P<pk>[^/.]+)/$` | AbonoCxCViewSet | AbonoCxC | — | ✅ | IsAuthenticated |
 | `^abonos-cxc/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AbonoCxCViewSet | AbonoCxC | — | ✅ | IsAuthenticated |
@@ -950,6 +953,12 @@
 | `^pedidos/sincronizar\.(?P<format>[a-z0-9]+)/?$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/(?P<pk>[^/.]+)/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/mi-perfil/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/mi-perfil\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
 | `^periodos-contables/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
 | `^periodos-contables/(?P<pk>[^/.]+)/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
 | `^periodos-contables/(?P<pk>[^/.]+)/cerrar/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
@@ -1413,4 +1422,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 256_
+_Total ViewSets: 260_

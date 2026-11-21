@@ -396,8 +396,13 @@ REST_FRAMEWORK = {
         "user": os.environ.get("THROTTLE_RATE_USER", "1000/min"),
         "signup": os.environ.get("THROTTLE_RATE_SIGNUP", "10/hour"),
         "escritura": os.environ.get("THROTTLE_RATE_ESCRITURA", "60/min"),
+        "connect_publico": os.environ.get("THROTTLE_RATE_CONNECT_PUBLICO", "60/min"),
+        "connect_lead": os.environ.get("THROTTLE_RATE_CONNECT_LEAD", "20/min"),
     },
 }
+
+# Secreto opcional para HMAC de IPs en Omni Connect (fallback: SECRET_KEY).
+CONNECT_IP_HASH_SECRET = os.environ.get("CONNECT_IP_HASH_SECRET", "")
 
 # drf-yasg — DEFAULT_INFO permite `manage.py generate_swagger` (esquema OpenAPI
 # para el contract testing con schemathesis). USE_COMPAT_RENDERERS=False silencia
@@ -730,10 +735,13 @@ MCP_AGENT_CAPABILITIES: dict = {
         "apps.tareas.mcp",
         "apps.agentes.mcp",
         "apps.localizacion.mcp",
+        "apps.connect.mcp",
     ],
     "scopes": {
         "core:read": "Lectura de empresas y clientes",
         "crm:read": "Lectura del CRM (clientes, contactos)",
+        "connect:read": "Lectura de perfil digital Omni Connect",
+        "connect:write": "Creación y actualización de perfil digital Omni Connect",
         "ventas:read": "Lectura de pedidos, cotizaciones, facturas",
         "ventas:write": "Creación y modificación de pedidos",
         "compras:read": "Consulta de requisiciones, cotizaciones y órdenes de compra",

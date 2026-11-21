@@ -1,0 +1,175 @@
+"""Serializers para Omni Connect (públicos y autenticados)."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from rest_framework import serializers
+
+from apps.core.models import Empresa, Usuarios
+
+from .models import Perfil
+from .validators import normalizar_slug
+
+
+def _validar_sin_nul_dict(data: Any) -> None:
+    if isinstance(data, dict):
+        for key, val in data.items():
+            if "\x00" in str(key):
+                raise serializers.ValidationError({"error": "Parámetro inválido."})
+            if isinstance(val, str) and "\x00" in val:
+                raise serializers.ValidationError({str(key): "El valor contiene caracteres inválidos."})
+
+
+class ConnectBotonSerializer(serializers.Serializer):
+    """Representación pública de un botón de acción del perfil."""
+
+    tipo = serializers.CharField(read_only=True)
+    etiqueta = serializers.CharField(read_only=True)
+    valor = serializers.CharField(read_only=True)
+
+
+class PublicPerfilSerializer(serializers.Serializer):
+    """Proyección pública segura del perfil Connect (sin IDs internos ni notas)."""
+
+    slug = serializers.CharField(read_only=True)
+    nombre_publico = serializers.CharField(read_only=True)
+    cargo = serializers.CharField(read_only=True)
+    bio = serializers.CharField(read_only=True)
+    telefono_publico = serializers.CharField(read_only=True)
+    email_publico = serializers.CharField(read_only=True)
+    tema = serializers.CharField(read_only=True)
+    botones = ConnectBotonSerializer(many=True, read_only=True)
+    empresa_nombre = serializers.CharField(read_only=True)
+    acepta_leads = serializers.BooleanField(read_only=True)
+    consentimiento_texto = serializers.CharField(read_only=True)
+
+
+class PublicLeadCreateSerializer(serializers.Serializer):
+    """Payload público de captura de lead con consentimiento obligatorio y honeypot."""
+
+    nombre = serializers.CharField(max_length=150, required=True, allow_blank=False)
+    apellido = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+    empresa_nombre = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    email = serializers.EmailField(max_length=254, required=False, allow_blank=True, default="")
+    telefono = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
+    mensaje = serializers.CharField(max_length=2000, required=False, allow_blank=True, default="")
+    fuente = serializers.ChoiceField(
+        choices=["NFC", "QR", "ENLACE"],
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    origen = serializers.ChoiceField(
+        choices=["NFC", "QR", "ENLACE"],
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    uid = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
+    uid_chip = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
+    consentimiento_aceptado = serializers.BooleanField(required=True)
+    consentimiento_texto = serializers.CharField(max_length=2000, required=True, allow_blank=False)
+    website = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    company_url = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+
+    def to_internal_value(self, data: Any) -> Any:
+        _validar_sin_nul_dict(data)
+        return super().to_internal_value(data)
+
+    def validate_consentimiento_aceptado(self, value: bool) -> bool:
+        if value is not True:
+            raise serializers.ValidationError("Debe aceptar el consentimiento para enviar sus datos.")
+        return value
+
+    def validate_consentimiento_texto(self, value: str) -> str:
+        texto = (value or "").strip()
+        if not texto:
+            raise serializers.ValidationError("El texto de consentimiento no puede estar vacío.")
+        return texto
+
+    def validate_nombre(self, value: str) -> str:
+        limpio = (value or "").strip()
+        if not limpio:
+            raise serializers.ValidationError("El nombre es obligatorio.")
+        return limpio
+
+
+class PublicLeadCreateResponseSerializer(serializers.Serializer):
+    """Respuesta neutra de captura pública de lead."""
+
+    ok = serializers.BooleanField(read_only=True)
+    mensaje = serializers.CharField(read_only=True)
+
+
+class _SlugNormalizerMixin:
+    """Normaliza ``slug`` antes de ejecutar validadores de campo DRF."""
+
+    def to_internal_value(self, data: Any) -> Any:
+        _validar_sin_nul_dict(data)
+        if isinstance(data, dict) and "slug" in data and isinstance(data["slug"], str):
+            mutable = dict(data)
+            mutable["slug"] = normalizar_slug(mutable["slug"])
+            data = mutable
+        return super().to_internal_value(data)  # type: ignore[misc]
+
+
+class PerfilSerializer(_SlugNormalizerMixin, serializers.ModelSerializer):
+    """Serializer CRUD multi-tenant para ``connect.Perfil`` (CTF-005 whitelist)."""
+
+    id_empresa = serializers.PrimaryKeyRelatedField(queryset=Empresa.objects.all(), required=False)
+    usuario = serializers.PrimaryKeyRelatedField(queryset=Usuarios.objects.all(), required=False)
+
+    class Meta:
+        model = Perfil
+        fields = [
+            "id_perfil",
+            "id_empresa",
+            "usuario",
+            "slug",
+            "nombre_publico",
+            "cargo",
+            "bio",
+            "telefono_publico",
+            "email_publico",
+            "tema",
+            "botones",
+            "plantilla_bloqueada",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = ["id_perfil", "fecha_creacion", "fecha_actualizacion"]
+        validators: list[Any] = []
+
+
+class MiPerfilSerializer(_SlugNormalizerMixin, serializers.ModelSerializer):
+    """Serializer del perfil propio (``/api/connect/perfiles/mi-perfil/``)."""
+
+    class Meta:
+        model = Perfil
+        fields = [
+            "id_perfil",
+            "id_empresa",
+            "usuario",
+            "slug",
+            "nombre_publico",
+            "cargo",
+            "bio",
+            "telefono_publico",
+            "email_publico",
+            "tema",
+            "botones",
+            "plantilla_bloqueada",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = [
+            "id_perfil",
+            "id_empresa",
+            "usuario",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
