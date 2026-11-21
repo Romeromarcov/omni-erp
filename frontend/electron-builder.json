@@ -37,6 +37,7 @@
   "linux": {
     "target": ["AppImage"],
     "icon": "public/pwa-512x512.png",
-    "category": "Office"
+    "category": "Office",
+    "artifactName": "OmniERP-${version}.${ext}"
   }
 }

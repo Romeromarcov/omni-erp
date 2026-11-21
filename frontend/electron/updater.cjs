@@ -217,16 +217,39 @@ function createUpdaterController(deps = {}) {
   }
 
   function isAuthorizedIpcEvent(event) {
-    if (!event) return true;
     const win = getWindow();
-    if (event.sender && win && win.webContents && event.sender !== win.webContents) {
+    if (
+      !event ||
+      !win ||
+      (typeof win.isDestroyed === 'function' && win.isDestroyed()) ||
+      !win.webContents ||
+      event.sender !== win.webContents
+    ) {
       return false;
+    }
+    // En desarrollo / flag deshabilitado basta validar `win.webContents` (los
+    // handlers devuelven igualmente `{ ok: false, status: 'disabled' }`).
+    if (!isEnabled()) {
+      return true;
     }
     const frameUrl = event.senderFrame && typeof event.senderFrame.url === 'string' ? event.senderFrame.url : '';
-    if (frameUrl && isEnabled() && !frameUrl.startsWith('app://omni')) {
+    if (!frameUrl) {
       return false;
     }
-    return true;
+    try {
+      const parsed = new URL(frameUrl);
+      // Nota: en WHATWG URL de Node, `new URL('app://omni/').origin` es `"null"`
+      // por no ser un esquema especial estándar; validar protocol + host + sin credenciales.
+      return (
+        parsed.protocol === 'app:' &&
+        parsed.hostname === 'omni' &&
+        parsed.host === 'omni' &&
+        !parsed.username &&
+        !parsed.password
+      );
+    } catch {
+      return false;
+    }
   }
 
   function handleUpdaterError(err) {
@@ -452,19 +475,28 @@ function createUpdaterController(deps = {}) {
       };
     }
 
+    lastErrorInOperation = null;
     try {
       sendStatus({
         status: 'installing',
         version: currentVersion,
       });
       updaterInstance.quitAndInstall();
+      if (lastErrorInOperation) {
+        return {
+          ok: false,
+          status: 'error',
+          error: lastErrorInOperation.message,
+          errorCode: lastErrorInOperation.code,
+        };
+      }
       return {
         ok: true,
         status: 'installing',
         version: currentVersion,
       };
     } catch (err) {
-      const safe = handleUpdaterError(err);
+      const safe = lastErrorInOperation ?? handleUpdaterError(err);
       return {
         ok: false,
         status: 'error',

@@ -38,8 +38,25 @@ protocol.registerSchemesAsPrivileged([
 function registerAppProtocol() {
   const distDir = path.join(__dirname, '..', 'dist');
   protocol.handle(APP_SCHEME, (request) => {
-    const { pathname } = new URL(request.url);
-    const relative = decodeURIComponent(pathname).replace(/^\/+/, '');
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(request.url);
+    } catch {
+      return new Response('Not found', { status: 404 });
+    }
+    if (
+      parsedUrl.protocol !== `${APP_SCHEME}:` ||
+      parsedUrl.hostname !== APP_HOST ||
+      parsedUrl.host !== APP_HOST
+    ) {
+      return new Response('Not found', { status: 404 });
+    }
+    let relative = '';
+    try {
+      relative = decodeURIComponent(parsedUrl.pathname).replace(/^\/+/, '');
+    } catch {
+      return new Response('Not found', { status: 404 });
+    }
     // El service worker de la PWA no aporta en escritorio (assets locales) y
     // el precache de Workbox falla sobre schemes custom ("Failed to fetch").
     // Solo el shell de Electron lo neutraliza; web y Android lo conservan.

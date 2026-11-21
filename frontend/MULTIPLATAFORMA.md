@@ -102,6 +102,10 @@ Release en draft con todos los binarios y metadatos de actualización).
 - **Feed de actualización**: `electron-builder.json` configura `publish` sobre
   GitHub Releases (`Romeromarcov/omni-erp`). Cada build en CI genera `latest.yml` /
   `*.blockmap` (Windows) y `latest-linux.yml` (Linux) junto a los binarios.
+  Para canales estables (`0.1.0`), los tags `app-v*` resuelven `/releases/latest`
+  sin inconvenientes en `GitHubProvider`; eventuales canales *pre-release*
+  (`alpha`/`beta` con `allowPrerelease`) exigirían tags `v*` por la validación
+  `semver.valid()` de `GitHubProvider`.
 - **Controlador principal**: [`electron/updater.cjs`](electron/updater.cjs),
   integrado en [`electron/main.cjs`](electron/main.cjs). Solo se activa en builds
   empaquetados (`app.isPackaged && process.env.OMNI_DISABLE_AUTO_UPDATE !== '1'`)

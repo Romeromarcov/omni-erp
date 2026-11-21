@@ -131,7 +131,7 @@ describe('electron/updater.cjs', () => {
     ]) {
       const autoUpdater = new FakeAutoUpdater();
       const ipcMain = createFakeIpcMain();
-      const { win, send } = createFakeWindow();
+      const { win, send, webContents } = createFakeWindow();
       const controller = updaterMod.createUpdaterController({
         autoUpdater,
         app: scenario.app,
@@ -145,9 +145,13 @@ describe('electron/updater.cjs', () => {
       expect(controller.isEnabled()).toBe(false);
       expect(autoUpdater.listenerCount('checking-for-update')).toBe(0);
 
-      const checkRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.CHECK);
-      const downloadRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.DOWNLOAD);
-      const installRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.INSTALL);
+      const devEvent = {
+        sender: webContents,
+        senderFrame: { url: 'http://localhost:5173/' },
+      };
+      const checkRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.CHECK, devEvent);
+      const downloadRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.DOWNLOAD, devEvent);
+      const installRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.INSTALL, devEvent);
 
       expect(checkRes).toEqual({
         ok: false,
@@ -360,7 +364,21 @@ describe('electron/updater.cjs', () => {
       message: updaterMod.ERROR_MESSAGES.UNAVAILABLE,
     });
 
-    // 4) Error síncrono en quitAndInstall tras descarga no tumba el proceso
+    // 4) Error emitido vía evento 'error' dentro de quitAndInstall() sin hacer throw
+    autoUpdater.emit('update-downloaded', { version: '2.1.0' });
+    autoUpdater.quitAndInstall.mockImplementationOnce(() => {
+      autoUpdater.emit('error', new Error('EACCES C:\\Windows\\System32\\setup.exe'));
+    });
+    const installEmittedErr = controller.installUpdate();
+    expect(installEmittedErr).toEqual({
+      ok: false,
+      status: 'error',
+      error: updaterMod.ERROR_MESSAGES.UPDATER_ERROR,
+      errorCode: 'UPDATER_ERROR',
+    });
+    expect(installEmittedErr.error).not.toContain('System32');
+
+    // 5) Error síncrono en quitAndInstall tras descarga no tumba el proceso
     autoUpdater.emit('update-downloaded', { version: '2.1.0' });
     autoUpdater.quitAndInstall.mockImplementationOnce(() => {
       throw new Error('EACCES C:\\Program Files\\OmniERP\\uninstall.exe');
@@ -373,6 +391,114 @@ describe('electron/updater.cjs', () => {
       errorCode: 'UPDATER_ERROR',
     });
     expect(installErr.error).not.toContain('Program Files');
+
+    controller.cleanup();
+  });
+
+  it('rechaza eventos IPC de forma fail-closed cuando faltan event, win o senderFrame válido', async () => {
+    const autoUpdater = new FakeAutoUpdater();
+    const ipcMain = createFakeIpcMain();
+    let activeWin: ReturnType<typeof createFakeWindow>['win'] | null = null;
+    const controller = updaterMod.createUpdaterController({
+      autoUpdater,
+      app: { isPackaged: true },
+      ipcMain,
+      getWindow: () => activeWin,
+      env: {},
+    });
+    controller.init();
+
+    // win == null
+    const noWinRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.CHECK, {
+      sender: {},
+      senderFrame: { url: 'app://omni/' },
+    });
+    expect(noWinRes).toMatchObject({ ok: false, status: 'error', errorCode: 'UPDATER_ERROR' });
+
+    const live = createFakeWindow();
+    activeWin = live.win;
+
+    // event ausente, sender distinto, senderFrame nulo/vacío o prefijo malicioso
+    const invalidEvents: unknown[] = [
+      undefined,
+      { sender: {}, senderFrame: { url: 'app://omni/' } },
+      { sender: live.webContents, senderFrame: null },
+      { sender: live.webContents, senderFrame: { url: '' } },
+      { sender: live.webContents, senderFrame: { url: 'app://omni.evil/' } },
+      { sender: live.webContents, senderFrame: { url: 'https://omni/' } },
+      { sender: live.webContents, senderFrame: { url: 'app://omni:9999/' } },
+      { sender: live.webContents, senderFrame: { url: 'app://user@omni/' } },
+      { sender: live.webContents, senderFrame: { url: 'not-a-valid-url' } },
+    ];
+
+    for (const invalidEvent of invalidEvents) {
+      const res = await ipcMain.invoke(updaterMod.IPC_CHANNELS.CHECK, invalidEvent);
+      expect(res).toMatchObject({ ok: false, status: 'error', errorCode: 'UPDATER_ERROR' });
+    }
+    expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled();
+
+    // URL válida con hash route de Electron sí autoriza
+    autoUpdater.checkForUpdates.mockImplementationOnce(async () => {
+      autoUpdater.emit('update-not-available', { version: '0.1.0' });
+      return { updateInfo: { version: '0.1.0' } };
+    });
+    const validRes = await ipcMain.invoke(updaterMod.IPC_CHANNELS.CHECK, {
+      sender: live.webContents,
+      senderFrame: { url: 'app://omni/#/ventas' },
+    });
+    expect(validRes).toEqual({ ok: true, status: 'not-available', version: '0.1.0' });
+
+    controller.cleanup();
+  });
+
+  it('deduplica llamadas concurrentes a checkForUpdates() y downloadUpdate()', async () => {
+    const autoUpdater = new FakeAutoUpdater();
+    const ipcMain = createFakeIpcMain();
+    const { win } = createFakeWindow();
+    const controller = updaterMod.createUpdaterController({
+      autoUpdater,
+      app: { isPackaged: true },
+      ipcMain,
+      getWindow: () => win,
+      env: {},
+    });
+    controller.init();
+
+    let resolveCheck!: (value: unknown) => void;
+    autoUpdater.checkForUpdates.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCheck = resolve;
+        }),
+    );
+
+    const checkP1 = controller.checkForUpdates();
+    const checkP2 = controller.checkForUpdates();
+    expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+
+    autoUpdater.emit('update-available', { version: '2.5.0' });
+    resolveCheck({ updateInfo: { version: '2.5.0' } });
+    const [checkR1, checkR2] = await Promise.all([checkP1, checkP2]);
+    expect(checkR1).toEqual({ ok: true, status: 'available', version: '2.5.0' });
+    expect(checkR2).toEqual(checkR1);
+
+    let resolveDownload!: (value: string[]) => void;
+    autoUpdater.downloadUpdate.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDownload = resolve;
+        }),
+    );
+
+    const dlP1 = controller.downloadUpdate();
+    const dlP2 = controller.downloadUpdate();
+    expect(autoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
+
+    autoUpdater.emit('update-downloaded', { version: '2.5.0' });
+    resolveDownload(['/tmp/OmniERP-2.5.0.AppImage']);
+    const [dlR1, dlR2] = await Promise.all([dlP1, dlP2]);
+    expect(dlR1).toEqual({ ok: true, status: 'downloaded', version: '2.5.0' });
+    expect(dlR2).toEqual(dlR1);
 
     controller.cleanup();
   });
