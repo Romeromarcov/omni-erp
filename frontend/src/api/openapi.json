@@ -13628,6 +13628,306 @@
                 }
             ]
         },
+        "/crm/actividades/": {
+            "get": {
+                "operationId": "crm_actividades_list",
+                "description": "CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Actividad"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "post": {
+                "operationId": "crm_actividades_create",
+                "description": "CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": []
+        },
+        "/crm/actividades/{id_actividad}/": {
+            "get": {
+                "operationId": "crm_actividades_read",
+                "description": "CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "put": {
+                "operationId": "crm_actividades_update",
+                "description": "CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "patch": {
+                "operationId": "crm_actividades_partial_update",
+                "description": "CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "delete": {
+                "operationId": "crm_actividades_delete",
+                "description": "CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_actividad",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Actividad.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/actividades/{id_actividad}/activar/": {
+            "post": {
+                "operationId": "crm_actividades_activar",
+                "description": "POST /{pk}/activar/\nReactiva un registro que fue desactivado.\nBusca el objeto incluyendo inactivos (necesario para reactivar).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_actividad",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Actividad.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/actividades/{id_actividad}/completar/": {
+            "post": {
+                "operationId": "crm_actividades_completar",
+                "summary": "Marca o desmarca una actividad como completada",
+                "description": "CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CompletarActividad"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación"
+                    },
+                    "404": {
+                        "description": "Actividad no encontrada"
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_actividad",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Actividad.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/actividades/{id_actividad}/desactivar/": {
+            "post": {
+                "operationId": "crm_actividades_desactivar",
+                "description": "POST /{pk}/desactivar/\nDesactiva (borrado lógico) un registro activo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Actividad"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_actividad",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Actividad.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/crm/clientes/": {
             "get": {
                 "operationId": "crm_clientes_list",
@@ -14290,6 +14590,905 @@
                     "name": "id_direccion",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Dirección de Cliente.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/etapas/": {
+            "get": {
+                "operationId": "crm_etapas_list",
+                "description": "CRUD multi-tenant de etapas configurables de ``crm.Pipeline``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Etapa"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "post": {
+                "operationId": "crm_etapas_create",
+                "description": "CRUD multi-tenant de etapas configurables de ``crm.Pipeline``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": []
+        },
+        "/crm/etapas/{id_etapa}/": {
+            "get": {
+                "operationId": "crm_etapas_read",
+                "description": "CRUD multi-tenant de etapas configurables de ``crm.Pipeline``.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "put": {
+                "operationId": "crm_etapas_update",
+                "description": "CRUD multi-tenant de etapas configurables de ``crm.Pipeline``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "patch": {
+                "operationId": "crm_etapas_partial_update",
+                "description": "CRUD multi-tenant de etapas configurables de ``crm.Pipeline``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "delete": {
+                "operationId": "crm_etapas_delete",
+                "description": "CRUD multi-tenant de etapas configurables de ``crm.Pipeline``.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_etapa",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Etapa.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/etapas/{id_etapa}/activar/": {
+            "post": {
+                "operationId": "crm_etapas_activar",
+                "description": "POST /{pk}/activar/\nReactiva un registro que fue desactivado.\nBusca el objeto incluyendo inactivos (necesario para reactivar).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_etapa",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Etapa.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/etapas/{id_etapa}/desactivar/": {
+            "post": {
+                "operationId": "crm_etapas_desactivar",
+                "description": "POST /{pk}/desactivar/\nDesactiva (borrado lógico) un registro activo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Etapa"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_etapa",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Etapa.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/leads/": {
+            "get": {
+                "operationId": "crm_leads_list",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Lead"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "post": {
+                "operationId": "crm_leads_create",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": []
+        },
+        "/crm/leads/{id_lead}/": {
+            "get": {
+                "operationId": "crm_leads_read",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "put": {
+                "operationId": "crm_leads_update",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "patch": {
+                "operationId": "crm_leads_partial_update",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "delete": {
+                "operationId": "crm_leads_delete",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_lead",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Lead.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/leads/{id_lead}/activar/": {
+            "post": {
+                "operationId": "crm_leads_activar",
+                "description": "POST /{pk}/activar/\nReactiva un registro que fue desactivado.\nBusca el objeto incluyendo inactivos (necesario para reactivar).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_lead",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Lead.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/leads/{id_lead}/desactivar/": {
+            "post": {
+                "operationId": "crm_leads_desactivar",
+                "description": "POST /{pk}/desactivar/\nDesactiva (borrado lógico) un registro activo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_lead",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Lead.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/leads/{id_lead}/mover-etapa/": {
+            "post": {
+                "operationId": "crm_leads_mover_etapa",
+                "summary": "Mueve un lead a otra etapa del mismo pipeline",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MoverEtapa"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    },
+                    "400": {
+                        "description": "Transición de etapa inválida"
+                    },
+                    "404": {
+                        "description": "Lead no encontrado"
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_lead",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Lead.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/pipelines/": {
+            "get": {
+                "operationId": "crm_pipelines_list",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Pipeline"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "post": {
+                "operationId": "crm_pipelines_create",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": []
+        },
+        "/crm/pipelines/asegurar-predeterminado/": {
+            "post": {
+                "operationId": "crm_pipelines_asegurar_predeterminado",
+                "summary": "Obtiene o inicializa idempotentemente el pipeline predeterminado de la empresa",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AsegurarPipelineInput"
+                        }
+                    },
+                    {
+                        "name": "empresa",
+                        "in": "query",
+                        "description": "UUID de la empresa visible (opcional).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos"
+                    },
+                    "403": {
+                        "description": "Sin acceso"
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": []
+        },
+        "/crm/pipelines/{id_pipeline}/": {
+            "get": {
+                "operationId": "crm_pipelines_read",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "put": {
+                "operationId": "crm_pipelines_update",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "patch": {
+                "operationId": "crm_pipelines_partial_update",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "delete": {
+                "operationId": "crm_pipelines_delete",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_pipeline",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Pipeline.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/pipelines/{id_pipeline}/activar/": {
+            "post": {
+                "operationId": "crm_pipelines_activar",
+                "description": "POST /{pk}/activar/\nReactiva un registro que fue desactivado.\nBusca el objeto incluyendo inactivos (necesario para reactivar).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_pipeline",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Pipeline.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/pipelines/{id_pipeline}/desactivar/": {
+            "post": {
+                "operationId": "crm_pipelines_desactivar",
+                "description": "POST /{pk}/desactivar/\nDesactiva (borrado lógico) un registro activo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_pipeline",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Pipeline.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/pipelines/{id_pipeline}/reordenar-etapas/": {
+            "post": {
+                "operationId": "crm_pipelines_reordenar_etapas",
+                "summary": "Reordena atómicamente las etapas activas del pipeline",
+                "description": "CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReordenarEtapas"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pipeline"
+                        }
+                    },
+                    "400": {
+                        "description": "Orden o etapas inválidas"
+                    },
+                    "404": {
+                        "description": "Pipeline no encontrado"
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_pipeline",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Pipeline.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -56601,6 +57800,132 @@
                 }
             }
         },
+        "Actividad": {
+            "required": [
+                "lead",
+                "asunto"
+            ],
+            "type": "object",
+            "properties": {
+                "id_actividad": {
+                    "title": "Id actividad",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "lead": {
+                    "title": "Lead",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "lead_nombre": {
+                    "title": "Lead nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "enum": [
+                        "LLAMADA",
+                        "CORREO",
+                        "REUNION",
+                        "NOTA",
+                        "WHATSAPP"
+                    ]
+                },
+                "asunto": {
+                    "title": "Asunto",
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string"
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date-time",
+                    "x-nullable": true
+                },
+                "completada": {
+                    "title": "Completada",
+                    "type": "boolean"
+                },
+                "fecha_completada": {
+                    "title": "Fecha completada",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "asignado_a": {
+                    "title": "Asignado a",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "asignado_a_nombre": {
+                    "title": "Asignado a nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "creado_por": {
+                    "title": "Creado por",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "tarea": {
+                    "title": "Tarea",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "CompletarActividad": {
+            "type": "object",
+            "properties": {
+                "completada": {
+                    "title": "Completada",
+                    "type": "boolean",
+                    "default": true
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string"
+                }
+            }
+        },
         "Cliente": {
             "required": [
                 "razon_social",
@@ -56946,6 +58271,337 @@
                     "title": "Id cliente",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "Etapa": {
+            "required": [
+                "pipeline",
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_etapa": {
+                    "title": "Id etapa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "pipeline": {
+                    "title": "Pipeline",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "orden": {
+                    "title": "Orden",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "enum": [
+                        "ABIERTA",
+                        "GANADA",
+                        "PERDIDA"
+                    ]
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "Lead": {
+            "required": [
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_lead": {
+                    "title": "Id lead",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 1
+                },
+                "apellido": {
+                    "title": "Apellido",
+                    "type": "string",
+                    "maxLength": 150
+                },
+                "empresa_nombre": {
+                    "title": "Empresa nombre",
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "email": {
+                    "title": "Email",
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                },
+                "telefono": {
+                    "title": "Telefono",
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "email_normalizado": {
+                    "title": "Email normalizado",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "telefono_normalizado": {
+                    "title": "Telefono normalizado",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "mensaje": {
+                    "title": "Mensaje",
+                    "type": "string"
+                },
+                "fuente": {
+                    "title": "Fuente",
+                    "type": "string",
+                    "enum": [
+                        "NFC",
+                        "QR",
+                        "ENLACE",
+                        "MANUAL",
+                        "IMPORTACION"
+                    ]
+                },
+                "tarjeta": {
+                    "title": "Tarjeta",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "perfil": {
+                    "title": "Perfil",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "pipeline": {
+                    "title": "Pipeline",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "pipeline_nombre": {
+                    "title": "Pipeline nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "etapa": {
+                    "title": "Etapa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "etapa_nombre": {
+                    "title": "Etapa nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "etapa_tipo": {
+                    "title": "Etapa tipo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "propietario": {
+                    "title": "Propietario",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "propietario_nombre": {
+                    "title": "Propietario nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "contacto": {
+                    "title": "Contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "consentimiento_aceptado": {
+                    "title": "Consentimiento aceptado",
+                    "type": "boolean"
+                },
+                "consentimiento_fecha": {
+                    "title": "Consentimiento fecha",
+                    "type": "string",
+                    "format": "date-time",
+                    "x-nullable": true
+                },
+                "consentimiento_texto": {
+                    "title": "Consentimiento texto",
+                    "type": "string"
+                },
+                "actividades_pendientes": {
+                    "title": "Actividades pendientes",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "actividades_vencidas": {
+                    "title": "Actividades vencidas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "MoverEtapa": {
+            "required": [
+                "etapa"
+            ],
+            "type": "object",
+            "properties": {
+                "etapa": {
+                    "title": "Etapa",
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
+        "Pipeline": {
+            "required": [
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_pipeline": {
+                    "title": "Id pipeline",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "es_predeterminado": {
+                    "title": "Es predeterminado",
+                    "type": "boolean"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "etapas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Etapa"
+                    },
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "AsegurarPipelineInput": {
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
+        "ReordenarEtapas": {
+            "required": [
+                "etapas"
+            ],
+            "type": "object",
+            "properties": {
+                "etapas": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
                 }
             }
         },
@@ -58389,7 +60045,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T16:11:12.601162-04:00"
+                    "default": "2026-11-21T17:21:47.818728-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

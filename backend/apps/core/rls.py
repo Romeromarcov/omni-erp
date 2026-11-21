@@ -255,10 +255,11 @@ RLS_TABLES = {
     "crm_cliente": "id_empresa_id",
     "crm_contacto_cliente": "id_empresa_id",
     "crm_direccion_cliente": "id_empresa_id",
-    # crm ligero + connect (Omni Connect S1)
+    # crm ligero + connect (Omni Connect S1/S4)
     "crm_pipeline": "id_empresa_id",
     "crm_etapa": "id_empresa_id",
     "crm_lead": "id_empresa_id",
+    "crm_actividad": "id_empresa_id",
     "connect_perfil": "id_empresa_id",
     "connect_tarjeta": "id_empresa_id",
     "connect_toque": "id_empresa_id",

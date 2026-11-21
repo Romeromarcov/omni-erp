@@ -298,3 +298,71 @@ class Lead(OmniBaseModel):
             raise ValidationError({"tarjeta": "La tarjeta no está asignada al perfil del lead."})
         if self.propietario_id and not self.propietario.empresas.filter(pk=self.id_empresa_id).exists():
             raise ValidationError({"propietario": "El propietario no pertenece a esta empresa."})
+
+
+class Actividad(OmniBaseModel):
+    """Actividad de seguimiento comercial asociada a un ``Lead`` (S4)."""
+
+    class Tipo(models.TextChoices):
+        LLAMADA = "LLAMADA", "Llamada"
+        CORREO = "CORREO", "Correo"
+        REUNION = "REUNION", "Reunión"
+        NOTA = "NOTA", "Nota"
+        WHATSAPP = "WHATSAPP", "WhatsApp"
+
+    id_actividad = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="crm_actividades")
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="actividades")
+    tipo = models.CharField(max_length=12, choices=Tipo.choices, default=Tipo.NOTA)
+    asunto = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, default="")
+    fecha_vencimiento = models.DateTimeField(null=True, blank=True)
+    completada = models.BooleanField(default=False)
+    fecha_completada = models.DateTimeField(null=True, blank=True)
+    asignado_a = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="crm_actividades_asignadas",
+    )
+    creado_por = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="crm_actividades_creadas",
+    )
+    tarea = models.ForeignKey(
+        "tareas.Tarea",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="crm_actividades",
+    )
+
+    class Meta:
+        db_table = "crm_actividad"
+        verbose_name = "Actividad"
+        verbose_name_plural = "Actividades"
+        ordering = ["-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "lead", "completada"]),
+            models.Index(fields=["id_empresa", "asignado_a", "completada"]),
+            models.Index(fields=["id_empresa", "fecha_vencimiento"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tipo} · {self.asunto}"
+
+    def clean(self) -> None:
+        super().clean()
+        validar_misma_empresa(self, lead=self.lead, tarea=self.tarea)
+        for campo, usuario in (("asignado_a", self.asignado_a), ("creado_por", self.creado_por)):
+            if (
+                usuario is not None
+                and self.id_empresa_id is not None
+                and not (getattr(usuario, "es_superusuario_omni", False) or getattr(usuario, "is_superuser", False))
+                and not usuario.empresas.filter(pk=self.id_empresa_id).exists()
+            ):
+                raise ValidationError({campo: "El usuario no pertenece a esta empresa."})
