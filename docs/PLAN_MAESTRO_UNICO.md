@@ -356,12 +356,11 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **Ciclo comercial:** `ventas` (Cotización→Pedido→NotaVenta→FacturaFiscal→NC/devoluciones, listas de precio + comisiones, integrado stock+IVA/IGTF+asiento+CxC), `inventario` (kardex, valoración FIFO/Promedio, COGS, stepper de operaciones, datos maestros + UI), `compras` (OC→Recepción→FacturaCompra + asientos; UI aprovisionamiento), `crm` (Cliente/Contacto/Dirección + UI; esquema `Pipeline`/`Etapa`/`Lead` S1), `proveedores` (RIF + UI), `finanzas` (Moneda/MetodoPago/Pago/PagoTercero/Cajas/TasaCambio/FX/MCP + UI), `fiscal` (IVA/IGTF config-driven, Libros SENIAT TXT+PDF, cierre período, pagos parafiscales + UI), `contabilidad` (`generar_asiento()` en `@transaction.atomic`, R-CODE-11, FK usuario).
 - **Cobranza, tesorería y operación:** `cuentas_por_cobrar` (abono atómico con lock+tope, aging 5 tramos, scoring, PDF), `cuentas_por_pagar` (abonos con write-guard, aging, diferencia cambiaria), `cxc` (GestionCobranza, AcuerdoPago/CuotaAcuerdo, agente IA SSE), `cxc_lubrikca` (Fases 0–6 + standalone staging), `tesoreria` (conciliación con lock, `OperacionCambioDivisa`, ingesta extractos VE + pre-conciliación humana PRs #283–#284), `tareas` (Kanban/minutas/recurrencia/escalación/MCP PRs #286–#287), `activaciones` (+ Google Calendar), `bots_ingest` (flota + CapabilityToken + push borrador Odoo 7 tipos).
 - **RRHH, nómina, manufactura y despacho:** `nomina` (cálculo LOTTT + extrasalarial + UI), `rrhh` (Empleado/Cargo/Beneficio/Licencia + UI), `control_asistencia` (+ UI), `manufactura` (BOM, rutas, centros, OF con etapas, costeo real, MRP + UI), `despacho` (máquina de estados, PDF + UI), `gastos` (flujo aprobación + reembolsos + UI), `costos` (+ UI), `servicio_cliente` (tickets/SLA/base conocimiento + UI).
-- **Localización (framework):** `localizacion` instalada (6 puertos ABC + registry). `eventos` (subsistema sin `models.py`). `sync` (pull deltas + `POST /api/sync/push/ventas/`).
+- **Localización (framework + VE):** `localizacion` instalada (6 puertos ABC + 6 `NoOp` + registry con alias `VE`/`VEN` + `GET /api/localizacion/estado/` + MCP `localizacion_estado_empresa`). `localizacion_ve` **6/6 puertos ✅** (`MotorImpuestosVE`, `GeneradorDocumentoLegalVE`, `CalculadoraNominaVE`, `LibroLegalVE`, `ProveedorTasasVE`, `MetodosPagoLocalesVE`). `eventos` (subsistema sin `models.py`). `sync` (pull deltas + `POST /api/sync/push/ventas/`).
 
 **🔶 PARCIAL / BRECHA DE PARIDAD FUNCIONAL (tienen UI/CRUD o base parcial, requieren cierre técnico)**
 
 - `connect` (`S1` esquema completo; faltan historias `S2`–`S12` — ver [`07-omni-connect.md`](planes/07-omni-connect.md)).
-- `localizacion_ve` — **2 de 6 puertos** implementados (`MotorImpuestosVE`, `CalculadoraNominaVE`); faltan `GeneradorDocumentoLegalVE`, `LibroLegalVE`, `ProveedorTasasVE`, `MetodosPagoLocalesVE` + flags por capa.
 - `almacenes` (CRUD `Almacen`/`UbicacionAlmacen` + UI; faltan reservas/transferencias entre ubicaciones y reglas de reabastecimiento), `compras` + `gestion_aprobaciones` (`gestion_aprobaciones` ya cuenta con motor de etapas por monto/rol/usuario y UI, pero falta capa transaccional `RequisicionCompra`→`SolicitudCotizacion`→`OfertaProveedor`→`OrdenCompra` y reglas por departamento/SLA — ver [`08-conciliacion-pagos-y-paridad-odoo.md`](planes/08-conciliacion-pagos-y-paridad-odoo.md)), `contabilidad` (faltan diarios contables, reversión atómica por contra-asiento, cierre de período/ejercicio y estados financieros canónicos — Plan 08).
 - `banca_electronica` (tiene CRUD + UI de cuentas, pero duplica el modelo `CuentaBancariaEmpresa` respecto a `finanzas` y requiere consolidación de servicios con `tesoreria` — Plan 08).
 
@@ -374,7 +373,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **Plan 06 (Fases 1–4 restantes):** auditar 38 respuestas `Response({...str(e|exc|err)...})` en 15 archivos (Tarea 1.1), activar rol no-dueño `omni_app` con `bypass='off'` (Fase 2 / CTF-012), migrar a `ruff` y limpiar 201 `# noqa` / 40 `eslint-disable` (Tareas 3.3–3.4), segunda pasada Decimal FE (Tarea 4.2) y ajustes Railway del owner (Tarea 4.3). *(Tareas `1.3` pines/Dependabot/audits nocturnos y `3.6` Actions Node 24 cerradas en PR `#289`.)*
 - **Seguridad residual (Plan 05):** `P1-5` (auditoría inmutable BD), `P1-6` (pasada IDOR), `P1-7` (cargar secrets backup owner), `P2-2` (agentes síncronos en vistas → Celery), `P2-3` (persistencia dedicada de costos LLM), `P2-4` (cacheo consultas calientes + N+1), `P2-6` (OpenTelemetry).
 - **Conciliación N:M + Paridad ERP Odoo (`Plan 08`):** `finanzas.Pago` hoy apunta a un único `id_documento`; falta `finanzas.AsignacionPago` anclada en `core.Contacto` (para dividir un pago entre N facturas, aplicar anticipos/saldos a favor, y desbloquear inbound de `facturas_compra` y pagos multi-factura desde Odoo en [`docs/integracion-hub/ESTADO.md`](integracion-hub/ESTADO.md) §4.1).
-- **Acoplamiento a Venezuela en el núcleo:** lógica VE dispersa (`fiscal`, IGTF en `ventas`, libros SENIAT); completar los 4 puertos pendientes en `localizacion_ve`.
+- **Acoplamiento residual en callers directos:** `localizacion_ve` ya cubre **6/6 puertos ✅**; resta migrar gradualmente (*strangler fig*) los callers directos en `fiscal` y `ventas` hacia `get_localizacion(empresa)`.
 - **`saas` middleware fail-open** — revisar a fail-closed al activar `SAAS_VERIFICAR_SUSCRIPCION`.
 - **Operativo del owner:** probar en producción `cxc_lubrikca` vs Odoo real, activar branch protection en GitHub, cargar secrets de backup (`BACKUP_DB_HOST`) y configurar rol `omni_app` en Railway (`CTF-012`).
 
@@ -492,7 +491,7 @@ P0 (✅ cerrado #64–#73) + UI/E2E sweep (✅ cerrado #215–#247) + Plan 06 Fa
    │      dedup core.Contacto (S5) → conversión Cliente (S6) → outbox + push Odoo crm.lead (S7–S9) →
    │      analíticas Toque (S10) → tarjetas físicas + Agentes IA con aprobación (S11–S12)
    └─ Ola 5 — Localización desacoplada + Multiplataforma:
-        • localizacion_ve: 4 adaptadores faltantes + flags por capa en Empresa
+        • localizacion_ve: 6/6 adaptadores VE ✅ + flags por capa en Empresa + REST/MCP
         • Plan B (CTF-010, shells firmados) + Plan A (offline niveles 2–3)
 ```
 

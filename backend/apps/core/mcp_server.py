@@ -1188,6 +1188,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.integration_hub.mcp",
     "apps.tareas.mcp",
     "apps.agentes.mcp",
+    "apps.localizacion.mcp",
 ]
 
 

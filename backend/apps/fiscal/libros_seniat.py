@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 def _periodo_a_rango(periodo: str) -> tuple[date, date]:
     """Convierte 'YYYY-MM' en (date_inicio, date_fin) del mes completo."""
     try:
-        año, mes = periodo.split("-")
-        año, mes = int(año), int(mes)
+        año_str, mes_str = periodo.split("-")
+        año, mes = int(año_str), int(mes_str)
     except (ValueError, AttributeError) as exc:
         raise ValueError(f"Formato de período inválido: '{periodo}'. Use YYYY-MM.") from exc
     ultimo_dia = calendar.monthrange(año, mes)[1]
