@@ -8,7 +8,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) + §B.3 (`inventario` + `almacenes` Ola B4) + §B.4.1 (`banca_electronica` Ola B5) COMPLETADO |
+| **Estado** | Bloque A COMPLETADO (`PR #297`, `PR #298`, Ola A3); Bloque B §B.1 (`contabilidad` Olas B1 + B2) + §B.2 (`compras` + `gestion_aprobaciones` Ola B3) + §B.3 (`inventario` + `almacenes` Ola B4) + §B.4.1 (`banca_electronica` Ola B5) + §B.4.2–§B.4.3 (`integration_hub` Ola B6) COMPLETADO |
 | **Fecha** | 2026-11-17 (basado en símbolos verificados en `origin/develop @ ff2bdb6`) |
 | **Apps involucradas** | `finanzas`, `core`, `cuentas_por_cobrar`, `cuentas_por_pagar`, `ventas`, `compras`, `contabilidad`, `gestion_aprobaciones`, `inventario`, `almacenes`, `banca_electronica`, `tesoreria`, `integration_hub`, `agentes` |
 | **Esfuerzo estimado** | ~5–7 semanas en PRs pequeños y focales (`R-PROC-2`) |
@@ -171,7 +171,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 
 **Estado actual verificado:**
 - `apps/banca_electronica/models.py` define `CuentaBancariaEmpresa` (`empresa`, `banco`, `numero_cuenta`, `tipo_cuenta`, `moneda`, `saldo_actual`, `activa`), que **duplica** `finanzas.CuentaBancariaEmpresa` (`id_cuenta_bancaria`, `id_empresa`, `nombre_banco`, `numero_cuenta`, `id_moneda`, `metodos_pago`, `monedas`), siendo esta última la única usada por `Pago`, `MovimientoCajaBanco`, `ConfiguracionConciliacionCuenta` y `PropuestaConciliacionBancaria` (`tesoreria` PRs `#283–#284`).
-- `docs/integracion-hub/ESTADO.md` §4.1 mantiene pendientes: (1) `facturas_compra` inbound, (2) pagos multi-factura y pagos outbound a proveedor, y (3) push outbound a Odoo (`CTF-011`).
+- `docs/integracion-hub/ESTADO.md` §4.1 mantiene pendiente únicamente el push outbound a Odoo (`CTF-011`); `facturas_compra` inbound y pagos multi-factura/outbound con `AsignacionPago` quedan completados en Ola B6.
 
 **Entregables incrementales:**
 1. **Consolidación `banca_electronica` ↔ `finanzas` ↔ `tesoreria` (`✅ COMPLETADO` — Ola B5):**
@@ -179,14 +179,14 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
    - Migrar los datos residuales de `banca_electronica_cuentabancariaempresa` hacia `finanzas_cuenta_bancaria_empresa` (migración `0004`–`0006` con `LotePagoBancario`, `DetalleLotePagoBancario` y RLS) y reemplazar `banca_electronica` en una capa de servicios operativos bancarios sobre `finanzas.CuentaBancariaEmpresa` y `tesoreria.MovimientoBancario`:
      - Generador de archivos de lotes de pago bancario VE (`BANESCO_TXT`, `MERCANTIL_TXT`, `BDV_TXT`, `GENERICO_CSV`) para proveedores y nómina (`Pago` / `ProcesoNomina`).
      - Validación SUDEBAN VE 20 dígitos, detección de referencias bancarias duplicadas, herramientas MCP (`banca_validar_referencia`, `banca_listar_lotes_pago`) y UI de 3 pestañas en `CuentasBancariasEmpresaPage` sobre `/finanzas/cuentas-bancarias-empresa/`.
-2. **Integration Hub inbound — `facturas_compra` (`in_invoice`):**
-   - Extender `OdooXMLRPCClient` y `OdooConnector` para traer `account.move` (`move_type='in_invoice'`) + `get_lineas_factura`.
-   - Implementar `_upsert_factura_compra` en `SyncEngine` (espejo de `_upsert_factura_venta` PR `#187`): auto-crea `proveedores.Proveedor` si no existe, persiste `compras.FacturaCompra` + `DetalleFacturaCompra` (*history-only*, idempotente por `(id_empresa, numero_factura)` y `EntidadSincronizada`) y crea/vincula `CuentaPorPagar` sin duplicar.
-3. **Integration Hub inbound — Pagos multi-factura y pagos a proveedor (`AsignacionPago`):**
-   - Enriquecer `OdooXMLRPCClient.get_pagos` para leer `account.partial.reconcile` (montos conciliados por factura `debit_move_id`/`credit_move_id`, `amount`, `amount_currency`) en lugar de solo `reconciled_invoice_ids`.
-   - Actualizar `_upsert_pago` en `SyncEngine` usando **`finanzas.AsignacionPago`** (Bloque A) para:
-     - Importar cobros de cliente (`inbound`) reconciliados con **0, 1 o N facturas** (`FacturaFiscal` / `CuentaPorCobrar`), dejando cualquier sobrante como saldo a favor del `core.Contacto`.
-     - Importar pagos a proveedor (`outbound`) vinculados a `FacturaCompra` / `CuentaPorPagar` vía `AsignacionPago`.
+2. **Integration Hub inbound — `facturas_compra` (`in_invoice`) (`✅ COMPLETADO` — Ola B6):**
+   - `compras.FacturaCompra` acepta facturas directas/importadas sin `OrdenCompra` (`id_orden_compra` nullable + `id_proveedor` FK con backfill reversible) y `FacturaCompraSerializer` expone whitelist explícita con validación multi-tenant.
+   - `OdooXMLRPCClient` y `OdooConnector.pull_facturas_compra` leen `account.move` (`move_type='in_invoice'`) + `get_lineas_factura`.
+   - `SyncEngine._upsert_factura_compra` auto-crea `proveedores.Proveedor` + `core.Contacto` común, persiste `compras.FacturaCompra` + `DetalleFacturaCompra` (*history-only*, idempotente por `(id_empresa, numero_factura)`) y sincroniza `cuentas_por_pagar.CuentaPorPagar` sin generar asientos.
+3. **Integration Hub inbound — Pagos multi-factura y pagos a proveedor (`AsignacionPago`) (`✅ COMPLETADO` — Ola B6):**
+   - `OdooXMLRPCClient.get_pagos` resuelve dinámicamente campos de `account.payment` vía `fields_get` (compatible con Odoo 18 donde `ref` fue removido y reemplazado por `memo`/`payment_reference`, incluyendo `move_id` y `reconciled_bill_ids`), y `get_reconciliaciones_pagos` lee en lote `account.move.line` + `account.partial.reconcile` (cero N+1).
+   - `aplicar_pago_a_documentos(..., modo_historico_externo=True, generar_asiento=False)` permite conciliar documentos históricos ya saldados o parciales respetando el tope `monto_total - asignaciones_activas` sin duplicar `AbonoCxC`/`AbonoCxP` ni generar asientos.
+   - `SyncEngine._upsert_pago` soporta cobros `inbound/customer` (`INGRESO`) y pagos `outbound/supplier` (`EGRESO`) en 0 (anticipo/`ANTICIPO`), 1 (`FACTURA`/`CXP`/`COMPRA`) o N (`CONCILIACION_MULTIPLE`) facturas usando `finanzas.AsignacionPago`, dejando sobrantes como saldo a favor del `core.Contacto`.
 4. **Cierre de `CTF-011` — Outbound `push` a Odoo validado contra instancia de prueba:**
    - Unificar y completar el `push` bidireccional en `Integration Hub` (complementando la capa opt-in de `bots_ingest/services/odoo_push.py`) para pagos/abonos de cobranza (`cxc` / `cuentas_por_cobrar` → `account.payment` / reconciliación en Odoo) con `Idempotency-Key`, credencial `write_user` de mínimo privilegio, modo borrador/confirmado configurable y pruebas de integración contra el Odoo de prueba.
    - Al verificar en vivo contra Odoo de prueba con CI verde, actualizar [`CTF-011`](../ctf/CTF-011.md) a `CERRADO`.
@@ -205,7 +205,7 @@ Toda operación corre dentro de `@transaction.atomic` adquiriendo locks en orden
 | **Ola B3** | ✅ `feat(compras): flujo transaccional Requisicion->RFQ->Oferta->OC y reglas departamento/SLA en aprobaciones` (`PR-15`) | Ninguna |
 | **Ola B4** | ✅ `feat(inventario): ReglaReabastecimiento, LoteProducto opt-in y StockUbicacion` (`PR-16`) | Ninguna |
 | **Ola B5** | ✅ `refactor(banca): consolida CuentaBancariaEmpresa en finanzas y servicios de pagos masivos` (`PR-17`) | Ninguna |
-| **Ola B6** | `feat(hub): inbound facturas_compra + pagos multi-factura con AsignacionPago` | Ola A2 |
+| **Ola B6** | ✅ `feat(hub): inbound facturas_compra + pagos multi-factura con AsignacionPago` | Ola A2 |
 | **Ola B7** | `feat(hub): cierre CTF-011 push outbound cobranza validado contra Odoo de prueba` | Ola A2 + credenciales Odoo prueba |
 
 Cada PR pasa el gate completo de [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md) (`check`, `makemigrations --check --dry-run`, `mapa_superficie --check`, tests con aislamiento multi-tenant + RLS y `diff-cover ≥95%`, `tsc -b`, `npm run lint`, `check:api-drift`, Vitest/Playwright) y recibe dictamen **`APROBADO`** de revisor independiente (`QA + Seguridad`) antes de `ready` y merge a `develop`.

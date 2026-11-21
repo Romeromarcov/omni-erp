@@ -51054,8 +51054,7 @@
             "required": [
                 "numero_factura",
                 "fecha_emision",
-                "monto_total",
-                "id_orden_compra"
+                "monto_total"
             ],
             "type": "object",
             "properties": {
@@ -51064,6 +51063,30 @@
                     "type": "string",
                     "format": "uuid",
                     "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_orden_compra": {
+                    "title": "Id orden compra",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_proveedor": {
+                    "title": "Id proveedor",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "id_recepcion": {
+                    "title": "Id recepcion",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
                 },
                 "numero_factura": {
                     "title": "Numero factura",
@@ -51095,23 +51118,6 @@
                     "type": "string",
                     "format": "date-time",
                     "readOnly": true
-                },
-                "id_empresa": {
-                    "title": "Id empresa",
-                    "type": "string",
-                    "format": "uuid",
-                    "readOnly": true
-                },
-                "id_orden_compra": {
-                    "title": "Id orden compra",
-                    "type": "string",
-                    "format": "uuid"
-                },
-                "id_recepcion": {
-                    "title": "Id recepcion",
-                    "type": "string",
-                    "format": "uuid",
-                    "x-nullable": true
                 }
             }
         },
@@ -57052,7 +57058,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-20T16:04:41.405743-04:00"
+                    "default": "2026-11-20T18:33:27.977502-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

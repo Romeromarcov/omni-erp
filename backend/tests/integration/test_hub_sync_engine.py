@@ -1118,21 +1118,69 @@ class TestUpsertPago:
 
         assert qs.first().monto == Decimal("200.00")  # se actualizó
 
-    def test_omite_si_no_es_cobro_de_cliente(self, instancia_fake):
+    def test_omite_si_combinacion_tipo_no_soportada(self, instancia_fake):
         eng = SyncEngine()
         self._seed_factura_sincronizada(eng, instancia_fake)
-        assert eng._upsert_pago(self._pago(tipo="outbound", tipo_socio="supplier"), instancia_fake) is None
+        assert eng._upsert_pago(self._pago(tipo="inbound", tipo_socio="supplier"), instancia_fake) is None
+        assert eng._upsert_pago(self._pago(tipo="outbound", tipo_socio="customer"), instancia_fake) is None
 
     def test_omite_si_factura_no_sincronizada(self, instancia_fake):
         eng = SyncEngine()
         self._seed_moneda(instancia_fake)  # sin sembrar la factura
         assert eng._upsert_pago(self._pago(facturas_externas=["999"]), instancia_fake) is None
 
-    def test_omite_si_reconciliacion_multiple(self, instancia_fake):
+    def test_omite_si_reconciliacion_multiple_sin_montos_parciales(self, instancia_fake):
         eng = SyncEngine()
         self._seed_factura_sincronizada(eng, instancia_fake, "900", "INV/2024/0001")
         self._seed_factura_sincronizada(eng, instancia_fake, "901", "INV/2024/0002")
         assert eng._upsert_pago(self._pago(facturas_externas=["900", "901"]), instancia_fake) is None
+
+    def test_crea_pago_reconciliacion_multiple_con_montos(self, instancia_fake):
+        from decimal import Decimal
+
+        from apps.finanzas.models import AsignacionPago, Pago
+
+        eng = SyncEngine()
+        self._seed_factura_sincronizada(eng, instancia_fake, "900", "INV/2024/0001")
+        self._seed_factura_sincronizada(eng, instancia_fake, "901", "INV/2024/0002")
+
+        pk = eng._upsert_pago(
+            self._pago(
+                monto="100.00",
+                facturas_externas=["900", "901"],
+                reconciliaciones=[
+                    {
+                        "partial_reconcile_id": "1",
+                        "move_id_externo": "900",
+                        "move_type": "out_invoice",
+                        "monto_base": "35.00",
+                        "monto_pago": "35.00",
+                        "monto_documento": "35.00",
+                        "moneda_pago": "USD",
+                        "moneda_documento": "USD",
+                    },
+                    {
+                        "partial_reconcile_id": "2",
+                        "move_id_externo": "901",
+                        "move_type": "out_invoice",
+                        "monto_base": "65.00",
+                        "monto_pago": "65.00",
+                        "monto_documento": "65.00",
+                        "moneda_pago": "USD",
+                        "moneda_documento": "USD",
+                    },
+                ],
+            ),
+            instancia_fake,
+        )
+        assert pk
+        pago = Pago.objects.get(pk=pk)
+        assert pago.tipo_documento == "CONCILIACION_MULTIPLE"
+        assert pago.id_documento is None
+        assert pago.id_transaccion_financiera is None
+        asigs = list(AsignacionPago.objects.filter(id_pago=pago, estado="ACTIVA").order_by("monto_asignado_pago"))
+        assert len(asigs) == 2
+        assert [a.monto_asignado_pago for a in asigs] == [Decimal("35.0000"), Decimal("65.0000")]
 
     def test_omite_sin_id_externo(self, instancia_fake):
         assert SyncEngine()._upsert_pago(self._pago(id_externo=""), instancia_fake) is None

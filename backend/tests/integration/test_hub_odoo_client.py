@@ -405,6 +405,7 @@ class TestConnectorPullErrores:
             ("pull_pedidos_venta", "get_pedidos_venta"),
             ("pull_pedidos_compra", "get_pedidos_compra"),
             ("pull_facturas_venta", "get_facturas"),
+            ("pull_facturas_compra", "get_facturas"),
             ("pull_pagos", "get_pagos"),
             ("pull_inventario", "get_stock_actual"),
         ],
@@ -531,6 +532,40 @@ class TestConnectorPedidosYNormalizacion:
         assert factura["saldo_pendiente"] == Decimal("50.0")
         assert factura["estado_pago"] == "parcial"
         mock_client.get_facturas.assert_called_once_with(tipo="out_invoice", desde=None, limite=200)
+
+    def test_pull_facturas_compra_normaliza(self):
+        connector, mock_client = _connector_con_cliente_mock()
+        mock_client.get_facturas.return_value = [
+            {
+                "id": 31,
+                "name": "BILL/2024/0001",
+                "ref": "PROV-FAC-9",
+                "invoice_origin": "PO009",
+                "partner_id": [7, "Proveedor XYZ"],
+                "invoice_date": "2024-03-10",
+                "invoice_date_due": "2024-04-09",
+                "amount_untaxed": 200.0,
+                "amount_tax": 32.0,
+                "amount_total": 232.0,
+                "amount_residual": 100.0,
+                "currency_id": [2, "USD"],
+                "payment_state": "partial",
+            }
+        ]
+        mock_client.get_lineas_factura.return_value = [{"id": 91, "product_id": [10, "Prod"], "quantity": 2}]
+        result = connector.pull_facturas_compra()
+        factura = result[0]
+        assert factura["id_externo"] == "31"
+        assert factura["numero"] == "BILL/2024/0001"
+        assert factura["referencia"] == "PROV-FAC-9"
+        assert factura["origen_pedido"] == "PO009"
+        assert factura["proveedor_id_externo"] == "7"
+        assert factura["proveedor_nombre"] == "Proveedor XYZ"
+        assert factura["total"] == Decimal("232.0")
+        assert factura["saldo_pendiente"] == Decimal("100.0")
+        assert factura["estado_pago"] == "parcial"
+        assert len(factura["lineas"]) == 1
+        mock_client.get_facturas.assert_called_once_with(tipo="in_invoice", desde=None, limite=200)
 
     def test_pull_inventario_normaliza_quants(self):
         connector, mock_client = _connector_con_cliente_mock()
@@ -814,3 +849,290 @@ class TestNormalizeOdooHost:
         from apps.integration_hub.connectors.odoo.client import normalize_odoo_host
 
         assert normalize_odoo_host(raw) == esperado
+
+
+class TestOdoo18PagosYReconciliacionesBatch:
+    """Tests para fields_get cacheado en get_pagos y get_reconciliaciones_pagos batch (Odoo 18)."""
+
+    def test_get_pagos_odoo18_omite_ref_y_cachea_fields_get(self):
+        client, mock_models = _make_client()
+        odoo18_fields = {
+            "id": {"string": "ID"},
+            "name": {"string": "Number"},
+            "partner_id": {"string": "Partner"},
+            "payment_type": {"string": "Payment Type"},
+            "partner_type": {"string": "Partner Type"},
+            "amount": {"string": "Amount"},
+            "date": {"string": "Date"},
+            "state": {"string": "Status"},
+            "journal_id": {"string": "Journal"},
+            "currency_id": {"string": "Currency"},
+            "memo": {"string": "Memo"},
+            "payment_reference": {"string": "Payment Reference"},
+            "move_id": {"string": "Journal Entry"},
+            "reconciled_invoice_ids": {"string": "Reconciled Invoices"},
+            "reconciled_bill_ids": {"string": "Reconciled Bills"},
+            "write_date": {"string": "Write Date"},
+            "create_date": {"string": "Create Date"},
+        }
+        mock_models.execute_kw.side_effect = [
+            odoo18_fields,  # 1er fields_get
+            [{"id": 1, "name": "P1"}],  # 1er search_read
+            [{"id": 2, "name": "P2"}],  # 2do search_read (reusa cache sin llamar fields_get!)
+        ]
+
+        res1 = client.get_pagos(tipo="inbound")
+        res2 = client.get_pagos(tipo="outbound")
+
+        assert len(res1) == 1 and len(res2) == 1
+        assert mock_models.execute_kw.call_count == 3
+        first_search_kwargs = mock_models.execute_kw.call_args_list[1][0][6]
+        assert "ref" not in first_search_kwargs["fields"]
+        assert "memo" in first_search_kwargs["fields"]
+        assert "payment_reference" in first_search_kwargs["fields"]
+        assert "move_id" in first_search_kwargs["fields"]
+        assert "reconciled_bill_ids" in first_search_kwargs["fields"]
+
+    def test_get_pagos_odoo_legacy_incluye_ref(self):
+        client, mock_models = _make_client()
+        legacy_fields = {
+            "id": {"string": "ID"},
+            "name": {"string": "Name"},
+            "partner_id": {"string": "Partner"},
+            "payment_type": {"string": "Payment Type"},
+            "partner_type": {"string": "Partner Type"},
+            "amount": {"string": "Amount"},
+            "date": {"string": "Date"},
+            "state": {"string": "Status"},
+            "journal_id": {"string": "Journal"},
+            "currency_id": {"string": "Currency"},
+            "ref": {"string": "Reference"},
+            "move_id": {"string": "Move"},
+            "reconciled_invoice_ids": {"string": "Invoices"},
+        }
+        mock_models.execute_kw.side_effect = [legacy_fields, []]
+        client.get_pagos()
+        search_kwargs = mock_models.execute_kw.call_args_list[1][0][6]
+        assert "ref" in search_kwargs["fields"]
+        assert "memo" not in search_kwargs["fields"]
+
+    def test_get_reconciliaciones_pagos_vacio_sin_llamadas(self):
+        client, mock_models = _make_client()
+        assert client.get_reconciliaciones_pagos([]) == {}
+        mock_models.execute_kw.assert_not_called()
+
+    def test_get_reconciliaciones_pagos_batch_inbound_y_outbound(self):
+        client, mock_models = _make_client()
+        mock_models.execute_kw.side_effect = [
+            # 1. account.move.line de pagos
+            [
+                {
+                    "id": 1001,
+                    "move_id": [100, "PAY/IN/1"],
+                    "account_type": "asset_receivable",
+                    "matched_debit_ids": [501, 502],
+                    "matched_credit_ids": [],
+                    "currency_id": [2, "USD"],
+                },
+                {
+                    "id": 1002,
+                    "move_id": [200, "PAY/OUT/1"],
+                    "account_type": "liability_payable",
+                    "matched_debit_ids": [],
+                    "matched_credit_ids": [503, 504],
+                    "currency_id": [2, "USD"],
+                },
+            ],
+            # 2. account.partial.reconcile batch read
+            [
+                {
+                    "id": 501,
+                    "debit_move_id": [2001, "INV/1"],
+                    "credit_move_id": [1001, "PAY/IN/1"],
+                    "amount": 35.0,
+                    "debit_amount_currency": 35.0,
+                    "credit_amount_currency": 35.0,
+                    "debit_currency_id": [2, "USD"],
+                    "credit_currency_id": [2, "USD"],
+                },
+                {
+                    "id": 502,
+                    "debit_move_id": [2002, "INV/2"],
+                    "credit_move_id": [1001, "PAY/IN/1"],
+                    "amount": 65.0,
+                    "debit_amount_currency": 65.0,
+                    "credit_amount_currency": 65.0,
+                    "debit_currency_id": [2, "USD"],
+                    "credit_currency_id": [2, "USD"],
+                },
+                {
+                    "id": 503,
+                    "debit_move_id": [1002, "PAY/OUT/1"],
+                    "credit_move_id": [2003, "BILL/1"],
+                    "amount": 120.0,
+                    "debit_amount_currency": 120.0,
+                    "credit_amount_currency": 120.0,
+                    "debit_currency_id": [2, "USD"],
+                    "credit_currency_id": [2, "USD"],
+                },
+                {
+                    # Asiento contable no factura ('entry') debe filtrarse
+                    "id": 504,
+                    "debit_move_id": [1002, "PAY/OUT/1"],
+                    "credit_move_id": [2004, "MISC/1"],
+                    "amount": 10.0,
+                    "debit_amount_currency": 10.0,
+                    "credit_amount_currency": 10.0,
+                    "debit_currency_id": [2, "USD"],
+                    "credit_currency_id": [2, "USD"],
+                },
+            ],
+            # 3. account.move.line contrapartes batch read
+            [
+                {"id": 2001, "move_id": [301, "INV/1"], "currency_id": [2, "USD"]},
+                {"id": 2002, "move_id": [302, "INV/2"], "currency_id": [2, "USD"]},
+                {"id": 2003, "move_id": [303, "BILL/1"], "currency_id": [2, "USD"]},
+                {"id": 2004, "move_id": [304, "MISC/1"], "currency_id": [2, "USD"]},
+            ],
+            # 4. account.move contrapartes batch read
+            [
+                {"id": 301, "move_type": "out_invoice", "name": "INV/1", "currency_id": [2, "USD"]},
+                {"id": 302, "move_type": "out_invoice", "name": "INV/2", "currency_id": [2, "USD"]},
+                {"id": 303, "move_type": "in_invoice", "name": "BILL/1", "currency_id": [2, "USD"]},
+                {"id": 304, "move_type": "entry", "name": "MISC/1", "currency_id": [2, "USD"]},
+            ],
+        ]
+
+        res = client.get_reconciliaciones_pagos([100, 200])
+
+        assert mock_models.execute_kw.call_count == 4  # batch estricto, cero N+1
+        assert len(res[100]) == 2
+        assert res[100][0]["move_id_externo"] == "301"
+        assert res[100][0]["monto_pago"] == Decimal("35.0")
+        assert res[100][1]["move_id_externo"] == "302"
+        assert res[100][1]["monto_documento"] == Decimal("65.0")
+        assert len(res[200]) == 1
+        assert res[200][0]["move_id_externo"] == "303"
+        assert res[200][0]["move_type"] == "in_invoice"
+        assert res[200][0]["monto_documento"] == Decimal("120.0")
+
+    def test_connector_pull_pagos_adjunta_reconciliaciones_y_cambia_checksum(self):
+        connector, mock_client = _connector_con_cliente_mock()
+        raw_pay = {
+            "id": 77,
+            "name": "PAY/77",
+            "payment_type": "outbound",
+            "partner_type": "supplier",
+            "partner_id": [8, "Prov"],
+            "amount": 120.0,
+            "date": "2024-06-01",
+            "state": "in_process",
+            "journal_id": [1, "Banco"],
+            "currency_id": [2, "USD"],
+            "payment_reference": "Transferencia #88",
+            "move_id": [200, "PAY/77"],
+            "reconciled_invoice_ids": [],
+            "reconciled_bill_ids": [303],
+        }
+        mock_client.get_pagos.return_value = [raw_pay]
+        mock_client.get_reconciliaciones_pagos.return_value = {
+            200: [
+                {
+                    "partial_reconcile_id": 503,
+                    "move_id_externo": "303",
+                    "move_type": "in_invoice",
+                    "monto_base": Decimal("120.0"),
+                    "monto_pago": Decimal("120.0"),
+                    "monto_documento": Decimal("120.0"),
+                    "moneda_pago": "USD",
+                    "moneda_documento": "USD",
+                }
+            ]
+        }
+
+        pagos = connector.pull_pagos()
+        assert len(pagos) == 1
+        p = pagos[0]
+        assert p["facturas_externas"] == ["303"]
+        assert p["referencia"] == "Transferencia #88"
+        assert len(p["reconciliaciones"]) == 1
+        assert p["reconciliaciones"][0]["partial_reconcile_id"] == "503"
+        # Checksum incluye reconciliaciones cuando existen
+        sin_recons = connector._normalizar_pago(raw_pay, reconciliaciones=None)
+        assert p["_checksum"] != sin_recons["_checksum"]
+
+    def test_helpers_defensivos_fields_sin_id_y_reconciliaciones_incompletas(self):
+        client, mock_models = _make_client()
+
+        # Helpers _m2o_id, _m2o_name, _to_decimal y recreación lazy de _fields_cache
+        assert client._m2o_id("no-num") is None
+        assert client._m2o_name(None) == ""
+        assert client._to_decimal(None) == Decimal("0")
+        assert client._to_decimal("invalido") == Decimal("0")
+        delattr(client, "_fields_cache")
+        mock_models.execute_kw.side_effect = [
+            {"name": {"string": "N"}, "memo": {"string": "Memo"}},  # sin "id" -> rama else l.620
+            [],
+        ]
+        assert client.get_pagos() == []
+        search_kwargs = mock_models.execute_kw.call_args_list[1][0][6]
+        assert "memo" in search_kwargs["fields"]
+        assert "id" in search_kwargs["fields"]
+
+        # get_reconciliaciones_pagos: aml sin id, counterpart_line sin move_id -> {}
+        mock_models.execute_kw.side_effect = [
+            [
+                {"id": None, "move_id": [1, "X"], "matched_debit_ids": [1]},
+                {"id": 10, "move_id": [100, "P"], "matched_debit_ids": [50], "matched_credit_ids": []},
+            ],
+            [{"id": 50, "debit_move_id": [20, "C"], "credit_move_id": [10, "P"], "amount": 5.0}],
+            [{"id": 20, "move_id": False}],
+        ]
+        assert client.get_reconciliaciones_pagos([100]) == {}
+
+        # get_reconciliaciones_pagos: pr duplicado / faltantes en lookup
+        mock_models.execute_kw.side_effect = [
+            [{"id": 10, "move_id": [100, "P"], "matched_debit_ids": [51, 52], "matched_credit_ids": []}],
+            [
+                {"id": None, "debit_move_id": [20, "C"], "credit_move_id": [10, "P"], "amount": 5.0},
+                {"id": 51, "debit_move_id": [99, "NO_AML"], "credit_move_id": [10, "P"], "amount": 5.0},
+                {"id": 52, "debit_move_id": [21, "C2"], "credit_move_id": [10, "P"], "amount": 5.0},
+                {"id": 52, "debit_move_id": [21, "C2"], "credit_move_id": [10, "P"], "amount": 5.0},
+            ],
+            [{"id": 21, "move_id": [301, "F1"]}, {"id": 99, "move_id": [399, "F_MISSING"]}],
+            [{"id": 301, "move_type": "out_invoice", "name": "F1", "currency_id": [2, "USD"]}],
+        ]
+        res = client.get_reconciliaciones_pagos([100])
+        assert len(res[100]) == 1
+
+        # _normalizar_pago agrega move_id_externo de reconciliaciones aunque no esté en reconciled_*_ids
+        connector, _ = _connector_con_cliente_mock()
+        norm = connector._normalizar_pago(
+            {
+                "id": 88,
+                "name": "PAY/88",
+                "payment_type": "inbound",
+                "partner_type": "customer",
+                "partner_id": [5, "Cli"],
+                "amount": 50.0,
+                "date": "2024-06-02",
+                "state": "paid",
+                "journal_id": [1, "B"],
+                "currency_id": [2, "USD"],
+                "reconciled_invoice_ids": [],
+                "reconciled_bill_ids": [],
+            },
+            reconciliaciones=[
+                {
+                    "partial_reconcile_id": 900,
+                    "move_id_externo": "404",
+                    "move_type": "out_invoice",
+                    "monto_base": Decimal("50"),
+                    "monto_pago": Decimal("50"),
+                    "monto_documento": Decimal("50"),
+                    "moneda_pago": "USD",
+                    "moneda_documento": "USD",
+                }
+            ],
+        )
+        assert norm["facturas_externas"] == ["404"]

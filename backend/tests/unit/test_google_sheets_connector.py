@@ -24,13 +24,14 @@ pytestmark = pytest.mark.unit
 
 
 class TestColumnas:
-    def test_entidades_soportadas_cubre_las_siete(self):
+    def test_entidades_soportadas_cubre_las_ocho(self):
         assert set(columns.entidades_soportadas()) == {
             "contactos",
             "productos",
             "pedidos_venta",
             "pedidos_compra",
             "facturas_venta",
+            "facturas_compra",
             "pagos",
             "inventario",
         }

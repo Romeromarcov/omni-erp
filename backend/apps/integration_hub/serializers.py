@@ -272,6 +272,7 @@ class JobSincronizacionTriggerSerializer(serializers.Serializer):
             "pedidos_venta",
             "pedidos_compra",
             "facturas_venta",
+            "facturas_compra",
             "pagos",
             "inventario",
         ]

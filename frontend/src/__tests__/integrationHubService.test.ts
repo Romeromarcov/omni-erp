@@ -17,6 +17,7 @@ import {
   getJobsDeConector,
   getJobs,
   getIntegrationHubStatus,
+  etiquetaEntidad,
   type ConectorInstanciaCreate,
 } from '../services/integrationHubService';
 
@@ -131,5 +132,10 @@ describe('integrationHubService.getJobs — filtros por querystring', () => {
     expect(mockedGet).toHaveBeenCalledWith(
       '/integration-hub/jobs/?instancia=abc&estado=completado',
     );
+  });
+
+  it('etiquetaEntidad traduce facturas_compra y devuelve fallback si es desconocida', () => {
+    expect(etiquetaEntidad('facturas_compra')).toBe('Facturas de Compra');
+    expect(etiquetaEntidad('entidad_custom')).toBe('entidad_custom');
   });
 });

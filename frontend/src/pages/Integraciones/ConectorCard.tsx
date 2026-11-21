@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import {
+  etiquetaEntidad,
   exportarConector,
   type ConectorInstancia,
 } from '../../services/integrationHubService';
@@ -78,7 +79,7 @@ const ConectorCard: React.FC<Props> = ({ conector }) => {
             {conector.entidades_activas.length > 0 && (
               <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                 {conector.entidades_activas.map(e => (
-                  <Chip key={e} size="small" label={e} color="info" variant="outlined" />
+                  <Chip key={e} size="small" label={etiquetaEntidad(e)} color="info" variant="outlined" />
                 ))}
               </Stack>
             )}

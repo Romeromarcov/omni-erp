@@ -47,6 +47,7 @@ class ExportEngine:
         "pedidos_venta": "pull_pedidos_venta",
         "pedidos_compra": "pull_pedidos_compra",
         "facturas_venta": "pull_facturas_venta",
+        "facturas_compra": "pull_facturas_compra",
         "pagos": "pull_pagos",
         "inventario": "pull_inventario",
     }

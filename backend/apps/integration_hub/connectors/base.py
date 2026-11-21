@@ -148,6 +148,10 @@ class BaseConnector(ABC):
         """Trae facturas de venta del sistema externo."""
         raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de facturas de venta")
 
+    def pull_facturas_compra(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
+        """Trae facturas de compra (proveedor) del sistema externo."""
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de facturas de compra")
+
     def pull_pagos(self, desde: datetime | None = None, limite: int = 300) -> list[dict]:
         """Trae pagos del sistema externo."""
         raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta sync de pagos")

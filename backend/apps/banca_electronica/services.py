@@ -382,7 +382,11 @@ def _resolver_proveedor_de_pago(pago: Pago, empresa: Empresa) -> Proveedor | Non
     asignaciones = (
         pago.asignaciones.filter(activo=True)
         .exclude(estado="REVERTIDA")
-        .select_related("id_cxp__id_proveedor", "id_factura_compra__id_orden_compra__id_proveedor")
+        .select_related(
+            "id_cxp__id_proveedor",
+            "id_factura_compra__id_proveedor",
+            "id_factura_compra__id_orden_compra__id_proveedor",
+        )
         .order_by("fecha_creacion")
     )
     for asig in asignaciones:
@@ -390,8 +394,10 @@ def _resolver_proveedor_de_pago(pago: Pago, empresa: Empresa) -> Proveedor | Non
             prov = asig.id_cxp.id_proveedor
             if prov.id_empresa_id == empresa.pk:
                 return prov
-        if asig.id_factura_compra is not None and asig.id_factura_compra.id_orden_compra is not None:
-            prov = getattr(asig.id_factura_compra.id_orden_compra, "id_proveedor", None)
+        if asig.id_factura_compra is not None:
+            prov = getattr(asig.id_factura_compra, "id_proveedor", None)
+            if prov is None and asig.id_factura_compra.id_orden_compra is not None:
+                prov = getattr(asig.id_factura_compra.id_orden_compra, "id_proveedor", None)
             if prov is not None and prov.id_empresa_id == empresa.pk:
                 return prov
     return None

@@ -52,6 +52,7 @@ class SyncEngine:
         "pedidos_venta": "pull_pedidos_venta",
         "pedidos_compra": "pull_pedidos_compra",
         "facturas_venta": "pull_facturas_venta",
+        "facturas_compra": "pull_facturas_compra",
         "pagos": "pull_pagos",
         "inventario": "pull_inventario",
     }
@@ -316,6 +317,7 @@ class SyncEngine:
             "pedidos_venta": self._upsert_pedido_venta,
             "pedidos_compra": self._upsert_pedido_compra,
             "facturas_venta": self._upsert_factura_venta,
+            "facturas_compra": self._upsert_factura_compra,
             "pagos": self._upsert_pago,
             "inventario": self._upsert_inventario,
             # Las demás entidades se implementan por fase
@@ -466,57 +468,168 @@ class SyncEngine:
         except (InvalidOperation, TypeError, ValueError):
             return Decimal("0")
 
-    def _resolver_o_crear_cliente(self, datos: dict, instancia: "ConectorInstancia"):
-        """
-        Resuelve el ``crm.Cliente`` del pedido; si no existe, lo auto-crea
-        (decisión del owner: auto-crear maestros faltantes). Idempotente por
-        ``referencia_externa`` (= id externo de Odoo). Si hay un ``core.Contacto``
-        ya sincronizado con el mismo id externo, lo enlaza y reutiliza su RIF.
+    @staticmethod
+    def _resolver_moneda_para_empresa(empresa, codigo_iso: str | None):
+        """Resuelve una ``Moneda`` activa visible para ``empresa`` (nunca de otro tenant)."""
+        from django.db.models import Q
 
-        Retorna el Cliente o ``None`` si no hay datos mínimos (nombre).
-        Multi-tenant: todo acotado a ``instancia.id_empresa`` (R-CODE-1).
-        """
+        from apps.finanzas.models import Moneda
+
+        visibles = Moneda.objects.filter(
+            Q(empresa=empresa) | Q(empresa__isnull=True) | Q(es_publica=True),
+            activo=True,
+        ).order_by("-es_publica", "id_moneda")
+        codigo = (codigo_iso or "").strip()
+        if codigo:
+            exacta = visibles.filter(codigo_iso__iexact=codigo).first()
+            if exacta is not None:
+                return exacta
+        return visibles.filter(codigo_iso="USD").first() or visibles.first()
+
+    def _asegurar_contacto_de_tercero(
+        self,
+        tercero,
+        instancia: "ConectorInstancia",
+        *,
+        id_externo: str = "",
+        es_cliente: bool = False,
+        es_proveedor: bool = False,
+    ):
+        """Garantiza que ``Cliente``/``Proveedor`` tenga un ``core.Contacto`` enlazado en el tenant."""
+        from apps.core.models import Contacto
         from apps.crm.models import Cliente
         from apps.integration_hub.models import EntidadSincronizada
+        from apps.proveedores.models import Proveedor
 
         empresa = instancia.id_empresa
-        ext = str(datos.get("cliente_id_externo") or "")
-        nombre = (datos.get("cliente_nombre") or "").strip()
+        ext = (id_externo or "").strip()
+        contacto = getattr(tercero, "contacto", None)
+        if contacto is not None and contacto.id_empresa_id != empresa.pk:
+            contacto = None
 
-        # 1. Idempotencia por referencia externa.
-        if ext:
-            existente = Cliente.objects.filter(id_empresa=empresa, referencia_externa=ext).first()
-            if existente:
-                return existente
-
-        # 2. Enlazar al Contacto ya sincronizado (mismo id externo), si existe.
-        contacto = None
-        rif = ""
-        if ext:
+        if contacto is None and ext:
             mapping = EntidadSincronizada.objects.filter(
                 id_instancia=instancia, tipo_entidad="contactos", id_externo=ext
             ).first()
             if mapping and mapping.id_omni:
-                from apps.core.models import Contacto
+                contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
 
+        rif_tercero = (getattr(tercero, "rif", "") or "").strip()
+        if contacto is None and rif_tercero:
+            contacto = Contacto.objects.filter(id_empresa=empresa, rif=rif_tercero).first()
+
+        if contacto is None:
+            contacto = Contacto.objects.create(
+                id_empresa=empresa,
+                nombre=(getattr(tercero, "razon_social", "") or f"Contacto {ext or tercero.pk}").strip(),
+                rif=rif_tercero,
+                email=getattr(tercero, "email", "") or "",
+                telefono=getattr(tercero, "telefono", "") or "",
+                direccion_fiscal=getattr(tercero, "direccion", "") or "",
+                es_cliente=es_cliente,
+                es_proveedor=es_proveedor,
+            )
+        else:
+            campos_rol: list[str] = []
+            if es_cliente and not contacto.es_cliente:
+                contacto.es_cliente = True
+                campos_rol.append("es_cliente")
+            if es_proveedor and not contacto.es_proveedor:
+                contacto.es_proveedor = True
+                campos_rol.append("es_proveedor")
+            if campos_rol:
+                contacto.save(update_fields=campos_rol)
+
+        if getattr(tercero, "contacto_id", None) != contacto.pk:
+            ocupado = (
+                Cliente.objects.filter(contacto=contacto).exclude(pk=tercero.pk).exists()
+                if isinstance(tercero, Cliente)
+                else Proveedor.objects.filter(contacto=contacto).exclude(pk=tercero.pk).exists()
+            )
+            if not ocupado:
+                tercero.contacto = contacto
+                tercero.save(update_fields=["contacto"])
+
+        if ext:
+            mapping, creado = EntidadSincronizada.objects.get_or_create(
+                id_instancia=instancia,
+                tipo_entidad="contactos",
+                id_externo=ext,
+                defaults={"id_omni": str(contacto.pk), "modelo_omni": "apps.core.models.Contacto"},
+            )
+            if not creado and not mapping.id_omni:
+                mapping.id_omni = str(contacto.pk)
+                mapping.modelo_omni = "apps.core.models.Contacto"
+                mapping.save(update_fields=["id_omni", "modelo_omni", "ultimo_sync"])
+
+        return contacto
+
+    def _resolver_o_crear_tercero(
+        self,
+        modelo,
+        *,
+        ext: str,
+        nombre: str,
+        instancia: "ConectorInstancia",
+        es_cliente: bool,
+        es_proveedor: bool,
+    ):
+        """Resuelve o auto-crea ``crm.Cliente`` / ``proveedores.Proveedor`` con su ``core.Contacto``."""
+        from apps.core.models import Contacto
+        from apps.integration_hub.models import EntidadSincronizada
+
+        empresa = instancia.id_empresa
+        tercero = None
+
+        if ext:
+            tercero = modelo.objects.filter(id_empresa=empresa, referencia_externa=ext).first()
+
+        contacto = None
+        rif = ""
+        if tercero is None and ext:
+            mapping = EntidadSincronizada.objects.filter(
+                id_instancia=instancia, tipo_entidad="contactos", id_externo=ext
+            ).first()
+            if mapping and mapping.id_omni:
                 contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
                 if contacto:
                     rif = getattr(contacto, "rif", "") or ""
-                    ya = Cliente.objects.filter(id_empresa=empresa, contacto=contacto).first()
-                    if ya:
-                        return ya
+                    tercero = modelo.objects.filter(id_empresa=empresa, contacto=contacto).first()
 
-        if not nombre:
-            return None
+        if tercero is None:
+            if not nombre:
+                return None
+            tercero = modelo.objects.create(
+                id_empresa=empresa,
+                razon_social=nombre,
+                rif=rif,
+                referencia_externa=ext or None,
+                contacto=contacto,
+            )
 
-        # 3. Auto-crear el maestro. El create por ORM no dispara el validador de
-        #    RIF; usamos el RIF del contacto si lo hay (puede quedar vacío).
-        return Cliente.objects.create(
-            id_empresa=empresa,
-            razon_social=nombre,
-            rif=rif,
-            referencia_externa=ext or None,
-            contacto=contacto,
+        self._asegurar_contacto_de_tercero(
+            tercero,
+            instancia,
+            id_externo=ext,
+            es_cliente=es_cliente,
+            es_proveedor=es_proveedor,
+        )
+        return tercero
+
+    def _resolver_o_crear_cliente(self, datos: dict, instancia: "ConectorInstancia"):
+        """
+        Resuelve el ``crm.Cliente`` del pedido; si no existe, lo auto-crea
+        y garantiza un ``core.Contacto`` enlazado. Multi-tenant (R-CODE-1).
+        """
+        from apps.crm.models import Cliente
+
+        return self._resolver_o_crear_tercero(
+            Cliente,
+            ext=str(datos.get("cliente_id_externo") or "").strip(),
+            nombre=(datos.get("cliente_nombre") or "").strip(),
+            instancia=instancia,
+            es_cliente=True,
+            es_proveedor=False,
         )
 
     def _resolver_producto_mapeado(self, product_id_field, instancia: "ConectorInstancia"):
@@ -619,48 +732,17 @@ class SyncEngine:
 
     def _resolver_o_crear_proveedor(self, datos: dict, instancia: "ConectorInstancia"):
         """
-        Resuelve/auto-crea el ``proveedores.Proveedor`` de la orden de compra.
-        Análogo a ``_resolver_o_crear_cliente``: idempotente por
-        ``referencia_externa``; enlaza al ``core.Contacto`` ya sincronizado y
-        reutiliza su RIF. Retorna el Proveedor o None si no hay nombre.
+        Resuelve/auto-crea el ``proveedores.Proveedor`` y garantiza su ``core.Contacto``.
         """
-        from apps.integration_hub.models import EntidadSincronizada
         from apps.proveedores.models import Proveedor
 
-        empresa = instancia.id_empresa
-        ext = str(datos.get("proveedor_id_externo") or "")
-        nombre = (datos.get("proveedor_nombre") or "").strip()
-
-        if ext:
-            existente = Proveedor.objects.filter(id_empresa=empresa, referencia_externa=ext).first()
-            if existente:
-                return existente
-
-        contacto = None
-        rif = ""
-        if ext:
-            mapping = EntidadSincronizada.objects.filter(
-                id_instancia=instancia, tipo_entidad="contactos", id_externo=ext
-            ).first()
-            if mapping and mapping.id_omni:
-                from apps.core.models import Contacto
-
-                contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
-                if contacto:
-                    rif = getattr(contacto, "rif", "") or ""
-                    ya = Proveedor.objects.filter(id_empresa=empresa, contacto=contacto).first()
-                    if ya:
-                        return ya
-
-        if not nombre:
-            return None
-
-        return Proveedor.objects.create(
-            id_empresa=empresa,
-            razon_social=nombre,
-            rif=rif,
-            referencia_externa=ext or None,
-            contacto=contacto,
+        return self._resolver_o_crear_tercero(
+            Proveedor,
+            ext=str(datos.get("proveedor_id_externo") or "").strip(),
+            nombre=(datos.get("proveedor_nombre") or "").strip(),
+            instancia=instancia,
+            es_cliente=False,
+            es_proveedor=True,
         )
 
     def _upsert_pedido_compra(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
@@ -755,7 +837,6 @@ class SyncEngine:
         """
         from decimal import Decimal
 
-        from apps.finanzas.models import Moneda
         from apps.ventas.models import DetalleFacturaFiscal, FacturaFiscal
 
         empresa = instancia.id_empresa
@@ -775,11 +856,7 @@ class SyncEngine:
             )
             return None
 
-        moneda = (
-            Moneda.objects.filter(codigo_iso=datos.get("moneda")).first()
-            or Moneda.objects.filter(codigo_iso="USD").first()
-            or Moneda.objects.first()
-        )
+        moneda = self._resolver_moneda_para_empresa(empresa, datos.get("moneda"))
         if moneda is None:
             logger.warning(
                 "Factura de venta %s omitida: no hay Moneda configurada para " "id_moneda (empresa %s).",
@@ -838,76 +915,426 @@ class SyncEngine:
 
         return str(factura.pk)
 
-    # ── Pagos (Fase 2) ─────────────────────────────────────────────────────────
+    # ── Facturas de compra (Ola B6) ────────────────────────────────────────────
 
-    def _upsert_pago(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+    def _upsert_factura_compra(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
         """
-        Upsert de pago en ``finanzas.Pago`` (histórico **importado**, SIN
-        side-effects: no crea ``TransaccionFinanciera`` ni mueve saldos de
-        caja/banco — esos los gestiona Omni en sus operaciones nativas; aquí solo
-        se acumula el histórico del sistema externo).
+        Upsert idempotente (history-only) de factura de compra en ``compras.FacturaCompra``
+        (+ ``DetalleFacturaCompra`` y ``cuentas_por_pagar.CuentaPorPagar`` asociada).
 
-        Alcance actual: cobros entrantes de cliente (``payment_type`` inbound,
-        ``partner_type`` customer) reconciliados con **exactamente una** factura
-        ya sincronizada (``facturas_venta``). Se omiten (con log) los pagos sin
-        factura resoluble o con reconciliación múltiple/parcial — estos requieren
-        los montos de conciliación por documento, que el conector aún no trae
-        (limitación documentada; pagos a proveedor / CxP son trabajo posterior).
-
-        Idempotente por ``(id_empresa, tipo_documento, id_documento)`` (un cobro
-        total por factura). Multi-tenant (R-CODE-1); montos Decimal (R-CODE-4).
+        - Número tomado de ``numero`` o ``referencia``; si ambos vacíos, omite.
+        - Auto-crea ``proveedores.Proveedor`` y su ``core.Contacto`` común.
+        - Enlaza opcionalmente a ``OrdenCompra`` por ``origen_pedido`` (``None`` si no existe).
+        - Cero asientos contables ni movimientos de caja/inventario (history-only).
         """
-        from datetime import datetime, time as _time
+        from decimal import Decimal
 
         from django.utils.dateparse import parse_date
 
-        from apps.finanzas.models import MetodoPago, Moneda, Pago
+        from apps.compras.models import DetalleFacturaCompra, FacturaCompra, OrdenCompra
+        from apps.cuentas_por_pagar.models import CuentaPorPagar
+
+        empresa = instancia.id_empresa
+        numero = (datos.get("numero") or datos.get("referencia") or "").strip()[:50]
+        if not numero:
+            logger.warning(
+                "Factura de compra externa %s omitida: sin número.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        proveedor = self._resolver_o_crear_proveedor(datos, instancia)
+        if proveedor is None:
+            logger.warning(
+                "Factura de compra %s omitida: proveedor no resoluble.",
+                datos.get("id_externo", ""),
+            )
+            return None
+
+        origen_pedido = (datos.get("origen_pedido") or "").strip()
+        orden = (
+            OrdenCompra.objects.filter(id_empresa=empresa, numero_orden=origen_pedido).first()
+            if origen_pedido
+            else None
+        )
+
+        fecha_emision = parse_date((datos.get("fecha_factura") or "")[:10] or "") or dj_timezone.now().date()
+        fecha_vencimiento = parse_date((datos.get("fecha_vencimiento") or "")[:10] or "") or fecha_emision
+
+        total = max(Decimal("0"), self._safe_decimal_money(datos.get("total")))
+        estado_pago = (datos.get("estado_pago") or "").strip().lower()
+        if estado_pago in ("pagado", "paid", "en_proceso", "in_payment"):
+            estado_cxp = "PAGADA"
+        elif estado_pago in ("parcial", "partial"):
+            estado_cxp = "PARCIAL"
+        else:
+            estado_cxp = "PENDIENTE"
+
+        saldo_raw = datos.get("saldo_pendiente")
+        if saldo_raw in (None, ""):
+            saldo_pendiente = Decimal("0") if estado_cxp == "PAGADA" else total
+        else:
+            saldo_pendiente = max(Decimal("0"), min(total, self._safe_decimal_money(saldo_raw)))
+
+        id_externo = str(datos.get("id_externo") or "").strip()
+        referencia_ext = f"odoo:in_invoice:{id_externo}"[:100] if id_externo else None
+
+        doc_json = {
+            "moneda": str(datos.get("moneda") or ""),
+            "estado_pago": estado_pago,
+            "saldo_pendiente": str(saldo_pendiente),
+            "fecha_vencimiento": fecha_vencimiento.isoformat(),
+            "origen_pedido": origen_pedido,
+        }
+
+        with transaction.atomic():
+            factura, _creada = FacturaCompra.objects.update_or_create(
+                id_empresa=empresa,
+                numero_factura=numero,
+                defaults={
+                    "id_proveedor": proveedor,
+                    "id_orden_compra": orden,
+                    "fecha_emision": fecha_emision,
+                    "monto_total": total,
+                    "referencia_externa": referencia_ext,
+                    "documento_json": doc_json,
+                    "observaciones": origen_pedido or None,
+                    "activo": True,
+                },
+            )
+
+            factura.detalles.all().delete()
+            for linea in datos.get("lineas") or []:
+                producto = self._resolver_producto_mapeado(linea.get("product_id"), instancia)
+                if producto is None:
+                    continue
+                cantidad = self._safe_decimal_money(linea.get("quantity"))
+                precio_unitario = self._safe_decimal_money(linea.get("price_unit"))
+                descuento_pct = min(
+                    Decimal("100.00"),
+                    max(
+                        Decimal("0.00"),
+                        self._safe_decimal_money(linea.get("discount")).quantize(Decimal("0.01")),
+                    ),
+                )
+                subtotal = self._safe_decimal_money(linea.get("price_subtotal"))
+                total_linea = self._safe_decimal_money(linea.get("price_total"))
+                monto_impuesto = total_linea - subtotal if total_linea > subtotal else Decimal("0")
+                bruto = cantidad * precio_unitario
+                descuento_monto = (
+                    bruto - subtotal if bruto > subtotal and descuento_pct > Decimal("0") else Decimal("0")
+                )
+                DetalleFacturaCompra.objects.create(
+                    id_factura_compra=factura,
+                    id_producto=producto,
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
+                    descuento_porcentaje=descuento_pct,
+                    descuento_monto=descuento_monto,
+                    subtotal=subtotal,
+                    monto_impuesto=monto_impuesto,
+                    total_linea=total_linea or subtotal,
+                )
+
+            cxp = CuentaPorPagar.objects.filter(id_empresa=empresa, id_factura_compra=factura).first()
+            if cxp is None and referencia_ext:
+                cxp = CuentaPorPagar.objects.filter(id_empresa=empresa, referencia_externa=referencia_ext).first()
+
+            cxp_defaults = {
+                "id_proveedor": proveedor,
+                "id_factura_compra": factura,
+                "referencia_externa": referencia_ext,
+                "documento_json": doc_json,
+                "tipo_operacion": "FACTURA_COMPRA",
+                "monto_total": total,
+                "monto_pendiente": saldo_pendiente,
+                "fecha_emision": fecha_emision,
+                "fecha_vencimiento": fecha_vencimiento,
+                "estado": estado_cxp,
+                "activo": True,
+            }
+            if cxp is not None:
+                for field, value in cxp_defaults.items():
+                    setattr(cxp, field, value)
+                cxp.save()
+            else:
+                CuentaPorPagar.objects.create(id_empresa=empresa, **cxp_defaults)
+
+        return str(factura.pk)
+
+    # ── Pagos (Fase 2 + Ola B6 N:M) ───────────────────────────────────────────
+
+    def _asegurar_contacto_de_documento(
+        self,
+        doc,
+        instancia: "ConectorInstancia",
+        *,
+        id_externo: str = "",
+    ):
+        """Asegura ``core.Contacto`` en el tercero de un documento legacy si carece de él."""
+        if getattr(doc, "cliente_id", None):
+            return self._asegurar_contacto_de_tercero(doc.cliente, instancia, id_externo=id_externo, es_cliente=True)
+        if getattr(doc, "id_cliente_id", None):
+            return self._asegurar_contacto_de_tercero(
+                doc.id_cliente, instancia, id_externo=id_externo, es_cliente=True
+            )
+        if getattr(doc, "id_proveedor_id", None):
+            return self._asegurar_contacto_de_tercero(
+                doc.id_proveedor, instancia, id_externo=id_externo, es_proveedor=True
+            )
+        if getattr(doc, "id_orden_compra_id", None) and doc.id_orden_compra.id_proveedor_id:
+            return self._asegurar_contacto_de_tercero(
+                doc.id_orden_compra.id_proveedor,
+                instancia,
+                id_externo=id_externo,
+                es_proveedor=True,
+            )
+        return None
+
+    def _resolver_o_crear_contacto_desde_pago(
+        self,
+        datos: dict,
+        instancia: "ConectorInstancia",
+        *,
+        es_cliente: bool,
+        es_proveedor: bool,
+        docs_resueltos: list[tuple[str, object]],
+    ):
+        """Resuelve o crea el ``core.Contacto`` propietario de un pago importado."""
+        from apps.core.models import Contacto
+        from apps.crm.models import Cliente
+        from apps.finanzas.services_conciliacion_pagos import (
+            ConciliacionPagoError,
+            _resolver_contacto_documento,
+        )
+        from apps.integration_hub.models import EntidadSincronizada
+        from apps.proveedores.models import Proveedor
+
+        empresa = instancia.id_empresa
+        ext_socio = str(datos.get("socio_id_externo") or "").strip()
+        socio_nombre = (datos.get("socio_nombre") or "").strip()
+
+        contacto = None
+        for _, doc_res in docs_resueltos:
+            try:
+                contacto_doc = _resolver_contacto_documento(empresa, doc_res)
+            except ConciliacionPagoError:
+                contacto_doc = self._asegurar_contacto_de_documento(doc_res, instancia, id_externo=ext_socio)
+            if contacto is None and contacto_doc is not None:
+                contacto = contacto_doc
+
+        if contacto is None and ext_socio:
+            mapping = EntidadSincronizada.objects.filter(
+                id_instancia=instancia, tipo_entidad="contactos", id_externo=ext_socio
+            ).first()
+            if mapping and mapping.id_omni:
+                contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
+
+        if contacto is None and ext_socio:
+            if es_cliente:
+                cli = Cliente.objects.filter(id_empresa=empresa, referencia_externa=ext_socio).first()
+                if cli is not None:
+                    contacto = self._asegurar_contacto_de_tercero(
+                        cli, instancia, id_externo=ext_socio, es_cliente=True
+                    )
+            if contacto is None and es_proveedor:
+                prov = Proveedor.objects.filter(id_empresa=empresa, referencia_externa=ext_socio).first()
+                if prov is not None:
+                    contacto = self._asegurar_contacto_de_tercero(
+                        prov, instancia, id_externo=ext_socio, es_proveedor=True
+                    )
+
+        if contacto is None and (socio_nombre or ext_socio):
+            contacto = Contacto.objects.create(
+                id_empresa=empresa,
+                nombre=socio_nombre or f"Contacto {ext_socio}",
+                es_cliente=es_cliente,
+                es_proveedor=es_proveedor,
+            )
+
+        if contacto is not None:
+            campos_rol: list[str] = []
+            if es_cliente and not contacto.es_cliente:
+                contacto.es_cliente = True
+                campos_rol.append("es_cliente")
+            if es_proveedor and not contacto.es_proveedor:
+                contacto.es_proveedor = True
+                campos_rol.append("es_proveedor")
+            if campos_rol:
+                contacto.save(update_fields=campos_rol)
+            if ext_socio:
+                mapping, creado = EntidadSincronizada.objects.get_or_create(
+                    id_instancia=instancia,
+                    tipo_entidad="contactos",
+                    id_externo=ext_socio,
+                    defaults={"id_omni": str(contacto.pk), "modelo_omni": "apps.core.models.Contacto"},
+                )
+                if not creado and not mapping.id_omni:
+                    mapping.id_omni = str(contacto.pk)
+                    mapping.modelo_omni = "apps.core.models.Contacto"
+                    mapping.save(update_fields=["id_omni", "modelo_omni", "ultimo_sync"])
+
+        return contacto
+
+    def _upsert_pago(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
+        """
+        Upsert de pago en ``finanzas.Pago`` + ``finanzas.AsignacionPago`` (N:M) en
+        modo estrictamente **history-only** (``generar_asiento=False``,
+        ``modo_historico_externo=True``, ``id_transaccion_financiera=None``).
+
+        Soporta:
+        - Cobros de cliente (``inbound``/``customer`` -> ``INGRESO``) contra 0, 1 o N
+          ``FacturaFiscal`` / ``CuentaPorCobrar``.
+        - Pagos a proveedor (``outbound``/``supplier`` -> ``EGRESO``) contra 0, 1 o N
+          ``CuentaPorPagar`` (vinculada a ``FacturaCompra``) o ``FacturaCompra``.
+        - Anticipos / saldos a favor (``tipo_documento="ANTICIPO"``) cuando no trae
+          facturas reconciliadas.
+        """
+        from datetime import datetime, time as _time
+        from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
+
+        from django.db.models import DecimalField, Q, Sum
+        from django.db.models.functions import Coalesce
+        from django.utils.dateparse import parse_date
+
+        from apps.compras.models import FacturaCompra
+        from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+        from apps.cuentas_por_pagar.models import CuentaPorPagar
+        from apps.finanzas.models import MetodoPago, Pago
+        from apps.finanzas.services import TasaCambioError, obtener_tasa_cambio
+        from apps.finanzas.services_conciliacion_pagos import (
+            _saldo_aplicable_historico_documento,
+            aplicar_pago_a_documentos,
+            saldo_disponible_pago,
+        )
         from apps.integration_hub.models import EntidadSincronizada
         from apps.ventas.models import FacturaFiscal
 
         empresa = instancia.id_empresa
-        ext = str(datos.get("id_externo") or "")
+        ext = str(datos.get("id_externo") or "").strip()
         if not ext:
             return None
 
-        if (datos.get("tipo") or "") != "inbound" or (datos.get("tipo_socio") or "") != "customer":
+        tipo = (datos.get("tipo") or "").strip()
+        tipo_socio = (datos.get("tipo_socio") or "").strip()
+        if tipo == "inbound" and tipo_socio == "customer":
+            tipo_operacion = "INGRESO"
+        elif tipo == "outbound" and tipo_socio == "supplier":
+            tipo_operacion = "EGRESO"
+        else:
             logger.warning(
-                "Pago externo %s omitido: solo se importan cobros de cliente "
-                "(inbound/customer); recibido tipo=%s socio=%s.",
+                "Pago externo %s omitido: tipo=%s socio=%s no soportado.",
                 ext,
-                datos.get("tipo") or "",
-                datos.get("tipo_socio") or "",
+                tipo,
+                tipo_socio,
             )
             return None
 
-        # Resolver las facturas reconciliadas que ya estén sincronizadas en Omni.
-        facturas = []
-        for inv_ext in datos.get("facturas_externas") or []:
-            mapping = EntidadSincronizada.objects.filter(
-                id_instancia=instancia, tipo_entidad="facturas_venta", id_externo=str(inv_ext)
-            ).first()
-            if mapping and mapping.id_omni:
-                fac = FacturaFiscal.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
-                if fac:
-                    facturas.append(fac)
-
-        if len(facturas) != 1:
-            logger.warning(
-                "Pago externo %s omitido: se requiere exactamente 1 factura "
-                "sincronizada reconciliada (resueltas %s).",
-                ext,
-                len(facturas),
-            )
-            return None
-        factura = facturas[0]
-
-        moneda = (
-            Moneda.objects.filter(codigo_iso=datos.get("moneda")).first()
-            or Moneda.objects.filter(codigo_iso="USD").first()
-            or Moneda.objects.first()
-        )
+        moneda = self._resolver_moneda_para_empresa(empresa, datos.get("moneda"))
         if moneda is None:
             logger.warning("Pago externo %s omitido: sin Moneda configurada.", ext)
+            return None
+
+        reconciliaciones_raw = list(datos.get("reconciliaciones") or [])
+        ext_move_ids: list[str] = []
+        seen_ext: set[str] = set()
+        for inv_ext in datos.get("facturas_externas") or []:
+            sid = str(inv_ext or "").strip()
+            if sid and sid not in seen_ext:
+                seen_ext.add(sid)
+                ext_move_ids.append(sid)
+        for rec in reconciliaciones_raw:
+            sid = str(rec.get("move_id_externo") or "").strip()
+            if sid and sid not in seen_ext:
+                seen_ext.add(sid)
+                ext_move_ids.append(sid)
+
+        tiene_referencia_facturas = bool(ext_move_ids or reconciliaciones_raw)
+
+        docs_por_ext: dict[str, tuple[str, object]] = {}
+        docs_resueltos: list[tuple[str, object]] = []
+        vistos_doc_pk: set[tuple[str, str]] = set()
+
+        for inv_ext in ext_move_ids:
+            par_resuelto: tuple[str, object] | None = None
+            if tipo_operacion == "INGRESO":
+                mapping = EntidadSincronizada.objects.filter(
+                    id_instancia=instancia, tipo_entidad="facturas_venta", id_externo=inv_ext
+                ).first()
+                if mapping and mapping.id_omni:
+                    fac = FacturaFiscal.objects.filter(pk=mapping.id_omni, id_empresa=empresa, activo=True).first()
+                    if fac is not None:
+                        par_resuelto = ("FACTURA_VENTA", fac)
+                if par_resuelto is None:
+                    cxc = (
+                        CuentaPorCobrar.objects.filter(
+                            empresa=empresa,
+                            referencia_externa__in=[inv_ext, f"odoo:out_invoice:{inv_ext}"],
+                        )
+                        .exclude(estado="anulada")
+                        .order_by("pk")
+                        .first()
+                    )
+                    if cxc is not None:
+                        par_resuelto = ("CUENTA_POR_COBRAR", cxc)
+            else:
+                mapping = EntidadSincronizada.objects.filter(
+                    id_instancia=instancia, tipo_entidad="facturas_compra", id_externo=inv_ext
+                ).first()
+                if mapping and mapping.id_omni:
+                    fc = FacturaCompra.objects.filter(pk=mapping.id_omni, id_empresa=empresa, activo=True).first()
+                    if fc is not None:
+                        cxp = (
+                            CuentaPorPagar.objects.filter(id_empresa=empresa, id_factura_compra=fc, activo=True)
+                            .order_by("fecha_creacion")
+                            .first()
+                        )
+                        par_resuelto = ("CUENTA_POR_PAGAR", cxp) if cxp is not None else ("FACTURA_COMPRA", fc)
+                if par_resuelto is None:
+                    cxp_fb = (
+                        CuentaPorPagar.objects.filter(
+                            id_empresa=empresa,
+                            referencia_externa__in=[inv_ext, f"odoo:in_invoice:{inv_ext}"],
+                            activo=True,
+                        )
+                        .order_by("fecha_creacion")
+                        .first()
+                    )
+                    if cxp_fb is not None:
+                        par_resuelto = ("CUENTA_POR_PAGAR", cxp_fb)
+
+            if par_resuelto is not None:
+                docs_por_ext[inv_ext] = par_resuelto
+                clave_pk = (par_resuelto[0], str(par_resuelto[1].pk))
+                if clave_pk not in vistos_doc_pk:
+                    vistos_doc_pk.add(clave_pk)
+                    docs_resueltos.append(par_resuelto)
+
+        if not docs_resueltos and tiene_referencia_facturas:
+            logger.warning(
+                "Pago externo %s omitido: ninguna de las facturas referenciadas (%s) está sincronizada en Omni.",
+                ext,
+                ext_move_ids,
+            )
+            return None
+
+        if len(docs_resueltos) >= 2 and not reconciliaciones_raw:
+            logger.warning(
+                "Pago externo %s omitido: reconciliación múltiple (%s docs) sin detalle de montos parciales.",
+                ext,
+                len(docs_resueltos),
+            )
+            return None
+
+        contacto = self._resolver_o_crear_contacto_desde_pago(
+            datos,
+            instancia,
+            es_cliente=(tipo_operacion == "INGRESO"),
+            es_proveedor=(tipo_operacion == "EGRESO"),
+            docs_resueltos=docs_resueltos,
+        )
+        if not docs_resueltos and contacto is None:
+            logger.warning("Pago externo %s omitido: anticipo sin contacto identificable.", ext)
             return None
 
         metodo, _ = MetodoPago.objects.get_or_create(
@@ -918,24 +1345,265 @@ class SyncEngine:
 
         fecha_d = parse_date((datos.get("fecha") or "")[:10] or "") or dj_timezone.now().date()
         fecha_dt = dj_timezone.make_aware(datetime.combine(fecha_d, _time()))
+        monto_nuevo = max(Decimal("0"), self._safe_decimal_money(datos.get("monto")))
+        referencia_str = (f"odoo:{ext} " + (datos.get("referencia") or "")).strip()[:100]
+
+        if not docs_resueltos:
+            tipo_doc_pago = "ANTICIPO"
+            id_doc_pago = None
+            id_factura_fk = None
+            id_cxp_fk = None
+        elif len(docs_resueltos) == 1:
+            u_tipo, u_doc = docs_resueltos[0]
+            id_factura_fk = u_doc if u_tipo == "FACTURA_VENTA" else None
+            id_cxp_fk = u_doc if u_tipo == "CUENTA_POR_PAGAR" else None
+            if u_tipo == "FACTURA_VENTA":
+                tipo_doc_pago = "FACTURA"
+                id_doc_pago = u_doc.pk
+            elif u_tipo == "CUENTA_POR_COBRAR":
+                tipo_doc_pago = "CXC"
+                id_doc_pago = None
+            elif u_tipo == "CUENTA_POR_PAGAR":
+                tipo_doc_pago = "CXP"
+                id_doc_pago = u_doc.pk
+            else:
+                tipo_doc_pago = "COMPRA"
+                id_doc_pago = u_doc.pk
+        else:
+            tipo_doc_pago = "CONCILIACION_MULTIPLE"
+            id_doc_pago = None
+            id_factura_fk = None
+            id_cxp_fk = None
 
         with transaction.atomic():
-            pago, _creado = Pago.objects.update_or_create(
-                id_empresa=empresa,
-                tipo_documento="FACTURA",
-                id_documento=factura.pk,
-                defaults={
-                    "tipo_operacion": "INGRESO",
-                    "fecha_pago": fecha_dt,
-                    "monto": self._safe_decimal_money(datos.get("monto")),
-                    "id_moneda": moneda,
-                    "id_metodo_pago": metodo,
-                    # FK de conveniencia (consistente con el flujo nativo): habilita
-                    # ``documento_relacionado`` además del par tipo/id_documento.
-                    "id_factura": factura,
-                    "referencia": (f"odoo:{ext} " + (datos.get("referencia") or "")).strip()[:100],
-                },
-            )
+            pago = None
+            mapping_pago = EntidadSincronizada.objects.filter(
+                id_instancia=instancia, tipo_entidad="pagos", id_externo=ext
+            ).first()
+            if mapping_pago and mapping_pago.id_omni:
+                pago = Pago.objects.filter(pk=mapping_pago.id_omni, id_empresa=empresa).first()
+            if pago is None:
+                pago = (
+                    Pago.objects.filter(id_empresa=empresa)
+                    .filter(Q(referencia=f"odoo:{ext}") | Q(referencia__startswith=f"odoo:{ext} "))
+                    .order_by("fecha_creacion", "id_pago")
+                    .first()
+                )
+
+            if pago is not None:
+                asignado_activo: Decimal = pago.asignaciones.filter(estado="ACTIVA", activo=True).aggregate(
+                    total=Coalesce(
+                        Sum("monto_asignado_pago"),
+                        Decimal("0.0000"),
+                        output_field=DecimalField(max_digits=18, decimal_places=4),
+                    )
+                )["total"]
+                monto_eff = max(monto_nuevo, Decimal(str(asignado_activo)))
+                pago.id_contacto = contacto
+                pago.tipo_operacion = tipo_operacion
+                pago.tipo_documento = tipo_doc_pago
+                pago.id_documento = id_doc_pago
+                pago.fecha_pago = fecha_dt
+                pago.monto = monto_eff
+                pago.id_moneda = moneda
+                pago.id_metodo_pago = metodo
+                pago.id_factura = id_factura_fk
+                pago.id_cxp = id_cxp_fk
+                pago.referencia = referencia_str
+                pago.save()
+            else:
+                pago = Pago.objects.create(
+                    id_empresa=empresa,
+                    id_contacto=contacto,
+                    tipo_operacion=tipo_operacion,
+                    tipo_documento=tipo_doc_pago,
+                    id_documento=id_doc_pago,
+                    fecha_pago=fecha_dt,
+                    monto=monto_nuevo,
+                    id_moneda=moneda,
+                    id_metodo_pago=metodo,
+                    id_factura=id_factura_fk,
+                    id_cxp=id_cxp_fk,
+                    referencia=referencia_str,
+                    id_transaccion_financiera=None,
+                )
+
+            if docs_resueltos:
+                refs_activas = set(
+                    pago.asignaciones.filter(estado="ACTIVA", activo=True)
+                    .exclude(referencia_externa="")
+                    .values_list("referencia_externa", flat=True)
+                )
+                lote_asignaciones: list[dict] = []
+                disponible_restante = saldo_disponible_pago(pago)
+                saldo_doc_cache: dict[tuple[str, str], Decimal] = {}
+
+                if reconciliaciones_raw:
+                    for idx, rec in enumerate(reconciliaciones_raw):
+                        move_ext = str(rec.get("move_id_externo") or "").strip()
+                        if move_ext not in docs_por_ext or disponible_restante <= Decimal("0"):
+                            continue
+                        t_tipo, t_doc = docs_por_ext[move_ext]
+                        pr_id = str(rec.get("partial_reconcile_id") or "").strip()
+                        ref_asig = f"odoo:pr:{pr_id}"[:100] if pr_id else f"odoo:pay:{ext}:doc:{t_doc.pk}:{idx}"[:100]
+                        if ref_asig in refs_activas:
+                            continue
+
+                        clave_cache = (t_tipo, str(t_doc.pk))
+                        if clave_cache not in saldo_doc_cache:
+                            saldo_doc_cache[clave_cache] = _saldo_aplicable_historico_documento(
+                                empresa.pk, t_tipo, t_doc
+                            )
+                        saldo_doc_rest = saldo_doc_cache[clave_cache]
+                        if saldo_doc_rest <= Decimal("0"):
+                            continue
+
+                        monto_pago_pr = self._safe_decimal_money(rec.get("monto_pago") or rec.get("monto_base"))
+                        monto_doc_pr = self._safe_decimal_money(rec.get("monto_documento") or rec.get("monto_base"))
+                        if monto_pago_pr <= Decimal("0") or monto_doc_pr <= Decimal("0"):
+                            continue
+
+                        if t_tipo == "FACTURA_VENTA":
+                            moneda_doc_obj = t_doc.id_moneda
+                        else:
+                            moneda_doc_obj = (
+                                self._resolver_moneda_para_empresa(empresa, rec.get("moneda_documento"))
+                                or empresa.id_moneda_base
+                                or moneda
+                            )
+
+                        if moneda_doc_obj.pk == pago.id_moneda_id:
+                            quant = Decimal("0.01") if t_tipo == "CUENTA_POR_COBRAR" else Decimal("0.0001")
+                            monto_apl = min(monto_pago_pr, disponible_restante, saldo_doc_rest).quantize(
+                                quant, rounding=ROUND_DOWN
+                            )
+                            if monto_apl <= Decimal("0"):
+                                continue
+                            lote_asignaciones.append(
+                                {
+                                    "tipo_documento": t_tipo,
+                                    "id_documento": t_doc.pk,
+                                    "monto_asignado_pago": monto_apl,
+                                    "monto_asignado_documento": monto_apl,
+                                    "moneda_documento": moneda_doc_obj.codigo_iso,
+                                    "referencia_externa": ref_asig,
+                                }
+                            )
+                            disponible_restante -= monto_apl
+                            saldo_doc_cache[clave_cache] -= monto_apl
+                        else:
+                            tasa_orig = (monto_doc_pr / monto_pago_pr).quantize(
+                                Decimal("0.00000001"), rounding=ROUND_HALF_UP
+                            )
+                            if tasa_orig <= Decimal("0"):
+                                continue
+                            monto_pago_eff = min(monto_pago_pr, disponible_restante).quantize(
+                                Decimal("0.0001"), rounding=ROUND_DOWN
+                            )
+                            quant_doc = Decimal("0.01") if t_tipo == "CUENTA_POR_COBRAR" else Decimal("0.0001")
+                            monto_doc_eff = min(
+                                monto_doc_pr,
+                                saldo_doc_rest,
+                                (monto_pago_eff * tasa_orig).quantize(quant_doc, rounding=ROUND_HALF_UP),
+                            ).quantize(quant_doc, rounding=ROUND_DOWN)
+                            if monto_doc_eff < monto_doc_pr:
+                                monto_pago_eff = min(
+                                    disponible_restante,
+                                    (monto_doc_eff / tasa_orig).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
+                                )
+                            if monto_pago_eff <= Decimal("0") or monto_doc_eff <= Decimal("0"):
+                                continue
+                            tasa_eff = (monto_doc_eff / monto_pago_eff).quantize(
+                                Decimal("0.00000001"), rounding=ROUND_HALF_UP
+                            )
+                            lote_asignaciones.append(
+                                {
+                                    "tipo_documento": t_tipo,
+                                    "id_documento": t_doc.pk,
+                                    "monto_asignado_pago": monto_pago_eff,
+                                    "monto_asignado_documento": monto_doc_eff,
+                                    "moneda_documento": moneda_doc_obj.codigo_iso,
+                                    "tasa_aplicada": tasa_eff,
+                                    "referencia_externa": ref_asig,
+                                }
+                            )
+                            disponible_restante -= monto_pago_eff
+                            saldo_doc_cache[clave_cache] -= monto_doc_eff
+                        refs_activas.add(ref_asig)
+                elif len(docs_resueltos) == 1:
+                    t_tipo, t_doc = docs_resueltos[0]
+                    ref_asig = f"odoo:pay:{ext}:doc:{t_doc.pk}"[:100]
+                    ya_asignado = (
+                        ref_asig in refs_activas
+                        or pago.asignaciones.filter(
+                            estado="ACTIVA",
+                            activo=True,
+                            tipo_documento=t_tipo,
+                            id_documento=str(t_doc.pk),
+                        ).exists()
+                    )
+                    if not ya_asignado and disponible_restante > Decimal("0"):
+                        saldo_doc_rest = _saldo_aplicable_historico_documento(empresa.pk, t_tipo, t_doc)
+                        if t_tipo == "FACTURA_VENTA":
+                            moneda_doc_obj = t_doc.id_moneda
+                        else:
+                            moneda_doc_obj = empresa.id_moneda_base or moneda
+                        if saldo_doc_rest > Decimal("0"):
+                            if moneda_doc_obj.pk == pago.id_moneda_id:
+                                quant = Decimal("0.01") if t_tipo == "CUENTA_POR_COBRAR" else Decimal("0.0001")
+                                monto_apl = min(disponible_restante, saldo_doc_rest).quantize(
+                                    quant, rounding=ROUND_DOWN
+                                )
+                                if monto_apl > Decimal("0"):
+                                    lote_asignaciones.append(
+                                        {
+                                            "tipo_documento": t_tipo,
+                                            "id_documento": t_doc.pk,
+                                            "monto_asignado_pago": monto_apl,
+                                            "monto_asignado_documento": monto_apl,
+                                            "moneda_documento": moneda_doc_obj.codigo_iso,
+                                            "referencia_externa": ref_asig,
+                                        }
+                                    )
+                            else:
+                                try:
+                                    tasa_obj = obtener_tasa_cambio(
+                                        pago.id_moneda, moneda_doc_obj, empresa=empresa, fecha=fecha_d
+                                    )
+                                    tasa_val = Decimal(str(tasa_obj.valor_tasa))
+                                except TasaCambioError:
+                                    tasa_val = Decimal("0")
+                                if tasa_val > Decimal("0"):
+                                    quant_doc = Decimal("0.01") if t_tipo == "CUENTA_POR_COBRAR" else Decimal("0.0001")
+                                    monto_doc_eff = min(
+                                        saldo_doc_rest,
+                                        (disponible_restante * tasa_val).quantize(quant_doc, rounding=ROUND_DOWN),
+                                    ).quantize(quant_doc, rounding=ROUND_DOWN)
+                                    monto_pago_eff = min(
+                                        disponible_restante,
+                                        (monto_doc_eff / tasa_val).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
+                                    )
+                                    if monto_pago_eff > Decimal("0") and monto_doc_eff > Decimal("0"):
+                                        lote_asignaciones.append(
+                                            {
+                                                "tipo_documento": t_tipo,
+                                                "id_documento": t_doc.pk,
+                                                "monto_asignado_pago": monto_pago_eff,
+                                                "monto_asignado_documento": monto_doc_eff,
+                                                "moneda_documento": moneda_doc_obj.codigo_iso,
+                                                "tasa_aplicada": tasa_val,
+                                                "referencia_externa": ref_asig,
+                                            }
+                                        )
+
+                if lote_asignaciones:
+                    aplicar_pago_a_documentos(
+                        pago,
+                        lote_asignaciones,
+                        generar_asiento=False,
+                        modo_historico_externo=True,
+                    )
+
         return str(pago.pk)
 
     # ── Inventario / stock (Fase 2) ────────────────────────────────────────────

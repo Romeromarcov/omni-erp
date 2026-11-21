@@ -148,9 +148,65 @@ class RecepcionMercanciaSerializer(serializers.ModelSerializer):
 class FacturaCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = FacturaCompra
-        exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915);
+        # excluye referencia_externa y documento_json (SEC-NEW-3).
+        fields = [
+            "id_factura_compra",
+            "id_empresa",
+            "id_orden_compra",
+            "id_proveedor",
+            "id_recepcion",
+            "numero_factura",
+            "fecha_emision",
+            "monto_total",
+            "observaciones",
+            "activo",
+            "fecha_creacion",
+        ]
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_factura_compra", "fecha_creacion")
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        orden = (
+            attrs["id_orden_compra"] if "id_orden_compra" in attrs else getattr(self.instance, "id_orden_compra", None)
+        )
+        prov = attrs["id_proveedor"] if "id_proveedor" in attrs else getattr(self.instance, "id_proveedor", None)
+        recepcion = attrs["id_recepcion"] if "id_recepcion" in attrs else getattr(self.instance, "id_recepcion", None)
+
+        visibles = _empresas_visibles_contexto(self)
+        empresa_ref = _empresa_efectiva_contexto(self)
+        if empresa_ref is None:
+            if orden is not None:
+                empresa_ref = str(orden.id_empresa_id)
+            elif prov is not None:
+                empresa_ref = str(prov.id_empresa_id)
+            elif recepcion is not None:
+                empresa_ref = str(recepcion.id_empresa_id)
+
+        _validar_unicidad_empresa(
+            FacturaCompra,
+            "numero_factura",
+            attrs.get("numero_factura"),
+            empresa_ref,
+            self.instance,
+        )
+        _validar_fk_empresa(orden, "id_orden_compra", empresa_ref, visibles, etiqueta="Orden de compra")
+        _validar_fk_empresa(prov, "id_proveedor", empresa_ref, visibles, etiqueta="Proveedor")
+        _validar_fk_empresa(recepcion, "id_recepcion", empresa_ref, visibles, etiqueta="Recepción")
+
+        if orden is None and prov is None:
+            raise serializers.ValidationError(
+                {"id_proveedor": "Debe indicar un proveedor o una orden de compra asociada."}
+            )
+        if orden is not None and prov is not None and orden.id_proveedor_id != prov.pk:
+            raise serializers.ValidationError(
+                {"id_proveedor": "El proveedor indicado no coincide con el proveedor de la orden de compra."}
+            )
+        if orden is not None and prov is None:
+            attrs["id_proveedor"] = orden.id_proveedor
+
+        return attrs
 
 
 class RequisicionCompraSerializer(serializers.ModelSerializer):

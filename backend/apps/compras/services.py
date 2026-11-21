@@ -202,6 +202,7 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None,
     factura = FacturaCompra.objects.create(
         id_empresa=empresa,
         id_orden_compra=recepcion.id_orden_compra,
+        id_proveedor=recepcion.id_orden_compra.id_proveedor,
         id_recepcion=recepcion,
         numero_factura=numero_factura,
         fecha_emision=fecha,
