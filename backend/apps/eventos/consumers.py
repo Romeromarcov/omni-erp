@@ -98,10 +98,22 @@ def _handle_pago(envelope: dict) -> None:
 # ── Consumer principal ────────────────────────────────────────────────────────
 
 
-def _process_message(msg_value: bytes, headers: Any = None) -> None:
+def _process_message(msg_value: bytes | None, headers: Any = None) -> None:
     """Deserializa el envelope, extrae contexto W3C si existe y despacha al handler."""
+    if msg_value is None:
+        logger.warning("OmniEventConsumer: mensaje tombstone (value=None) ignorado")
+        return
+
+    if not isinstance(msg_value, (bytes, bytearray, str)):
+        logger.warning(
+            "OmniEventConsumer: mensaje inválido (tipo inesperado %s)",
+            type(msg_value).__name__,
+        )
+        return
+
     try:
-        envelope = json.loads(msg_value.decode("utf-8"))
+        raw_text = msg_value if isinstance(msg_value, str) else bytes(msg_value).decode("utf-8")
+        envelope = json.loads(raw_text)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         logger.warning("OmniEventConsumer: mensaje inválido (no JSON): %s", exc)
         return
@@ -110,7 +122,11 @@ def _process_message(msg_value: bytes, headers: Any = None) -> None:
         logger.warning("OmniEventConsumer: mensaje inválido (envelope no es objeto JSON)")
         return
 
-    event_type = envelope.get("event_type", "")
+    event_type = envelope.get("event_type")
+    if not isinstance(event_type, str) or not event_type:
+        logger.warning("OmniEventConsumer: mensaje inválido (event_type ausente o no string)")
+        return
+
     handlers = _handlers.get(event_type, [])
 
     if not handlers:

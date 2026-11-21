@@ -23,6 +23,7 @@ import asyncio
 import importlib
 import json
 import logging
+import os
 from unittest import mock
 
 from celery import shared_task
@@ -116,6 +117,8 @@ def _clean_otel_and_eventos(monkeypatch):
     monkeypatch.delenv("OTEL_ENVIRONMENT", raising=False)
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", raising=False)
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_HEADERS", raising=False)
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", raising=False)
     monkeypatch.setattr(producer, "_producer_instance", None)
     _CAPTURED_E2E_LOGS.clear()
     reset_telemetry_for_tests()
@@ -535,7 +538,23 @@ class TestSanitizacionYFailSafe:
         ):
             assert forbidden not in attrs
 
-    @pytest.mark.parametrize("endpoint_val", ["", "not-a-url", "ftp://collector:4318", "http://bad host:4318"])
+    @pytest.mark.parametrize(
+        "endpoint_val",
+        [
+            "",
+            "not-a-url",
+            "ftp://collector:4318",
+            "http://bad host:4318",
+            " https://collector.example.com:4318",
+            "https://collector.example.com:4318 ",
+            "https://user:ci-only-dummy-key-pw@collector.example.com:4318",
+            "https://user@collector.example.com:4318",
+            "https://:ci-only-dummy-key-pw@collector.example.com:4318",
+            "http:///v1/traces",
+            "https://collector.example.com:99999",
+            "https://collector.example.com:4318#frag",
+        ],
+    )
     def test_failsafe_endpoint_ausente_o_invalido_genera_spans_locales(self, monkeypatch, caplog, endpoint_val):
         monkeypatch.setenv("OTEL_ENABLED", "true")
         if endpoint_val:
@@ -550,6 +569,7 @@ class TestSanitizacionYFailSafe:
 
         assert is_telemetry_active() is True
         assert any("sin exportación" in r.getMessage() for r in caplog.records)
+        assert "ci-only-dummy-key" not in caplog.text
 
         with trazar_operacion("local.sin_exporter") as span:
             ctx = span.get_span_context()
@@ -582,6 +602,7 @@ class TestSanitizacionYFailSafe:
     def test_otlp_exporter_valido_configura_batch_processor_y_shutdown(self, monkeypatch):
         monkeypatch.setenv("OTEL_ENABLED", "true")
         monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://collector.example.com:4318")
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_HEADERS", "Authorization=Bearer%20ci-only-dummy-key-hdr")
 
         exporter_stub = mock.Mock()
         exporter_stub.shutdown.return_value = None
@@ -592,7 +613,10 @@ class TestSanitizacionYFailSafe:
             return_value=exporter_stub,
         ) as exp_cls:
             assert init_telemetry() is True
-            exp_cls.assert_called_once()
+            exp_cls.assert_called_once_with(
+                endpoint="https://collector.example.com:4318/v1/traces",
+                headers={"authorization": "Bearer ci-only-dummy-key-hdr"},
+            )
 
         shutdown_telemetry()
         exporter_stub.shutdown.assert_called_once()
@@ -737,3 +761,139 @@ class TestSanitizacionYFailSafe:
         assert "---" not in sanitized
         assert "mysecretvalue" not in sanitized
         assert 123 not in sanitized
+
+    def test_otlp_endpoint_normalizacion_y_headers_seguros_sin_fuga_en_logs(self, monkeypatch, caplog):
+        monkeypatch.setenv("OTEL_ENABLED", "true")
+
+        # 1. Normalización de base endpoint preservando query
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://collector.example.com:4318/otel/?env=prod")
+        assert telemetry._resolve_valid_otlp_endpoint() == "https://collector.example.com:4318/otel/v1/traces?env=prod"
+
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://collector.example.com:4318/v1/traces?k=1")
+        assert telemetry._resolve_valid_otlp_endpoint() == "https://collector.example.com:4318/v1/traces?k=1"
+
+        # 2. Prioridad de TRACES_ENDPOINT y fallback si es solo espacios
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "   ")
+        assert telemetry._resolve_valid_otlp_endpoint() == "https://collector.example.com:4318/v1/traces?k=1"
+
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", " https://collector.example.com:4318/v1/traces")
+        assert telemetry._resolve_valid_otlp_endpoint() is None
+
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "https://collector.example.com:4318/ingest?v=2")
+        assert telemetry._resolve_valid_otlp_endpoint() == "https://collector.example.com:4318/ingest?v=2"
+
+        # 3. Parser propio con OTLPSpanExporter real: headers malformados nunca filtran credenciales en caplog
+        raw_headers = (
+            "Authorization=Bearer%20ci-only-dummy-key-ok,"
+            "malformed_ci-only-dummy-key-sin_igual,"
+            "x-crlf=ci-only-dummy-key-crlf%0aEvil:1,"
+            "x-raw-nl=ci-only-dummy-key-nl\nEvil:1,"
+            "x-nul=ci-only-dummy-key-nul%00x,"
+            "x-tenant=emp-1"
+        )
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_HEADERS", raw_headers)
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "   ")
+
+        with caplog.at_level("WARNING"):
+            assert init_telemetry() is True
+
+        full_logs = " ".join(r.getMessage() for r in caplog.records)
+        assert "formato inválido" in full_logs
+        assert "ci-only-dummy-key" not in full_logs
+        assert "malformed" not in full_logs
+        assert "x-crlf" not in full_logs
+        assert "x-raw-nl" not in full_logs
+        assert "x-nul" not in full_logs
+        assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == raw_headers
+        assert telemetry._has_unsafe_header_chars("bad\x00val") is True
+
+        # Solo whitespace con salto de línea también emite warning seguro
+        caplog.clear()
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "\n  ")
+        with caplog.at_level("WARNING", logger="omni.telemetry"):
+            assert telemetry._parse_safe_otlp_headers() == {}
+        assert any("caracteres de control" in r.getMessage() for r in caplog.records)
+
+    def test_sanitize_camelcase_diacriticos_y_mappings_anidados(self):
+        dirty = {
+            "privateKey": "ci-only-dummy-key-1",
+            "accessKey": "ci-only-dummy-key-2",
+            "sessionKey": "ci-only-dummy-key-3",
+            "signingKey": "ci-only-dummy-key-4",
+            "encryptionKey": "ci-only-dummy-key-5",
+            "authHeader": "ci-only-dummy-key-6",
+            "contraseña": "ci-only-dummy-key-7",
+            "CONTRASEÑA_ADMIN": "ci-only-dummy-key-8",
+            "miContraseña": "ci-only-dummy-key-9",
+            "detalle": {
+                "password": "ci-only-dummy-key-nested",
+                "modulo": "ventas",
+                "sub": {
+                    "privateKey": "ci-only-dummy-key-deep",
+                    "paso": 2,
+                    "trace": "Bearer ci-only-dummy-key-bearer",
+                },
+            },
+            "solo_secreto": {"contraseña": "ci-only-dummy-key-only"},
+            "lista_mixta": ["ok", {"secret": "ci-only-dummy-key-list", "id": 7}],
+            "texto_dict": "{'password': 'ci-only-dummy-key-str'}",
+        }
+        sanitized = telemetry.sanitize_span_attributes(dirty)
+
+        for forbidden in (
+            "privateKey",
+            "accessKey",
+            "sessionKey",
+            "signingKey",
+            "encryptionKey",
+            "authHeader",
+            "contraseña",
+            "CONTRASEÑA_ADMIN",
+            "miContraseña",
+            "solo_secreto",
+        ):
+            assert forbidden not in sanitized
+
+        assert sanitized["detalle"] == {
+            "modulo": "ventas",
+            "sub": {"paso": 2, "trace": "[REDACTED]"},
+        }
+        assert sanitized["lista_mixta"] == ("ok", {"id": 7})
+        assert sanitized["texto_dict"] == "[REDACTED]"
+
+        # Protección ante profundidad excesiva o ciclo
+        cyclic: dict[str, object] = {"ok": "val"}
+        cyclic["self"] = cyclic
+        bounded = telemetry.sanitize_span_attributes({"wrap": cyclic})
+        assert bounded["wrap"]["ok"] == "val"
+
+    def test_reinit_con_nuevo_span_exporter_cierra_anterior_y_consumidor_tombstone(self, monkeypatch, caplog):
+        monkeypatch.setenv("OTEL_ENABLED", "true")
+        monkeypatch.setattr(logging.getLogger("omni.eventos"), "propagate", True)
+
+        exp1 = InMemorySpanExporter()
+        assert init_telemetry(span_exporter=exp1) is True
+
+        exp2 = InMemorySpanExporter()
+        with mock.patch("apps.core.telemetry.shutdown_telemetry", wraps=shutdown_telemetry) as shutdown_spy:
+            assert init_telemetry(span_exporter=exp2) is True
+            shutdown_spy.assert_called_once()
+
+        with trazar_operacion("post.reinit"):
+            pass
+
+        assert [s.name for s in exp1.get_finished_spans()] == []
+        assert [s.name for s in exp2.get_finished_spans()] == ["post.reinit"]
+
+        # Tombstone (None), tipo inesperado y event_type no string en _process_message
+        with caplog.at_level("WARNING", logger="omni.eventos.consumer"):
+            consumers._process_message(None)
+            consumers._process_message(12345)  # type: ignore[arg-type]
+            consumers._process_message(json.dumps({"event_type": ["no", "string"]}).encode("utf-8"))
+            consumers._process_message(json.dumps({"event_type": 42}).encode("utf-8"))
+            consumers._process_message(json.dumps({}).encode("utf-8"))
+
+        mensajes = " ".join(r.getMessage() for r in caplog.records)
+        assert "tombstone" in mensajes
+        assert "tipo inesperado" in mensajes
+        assert "event_type ausente o no string" in mensajes

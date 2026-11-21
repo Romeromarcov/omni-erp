@@ -21,10 +21,11 @@ import logging
 import os
 import re
 import threading
+import unicodedata
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import AbstractContextManager, ContextDecorator, nullcontext
-from typing import Any
-from urllib.parse import urlsplit
+from typing import Any, Literal
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 logger = logging.getLogger("omni.telemetry")
 
@@ -86,9 +87,11 @@ _SENSITIVE_SUBSTRINGS: tuple[str, ...] = (
     "secret",
     "password",
     "passwd",
+    "contrasena",
     "api_key",
     "apikey",
     "authorization",
+    "auth_header",
     "credential",
     "private_key",
     "access_key",
@@ -101,15 +104,20 @@ _SENSITIVE_SUBSTRINGS: tuple[str, ...] = (
 
 _UNSAFE_VALUE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(?:Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{6,}", re.IGNORECASE),
-    re.compile(r"\b(?:password|passwd|secret|api_key|access_token|token)\s*=", re.IGNORECASE),
+    re.compile(
+        r"\b(?:password|passwd|secret|api_key|access_token|token|private_key|authorization)['\"]?\s*[:=]",
+        re.IGNORECASE,
+    ),
     re.compile(r"://[^/\s:@]+:[^/\s@]+@", re.IGNORECASE),
     re.compile(r"Traceback \(most recent call last\):", re.IGNORECASE),
     re.compile(r'\bFile "[^"\n]+", line \d+'),
 )
 
 _MAX_ATTR_STR_LEN = 512
+_MAX_ATTR_DEPTH = 8
 _MAX_HEADER_KEY_LEN = 128
-_MAX_HEADER_VAL_LEN = 512
+_MAX_HEADER_VAL_LEN = 4096
+_HTTP_HEADER_KEY_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9a-z]+$")
 
 
 def is_telemetry_enabled() -> bool:
@@ -138,7 +146,12 @@ def is_telemetry_active() -> bool:
 
 def _is_sensitive_attr_key(key: str) -> bool:
     """Detecta nombres de atributos que representan credenciales, tokens o secretos (R-CODE-8)."""
-    normalized = re.sub(r"[^a-z0-9]+", "_", key.strip().lower()).strip("_")
+    cleaned = key.replace("\x00", "").strip()
+    decomposed = unicodedata.normalize("NFKD", cleaned)
+    ascii_folded = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    snake_split = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", ascii_folded)
+    snake_split = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", snake_split)
+    normalized = re.sub(r"[^a-z0-9]+", "_", snake_split.lower()).strip("_")
     if not normalized:
         return True
     if normalized in _SENSITIVE_KEY_TOKENS:
@@ -172,9 +185,29 @@ def _sanitize_scalar_value(value: Any) -> str | bool | int | float | None:
     return text
 
 
-def sanitize_span_attributes(attributes: Mapping[str, Any] | None) -> dict[str, Any]:
-    """Filtra llaves sensibles y sanea valores para atributos OpenTelemetry (R-CODE-8)."""
-    if not attributes:
+def _sanitize_attr_value(raw_val: Any, *, _depth: int = 0) -> Any:
+    """Sanea recursivamente valores escalares, secuencias y mapeos anidados para spans."""
+    if raw_val is None or _depth > _MAX_ATTR_DEPTH:
+        return None
+    if isinstance(raw_val, Mapping):
+        nested = _sanitize_mapping_attributes(raw_val, _depth=_depth + 1)
+        return nested or None
+    if isinstance(raw_val, Sequence) and not isinstance(raw_val, (str, bytes, bytearray)):
+        items: list[Any] = []
+        for item in raw_val:
+            sanitized_item = _sanitize_attr_value(item, _depth=_depth + 1)
+            if sanitized_item is not None:
+                items.append(sanitized_item)
+        return tuple(items) if items else None
+    return _sanitize_scalar_value(raw_val)
+
+
+def _sanitize_mapping_attributes(
+    attributes: Mapping[Any, Any],
+    *,
+    _depth: int = 0,
+) -> dict[str, Any]:
+    if _depth > _MAX_ATTR_DEPTH:
         return {}
     cleaned: dict[str, Any] = {}
     for raw_key, raw_val in attributes.items():
@@ -183,35 +216,124 @@ def sanitize_span_attributes(attributes: Mapping[str, Any] | None) -> dict[str, 
         key = raw_key.replace("\x00", "").strip()
         if not key or _is_sensitive_attr_key(key):
             continue
-        if isinstance(raw_val, Sequence) and not isinstance(raw_val, (str, bytes, bytearray)):
-            items: list[str | bool | int | float] = []
-            for item in raw_val:
-                scalar = _sanitize_scalar_value(item)
-                if scalar is not None:
-                    items.append(scalar)
-            if items:
-                cleaned[key] = tuple(items)
-            continue
-        scalar = _sanitize_scalar_value(raw_val)
-        if scalar is not None:
-            cleaned[key] = scalar
+        sanitized_val = _sanitize_attr_value(raw_val, _depth=_depth)
+        if sanitized_val is not None:
+            cleaned[key] = sanitized_val
     return cleaned
 
 
+def sanitize_span_attributes(attributes: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Filtra llaves sensibles y sanea valores (incluidos Mapping anidados) para atributos OTel (R-CODE-8)."""
+    if not attributes:
+        return {}
+    return _sanitize_mapping_attributes(attributes)
+
+
 def _resolve_valid_otlp_endpoint() -> str | None:
-    """Valida que exista un endpoint OTLP HTTP/HTTPS sintácticamente válido sin exponer credenciales."""
-    raw = (
-        os.environ.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or ""
-    ).strip()
-    if not raw or "\x00" in raw or any(ch.isspace() for ch in raw):
+    """Valida y normaliza el endpoint OTLP HTTP/HTTPS sin exponer credenciales."""
+    traces_raw = os.environ.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+    if traces_raw is not None and traces_raw.strip():
+        raw_selected = traces_raw
+        from_traces = True
+    else:
+        base_raw = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+        if base_raw is None or not base_raw.strip():
+            return None
+        raw_selected = base_raw
+        from_traces = False
+
+    if "\x00" in raw_selected or any(ch.isspace() for ch in raw_selected):
         return None
     try:
-        parsed = urlsplit(raw)
+        parsed = urlsplit(raw_selected)
+        _ = parsed.port
     except ValueError:
         return None
-    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"} or not parsed.hostname:
         return None
-    return raw
+    if parsed.username is not None or parsed.password is not None:
+        return None
+    if parsed.fragment:
+        return None
+
+    if from_traces:
+        return urlunsplit((scheme, parsed.netloc, parsed.path, parsed.query, ""))
+
+    clean_path = parsed.path.rstrip("/")
+    if clean_path.endswith("/v1/traces"):
+        target_path = clean_path
+    elif not clean_path:
+        target_path = "/v1/traces"
+    else:
+        target_path = f"{clean_path}/v1/traces"
+    return urlunsplit((scheme, parsed.netloc, target_path, parsed.query, ""))
+
+
+def _has_unsafe_header_chars(text: str) -> bool:
+    return any(ch in {"\r", "\n", "\x00"} or ord(ch) < 32 or ord(ch) == 127 for ch in text)
+
+
+def _parse_safe_otlp_headers() -> dict[str, str]:
+    """
+    Parsea ``OTEL_EXPORTER_OTLP_TRACES_HEADERS`` / ``OTEL_EXPORTER_OTLP_HEADERS`` sin exponer secretos.
+
+    Evita delegar en ``opentelemetry.util.re.parse_env_headers`` porque ese parser registra
+    en logs el header completo sin redactar cuando detecta un formato inválido.
+    """
+    traces_headers = os.environ.get("OTEL_EXPORTER_OTLP_TRACES_HEADERS")
+    if traces_headers is not None and (traces_headers.strip() or _has_unsafe_header_chars(traces_headers)):
+        raw_headers = traces_headers
+    else:
+        raw_headers = os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") or ""
+
+    if not raw_headers:
+        return {}
+    if not raw_headers.strip():
+        if _has_unsafe_header_chars(raw_headers):
+            logger.warning(
+                "Se ignoraron cabeceras OTLP con caracteres de control inválidos; detalles omitidos por seguridad."
+            )
+        return {}
+
+    parsed: dict[str, str] = {}
+    had_invalid = False
+
+    for raw_entry in raw_headers.split(","):
+        if _has_unsafe_header_chars(raw_entry):
+            had_invalid = True
+            continue
+        entry = raw_entry.strip()
+        if not entry:
+            continue
+        raw_k, sep, raw_v = entry.partition("=")
+        if not sep:
+            had_invalid = True
+            continue
+
+        key = unquote(raw_k).strip().lower()
+        val = unquote(raw_v).strip()
+
+        if (
+            not key
+            or not val
+            or len(key) > _MAX_HEADER_KEY_LEN
+            or len(val) > _MAX_HEADER_VAL_LEN
+            or _has_unsafe_header_chars(key)
+            or _has_unsafe_header_chars(val)
+            or not _HTTP_HEADER_KEY_RE.fullmatch(key)
+        ):
+            had_invalid = True
+            continue
+
+        parsed[key] = val
+
+    if had_invalid:
+        logger.warning(
+            "Se ignoraron cabeceras OTLP con formato inválido; credenciales y valores omitidos por seguridad."
+        )
+
+    return parsed
 
 
 def _load_instrumentor(module_path: str, class_name: str) -> Any:
@@ -258,8 +380,10 @@ def init_telemetry(
         return False
 
     with _LOCK:
-        if _INITIALIZED and span_exporter is None:
-            return True
+        if _INITIALIZED:
+            if span_exporter is None:
+                return True
+            reset_telemetry_for_tests()
 
         try:
             from opentelemetry import trace
@@ -302,10 +426,19 @@ def init_telemetry(
                     "tracing local habilitado sin exportación de red."
                 )
             else:
+                safe_headers = _parse_safe_otlp_headers()
                 try:
                     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-                    exporter = OTLPSpanExporter()
+                    saved_env_headers = {
+                        var: os.environ.pop(var)
+                        for var in ("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "OTEL_EXPORTER_OTLP_HEADERS")
+                        if var in os.environ
+                    }
+                    try:
+                        exporter = OTLPSpanExporter(endpoint=endpoint, headers=safe_headers)
+                    finally:
+                        os.environ.update(saved_env_headers)
                     provider.add_span_processor(BatchSpanProcessor(exporter))
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
@@ -581,7 +714,7 @@ class trazar_operacion(ContextDecorator):
         self._span = span_cm.__enter__()
         return self._span
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         cm = self._cm
         if cm is None:
             return False
@@ -594,7 +727,8 @@ class trazar_operacion(ContextDecorator):
             except Exception:  # noqa: BLE001
                 pass
         try:
-            return bool(cm.__exit__(exc_type, exc_val, exc_tb))
+            cm.__exit__(exc_type, exc_val, exc_tb)
+            return False
         finally:
             self._cm = None
             self._span = None
