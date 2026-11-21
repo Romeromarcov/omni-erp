@@ -20,6 +20,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.exceptions import domain_error_response
 from apps.core.models import Empresa, Usuarios
 from apps.core.viewsets import (
     BaseModelViewSet,
@@ -287,7 +288,7 @@ class PublicLeadCreateView(APIView):
         except PerfilNoEncontradoError:
             return Response({"detail": "Perfil no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except (ConsentimientoRequeridoError, ConnectError) as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
 
         return Response(
             {"ok": bool(resultado["ok"]), "mensaje": str(resultado["mensaje"])},
