@@ -34,6 +34,7 @@ import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined';
 import AssignmentTurnedInOutlined from '@mui/icons-material/AssignmentTurnedInOutlined';
+import ContactPageOutlined from '@mui/icons-material/ContactPageOutlined';
 import { isModuleEnabled, isCxcLubrikcaVisible } from './appProfile';
 
 export interface NavItem {
@@ -96,6 +97,12 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Clientes (CRM)',
       icon: <PeopleAltOutlined />,
       items: [{ label: 'Clientes', path: '/crm/clientes' }],
+    },
+    {
+      id: 'connect',
+      label: 'Omni Connect',
+      icon: <ContactPageOutlined />,
+      items: [{ label: 'Mi perfil digital', path: '/connect/perfil' }],
     },
     {
       id: 'servicio-cliente',

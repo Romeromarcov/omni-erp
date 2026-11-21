@@ -109,6 +109,8 @@ urlpatterns = [
     path("api/bots/", include("apps.bots_ingest.urls")),
     path("api/tareas/", include("apps.tareas.urls")),
     path("api/localizacion/", include("apps.localizacion.urls")),
+    path("api/connect/", include("apps.connect.urls")),
+    path("api/public/connect/", include("apps.connect.public_urls")),
 ]
 
 if settings.DEBUG:

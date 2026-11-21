@@ -31,6 +31,10 @@ PUBLIC_ALLOWLIST: dict[str, str] = {
     "saas/signup": "Auto-registro de prospectos (Plan C — C3): un prospecto aún no "
     "tiene credenciales; crea Empresa + admin + TRIAL. Con rate-limit y "
     "sin escalada de privilegios (es_superusuario_omni/is_staff forzados a False).",
+    "public/connect/": (
+        "Omni Connect S2/S3: perfil público NFC/QR/enlace, descarga vCard RFC 6350 y "
+        "captura pública de leads con consentimiento obligatorio, honeypot y rate-limit."
+    ),
     "swagger": "Esquema OpenAPI / Swagger UI (drf-yasg).",
     "redoc": "Documentación ReDoc (drf-yasg).",
 }

@@ -2334,6 +2334,71 @@ export interface paths {
         patch: operations["configuracion_tipos-documento_partial_update"];
         trace?: never;
     };
+    "/connect/perfiles/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        get: operations["connect_perfiles_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        post: operations["connect_perfiles_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/perfiles/mi-perfil/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obtiene el perfil Connect propio del usuario autenticado
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        get: operations["connect_perfiles_mi-perfil_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Crea o actualiza el perfil Connect propio del usuario autenticado
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        patch: operations["connect_perfiles_mi-perfil_partial_update"];
+        trace?: never;
+    };
+    "/connect/perfiles/{id_perfil}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        get: operations["connect_perfiles_read"];
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        put: operations["connect_perfiles_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        delete: operations["connect_perfiles_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        patch: operations["connect_perfiles_partial_update"];
+        trace?: never;
+    };
     "/contabilidad/asientos-contables/": {
         parameters: {
             query?: never;
@@ -11376,6 +11441,72 @@ export interface paths {
         patch: operations["proveedores_proveedores_partial_update"];
         trace?: never;
     };
+    "/public/connect/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Detalle público del perfil Connect y registro de toque
+         * @description GET /api/public/connect/<slug>/ — Perfil digital público y registro de toque.
+         */
+        get: operations["public_connect_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/connect/{slug}/leads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Captura pública de lead desde perfil Omni Connect
+         * @description POST /api/public/connect/<slug>/leads/ — Captura pública de lead con consentimiento.
+         */
+        post: operations["public_connect_leads_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/connect/{slug}/vcard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Descarga de archivo vCard (.vcf) del perfil público
+         * @description GET /api/public/connect/<slug>/vcard/ — Descarga de contacto vCard RFC 6350.
+         */
+        get: operations["public_connect_vcard_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rrhh/beneficios-empleado/": {
         parameters: {
             query?: never;
@@ -16461,6 +16592,116 @@ export interface components {
             /** Ultimo correlativo */
             ultimo_correlativo?: number;
         };
+        Perfil: {
+            /**
+             * Id perfil
+             * Format: uuid
+             */
+            readonly id_perfil?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Usuario
+             * Format: uuid
+             */
+            usuario?: string;
+            /** Slug */
+            slug: string;
+            /** Nombre publico */
+            nombre_publico: string;
+            /** Cargo */
+            cargo?: string;
+            /** Bio */
+            bio?: string;
+            /** Telefono publico */
+            telefono_publico?: string;
+            /**
+             * Email publico
+             * Format: email
+             */
+            email_publico?: string;
+            /** Tema */
+            tema?: string;
+            /** Botones */
+            botones?: Record<string, never>;
+            /** Plantilla bloqueada */
+            plantilla_bloqueada?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        MiPerfil: {
+            /**
+             * Id perfil
+             * Format: uuid
+             */
+            readonly id_perfil?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Usuario
+             * Format: uuid
+             */
+            readonly usuario?: string;
+            /** Slug */
+            slug: string;
+            /** Nombre publico */
+            nombre_publico: string;
+            /** Cargo */
+            cargo?: string;
+            /** Bio */
+            bio?: string;
+            /** Telefono publico */
+            telefono_publico?: string;
+            /**
+             * Email publico
+             * Format: email
+             */
+            email_publico?: string;
+            /** Tema */
+            tema?: string;
+            /** Botones */
+            botones?: Record<string, never>;
+            /** Plantilla bloqueada */
+            plantilla_bloqueada?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         DetalleAsiento: {
             /**
              * Id detalle asiento
@@ -19593,7 +19834,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T12:20:59.517772-04:00
+             * @default 2026-11-21T16:11:12.601162-04:00
              */
             fecha_despacho: string;
             /**
@@ -24754,6 +24995,109 @@ export interface components {
              */
             contacto?: string | null;
         };
+        ConnectBoton: {
+            /** Tipo */
+            readonly tipo?: string;
+            /** Etiqueta */
+            readonly etiqueta?: string;
+            /** Valor */
+            readonly valor?: string;
+        };
+        PublicPerfil: {
+            /** Slug */
+            readonly slug?: string;
+            /** Nombre publico */
+            readonly nombre_publico?: string;
+            /** Cargo */
+            readonly cargo?: string;
+            /** Bio */
+            readonly bio?: string;
+            /** Telefono publico */
+            readonly telefono_publico?: string;
+            /** Email publico */
+            readonly email_publico?: string;
+            /** Tema */
+            readonly tema?: string;
+            readonly botones?: components["schemas"]["ConnectBoton"][];
+            /** Empresa nombre */
+            readonly empresa_nombre?: string;
+            /** Acepta leads */
+            readonly acepta_leads?: boolean;
+            /** Consentimiento texto */
+            readonly consentimiento_texto?: string;
+        };
+        PublicLeadCreate: {
+            /** Nombre */
+            nombre: string;
+            /**
+             * Apellido
+             * @default
+             */
+            apellido: string;
+            /**
+             * Empresa nombre
+             * @default
+             */
+            empresa_nombre: string;
+            /**
+             * Email
+             * Format: email
+             * @default
+             */
+            email: string;
+            /**
+             * Telefono
+             * @default
+             */
+            telefono: string;
+            /**
+             * Mensaje
+             * @default
+             */
+            mensaje: string;
+            /**
+             * Fuente
+             * @default
+             * @enum {string}
+             */
+            fuente: "NFC" | "QR" | "ENLACE";
+            /**
+             * Origen
+             * @default
+             * @enum {string}
+             */
+            origen: "NFC" | "QR" | "ENLACE";
+            /**
+             * Uid
+             * @default
+             */
+            uid: string;
+            /**
+             * Uid chip
+             * @default
+             */
+            uid_chip: string;
+            /** Consentimiento aceptado */
+            consentimiento_aceptado: boolean;
+            /** Consentimiento texto */
+            consentimiento_texto: string;
+            /**
+             * Website
+             * @default
+             */
+            website: string;
+            /**
+             * Company url
+             * @default
+             */
+            company_url: string;
+        };
+        PublicLeadCreateResponse: {
+            /** Ok */
+            readonly ok?: boolean;
+            /** Mensaje */
+            readonly mensaje?: string;
+        };
         BeneficioEmpleado: {
             /**
              * Id beneficio empleado
@@ -27913,6 +28257,11 @@ export interface components {
         EsquemaComision: {
             content: {
                 "application/json": components["schemas"]["EsquemaComision"];
+            };
+        };
+        Perfil: {
+            content: {
+                "application/json": components["schemas"]["Perfil"];
             };
         };
         ListaMaterialesDetalle: {
@@ -33952,6 +34301,234 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TipoDocumento"];
+                };
+            };
+        };
+    };
+    connect_perfiles_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Perfil"][];
+                    };
+                };
+            };
+        };
+    };
+    connect_perfiles_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Perfil"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
+                };
+            };
+        };
+    };
+    "connect_perfiles_mi-perfil_read": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiPerfil"];
+                };
+            };
+            /** @description Sin acceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no configurado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "connect_perfiles_mi-perfil_partial_update": {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiPerfil"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiPerfil"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiPerfil"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin acceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_perfiles_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
+                };
+            };
+        };
+    };
+    connect_perfiles_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Perfil"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
+                };
+            };
+        };
+    };
+    connect_perfiles_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_perfiles_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Perfil"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
                 };
             };
         };
@@ -56008,6 +56585,137 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Proveedor"];
                 };
+            };
+        };
+    };
+    public_connect_read: {
+        parameters: {
+            query?: {
+                /** @description UID hexadecimal de la tarjeta NFC física (opcional). */
+                uid?: string;
+                /** @description Origen de visita pública: NFC, QR o ENLACE (opcional). */
+                origen?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPerfil"];
+                };
+            };
+            /** @description Parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    public_connect_leads_create: {
+        parameters: {
+            query?: {
+                /** @description UID hexadecimal de la tarjeta NFC física (opcional). */
+                uid?: string;
+                /** @description Origen de visita pública: NFC, QR o ENLACE (opcional). */
+                origen?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicLeadCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLeadCreateResponse"];
+                };
+            };
+            /** @description Datos o consentimiento inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Límite de envíos excedido */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    public_connect_vcard_list: {
+        parameters: {
+            query?: {
+                /** @description UID hexadecimal de la tarjeta NFC física (opcional). */
+                uid?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archivo vCard RFC 6350 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "text/vcard": string;
+                };
+            };
+            /** @description Parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

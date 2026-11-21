@@ -33,6 +33,7 @@ RUTAS_EXCLUIDAS_DEFAULT = [
     "/api/auth/",
     "/api/token/",
     "/api/saas/",
+    "/api/public/",
     "/swagger/",
     "/redoc/",
     "/health/",

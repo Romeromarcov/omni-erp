@@ -28,6 +28,7 @@ _TIPO_POR_EVENTO = {
     "PAGO_RECIBIDO": "EXITO",
     "STOCK_BAJO": "ALERTA",
     "FACTURA_VENCIDA": "ALERTA",
+    "CONNECT_LEAD_CAPTURADO": "EXITO",
 }
 
 # Títulos por defecto para notificaciones in-app
@@ -36,6 +37,7 @@ _TITULO_POR_EVENTO = {
     "PAGO_RECIBIDO": "Pago registrado",
     "STOCK_BAJO": "Alerta de stock bajo",
     "FACTURA_VENCIDA": "Factura por vencer",
+    "CONNECT_LEAD_CAPTURADO": "Nuevo lead desde Omni Connect",
 }
 
 # Templates de mensaje in-app por evento (Django template syntax)
@@ -50,6 +52,9 @@ _MENSAJE_TEMPLATES = {
     ),
     "FACTURA_VENCIDA": (
         "La factura #{{ numero_factura }} de {{ nombre_cliente }} " "venció el {{ fecha_vencimiento }}."
+    ),
+    "CONNECT_LEAD_CAPTURADO": (
+        "{{ nombre_lead }} compartió sus datos vía {{ fuente }} en tu tarjeta {{ perfil_slug }}."
     ),
 }
 

@@ -858,3 +858,11 @@ export const tareasKeys = {
     ['tareas', empresaId ?? null, 'resumen', fecha ?? null] as const,
   alertas: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'alertas'] as const,
 };
+
+export const connectKeys = {
+  all: ['connect'] as const,
+  publicProfile: (slug: string, uid?: string | null) =>
+    ['connect', 'public', slug, uid ?? null] as const,
+  miPerfil: (empresaId?: string | null) =>
+    ['connect', empresaId ?? null, 'mi-perfil'] as const,
+};

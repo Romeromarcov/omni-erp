@@ -41,7 +41,29 @@ BOTONES_TIPOS = BOTONES_URL | BOTONES_TELEFONO | BOTONES_CORREO
 BOTONES_MAX = 30
 
 
-def normalizar_slug(value: str) -> str:
+def normalizar_email(value: str | None) -> str:
+    """Normaliza correo electrónico (minúsculas y sin espacios laterales)."""
+    return (value or "").strip().lower()[:254]
+
+
+def normalizar_telefono(value: str | None, codigo_pais_default: str = "58") -> str:
+    """Normaliza teléfono a dígitos E.164 sin separadores (máx. 20 dígitos)."""
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    tiene_mas = raw.startswith("+")
+    digits = re.sub(r"\D", "", raw)
+    if not digits:
+        return ""
+    if not tiene_mas:
+        if digits.startswith("00") and len(digits) > 2:
+            digits = digits[2:]
+        elif digits.startswith("0") and codigo_pais_default:
+            digits = f"{codigo_pais_default}{digits[1:]}"
+    return digits[:20]
+
+
+def normalizar_slug(value: str | None) -> str:
     """Minúsculas y sin espacios en los extremos (``' Juan-Perez '`` → ``'juan-perez'``)."""
     return (value or "").strip().lower()
 
@@ -58,7 +80,7 @@ def validar_slug_perfil(value: str) -> None:
         raise ValidationError("Ese slug está reservado.")
 
 
-def normalizar_uid_chip(value: str) -> str:
+def normalizar_uid_chip(value: str | None) -> str:
     """UID en hex mayúsculas, sin separadores (``04:a2:..`` → ``04A2..``)."""
     return re.sub(r"[\s:\-]", "", value or "").upper()
 
@@ -81,6 +103,8 @@ def validar_botones(value) -> None:
         tipo, etiqueta, valor = boton["tipo"], boton["etiqueta"], boton["valor"]
         if not all(isinstance(x, str) for x in (tipo, etiqueta, valor)):
             raise ValidationError(f"Botón {i}: tipo, etiqueta y valor deben ser texto.")
+        if any("\x00" in x for x in (tipo, etiqueta, valor)):
+            raise ValidationError(f"Botón {i}: contiene caracteres inválidos.")
         if tipo not in BOTONES_TIPOS:
             raise ValidationError(f"Botón {i}: tipo '{tipo}' no permitido.")
         if not 1 <= len(etiqueta.strip()) <= 60:

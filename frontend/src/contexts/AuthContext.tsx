@@ -125,11 +125,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // preserva outbox, caché local y pos_auth_scope hasta recuperar conexión.
   }, [applyAuthenticatedScope, logout]);
 
+  const esRutaPublicaSinSesion = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname || '';
+    const hash = window.location.hash || '';
+    const normalizedHash = hash.startsWith('#') ? hash.slice(1) : hash;
+    const matches = (target: string) =>
+      target === '/c' ||
+      target.startsWith('/c/') ||
+      target.startsWith('/login') ||
+      target.startsWith('/signup');
+    return matches(path) || matches(normalizedHash);
+  };
+
   // FE-HIGH-11/13: wire the api layer's unauthorized handler to context logout.
   useEffect(() => {
     setUnauthorizedHandler(() => {
       logout();
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      if (typeof window !== 'undefined' && !esRutaPublicaSinSesion()) {
         window.location.href = '/login';
       }
     });
@@ -140,6 +153,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let cancelled = false;
     purgeLegacyAuthStorage();
+    if (esRutaPublicaSinSesion()) {
+      setIsLoading(false);
+      return;
+    }
     (async () => {
       const res = await resolveHydration();
       if (cancelled) return;
