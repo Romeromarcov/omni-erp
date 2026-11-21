@@ -8,6 +8,24 @@ import { get, post, patch, fetchText } from './api';
 
 export type ProveedorEstado = 'activo' | 'beta' | 'proximamente';
 
+export const ENTIDAD_LABELS: Record<string, string> = {
+  contactos: 'Contactos',
+  productos: 'Productos',
+  pedidos_venta: 'Pedidos de Venta',
+  pedidos_compra: 'Pedidos de Compra',
+  facturas_venta: 'Facturas de Venta',
+  facturas_compra: 'Facturas de Compra',
+  pagos: 'Pagos',
+  inventario: 'Inventario',
+  empleados: 'Empleados',
+};
+
+const ENTIDAD_LABELS_MAP = new Map<string, string>(Object.entries(ENTIDAD_LABELS));
+
+export function etiquetaEntidad(tipo: string): string {
+  return ENTIDAD_LABELS_MAP.get(tipo) ?? tipo;
+}
+
 export interface ConectorProveedor {
   id_proveedor: string;
   codigo: string;

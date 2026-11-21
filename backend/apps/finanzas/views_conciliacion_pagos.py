@@ -443,20 +443,26 @@ def _obligaciones_abiertas_contacto(
             )
 
     if "FACTURA_COMPRA" in tipos_buscar:
-        fc_qs = FacturaCompra.objects.filter(
-            id_empresa_id=empresa_id,
-            activo=True,
-            id_orden_compra__id_empresa_id=empresa_id,
-            id_orden_compra__id_proveedor__contacto_id=contacto.pk,
-            id_orden_compra__id_proveedor__id_empresa_id=empresa_id,
-        ).annotate(
-            total_asig_agg=Coalesce(
-                Sum(
-                    "asignaciones_pago__monto_asignado_documento",
-                    filter=Q(asignaciones_pago__estado="ACTIVA", asignaciones_pago__activo=True),
-                ),
-                _CERO,
-                output_field=DecimalField(max_digits=18, decimal_places=4),
+        fc_qs = (
+            FacturaCompra.objects.filter(id_empresa_id=empresa_id, activo=True)
+            .filter(
+                Q(id_proveedor__contacto_id=contacto.pk, id_proveedor__id_empresa_id=empresa_id)
+                | Q(
+                    id_orden_compra__id_empresa_id=empresa_id,
+                    id_orden_compra__id_proveedor__contacto_id=contacto.pk,
+                    id_orden_compra__id_proveedor__id_empresa_id=empresa_id,
+                )
+            )
+            .distinct()
+            .annotate(
+                total_asig_agg=Coalesce(
+                    Sum(
+                        "asignaciones_pago__monto_asignado_documento",
+                        filter=Q(asignaciones_pago__estado="ACTIVA", asignaciones_pago__activo=True),
+                    ),
+                    _CERO,
+                    output_field=DecimalField(max_digits=18, decimal_places=4),
+                )
             )
         )
         for fc in fc_qs:

@@ -15616,6 +15616,26 @@ export interface components {
              * Format: uuid
              */
             readonly id_factura_compra?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id orden compra
+             * Format: uuid
+             */
+            id_orden_compra?: string | null;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor?: string | null;
+            /**
+             * Id recepcion
+             * Format: uuid
+             */
+            id_recepcion?: string | null;
             /** Numero factura */
             numero_factura: string;
             /**
@@ -15637,21 +15657,6 @@ export interface components {
              * Format: date-time
              */
             readonly fecha_creacion?: string;
-            /**
-             * Id empresa
-             * Format: uuid
-             */
-            readonly id_empresa?: string;
-            /**
-             * Id orden compra
-             * Format: uuid
-             */
-            id_orden_compra: string;
-            /**
-             * Id recepcion
-             * Format: uuid
-             */
-            id_recepcion?: string | null;
         };
         OfertaProveedor: {
             /**
@@ -19245,7 +19250,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-20T16:04:41.405743-04:00
+             * @default 2026-11-20T18:33:27.977502-04:00
              */
             fecha_despacho: string;
             /**

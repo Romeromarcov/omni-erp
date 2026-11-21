@@ -115,7 +115,16 @@ class DetalleRecepcionMercancia(models.Model):
 class FacturaCompra(models.Model):
     id_factura_compra = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="facturas_compra")
-    id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name="facturas")
+    id_orden_compra = models.ForeignKey(
+        OrdenCompra, on_delete=models.SET_NULL, null=True, blank=True, related_name="facturas"
+    )
+    id_proveedor = models.ForeignKey(
+        "proveedores.Proveedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="facturas_compra",
+    )
     id_recepcion = models.ForeignKey(
         RecepcionMercancia, on_delete=models.SET_NULL, null=True, blank=True, related_name="facturas"
     )

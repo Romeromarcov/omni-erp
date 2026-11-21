@@ -25,6 +25,7 @@ import {
   triggerSync,
   exportarConector,
   getJobsDeConector,
+  etiquetaEntidad,
   type JobSincronizacion,
 } from '../../services/integrationHubService';
 import { PageContainer, PageHeader, StatusChip, SectionTitle } from '../../components/ui';
@@ -66,7 +67,7 @@ const JobRow: React.FC<{ job: JobSincronizacion }> = ({ job }) => {
           variant="outlined"
         />
       </TableCell>
-      <TableCell>{job.tipo_entidad}</TableCell>
+      <TableCell>{etiquetaEntidad(job.tipo_entidad)}</TableCell>
       <TableCell>
         <Chip size="small" label={job.estado.replace(/_/g, ' ')} color={color} variant={color === 'default' ? 'outlined' : 'filled'} />
       </TableCell>
@@ -201,7 +202,7 @@ const ConectorDetallePage: React.FC = () => {
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap mt={1.5} alignItems="center">
             <Typography variant="body2" color="text.secondary">Entidades:</Typography>
             {conector.entidades_activas.map(e => (
-              <Chip key={e} size="small" label={e} color="info" variant="outlined" />
+              <Chip key={e} size="small" label={etiquetaEntidad(e)} color="info" variant="outlined" />
             ))}
           </Stack>
         )}
@@ -258,7 +259,7 @@ const ConectorDetallePage: React.FC = () => {
           >
             <MenuItem value="">Seleccionar entidad…</MenuItem>
             {conector.entidades_activas.map(e => (
-              <MenuItem key={e} value={e}>{e}</MenuItem>
+              <MenuItem key={e} value={e}>{etiquetaEntidad(e)}</MenuItem>
             ))}
           </TextField>
           <Button

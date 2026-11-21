@@ -241,9 +241,12 @@ def _resolver_contacto_documento(empresa: "Empresa", documento: Any) -> "Contact
         return _resolver_contacto_tercero(empresa.pk, documento.id_proveedor, "proveedor", "CuentaPorPagar")
 
     if isinstance(documento, FacturaCompra):
+        proveedor = getattr(documento, "id_proveedor", None)
+        if proveedor is not None:
+            return _resolver_contacto_tercero(empresa.pk, proveedor, "proveedor", "FacturaCompra")
         orden = getattr(documento, "id_orden_compra", None)
         if orden is None:
-            raise ConciliacionPagoError("La FacturaCompra no tiene orden de compra asociada.")
+            raise ConciliacionPagoError("La FacturaCompra no tiene proveedor ni orden de compra asociada.")
         if orden.id_empresa_id != empresa.pk:
             raise ConciliacionTenantError("La orden de compra pertenece a otra empresa.")
         return _resolver_contacto_tercero(empresa.pk, orden.id_proveedor, "proveedor", "FacturaCompra")
@@ -703,20 +706,26 @@ def sugerir_distribucion_fifo(pago: "Pago", *, tipo_documento: str | None = None
             )
 
     if "FACTURA_COMPRA" in tipos_buscar:
-        fc_qs = FacturaCompra.objects.filter(
-            id_empresa_id=empresa_id,
-            activo=True,
-            id_orden_compra__id_empresa_id=empresa_id,
-            id_orden_compra__id_proveedor__contacto_id=contacto.pk,
-            id_orden_compra__id_proveedor__id_empresa_id=empresa_id,
-        ).annotate(
-            total_asig_agg=Coalesce(
-                Sum(
-                    "asignaciones_pago__monto_asignado_documento",
-                    filter=Q(asignaciones_pago__estado="ACTIVA", asignaciones_pago__activo=True),
-                ),
-                _CERO,
-                output_field=DecimalField(max_digits=18, decimal_places=4),
+        fc_qs = (
+            FacturaCompra.objects.filter(id_empresa_id=empresa_id, activo=True)
+            .filter(
+                Q(id_proveedor__contacto_id=contacto.pk, id_proveedor__id_empresa_id=empresa_id)
+                | Q(
+                    id_orden_compra__id_empresa_id=empresa_id,
+                    id_orden_compra__id_proveedor__contacto_id=contacto.pk,
+                    id_orden_compra__id_proveedor__id_empresa_id=empresa_id,
+                )
+            )
+            .distinct()
+            .annotate(
+                total_asig_agg=Coalesce(
+                    Sum(
+                        "asignaciones_pago__monto_asignado_documento",
+                        filter=Q(asignaciones_pago__estado="ACTIVA", asignaciones_pago__activo=True),
+                    ),
+                    _CERO,
+                    output_field=DecimalField(max_digits=18, decimal_places=4),
+                )
             )
         )
         for fc in fc_qs:
@@ -929,19 +938,52 @@ def _lock_target_documento(tipo_doc: str, pk_norm: int | UUID) -> Any:
     raise ConciliacionPagoError(f"tipo_documento inválido: {tipo_doc!r}.")
 
 
-def _validar_estado_abierto_documento(tipo_doc: str, doc: Any) -> None:
+def _validar_estado_abierto_documento(
+    tipo_doc: str,
+    doc: Any,
+    *,
+    modo_historico_externo: bool = False,
+) -> None:
     if tipo_doc == "CUENTA_POR_COBRAR":
-        if doc.estado == "pagada":
+        if modo_historico_externo:
+            if doc.estado == "anulada":
+                raise ConciliacionPagoError("La CuentaPorCobrar está anulada y no puede conciliarse.")
+        elif doc.estado == "pagada":
             raise ConciliacionPagoError("La CuentaPorCobrar ya se encuentra pagada.")
     elif tipo_doc == "CUENTA_POR_PAGAR":
-        if not doc.activo or doc.estado in ("PAGADA", "ANULADA"):
+        estados_bloqueados = ("ANULADA", "BORRADOR") if modo_historico_externo else ("PAGADA", "ANULADA")
+        if not doc.activo or doc.estado in estados_bloqueados:
             raise ConciliacionPagoError(f"La CuentaPorPagar no acepta conciliaciones en estado '{doc.estado}'.")
     elif tipo_doc == "FACTURA_VENTA":
-        if not doc.activo or doc.estado in ("BORRADOR", "ANULADA", "PAGADA"):
+        estados_bloqueados_fv = (
+            ("BORRADOR", "ANULADA") if modo_historico_externo else ("BORRADOR", "ANULADA", "PAGADA")
+        )
+        if not doc.activo or doc.estado in estados_bloqueados_fv:
             raise ConciliacionPagoError(f"La FacturaFiscal no acepta conciliaciones en estado '{doc.estado}'.")
     elif tipo_doc == "FACTURA_COMPRA":
         if not doc.activo:
             raise ConciliacionPagoError("La FacturaCompra está inactiva y no puede conciliarse.")
+
+
+def _saldo_aplicable_historico_documento(empresa_id: UUID, tipo_doc: str, documento: Any) -> Decimal:
+    """Tope histórico aplicable: ``monto_total - sum(asignaciones ACTIVAS previas)`` (>= 0)."""
+    if tipo_doc == "CUENTA_POR_COBRAR":
+        total_2d = Decimal(str(documento.monto)).quantize(_DOS_DECIMALES, rounding=ROUND_HALF_UP)
+        asignado_2d = _total_asignado_documento(empresa_id, "CUENTA_POR_COBRAR", "id_cxc", documento)
+        return max(Decimal("0.00"), (total_2d - asignado_2d).quantize(_DOS_DECIMALES, rounding=ROUND_HALF_UP))
+    if tipo_doc == "CUENTA_POR_PAGAR":
+        total = Decimal(str(documento.monto_total)).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+        asignado = _total_asignado_documento(empresa_id, "CUENTA_POR_PAGAR", "id_cxp", documento)
+        return max(_CERO, (total - asignado).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP))
+    if tipo_doc == "FACTURA_VENTA":
+        total = Decimal(str(documento.monto_total)).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+        asignado = _total_asignado_documento(empresa_id, "FACTURA_VENTA", "id_factura_venta", documento)
+        return max(_CERO, (total - asignado).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP))
+    if tipo_doc == "FACTURA_COMPRA":
+        total = Decimal(str(documento.monto_total)).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+        asignado = _total_asignado_documento(empresa_id, "FACTURA_COMPRA", "id_factura_compra", documento)
+        return max(_CERO, (total - asignado).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP))
+    raise ConciliacionPagoError(f"Tipo de documento no soportado para cálculo histórico: {tipo_doc!r}.")
 
 
 def _es_ratio_cercano_a_local(tasa_eval: Decimal, ext_por_base: Decimal) -> bool:
@@ -1167,6 +1209,7 @@ def aplicar_pago_a_documentos(
     usuario: Any = None,
     generar_asiento: bool = True,
     descripcion: str = "",
+    modo_historico_externo: bool = False,
 ) -> list["AsignacionPago"]:
     """Aplica un ``Pago`` a 1..N documentos destino dentro de una transacción atómica."""
     from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
@@ -1175,6 +1218,8 @@ def aplicar_pago_a_documentos(
     from apps.finanzas.models import AsignacionPago, Pago
     from apps.finanzas.services import TasaCambioError, obtener_tasa_cambio
 
+    if modo_historico_externo and generar_asiento:
+        raise ConciliacionPagoError("El modo histórico externo requiere generar_asiento=False.")
     if _es_instancia_no_guardada(pago):
         raise ConciliacionPagoError("Debe indicar un Pago guardado en base de datos.")
     if not asignaciones or isinstance(asignaciones, (str, bytes, Mapping)):
@@ -1220,13 +1265,21 @@ def aplicar_pago_a_documentos(
         doc_emp_id = _extraer_empresa_id(doc_locked)
         if doc_emp_id != empresa_id:
             raise ConciliacionTenantError(f"El documento {tipo_doc}:{pk_norm} pertenece a otra empresa.")
-        _validar_estado_abierto_documento(tipo_doc, doc_locked)
+        _validar_estado_abierto_documento(
+            tipo_doc,
+            doc_locked,
+            modo_historico_externo=modo_historico_externo,
+        )
         contacto_doc = _resolver_contacto_documento(empresa, doc_locked)
         contactos_resueltos.append(contacto_doc)
 
         key = (tipo_doc, str(pk_norm))
         targets_locked[key] = doc_locked
-        saldos_doc_restantes[key] = saldo_pendiente_documento(doc_locked, empresa_id=empresa_id)
+        saldos_doc_restantes[key] = (
+            _saldo_aplicable_historico_documento(empresa_id, tipo_doc, doc_locked)
+            if modo_historico_externo
+            else saldo_pendiente_documento(doc_locked, empresa_id=empresa_id)
+        )
 
     # 3. Validar identidad de core.Contacto común y asignarlo al Pago si faltaba.
     contacto_pago: "Contacto | None" = pago_locked.id_contacto
@@ -1369,31 +1422,60 @@ def aplicar_pago_a_documentos(
         abono_cxp: AbonoCxP | None = None
 
         if tipo_doc == "CUENTA_POR_COBRAR":
-            monto_cxc_2d = monto_doc.quantize(_DOS_DECIMALES, rounding=ROUND_HALF_UP)
-            abono_cxc = AbonoCxC.objects.create(
-                cuenta_por_cobrar=doc_locked,
-                monto=monto_cxc_2d,
-                usuario=usuario,
-                descripcion=desc_linea,
-                referencia_externa=ref_ext or None,
-            )
-            doc_locked.estado = "pagada" if nuevo_saldo_doc == Decimal("0") else "parcial"
-            doc_locked.save(update_fields=["estado"])
+            if modo_historico_externo:
+                if doc_locked.estado != "pagada":
+                    doc_locked.estado = "pagada" if nuevo_saldo_doc == Decimal("0") else "parcial"
+                    doc_locked.save(update_fields=["estado"])
+            else:
+                monto_cxc_2d = monto_doc.quantize(_DOS_DECIMALES, rounding=ROUND_HALF_UP)
+                abono_cxc = AbonoCxC.objects.create(
+                    cuenta_por_cobrar=doc_locked,
+                    monto=monto_cxc_2d,
+                    usuario=usuario,
+                    descripcion=desc_linea,
+                    referencia_externa=ref_ext or None,
+                )
+                doc_locked.estado = "pagada" if nuevo_saldo_doc == Decimal("0") else "parcial"
+                doc_locked.save(update_fields=["estado"])
         elif tipo_doc == "CUENTA_POR_PAGAR":
-            abono_cxp = AbonoCxP.objects.create(
-                cuenta_por_pagar=doc_locked,
-                monto=monto_doc,
-                usuario=usuario,
-                descripcion=desc_linea,
-                referencia_externa=ref_ext or None,
-            )
-            doc_locked.monto_pendiente = (Decimal(str(doc_locked.monto_pendiente)) - monto_doc).quantize(
-                _CUATRO_DECIMALES, rounding=ROUND_HALF_UP
-            )
-            doc_locked.estado = "PAGADA" if doc_locked.monto_pendiente == Decimal("0") else "PARCIAL"
-            doc_locked.save(update_fields=["monto_pendiente", "estado"])
+            if modo_historico_externo:
+                pendiente_actual = Decimal(str(doc_locked.monto_pendiente)).quantize(
+                    _CUATRO_DECIMALES, rounding=ROUND_HALF_UP
+                )
+                tope_pendiente = max(_CERO, nuevo_saldo_doc).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+                nuevo_pendiente = max(_CERO, min(pendiente_actual, tope_pendiente))
+                campos_cxp: list[str] = []
+                if nuevo_pendiente != doc_locked.monto_pendiente:
+                    doc_locked.monto_pendiente = nuevo_pendiente
+                    campos_cxp.append("monto_pendiente")
+                if nuevo_pendiente == Decimal("0") and doc_locked.estado != "PAGADA":
+                    doc_locked.estado = "PAGADA"
+                    campos_cxp.append("estado")
+                elif Decimal("0") < nuevo_pendiente < Decimal(
+                    str(doc_locked.monto_total)
+                ) and doc_locked.estado not in (
+                    "PAGADA",
+                    "PARCIAL",
+                ):
+                    doc_locked.estado = "PARCIAL"
+                    campos_cxp.append("estado")
+                if campos_cxp:
+                    doc_locked.save(update_fields=campos_cxp)
+            else:
+                abono_cxp = AbonoCxP.objects.create(
+                    cuenta_por_pagar=doc_locked,
+                    monto=monto_doc,
+                    usuario=usuario,
+                    descripcion=desc_linea,
+                    referencia_externa=ref_ext or None,
+                )
+                doc_locked.monto_pendiente = (Decimal(str(doc_locked.monto_pendiente)) - monto_doc).quantize(
+                    _CUATRO_DECIMALES, rounding=ROUND_HALF_UP
+                )
+                doc_locked.estado = "PAGADA" if doc_locked.monto_pendiente == Decimal("0") else "PARCIAL"
+                doc_locked.save(update_fields=["monto_pendiente", "estado"])
         elif tipo_doc == "FACTURA_VENTA":
-            if nuevo_saldo_doc == Decimal("0"):
+            if nuevo_saldo_doc == Decimal("0") and doc_locked.estado != "PAGADA":
                 doc_locked.estado = "PAGADA"
                 doc_locked.save(update_fields=["estado"])
 

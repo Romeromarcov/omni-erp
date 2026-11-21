@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import xmlrpc.client  # nosec B411
+from decimal import Decimal, InvalidOperation
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -107,6 +108,7 @@ class OdooXMLRPCClient:
         self.uid: int | None = None
         self._version_info: dict = {}
         self._models: xmlrpc.client.ServerProxy | None = None
+        self._fields_cache: dict[str, set[str]] = {}
 
         self._authenticate()
 
@@ -188,6 +190,69 @@ class OdooXMLRPCClient:
     def get_version(self) -> dict:
         """Retorna información de versión detectada al autenticar."""
         return self._version_info
+
+    def _get_model_fields(self, modelo: str) -> set[str]:
+        """Retorna campos disponibles en ``modelo`` (cacheados por instancia)."""
+        cache = getattr(self, "_fields_cache", None)
+        if cache is None:
+            cache = {}
+            self._fields_cache = cache
+        if modelo in cache:
+            return cache[modelo]
+
+        campos: set[str] = set()
+        try:
+            resp = self.call(modelo, "fields_get", [[]], {"attributes": ["string"]})
+            if isinstance(resp, dict):
+                campos = {str(k) for k in resp.keys()}
+        except (OdooCallError, KeyError, AttributeError, TypeError):
+            campos = set()
+        cache[modelo] = campos
+        return campos
+
+    def _campos_disponibles(
+        self,
+        modelo: str,
+        base_fields: list[str],
+        opcionales: tuple[str, ...],
+        fallback: list[str],
+    ) -> list[str]:
+        """Filtra ``base_fields + opcionales`` contra los campos reales de ``modelo``."""
+        campos_modelo = self._get_model_fields(modelo)
+        if not campos_modelo:
+            return list(fallback)
+        if "id" in campos_modelo:
+            return [f for f in (*base_fields, *opcionales) if f in campos_modelo]
+        return [*base_fields, *(f for f in opcionales if f in campos_modelo)]
+
+    @staticmethod
+    def _m2o_id(val: Any) -> int | None:
+        if isinstance(val, (list, tuple)) and val:
+            raw_id = val[0]
+        else:
+            raw_id = val
+        if isinstance(raw_id, bool) or raw_id in (None, "", 0):
+            return None
+        try:
+            parsed = int(raw_id)
+            return parsed if parsed > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _m2o_name(val: Any) -> str:
+        if isinstance(val, (list, tuple)) and len(val) > 1 and val[1]:
+            return str(val[1])
+        return ""
+
+    @staticmethod
+    def _to_decimal(val: Any) -> Decimal:
+        if val in (None, "", False):
+            return Decimal("0")
+        try:
+            return Decimal(str(val))
+        except (InvalidOperation, TypeError, ValueError):
+            return Decimal("0")
 
     # ── Ping / health ─────────────────────────────────────────────────────────
 
@@ -545,33 +610,237 @@ class OdooXMLRPCClient:
             domain.append(["payment_type", "=", tipo])
         if desde:
             domain.append(["date", ">=", desde])
+
+        base_fields = [
+            "id",
+            "name",
+            "partner_id",
+            "payment_type",
+            "partner_type",
+            "amount",
+            "date",
+            "state",
+            "journal_id",
+            "currency_id",
+            "reconciled_invoice_ids",
+            "write_date",
+            "create_date",
+        ]
+        fields = self._campos_disponibles(
+            "account.payment",
+            base_fields,
+            ("memo", "payment_reference", "ref", "move_id", "reconciled_bill_ids"),
+            # Fallback estándar compatible con Odoo 18+ (sin 'ref', removido en Odoo 18).
+            [*base_fields, "memo", "payment_reference", "move_id", "reconciled_bill_ids"],
+        )
+
         return self.call(
             "account.payment",
             "search_read",
             [domain],
             {
-                "fields": [
-                    "id",
-                    "name",
-                    "partner_id",
-                    "payment_type",
-                    "partner_type",
-                    "amount",
-                    "date",
-                    "state",
-                    "journal_id",
-                    "currency_id",
-                    "memo",
-                    "ref",
-                    # Reconciliación: facturas (account.move) saldadas por este pago.
-                    "reconciled_invoice_ids",
-                    "write_date",
-                    "create_date",
-                ],
+                "fields": fields,
                 "limit": limite,
                 "order": "date desc",
             },
         )
+
+    def get_reconciliaciones_pagos(self, move_ids: list[int]) -> dict[int, list[dict]]:
+        """Lee reconciliaciones parciales en lote para los ``move_id`` de ``account.payment``.
+
+        Ejecuta a lo sumo 4 lecturas XML-RPC en lote (cero N+1):
+          1. ``account.move.line`` (líneas CxC/CxP de los asientos de pago).
+          2. ``account.partial.reconcile`` (montos y monedas conciliadas).
+          3. ``account.move.line`` (líneas contraparte de facturas/notas).
+          4. ``account.move`` (``move_type``, ``name``, ``currency_id`` de contrapartes).
+        """
+        ids_limpios = sorted({int(mid) for mid in move_ids if mid and not isinstance(mid, bool)})
+        if not ids_limpios:
+            return {}
+
+        amls = (
+            self.call(
+                "account.move.line",
+                "search_read",
+                [
+                    [
+                        ["move_id", "in", ids_limpios],
+                        ["account_type", "in", ["asset_receivable", "liability_payable"]],
+                    ]
+                ],
+                {
+                    "fields": [
+                        "id",
+                        "move_id",
+                        "account_type",
+                        "matched_debit_ids",
+                        "matched_credit_ids",
+                        "currency_id",
+                    ]
+                },
+            )
+            or []
+        )
+        if not amls:
+            return {}
+
+        pay_line_by_id: dict[int, dict] = {}
+        pr_ids_set: set[int] = set()
+        for aml in amls:
+            lid = self._m2o_id(aml.get("id"))
+            if lid is None:
+                continue
+            pay_line_by_id[lid] = aml
+            for pid in list(aml.get("matched_debit_ids") or []) + list(aml.get("matched_credit_ids") or []):
+                if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0:
+                    pr_ids_set.add(pid)
+
+        pr_ids = sorted(pr_ids_set)
+        if not pr_ids:
+            return {}
+
+        pr_base = ["id", "debit_move_id", "credit_move_id", "amount"]
+        pr_fields = self._campos_disponibles(
+            "account.partial.reconcile",
+            pr_base,
+            (
+                "debit_amount_currency",
+                "credit_amount_currency",
+                "debit_currency_id",
+                "credit_currency_id",
+            ),
+            # Fail-safe para Odoo < 14 o cuando fields_get falla/devuelve vacío.
+            pr_base,
+        )
+
+        partials = (
+            self.call(
+                "account.partial.reconcile",
+                "read",
+                [pr_ids],
+                {"fields": pr_fields},
+            )
+            or []
+        )
+        if not partials:
+            return {}
+
+        enlaces: list[tuple[dict, int, int, str]] = []
+        counterpart_line_ids_set: set[int] = set()
+        for pr in partials:
+            debit_line_id = self._m2o_id(pr.get("debit_move_id"))
+            credit_line_id = self._m2o_id(pr.get("credit_move_id"))
+            if credit_line_id in pay_line_by_id and debit_line_id is not None and debit_line_id not in pay_line_by_id:
+                enlaces.append((pr, credit_line_id, debit_line_id, "credit"))
+                counterpart_line_ids_set.add(debit_line_id)
+            elif (
+                debit_line_id in pay_line_by_id and credit_line_id is not None and credit_line_id not in pay_line_by_id
+            ):
+                enlaces.append((pr, debit_line_id, credit_line_id, "debit"))
+                counterpart_line_ids_set.add(credit_line_id)
+
+        counterpart_line_ids = sorted(counterpart_line_ids_set)
+        if not counterpart_line_ids:
+            return {}
+
+        counterpart_lines = (
+            self.call(
+                "account.move.line",
+                "read",
+                [counterpart_line_ids],
+                {"fields": ["id", "move_id", "currency_id"]},
+            )
+            or []
+        )
+        counterpart_lines_by_id: dict[int, dict] = {}
+        counterpart_move_ids_set: set[int] = set()
+        for line in counterpart_lines:
+            lid = self._m2o_id(line.get("id"))
+            if lid is None:
+                continue
+            counterpart_lines_by_id[lid] = line
+            mv_id = self._m2o_id(line.get("move_id"))
+            if mv_id is not None:
+                counterpart_move_ids_set.add(mv_id)
+
+        counterpart_move_ids = sorted(counterpart_move_ids_set)
+        if not counterpart_move_ids:
+            return {}
+
+        counterpart_moves = (
+            self.call(
+                "account.move",
+                "read",
+                [counterpart_move_ids],
+                {"fields": ["id", "move_type", "name", "currency_id"]},
+            )
+            or []
+        )
+        counterpart_moves_by_id: dict[int, dict] = {
+            mid: mv for mv in counterpart_moves if (mid := self._m2o_id(mv.get("id"))) is not None
+        }
+
+        resultado: dict[int, list[dict]] = {}
+        vistos: set[tuple[int, int]] = set()
+        tipos_factura = {"out_invoice", "in_invoice", "out_refund", "in_refund"}
+
+        for pr, pay_line_id, cp_line_id, lado_pago in enlaces:
+            pr_id = self._m2o_id(pr.get("id"))
+            pay_aml = pay_line_by_id.get(pay_line_id)
+            cp_aml = counterpart_lines_by_id.get(cp_line_id)
+            if pr_id is None or pay_aml is None or cp_aml is None:
+                continue
+            pay_move_id = self._m2o_id(pay_aml.get("move_id"))
+            cp_move_id = self._m2o_id(cp_aml.get("move_id"))
+            if pay_move_id is None or cp_move_id is None:
+                continue
+            cp_move = counterpart_moves_by_id.get(cp_move_id)
+            if cp_move is None:
+                continue
+            move_type = str(cp_move.get("move_type") or "")
+            if move_type not in tipos_factura:
+                continue
+            clave = (pay_move_id, pr_id)
+            if clave in vistos:
+                continue
+            vistos.add(clave)
+
+            monto_base = self._to_decimal(pr.get("amount"))
+            if lado_pago == "credit":
+                raw_pago = pr.get("credit_amount_currency")
+                raw_doc = pr.get("debit_amount_currency")
+                moneda_pago = self._m2o_name(pr.get("credit_currency_id") or pay_aml.get("currency_id"))
+                moneda_doc = self._m2o_name(
+                    pr.get("debit_currency_id") or cp_aml.get("currency_id") or cp_move.get("currency_id")
+                )
+            else:
+                raw_pago = pr.get("debit_amount_currency")
+                raw_doc = pr.get("credit_amount_currency")
+                moneda_pago = self._m2o_name(pr.get("debit_currency_id") or pay_aml.get("currency_id"))
+                moneda_doc = self._m2o_name(
+                    pr.get("credit_currency_id") or cp_aml.get("currency_id") or cp_move.get("currency_id")
+                )
+
+            monto_pago = self._to_decimal(raw_pago) if raw_pago not in (None, False, "", 0, 0.0) else monto_base
+            monto_doc = self._to_decimal(raw_doc) if raw_doc not in (None, False, "", 0, 0.0) else monto_base
+
+            resultado.setdefault(pay_move_id, []).append(
+                {
+                    "partial_reconcile_id": pr_id,
+                    "move_id_externo": str(cp_move_id),
+                    "move_name": str(cp_move.get("name") or ""),
+                    "move_type": move_type,
+                    "monto_base": monto_base,
+                    "monto_pago": monto_pago,
+                    "monto_documento": monto_doc,
+                    "moneda_pago": moneda_pago,
+                    "moneda_documento": moneda_doc,
+                }
+            )
+
+        for recs in resultado.values():
+            recs.sort(key=lambda item: item["partial_reconcile_id"])
+        return resultado
 
     # ── Inventario ────────────────────────────────────────────────────────────
 

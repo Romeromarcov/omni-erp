@@ -70,6 +70,7 @@ class OdooConnector(BaseConnector):
         "pedidos_venta",
         "pedidos_compra",
         "facturas_venta",
+        "facturas_compra",
         "pagos",
         "inventario",
     ]
@@ -381,21 +382,28 @@ class OdooConnector(BaseConnector):
             "_fuente": "odoo",
         }
 
-    # ── Facturas de Venta ─────────────────────────────────────────────────────
+    # ── Facturas de Venta y Compra ────────────────────────────────────────────
 
-    def pull_facturas_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
-        """Trae facturas de venta publicadas de Odoo."""
+    def _pull_facturas_por_tipo(
+        self,
+        *,
+        tipo_move: str,
+        etiqueta_error: str,
+        normalizer,
+        desde: datetime | None = None,
+        limite: int = 200,
+    ) -> list[dict]:
         client = self._get_client()
         desde_str = desde.strftime("%Y-%m-%d %H:%M:%S") if desde else None
 
         try:
-            facturas = client.get_facturas(tipo="out_invoice", desde=desde_str, limite=limite)
+            facturas = client.get_facturas(tipo=tipo_move, desde=desde_str, limite=limite)
         except OdooCallError as exc:
-            raise ConnectorDataError(f"Error leyendo facturas de Odoo: {exc}") from exc
+            raise ConnectorDataError(f"Error leyendo {etiqueta_error} de Odoo: {exc}") from exc
 
         normalizados = []
         for f in facturas:
-            norm = self._normalizar_factura(f)
+            norm = normalizer(f)
             # Traer líneas (account.move.line); si falla, factura sin líneas.
             try:
                 norm["lineas"] = client.get_lineas_factura(f["id"])
@@ -405,7 +413,27 @@ class OdooConnector(BaseConnector):
 
         return normalizados
 
-    def _normalizar_factura(self, raw: dict) -> dict:
+    def pull_facturas_venta(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
+        """Trae facturas de venta publicadas de Odoo."""
+        return self._pull_facturas_por_tipo(
+            tipo_move="out_invoice",
+            etiqueta_error="facturas",
+            normalizer=self._normalizar_factura,
+            desde=desde,
+            limite=limite,
+        )
+
+    def pull_facturas_compra(self, desde: datetime | None = None, limite: int = 200) -> list[dict]:
+        """Trae facturas de proveedor (in_invoice) publicadas de Odoo."""
+        return self._pull_facturas_por_tipo(
+            tipo_move="in_invoice",
+            etiqueta_error="facturas de compra",
+            normalizer=self._normalizar_factura_compra,
+            desde=desde,
+            limite=limite,
+        )
+
+    def _normalizar_factura_base(self, raw: dict, *, id_key: str, nombre_key: str) -> dict:
         partner = raw.get("partner_id") or []
         currency = raw.get("currency_id") or []
 
@@ -422,8 +450,8 @@ class OdooConnector(BaseConnector):
             "numero": raw.get("name") or "",
             "referencia": raw.get("ref") or "",
             "origen_pedido": raw.get("invoice_origin") or "",
-            "cliente_id_externo": str(partner[0]) if isinstance(partner, list) and partner else "",
-            "cliente_nombre": (partner[1] if isinstance(partner, list) and len(partner) > 1 else ""),
+            id_key: str(partner[0]) if isinstance(partner, list) and partner else "",
+            nombre_key: (partner[1] if isinstance(partner, list) and len(partner) > 1 else ""),
             "fecha_factura": (raw.get("invoice_date") or "")[:10],
             "fecha_vencimiento": (raw.get("invoice_date_due") or "")[:10],
             "subtotal": self._safe_decimal(raw.get("amount_untaxed")),
@@ -437,10 +465,24 @@ class OdooConnector(BaseConnector):
             "_fuente": "odoo",
         }
 
+    def _normalizar_factura(self, raw: dict) -> dict:
+        return self._normalizar_factura_base(
+            raw,
+            id_key="cliente_id_externo",
+            nombre_key="cliente_nombre",
+        )
+
+    def _normalizar_factura_compra(self, raw: dict) -> dict:
+        return self._normalizar_factura_base(
+            raw,
+            id_key="proveedor_id_externo",
+            nombre_key="proveedor_nombre",
+        )
+
     # ── Pagos ─────────────────────────────────────────────────────────────────
 
     def pull_pagos(self, desde: datetime | None = None, limite: int = 300) -> list[dict]:
-        """Trae pagos (inbound + outbound) de Odoo."""
+        """Trae pagos (inbound + outbound) de Odoo con reconciliaciones parciales en lote."""
         client = self._get_client()
         desde_str = desde.strftime("%Y-%m-%d") if desde else None
 
@@ -449,12 +491,65 @@ class OdooConnector(BaseConnector):
         except OdooCallError as exc:
             raise ConnectorDataError(f"Error leyendo pagos de Odoo: {exc}") from exc
 
-        return [self._normalizar_pago(p) for p in pagos]
+        move_ids: list[int] = []
+        for p in pagos:
+            mv = p.get("move_id")
+            mid = mv[0] if isinstance(mv, (list, tuple)) and mv else mv
+            if isinstance(mid, int) and not isinstance(mid, bool) and mid > 0:
+                move_ids.append(mid)
 
-    def _normalizar_pago(self, raw: dict) -> dict:
+        recons_por_move: dict[int, list[dict]] = {}
+        if move_ids:
+            try:
+                recons = client.get_reconciliaciones_pagos(move_ids)
+                if isinstance(recons, dict):
+                    recons_por_move = recons
+            except (AttributeError, OdooCallError):
+                recons_por_move = {}
+
+        resultado: list[dict] = []
+        for p in pagos:
+            mv = p.get("move_id")
+            mid = mv[0] if isinstance(mv, (list, tuple)) and mv else mv
+            recons_pago = recons_por_move.get(mid) if isinstance(mid, int) and not isinstance(mid, bool) else None
+            resultado.append(self._normalizar_pago(p, reconciliaciones=recons_pago))
+        return resultado
+
+    def _normalizar_pago(self, raw: dict, reconciliaciones: list[dict] | None = None) -> dict:
         partner = raw.get("partner_id") or []
         journal = raw.get("journal_id") or []
         currency = raw.get("currency_id") or []
+
+        facturas_ext: list[str] = []
+        seen_facturas: set[str] = set()
+        for inv_id in list(raw.get("reconciled_invoice_ids") or []) + list(raw.get("reconciled_bill_ids") or []):
+            sid = str(inv_id)
+            if sid and sid not in seen_facturas:
+                seen_facturas.add(sid)
+                facturas_ext.append(sid)
+
+        recons_norm: list[dict] = []
+        for rec in reconciliaciones or []:
+            move_id_ext = str(rec.get("move_id_externo") or "")
+            if move_id_ext and move_id_ext not in seen_facturas:
+                seen_facturas.add(move_id_ext)
+                facturas_ext.append(move_id_ext)
+            recons_norm.append(
+                {
+                    "partial_reconcile_id": str(rec.get("partial_reconcile_id") or ""),
+                    "move_id_externo": move_id_ext,
+                    "move_type": str(rec.get("move_type") or ""),
+                    "monto_base": self._safe_decimal(rec.get("monto_base")),
+                    "monto_pago": self._safe_decimal(rec.get("monto_pago")),
+                    "monto_documento": self._safe_decimal(rec.get("monto_documento")),
+                    "moneda_pago": str(rec.get("moneda_pago") or ""),
+                    "moneda_documento": str(rec.get("moneda_documento") or ""),
+                }
+            )
+
+        checksum_payload = dict(raw)
+        if recons_norm:
+            checksum_payload["_reconciliaciones"] = recons_norm
 
         return {
             "id_externo": str(raw["id"]),
@@ -469,10 +564,11 @@ class OdooConnector(BaseConnector):
             "diario": (journal[1] if isinstance(journal, list) and len(journal) > 1 else ""),
             "moneda": (currency[1] if isinstance(currency, list) and len(currency) > 1 else "USD"),
             # Facturas (account.move) reconciliadas por este pago → reconciliación.
-            "facturas_externas": [str(i) for i in (raw.get("reconciled_invoice_ids") or [])],
-            "referencia": raw.get("memo") or raw.get("ref") or "",
+            "facturas_externas": facturas_ext,
+            "reconciliaciones": recons_norm,
+            "referencia": raw.get("memo") or raw.get("payment_reference") or raw.get("ref") or "",
             "fecha_modificacion_externo": (raw.get("write_date") or "")[:19],
-            "_checksum": self._checksum(raw),
+            "_checksum": self._checksum(checksum_payload),
             "_fuente": "odoo",
         }
 

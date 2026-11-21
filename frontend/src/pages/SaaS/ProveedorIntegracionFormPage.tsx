@@ -20,7 +20,7 @@ import {
 // Entidades sincronizables conocidas (espejo de EntidadSincronizada.TIPO_CHOICES).
 const CAPACIDADES_DISPONIBLES = [
   'contactos', 'productos', 'pedidos_venta', 'pedidos_compra',
-  'facturas_venta', 'pagos', 'inventario',
+  'facturas_venta', 'facturas_compra', 'pagos', 'inventario',
 ];
 
 const DEFAULTS: ProveedorIntegracionFormValues = {
