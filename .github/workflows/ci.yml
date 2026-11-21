@@ -431,7 +431,7 @@ jobs:
 
       - name: Install dev tooling
         working-directory: backend
-        run: pip install bandit==1.9.4 ruff==0.8.4 mypy==1.13.0 semgrep==1.97.0
+        run: pip install bandit==1.9.4 ruff==0.8.4 mypy==1.13.0
 
       - name: Bandit (seguridad estática — bloqueante en MEDIUM+)
         working-directory: backend
@@ -441,7 +441,11 @@ jobs:
         working-directory: backend
         # ../.semgrep.yml: reglas propias (raw SQL, verify=False, eval/exec, shell=True),
         # verificadas limpias (0 findings sobre 616 archivos) → bloqueantes.
-        run: semgrep --config p/python --config p/django --config ../.semgrep.yml --severity ERROR --error apps/ config/
+        # Venv dedicado con requirements-semgrep.txt para aislar opentelemetry-api~=1.25.0 de semgrep.
+        run: |
+          python -m venv /tmp/semgrep-venv
+          /tmp/semgrep-venv/bin/pip install --no-cache-dir -r requirements-semgrep.txt
+          /tmp/semgrep-venv/bin/semgrep --config p/python --config p/django --config ../.semgrep.yml --severity ERROR --error apps/ config/
 
       - name: Ruff (bugs reales e imports sin usar — BLOQUEANTE)
         working-directory: backend

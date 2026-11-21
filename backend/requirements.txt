@@ -61,5 +61,15 @@ anthropic==2.9.0
 # Se mantienen aquí para que CI las instale automáticamente.
 sentry-sdk[django]==2.25.1
 
+# ── Observabilidad / Tracing distribuido (Plan 05 P2-6 — OpenTelemetry opt-in) ─
+opentelemetry-api==1.45.2
+opentelemetry-sdk==1.45.2
+opentelemetry-exporter-otlp-proto-http==1.45.2
+opentelemetry-instrumentation==0.66b2
+opentelemetry-instrumentation-django==0.66b2
+opentelemetry-instrumentation-asgi==0.66b2
+opentelemetry-instrumentation-celery==0.66b2
+opentelemetry-instrumentation-requests==0.66b2
+
 pre-commit==4.6.0
 cryptography==50.0.0  # GHSA-537c-gmf6-5ccf (fix 48.0.1); prev 46.0.7 (GHSA-r6ph-v2qm-q3c2)

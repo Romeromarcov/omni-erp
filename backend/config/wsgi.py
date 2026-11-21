@@ -10,14 +10,20 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 import os
 import sys
 
-# Agregar la carpeta 'apps' al PYTHONPATH
+from django.core.wsgi import get_wsgi_application
+
+# Agregar la carpeta 'apps' y la raíz del backend al PYTHONPATH
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 apps_path = os.path.join(current_dir, "apps")
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 if apps_path not in sys.path:
     sys.path.insert(0, apps_path)
 
-from django.core.wsgi import get_wsgi_application
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+
+from apps.core.telemetry import init_telemetry  # noqa: E402  (requiere sys.path y DJANGO_SETTINGS_MODULE)
+
+init_telemetry()
 
 application = get_wsgi_application()
