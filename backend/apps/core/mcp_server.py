@@ -1190,6 +1190,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.agentes.mcp",
     "apps.localizacion.mcp",
     "apps.connect.mcp",
+    "apps.crm.mcp",
 ]
 
 

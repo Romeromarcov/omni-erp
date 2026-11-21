@@ -4203,6 +4203,117 @@ export interface paths {
         patch: operations["costos_costos-produccion_partial_update"];
         trace?: never;
     };
+    "/crm/actividades/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        get: operations["crm_actividades_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        post: operations["crm_actividades_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        get: operations["crm_actividades_read"];
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        put: operations["crm_actividades_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        delete: operations["crm_actividades_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        patch: operations["crm_actividades_partial_update"];
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_actividades_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/completar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marca o desmarca una actividad como completada
+         * @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.
+         */
+        post: operations["crm_actividades_completar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_actividades_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/crm/clientes/": {
         parameters: {
             query?: never;
@@ -4366,6 +4477,336 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["crm_direcciones-cliente_partial_update"];
+        trace?: never;
+    };
+    "/crm/etapas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        get: operations["crm_etapas_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        post: operations["crm_etapas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/etapas/{id_etapa}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        get: operations["crm_etapas_read"];
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        put: operations["crm_etapas_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        delete: operations["crm_etapas_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        patch: operations["crm_etapas_partial_update"];
+        trace?: never;
+    };
+    "/crm/etapas/{id_etapa}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_etapas_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/etapas/{id_etapa}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_etapas_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        get: operations["crm_leads_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        post: operations["crm_leads_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        get: operations["crm_leads_read"];
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        put: operations["crm_leads_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        delete: operations["crm_leads_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        patch: operations["crm_leads_partial_update"];
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_leads_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_leads_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/mover-etapa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mueve un lead a otra etapa del mismo pipeline
+         * @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.
+         */
+        post: operations["crm_leads_mover_etapa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        get: operations["crm_pipelines_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        post: operations["crm_pipelines_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/asegurar-predeterminado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Obtiene o inicializa idempotentemente el pipeline predeterminado de la empresa
+         * @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.
+         */
+        post: operations["crm_pipelines_asegurar_predeterminado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        get: operations["crm_pipelines_read"];
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        put: operations["crm_pipelines_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        delete: operations["crm_pipelines_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        patch: operations["crm_pipelines_partial_update"];
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_pipelines_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_pipelines_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/reordenar-etapas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reordena atómicamente las etapas activas del pipeline
+         * @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.
+         */
+        post: operations["crm_pipelines_reordenar_etapas"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/cuentas-por-pagar/abonos-cxp/": {
@@ -18719,6 +19160,89 @@ export interface components {
              */
             id_moneda: string;
         };
+        Actividad: {
+            /**
+             * Id actividad
+             * Format: uuid
+             */
+            readonly id_actividad?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Lead
+             * Format: uuid
+             */
+            lead: string;
+            /** Lead nombre */
+            readonly lead_nombre?: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "LLAMADA" | "CORREO" | "REUNION" | "NOTA" | "WHATSAPP";
+            /** Asunto */
+            asunto: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Fecha vencimiento
+             * Format: date-time
+             */
+            fecha_vencimiento?: string | null;
+            /** Completada */
+            completada?: boolean;
+            /**
+             * Fecha completada
+             * Format: date-time
+             */
+            readonly fecha_completada?: string | null;
+            /**
+             * Asignado a
+             * Format: uuid
+             */
+            asignado_a?: string | null;
+            /** Asignado a nombre */
+            readonly asignado_a_nombre?: string;
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string;
+            /**
+             * Tarea
+             * Format: uuid
+             */
+            tarea?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        CompletarActividad: {
+            /**
+             * Completada
+             * @default true
+             */
+            completada: boolean;
+            /** Descripcion */
+            descripcion?: string;
+        };
         Cliente: {
             /**
              * Id cliente
@@ -18928,6 +19452,204 @@ export interface components {
              * Format: uuid
              */
             id_cliente: string;
+        };
+        Etapa: {
+            /**
+             * Id etapa
+             * Format: uuid
+             */
+            readonly id_etapa?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Pipeline
+             * Format: uuid
+             */
+            pipeline: string;
+            /** Nombre */
+            nombre: string;
+            /** Orden */
+            orden?: number;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "ABIERTA" | "GANADA" | "PERDIDA";
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Lead: {
+            /**
+             * Id lead
+             * Format: uuid
+             */
+            readonly id_lead?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Apellido */
+            apellido?: string;
+            /** Empresa nombre */
+            empresa_nombre?: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email?: string;
+            /** Telefono */
+            telefono?: string;
+            /** Email normalizado */
+            readonly email_normalizado?: string;
+            /** Telefono normalizado */
+            readonly telefono_normalizado?: string;
+            /** Mensaje */
+            mensaje?: string;
+            /**
+             * Fuente
+             * @enum {string}
+             */
+            fuente?: "NFC" | "QR" | "ENLACE" | "MANUAL" | "IMPORTACION";
+            /**
+             * Tarjeta
+             * Format: uuid
+             */
+            tarjeta?: string | null;
+            /**
+             * Perfil
+             * Format: uuid
+             */
+            perfil?: string | null;
+            /**
+             * Pipeline
+             * Format: uuid
+             */
+            pipeline?: string;
+            /** Pipeline nombre */
+            readonly pipeline_nombre?: string;
+            /**
+             * Etapa
+             * Format: uuid
+             */
+            etapa?: string;
+            /** Etapa nombre */
+            readonly etapa_nombre?: string;
+            /** Etapa tipo */
+            readonly etapa_tipo?: string;
+            /**
+             * Propietario
+             * Format: uuid
+             */
+            propietario?: string;
+            /** Propietario nombre */
+            readonly propietario_nombre?: string;
+            /**
+             * Contacto
+             * Format: uuid
+             */
+            contacto?: string | null;
+            /** Consentimiento aceptado */
+            consentimiento_aceptado?: boolean;
+            /**
+             * Consentimiento fecha
+             * Format: date-time
+             */
+            consentimiento_fecha?: string | null;
+            /** Consentimiento texto */
+            consentimiento_texto?: string;
+            /** Actividades pendientes */
+            readonly actividades_pendientes?: number;
+            /** Actividades vencidas */
+            readonly actividades_vencidas?: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        MoverEtapa: {
+            /**
+             * Etapa
+             * Format: uuid
+             */
+            etapa: string;
+        };
+        Pipeline: {
+            /**
+             * Id pipeline
+             * Format: uuid
+             */
+            readonly id_pipeline?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Es predeterminado */
+            es_predeterminado?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            readonly etapas?: components["schemas"]["Etapa"][];
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        AsegurarPipelineInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+        };
+        ReordenarEtapas: {
+            etapas: string[];
         };
         AbonoCxP: {
             /**
@@ -19834,7 +20556,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T16:11:12.601162-04:00
+             * @default 2026-11-21T17:21:47.818728-04:00
              */
             fecha_despacho: string;
             /**
@@ -28468,6 +29190,11 @@ export interface components {
                 "application/json": components["schemas"]["ListaPrecio"];
             };
         };
+        Pipeline: {
+            content: {
+                "application/json": components["schemas"]["Pipeline"];
+            };
+        };
         SesionDatafono: {
             content: {
                 "application/json": components["schemas"]["SesionDatafono"];
@@ -28546,6 +29273,11 @@ export interface components {
         DetallePrecio: {
             content: {
                 "application/json": components["schemas"]["DetallePrecio"];
+            };
+        };
+        Etapa: {
+            content: {
+                "application/json": components["schemas"]["Etapa"];
             };
         };
         DetalleErrorMigracion: {
@@ -28726,6 +29458,16 @@ export interface components {
         CostoProduccion: {
             content: {
                 "application/json": components["schemas"]["CostoProduccion"];
+            };
+        };
+        Actividad: {
+            content: {
+                "application/json": components["schemas"]["Actividad"];
+            };
+        };
+        Lead: {
+            content: {
+                "application/json": components["schemas"]["Lead"];
             };
         };
         CuentaPorPagar: {
@@ -38766,6 +39508,228 @@ export interface operations {
             };
         };
     };
+    crm_actividades_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Actividad"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_actividades_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_actividades_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_completar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletarActividad"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+            /** @description Error de validación */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Actividad no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_actividades_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
     crm_clientes_list: {
         parameters: {
             query?: {
@@ -39254,6 +40218,672 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DireccionCliente"];
                 };
+            };
+        };
+    };
+    crm_etapas_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Etapa"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_etapas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_etapas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_leads_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Lead"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_leads_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_leads_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_mover_etapa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoverEtapa"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+            /** @description Transición de etapa inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_pipelines_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Pipeline"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_pipelines_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_asegurar_predeterminado: {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible (opcional). */
+                empresa?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AsegurarPipelineInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+            /** @description Parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin acceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_pipelines_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_pipelines_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_reordenar_etapas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReordenarEtapas"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+            /** @description Orden o etapas inválidas */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Pipeline no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

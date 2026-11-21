@@ -15,6 +15,16 @@
 | `^abonos-cxp/(?P<pk>[^/.]+)/$` | AbonoCxPViewSet | AbonoCxP | — | ✅ | IsAuthenticated |
 | `^abonos-cxp/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | AbonoCxPViewSet | AbonoCxP | — | ✅ | IsAuthenticated |
 | `^abonos-cxp\.(?P<format>[a-z0-9]+)/?$` | AbonoCxPViewSet | AbonoCxP | — | ✅ | IsAuthenticated |
+| `^actividades/$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)/$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)/activar/$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)/completar/$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)/completar\.(?P<format>[a-z0-9]+)/?$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)/desactivar/$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
+| `^actividades\.(?P<format>[a-z0-9]+)/?$` | ActividadViewSet | Actividad | ✅ | ✅ | IsAuthenticated |
 | `^acuerdos/$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
 | `^acuerdos/(?P<pk>[^/.]+)/$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
 | `^acuerdos/(?P<pk>[^/.]+)/registrar-pago/$` | AcuerdoPagoViewSet | — | — | ✅ | IsAuthenticated |
@@ -533,6 +543,14 @@
 | `^etapas-produccion/crear-estandar/$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^etapas-produccion/crear-estandar\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^etapas-produccion\.(?P<format>[a-z0-9]+)/?$` | EtapaProduccionViewSet | EtapaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^etapas/$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
+| `^etapas/(?P<pk>[^/.]+)/$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
+| `^etapas/(?P<pk>[^/.]+)/activar/$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
+| `^etapas/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
+| `^etapas/(?P<pk>[^/.]+)/desactivar/$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
+| `^etapas/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
+| `^etapas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
+| `^etapas\.(?P<format>[a-z0-9]+)/?$` | EtapaViewSet | Etapa | ✅ | ✅ | IsAuthenticated |
 | `^eventos/$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
 | `^eventos/(?P<pk>[^/.]+)/$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
 | `^eventos/(?P<pk>[^/.]+)/cancelar/$` | EventoActivacionViewSet | EventoActivacion | ✅ | ✅ | IsAuthenticated |
@@ -667,6 +685,16 @@
 | `^jobs/(?P<pk>[0-9a-fA-F-]{36})/logs\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
 | `^jobs/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
 | `^jobs\.(?P<format>[a-z0-9]+)/?$` | JobSincronizacionViewSet | JobSincronizacion | — | ✅ | IsAuthenticated |
+| `^leads/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/activar/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/desactivar/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/mover-etapa/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/mover-etapa\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
 | `^licencias-empleado/$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
 | `^licencias-empleado/(?P<pk>[^/.]+)/$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
 | `^licencias-empleado/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
@@ -993,6 +1021,18 @@
 | `^permisos/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
 | `^permisos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
 | `^permisos\.(?P<format>[a-z0-9]+)/?$` | PermisosViewSet | Permisos | — | ✅ | IsAuthenticated |
+| `^pipelines/$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)/$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)/activar/$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)/desactivar/$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)/reordenar-etapas/$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)/reordenar-etapas\.(?P<format>[a-z0-9]+)/?$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/asegurar-predeterminado/$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines/asegurar-predeterminado\.(?P<format>[a-z0-9]+)/?$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
+| `^pipelines\.(?P<format>[a-z0-9]+)/?$` | PipelineViewSet | Pipeline | ✅ | ✅ | IsAuthenticated |
 | `^plan-cuentas/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
 | `^plan-cuentas/(?P<pk>[^/.]+)/$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
 | `^plan-cuentas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlanCuentasViewSet | PlanCuentas | ✅ | ✅ | IsAuthenticated |
@@ -1422,4 +1462,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 260_
+_Total ViewSets: 264_

@@ -736,10 +736,12 @@ MCP_AGENT_CAPABILITIES: dict = {
         "apps.agentes.mcp",
         "apps.localizacion.mcp",
         "apps.connect.mcp",
+        "apps.crm.mcp",
     ],
     "scopes": {
         "core:read": "Lectura de empresas y clientes",
-        "crm:read": "Lectura del CRM (clientes, contactos)",
+        "crm:read": "Lectura del CRM (clientes, contactos, pipelines y leads)",
+        "crm:write": "Creación y gestión de leads, etapas y actividades del CRM",
         "connect:read": "Lectura de perfil digital Omni Connect",
         "connect:write": "Creación y actualización de perfil digital Omni Connect",
         "ventas:read": "Lectura de pedidos, cotizaciones, facturas",

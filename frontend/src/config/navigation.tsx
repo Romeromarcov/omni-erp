@@ -96,7 +96,10 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       id: 'crm',
       label: 'Clientes (CRM)',
       icon: <PeopleAltOutlined />,
-      items: [{ label: 'Clientes', path: '/crm/clientes' }],
+      items: [
+        { label: 'Clientes', path: '/crm/clientes' },
+        { label: 'Pipeline Kanban', path: '/crm/pipeline' },
+      ],
     },
     {
       id: 'connect',

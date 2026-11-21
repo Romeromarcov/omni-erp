@@ -67,6 +67,7 @@
 | costos | AnalisisVariacionCosto | ✅ | ✅ | — |
 | costos | CostoEstandarProducto | ✅ | ✅ | — |
 | costos | CostoProduccion | ✅ | ✅ | — |
+| crm | Actividad | ✅ | ✅ | — |
 | crm | Cliente | ✅ | ✅ | id_empresa+rif |
 | crm | ContactoCliente | ✅ | ✅ | — |
 | crm | DireccionCliente | ✅ | ✅ | — |
@@ -263,4 +264,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 260_
+_Total modelos: 261_

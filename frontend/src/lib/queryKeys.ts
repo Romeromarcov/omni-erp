@@ -166,6 +166,31 @@ export const crmKeys = {
     ['crm', 'clientes', 'credito-disponible', clienteId] as const,
   historialVentas: (clienteId: string) =>
     ['crm', 'clientes', 'historial-ventas', clienteId] as const,
+  pipelinesAll: (empresaId?: string | null) => ['crm', 'pipelines', empresaId ?? null] as const,
+  etapas: (empresaId?: string | null, pipelineId?: string | null) =>
+    ['crm', 'etapas', empresaId ?? null, pipelineId ?? null] as const,
+  leadsAll: (empresaId?: string | null) => ['crm', 'leads', empresaId ?? null] as const,
+  leads: (
+    empresaId?: string | null,
+    filtros?: {
+      pipeline?: string | null;
+      etapa?: string | null;
+      fuente?: string | null;
+      search?: string | null;
+    },
+  ) =>
+    [
+      'crm',
+      'leads',
+      empresaId ?? null,
+      'list',
+      filtros?.pipeline ?? null,
+      filtros?.etapa ?? null,
+      filtros?.fuente ?? null,
+      filtros?.search ?? null,
+    ] as const,
+  actividades: (empresaId?: string | null, leadId?: string | null) =>
+    ['crm', 'actividades', empresaId ?? null, leadId ?? null] as const,
 };
 
 // ── Gestión documental (carpetas, documentos, vínculos, permisos) ─────────────
