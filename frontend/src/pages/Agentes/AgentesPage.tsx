@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Divider,
   MenuItem,
@@ -22,11 +23,13 @@ import {
   AGENTES,
   RESULTADOS_HUMANOS,
   type Agente,
+  type ConsumoLLMResumen,
   type EjecucionAgente,
   type ResultadoHumano,
   type PrediccionAgente,
 } from '../../services/agentesService';
 import { agentesKeys } from '../../lib/queryKeys';
+import { formatoDecimal } from '../../lib/decimal';
 import { mensajeDeError } from '../../utils/api';
 
 // ── Etiquetas y colores ─────────────────────────────────────────────────────
@@ -54,6 +57,14 @@ const ESTADO_EJECUCION_LABEL = new Map<string, string>([
 const labelAgente = (a: string): string => AGENTE_LABEL.get(a) ?? a;
 const labelResultado = (r: string): string => RESULTADO_LABEL.get(r) ?? r;
 const labelEstadoEjecucion = (e: string): string => ESTADO_EJECUCION_LABEL.get(e) ?? e;
+
+const USO_LLM_LABEL = new Map<string, string>([
+  ['agente', 'Agentes'],
+  ['chat', 'Asistente Chat'],
+  ['analisis', 'Análisis CxC'],
+]);
+
+const labelUsoLlm = (u: string): string => USO_LLM_LABEL.get(u) ?? u;
 
 const RESULTADO_COLOR: Record<string, 'warning' | 'success' | 'error' | 'default'> = {
   pendiente: 'warning',
@@ -93,8 +104,10 @@ const AgentesPage: React.FC<AgentesPageProps> = ({ pollIntervalMs = 1000 }) => {
       }),
   });
 
-  const invalidarPredicciones = () =>
-    queryClient.invalidateQueries({ queryKey: agentesKeys.prediccionesAll() });
+  const invalidarPredicciones = () => {
+    void queryClient.invalidateQueries({ queryKey: agentesKeys.prediccionesAll() });
+    void queryClient.invalidateQueries({ queryKey: agentesKeys.consumoLlmAll() });
+  };
 
   const responder = useMutation({
     mutationFn: ({ id, accion }: { id: string; accion: 'aceptar' | 'rechazar' }) =>
@@ -203,6 +216,8 @@ const AgentesPage: React.FC<AgentesPageProps> = ({ pollIntervalMs = 1000 }) => {
       />
 
       <MetricasClasificadorSection />
+
+      <ConsumoLlmSection />
 
       <Typography variant="h6" sx={{ mt: 1, mb: 1.5 }}>
         Predicciones
@@ -543,5 +558,104 @@ const Metrica: React.FC<{ label: string; valor: string }> = ({ label, valor }) =
     <Typography variant="h6">{valor}</Typography>
   </Box>
 );
+
+// ── Consumo LLM (Tokens y Costo USD) ──────────────────────────────────────────
+
+function esResumenConsumoValido(data: unknown): data is ConsumoLLMResumen {
+  return (
+    Boolean(data) &&
+    typeof data === 'object' &&
+    !Array.isArray(data) &&
+    typeof (data as ConsumoLLMResumen).llamadas === 'number'
+  );
+}
+
+function formatoUsdPreciso(valor: string | number | null | undefined): string {
+  return `$${formatoDecimal(valor ?? '0', 6, 6, 'en-US')} USD`;
+}
+
+function formatoTokens(valor: number | null | undefined): string {
+  return formatoDecimal(valor ?? 0, 0, 0, 'en-US');
+}
+
+const ConsumoLlmSection: React.FC = () => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: agentesKeys.consumoLlmResumen(),
+    queryFn: () => prediccionesService.obtenerResumenConsumoLLM(),
+  });
+
+  const resumen = esResumenConsumoValido(data) ? data : null;
+  const porUso = Array.isArray(resumen?.por_uso) ? resumen.por_uso : [];
+  const porModelo = Array.isArray(resumen?.por_modelo) ? resumen.por_modelo : [];
+
+  return (
+    <Card variant="outlined" sx={{ mb: 3 }} data-testid="consumo-llm-section">
+      <CardContent>
+        <Typography variant="h6" sx={{ mb: 1.5 }}>
+          Consumo LLM (Tokens y Costo USD)
+        </Typography>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : isError || !resumen ? (
+          <Typography variant="body2" color="text.secondary">
+            No se pudo cargar el resumen de consumo LLM.
+          </Typography>
+        ) : resumen.llamadas === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            Sin consumo LLM registrado todavía.
+          </Typography>
+        ) : (
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={4} flexWrap="wrap" useFlexGap>
+              <Metrica label="Llamadas" valor={formatoTokens(resumen.llamadas)} />
+              <Metrica label="Tokens entrada" valor={formatoTokens(resumen.tokens_entrada_total)} />
+              <Metrica label="Tokens salida" valor={formatoTokens(resumen.tokens_salida_total)} />
+              <Metrica label="Costo estimado" valor={formatoUsdPreciso(resumen.costo_total_usd)} />
+              <Metrica label="Latencia promedio" valor={`${resumen.latencia_promedio_ms} ms`} />
+            </Stack>
+
+            {porUso.length > 0 && (
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                  Por uso
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {porUso.map((item) => (
+                    <Chip
+                      key={item.uso}
+                      size="small"
+                      variant="outlined"
+                      label={`${labelUsoLlm(item.uso)}: ${item.llamadas} · ${formatoUsdPreciso(item.costo_total_usd)}`}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+
+            {porModelo.length > 0 && (
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                  Por modelo
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {porModelo.map((item) => (
+                    <Chip
+                      key={item.modelo}
+                      size="small"
+                      variant="outlined"
+                      label={`${item.modelo}: ${item.llamadas} (${formatoTokens(item.tokens_entrada_total)} in / ${formatoTokens(item.tokens_salida_total)} out) · ${formatoUsdPreciso(item.costo_total_usd)}`}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default AgentesPage;

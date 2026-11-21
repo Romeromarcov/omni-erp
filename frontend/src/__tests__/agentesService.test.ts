@@ -7,7 +7,12 @@ vi.mock('../services/api', () => ({
 }));
 
 import { get, post, patch } from '../services/api';
-import { prediccionesService, type EjecucionAgente } from '../services/agentesService';
+import {
+  listarConsumoLLM,
+  obtenerResumenConsumoLLM,
+  prediccionesService,
+  type EjecucionAgente,
+} from '../services/agentesService';
 
 const prediccion = {
   id_prediccion: 'p1',
@@ -307,6 +312,60 @@ describe('prediccionesService', () => {
     const res = await prediccionesService.metricasClasificador();
     expect(get).toHaveBeenCalledWith('/agentes/predicciones/metricas-clasificador/');
     expect(res.precision).toBe(0.923);
+  });
+
+  // ── consumo LLM (listarConsumoLLM / obtenerResumenConsumoLLM) ─────────────
+  it('listarConsumoLLM sin filtros consulta /agentes/consumo-llm/ y normaliza paginación', async () => {
+    const evento = {
+      id_consumo: 'c-1',
+      id_empresa: 'e1',
+      proveedor: 'anthropic',
+      uso: 'agente',
+      modelo: 'modelo-haiku-test',
+      tokens_entrada: 1000,
+      tokens_salida: 500,
+      costo_estimado_usd: '0.003500',
+      latencia_ms: 180,
+      creado_en: '2026-11-21T08:00:00Z',
+    };
+    vi.mocked(get).mockResolvedValue({ count: 1, next: null, previous: null, results: [evento] });
+    const res = await listarConsumoLLM();
+    expect(get).toHaveBeenCalledWith('/agentes/consumo-llm/');
+    expect(res).toEqual([evento]);
+  });
+
+  it('listarConsumoLLM arma querystring con modelo, uso y fechas', async () => {
+    vi.mocked(get).mockResolvedValue([]);
+    await prediccionesService.listarConsumoLLM({
+      modelo: 'modelo-sonnet-test',
+      uso: 'chat',
+      fecha_desde: '2026-11-01',
+      fecha_hasta: '2026-11-21',
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/agentes/consumo-llm/?modelo=modelo-sonnet-test&uso=chat&fecha_desde=2026-11-01&fecha_hasta=2026-11-21',
+    );
+  });
+
+  it('obtenerResumenConsumoLLM consulta /agentes/consumo-llm/resumen/ con y sin filtros', async () => {
+    const resumen = {
+      llamadas: 4,
+      tokens_entrada_total: 4000,
+      tokens_salida_total: 1000,
+      costo_total_usd: '0.027000',
+      latencia_promedio_ms: 210,
+      por_modelo: [],
+      por_uso: [],
+    };
+    vi.mocked(get).mockResolvedValue(resumen);
+    const resSin = await obtenerResumenConsumoLLM();
+    expect(get).toHaveBeenCalledWith('/agentes/consumo-llm/resumen/');
+    expect(resSin.costo_total_usd).toBe('0.027000');
+
+    await prediccionesService.obtenerResumenConsumoLLM({ uso: 'analisis', fecha_desde: '2026-11-10' });
+    expect(get).toHaveBeenCalledWith(
+      '/agentes/consumo-llm/resumen/?uso=analisis&fecha_desde=2026-11-10',
+    );
   });
 
   // ── propagación de errores ──────────────────────────────────────────────

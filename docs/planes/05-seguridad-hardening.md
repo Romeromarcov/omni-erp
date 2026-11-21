@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1/P2-2/P2-5 ✅, P1-7/P2-3/P2-4 parciales; P2-6/P3 abiertos |
+| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1..P2-3/P2-5 ✅, P1-7/P2-4 parciales; P2-6/P3 abiertos |
 | **Fecha**    | 2026-06-07 (estado actualizado 2026-11-17 contra `develop @ ff2bdb6`) |
 | **Esfuerzo** | ~3–4 semanas (repartibles en paralelo) |
 | **Owner**    | equipo-backend / equipo-agentes / devops |
@@ -58,7 +58,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | R8 | Backups automáticos + prueba de restore de PostgreSQL | ⚠️✅ **P1-7 (#96)** — `backup.yml` + `restore-test.yml` + `RUNBOOK_BACKUPS.md` listos; **falta secret/bucket del owner** |
 | R9 | Idempotencia en endpoints de pago/creación (claves idempotentes) | ✅ **P1-2 (#86)** (`apps/core/idempotency.py`, `ClaveIdempotencia`) |
 | R10 | Circuit breaker / timeouts en llamadas LLM | ✅ **P2-1 (#99)** (`LLM_TIMEOUT`, `LLM_MAX_RETRIES`, `LLM_CB_UMBRAL`/`VENTANA` en `llm_gateway.py`) |
-| R11 | Observabilidad de costos LLM (tokens por tenant) | 🟡 **P2-3 parcial (#99)** — log estructurado `llm_consumo` + hook `registrar_consumo_hook`; **falta persistencia dedicada** |
+| R11 | Observabilidad de costos LLM (tokens por tenant) | ✅ (**P2-3 cerrado**) — tabla `ConsumoLLM` (`agentes_consumo_llm`) con RLS forzado, cálculo Decimal `calcular_costo_estimado_usd`, hook fail-safe desde `llm_gateway`, REST `/api/agentes/consumo-llm/` + `/resumen/`, MCP `agentes_resumen_consumo_llm` y panel UI |
 | R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ (**P2-6 abierto**) |
 | R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ✅ (**P1-5 cerrado** — triggers `BEFORE UPDATE OR DELETE` en PostgreSQL (`0005`/`0025`), `REVOKE UPDATE, DELETE` en `configurar_rol_rls`, API ReadOnly y Django Admin append-only) |
 | R14 | CSP a nivel Django (`django-csp`, nonce por request) | ✅ **P2-5 (#106)** (`django-csp==4.0` enforce; `tests/api/test_p25_csp.py`) |
@@ -250,13 +250,17 @@ modelos hardcodeados.
 - Frontend (`agentesService.ts` + `AgentesPage.tsx` + `schema.d.ts`): flujo `202` + polling cancelable con `AbortSignal` y limpieza en unmount.
 - Tests en `tests/integration/test_agentes_async_celery.py`, `tests/api/test_agentes_cobertura.py`, `tests/api/test_views_agentes_saas.py`, `frontend/src/__tests__/agentesService.test.ts` y `AgentesPage.test.tsx`.
 
-### P2-3 · Observabilidad de costos LLM por tenant (R11) — `🟡 PARCIAL` (hook + logs en PR #99; falta persistencia)
+### P2-3 · Observabilidad de costos LLM por tenant (R11) — `✅`
 **Por qué:** control de gasto y detección de abuso; encaja con el billing futuro del Plan C.
 
-**Estado actual (PR #99):** `apps/core/llm_gateway.py` emite un log estructurado `llm_consumo` (proveedor, uso, modelo real, empresa, tokens in/out) en cada llamada y expone el punto de extensión `registrar_consumo_hook`.
-**Pendiente:** crear tabla dedicada (o extender `RegistroAuditoria` / `saas`) para persistir tokens y costo estimado por tenant + vista/consulta agregada + tests.
-**DoD:** consumo histórico por tenant consultable vía API/admin; test de registro persistido.
-**Esfuerzo restante:** ~1 día. **Owner:** equipo-agentes.
+**Estado — `🟢 HECHO` (PR `feat/p2-3-llm-costos-persistencia`):**
+- Cálculo exacto en `Decimal` (`R-CODE-4`, redondeo `0.000001` `ROUND_HALF_UP`): `calcular_costo_estimado_usd` y `DEFAULT_PRICING_PER_MILLION_USD` en `apps/core/llm_gateway.py` con soporte configurable vía `LLM_PRICING_JSON` (preservando el dict de 7 claves en `registrar_consumo_hook`).
+- Modelo `ConsumoLLM` (`db_table = "agentes_consumo_llm"`, migración `0007_consumollm`) con RLS forzado (`0008_rls_consumo_llm` con `null_visible=True`, registrado en `RLS_TABLES` y `RLS_SHARED_NULL_TABLES`) y admin de solo lectura (`ConsumoLLMAdmin`).
+- Persistencia automática fail-safe: `persistir_consumo_llm` y `registrar_hook_consumo_llm` (`apps/agentes/services.py`), conectados de forma idempotente en `AgentesConfig.ready()` (`apps/agentes/apps.py`) con savepoint `transaction.atomic()` para no propagar fallos ni envenenar transacciones externas.
+- API REST de solo lectura (`ConsumoLLMViewSet`: `GET /api/agentes/consumo-llm/`, `/{id}/` y `/resumen/`) con `NulSafeFilterMixin`, `lookup_value_regex` UUID, filtros validados (`empresa_id`, `modelo`, `uso`, `fecha_desde`, `fecha_hasta`) y exclusión estricta de filas globales (`id_empresa=None`) frente a tenants.
+- Paridad MCP (`apps/agentes/mcp.py`): `agentes_resumen_consumo_llm` (`agentes:read`) con `CapabilityToken`, `mcp_tenant_context`, validación UUID/fechas/NUL y errores saneados.
+- Frontend (`agentesService.ts`, `queryKeys.ts`, `AgentesPage.tsx`, `schema.d.ts`): tarjeta **"Consumo LLM (Tokens y Costo USD)"** con formateo `decimal.js` sin flotantes JS.
+- Tests en `tests/integration/test_llm_consumo_persistencia.py`, `tests/unit/test_llm_gateway.py`, `frontend/src/__tests__/agentesService.test.ts` y `AgentesPage.test.tsx`.
 
 ### P2-4 · `CACHES` de Django con Redis (#9) — `🟡 PARCIAL` (PR #106; falta cacheo consultas/N+1)
 **Por qué:** Redis ya está para Celery; falta cachear queries ORM caras y reducir N+1.

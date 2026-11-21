@@ -63,8 +63,50 @@ const ejecucionBase = {
   id_empresa: 'e1',
 };
 
+const resumenConsumoDefault = {
+  llamadas: 3,
+  tokens_entrada_total: 1500,
+  tokens_salida_total: 600,
+  costo_total_usd: '0.013500',
+  latencia_promedio_ms: 245,
+  por_modelo: [
+    {
+      modelo: 'modelo-sonnet-test',
+      llamadas: 2,
+      tokens_entrada_total: 1000,
+      tokens_salida_total: 400,
+      costo_total_usd: '0.009000',
+    },
+    {
+      modelo: 'modelo-haiku-test',
+      llamadas: 1,
+      tokens_entrada_total: 500,
+      tokens_salida_total: 200,
+      costo_total_usd: '0.004500',
+    },
+  ],
+  por_uso: [
+    {
+      uso: 'chat',
+      llamadas: 2,
+      tokens_entrada_total: 1000,
+      tokens_salida_total: 400,
+      costo_total_usd: '0.009000',
+    },
+    {
+      uso: 'agente',
+      llamadas: 1,
+      tokens_entrada_total: 500,
+      tokens_salida_total: 200,
+      costo_total_usd: '0.004500',
+    },
+  ],
+};
+
 function setupGet(predicciones = [prediccionPendiente, prediccionAceptada]) {
   vi.mocked(get).mockImplementation((url: string) => {
+    if (url.startsWith('/agentes/consumo-llm/resumen'))
+      return Promise.resolve(resumenConsumoDefault);
     if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
       return Promise.resolve(metricas);
     if (url.startsWith('/agentes/predicciones')) return Promise.resolve(predicciones);
@@ -283,5 +325,60 @@ describe('AgentesPage', () => {
       await screen.findByText('Sin predicciones registradas todavía.'),
     ).toBeInTheDocument();
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('muestra la tarjeta de Consumo LLM con totales Decimal USD y desglose por uso y modelo', async () => {
+    renderPage();
+    const seccion = await screen.findByTestId('consumo-llm-section');
+    expect(within(seccion).getByText('Consumo LLM (Tokens y Costo USD)')).toBeInTheDocument();
+    expect(await within(seccion).findByText('$0.013500 USD')).toBeInTheDocument();
+    expect(within(seccion).getByText('1,500')).toBeInTheDocument();
+    expect(within(seccion).getByText('600')).toBeInTheDocument();
+    expect(within(seccion).getByText('245 ms')).toBeInTheDocument();
+    expect(within(seccion).getByText(/Asistente Chat: 2/)).toBeInTheDocument();
+    expect(within(seccion).getByText(/modelo-sonnet-test: 2/)).toBeInTheDocument();
+  });
+
+  it('muestra estado vacío cuando no hay consumo LLM registrado', async () => {
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/agentes/consumo-llm/resumen')) {
+        return Promise.resolve({
+          llamadas: 0,
+          tokens_entrada_total: 0,
+          tokens_salida_total: 0,
+          costo_total_usd: '0.000000',
+          latencia_promedio_ms: 0,
+          por_modelo: [],
+          por_uso: [],
+        });
+      }
+      if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
+        return Promise.resolve(metricas);
+      if (url.startsWith('/agentes/predicciones'))
+        return Promise.resolve([prediccionPendiente]);
+      return Promise.resolve([]);
+    });
+
+    renderPage();
+    expect(await screen.findByText('Sin consumo LLM registrado todavía.')).toBeInTheDocument();
+  });
+
+  it('muestra mensaje limpio si falla la carga de consumo LLM sin romper la página', async () => {
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/agentes/consumo-llm/resumen')) {
+        return Promise.reject(new Error('500'));
+      }
+      if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
+        return Promise.resolve(metricas);
+      if (url.startsWith('/agentes/predicciones'))
+        return Promise.resolve([prediccionPendiente]);
+      return Promise.resolve([]);
+    });
+
+    renderPage();
+    expect(await screen.findByText('oficina')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No se pudo cargar el resumen de consumo LLM.'),
+    ).toBeInTheDocument();
   });
 });

@@ -187,6 +187,54 @@ export interface MetricasClasificador {
   latencia_promedio_ms?: number;
 }
 
+/** Evento persistido de consumo y costo LLM por tenant (Plan 05 P2-3). */
+export interface ConsumoLLM {
+  id_consumo: string;
+  id_empresa: string | null;
+  proveedor: string;
+  uso: string;
+  modelo: string;
+  tokens_entrada: number;
+  tokens_salida: number;
+  costo_estimado_usd: string;
+  latencia_ms: number;
+  creado_en: string;
+}
+
+export interface ConsumoLLMPorModelo {
+  modelo: string;
+  llamadas: number;
+  tokens_entrada_total: number;
+  tokens_salida_total: number;
+  costo_total_usd: string;
+}
+
+export interface ConsumoLLMPorUso {
+  uso: string;
+  llamadas: number;
+  tokens_entrada_total: number;
+  tokens_salida_total: number;
+  costo_total_usd: string;
+}
+
+/** Resumen agregado de consumo LLM (`/api/agentes/consumo-llm/resumen/`). */
+export interface ConsumoLLMResumen {
+  llamadas: number;
+  tokens_entrada_total: number;
+  tokens_salida_total: number;
+  costo_total_usd: string;
+  latencia_promedio_ms: number;
+  por_modelo: ConsumoLLMPorModelo[];
+  por_uso: ConsumoLLMPorUso[];
+}
+
+export interface ConsumoLLMFiltros {
+  modelo?: string;
+  uso?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+}
+
 export interface EsperarEjecucionOptions<T = Record<string, unknown>> {
   intervalMs?: number;
   maxIntentos?: number;
@@ -196,6 +244,16 @@ export interface EsperarEjecucionOptions<T = Record<string, unknown>> {
 
 const BASE = '/agentes/predicciones';
 const EJECUCIONES_BASE = '/agentes/ejecuciones';
+const CONSUMO_LLM_BASE = '/agentes/consumo-llm';
+
+function buildConsumoQuery(filtros?: ConsumoLLMFiltros): string {
+  const qs = new URLSearchParams();
+  if (filtros?.modelo) qs.set('modelo', filtros.modelo);
+  if (filtros?.uso) qs.set('uso', filtros.uso);
+  if (filtros?.fecha_desde) qs.set('fecha_desde', filtros.fecha_desde);
+  if (filtros?.fecha_hasta) qs.set('fecha_hasta', filtros.fecha_hasta);
+  return qs.toString();
+}
 
 function abortError(): DOMException {
   return new DOMException('Operación cancelada.', 'AbortError');
@@ -364,4 +422,22 @@ export const prediccionesService = {
   /** Métricas de calidad del clasificador de gastos para la empresa. */
   metricasClasificador: async (): Promise<MetricasClasificador> =>
     get<MetricasClasificador>(`${BASE}/metricas-clasificador/`),
+
+  /** Lista registros históricos de consumo LLM del tenant. */
+  listarConsumoLLM: async (filtros?: ConsumoLLMFiltros): Promise<ConsumoLLM[]> => {
+    const query = buildConsumoQuery(filtros);
+    const response = await get<PaginatedResponse<ConsumoLLM> | ConsumoLLM[]>(
+      `${CONSUMO_LLM_BASE}/${query ? '?' + query : ''}`,
+    );
+    return toList<ConsumoLLM>(response);
+  },
+
+  /** Obtiene el resumen agregado de tokens y costo estimado USD del tenant. */
+  obtenerResumenConsumoLLM: async (filtros?: ConsumoLLMFiltros): Promise<ConsumoLLMResumen> => {
+    const query = buildConsumoQuery(filtros);
+    return get<ConsumoLLMResumen>(`${CONSUMO_LLM_BASE}/resumen/${query ? '?' + query : ''}`);
+  },
 };
+
+export const listarConsumoLLM = prediccionesService.listarConsumoLLM;
+export const obtenerResumenConsumoLLM = prediccionesService.obtenerResumenConsumoLLM;

@@ -7,6 +7,7 @@
 | activaciones | RecursoActivacion | ✅ | ✅ | — |
 | activaciones | UsoRecursoEvento | ✅ | ✅ | — |
 | agentes | ConfigAgente | ✅ | ✅ | id_empresa+agente |
+| agentes | ConsumoLLM | ✅ | ✅ | — |
 | agentes | EjecucionAgente | ✅ | ✅ | — |
 | agentes | PrediccionAgente | ✅ | ✅ | — |
 | almacenes | Almacen | ✅ | ✅ | id_empresa+codigo_almacen |
@@ -262,4 +263,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 259_
+_Total modelos: 260_

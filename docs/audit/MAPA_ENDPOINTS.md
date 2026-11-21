@@ -250,6 +250,12 @@
 | `^configuraciones/historial/$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones/historial\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
 | `^configuraciones\.(?P<format>[a-z0-9]+)/?$` | PersonalizacionConfigViewSet | PersonalizacionConfig | ✅ | ✅ | IsAuthenticated |
+| `^consumo-llm/$` | ConsumoLLMViewSet | ConsumoLLM | ✅ | ✅ | IsAuthenticated |
+| `^consumo-llm/(?P<pk>[0-9a-fA-F-]{36})/$` | ConsumoLLMViewSet | ConsumoLLM | ✅ | ✅ | IsAuthenticated |
+| `^consumo-llm/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | ConsumoLLMViewSet | ConsumoLLM | ✅ | ✅ | IsAuthenticated |
+| `^consumo-llm/resumen/$` | ConsumoLLMViewSet | ConsumoLLM | ✅ | ✅ | IsAuthenticated |
+| `^consumo-llm/resumen\.(?P<format>[a-z0-9]+)/?$` | ConsumoLLMViewSet | ConsumoLLM | ✅ | ✅ | IsAuthenticated |
+| `^consumo-llm\.(?P<format>[a-z0-9]+)/?$` | ConsumoLLMViewSet | ConsumoLLM | ✅ | ✅ | IsAuthenticated |
 | `^consumos-material/$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ | IsAuthenticated |
 | `^consumos-material/(?P<pk>[^/.]+)/$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ | IsAuthenticated |
 | `^consumos-material/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConsumoMaterialViewSet | ConsumoMaterial | — | ✅ | IsAuthenticated |
@@ -1406,4 +1412,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 254_
+_Total ViewSets: 255_

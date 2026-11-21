@@ -699,6 +699,37 @@ export const agentesKeys = {
   sugerenciasActivas: (limite?: number | null) =>
     ['agentes', 'sugerencias-activas', limite ?? null] as const,
   metricasClasificador: () => ['agentes', 'metricas-clasificador'] as const,
+  consumoLlmAll: () => ['agentes', 'consumo-llm'] as const,
+  consumoLlm: (filtros?: {
+    modelo?: string | null;
+    uso?: string | null;
+    fecha_desde?: string | null;
+    fecha_hasta?: string | null;
+  }) =>
+    [
+      'agentes',
+      'consumo-llm',
+      'list',
+      filtros?.modelo ?? null,
+      filtros?.uso ?? null,
+      filtros?.fecha_desde ?? null,
+      filtros?.fecha_hasta ?? null,
+    ] as const,
+  consumoLlmResumen: (filtros?: {
+    modelo?: string | null;
+    uso?: string | null;
+    fecha_desde?: string | null;
+    fecha_hasta?: string | null;
+  }) =>
+    [
+      'agentes',
+      'consumo-llm',
+      'resumen',
+      filtros?.modelo ?? null,
+      filtros?.uso ?? null,
+      filtros?.fecha_desde ?? null,
+      filtros?.fecha_hasta ?? null,
+    ] as const,
 };
 
 // ── Activaciones (eventos en puntos de venta) ────────────────────────────────

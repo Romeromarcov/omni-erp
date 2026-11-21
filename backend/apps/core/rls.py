@@ -265,6 +265,7 @@ RLS_TABLES = {
     # Lote 3 (CTF-012) — resto de tablas tenant, por app.
     # agentes
     "agentes_config_agente": "id_empresa_id",
+    "agentes_consumo_llm": "id_empresa_id",
     "agentes_ejecucion_agente": "id_empresa_id",
     "agentes_prediccionagente": "id_empresa_id",
     # almacenes
@@ -464,6 +465,7 @@ RLS_TABLES = {
 # (lo verifica tests_api/test_rls_rollout.py).
 RLS_SHARED_NULL_TABLES = frozenset(
     {
+        "agentes_consumo_llm",
         "configuracion_motor_parametro_sistema",
         "cuentas_por_cobrar_cuentaporcobrar",
         "finanzas_caja_fisica",

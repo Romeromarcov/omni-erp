@@ -166,6 +166,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agentes/consumo-llm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura del consumo de tokens y costos LLM por tenant (Plan 05 P2-3).
+         * @description GET /api/agentes/consumo-llm/         — listado histórico paginado
+         *     GET /api/agentes/consumo-llm/{id}/    — detalle de evento
+         *     GET /api/agentes/consumo-llm/resumen/ — resumen agregado (totales + por_modelo + por_uso)
+         */
+        get: operations["agentes_consumo-llm_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/consumo-llm/resumen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET /api/agentes/consumo-llm/resumen/
+         * @description Retorna totales agregados (llamadas, tokens in/out, costo_total_usd,
+         *     latencia_promedio_ms) y desglose ``por_modelo`` y ``por_uso``.
+         */
+        get: operations["agentes_consumo-llm_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/consumo-llm/{id_consumo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Consumo LLM. */
+                id_consumo: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura del consumo de tokens y costos LLM por tenant (Plan 05 P2-3).
+         * @description GET /api/agentes/consumo-llm/         — listado histórico paginado
+         *     GET /api/agentes/consumo-llm/{id}/    — detalle de evento
+         *     GET /api/agentes/consumo-llm/resumen/ — resumen agregado (totales + por_modelo + por_uso)
+         */
+        get: operations["agentes_consumo-llm_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agentes/ejecuciones/": {
         parameters: {
             query?: never;
@@ -14414,6 +14482,87 @@ export interface components {
              */
             activo?: boolean;
         };
+        ConsumoLLM: {
+            /**
+             * Id consumo
+             * Format: uuid
+             */
+            readonly id_consumo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string | null;
+            /** Proveedor */
+            readonly proveedor?: string;
+            /** Uso */
+            readonly uso?: string;
+            /** Modelo */
+            readonly modelo?: string;
+            /** Tokens entrada */
+            readonly tokens_entrada?: number;
+            /** Tokens salida */
+            readonly tokens_salida?: number;
+            /**
+             * Costo estimado usd
+             * Format: decimal
+             */
+            readonly costo_estimado_usd?: string;
+            /** Latencia ms */
+            readonly latencia_ms?: number;
+            /**
+             * Creado en
+             * Format: date-time
+             */
+            readonly creado_en?: string;
+        };
+        ConsumoLLMPorModelo: {
+            /** Modelo */
+            readonly modelo?: string;
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+        };
+        ConsumoLLMPorUso: {
+            /** Uso */
+            readonly uso?: string;
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+        };
+        ConsumoLLMResumen: {
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+            /** Latencia promedio ms */
+            readonly latencia_promedio_ms?: number;
+            readonly por_modelo?: components["schemas"]["ConsumoLLMPorModelo"][];
+            readonly por_uso?: components["schemas"]["ConsumoLLMPorUso"][];
+        };
         EjecucionAgente: {
             /**
              * Id ejecucion
@@ -19424,7 +19573,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T02:48:40.794369-04:00
+             * @default 2026-11-21T04:35:43.420157-04:00
              */
             fecha_despacho: string;
             /**
@@ -28911,6 +29060,107 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "agentes_consumo-llm_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+                /** @description Filtrar por identificador exacto del modelo LLM. */
+                modelo?: string;
+                /** @description Filtrar por tipo de uso (agente, chat, analisis). */
+                uso?: string;
+                /** @description Fecha inicial inclusive (YYYY-MM-DD). */
+                fecha_desde?: string;
+                /** @description Fecha final inclusive (YYYY-MM-DD). */
+                fecha_hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConsumoLLM"][];
+                    };
+                };
+            };
+        };
+    };
+    "agentes_consumo-llm_resumen": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+                /** @description Filtrar por identificador exacto del modelo LLM. */
+                modelo?: string;
+                /** @description Filtrar por tipo de uso (agente, chat, analisis). */
+                uso?: string;
+                /** @description Fecha inicial inclusive (YYYY-MM-DD). */
+                fecha_desde?: string;
+                /** @description Fecha final inclusive (YYYY-MM-DD). */
+                fecha_hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumoLLMResumen"];
+                };
+            };
+        };
+    };
+    "agentes_consumo-llm_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Consumo LLM. */
+                id_consumo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumoLLM"];
+                };
             };
         };
     };
