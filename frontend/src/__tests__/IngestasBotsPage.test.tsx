@@ -365,10 +365,11 @@ describe('IngestasBotsPage', () => {
         bots: ['cobranza'],
       }),
     );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
     // Edición quitando restricción de bot -> vuelve a [] («Todos los bots»)
     const fila = (await screen.findByText('111222333')).closest('tr') as HTMLElement;
-    fireEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
+    fireEvent.click(await within(fila).findByRole('button', { name: 'Editar' }));
     const dialogoEdicion = await screen.findByRole('dialog');
     fireEvent.click(within(dialogoEdicion).getByText('Ventas y Pedidos'));
     fireEvent.click(within(dialogoEdicion).getByRole('button', { name: 'Guardar' }));
@@ -380,9 +381,11 @@ describe('IngestasBotsPage', () => {
         bots: [],
       }),
     );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
     // Baja con confirmación
-    fireEvent.click(within(fila).getByRole('button', { name: 'Quitar' }));
+    const filaBaja = (await screen.findByText('111222333')).closest('tr') as HTMLElement;
+    fireEvent.click(await within(filaBaja).findByRole('button', { name: 'Quitar' }));
     const dialogoBorrar = await screen.findByRole('dialog');
     fireEvent.click(within(dialogoBorrar).getByRole('button', { name: 'Quitar' }));
     await waitFor(() => expect(del).toHaveBeenCalledWith('/bots/usuarios/b1/'));
