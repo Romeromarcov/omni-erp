@@ -19,6 +19,7 @@ import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined';
 import SaveOutlined from '@mui/icons-material/SaveOutlined';
 import { PageContainer, PageHeader } from '../../components/ui';
 import { connectKeys } from '../../lib/queryKeys';
+import { shouldUseHashRouter } from '../../platform';
 import {
   getMiPerfil,
   updateMiPerfil,
@@ -122,8 +123,13 @@ export default function ConnectPerfilPage() {
   const plantillaBloqueada = Boolean(perfilQuery.data?.plantilla_bloqueada);
   const slugLimpio = slug.trim().toLowerCase();
   const publicPath = slugLimpio ? `/c/${slugLimpio}` : '';
+  const publicHref = publicPath ? (shouldUseHashRouter() ? `#${publicPath}` : publicPath) : '';
   const publicUrl =
-    publicPath && typeof window !== 'undefined' ? `${window.location.origin}${publicPath}` : publicPath;
+    publicPath && typeof window !== 'undefined'
+      ? shouldUseHashRouter()
+        ? `${window.location.origin}/#${publicPath}`
+        : `${window.location.origin}${publicPath}`
+      : publicPath;
 
   function handleAddBoton() {
     if (botones.length >= 30) return;
@@ -403,12 +409,12 @@ export default function ConnectPerfilPage() {
                 </Button>
                 <Button
                   component="a"
-                  href={publicPath || undefined}
+                  href={publicHref || undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="contained"
                   endIcon={<OpenInNewOutlined />}
-                  disabled={!publicPath}
+                  disabled={!publicHref}
                   fullWidth
                 >
                   Abrir tarjeta pública

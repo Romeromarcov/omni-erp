@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from rest_framework import serializers
@@ -12,13 +13,17 @@ from .models import Perfil
 from .validators import normalizar_slug
 
 
-def _validar_sin_nul_dict(data: Any) -> None:
-    if isinstance(data, dict):
+def _validar_sin_nul_dict(data: Any, campo: str = "error") -> None:
+    if isinstance(data, Mapping):
         for key, val in data.items():
             if "\x00" in str(key):
-                raise serializers.ValidationError({"error": "Parámetro inválido."})
-            if isinstance(val, str) and "\x00" in val:
-                raise serializers.ValidationError({str(key): "El valor contiene caracteres inválidos."})
+                raise serializers.ValidationError({campo: "Parámetro inválido."})
+            _validar_sin_nul_dict(val, str(key))
+    elif isinstance(data, (list, tuple)):
+        for item in data:
+            _validar_sin_nul_dict(item, campo)
+    elif isinstance(data, str) and "\x00" in data:
+        raise serializers.ValidationError({campo: "El valor contiene caracteres inválidos."})
 
 
 class ConnectBotonSerializer(serializers.Serializer):
@@ -169,7 +174,6 @@ class MiPerfilSerializer(_SlugNormalizerMixin, serializers.ModelSerializer):
             "id_perfil",
             "id_empresa",
             "usuario",
-            "activo",
             "fecha_creacion",
             "fecha_actualizacion",
         ]

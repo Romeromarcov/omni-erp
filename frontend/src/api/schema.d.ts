@@ -16688,7 +16688,7 @@ export interface components {
              * Activo
              * @description Indica si el registro está activo (False = borrado lógico).
              */
-            readonly activo?: boolean;
+            activo?: boolean;
             /**
              * Fecha de Creación
              * Format: date-time
@@ -19834,7 +19834,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T15:12:57.966915-04:00
+             * @default 2026-11-21T16:11:12.601162-04:00
              */
             fecha_despacho: string;
             /**

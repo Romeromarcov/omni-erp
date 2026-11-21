@@ -103,13 +103,17 @@ def _validar_request_sin_nul(request: Request, slug: str | None = None) -> None:
                 raise ValidationError({key: "Parámetro de consulta inválido."})
 
 
-def _validar_payload_sin_nul(data: Any) -> None:
+def _validar_payload_sin_nul(data: Any, campo: str = "error") -> None:
     if isinstance(data, Mapping):
         for key, val in data.items():
             if "\x00" in str(key):
-                raise ValidationError({"error": "Parámetro inválido."})
-            if isinstance(val, str) and "\x00" in val:
-                raise ValidationError({str(key): "El valor contiene caracteres inválidos."})
+                raise ValidationError({campo: "Parámetro inválido."})
+            _validar_payload_sin_nul(val, str(key))
+    elif isinstance(data, (list, tuple)):
+        for item in data:
+            _validar_payload_sin_nul(item, campo)
+    elif isinstance(data, str) and "\x00" in data:
+        raise ValidationError({campo: "El valor contiene caracteres inválidos."})
 
 
 def _extraer_honeypot_activo(data: Any) -> bool:
@@ -403,8 +407,8 @@ class PerfilViewSet(NulSafeFilterMixin, BaseModelViewSet):
         data = serializer.validated_data
         es_admin = usuario_es_admin_empresa(self.request.user, instancia.id_empresa_id)
 
-        if "id_empresa" in data and data["id_empresa"].pk != instancia.id_empresa_id and not es_admin:
-            raise PermissionDenied("No puedes mover un perfil a otra empresa.")
+        if "id_empresa" in data and data["id_empresa"].pk != instancia.id_empresa_id:
+            raise ValidationError({"id_empresa": "La empresa de un perfil Connect es inmutable."})
         if "usuario" in data and data["usuario"].pk != instancia.usuario_id and not es_admin:
             raise PermissionDenied("No puedes reasignar el propietario del perfil.")
 
@@ -508,5 +512,8 @@ class PerfilViewSet(NulSafeFilterMixin, BaseModelViewSet):
 
         for campo, valor in data.items():
             setattr(perfil, campo, valor)
+        if not perfil.activo and "activo" not in data:
+            # Si el perfil había sido desactivado, editar/guardar en mi-perfil lo reactiva.
+            perfil.activo = True
         self._guardar_perfil_validado(perfil)
         return Response(MiPerfilSerializer(perfil).data, status=status.HTTP_200_OK)

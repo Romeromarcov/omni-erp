@@ -3,23 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const authState = {
-  token: null as string | null,
-  isLoading: true,
-  user: null,
-};
-
 vi.mock('../services/api', () => ({
   API_URL: '/api',
   get: vi.fn(),
   patch: vi.fn(),
 }));
 vi.mock('../utils/empresa', () => ({ getEmpresaId: () => 'emp-1' }));
-vi.mock('../contexts/AuthContext', () => ({
-  useAuth: () => authState,
-}));
 
 import { get, patch } from '../services/api';
+import * as platformModule from '../platform';
 import ConnectPerfilPage from '../pages/Connect/ConnectPerfilPage';
 import { buildNavigation } from '../config/navigation';
 import { connectRoutes } from '../routes/connectRoutes';
@@ -62,6 +54,7 @@ describe('ConnectPerfilPage', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     window.history.pushState({}, '', '/');
   });
 
@@ -136,9 +129,7 @@ describe('ConnectPerfilPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('el enrutador público /c/:slug renderiza sin bloquearse aunque isLoading sea true', async () => {
-    authState.token = null;
-    authState.isLoading = true;
+  it('el enrutador público /c/:slug renderiza sin cargar AuthenticatedApp ni depender de sesión', async () => {
     window.history.pushState({}, '', '/c/ana-gomez');
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
@@ -212,5 +203,15 @@ describe('ConnectPerfilPage', () => {
     expect(
       await screen.findByText(/el slug público y el nombre público son obligatorios/i),
     ).toBeInTheDocument();
+  });
+
+  it('usa enlace #/c/:slug cuando shouldUseHashRouter es true (Electron/Capacitor)', async () => {
+    vi.spyOn(platformModule, 'shouldUseHashRouter').mockReturnValue(true);
+    vi.mocked(get).mockResolvedValueOnce(miPerfilFixture);
+
+    renderEditor();
+
+    const previewLink = await screen.findByRole('link', { name: /abrir tarjeta pública/i });
+    expect(previewLink).toHaveAttribute('href', '#/c/ana-gomez');
   });
 });

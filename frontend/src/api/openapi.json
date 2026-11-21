@@ -53345,8 +53345,7 @@
                 "activo": {
                     "title": "Activo",
                     "description": "Indica si el registro está activo (False = borrado lógico).",
-                    "type": "boolean",
-                    "readOnly": true
+                    "type": "boolean"
                 },
                 "fecha_creacion": {
                     "title": "Fecha de Creación",
@@ -58390,7 +58389,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T15:12:57.966915-04:00"
+                    "default": "2026-11-21T16:11:12.601162-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

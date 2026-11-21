@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from typing import Any
 
@@ -51,6 +51,19 @@ def _validar_texto_mcp(valor: str | None, campo: str) -> str | None:
     if "\x00" in texto:
         raise ValueError(f"El parámetro '{campo}' contiene caracteres inválidos.")
     return texto
+
+
+def _validar_sin_nul_recursivo_mcp(valor: Any, campo: str) -> None:
+    if isinstance(valor, Mapping):
+        for key, val in valor.items():
+            if "\x00" in str(key):
+                raise ValueError(f"El parámetro '{campo}' contiene caracteres inválidos.")
+            _validar_sin_nul_recursivo_mcp(val, campo)
+    elif isinstance(valor, (list, tuple)):
+        for item in valor:
+            _validar_sin_nul_recursivo_mcp(item, campo)
+    elif isinstance(valor, str) and "\x00" in valor:
+        raise ValueError(f"El parámetro '{campo}' contiene caracteres inválidos.")
 
 
 def _resolver_empresa_y_usuario(
@@ -174,6 +187,8 @@ def connect_actualizar_perfil(
     tel_val = _validar_texto_mcp(telefono_publico, "telefono_publico")
     email_val = _validar_texto_mcp(email_publico, "email_publico")
     tema_val = _validar_texto_mcp(tema, "tema")
+    if botones is not None:
+        _validar_sin_nul_recursivo_mcp(botones, "botones")
 
     with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_str) as ctx:
         empresa, usuario = _resolver_empresa_y_usuario(
@@ -182,9 +197,15 @@ def connect_actualizar_perfil(
             usuario_id=usuario_id,
         )
 
-        token_obj = CapabilityToken.objects.select_related("creado_por").filter(token=capability_token).first()
+        token_obj = (
+            CapabilityToken.objects.select_related("creado_por")
+            .filter(token=capability_token, empresa=empresa, activo=True)
+            .first()
+        )
         actor_usuario = token_obj.creado_por if token_obj is not None else None
         actor_es_admin = True if actor_usuario is None else usuario_es_admin_empresa(actor_usuario, empresa.pk)
+        if actor_usuario is not None and usuario.pk != actor_usuario.pk and not actor_es_admin:
+            raise PermissionError("No tienes permiso para modificar el perfil de otro usuario.")
 
         try:
             with transaction.atomic():

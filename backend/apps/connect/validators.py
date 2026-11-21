@@ -103,6 +103,8 @@ def validar_botones(value) -> None:
         tipo, etiqueta, valor = boton["tipo"], boton["etiqueta"], boton["valor"]
         if not all(isinstance(x, str) for x in (tipo, etiqueta, valor)):
             raise ValidationError(f"Botón {i}: tipo, etiqueta y valor deben ser texto.")
+        if any("\x00" in x for x in (tipo, etiqueta, valor)):
+            raise ValidationError(f"Botón {i}: contiene caracteres inválidos.")
         if tipo not in BOTONES_TIPOS:
             raise ValidationError(f"Botón {i}: tipo '{tipo}' no permitido.")
         if not 1 <= len(etiqueta.strip()) <= 60:

@@ -692,6 +692,31 @@ class TestPerfilViewSetYMCP:
         with pytest.raises(ValueError, match="inválidos"):
             connect_mcp.connect_actualizar_perfil(tok_write, cargo="abc\x00")
 
+        # IDOR intra-tenant: actor no-admin no puede editar el perfil de otro usuario vía MCP
+        colega_a = crear_usuario(empresa_a)
+        crear_perfil(empresa_a, colega_a, slug="colega-alpha", nombre_publico="Colega")
+        with pytest.raises(PermissionError, match="otro usuario"):
+            connect_mcp.connect_actualizar_perfil(tok_write, usuario_id=str(colega_a.pk), cargo="Hackeado")
+
+        # Validación recursiva de byte NUL dentro de botones en MCP
+        with pytest.raises(ValueError, match="inválidos"):
+            connect_mcp.connect_actualizar_perfil(
+                tok_write,
+                botones=[{"tipo": "web", "etiqueta": "Web", "valor": "https://alpha.test/\x00xss"}],
+            )
+
+        # Un actor admin SÍ puede actualizar el perfil de otro usuario de la misma empresa vía MCP
+        rol_admin_mcp = Roles.objects.create(id_empresa=empresa_a, nombre_rol="Administrador")
+        admin_mcp = crear_usuario(empresa_a)
+        UsuarioRoles.objects.create(id_usuario=admin_mcp, id_rol=rol_admin_mcp)
+        tok_admin_mcp = _token(empresa_a, ["connect:write"], creado_por=admin_mcp)
+        editado_admin = connect_mcp.connect_actualizar_perfil(
+            tok_admin_mcp,
+            usuario_id=str(colega_a.pk),
+            cargo="Actualizado Admin",
+        )
+        assert editado_admin["cargo"] == "Actualizado Admin"
+
         # plantilla_bloqueada impide cambio de tema por usuario no-admin
         Perfil.objects.filter(pk=creado["id_perfil"]).update(plantilla_bloqueada=True)
         with pytest.raises(PermissionError, match="bloqueada"):
@@ -780,7 +805,7 @@ class TestPerfilViewSetYMCP:
             ).status_code
             == 400
         )
-        # Incluso si pertenece a empresa_b (no admin), perform_update bloquea con 403 mover el perfil
+        # Incluso si pertenece a empresa_b (no-admin o admin), id_empresa es estrictamente inmutable (400)
         user_a.empresas.add(empresa_b)
         assert (
             client_a.patch(
@@ -788,7 +813,21 @@ class TestPerfilViewSetYMCP:
                 {"id_empresa": str(empresa_b.pk)},
                 format="json",
             ).status_code
-            == 403
+            == 400
+        )
+        rol_admin_emp = Roles.objects.create(id_empresa=empresa_a, nombre_rol="Admin")
+        admin_multi = crear_usuario(empresa_a)
+        admin_multi.empresas.add(empresa_b)
+        UsuarioRoles.objects.create(id_usuario=admin_multi, id_rol=rol_admin_emp)
+        client_admin_multi = APIClient()
+        client_admin_multi.force_authenticate(user=admin_multi)
+        assert (
+            client_admin_multi.patch(
+                f"/api/connect/perfiles/{perfil_id}/",
+                {"id_empresa": str(empresa_b.pk)},
+                format="json",
+            ).status_code
+            == 400
         )
         assert (
             client_a.patch(
@@ -797,6 +836,28 @@ class TestPerfilViewSetYMCP:
                 format="json",
             ).status_code
             == 403
+        )
+
+        # Byte NUL dentro de botones (nested JSONField) se rechaza con 400 en vez de DataError 500
+        assert (
+            client_a.patch(
+                "/api/connect/perfiles/mi-perfil/",
+                {"botones": [{"tipo": "web", "etiqueta": "Web", "valor": "https://a.com/\x00bad"}]},
+                format="json",
+            ).status_code
+            == 400
+        )
+        assert (
+            client_otro.post(
+                "/api/connect/perfiles/",
+                {
+                    "slug": "con-nul-boton",
+                    "nombre_publico": "NUL",
+                    "botones": [{"tipo": "web", "etiqueta": "Bad\x00Label", "valor": "https://a.com"}],
+                },
+                format="json",
+            ).status_code
+            == 400
         )
 
         # Con plantilla_bloqueada=True, cambiar tema vía PATCH /{id}/ -> 403
@@ -823,12 +884,23 @@ class TestPerfilViewSetYMCP:
             == 403
         )
 
-        # El dueño sí puede soft-delete
+        # El dueño sí puede soft-delete y luego reactivar vía PATCH /mi-perfil/
         resp_del = client_a.delete(f"/api/connect/perfiles/{perfil_id}/")
         assert resp_del.status_code == 204
         assert Perfil.objects.get(pk=perfil_id).activo is False
+        assert APIClient().get("/api/public/connect/creado-api/").status_code == 404
 
-    def test_validaciones_publicas_vcard_accept_throttles_y_helpers(self, empresa_a, user_a):
+        resp_reactivar = client_a.patch(
+            "/api/connect/perfiles/mi-perfil/",
+            {"nombre_publico": "Creado Reactivado"},
+            format="json",
+        )
+        assert resp_reactivar.status_code == 200
+        assert resp_reactivar.data["activo"] is True
+        assert Perfil.objects.get(pk=perfil_id).activo is True
+        assert APIClient().get("/api/public/connect/creado-api/").status_code == 200
+
+    def test_validaciones_publicas_vcard_accept_throttles_y_helpers(self, empresa_a, empresa_b, user_a):
         from django.contrib.auth.models import AnonymousUser
         from django.core.exceptions import ImproperlyConfigured, ValidationError as DjangoValidationError
         from django.test import override_settings
@@ -915,10 +987,25 @@ class TestPerfilViewSetYMCP:
         with pytest.raises(DjangoValidationError):
             resolver_perfil_publico("slug\x00mal")
 
-        # _hash_ip vacío retorna "" y obtener_ip_cliente respeta X-Forwarded-For
+        # _hash_ip vacío retorna "" y obtener_ip_cliente alinea XFF con NUM_PROXIES / REMOTE_ADDR
         assert _hash_ip("") == ""
-        req_xff = APIRequestFactory().get("/", HTTP_X_FORWARDED_FOR="203.0.113.5, 10.0.0.1")
-        assert obtener_ip_cliente(req_xff) == "203.0.113.5"
+        req_xff = APIRequestFactory().get(
+            "/",
+            REMOTE_ADDR="198.51.100.77",
+            HTTP_X_FORWARDED_FOR="192.0.2.99, 203.0.113.5, 10.0.0.1",
+        )
+        # Sin NUM_PROXIES ignora X-Forwarded-For spoofable y usa REMOTE_ADDR
+        assert obtener_ip_cliente(req_xff) == "198.51.100.77"
+        with override_settings(NUM_PROXIES=1):
+            assert obtener_ip_cliente(req_xff) == "10.0.0.1"
+        with override_settings(NUM_PROXIES=2):
+            assert obtener_ip_cliente(req_xff) == "203.0.113.5"
+
+        # validar_botones rechaza \x00 explícitamente
+        from apps.connect.validators import validar_botones
+
+        with pytest.raises(DjangoValidationError, match="inválidos"):
+            validar_botones([{"tipo": "web", "etiqueta": "Web", "valor": "https://ok.com/\x00x"}])
 
         # asegurar_pipeline_predeterminado cuando DEFAULT_PIPELINE_NOMBRE y "Ventas Connect" ya existen
         Pipeline.objects.create(id_empresa=empresa_a, nombre=DEFAULT_PIPELINE_NOMBRE, es_predeterminado=False)
@@ -927,9 +1014,20 @@ class TestPerfilViewSetYMCP:
         assert pipe_creado.es_predeterminado is True
         assert pipe_creado.nombre == "Ventas Connect 2"
 
-        # usuario_es_admin_empresa con anónimo / None / staff
+        # usuario_es_admin_empresa: match exacto normalizado y membresía obligatoria para rol global
         assert usuario_es_admin_empresa(None) is False
         assert usuario_es_admin_empresa(AnonymousUser()) is False
+        rol_falso = Roles.objects.create(id_empresa=empresa_a, nombre_rol="Asistente Administrativo")
+        user_falso = crear_usuario(empresa_a)
+        UsuarioRoles.objects.create(id_usuario=user_falso, id_rol=rol_falso)
+        assert usuario_es_admin_empresa(user_falso, empresa_a.pk) is False
+
+        rol_global = Roles.objects.create(id_empresa=None, nombre_rol="Administrador General")
+        user_global = crear_usuario(empresa_a)
+        UsuarioRoles.objects.create(id_usuario=user_global, id_rol=rol_global)
+        assert usuario_es_admin_empresa(user_global, empresa_a.pk) is True
+        assert usuario_es_admin_empresa(user_global, empresa_b.pk) is False
+
         staff_user = crear_usuario(empresa_a)
         staff_user.is_staff = True
         staff_user.save(update_fields=["is_staff"])

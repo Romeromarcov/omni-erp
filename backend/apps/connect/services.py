@@ -93,12 +93,33 @@ def _hash_ip(ip_str: str | None, *, salt: str = "") -> str:
 
 
 def obtener_ip_cliente(request: Any) -> str:
-    """Obtiene la IP del cliente respetando X-Forwarded-For cuando existe."""
+    """Obtiene la IP del cliente alineada con ``NUM_PROXIES`` para evitar spoofing de XFF."""
     meta = getattr(request, "META", {}) or {}
+    remote_addr = str(meta.get("REMOTE_ADDR", "") or "").strip()
     xff = str(meta.get("HTTP_X_FORWARDED_FOR", "") or "").strip()
-    if xff:
-        return xff.split(",")[0].strip()
-    return str(meta.get("REMOTE_ADDR", "") or "").strip()
+    if not xff:
+        return remote_addr
+
+    from rest_framework.settings import api_settings
+
+    num_proxies = getattr(settings, "NUM_PROXIES", None)
+    if num_proxies is None:
+        num_proxies = getattr(api_settings, "NUM_PROXIES", None)
+    if num_proxies is None:
+        return remote_addr
+    try:
+        proxies = int(num_proxies)
+    except (TypeError, ValueError):
+        return remote_addr
+    if proxies <= 0:
+        return remote_addr
+
+    partes = [p.strip() for p in xff.split(",") if p.strip()]
+    if not partes:
+        return remote_addr
+    # Cuenta desde el extremo derecho (último proxy confiable) igual que DRF BaseThrottle.get_ident.
+    indice = max(0, len(partes) - proxies)
+    return partes[indice]
 
 
 def clasificar_dispositivo(user_agent: str | None) -> str:
@@ -563,8 +584,11 @@ def capturar_lead_publico(
     }
 
 
+_ADMIN_ROLE_NAMES = ("admin", "administrador", "administrador general")
+
+
 def usuario_es_admin_empresa(usuario: Any, empresa_id: uuid.UUID | None = None) -> bool:
-    """True si ``usuario`` es superusuario Omni, staff con acceso a la empresa o tiene rol admin."""
+    """True si ``usuario`` es superusuario Omni, staff o posee rol administrador exacto en la empresa."""
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return False
     if getattr(usuario, "es_superusuario_omni", False) or getattr(usuario, "is_superuser", False):
@@ -579,10 +603,17 @@ def usuario_es_admin_empresa(usuario: Any, empresa_id: uuid.UUID | None = None) 
     from apps.core.models import UsuarioRoles
     from django.db.models import Q
 
+    if empresa_id is not None and not usuario.empresas.filter(pk=empresa_id).exists():
+        return False
+
+    nombre_q = Q()
+    for nombre in _ADMIN_ROLE_NAMES:
+        nombre_q |= Q(id_rol__nombre_rol__iexact=nombre)
+
     qs = UsuarioRoles.objects.filter(
+        nombre_q,
         id_usuario=usuario,
         id_rol__activo=True,
-        id_rol__nombre_rol__icontains="admin",
     )
     if empresa_id is not None:
         qs = qs.filter(Q(id_rol__id_empresa_id=empresa_id) | Q(id_rol__id_empresa__isnull=True))
