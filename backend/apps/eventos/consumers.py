@@ -12,6 +12,9 @@ el comando termina con un mensaje informativo.
 import json
 import logging
 import signal
+from typing import Any
+
+from apps.core.telemetry import extract_trace_context, init_telemetry, trazar_operacion
 
 logger = logging.getLogger("omni.eventos.consumer")
 
@@ -95,12 +98,16 @@ def _handle_pago(envelope: dict) -> None:
 # ── Consumer principal ────────────────────────────────────────────────────────
 
 
-def _process_message(msg_value: bytes) -> None:
-    """Deserializa el envelope y despacha al handler correspondiente."""
+def _process_message(msg_value: bytes, headers: Any = None) -> None:
+    """Deserializa el envelope, extrae contexto W3C si existe y despacha al handler."""
     try:
         envelope = json.loads(msg_value.decode("utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         logger.warning("OmniEventConsumer: mensaje inválido (no JSON): %s", exc)
+        return
+
+    if not isinstance(envelope, dict):
+        logger.warning("OmniEventConsumer: mensaje inválido (envelope no es objeto JSON)")
         return
 
     event_type = envelope.get("event_type", "")
@@ -113,18 +120,29 @@ def _process_message(msg_value: bytes) -> None:
     from apps.core import rls
 
     empresa_id = envelope.get("empresa_id") or envelope.get("tenant_id")
-    for handler in handlers:
-        try:
-            ctx = rls.rls_tenant_context([empresa_id]) if empresa_id else rls.rls_bypass()
-            with ctx:
-                handler(envelope)
-        except Exception as exc:
-            logger.exception(
-                "OmniEventConsumer: handler '%s' lanzó excepción para evento '%s': %s",
-                handler.__name__,
-                event_type,
-                exc,
-            )
+    parent_ctx = extract_trace_context(headers)
+
+    with trazar_operacion(
+        "eventos.consumir",
+        context=parent_ctx,
+        span_kind="consumer",
+        event_type=event_type,
+        event_id=envelope.get("event_id"),
+        empresa_id=empresa_id,
+        messaging_system="kafka",
+    ):
+        for handler in handlers:
+            try:
+                ctx = rls.rls_tenant_context([empresa_id]) if empresa_id else rls.rls_bypass()
+                with ctx:
+                    handler(envelope)
+            except Exception as exc:
+                logger.exception(
+                    "OmniEventConsumer: handler '%s' lanzó excepción para evento '%s': %s",
+                    handler.__name__,
+                    event_type,
+                    exc,
+                )
 
 
 def run_consumer(
@@ -160,6 +178,8 @@ def run_consumer(
         )
         return
 
+    init_telemetry()
+
     consumer_config = {
         "bootstrap.servers": broker_url,
         "group.id": group_id,
@@ -194,7 +214,7 @@ def run_consumer(
             if msg.error():
                 logger.warning("OmniEventConsumer: error de Kafka: %s", msg.error())
                 continue
-            _process_message(msg.value())
+            _process_message(msg.value(), headers=msg.headers())
     except KafkaException as exc:
         logger.exception("OmniEventConsumer: KafkaException: %s", exc)
     finally:

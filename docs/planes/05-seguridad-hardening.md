@@ -7,8 +7,8 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1..P2-5 ✅, P1-7 parcial; P2-6/P3 abiertos |
-| **Fecha**    | 2026-06-07 (estado actualizado 2026-11-17 contra `develop @ ff2bdb6`) |
+| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6 ✅, P1-7 parcial, **Fase P2 100 % completada (P2-1..P2-6 ✅)**; P3 abierto |
+| **Fecha**    | 2026-06-07 (estado actualizado 2026-11-21 — P2-6 cerrado sobre `develop @ eceadde`) |
 | **Esfuerzo** | ~3–4 semanas (repartibles en paralelo) |
 | **Owner**    | equipo-backend / equipo-agentes / devops |
 
@@ -59,7 +59,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | R9 | Idempotencia en endpoints de pago/creación (claves idempotentes) | ✅ **P1-2 (#86)** (`apps/core/idempotency.py`, `ClaveIdempotencia`) |
 | R10 | Circuit breaker / timeouts en llamadas LLM | ✅ **P2-1 (#99)** (`LLM_TIMEOUT`, `LLM_MAX_RETRIES`, `LLM_CB_UMBRAL`/`VENTANA` en `llm_gateway.py`) |
 | R11 | Observabilidad de costos LLM (tokens por tenant) | ✅ (**P2-3 cerrado**) — tabla `ConsumoLLM` (`agentes_consumo_llm`) con RLS forzado, cálculo Decimal `calcular_costo_estimado_usd`, hook fail-safe desde `llm_gateway`, REST `/api/agentes/consumo-llm/` + `/resumen/`, MCP `agentes_resumen_consumo_llm` y panel UI |
-| R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ❌ (**P2-6 abierto**) |
+| R12 | Tracing distribuido (OpenTelemetry) — Celery + Kafka + agentes | ✅ (**P2-6 cerrado** — `apps/core/telemetry.py` opt-in vía `OTEL_ENABLED`, `wsgi`/`asgi`/`celery` + propagación W3C en `apps/eventos` + `OTelTraceLogFilter` + sanitización R-CODE-8) |
 | R13 | Auditoría inmutable (`RegistroAuditoria` no editable/borrable) | ✅ (**P1-5 cerrado** — triggers `BEFORE UPDATE OR DELETE` en PostgreSQL (`0005`/`0025`), `REVOKE UPDATE, DELETE` en `configurar_rol_rls`, API ReadOnly y Django Admin append-only) |
 | R14 | CSP a nivel Django (`django-csp`, nonce por request) | ✅ **P2-5 (#106)** (`django-csp==4.0` enforce; `tests/api/test_p25_csp.py`) |
 
@@ -295,12 +295,18 @@ llevan su relajación mínima **por vista** (`csp_update`: `style-src
 de swagger-ui—, `worker-src blob:` —worker de búsqueda de redoc—). Tests:
 `tests/api/test_p25_csp.py`.
 
-### P2-6 · Tracing distribuido — OpenTelemetry (R12) — `❌`
+### P2-6 · Tracing distribuido — OpenTelemetry (R12) — `✅` (Fase P2 100 % completada)
 **Por qué:** hay Celery + Kafka + agentes; sin trace correlacionado es difícil diagnosticar.
 
 **Tareas:** instrumentar Django + Celery + Kafka con OTel; exportar a Sentry/colector.
 **DoD:** un request se sigue de extremo a extremo (web→tarea→evento).
-**Esfuerzo:** ~2 días. **Owner:** devops. **→ CTF si se difiere.**
+
+#### Estado — `🟢 HECHO` (`feat/p2-6-opentelemetry-tracing`)
+- **Dependencias pineadas (`backend/requirements.txt`):** `opentelemetry-api==1.45.2`, `opentelemetry-sdk==1.45.2`, `opentelemetry-exporter-otlp-proto-http==1.45.2`, `opentelemetry-instrumentation==0.66b2`, `opentelemetry-instrumentation-django==0.66b2`, `opentelemetry-instrumentation-asgi==0.66b2`, `opentelemetry-instrumentation-celery==0.66b2` y `opentelemetry-instrumentation-requests==0.66b2`.
+- **Módulo opt-in fail-safe (`apps/core/telemetry.py`):** 100 % no-op puro por defecto (`OTEL_ENABLED=false`). Con `OTEL_ENABLED` ∈ `{"1", "true", "yes", "on"}`, inicializa `Resource` (`service.name`, `deployment.environment`), `TracerProvider` (con `OTLPSpanExporter` + `BatchSpanProcessor` o degradación local sin exportación si falta/falla `OTEL_EXPORTER_OTLP_ENDPOINT`, sin exponer credenciales ni tracebacks — R-CODE-8), instrumentación idempotente de Django (WSGI/ASGI), Celery y Requests, helpers W3C `inject_trace_headers` / `extract_trace_context`, decorador/context manager `trazar_operacion` (con filtrado de llaves sensibles `token`/`secret`/`password`/`api_key` — R-CODE-8) y `OTelTraceLogFilter` conectado en `LOGGING` (`config/settings_base.py`) para inyectar `trace_id`/`span_id`.
+- **Entrypoints y Eventos/Kafka:** `config/wsgi.py` y `config/asgi.py` invocan `init_telemetry()`; `config/celery.py` conecta `@worker_process_init.connect` y `@worker_process_shutdown.connect`; `apps/eventos/producer.py` y `apps/eventos/consumers.py` propagan cabeceras W3C `traceparent` entre emisión y consumo abriendo spans correlacionados bajo el mismo `trace_id`.
+- **Tests:** `tests/integration/test_p26_opentelemetry.py` (no-op con `OTEL_ENABLED=false`, flujo E2E HTTP Django → Celery → Kafka producer/consumer con `InMemorySpanExporter`, propagación W3C tolerante a bytes/NUL/malformados, sanitización R-CODE-8 y tolerancia fail-safe).
+- **Cierre de fase:** con P2-6 cerrado, la **Fase P2 queda 100 % completada (P2-1..P2-6 ✅)**.
 
 ---
 
@@ -334,8 +340,8 @@ Futuro  ──┴─ P3 (2FA, RAG, WebSockets) ── cada uno con su CTF
 ## CTFs a abrir si algo se difiere
 
 Cualquier item P2/P3 que no entre en su ventana se difiere con un CTF en
-[`../ctf/`](../ctf/) (`vence_en` + owner), según R-PROC-6. Candidatos directos:
-P2-1 (gateway LLM), P2-6 (OTel), P3-1 (2FA), P3-2 (RAG), P3-3 (WebSockets).
+[`../ctf/`](../ctf/) (`vence_en` + owner), según R-PROC-6. Candidatos directos restantes (P2 completado al 100 %):
+P3-1 (2FA), P3-2 (RAG), P3-3 (WebSockets).
 
 ## Definition of Done del plan
 
