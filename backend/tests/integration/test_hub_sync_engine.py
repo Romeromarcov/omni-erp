@@ -258,14 +258,14 @@ class TestErroresDeConector:
         assert job.estado == "fallido"
         assert "no soporta" in job.resumen_errores[0]["error"]
 
-    def test_direccion_outbound_no_implementada(self, fake_registry, instancia_fake):
+    def test_direccion_outbound_deshabilitada_sin_opt_in(self, fake_registry, instancia_fake):
         job = _job(instancia_fake, direccion="outbound")
 
         SyncEngine().ejecutar_job(job)
 
         job.refresh_from_db()
         assert job.estado == "fallido"
-        assert "outbound no implementada" in job.resumen_errores[0]["error"]
+        assert "Push outbound deshabilitado" in job.resumen_errores[0]["error"]
 
     def test_entidad_soportada_sin_metodo_pull_marca_fallido(self, fake_registry, instancia_fake):
         # "empleados" está en SUPPORTED_ENTITIES del fake pero no en PULL_METHODS.

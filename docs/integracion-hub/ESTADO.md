@@ -1,8 +1,8 @@
 # Integration Hub — Estado y avances
 
-> Última actualización: 2026-06-22. Documenta el estado del Integration Hub tras
-> el trabajo de conexión Odoo + visión "Omni como hub" (Fases 1–2 inbound y
-> Fase 3 completadas).
+> Última actualización: 2026-11-20. Documenta el estado del Integration Hub tras
+> completar Fases 1–3, Ola B6 (inbound `facturas_compra` y pagos N:M) y Ola B7 /
+> `CTF-011` (Push Outbound hacia Odoo validado en vivo contra Odoo QA).
 
 ## 1. Visión
 
@@ -104,6 +104,13 @@ Cerradas por el loop autónomo (todas con tests y revisión independiente):
 - `SyncEngine._upsert_pago` persiste `finanzas.Pago` + `finanzas.AsignacionPago` (`generar_asiento=False`, `modo_historico_externo=True`) para:
   - Cobros `inbound/customer` (`INGRESO`) y pagos `outbound/supplier` (`EGRESO`, vinculados a `CuentaPorPagar` / `FacturaCompra`).
   - **0 facturas (`ANTICIPO`)**, **1 factura (`FACTURA`/`CXP`/`COMPRA`)** y **N facturas (`CONCILIACION_MULTIPLE`)**, preservando cualquier excedente como saldo a favor en `core.Contacto` e idempotencia por `odoo:pr:{partial_reconcile_id}`.
+
+### ✅ Push Outbound hacia Odoo + `gestiones_cobranza` (Fase 3 / Ola B7 / `CTF-011` — COMPLETADO)
+
+- **Opt-in y mínimo privilegio:** bandera `push_habilitado` (default `False`), `push_modo_pago` (`"borrador"` | `"confirmado"`), `diario_pagos_default_id` y par simétrico fail-closed `write_user` / `write_api_key` en `configuracion` (cifrado en reposo, nunca expuesto en API ni logs — `R-CODE-8`).
+- **`OdooConnector`:** `_get_write_client()`, `_get_model_fields()` (Odoo 18 `memo` vs `<18` `payment_reference`/`ref`), `push_pago_cobranza()` idempotente (`[OMNI:{key}]`, `borrador` y `confirmado` con `action_post` + `reconcile()`), `push_gestion_cobranza()` idempotente (`[OMNI-GESTION:{key}]`, `html.escape()` XSS-safe sobre `account.move`/`res.partner`) y `_sanitizar_error_externo()`.
+- **`SyncEngine`:** `PUSH_METHODS` (`pagos`, `gestiones_cobranza`, `contactos`, `productos`), ejecución `outbound` y `bidireccional` con `EntidadSincronizada` + checksum y trazabilidad en `LogDetalleSincronizacion`.
+- **API, MCP y UI:** `POST /api/integration-hub/instancias/{id}/push-cobranza/` + `Idempotency-Key` + `NulSafeFilterMixin`, paridad MCP (`integration_hub/mcp.py` con `MCP_TOOLS`), controles en `EditarConectorModal.tsx` y `ConectorDetallePage.tsx`. Validado con test opt-in en vivo contra Odoo QA (`CTF-011` cerrado).
 
 ### Pendiente siguiente
 

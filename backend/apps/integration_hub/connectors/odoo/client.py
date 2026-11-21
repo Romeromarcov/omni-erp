@@ -16,7 +16,9 @@ Seguridad (R-CODE-8):
 from __future__ import annotations
 
 import logging
+import re
 import xmlrpc.client  # nosec B411
+from collections.abc import Iterable
 from decimal import Decimal, InvalidOperation
 from typing import Any
 from urllib.parse import urlsplit
@@ -29,6 +31,34 @@ from defusedxml.xmlrpc import monkey_patch as _defuse_xmlrpc
 _defuse_xmlrpc()
 
 logger = logging.getLogger(__name__)
+
+_SECRET_KV_RX = re.compile(r"(?i)\b(api_key|write_api_key|password|passwd|secret|token)\s*([:=])\s*([^\s,;\"']+)")
+_URL_CREDS_RX = re.compile(r"(https?://)[^/\s@]+@")
+
+
+def sanitizar_error_odoo(exc_or_msg: Any, secrets: Iterable[str] = ()) -> str:
+    """Enmascara credenciales, URLs con auth y trazas técnicas en errores externos Odoo (R-CODE-8)."""
+    msg = str(exc_or_msg or "").strip()
+    if not msg:
+        return "Error de comunicación con Odoo."
+
+    # Enmascarar valores literales de secretos configurados (más largos primero).
+    secret_vals = sorted(
+        {str(s).strip() for s in secrets if s and isinstance(s, str) and str(s).strip()},
+        key=len,
+        reverse=True,
+    )
+    for sec in secret_vals:
+        msg = msg.replace(sec, "***")
+
+    msg = _URL_CREDS_RX.sub(r"\1***@", msg)
+    msg = _SECRET_KV_RX.sub(r"\1\2***", msg)
+
+    if "Traceback (most recent call last):" in msg:
+        primera_linea = msg.split("Traceback (most recent call last):", 1)[0].strip()
+        msg = primera_linea or "Error en operación XML-RPC de Odoo."
+
+    return msg[:500]
 
 
 def normalize_odoo_host(raw: str) -> str:
@@ -183,9 +213,17 @@ class OdooXMLRPCClient:
             )
             return result
         except xmlrpc.client.Fault as fault:
-            raise OdooCallError(f"Odoo fault en {model}.{method}: {fault.faultCode} — {fault.faultString}") from fault
+            detalle = sanitizar_error_odoo(
+                f"Odoo fault en {model}.{method}: {fault.faultCode} — {fault.faultString}",
+                secrets=(self._api_key,),
+            )
+            raise OdooCallError(detalle) from fault
         except Exception as exc:
-            raise OdooCallError(f"Error en {model}.{method}: {type(exc).__name__}: {exc}") from exc
+            detalle = sanitizar_error_odoo(
+                f"Error en {model}.{method}: {type(exc).__name__}: {exc}",
+                secrets=(self._api_key,),
+            )
+            raise OdooCallError(detalle) from exc
 
     def get_version(self) -> dict:
         """Retorna información de versión detectada al autenticar."""

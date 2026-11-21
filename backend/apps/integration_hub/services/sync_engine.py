@@ -18,12 +18,15 @@ Uso (desde Celery task o view):
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone as dj_timezone
 
 from apps.integration_hub.connectors.base import (
@@ -59,6 +62,13 @@ class SyncEngine:
         "inventario": "pull_inventario",
     }
 
+    PUSH_METHODS = {
+        "pagos": "push_pago_cobranza",
+        "gestiones_cobranza": "push_gestion_cobranza",
+        "contactos": "push_contacto",
+        "productos": "push_producto",
+    }
+
     def ejecutar_job(self, job: "JobSincronizacion") -> SyncResult:
         """
         Ejecuta un job de sincronización completo.
@@ -77,7 +87,7 @@ class SyncEngine:
         try:
             conector = registry.get_connector(job.id_instancia)
         except Exception as exc:
-            self._marcar_fallido(job, str(exc), resultado)
+            self._marcar_fallido(job, self._sanitizar_error(None, job.id_instancia, exc), resultado)
             return resultado
 
         # Verificar que la entidad esté soportada
@@ -86,25 +96,31 @@ class SyncEngine:
             self._marcar_fallido(job, msg, resultado)
             return resultado
 
-        # Determinar desde cuándo sincronizar (incremental)
-        desde = self._calcular_desde(job)
-
-        if job.direccion in ("inbound", "bidireccional"):
-            resultado = self._ejecutar_pull(job, conector, desde, resultado)
+        # Determinar watermarks incrementales por dirección (inbound vs outbound)
+        ejecutar_pull = job.direccion == "inbound" or (
+            job.direccion == "bidireccional" and job.tipo_entidad in self.PULL_METHODS
+        )
+        if ejecutar_pull:
+            desde_pull = self._calcular_desde(job, direccion_efectiva="inbound")
+            resultado = self._ejecutar_pull(job, conector, desde_pull, resultado)
             job.refresh_from_db(fields=["estado"])
             if job.estado == "fallido":
                 # El pull falló de raíz (sin método, conexión caída, etc.):
                 # _ejecutar_pull ya marcó el job; no sobreescribir con 'completado'.
                 return resultado
 
-        # outbound no implementado en esta versión (Fase 1)
-        if job.direccion == "outbound":
-            self._marcar_fallido(
-                job,
-                "Sincronización outbound no implementada en esta versión.",
-                resultado,
-            )
-            return resultado
+        if job.direccion in ("outbound", "bidireccional"):
+            if job.direccion == "bidireccional" and job.tipo_entidad not in self.PUSH_METHODS and not ejecutar_pull:
+                msg = f"Entidad '{job.tipo_entidad}' sin método pull ni push."
+                resultado.agregar_error("N/A", msg)
+                self._marcar_fallido(job, msg, resultado)
+                return resultado
+            if job.direccion == "outbound" or job.tipo_entidad in self.PUSH_METHODS:
+                desde_push = self._calcular_desde(job, direccion_efectiva="outbound")
+                resultado = self._ejecutar_push(job, conector, desde_push, resultado)
+                job.refresh_from_db(fields=["estado"])
+                if job.estado == "fallido":
+                    return resultado
 
         # Completar job
         self._marcar_completado(job, resultado)
@@ -291,6 +307,593 @@ class SyncEngine:
                 logger.warning("Error sincronizando %s:%s → %s", job.tipo_entidad, id_externo, exc)
 
         # Bulk create logs (eficiencia)
+        if logs_batch:
+            LogDetalleSincronizacion.objects.bulk_create(logs_batch, batch_size=200)
+
+        return resultado
+
+    # ── Push outbound (Omni → Externo, CTF-011 / Ola B7) ─────────────────────
+
+    @staticmethod
+    def _sanitizar_error(
+        conector: BaseConnector | None, instancia: "ConectorInstancia", exc: BaseException | str
+    ) -> str:
+        """Sanitiza excepciones externas para no filtrar secretos ni URLs con auth (R-CODE-8)."""
+        if conector is not None and hasattr(conector, "_sanitizar_error_externo"):
+            return str(conector._sanitizar_error_externo(exc))
+        from apps.integration_hub.connectors.odoo.client import sanitizar_error_odoo
+
+        cfg = instancia.get_config() if instancia is not None else {}
+        secretos = [
+            str(cfg.get(k) or "") for k in ("api_key", "write_api_key", "password", "token", "secret") if cfg.get(k)
+        ]
+        return sanitizar_error_odoo(exc, secrets=secretos)
+
+    @staticmethod
+    def _checksum_push(payload: dict) -> str:
+        clean = {k: v for k, v in payload.items() if k != "id_externo"}
+        serialized = json.dumps(clean, sort_keys=True, default=str)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
+
+    @staticmethod
+    def _parse_uuid(raw_val: object) -> uuid.UUID | None:
+        if not raw_val or isinstance(raw_val, bool):
+            return None
+        try:
+            return uuid.UUID(str(raw_val).strip())
+        except (ValueError, TypeError, AttributeError):
+            return None
+
+    @staticmethod
+    def _parse_odoo_int_id(raw_val: object) -> int | None:
+        s = str(raw_val or "").strip()
+        for prefix in ("odoo:out_invoice:", "odoo:in_invoice:", "odoo:"):
+            if s.startswith(prefix):
+                s = s[len(prefix) :].strip()
+                break
+        if s.isdigit():
+            val = int(s)
+            return val if val > 0 else None
+        return None
+
+    def _resolver_partner_odoo_de_pago(self, pago, instancia: "ConectorInstancia") -> int | None:
+        from apps.crm.models import Cliente
+        from apps.integration_hub.models import EntidadSincronizada
+        from apps.proveedores.models import Proveedor
+
+        empresa = instancia.id_empresa
+        if pago.id_contacto_id:
+            mapping = EntidadSincronizada.objects.filter(
+                id_instancia=instancia,
+                tipo_entidad="contactos",
+                id_omni=str(pago.id_contacto_id),
+                activo=True,
+            ).first()
+            if mapping and mapping.id_externo:
+                pid = self._parse_odoo_int_id(mapping.id_externo)
+                if pid is not None:
+                    return pid
+
+            cli = Cliente.objects.filter(id_empresa=empresa, contacto_id=pago.id_contacto_id).first()
+            if cli and cli.referencia_externa:
+                pid = self._parse_odoo_int_id(cli.referencia_externa)
+                if pid is not None:
+                    return pid
+
+            prov = Proveedor.objects.filter(id_empresa=empresa, contacto_id=pago.id_contacto_id).first()
+            if prov and prov.referencia_externa:
+                pid = self._parse_odoo_int_id(prov.referencia_externa)
+                if pid is not None:
+                    return pid
+
+        if pago.id_factura_id and getattr(pago.id_factura, "id_cliente_id", None):
+            pid = self._parse_odoo_int_id(pago.id_factura.id_cliente.referencia_externa)
+            if pid is not None:
+                return pid
+
+        for asig in pago.asignaciones.all():
+            if asig.id_cxc_id:
+                pid = self._parse_odoo_int_id(asig.id_cxc.cliente_externo_id)
+                if pid is not None:
+                    return pid
+                if asig.id_cxc.cliente_id:
+                    pid = self._parse_odoo_int_id(asig.id_cxc.cliente.referencia_externa)
+                    if pid is not None:
+                        return pid
+            if asig.id_factura_venta_id and getattr(asig.id_factura_venta, "id_cliente_id", None):
+                pid = self._parse_odoo_int_id(asig.id_factura_venta.id_cliente.referencia_externa)
+                if pid is not None:
+                    return pid
+
+        return None
+
+    def _resolver_facturas_odoo_de_pago(self, pago, instancia: "ConectorInstancia") -> list[int]:
+        from apps.integration_hub.models import EntidadSincronizada
+
+        facturas_ids: list[int] = []
+
+        def _add(fid: int | None) -> None:
+            if fid is not None and fid not in facturas_ids:
+                facturas_ids.append(fid)
+
+        for asig in pago.asignaciones.filter(estado="ACTIVA", activo=True):
+            if asig.id_factura_venta_id:
+                mp = EntidadSincronizada.objects.filter(
+                    id_instancia=instancia,
+                    tipo_entidad="facturas_venta",
+                    id_omni=str(asig.id_factura_venta_id),
+                ).first()
+                _add(self._parse_odoo_int_id(mp.id_externo if mp else asig.id_factura_venta.referencia_externa))
+            if asig.id_cxc_id:
+                _add(self._parse_odoo_int_id(asig.id_cxc.referencia_externa))
+            if asig.id_factura_compra_id:
+                mp = EntidadSincronizada.objects.filter(
+                    id_instancia=instancia,
+                    tipo_entidad="facturas_compra",
+                    id_omni=str(asig.id_factura_compra_id),
+                ).first()
+                _add(self._parse_odoo_int_id(mp.id_externo if mp else asig.id_factura_compra.referencia_externa))
+            if asig.id_cxp_id:
+                _add(self._parse_odoo_int_id(asig.id_cxp.referencia_externa))
+
+        if not facturas_ids and pago.id_factura_id:
+            mp = EntidadSincronizada.objects.filter(
+                id_instancia=instancia,
+                tipo_entidad="facturas_venta",
+                id_omni=str(pago.id_factura_id),
+            ).first()
+            _add(self._parse_odoo_int_id(mp.id_externo if mp else pago.id_factura.referencia_externa))
+
+        return facturas_ids
+
+    def _resolver_partner_odoo_de_gestion(self, gestion, instancia: "ConectorInstancia") -> int | None:
+        from apps.crm.models import Cliente
+        from apps.integration_hub.models import EntidadSincronizada
+
+        pid = self._parse_odoo_int_id(gestion.cliente_id)
+        if pid is not None:
+            return pid
+
+        if gestion.cxc_id:
+            pid = self._parse_odoo_int_id(gestion.cxc.cliente_externo_id)
+            if pid is not None:
+                return pid
+            if gestion.cxc.cliente_id:
+                pid = self._parse_odoo_int_id(gestion.cxc.cliente.referencia_externa)
+                if pid is not None:
+                    return pid
+
+        if gestion.cliente_id:
+            mp = EntidadSincronizada.objects.filter(
+                id_instancia=instancia,
+                tipo_entidad="contactos",
+                id_omni=str(gestion.cliente_id),
+                activo=True,
+            ).first()
+            if mp and mp.id_externo:
+                pid = self._parse_odoo_int_id(mp.id_externo)
+                if pid is not None:
+                    return pid
+
+            cliente_uuid = self._parse_uuid(gestion.cliente_id)
+            if cliente_uuid is not None:
+                cli = Cliente.objects.filter(
+                    id_empresa=instancia.id_empresa,
+                    pk=cliente_uuid,
+                ).first()
+                if cli and cli.referencia_externa:
+                    pid = self._parse_odoo_int_id(cli.referencia_externa)
+                    if pid is not None:
+                        return pid
+
+        return None
+
+    def _preparar_items_push(
+        self,
+        job: "JobSincronizacion",
+        desde: datetime | None,
+    ) -> list[dict]:
+        """Construye lotes canónicos de push estrictamente acotados a ``job.id_instancia.id_empresa`` (R-CODE-1)."""
+        from apps.core.models import Contacto
+        from apps.cxc.models import GestionCobranza
+        from apps.finanzas.models import Pago
+        from apps.integration_hub.models import EntidadSincronizada
+        from apps.inventario.models import Producto
+
+        instancia = job.id_instancia
+        empresa = instancia.id_empresa
+        config = instancia.get_config()
+        parametros = job.parametros or {}
+        ids_filtro_raw = [str(x) for x in (parametros.get("ids") or []) if x]
+        parsed_ids_filtro = [u for u in (self._parse_uuid(x) for x in ids_filtro_raw) if u is not None]
+        desde_explicit = bool(parametros.get("desde"))
+        desde_eff = None if parametros.get("sync_completo") or ids_filtro_raw else desde
+
+        # En flujo incremental automático (sin 'desde' explícito), incluir también registros locales
+        # pendientes o que fallaron en un job previo (sin EntidadSincronizada outbound confirmada).
+        mapped_uuids: list[uuid.UUID] = []
+        if desde_eff is not None and not desde_explicit:
+            exige_hash_push = job.tipo_entidad in ("contactos", "productos")
+            raw_mapped = (
+                EntidadSincronizada.objects.filter(
+                    id_instancia=instancia,
+                    tipo_entidad=job.tipo_entidad,
+                    activo=True,
+                )
+                .exclude(id_omni__isnull=True)
+                .exclude(id_omni="")
+                .exclude(id_externo="")
+                .values_list("id_omni", "metadatos")
+            )
+            for raw_omni, meta in raw_mapped:
+                if exige_hash_push and not (meta or {}).get("hash_datos_push"):
+                    continue
+                parsed = self._parse_uuid(raw_omni)
+                if parsed is not None:
+                    mapped_uuids.append(parsed)
+
+        def _filtrar_incremental(qs, campo_fecha: str):
+            if ids_filtro_raw:
+                return qs.filter(pk__in=parsed_ids_filtro)
+            if desde_eff is None:
+                return qs
+            if desde_explicit:
+                return qs.filter(**{f"{campo_fecha}__gte": desde_eff})
+            if mapped_uuids:
+                return qs.filter(Q(**{f"{campo_fecha}__gte": desde_eff}) | ~Q(pk__in=mapped_uuids))
+            return qs
+
+        def _error_item(pk: object, modelo_omni: str, resumen: dict, exc: Exception) -> dict:
+            return {
+                "id_omni": str(pk),
+                "modelo_omni": modelo_omni,
+                "resumen": resumen,
+                "datos": {},
+                "origen_externo": False,
+                "checksum": "",
+                "_prep_error": exc,
+            }
+
+        items: list[dict] = []
+
+        if job.tipo_entidad == "pagos":
+            qs = _filtrar_incremental(
+                Pago.objects.filter(id_empresa=empresa)
+                .select_related("id_contacto", "id_moneda", "id_factura", "id_factura__id_cliente", "id_cxp")
+                .prefetch_related(
+                    "asignaciones",
+                    "asignaciones__id_factura_venta",
+                    "asignaciones__id_factura_venta__id_cliente",
+                    "asignaciones__id_cxc",
+                    "asignaciones__id_cxc__cliente",
+                    "asignaciones__id_factura_compra",
+                    "asignaciones__id_cxp",
+                )
+                .order_by("fecha_pago", "id_pago"),
+                "fecha_actualizacion",
+            )
+
+            modo_pago = parametros.get("push_modo_pago") or config.get("push_modo_pago") or "borrador"
+            journal_id = parametros.get("journal_id") or config.get("diario_pagos_default_id")
+
+            for pago in qs:
+                ref_str = str(getattr(pago, "referencia", "") or "")
+                try:
+                    partner_id = self._resolver_partner_odoo_de_pago(pago, instancia)
+                    facturas_ids = self._resolver_facturas_odoo_de_pago(pago, instancia)
+                    datos = {
+                        "id_omni": str(pago.pk),
+                        "idempotency_key": f"pago-{pago.pk}",
+                        "partner_id": partner_id,
+                        "monto": Decimal(str(pago.monto)),
+                        "journal_id": journal_id,
+                        "tipo": "cliente" if pago.tipo_operacion == "INGRESO" else "proveedor",
+                        "moneda": pago.id_moneda.codigo_iso if pago.id_moneda_id else "USD",
+                        "fecha": pago.fecha_pago.date().isoformat() if pago.fecha_pago else "",
+                        "referencia": ref_str,
+                        "push_modo_pago": modo_pago,
+                        "facturas_odoo_ids": facturas_ids,
+                    }
+                    items.append(
+                        {
+                            "id_omni": str(pago.pk),
+                            "modelo_omni": "apps.finanzas.models.Pago",
+                            "resumen": {"referencia": ref_str[:80], "monto": str(datos["monto"])},
+                            "datos": datos,
+                            "origen_externo": ref_str.startswith("odoo:"),
+                            "checksum": self._checksum_push(datos),
+                        }
+                    )
+                except Exception as exc:
+                    items.append(
+                        _error_item(
+                            pago.pk,
+                            "apps.finanzas.models.Pago",
+                            {"referencia": ref_str[:80]},
+                            exc,
+                        )
+                    )
+
+        elif job.tipo_entidad == "gestiones_cobranza":
+            qs = _filtrar_incremental(
+                GestionCobranza.objects.filter(empresa=empresa, deleted_at__isnull=True)
+                .select_related("cxc", "cxc__cliente")
+                .order_by("fecha_gestion", "id"),
+                "updated_at",
+            )
+
+            for gestion in qs:
+                resumen = {"canal": getattr(gestion, "canal", ""), "resultado": getattr(gestion, "resultado", "")}
+                try:
+                    factura_odoo_id = (
+                        self._parse_odoo_int_id(gestion.cxc.referencia_externa) if gestion.cxc_id else None
+                    )
+                    partner_id = self._resolver_partner_odoo_de_gestion(gestion, instancia)
+                    datos = {
+                        "id_omni": str(gestion.pk),
+                        "idempotency_key": f"gestion-{gestion.pk}",
+                        "partner_id": partner_id,
+                        "factura_odoo_id": factura_odoo_id,
+                        "cliente_nombre": gestion.cliente_nombre or "",
+                        "orden_ref": gestion.orden_ref or "",
+                        "canal": gestion.canal,
+                        "resultado": gestion.resultado,
+                        "notas": gestion.notas or "",
+                        "fecha_gestion": gestion.fecha_gestion.isoformat() if gestion.fecha_gestion else "",
+                        "proxima_accion": gestion.proxima_accion.isoformat() if gestion.proxima_accion else "",
+                    }
+                    items.append(
+                        {
+                            "id_omni": str(gestion.pk),
+                            "modelo_omni": "apps.cxc.models.GestionCobranza",
+                            "resumen": resumen,
+                            "datos": datos,
+                            "origen_externo": False,
+                            "checksum": self._checksum_push(datos),
+                        }
+                    )
+                except Exception as exc:
+                    items.append(_error_item(gestion.pk, "apps.cxc.models.GestionCobranza", resumen, exc))
+
+        elif job.tipo_entidad == "contactos":
+            qs = _filtrar_incremental(
+                Contacto.objects.filter(id_empresa=empresa, activo=True).order_by("fecha_creacion", "id_contacto"),
+                "fecha_actualizacion",
+            )
+
+            for contacto in qs:
+                resumen = {"nombre": str(getattr(contacto, "nombre", "") or "")[:80]}
+                try:
+                    mapping = EntidadSincronizada.objects.filter(
+                        id_instancia=instancia, tipo_entidad="contactos", id_omni=str(contacto.pk)
+                    ).first()
+                    datos = {
+                        "id_omni": str(contacto.pk),
+                        "nombre": contacto.nombre,
+                        "email": contacto.email or "",
+                        "telefono": contacto.telefono or "",
+                        "identificador_fiscal": contacto.rif or contacto.cedula or "",
+                        "direccion": contacto.direccion_fiscal or "",
+                        "es_cliente": bool(contacto.es_cliente),
+                        "es_proveedor": bool(contacto.es_proveedor),
+                    }
+                    if mapping and mapping.id_externo:
+                        datos["id_externo"] = mapping.id_externo
+                    if contacto.latitud is not None and contacto.longitud is not None:
+                        datos["latitud"] = str(contacto.latitud)
+                        datos["longitud"] = str(contacto.longitud)
+                    items.append(
+                        {
+                            "id_omni": str(contacto.pk),
+                            "modelo_omni": "apps.core.models.Contacto",
+                            "resumen": resumen,
+                            "datos": datos,
+                            "origen_externo": False,
+                            "checksum": self._checksum_push(datos),
+                        }
+                    )
+                except Exception as exc:
+                    items.append(_error_item(contacto.pk, "apps.core.models.Contacto", resumen, exc))
+
+        elif job.tipo_entidad == "productos":
+            qs = _filtrar_incremental(
+                Producto.objects.filter(id_empresa=empresa, activo=True).order_by("fecha_creacion", "id_producto"),
+                "fecha_actualizacion",
+            )
+
+            for prod in qs:
+                resumen = {"nombre": str(getattr(prod, "nombre_producto", "") or "")[:80]}
+                try:
+                    mapping = EntidadSincronizada.objects.filter(
+                        id_instancia=instancia, tipo_entidad="productos", id_omni=str(prod.pk)
+                    ).first()
+                    datos = {
+                        "id_omni": str(prod.pk),
+                        "nombre": prod.nombre_producto,
+                        "codigo_interno": prod.sku or "",
+                        "descripcion_venta": prod.descripcion or "",
+                        "precio_venta": Decimal(str(prod.precio_venta_sugerido or 0)),
+                        "costo": Decimal(str(prod.costo_promedio or 0)),
+                    }
+                    if mapping and mapping.id_externo:
+                        datos["id_externo"] = mapping.id_externo
+                    items.append(
+                        {
+                            "id_omni": str(prod.pk),
+                            "modelo_omni": "apps.inventario.models.Producto",
+                            "resumen": resumen,
+                            "datos": datos,
+                            "origen_externo": False,
+                            "checksum": self._checksum_push(datos),
+                        }
+                    )
+                except Exception as exc:
+                    items.append(_error_item(prod.pk, "apps.inventario.models.Producto", resumen, exc))
+
+        return items
+
+    def _ejecutar_push(
+        self,
+        job: "JobSincronizacion",
+        conector: BaseConnector,
+        desde: datetime | None,
+        resultado: SyncResult,
+    ) -> SyncResult:
+        """Ejecuta la fase de push outbound (Omni → externo) con idempotencia por registro."""
+        from apps.integration_hub.models import (
+            EntidadSincronizada,
+            LogDetalleSincronizacion,
+        )
+
+        config = job.id_instancia.get_config()
+        if not config.get("push_habilitado", False):
+            msg = "Push outbound deshabilitado en este conector (push_habilitado=False)"
+            resultado.agregar_error("N/A", msg)
+            self._marcar_fallido(job, msg, resultado)
+            return resultado
+
+        method_name = self.PUSH_METHODS.get(job.tipo_entidad)
+        if not method_name or not hasattr(conector, method_name):
+            msg = f"Entidad '{job.tipo_entidad}' sin método push."
+            resultado.agregar_error("N/A", msg)
+            self._marcar_fallido(job, msg, resultado)
+            return resultado
+
+        push_method = getattr(conector, method_name)
+
+        try:
+            items = self._preparar_items_push(job, desde)
+        except Exception as exc:
+            msg = self._sanitizar_error(conector, job.id_instancia, exc)
+            resultado.agregar_error("N/A", msg)
+            self._marcar_fallido(job, msg, resultado)
+            return resultado
+
+        resultado.total += len(items)
+        job.total_registros = resultado.total
+        job.save(update_fields=["total_registros"])
+
+        logs_batch: list[LogDetalleSincronizacion] = []
+        solo_crear = job.tipo_entidad in ("pagos", "gestiones_cobranza")
+
+        for item in items:
+            id_omni = item["id_omni"]
+            checksum = item["checksum"]
+            resumen = item["resumen"]
+
+            try:
+                if item.get("_prep_error") is not None:
+                    raise item["_prep_error"]
+
+                mapping = EntidadSincronizada.objects.filter(
+                    id_instancia=job.id_instancia,
+                    tipo_entidad=job.tipo_entidad,
+                    id_omni=id_omni,
+                ).first()
+
+                push_hash_actual = (mapping.metadatos or {}).get("hash_datos_push") if mapping is not None else None
+                push_sin_cambios = push_hash_actual == checksum or (
+                    push_hash_actual is None and mapping is not None and mapping.checksum == checksum
+                )
+
+                # No duplicar pagos ya importados desde Odoo ni registros sin cambios en push
+                # sin pisar el checksum de pull (evita loops ping-pong en bidireccional).
+                if item.get("origen_externo") or (
+                    mapping is not None and bool(mapping.id_externo) and (solo_crear or push_sin_cambios)
+                ):
+                    resultado.omitidos += 1
+                    logs_batch.append(
+                        LogDetalleSincronizacion(
+                            id_job=job,
+                            id_externo=mapping.id_externo if mapping else "",
+                            id_omni=id_omni,
+                            operacion="omitir",
+                            resumen_externo=resumen,
+                        )
+                    )
+                    continue
+
+                id_externo = str(push_method(item["datos"]))
+
+                meta = dict(mapping.metadatos or {}) if mapping is not None else {}
+                meta["hash_datos_push"] = checksum
+
+                with transaction.atomic():
+                    if mapping is not None and mapping.id_externo == id_externo:
+                        mapping.id_omni = id_omni
+                        mapping.modelo_omni = item["modelo_omni"]
+                        mapping.metadatos = meta
+                        mapping.activo = True
+                        mapping.save(update_fields=["id_omni", "modelo_omni", "metadatos", "activo", "ultimo_sync"])
+                    else:
+                        ent, created_ent = EntidadSincronizada.objects.get_or_create(
+                            id_instancia=job.id_instancia,
+                            tipo_entidad=job.tipo_entidad,
+                            id_externo=id_externo,
+                            defaults={
+                                "id_omni": id_omni,
+                                "modelo_omni": item["modelo_omni"],
+                                "metadatos": meta,
+                                "activo": True,
+                            },
+                        )
+                        if not created_ent:
+                            ent_meta = dict(ent.metadatos or {})
+                            ent_meta["hash_datos_push"] = checksum
+                            ent.id_omni = id_omni
+                            ent.modelo_omni = item["modelo_omni"]
+                            ent.metadatos = ent_meta
+                            ent.activo = True
+                            ent.save(update_fields=["id_omni", "modelo_omni", "metadatos", "activo", "ultimo_sync"])
+
+                if mapping is None:
+                    resultado.creados += 1
+                    operacion = "crear"
+                else:
+                    resultado.actualizados += 1
+                    operacion = "actualizar"
+
+                logs_batch.append(
+                    LogDetalleSincronizacion(
+                        id_job=job,
+                        id_externo=id_externo,
+                        id_omni=id_omni,
+                        operacion=operacion,
+                        resumen_externo=resumen,
+                    )
+                )
+
+            except (ConnectorConnectionError, ConnectorNotSupportedError) as exc:
+                msg = self._sanitizar_error(conector, job.id_instancia, exc)
+                resultado.agregar_error(id_omni, msg)
+                logs_batch.append(
+                    LogDetalleSincronizacion(
+                        id_job=job,
+                        id_omni=id_omni,
+                        operacion="error",
+                        mensaje_error=msg[:500],
+                        resumen_externo=resumen,
+                    )
+                )
+                if logs_batch:
+                    LogDetalleSincronizacion.objects.bulk_create(logs_batch, batch_size=200)
+                self._marcar_fallido(job, msg, resultado)
+                return resultado
+
+            except Exception as exc:
+                msg = self._sanitizar_error(conector, job.id_instancia, exc)
+                resultado.agregar_error(id_omni, msg)
+                logs_batch.append(
+                    LogDetalleSincronizacion(
+                        id_job=job,
+                        id_omni=id_omni,
+                        operacion="error",
+                        mensaje_error=msg[:500],
+                        resumen_externo=resumen,
+                    )
+                )
+                logger.warning("Error en push %s:%s → %s", job.tipo_entidad, id_omni, msg)
+
         if logs_batch:
             LogDetalleSincronizacion.objects.bulk_create(logs_batch, batch_size=200)
 
@@ -1695,10 +2298,14 @@ class SyncEngine:
             )
         return str(stock.pk)
 
-    def _calcular_desde(self, job: "JobSincronizacion") -> datetime | None:
+    def _calcular_desde(
+        self,
+        job: "JobSincronizacion",
+        direccion_efectiva: str | None = None,
+    ) -> datetime | None:
         """
-        Calcula desde qué fecha sincronizar para sync incremental.
-        Usa el último sync exitoso de esta entidad en la instancia.
+        Calcula desde qué fecha sincronizar para sync incremental separando watermarks
+        por dirección efectiva ('inbound'/'outbound' + 'bidireccional').
         """
         if job.parametros.get("desde"):
             try:
@@ -1706,20 +2313,20 @@ class SyncEngine:
             except (ValueError, TypeError):
                 pass
 
-        # Buscar el último job completado para esta entidad
+        # Buscar el último job completado para esta entidad y dirección efectiva
         from apps.integration_hub.models import JobSincronizacion as Job
 
-        ultimo = (
-            Job.objects.filter(
-                id_instancia=job.id_instancia,
-                tipo_entidad=job.tipo_entidad,
-                estado__in=["completado", "completado_con_errores"],
-                completado_en__isnull=False,
-            )
-            .exclude(pk=job.pk)
-            .order_by("-completado_en")
-            .first()
-        )
+        dir_eff = direccion_efectiva or job.direccion
+        qs = Job.objects.filter(
+            id_instancia=job.id_instancia,
+            tipo_entidad=job.tipo_entidad,
+            estado__in=["completado", "completado_con_errores"],
+            completado_en__isnull=False,
+        ).exclude(pk=job.pk)
+        if dir_eff in ("inbound", "outbound"):
+            qs = qs.filter(direccion__in=[dir_eff, "bidireccional"])
+
+        ultimo = qs.order_by("-completado_en").first()
 
         return ultimo.completado_en if ultimo else None
 

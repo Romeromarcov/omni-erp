@@ -201,6 +201,7 @@ class EntidadSincronizada(models.Model):
         ("facturas_venta", "Facturas de Venta"),
         ("facturas_compra", "Facturas de Compra"),
         ("pagos", "Pagos"),
+        ("gestiones_cobranza", "Gestiones de Cobranza"),
         ("inventario", "Movimientos de Inventario"),
         ("empleados", "Empleados"),
     ]
@@ -225,6 +226,8 @@ class EntidadSincronizada(models.Model):
     ultimo_sync = models.DateTimeField(auto_now=True)
     # checksum del payload externo para detectar cambios sin re-comparar campo a campo
     checksum = models.CharField(max_length=64, blank=True)
+    # Metadatos por dirección (p. ej. hash_datos_push) para evitar ping-pong en sync bidireccional
+    metadatos = models.JSONField(default=dict, blank=True)
     activo = models.BooleanField(default=True)
 
     class Meta:

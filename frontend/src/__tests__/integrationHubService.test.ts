@@ -13,6 +13,7 @@ import {
   crearConector,
   testConector,
   triggerSync,
+  pushCobranza,
   exportarConector,
   getJobsDeConector,
   getJobs,
@@ -134,8 +135,29 @@ describe('integrationHubService.getJobs — filtros por querystring', () => {
     );
   });
 
-  it('etiquetaEntidad traduce facturas_compra y devuelve fallback si es desconocida', () => {
+  it('etiquetaEntidad traduce facturas_compra y gestiones_cobranza y devuelve fallback si es desconocida', () => {
     expect(etiquetaEntidad('facturas_compra')).toBe('Facturas de Compra');
+    expect(etiquetaEntidad('gestiones_cobranza')).toBe('Gestiones de Cobranza');
     expect(etiquetaEntidad('entidad_custom')).toBe('entidad_custom');
+  });
+
+  it('triggerSync con direccion y Idempotency-Key envia direccion y header', async () => {
+    mockedPost.mockResolvedValueOnce({ id_job: 'j2', estado: 'pendiente' });
+    await triggerSync('abc', 'pagos', 'outbound', { idempotencyKey: 'k-123' });
+    expect(mockedPost).toHaveBeenCalledWith(
+      '/integration-hub/instancias/abc/sync/',
+      { tipo_entidad: 'pagos', direccion: 'outbound' },
+      { headers: { 'Idempotency-Key': 'k-123' } },
+    );
+  });
+
+  it('pushCobranza llama el endpoint push-cobranza con payload y header opcional', async () => {
+    mockedPost.mockResolvedValueOnce({ mensaje: 'ok', job_id: 'j3', jobs: [] });
+    await pushCobranza('abc', { tipo: 'pagos', push_modo_pago: 'confirmado' }, { idempotencyKey: 'pc-1' });
+    expect(mockedPost).toHaveBeenCalledWith(
+      '/integration-hub/instancias/abc/push-cobranza/',
+      { tipo: 'pagos', push_modo_pago: 'confirmado' },
+      { headers: { 'Idempotency-Key': 'pc-1' } },
+    );
   });
 });

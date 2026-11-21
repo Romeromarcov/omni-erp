@@ -1185,6 +1185,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.bots_ingest.mcp",
     "apps.tesoreria.mcp",
     "apps.banca_electronica.mcp",
+    "apps.integration_hub.mcp",
     "apps.tareas.mcp",
 ]
 

@@ -15,9 +15,9 @@ PROVEEDORES_BASE = [
         "codigo": "odoo",
         "nombre": "Odoo",
         "descripcion": (
-            "Integración con Odoo ERP (Community, Enterprise y SaaS). Soporta "
-            "todas las versiones desde la 8 hasta la 18+. Conexión vía XML-RPC "
-            "estándar."
+            "Integración bidireccional (inbound + push outbound) con Odoo ERP "
+            "(Community, Enterprise y SaaS). Soporta todas las versiones desde "
+            "la 8 hasta la 18+. Conexión vía XML-RPC estándar."
         ),
         "icono_url": "/static/integration_hub/icons/odoo.svg",
         "versiones_soportadas": [
@@ -41,6 +41,7 @@ PROVEEDORES_BASE = [
             "facturas_venta",
             "facturas_compra",
             "pagos",
+            "gestiones_cobranza",
             "inventario",
         ],
         "requiere_url": True,
