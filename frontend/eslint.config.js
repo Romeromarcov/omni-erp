@@ -68,4 +68,14 @@ export default tseslint.config([
       globals: { ...globals.node },
     },
   },
+  // Proceso principal y preload de Electron (CommonJS).
+  {
+    files: ['electron/**/*.cjs'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: { ...globals.node },
+    },
+  },
 ])

@@ -22,7 +22,8 @@
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios",
     "electron:start": "electron electron/main.cjs",
-    "electron:build": "node scripts/build-native.mjs && electron-builder --config electron-builder.json",
+    "electron:build": "node scripts/build-native.mjs && electron-builder --config electron-builder.json --publish never",
+    "electron:build:linux": "node scripts/build-native.mjs && electron-builder --config electron-builder.json --linux AppImage --publish never",
     "cap:patch:android": "node scripts/patch-android-manifest.mjs"
   },
   "dependencies": {
@@ -40,6 +41,7 @@
     "@tanstack/react-query-persist-client": "^5.101.0",
     "axios": "^1.7.0",
     "decimal.js": "^10.6.0",
+    "electron-updater": "^6.8.11",
     "fuse.js": "^7.1.0",
     "i18next": "^26.2.0",
     "react": "^19.1.0",

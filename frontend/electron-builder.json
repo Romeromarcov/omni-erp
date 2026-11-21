@@ -10,6 +10,13 @@
   "extraMetadata": {
     "main": "electron/main.cjs"
   },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "Romeromarcov",
+      "repo": "omni-erp"
+    }
+  ],
   "win": {
     "target": ["nsis", "portable"],
     "icon": "public/pwa-512x512.png"
@@ -29,6 +36,7 @@
   },
   "linux": {
     "target": ["AppImage"],
+    "icon": "public/pwa-512x512.png",
     "category": "Office"
   }
 }

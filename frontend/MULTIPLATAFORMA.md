@@ -5,7 +5,8 @@ Una sola base de código **React + Vite + MUI** corre en cuatro destinos:
 | Destino | Tecnología | Estado |
 |---|---|---|
 | Web / PWA (instalable) | Vite + vite-plugin-pwa | ✅ Listo |
-| Windows (escritorio) | Electron + electron-builder | ✅ Listo (compila `.exe`) |
+| Windows (escritorio) | Electron + electron-builder + electron-updater | ✅ Listo (compila `.exe` + `latest.yml` + auto-update) |
+| Linux (escritorio) | Electron + electron-builder + electron-updater | ✅ Listo (compila `.AppImage` + `latest-linux.yml` + auto-update) |
 | Android | Capacitor | ✅ Listo para compilar (requiere Android SDK + JDK) |
 | iOS | Capacitor | ✅ Listo para compilar (requiere macOS + Xcode) |
 
@@ -31,7 +32,7 @@ VITE_API_URL=https://api.tu-dominio.com/api
 
 | Shell | Origen | Cómo se obtiene |
 |---|---|---|
-| Electron (Windows) | `app://omni` | `electron/main.cjs` sirve `dist/` bajo un scheme propio registrado como `standard+secure`. **Nunca** se usa `file://` (su `Origin: null` lo comparten los iframes sandboxeados de cualquier web y permitirlo en CORS sería inseguro). |
+| Electron (Windows / Linux) | `app://omni` | `electron/main.cjs` sirve `dist/` bajo un scheme propio registrado como `standard+secure`. **Nunca** se usa `file://` (su `Origin: null` lo comparten los iframes sandboxeados de cualquier web y permitirlo en CORS sería inseguro). |
 | Android (Capacitor) | `https://localhost` | `androidScheme: 'https'` en `capacitor.config.ts`. |
 | iOS (Capacitor, futuro) | `capacitor://localhost` | Default de Capacitor en iOS. |
 
@@ -51,9 +52,11 @@ VITE_API_URL=… npm run build
 # Build nativo (base relativa + hash router)
 VITE_API_URL=… npm run build:native
 
-# Windows (Electron)
-npm run electron:start                      # corre el dev server embebido
-VITE_API_URL=… npm run electron:build       # genera instalador NSIS + portable en release/
+# Escritorio (Electron)
+npm run electron:start                         # corre el dev server embebido
+VITE_API_URL=… npm run electron:build          # genera instalador NSIS + portable + latest.yml en release/
+VITE_API_URL=… npm run electron:build:linux    # genera AppImage + latest-linux.yml en release/
+OMNI_DISABLE_AUTO_UPDATE=1 …                   # desactiva auto-update en builds empaquetados
 
 # Android (Capacitor) — requiere Android Studio / SDK + JDK 21
 VITE_API_URL=… npm run build:native
@@ -81,14 +84,34 @@ El workflow [`.github/workflows/package.yml`](../.github/workflows/package.yml)
 compila los binarios en GitHub Actions:
 
 - **Windows**: `OmniERP-<version>-setup.exe` (instalador NSIS) +
-  `OmniERP-<version>-portable.exe`, en runner Windows.
+  `OmniERP-<version>-portable.exe` + `*.blockmap` + `latest.yml`, en runner
+  Windows. Firma Authenticode opt-in cuando existan los secrets `CSC_LINK` y
+  `CSC_KEY_PASSWORD` (sin `CSC_LINK` usa `CSC_IDENTITY_AUTO_DISCOVERY: "false"`).
+- **Linux**: `*.AppImage` + `latest-linux.yml`, en runner `ubuntu-latest`
+  (`CSC_IDENTITY_AUTO_DISCOVERY: "false"`).
 - **Android**: `.apk` debug siempre; `.apk` release firmado + `.aab` (Play Store)
   cuando existen los secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
   `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD`.
 
-Disparo: manual (*Actions → Package — apps nativas → Run workflow*, con la URL
-del backend como input) o tageando `app-v*` (además crea un GitHub Release en
-draft con los binarios).
+Disparo: manual (*Actions → Package — apps nativas (Windows + Linux + Android) → Run workflow*,
+con la URL del backend como input) o tageando `app-v*` (además crea un GitHub
+Release en draft con todos los binarios y metadatos de actualización).
+
+### Auto-actualización de escritorio (`electron-updater`)
+
+- **Feed de actualización**: `electron-builder.json` configura `publish` sobre
+  GitHub Releases (`Romeromarcov/omni-erp`). Cada build en CI genera `latest.yml` /
+  `*.blockmap` (Windows) y `latest-linux.yml` (Linux) junto a los binarios.
+- **Controlador principal**: [`electron/updater.cjs`](electron/updater.cjs),
+  integrado en [`electron/main.cjs`](electron/main.cjs). Solo se activa en builds
+  empaquetados (`app.isPackaged && process.env.OMNI_DISABLE_AUTO_UPDATE !== '1'`)
+  con `autoDownload = false`, manejo de errores *fail-safe* (nunca filtra stack
+  traces ni URLs privadas y no tumba la app sin red o ante releases sin firma)
+  y limpieza de listeners/handlers en `will-quit`.
+- **Puente al renderer**: [`electron/preload.cjs`](electron/preload.cjs) expone
+  `window.omniUpdater` vía `contextBridge` (`checkForUpdates`, `downloadUpdate`,
+  `installUpdate`, `onStatus` con función *unsubscribe*), tipado en
+  [`src/types/electron.d.ts`](src/types/electron.d.ts).
 
 **Firma pendiente** ([CTF-010](../docs/ctf/CTF-010.md)): los `.exe` van sin
 Authenticode (SmartScreen avisa) hasta comprar el certificado EV; el keystore

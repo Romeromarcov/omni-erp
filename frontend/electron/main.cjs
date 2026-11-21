@@ -1,4 +1,4 @@
-// Proceso principal de Electron — shell de escritorio (Windows) de Omni ERP.
+// Proceso principal de Electron — shell de escritorio (Windows / Linux) de Omni ERP.
 // Carga el dev server de Vite en desarrollo o el bundle estático en producción.
 //
 // En producción la app NO se sirve desde file:// sino desde el scheme propio
@@ -7,10 +7,11 @@
 // "null" en CORS del servidor abriría la puerta a cualquier iframe sandboxeado.
 // Con un scheme standard+secure el origen es estable (`app://omni`) y el
 // backend lo permite explícitamente (ver settings_prod.py, CORS de shells).
-const { app, BrowserWindow, net, protocol, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, net, protocol, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { createUpdaterController } = require('./updater.cjs');
 
 const DEV_URL = process.env.ELECTRON_START_URL || 'http://localhost:5173';
 const APP_SCHEME = 'app';
@@ -67,6 +68,8 @@ function registerAppProtocol() {
 
 /** @type {BrowserWindow | null} */
 let mainWindow = null;
+/** @type {ReturnType<typeof createUpdaterController> | null} */
+let updaterController = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -108,10 +111,31 @@ function createWindow() {
 
 app.whenReady().then(() => {
   if (!isDev) registerAppProtocol();
+  updaterController = createUpdaterController({
+    app,
+    ipcMain,
+    getWindow: () => mainWindow,
+    env: process.env,
+  });
+  const { enabled } = updaterController.init();
   createWindow();
+  if (enabled && mainWindow) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      if (updaterController) {
+        void updaterController.checkForUpdates();
+      }
+    });
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('will-quit', () => {
+  if (updaterController) {
+    updaterController.cleanup();
+    updaterController = null;
+  }
 });
 
 app.on('window-all-closed', () => {
