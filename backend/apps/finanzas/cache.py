@@ -74,6 +74,16 @@ def normalizar_empresa_uuid(empresa: Any) -> uuid.UUID | None:
     return uuid.UUID(str(raw))
 
 
+def _rls_permite_cache_global() -> bool:
+    """Con RLS activo solo usa caché L2 global bajo ``rls_bypass`` (evita divergencia con públicas)."""
+    if not getattr(settings, "RLS_ENABLED", False):
+        return True
+    from apps.core import rls
+
+    bypass, _ = rls._get_current_context()
+    return bypass == "on"
+
+
 def _rls_permite_cache_empresa(empresa_id: uuid.UUID | None) -> bool:
     """Evita leer/poblar caché L2 de una empresa cuando RLS activo la oculta."""
     if not getattr(settings, "RLS_ENABLED", False):
@@ -143,14 +153,17 @@ def obtener_moneda_por_iso(codigo_iso: str, *, empresa_id: uuid.UUID | None = No
             .first()
         )
 
-    global_ver = get_namespace_version(NS_MONEDA_GLOBAL, GLOBAL_TENANT_KEY)
-    dto_global = get_cached_or_set(
-        NS_MONEDA,
-        GLOBAL_TENANT_KEY,
-        f"iso:g{global_ver}:{iso_clean}",
-        _fetch_global,
-        timeout=DEFAULT_CACHE_TIMEOUT,
-    )
+    if _rls_permite_cache_global():
+        global_ver = get_namespace_version(NS_MONEDA_GLOBAL, GLOBAL_TENANT_KEY)
+        dto_global = get_cached_or_set(
+            NS_MONEDA,
+            GLOBAL_TENANT_KEY,
+            f"iso:g{global_ver}:{iso_clean}",
+            _fetch_global,
+            timeout=DEFAULT_CACHE_TIMEOUT,
+        )
+    else:
+        dto_global = _fetch_global()
     if dto_global is not None:
         return _reconstruir_moneda(dto_global)
 

@@ -219,4 +219,25 @@ describe('PedidoDetailPage — líneas y pagos', () => {
       expect(screen.queryByRole('dialog')).toBeNull();
     });
   });
+
+  it('muestra spinner mientras pagos está cargando antes de mostrar el mensaje vacío', async () => {
+    let resolverPagos!: (value: unknown[]) => void;
+    getPagosPedidoMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolverPagos = resolve;
+        }),
+    );
+
+    renderPage();
+    await screen.findByText(/Pedido P-0001/);
+
+    expect(screen.getByText('Pagos')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByText('No hay pagos registrados para este pedido.')).not.toBeInTheDocument();
+
+    resolverPagos([]);
+    expect(await screen.findByText('No hay pagos registrados para este pedido.')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
 });

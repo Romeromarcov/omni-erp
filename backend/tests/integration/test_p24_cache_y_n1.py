@@ -1076,3 +1076,46 @@ class TestEdgeCasesYGapsCobertura:
             obtener_monedas_activas_ids(empresa_a.pk)
             obtener_metodos_pago_mcp(empresa_a.pk)
             obtener_metodos_pago_empresa_nombres(empresa_a.pk)
+
+    def test_moneda_iso_global_omite_cache_bajo_rls_sin_bypass(self, empresa_a, empresa_b, settings, rls_test_role):
+        from apps.core import rls
+        from apps.finanzas.cache import obtener_moneda_por_iso
+        from apps.finanzas.models import Moneda
+
+        mon_pub_a = Moneda.objects.create(
+            empresa=empresa_a,
+            codigo_iso="PUBA",
+            nombre="Pública A",
+            simbolo="P",
+            tipo_moneda="otro",
+            es_publica=True,
+        )
+        settings.RLS_ENABLED = True
+
+        # Precalentar caché L2 global bajo rls_bypass
+        with rls.rls_bypass():
+            assert obtener_moneda_por_iso("PUBA", empresa_id=empresa_a.pk) is not None
+            with CaptureQueriesContext(connection) as q_hit:
+                assert obtener_moneda_por_iso("PUBA", empresa_id=empresa_a.pk) is not None
+            assert not any("finanzas_moneda" in q["sql"] for q in q_hit)
+
+        if rls_test_role is not None:
+            with connection.cursor() as cur:
+                cur.execute(f'SET ROLE "{rls_test_role}"')
+        try:
+            # Bajo rls_tenant_context sin bypass, omite caché L2 global y consulta directo a BD
+            with rls.rls_tenant_context([empresa_b.pk]):
+                with CaptureQueriesContext(connection) as q_rls:
+                    res_b = obtener_moneda_por_iso("PUBA", empresa_id=empresa_b.pk)
+                assert any("finanzas_moneda" in q["sql"] for q in q_rls)
+                # Bajo RLS real, una moneda pública con empresa=A no es visible para B (no lee caché global)
+                assert res_b is None
+        finally:
+            if rls_test_role is not None:
+                with connection.cursor() as cur:
+                    cur.execute("RESET ROLE")
+
+        # Tenant B no envenenó ni corrompió la caché L2 global para bypass/empresa_a
+        with rls.rls_bypass():
+            res_a = obtener_moneda_por_iso("PUBA", empresa_id=empresa_a.pk)
+            assert res_a is not None and res_a.pk == mon_pub_a.pk
