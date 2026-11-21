@@ -17,7 +17,9 @@ Uso (desde Celery task o view):
 
 from __future__ import annotations
 
+import hashlib
 import logging
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -486,6 +488,26 @@ class SyncEngine:
                 return exacta
         return visibles.filter(codigo_iso="USD").first() or visibles.first()
 
+    @staticmethod
+    def _generar_rif_sintetico_unico(modelo, empresa, *, ext: str, nombre: str) -> str:
+        """Genera un identificador sintético determinista y único <= 20 chars cuando falta RIF."""
+        base_seed = f"{ext}:{nombre}".strip() or nombre or "SIN-ID"
+        for intento in range(100):
+            seed = base_seed if intento == 0 else f"{base_seed}#{intento}"
+            digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:15].upper()
+            candidato = f"EXT-{digest}"
+            if not modelo.objects.filter(id_empresa=empresa, rif=candidato).exists():
+                return candidato
+        return f"EXT-{uuid.uuid4().hex[:15].upper()}"
+
+    @staticmethod
+    def _contacto_disponible(modelo, contacto, *, exclude_pk=None) -> bool:
+        """Retorna True si el ``OneToOneField(contacto)`` en ``modelo`` no lo ocupa otro registro."""
+        qs = modelo.objects.filter(contacto=contacto)
+        if exclude_pk is not None:
+            qs = qs.exclude(pk=exclude_pk)
+        return not qs.exists()
+
     def _asegurar_contacto_de_tercero(
         self,
         tercero,
@@ -503,6 +525,8 @@ class SyncEngine:
 
         empresa = instancia.id_empresa
         ext = (id_externo or "").strip()
+        modelo_tercero = Cliente if isinstance(tercero, Cliente) else Proveedor
+
         contacto = getattr(tercero, "contacto", None)
         if contacto is not None and contacto.id_empresa_id != empresa.pk:
             contacto = None
@@ -512,17 +536,25 @@ class SyncEngine:
                 id_instancia=instancia, tipo_entidad="contactos", id_externo=ext
             ).first()
             if mapping and mapping.id_omni:
-                contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
+                candidato_c = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
+                if candidato_c is not None and self._contacto_disponible(
+                    modelo_tercero, candidato_c, exclude_pk=tercero.pk
+                ):
+                    contacto = candidato_c
 
         rif_tercero = (getattr(tercero, "rif", "") or "").strip()
         if contacto is None and rif_tercero:
-            contacto = Contacto.objects.filter(id_empresa=empresa, rif=rif_tercero).first()
+            candidato_rif = Contacto.objects.filter(id_empresa=empresa, rif=rif_tercero).first()
+            if candidato_rif is not None and self._contacto_disponible(
+                modelo_tercero, candidato_rif, exclude_pk=tercero.pk
+            ):
+                contacto = candidato_rif
 
         if contacto is None:
             contacto = Contacto.objects.create(
                 id_empresa=empresa,
-                nombre=(getattr(tercero, "razon_social", "") or f"Contacto {ext or tercero.pk}").strip(),
-                rif=rif_tercero,
+                nombre=(getattr(tercero, "razon_social", "") or f"Contacto {ext or tercero.pk}").strip()[:255],
+                rif="" if rif_tercero.startswith("EXT-") else rif_tercero[:20],
                 email=getattr(tercero, "email", "") or "",
                 telefono=getattr(tercero, "telefono", "") or "",
                 direccion_fiscal=getattr(tercero, "direccion", "") or "",
@@ -541,14 +573,8 @@ class SyncEngine:
                 contacto.save(update_fields=campos_rol)
 
         if getattr(tercero, "contacto_id", None) != contacto.pk:
-            ocupado = (
-                Cliente.objects.filter(contacto=contacto).exclude(pk=tercero.pk).exists()
-                if isinstance(tercero, Cliente)
-                else Proveedor.objects.filter(contacto=contacto).exclude(pk=tercero.pk).exists()
-            )
-            if not ocupado:
-                tercero.contacto = contacto
-                tercero.save(update_fields=["contacto"])
+            tercero.contacto = contacto
+            tercero.save(update_fields=["contacto"])
 
         if ext:
             mapping, creado = EntidadSincronizada.objects.get_or_create(
@@ -573,6 +599,7 @@ class SyncEngine:
         instancia: "ConectorInstancia",
         es_cliente: bool,
         es_proveedor: bool,
+        rif: str = "",
     ):
         """Resuelve o auto-crea ``crm.Cliente`` / ``proveedores.Proveedor`` con su ``core.Contacto``."""
         from apps.core.models import Contacto
@@ -580,31 +607,43 @@ class SyncEngine:
 
         empresa = instancia.id_empresa
         tercero = None
+        rif_limpio = (rif or "").strip()[:20]
 
         if ext:
             tercero = modelo.objects.filter(id_empresa=empresa, referencia_externa=ext).first()
 
         contacto = None
-        rif = ""
-        if tercero is None and ext:
+        if ext:
             mapping = EntidadSincronizada.objects.filter(
                 id_instancia=instancia, tipo_entidad="contactos", id_externo=ext
             ).first()
             if mapping and mapping.id_omni:
                 contacto = Contacto.objects.filter(pk=mapping.id_omni, id_empresa=empresa).first()
                 if contacto:
-                    rif = getattr(contacto, "rif", "") or ""
-                    tercero = modelo.objects.filter(id_empresa=empresa, contacto=contacto).first()
+                    if not rif_limpio:
+                        rif_limpio = (getattr(contacto, "rif", "") or "").strip()[:20]
+                    if tercero is None:
+                        tercero = modelo.objects.filter(id_empresa=empresa, contacto=contacto).first()
+
+        if tercero is None and rif_limpio:
+            tercero = modelo.objects.filter(id_empresa=empresa, rif=rif_limpio).first()
+            if tercero is not None and ext and not tercero.referencia_externa:
+                tercero.referencia_externa = ext
+                tercero.save(update_fields=["referencia_externa"])
 
         if tercero is None:
             if not nombre:
                 return None
+            rif_crear = rif_limpio or self._generar_rif_sintetico_unico(modelo, empresa, ext=ext, nombre=nombre)
+            contacto_para_crear = (
+                contacto if contacto is not None and self._contacto_disponible(modelo, contacto) else None
+            )
             tercero = modelo.objects.create(
                 id_empresa=empresa,
                 razon_social=nombre,
-                rif=rif,
+                rif=rif_crear,
                 referencia_externa=ext or None,
-                contacto=contacto,
+                contacto=contacto_para_crear,
             )
 
         self._asegurar_contacto_de_tercero(
@@ -630,6 +669,7 @@ class SyncEngine:
             instancia=instancia,
             es_cliente=True,
             es_proveedor=False,
+            rif=str(datos.get("cliente_rif") or datos.get("rif") or "").strip(),
         )
 
     def _resolver_producto_mapeado(self, product_id_field, instancia: "ConectorInstancia"):
@@ -743,6 +783,7 @@ class SyncEngine:
             instancia=instancia,
             es_cliente=False,
             es_proveedor=True,
+            rif=str(datos.get("proveedor_rif") or datos.get("rif") or "").strip(),
         )
 
     def _upsert_pedido_compra(self, datos: dict, instancia: "ConectorInstancia") -> str | None:
@@ -1318,10 +1359,11 @@ class SyncEngine:
             )
             return None
 
-        if len(docs_resueltos) >= 2 and not reconciliaciones_raw:
+        if (len(docs_resueltos) >= 2 or len(ext_move_ids) >= 2) and not reconciliaciones_raw:
             logger.warning(
-                "Pago externo %s omitido: reconciliación múltiple (%s docs) sin detalle de montos parciales.",
+                "Pago externo %s omitido: reconciliación múltiple (%s externas / %s locales) sin detalle de montos parciales.",
                 ext,
+                len(ext_move_ids),
                 len(docs_resueltos),
             )
             return None

@@ -210,6 +210,21 @@ class OdooXMLRPCClient:
         cache[modelo] = campos
         return campos
 
+    def _campos_disponibles(
+        self,
+        modelo: str,
+        base_fields: list[str],
+        opcionales: tuple[str, ...],
+        fallback: list[str],
+    ) -> list[str]:
+        """Filtra ``base_fields + opcionales`` contra los campos reales de ``modelo``."""
+        campos_modelo = self._get_model_fields(modelo)
+        if not campos_modelo:
+            return list(fallback)
+        if "id" in campos_modelo:
+            return [f for f in (*base_fields, *opcionales) if f in campos_modelo]
+        return [*base_fields, *(f for f in opcionales if f in campos_modelo)]
+
     @staticmethod
     def _m2o_id(val: Any) -> int | None:
         if isinstance(val, (list, tuple)) and val:
@@ -611,16 +626,13 @@ class OdooXMLRPCClient:
             "write_date",
             "create_date",
         ]
-        opcionales = ("memo", "payment_reference", "ref", "move_id", "reconciled_bill_ids")
-        campos_modelo = self._get_model_fields("account.payment")
-        if campos_modelo:
-            if "id" in campos_modelo:
-                fields = [f for f in (*base_fields, *opcionales) if f in campos_modelo]
-            else:
-                fields = [*base_fields, *(f for f in opcionales if f in campos_modelo)]
-        else:
+        fields = self._campos_disponibles(
+            "account.payment",
+            base_fields,
+            ("memo", "payment_reference", "ref", "move_id", "reconciled_bill_ids"),
             # Fallback estándar compatible con Odoo 18+ (sin 'ref', removido en Odoo 18).
-            fields = [*base_fields, "memo", "payment_reference", "move_id", "reconciled_bill_ids"]
+            [*base_fields, "memo", "payment_reference", "move_id", "reconciled_bill_ids"],
+        )
 
         return self.call(
             "account.payment",
@@ -687,23 +699,26 @@ class OdooXMLRPCClient:
         if not pr_ids:
             return {}
 
+        pr_base = ["id", "debit_move_id", "credit_move_id", "amount"]
+        pr_fields = self._campos_disponibles(
+            "account.partial.reconcile",
+            pr_base,
+            (
+                "debit_amount_currency",
+                "credit_amount_currency",
+                "debit_currency_id",
+                "credit_currency_id",
+            ),
+            # Fail-safe para Odoo < 14 o cuando fields_get falla/devuelve vacío.
+            pr_base,
+        )
+
         partials = (
             self.call(
                 "account.partial.reconcile",
                 "read",
                 [pr_ids],
-                {
-                    "fields": [
-                        "id",
-                        "debit_move_id",
-                        "credit_move_id",
-                        "amount",
-                        "debit_amount_currency",
-                        "credit_amount_currency",
-                        "debit_currency_id",
-                        "credit_currency_id",
-                    ]
-                },
+                {"fields": pr_fields},
             )
             or []
         )

@@ -1090,6 +1090,7 @@ class TestCoberturaBordesPR18:
                 "call",
                 side_effect=[
                     [{"id": 10, "move_id": [100, "P"], "matched_debit_ids": [50], "matched_credit_ids": []}],
+                    {},
                     [],
                 ],
             ):
@@ -1695,10 +1696,15 @@ class TestCoberturaBordesPR18:
         cli_cross = Cliente.objects.create(
             id_empresa=empresa_a, razon_social="Cli Cross C", rif="J-92000003-3", contacto=contacto_ajeno
         )
-        EntidadSincronizada.objects.create(
-            id_instancia=inst, tipo_entidad="contactos", id_externo="map-c", id_omni=str(contacto.pk)
+        contacto_libre = Contacto.objects.create(
+            id_empresa=empresa_a, nombre="Libre Cross", rif="J-92000003-3", es_cliente=True
         )
-        assert eng._asegurar_contacto_de_tercero(cli_cross, inst, id_externo="map-c", es_cliente=True) == contacto
+        EntidadSincronizada.objects.create(
+            id_instancia=inst, tipo_entidad="contactos", id_externo="map-c", id_omni=str(contacto_libre.pk)
+        )
+        assert (
+            eng._asegurar_contacto_de_tercero(cli_cross, inst, id_externo="map-c", es_cliente=True) == contacto_libre
+        )
 
         # Reconciliación sobre doc ya 100% saldado y doc con saldo menor que monto_doc_pr multimoneda
         eur, _ = Moneda.objects.get_or_create(
@@ -1803,6 +1809,7 @@ class TestCoberturaBordesPR18:
                 "call",
                 side_effect=[
                     [{"id": 10, "move_id": [100, "P"], "matched_debit_ids": [55], "matched_credit_ids": []}],
+                    {},
                     [{"id": 55, "credit_move_id": [10, "P"], "debit_move_id": [10, "P"], "amount": 5.0}],
                 ],
             ):
@@ -2012,6 +2019,331 @@ class TestCoberturaBordesPR18:
         assert asigs_cap[0].monto_asignado_pago == Decimal("10.0000")
         assert asigs_cap[0].monto_asignado_documento == Decimal("500.0000")
         assert asigs_cap[1].monto_asignado_pago == Decimal("10.0000")
+
+
+@pytest.mark.django_db
+class TestRevisionRonda1Fixes:
+    """Pruebas de regresión para los 3 hallazgos de revisión Ronda 1 de PR #305."""
+
+    def test_multiples_proveedores_sin_rif_no_colisionan_en_sync_compras_y_pagos(self, empresa_a, moneda_usd):
+        inst = _instancia_odoo(empresa_a)
+        eng = SyncEngine()
+
+        # Pre-existe incluso un Proveedor manual con rif="" + dos contactos Odoo sin VAT
+        manual_vacio = Proveedor.objects.create(id_empresa=empresa_a, razon_social="Manual Sin RIF", rif="")
+        assert manual_vacio.rif == ""
+
+        eng.ingerir_en_omni(
+            inst,
+            "contactos",
+            [
+                {"id_externo": "odoo-p1", "nombre": "Odoo Prov Alfa", "identificador_fiscal": "", "_checksum": "c1"},
+                {"id_externo": "odoo-p2", "nombre": "Odoo Prov Beta", "identificador_fiscal": "", "_checksum": "c2"},
+            ],
+        )
+
+        # Además forzamos colisión del primer candidato EXT-... de odoo-p2 para probar el desempate
+        import hashlib
+
+        primer_hash_p2 = hashlib.sha256(b"odoo-p2:Odoo Prov Beta").hexdigest()[:15].upper()
+        Proveedor.objects.create(
+            id_empresa=empresa_a,
+            razon_social="Ocupa Hash 0",
+            rif=f"EXT-{primer_hash_p2}",
+        )
+
+        fc1_pk = eng._upsert_factura_compra(
+            {
+                "id_externo": "bill-no-rif-1",
+                "numero": "BILL/NORIF/1",
+                "proveedor_id_externo": "odoo-p1",
+                "proveedor_nombre": "Odoo Prov Alfa",
+                "fecha_factura": _hoy().isoformat(),
+                "total": "100.00",
+                "saldo_pendiente": "100.00",
+                "estado_pago": "no_pagado",
+                "moneda": "USD",
+            },
+            inst,
+        )
+        fc2_pk = eng._upsert_factura_compra(
+            {
+                "id_externo": "bill-no-rif-2",
+                "numero": "BILL/NORIF/2",
+                "proveedor_id_externo": "odoo-p2",
+                "proveedor_nombre": "Odoo Prov Beta",
+                "fecha_factura": _hoy().isoformat(),
+                "total": "200.00",
+                "saldo_pendiente": "200.00",
+                "estado_pago": "no_pagado",
+                "moneda": "USD",
+            },
+            inst,
+        )
+        assert fc1_pk and fc2_pk
+        fc1 = FacturaCompra.objects.get(pk=fc1_pk)
+        fc2 = FacturaCompra.objects.get(pk=fc2_pk)
+        assert fc1.id_proveedor_id != fc2.id_proveedor_id
+        assert fc1.id_proveedor.rif.startswith("EXT-") and len(fc1.id_proveedor.rif) <= 20
+        assert fc2.id_proveedor.rif.startswith("EXT-") and len(fc2.id_proveedor.rif) <= 20
+        assert fc2.id_proveedor.rif != f"EXT-{primer_hash_p2}"
+        assert fc1.id_proveedor.contacto is not None and fc2.id_proveedor.contacto is not None
+
+        # Sincronizar pagos sobre ambos proveedores sin RIF debe conciliar sin errores
+        EntidadSincronizada.objects.update_or_create(
+            id_instancia=inst,
+            tipo_entidad="facturas_compra",
+            id_externo="bill-no-rif-1",
+            defaults={"id_omni": str(fc1.pk), "modelo_omni": "apps.compras.models.FacturaCompra"},
+        )
+        EntidadSincronizada.objects.update_or_create(
+            id_instancia=inst,
+            tipo_entidad="facturas_compra",
+            id_externo="bill-no-rif-2",
+            defaults={"id_omni": str(fc2.pk), "modelo_omni": "apps.compras.models.FacturaCompra"},
+        )
+        p1_pk = eng._upsert_pago(
+            {
+                "id_externo": "pay-norif-1",
+                "tipo": "outbound",
+                "tipo_socio": "supplier",
+                "socio_id_externo": "odoo-p1",
+                "socio_nombre": "Odoo Prov Alfa",
+                "monto": "100.00",
+                "moneda": "USD",
+                "fecha": _hoy().isoformat(),
+                "facturas_externas": ["bill-no-rif-1"],
+                "reconciliaciones": [],
+            },
+            inst,
+        )
+        p2_pk = eng._upsert_pago(
+            {
+                "id_externo": "pay-norif-2",
+                "tipo": "outbound",
+                "tipo_socio": "supplier",
+                "socio_id_externo": "odoo-p2",
+                "socio_nombre": "Odoo Prov Beta",
+                "monto": "200.00",
+                "moneda": "USD",
+                "fecha": _hoy().isoformat(),
+                "facturas_externas": ["bill-no-rif-2"],
+                "reconciliaciones": [],
+            },
+            inst,
+        )
+        assert Pago.objects.get(pk=p1_pk).asignaciones.count() == 1
+        assert Pago.objects.get(pk=p2_pk).asignaciones.count() == 1
+
+    def test_reutiliza_proveedor_manual_existente_por_rif_y_concilia_pago(self, empresa_a, moneda_usd):
+        inst = _instancia_odoo(empresa_a)
+        eng = SyncEngine()
+
+        prov_manual = Proveedor.objects.create(
+            id_empresa=empresa_a,
+            razon_social="Suministros Manuales C.A.",
+            rif="J-40000001-9",
+            referencia_externa=None,
+            contacto=None,
+        )
+        eng.ingerir_en_omni(
+            inst,
+            "contactos",
+            [
+                {
+                    "id_externo": "odoo-manual-40",
+                    "nombre": "Suministros Manuales Odoo",
+                    "identificador_fiscal": "J-40000001-9",
+                    "_checksum": "cm1",
+                }
+            ],
+        )
+
+        fc_pk = eng._upsert_factura_compra(
+            {
+                "id_externo": "bill-manual-1",
+                "numero": "BILL/MANUAL/1",
+                "proveedor_id_externo": "odoo-manual-40",
+                "proveedor_nombre": "Suministros Manuales Odoo",
+                "fecha_factura": _hoy().isoformat(),
+                "total": "150.00",
+                "saldo_pendiente": "150.00",
+                "estado_pago": "no_pagado",
+                "moneda": "USD",
+            },
+            inst,
+        )
+        prov_manual.refresh_from_db()
+        fc = FacturaCompra.objects.get(pk=fc_pk)
+        assert fc.id_proveedor_id == prov_manual.pk
+        assert prov_manual.referencia_externa == "odoo-manual-40"
+        assert prov_manual.contacto is not None
+        assert prov_manual.contacto.es_proveedor is True
+
+        EntidadSincronizada.objects.create(
+            id_instancia=inst,
+            tipo_entidad="facturas_compra",
+            id_externo="bill-manual-1",
+            id_omni=str(fc.pk),
+            modelo_omni="apps.compras.models.FacturaCompra",
+        )
+        pago_pk = eng._upsert_pago(
+            {
+                "id_externo": "pay-manual-1",
+                "tipo": "outbound",
+                "tipo_socio": "supplier",
+                "socio_id_externo": "odoo-manual-40",
+                "socio_nombre": "Suministros Manuales Odoo",
+                "monto": "150.00",
+                "moneda": "USD",
+                "fecha": _hoy().isoformat(),
+                "facturas_externas": ["bill-manual-1"],
+                "reconciliaciones": [],
+            },
+            inst,
+        )
+        cxp = CuentaPorPagar.objects.get(id_empresa=empresa_a, id_factura_compra=fc)
+        cxp.refresh_from_db()
+        assert cxp.monto_pendiente == Decimal("0.0000")
+        assert Pago.objects.get(pk=pago_pk).asignaciones.count() == 1
+
+    def test_colision_onetoone_contacto_crea_contacto_dedicado_y_concilia(self, empresa_a, moneda_usd):
+        inst = _instancia_odoo(empresa_a)
+        eng = SyncEngine()
+
+        # Escenario A: Proveedor B tiene contacto=None y RIF compartido con un Contacto ocupado por Proveedor A
+        contacto_ocupado = Contacto.objects.create(
+            id_empresa=empresa_a, nombre="Grupo Compartido", rif="J-55555555-5", es_proveedor=True
+        )
+        prov_ocupante = Proveedor.objects.create(
+            id_empresa=empresa_a,
+            razon_social="Sucursal A",
+            rif="J-55555555-1",
+            contacto=contacto_ocupado,
+        )
+        prov_sin_contacto = Proveedor.objects.create(
+            id_empresa=empresa_a,
+            razon_social="Sucursal B Sin Contacto",
+            rif="J-55555555-5",
+            referencia_externa="odoo-suc-b",
+            contacto=None,
+        )
+
+        fc_pk = eng._upsert_factura_compra(
+            {
+                "id_externo": "bill-suc-b",
+                "numero": "BILL/SUC-B/1",
+                "proveedor_id_externo": "odoo-suc-b",
+                "proveedor_nombre": "Sucursal B Sin Contacto",
+                "fecha_factura": _hoy().isoformat(),
+                "total": "75.00",
+                "saldo_pendiente": "75.00",
+                "estado_pago": "no_pagado",
+                "moneda": "USD",
+            },
+            inst,
+        )
+        prov_sin_contacto.refresh_from_db()
+        prov_ocupante.refresh_from_db()
+        assert prov_ocupante.contacto_id == contacto_ocupado.pk
+        assert prov_sin_contacto.contacto is not None
+        assert prov_sin_contacto.contacto_id != contacto_ocupado.pk
+
+        EntidadSincronizada.objects.create(
+            id_instancia=inst,
+            tipo_entidad="facturas_compra",
+            id_externo="bill-suc-b",
+            id_omni=str(fc_pk),
+            modelo_omni="apps.compras.models.FacturaCompra",
+        )
+        pago_pk = eng._upsert_pago(
+            {
+                "id_externo": "pay-suc-b",
+                "tipo": "outbound",
+                "tipo_socio": "supplier",
+                "socio_id_externo": "odoo-suc-b",
+                "socio_nombre": "Sucursal B Sin Contacto",
+                "monto": "75.00",
+                "moneda": "USD",
+                "fecha": _hoy().isoformat(),
+                "facturas_externas": ["bill-suc-b"],
+                "reconciliaciones": [],
+            },
+            inst,
+        )
+        assert Pago.objects.get(pk=pago_pk).asignaciones.count() == 1
+
+        # Escenario B: Cliente sin contacto cuando EntidadSincronizada apunta a contacto ocupado por otro Cliente
+        c_cli_ocupado = Contacto.objects.create(
+            id_empresa=empresa_a, nombre="Cli Ocupado", rif="J-66666666-6", es_cliente=True
+        )
+        Cliente.objects.create(
+            id_empresa=empresa_a,
+            razon_social="Cli Titular",
+            rif="J-66666666-1",
+            contacto=c_cli_ocupado,
+        )
+        cli_sin_c = Cliente.objects.create(
+            id_empresa=empresa_a,
+            razon_social="Cli Sec Sin Contacto",
+            rif="J-66666666-2",
+            referencia_externa="odoo-cli-sec",
+            contacto=None,
+        )
+        EntidadSincronizada.objects.create(
+            id_instancia=inst,
+            tipo_entidad="contactos",
+            id_externo="odoo-cli-sec",
+            id_omni=str(c_cli_ocupado.pk),
+        )
+        c_res = eng._asegurar_contacto_de_tercero(cli_sin_c, inst, id_externo="odoo-cli-sec", es_cliente=True)
+        cli_sin_c.refresh_from_db()
+        assert c_res is not None
+        assert cli_sin_c.contacto_id == c_res.pk
+        assert cli_sin_c.contacto_id != c_cli_ocupado.pk
+
+    def test_pago_multifactura_sin_detalle_con_una_sola_factura_local_omitido(self, empresa_a, moneda_usd):
+        inst = _instancia_odoo(empresa_a)
+        eng = SyncEngine()
+        contacto = Contacto.objects.create(
+            id_empresa=empresa_a, nombre="Cli Multi Incompleto", rif="J-77771234-5", es_cliente=True
+        )
+        cli = Cliente.objects.create(
+            id_empresa=empresa_a, razon_social="Cli Multi Incompleto", rif="J-77771234-5", contacto=contacto
+        )
+        ff1 = FacturaFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cli,
+            numero_control="C-MINC-1",
+            numero_factura="F-MINC-1",
+            fecha_emision=_hoy(),
+            monto_total=Decimal("100.0000"),
+            id_moneda=moneda_usd,
+            estado="EMITIDA",
+        )
+        EntidadSincronizada.objects.create(
+            id_instancia=inst, tipo_entidad="facturas_venta", id_externo="odoo-inv-1", id_omni=str(ff1.pk)
+        )
+
+        # Odoo reporta 2 facturas externas reconciliadas pero solo 1 está en Omni y no hay reconciliaciones_raw
+        res = eng._upsert_pago(
+            {
+                "id_externo": "pay-multi-sin-detalle",
+                "tipo": "inbound",
+                "tipo_socio": "customer",
+                "socio_id_externo": "odoo-cli-minc",
+                "socio_nombre": "Cli Multi Incompleto",
+                "monto": "100.00",
+                "moneda": "USD",
+                "fecha": _hoy().isoformat(),
+                "facturas_externas": ["odoo-inv-1", "odoo-inv-2-no-sync"],
+                "reconciliaciones": [],
+            },
+            inst,
+        )
+        assert res is None
+        assert Pago.objects.filter(id_empresa=empresa_a, referencia__startswith="odoo:pay-multi").count() == 0
+        assert AsignacionPago.objects.filter(id_empresa=empresa_a, id_factura_venta=ff1).count() == 0
 
 
 @pytest.mark.django_db(transaction=True)

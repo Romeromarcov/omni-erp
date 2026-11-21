@@ -923,6 +923,16 @@ class TestOdoo18PagosYReconciliacionesBatch:
 
     def test_get_reconciliaciones_pagos_batch_inbound_y_outbound(self):
         client, mock_models = _make_client()
+        pr_fields_odoo18 = {
+            "id": {"string": "ID"},
+            "debit_move_id": {"string": "Debit"},
+            "credit_move_id": {"string": "Credit"},
+            "amount": {"string": "Amount"},
+            "debit_amount_currency": {"string": "Debit Amount Currency"},
+            "credit_amount_currency": {"string": "Credit Amount Currency"},
+            "debit_currency_id": {"string": "Debit Currency"},
+            "credit_currency_id": {"string": "Credit Currency"},
+        }
         mock_models.execute_kw.side_effect = [
             # 1. account.move.line de pagos
             [
@@ -943,7 +953,9 @@ class TestOdoo18PagosYReconciliacionesBatch:
                     "currency_id": [2, "USD"],
                 },
             ],
-            # 2. account.partial.reconcile batch read
+            # 2. fields_get cacheado en account.partial.reconcile (1 sola vez por instancia)
+            pr_fields_odoo18,
+            # 3. account.partial.reconcile batch read
             [
                 {
                     "id": 501,
@@ -1005,7 +1017,7 @@ class TestOdoo18PagosYReconciliacionesBatch:
 
         res = client.get_reconciliaciones_pagos([100, 200])
 
-        assert mock_models.execute_kw.call_count == 4  # batch estricto, cero N+1
+        assert mock_models.execute_kw.call_count == 5  # 1 fields_get cacheado + 4 lecturas batch, cero N+1
         assert len(res[100]) == 2
         assert res[100][0]["move_id_externo"] == "301"
         assert res[100][0]["monto_pago"] == Decimal("35.0")
@@ -1080,6 +1092,16 @@ class TestOdoo18PagosYReconciliacionesBatch:
         assert "id" in search_kwargs["fields"]
 
         # get_reconciliaciones_pagos: aml sin id, counterpart_line sin move_id -> {}
+        client._fields_cache["account.partial.reconcile"] = {
+            "id",
+            "debit_move_id",
+            "credit_move_id",
+            "amount",
+            "debit_amount_currency",
+            "credit_amount_currency",
+            "debit_currency_id",
+            "credit_currency_id",
+        }
         mock_models.execute_kw.side_effect = [
             [
                 {"id": None, "move_id": [1, "X"], "matched_debit_ids": [1]},
@@ -1136,3 +1158,77 @@ class TestOdoo18PagosYReconciliacionesBatch:
             ],
         )
         assert norm["facturas_externas"] == ["404"]
+
+    def test_get_reconciliaciones_pagos_odoo_legacy_menor_14_sin_campos_multimoneda(self):
+        client, mock_models = _make_client()
+        odoo13_pr_fields = {
+            "id": {"string": "ID"},
+            "debit_move_id": {"string": "Debit Move"},
+            "credit_move_id": {"string": "Credit Move"},
+            "amount": {"string": "Amount"},
+            "currency_id": {"string": "Currency"},
+        }
+        mock_models.execute_kw.side_effect = [
+            # 1. AML pago
+            [
+                {
+                    "id": 1001,
+                    "move_id": [100, "PAY/OLD/1"],
+                    "account_type": "asset_receivable",
+                    "matched_debit_ids": [701],
+                    "matched_credit_ids": [],
+                    "currency_id": [2, "USD"],
+                }
+            ],
+            # 2. fields_get de account.partial.reconcile en Odoo < 14 (sin *_amount_currency ni *_currency_id)
+            odoo13_pr_fields,
+            # 3. account.partial.reconcile.read (solo campos base)
+            [
+                {
+                    "id": 701,
+                    "debit_move_id": [2001, "INV/OLD/1"],
+                    "credit_move_id": [1001, "PAY/OLD/1"],
+                    "amount": 85.5,
+                }
+            ],
+            # 4. AML contraparte
+            [{"id": 2001, "move_id": [301, "INV/OLD/1"], "currency_id": [2, "USD"]}],
+            # 5. account.move contraparte
+            [{"id": 301, "move_type": "out_invoice", "name": "INV/OLD/1", "currency_id": [2, "USD"]}],
+        ]
+
+        res = client.get_reconciliaciones_pagos([100])
+        assert len(res[100]) == 1
+        assert res[100][0]["monto_base"] == Decimal("85.5")
+        assert res[100][0]["monto_pago"] == Decimal("85.5")
+        assert res[100][0]["monto_documento"] == Decimal("85.5")
+        assert res[100][0]["moneda_pago"] == "USD"
+        assert res[100][0]["moneda_documento"] == "USD"
+
+        # Verifica que fields solo pidió los campos base seguros de Odoo < 14
+        pr_read_call = mock_models.execute_kw.call_args_list[2][0]
+        assert pr_read_call[3] == "account.partial.reconcile"
+        assert pr_read_call[6]["fields"] == ["id", "debit_move_id", "credit_move_id", "amount"]
+
+        # Si fields_get falla en account.partial.reconcile (cache vacío -> {}), usa fail-safe solo base
+        client_fail, mock_models_fail = _make_client()
+        mock_models_fail.execute_kw.side_effect = [
+            [
+                {
+                    "id": 1002,
+                    "move_id": [101, "PAY/OLD/2"],
+                    "account_type": "liability_payable",
+                    "matched_debit_ids": [],
+                    "matched_credit_ids": [702],
+                    "currency_id": [2, "USD"],
+                }
+            ],
+            RuntimeError("fields_get denegado"),  # _get_model_fields captura OdooCallError
+            [{"id": 702, "debit_move_id": [1002, "PAY/OLD/2"], "credit_move_id": [2002, "BILL/1"], "amount": 40.0}],
+            [{"id": 2002, "move_id": [302, "BILL/1"], "currency_id": [2, "USD"]}],
+            [{"id": 302, "move_type": "in_invoice", "name": "BILL/1", "currency_id": [2, "USD"]}],
+        ]
+        res_fail = client_fail.get_reconciliaciones_pagos([101])
+        assert res_fail[101][0]["monto_documento"] == Decimal("40.0")
+        pr_fail_fields = mock_models_fail.execute_kw.call_args_list[2][0][6]["fields"]
+        assert pr_fail_fields == ["id", "debit_move_id", "credit_move_id", "amount"]
