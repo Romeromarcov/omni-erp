@@ -44,7 +44,7 @@ class LibroLegal(ABC):
     """Libros/declaraciones para el fisco (p. ej. libros SENIAT)."""
 
     @abstractmethod
-    def generar(self, *, empresa, periodo, tipo: str): ...
+    def generar(self, *, empresa, periodo, tipo: str, formato: str = "txt"): ...
 
 
 # ── Capa de mercado ──────────────────────────────────────────────────────────
@@ -123,6 +123,14 @@ class CalculadoraNominaNoOp(CalculadoraNomina):
             "total_deducciones": cero,
             "total_asignaciones": cero,
             "neto_pagar": cero,
+            "provision_utilidades": cero,
+            "provision_vacaciones": cero,
+            "provision_bono_vacacional": cero,
+            "provision_prestaciones": cero,
+            "aporte_patronal_sso": cero,
+            "aporte_patronal_faov": cero,
+            "aporte_patronal_inces": cero,
+            "aporte_patronal_rpe": cero,
             "total_aportes_patronales": cero,
             "noop": True,
         }
@@ -131,7 +139,9 @@ class CalculadoraNominaNoOp(CalculadoraNomina):
 class LibroLegalNoOp(LibroLegal):
     """Sin libros fiscales de país: devuelve contenido vacío."""
 
-    def generar(self, *, empresa, periodo, tipo: str) -> str:
+    def generar(self, *, empresa, periodo, tipo: str, formato: str = "txt") -> str | bytes:
+        if str(formato or "txt").strip().lower() == "pdf":
+            return b""
         return ""
 
 

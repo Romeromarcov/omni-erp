@@ -18,6 +18,8 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from django.core.exceptions import ValidationError
+
 from apps.localizacion.ports import (
     CalculadoraNomina,
     GeneradorDocumentoLegal,
@@ -28,6 +30,14 @@ from apps.localizacion.ports import (
 )
 
 _BOLIVAR_CODIGOS: frozenset[str] = frozenset({"VES", "BS", "VEF", "VEB"})
+
+
+class _TenantValidationError(ValidationError, PermissionError):
+    """Error de aislamiento multi-tenant compatible con ValidationError y PermissionError."""
+
+
+class _DocumentoValidationError(ValidationError, ValueError):
+    """Error de validación de documento fiscal compatible con ValidationError y ValueError."""
 
 
 def _get_campo(obj: Any, *campos: str) -> Any:
@@ -62,13 +72,13 @@ def _get_texto(obj: Any, *campos: str) -> str:
 def _a_decimal(valor: Any, *, campo: str) -> Decimal:
     """Convierte ``valor`` a ``Decimal`` finito (R-CODE-4), rechazando booleanos/NaN."""
     if isinstance(valor, bool):
-        raise ValueError(f"El campo '{campo}' no puede ser booleano.")
+        raise _DocumentoValidationError(f"El campo '{campo}' no puede ser booleano.")
     try:
         dec = valor if isinstance(valor, Decimal) else Decimal(str(valor).strip())
     except (InvalidOperation, ValueError, TypeError) as exc:
-        raise ValueError(f"Valor numérico inválido en '{campo}': {valor!r}") from exc
+        raise _DocumentoValidationError(f"Valor numérico inválido en '{campo}': {valor!r}") from exc
     if not dec.is_finite():
-        raise ValueError(f"El campo '{campo}' debe ser un número finito.")
+        raise _DocumentoValidationError(f"El campo '{campo}' debe ser un número finito.")
     return dec
 
 
@@ -79,20 +89,24 @@ def _empresa_pk(empresa: Any) -> Any:
     return getattr(empresa, "pk", None)
 
 
-def _validar_pertenencia_empresa(documento: Any, empresa: Any) -> None:
-    """Garantiza aislamiento multi-tenant (R-CODE-1) al emitir documentos legales."""
+def _validar_pertenencia_empresa(obj: Any, empresa: Any) -> None:
+    """Garantiza aislamiento multi-tenant fail-closed (R-CODE-1) sobre modelos ORM y DTOs."""
     emp_pk = _empresa_pk(empresa)
-    raw = _get_campo(documento, "id_empresa_id", "empresa_id", "id_empresa", "empresa")
+    raw = _get_campo(obj, "id_empresa_id", "empresa_id", "id_empresa", "empresa")
     if raw is None:
+        if hasattr(obj, "_meta"):
+            raise _TenantValidationError(
+                f"{type(obj).__name__} sin empresa asociada; aislamiento multi-tenant fail-closed."
+            )
         return
     raw_pk = _empresa_pk(raw)
     if emp_pk is not None:
         doc_id = raw_pk if raw_pk is not None else raw
         if str(doc_id) != str(emp_pk):
-            raise PermissionError("El documento no pertenece a la empresa indicada.")
+            raise _TenantValidationError("El documento no pertenece a la empresa indicada.")
         return
     if raw is not empresa:
-        raise PermissionError("El documento no pertenece a la empresa indicada.")
+        raise _TenantValidationError("El documento no pertenece a la empresa indicada.")
 
 
 def _inferir_tipo_documento(documento: Any) -> str:
@@ -264,7 +278,7 @@ class MotorImpuestosVE(MotorImpuestos):
     def calcular(self, *, subtotal: Decimal, empresa, contexto: dict | None = None) -> dict:
         from apps.fiscal.services import calcular_impuestos
 
-        return calcular_impuestos(Decimal(str(subtotal)), empresa)
+        return calcular_impuestos(_a_decimal(subtotal, campo="subtotal"), empresa)
 
 
 class GeneradorDocumentoLegalVE(GeneradorDocumentoLegal):
@@ -278,12 +292,19 @@ class GeneradorDocumentoLegalVE(GeneradorDocumentoLegal):
 
         _validar_pertenencia_empresa(documento, empresa)
 
+        cliente_obj = _get_campo(documento, "id_cliente", "cliente")
+        if cliente_obj is not None:
+            _validar_pertenencia_empresa(cliente_obj, empresa)
+
+        factura_origen = _get_campo(documento, "id_factura_origen")
+        if factura_origen is not None:
+            _validar_pertenencia_empresa(factura_origen, empresa)
+
         from apps.localizacion_ve.validators import normalizar_rif
 
         rif_emisor_raw = _get_texto(empresa, "identificador_fiscal", "rif")
         rif_emisor = normalizar_rif(rif_emisor_raw)
 
-        cliente_obj = _get_campo(documento, "id_cliente", "cliente")
         rif_receptor_raw = _get_texto(documento, "rif_receptor", "rif_cliente")
         if not rif_receptor_raw and cliente_obj is not None:
             rif_receptor_raw = _get_texto(cliente_obj, "rif", "identificador_fiscal")
@@ -312,10 +333,8 @@ class GeneradorDocumentoLegalVE(GeneradorDocumentoLegal):
             "numero",
         )
         numero_control = _get_texto(documento, "numero_control")
-        if not numero_control:
-            factura_origen = _get_campo(documento, "id_factura_origen")
-            if factura_origen is not None:
-                numero_control = _get_texto(factura_origen, "numero_control")
+        if not numero_control and factura_origen is not None:
+            numero_control = _get_texto(factura_origen, "numero_control")
 
         fecha_raw = _get_campo(documento, "fecha_emision", "fecha")
         if isinstance(fecha_raw, datetime):
@@ -355,6 +374,23 @@ class GeneradorDocumentoLegalVE(GeneradorDocumentoLegal):
             total = _a_decimal(total_raw, campo="total")
         else:
             total = subtotal + iva + igtf + exento
+
+        for nombre_campo, monto in (
+            ("subtotal", subtotal),
+            ("iva", iva),
+            ("igtf", igtf),
+            ("exento", exento),
+            ("total", total),
+        ):
+            if monto < Decimal("0"):
+                raise _DocumentoValidationError(f"El monto de '{nombre_campo}' no puede ser negativo.")
+
+        if subtotal_raw is not None and total_raw is not None:
+            esperado = subtotal + iva + igtf + exento
+            if esperado != total:
+                raise _DocumentoValidationError(
+                    f"El total ({total}) no cuadra con subtotal + iva + igtf + exento ({esperado})."
+                )
 
         return {
             "tipo_documento": tipo_documento,
@@ -472,7 +508,7 @@ class MetodosPagoLocalesVE(MetodosPagoLocales):
 
         metodos = (
             MetodoPago.objects.filter(activo=True)
-            .filter(Q(es_generico=True) | Q(es_publico=True) | Q(empresa__isnull=True) | Q(empresa_id=empresa_id))
+            .filter(Q(es_generico=True) | Q(es_publico=True) | Q(empresa_id=empresa_id))
             .exclude(id_metodo_pago__in=desactivados_ids)
             .prefetch_related("monedas")
             .order_by("nombre_metodo", "id_metodo_pago")

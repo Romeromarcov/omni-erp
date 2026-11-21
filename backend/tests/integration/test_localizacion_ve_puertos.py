@@ -7,10 +7,12 @@ import datetime
 import uuid
 from decimal import Decimal
 from types import SimpleNamespace
+from unittest import mock
 
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -29,7 +31,9 @@ from apps.localizacion_ve.adapters import (
     MetodosPagoLocalesVE,
     MotorImpuestosVE,
     ProveedorTasasVE,
+    _metadatos_metodo_pago_ve,
 )
+from apps.nomina.calculo_lottt import ResultadoNomina
 from apps.ventas.models import FacturaFiscal, NotaCreditoFiscal, NotaCreditoVenta
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
@@ -197,8 +201,15 @@ class TestRegistryYNoOp:
         assert nom["neto_pagar"] == Decimal("0")
         assert nom["total_deducciones"] == Decimal("0")
         assert nom["noop"] is True
+        esperados_nomina = set(ResultadoNomina.__dataclass_fields__.keys())
+        assert set(nom.keys()) - {"noop"} == esperados_nomina
+        for clave in esperados_nomina:
+            assert nom[clave] == Decimal("0")
 
         assert ports.LibroLegalNoOp().generar(empresa=empresa_ve, periodo="2026-05", tipo="ventas") == ""
+        assert (
+            ports.LibroLegalNoOp().generar(empresa=empresa_ve, periodo="2026-05", tipo="ventas", formato="pdf") == b""
+        )
         assert ports.ProveedorTasasNoOp().obtener_tasa(origen="USD", destino="VES", empresa=empresa_ve) is None
         assert ports.MetodosPagoLocalesNoOp().listar(empresa=empresa_ve) == []
 
@@ -279,6 +290,8 @@ class TestSeisPuertosVE:
         assert res["tasa_iva"] == Decimal("0.16")
         assert res["monto_iva"] == Decimal("16.00")
         assert res["total"] == Decimal("116.00")
+        with pytest.raises(ValidationError):
+            motor.calcular(subtotal=True, empresa=empresa_ve)
 
     def test_generador_documento_legal_ve_con_modelos_y_dto(self, empresa_ve, empresa_b, cliente_ve, moneda_usd):
         gen = services.get_localizacion(empresa_ve)["GeneradorDocumentoLegal"]
@@ -386,16 +399,98 @@ class TestSeisPuertosVE:
         assert out_min["subtotal"] == Decimal("0")
         assert out_min["total"] == Decimal("0")
 
-        # Casos negativos: documento ajeno (R-CODE-1), RIF inválido/faltante y montos inválidos
-        with pytest.raises(PermissionError, match="no pertenece"):
+        # Casos negativos: documento ajeno (R-CODE-1), ORM fail-closed, anidados cross-tenant,
+        # RIF inválido/faltante, montos negativos/descuadrados e inválidos
+        with pytest.raises(ValidationError, match="no pertenece"):
             gen.emitir(documento=factura, empresa=empresa_b)
 
         with pytest.raises(PermissionError, match="no pertenece"):
             gen.emitir(documento={"empresa_id": str(empresa_b.pk), "rif_receptor": "J-30999888-1"}, empresa=empresa_ve)
 
         emp_sin_pk = SimpleNamespace(identificador_fiscal="J-30543012-5")
-        with pytest.raises(PermissionError, match="no pertenece"):
+        with pytest.raises(ValidationError, match="no pertenece"):
             gen.emitir(documento=SimpleNamespace(empresa=SimpleNamespace()), empresa=emp_sin_pk)
+
+        # ORM sin empresa asociada debe fallar cerrado (ValidationError)
+        factura_huerfana = FacturaFiscal(
+            id_cliente=cliente_ve,
+            numero_control="00-00000777",
+            numero_factura="FAC-HUERFANA",
+            fecha_emision=fecha,
+            id_moneda=moneda_usd,
+            base_imponible=Decimal("10.00"),
+            monto_iva=Decimal("1.60"),
+            monto_total=Decimal("11.60"),
+        )
+        with pytest.raises(ValidationError, match="sin empresa asociada"):
+            gen.emitir(documento=factura_huerfana, empresa=empresa_ve)
+
+        # Cliente de otra empresa en documento de empresa_ve (cross-tenant anidado)
+        cliente_ajeno = Cliente.objects.create(id_empresa=empresa_b, razon_social="Ajeno S.A.", rif="J-90111222-3")
+        with pytest.raises(ValidationError, match="no pertenece"):
+            gen.emitir(
+                documento={"id_empresa": empresa_ve, "id_cliente": cliente_ajeno, "subtotal": "10.00"},
+                empresa=empresa_ve,
+            )
+
+        # Cliente ORM sin empresa asociada en DTO
+        with pytest.raises(ValidationError, match="sin empresa asociada"):
+            gen.emitir(
+                documento={"id_empresa": empresa_ve, "cliente": Cliente(rif="J-30999888-1"), "subtotal": "10.00"},
+                empresa=empresa_ve,
+            )
+
+        # Factura origen de otra empresa en NotaCreditoFiscal con numero_control explícito (cross-tenant anidado)
+        factura_b = FacturaFiscal.objects.create(
+            id_empresa=empresa_b,
+            id_cliente=cliente_ajeno,
+            numero_control="00-00000888",
+            numero_factura="FAC-B-888",
+            fecha_emision=fecha,
+            id_moneda=moneda_usd,
+            base_imponible=Decimal("100.00"),
+            monto_iva=Decimal("16.00"),
+            monto_total=Decimal("116.00"),
+            estado="EMITIDA",
+        )
+        nc_origen_ajeno = NotaCreditoFiscal(
+            id_empresa=empresa_ve,
+            id_cliente=cliente_ve,
+            id_factura_origen=factura_b,
+            numero_control="00-00000888",
+            numero_nota_credito="NCF-AJENA",
+            fecha_emision=fecha,
+            base_imponible=Decimal("10.00"),
+            monto_iva=Decimal("1.60"),
+            monto_total=Decimal("11.60"),
+            id_moneda=moneda_usd,
+            motivo="DEVOLUCION",
+            estado="EMITIDA",
+        )
+        with pytest.raises(ValidationError, match="no pertenece"):
+            gen.emitir(documento=nc_origen_ajeno, empresa=empresa_ve)
+
+        # Montos negativos rechazados con ValidationError
+        for campo_neg in ("subtotal", "iva", "igtf", "exento", "total"):
+            payload_neg = {"rif_receptor": "J-30999888-1", campo_neg: "-1.00"}
+            if campo_neg != "total" and campo_neg != "subtotal":
+                payload_neg["subtotal"] = "10.00"
+            with pytest.raises(ValidationError, match="negativo"):
+                gen.emitir(documento=payload_neg, empresa=empresa_ve)
+
+        # Descuadre entre componentes explícitos y total rechazado con ValidationError
+        with pytest.raises(ValidationError, match="no cuadra"):
+            gen.emitir(
+                documento={
+                    "rif_receptor": "J-30999888-1",
+                    "subtotal": "100.00",
+                    "iva": "16.00",
+                    "igtf": "3.00",
+                    "exento": "10.00",
+                    "total": "200.00",
+                },
+                empresa=empresa_ve,
+            )
 
         with pytest.raises(ValueError, match="RIF"):
             gen.emitir(
@@ -407,7 +502,7 @@ class TestSeisPuertosVE:
             gen.emitir(documento={"rif_receptor": "", "subtotal": "10"}, empresa=empresa_ve)
 
         for monto_malo in (True, "no-num", Decimal("NaN")):
-            with pytest.raises(ValueError):
+            with pytest.raises(ValidationError):
                 gen.emitir(documento={"subtotal": monto_malo}, empresa=empresa_ve)
 
         with pytest.raises(ValueError):
@@ -510,6 +605,8 @@ class TestSeisPuertosVE:
         for malo in (
             "2026-13",
             (13, 2026),
+            (5, 1800),
+            {"anio": 2200, "mes": 5},
             (2026,),
             (True, 2026),
             ("abc", 2026),
@@ -563,6 +660,10 @@ class TestSeisPuertosVE:
 
         # Moneda inexistente -> None
         assert prov.obtener_tasa(origen="USD", destino="XYZ", empresa=empresa_ve) is None
+
+        # Tasa sin valor_tasa -> None
+        with mock.patch("apps.finanzas.services.obtener_tasa_cambio", return_value=SimpleNamespace(valor_tasa=None)):
+            assert prov.obtener_tasa(origen="USD", destino="VES", empresa=empresa_ve) is None
 
     def test_metodos_pago_locales_ve_igtf_y_aislamiento(
         self, empresa_ve, empresa_b, moneda_usd, moneda_ves, moneda_usdt
@@ -656,6 +757,16 @@ class TestSeisPuertosVE:
             documento_json={"secreto": "NO_FILTRAR"},
         )
 
+        # Método sin empresa y sin es_generico/es_publico NO debe ser expuesto (alineado a MetodoPagoViewSet)
+        MetodoPago.objects.create(
+            nombre_metodo="Método Huérfano Sin Flags",
+            tipo_metodo="OTRO",
+            empresa=None,
+            activo=True,
+            es_generico=False,
+            es_publico=False,
+        )
+
         # Método desactivado por empresa_ve vía MetodoPagoEmpresaActiva
         m_desact = MetodoPago.objects.create(
             nombre_metodo="Cheque Desactivado",
@@ -669,6 +780,7 @@ class TestSeisPuertosVE:
         nombres = [item["nombre_metodo"] for item in lista]
         assert nombres == sorted(nombres)  # determinista
         assert "Zelle Secreto Empresa B" not in nombres
+        assert "Método Huérfano Sin Flags" not in nombres
         assert "Cheque Desactivado" not in nombres
         assert "secreto" not in str(lista)
 
@@ -703,6 +815,26 @@ class TestSeisPuertosVE:
             puerto.listar(empresa=None)
         with pytest.raises(ValueError):
             puerto.listar(empresa=SimpleNamespace(pais_codigo_iso="VE"))
+
+        # Atributos booleanos directos es_divisa / aplica_igtf en el objeto método
+        metodo_stub = SimpleNamespace(
+            id_metodo_pago=uuid.uuid4(),
+            nombre_metodo="Stub Directo",
+            tipo_metodo="OTRO",
+            documento_json=None,
+            es_divisa=True,
+            aplica_igtf=False,
+            es_generico=False,
+            es_publico=False,
+            monedas=SimpleNamespace(all=lambda: []),
+        )
+        meta_stub = _metadatos_metodo_pago_ve(
+            metodo_stub,
+            empresa_permite_igtf=True,
+            metodos_igtf=frozenset({"DIVISA_EFECTIVO"}),
+        )
+        assert meta_stub["es_divisa"] is True
+        assert meta_stub["aplica_igtf"] is False
 
 
 # ── 3. Endpoint REST y Tool MCP (R-CODE-7) ───────────────────────────────────
@@ -796,6 +928,21 @@ class TestLocalizacionRESTyMCP:
         c_sin = APIClient()
         c_sin.force_authenticate(user=sin_emp)
         assert c_sin.get(URL_ESTADO).status_code == 403
+
+        # Usuario autenticado vía capability_token (sin M2M empresas) usa fallback empresas.first() -> 200
+        tok = CapabilityToken.objects.create(
+            empresa=empresa_b,
+            nombre="tok-rest-fallback",
+            scopes=["localizacion:read"],
+            activo=True,
+        )
+        user_tok = User.objects.create_user(username="tok_user_l10n", password="x", is_active=True)
+        user_tok.capability_token = tok
+        c_tok = APIClient()
+        c_tok.force_authenticate(user=user_tok)
+        resp_tok = c_tok.get(URL_ESTADO)
+        assert resp_tok.status_code == 200
+        assert resp_tok.json()["empresa_id"] == str(empresa_b.pk)
 
     def test_mcp_autodiscovery_scope_y_ejecucion(self, empresa_ven, empresa_b):
         assert {item["name"] for item in LOCALIZACION_MCP_TOOLS} == {"localizacion_estado_empresa"}
