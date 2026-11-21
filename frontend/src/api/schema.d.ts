@@ -166,6 +166,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agentes/ejecuciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura para ejecuciones asíncronas de agentes IA (Plan 05 P2-2).
+         * @description GET /api/agentes/ejecuciones/       — listar (filtros ?agente=, ?estado=, ?search=, ?ordering=)
+         *     GET /api/agentes/ejecuciones/{id}/  — detalle de ejecución, estado y resultado
+         */
+        get: operations["agentes_ejecuciones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/ejecuciones/{id_ejecucion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ejecución de Agente. */
+                id_ejecucion: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura para ejecuciones asíncronas de agentes IA (Plan 05 P2-2).
+         * @description GET /api/agentes/ejecuciones/       — listar (filtros ?agente=, ?estado=, ?search=, ?ordering=)
+         *     GET /api/agentes/ejecuciones/{id}/  — detalle de ejecución, estado y resultado
+         */
+        get: operations["agentes_ejecuciones_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agentes/predicciones/": {
         parameters: {
             query?: never;
@@ -174,30 +219,32 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         get: operations["agentes_predicciones_list"];
         put?: never;
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         post: operations["agentes_predicciones_create"];
         delete?: never;
@@ -217,10 +264,10 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/analizar-cobranza/
-         * @description Ejecuta el CobranzaEstrategaAgent para la empresa del usuario.
-         *     Body (opcional): {"persistir": true}
+         * @description Encola en Celery el ``CobranzaEstrategaAgent`` para la empresa indicada o por defecto.
+         *     Body (opcional): {"empresa_id": "<uuid>", "persistir": true}
          *
-         *     Retorna lista de sugerencias de cobranza para CxC vencidas.
+         *     Retorna HTTP 202 Accepted con el estado de la ``EjecucionAgente``.
          */
         post: operations["agentes_predicciones_analizar_cobranza"];
         delete?: never;
@@ -240,9 +287,9 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/analizar-personalizacion/
-         * @description Ejecuta el PersonalizacionCapa2Agent para la empresa del usuario.
+         * @description Encola en Celery el ``PersonalizacionCapa2Agent`` para la empresa indicada o por defecto.
          *
-         *     Retorna recomendaciones de flujo de documentos, listas de precios y crédito a clientes.
+         *     Retorna HTTP 202 Accepted con el estado de la ``EjecucionAgente``.
          */
         post: operations["agentes_predicciones_analizar_personalizacion"];
         delete?: never;
@@ -262,10 +309,10 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/analizar-reorden/
-         * @description Ejecuta el ReordenSugeridorAgent para la empresa del usuario.
-         *     Body (opcional): {"solo_alertas": true, "persistir": false}
+         * @description Encola en Celery el ``ReordenSugeridorAgent`` para la empresa indicada o por defecto.
+         *     Body (opcional): {"empresa_id": "<uuid>", "solo_alertas": true, "persistir": false}
          *
-         *     Retorna lista de sugerencias de reorden de inventario.
+         *     Retorna HTTP 202 Accepted con el estado de la ``EjecucionAgente``.
          */
         post: operations["agentes_predicciones_analizar_reorden"];
         delete?: never;
@@ -285,8 +332,8 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/clasificar-gasto/
-         * @description Modo PRODUCCIÓN del ClasificadorGastos.  Predice la categoría de un Gasto
-         *     y, opcionalmente, la aplica escribiendo en Gasto.id_categoria_gasto.
+         * @description Valida pertenencia multi-tenant del gasto en todas las empresas visibles (R-CODE-1)
+         *     y encola en Celery el ``ClasificadorGastos`` sobre la empresa dueña del gasto.
          */
         post: operations["agentes_predicciones_clasificar_gasto"];
         delete?: never;
@@ -324,12 +371,14 @@ export interface paths {
         };
         /**
          * GET /agentes/predicciones/sugerencias-activas/
-         * @description Retorna las predicciones pendientes de revisión humana para la empresa del usuario.
-         *     Por defecto las últimas 10, ordenadas por confianza DESC.
+         * @description Retorna las predicciones pendientes de revisión humana para las empresas visibles
+         *     (o para ``?empresa_id=`` cuando se especifica). Por defecto las últimas 10,
+         *     ordenadas por confianza DESC.
          *
          *     Query params:
-         *       ?limite=N   — máximo de resultados (default 10, max 50)
-         *       ?agente=    — filtrar por nombre de agente
+         *       ?limite=N     — máximo de resultados (default 10, max 50)
+         *       ?agente=      — filtrar por nombre de agente
+         *       ?empresa_id=  — acotar a una empresa visible (obligatorio para superusuario Omni)
          */
         get: operations["agentes_predicciones_sugerencias_activas"];
         put?: never;
@@ -351,58 +400,62 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         get: operations["agentes_predicciones_read"];
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         put: operations["agentes_predicciones_update"];
         post?: never;
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         delete: operations["agentes_predicciones_delete"];
         options?: never;
         head?: never;
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         patch: operations["agentes_predicciones_partial_update"];
         trace?: never;
@@ -14361,6 +14414,56 @@ export interface components {
              */
             activo?: boolean;
         };
+        EjecucionAgente: {
+            /**
+             * Id ejecucion
+             * Format: uuid
+             */
+            readonly id_ejecucion?: string;
+            /**
+             * Agente
+             * @enum {string}
+             */
+            readonly agente?: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "pendiente" | "ejecutando" | "completado" | "fallido";
+            /** Celery task id */
+            readonly celery_task_id?: string;
+            /** Parametros */
+            readonly parametros?: Record<string, never>;
+            /** Resultado */
+            readonly resultado?: Record<string, never>;
+            /** Mensaje error */
+            readonly mensaje_error?: string;
+            /**
+             * Iniciado por
+             * Format: uuid
+             */
+            readonly iniciado_por?: string | null;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha inicio
+             * Format: date-time
+             */
+            readonly fecha_inicio?: string | null;
+            /**
+             * Fecha fin
+             * Format: date-time
+             */
+            readonly fecha_fin?: string | null;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+        };
         PrediccionAgente: {
             /**
              * Id prediccion
@@ -14412,6 +14515,54 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+        };
+        AnalizarCobranzaInput: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id?: string;
+            /**
+             * Persistir
+             * @default false
+             */
+            persistir: boolean;
+        };
+        AnalizarPersonalizacionInput: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id?: string;
+        };
+        AnalizarReordenInput: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id?: string;
+            /**
+             * Solo alertas
+             * @default true
+             */
+            solo_alertas: boolean;
+            /**
+             * Persistir
+             * @default false
+             */
+            persistir: boolean;
+        };
+        ClasificarGastoInput: {
+            /**
+             * Gasto id
+             * Format: uuid
+             */
+            gasto_id: string;
+            /**
+             * Aplicar
+             * @default false
+             */
+            aplicar: boolean;
         };
         Almacen: {
             /**
@@ -19273,7 +19424,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T00:00:55.472667-04:00
+             * @default 2026-11-21T02:48:40.794369-04:00
              */
             fecha_despacho: string;
             /**
@@ -28763,6 +28914,61 @@ export interface operations {
             };
         };
     };
+    agentes_ejecuciones_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EjecucionAgente"][];
+                    };
+                };
+            };
+        };
+    };
+    agentes_ejecuciones_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ejecución de Agente. */
+                id_ejecucion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EjecucionAgente"];
+                };
+            };
+        };
+    };
     agentes_predicciones_list: {
         parameters: {
             query?: {
@@ -28822,14 +29028,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalizarCobranzaInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
             };
         };
@@ -28841,14 +29051,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalizarPersonalizacionInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
             };
         };
@@ -28860,14 +29074,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalizarReordenInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
             };
         };
@@ -28879,14 +29097,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClasificarGastoInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
             };
         };
@@ -28900,6 +29122,8 @@ export interface operations {
                 ordering?: string;
                 /** @description Un número de página dentro del conjunto de resultados paginado. */
                 page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
             };
             header?: never;
             path?: never;
@@ -28933,6 +29157,8 @@ export interface operations {
                 ordering?: string;
                 /** @description Un número de página dentro del conjunto de resultados paginado. */
                 page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
             };
             header?: never;
             path?: never;

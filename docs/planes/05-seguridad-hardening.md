@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1/P2-5 ✅, P1-7/P2-3/P2-4 parciales; P2-2/P2-6/P3 abiertos |
+| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1/P2-2/P2-5 ✅, P1-7/P2-3/P2-4 parciales; P2-6/P3 abiertos |
 | **Fecha**    | 2026-06-07 (estado actualizado 2026-11-17 contra `develop @ ff2bdb6`) |
 | **Esfuerzo** | ~3–4 semanas (repartibles en paralelo) |
 | **Owner**    | equipo-backend / equipo-agentes / devops |
@@ -33,7 +33,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | 3 | Security headers | ✅ | Django prod (`settings_prod.py`) + nginx con CSP + `django-csp==4.0` enforce (P2-5, #106) |
 | 4 | Arquitectura desacoplada / gateway LLM / agnóstica | ✅ | `apps/core/llm_gateway.py` (P2-1, #99): punto único configurable por env; sin `anthropic.Anthropic()` directo fuera del gateway |
 | 4b | Fallback a otros modelos si el principal falla | ✅ | Cascada `LLM_MODEL` → `LLM_MODEL_FALLBACK` → reglas deterministas + circuit breaker (P2-1, #99) |
-| 5 | Arquitectura orientada a eventos / IA en background | ⚠️ | Celery+Redis+Kafka existen; sugerencias diarias en Beat. Agentes en `apps/agentes/views.py` aún corren síncronos (**P2-2 abierto**) |
+| 5 | Arquitectura orientada a eventos / IA en background | ✅ | Celery+Redis+Kafka existen; sugerencias diarias en Beat; `EjecucionAgente` + tarea `agentes.ejecutar_analisis_agente` (`HTTP 202` + `GET /api/agentes/ejecuciones/` + paridad MCP + polling cancelable en UI) (**P2-2 ✅**) |
 | 5b | WebSockets para streaming | ⚠️ | Hay **SSE** en chat (`StreamingHttpResponse`); no hay Django Channels (full-duplex, **P3-3**) |
 | 6 | RAG | ❌ | Sin pgvector / embeddings / vector store / retrieval (**P3-2 abierto**) |
 | 7 | Frontend comprimido sin source maps | ✅ | Vite sin `build.sourcemap`, bundle minificado, gzip nginx |
@@ -238,14 +238,17 @@ modelos hardcodeados.
 - Migrados los 6 sitios (`clasificador.py`, `cobranza.py`, `reorden.py`, `personalizacion_agente.py`, `chat.py`, `cxc/agents/cobranza_agent.py`).
 - Guard de superficie + 43 tests en `tests/unit/test_llm_gateway.py` (antes `tests_api/test_llm_gateway.py`).
 
-### P2-2 · Mover agentes de las vistas a Celery (#5) — `⚠️` (ABIERTO)
+### P2-2 · Mover agentes de las vistas a Celery (#5) — `✅`
 **Por qué:** ya existe la infra (Celery+Redis+Beat); las vistas que llaman agentes en
-`apps/agentes/views.py` corren síncronas y bloquean el request.
+`apps/agentes/views.py` corrían síncronas y bloqueaban el request HTTP.
 
-**Tareas:** convertir acciones de análisis a `.delay()` / `apply_async()`; devolver job id;
-exponer estado (poll o vía SSE existente).
-**DoD:** análisis de agentes fuera del request HTTP; test de encolado.
-**Esfuerzo:** ~2 días. **Owner:** equipo-agentes.
+**Estado — `🟢 HECHO` (PR `feat/p2-2-agentes-async-celery`):**
+- Modelo `EjecucionAgente` (`db_table = "agentes_ejecucion_agente"`) con RLS forzado (`0006_rls_ejecucion_agente`, registrado en `apps/core/rls.py`) y admin de solo lectura (`EjecucionAgenteAdmin`).
+- Tarea Celery `agentes.ejecutar_analisis_agente` (`apps/agentes/tasks.py`) bajo `rls_tenant_context([empresa_id])`: ejecuta `cobranza_estratega`, `reorden_sugeridor`, `personalizacion_capa2` y `clasificador_gastos`, serializa resultados a JSON seguro y captura excepciones guardando `estado="fallido"` con `mensaje_error` genérico/saneado (`R-CODE-8`).
+- `PrediccionAgenteViewSet` (`analizar-cobranza`, `analizar-reorden`, `analizar-personalizacion`, `clasificar-gasto`) encola vía `encolar_ejecucion_agente` y retorna `HTTP 202 Accepted` con `EjecucionAgenteSerializer`; `EjecucionAgenteViewSet` (`GET /api/agentes/ejecuciones/` y `/{id}/`) expone consulta solo-lectura con `NulSafeFilterMixin`, `lookup_value_regex` UUID y aislamiento estricto por `get_empresas_visible`.
+- Paridad MCP (`apps/agentes/mcp.py`, registrado en `apps/core/mcp_server.py` y `MCP_AGENT_CAPABILITIES`): `agentes_disparar_analisis`, `agentes_obtener_ejecucion` y `agentes_listar_ejecuciones`.
+- Frontend (`agentesService.ts` + `AgentesPage.tsx` + `schema.d.ts`): flujo `202` + polling cancelable con `AbortSignal` y limpieza en unmount.
+- Tests en `tests/integration/test_agentes_async_celery.py`, `tests/api/test_agentes_cobertura.py`, `tests/api/test_views_agentes_saas.py`, `frontend/src/__tests__/agentesService.test.ts` y `AgentesPage.test.tsx`.
 
 ### P2-3 · Observabilidad de costos LLM por tenant (R11) — `🟡 PARCIAL` (hook + logs en PR #99; falta persistencia)
 **Por qué:** control de gasto y detección de abuso; encaja con el billing futuro del Plan C.

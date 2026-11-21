@@ -303,8 +303,8 @@ export async function streamSSE(
 }
 
 // ── Convenience verbs (public API preserved) ──────────────────────────────────
-export async function get<T>(endpoint: string): Promise<T> {
-  return fetcher<T>(endpoint);
+export async function get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
+  return fetcher<T>(endpoint, options);
 }
 
 export async function post<T>(

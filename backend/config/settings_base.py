@@ -721,6 +721,7 @@ MCP_AGENT_CAPABILITIES: dict = {
         "apps.banca_electronica.mcp",
         "apps.integration_hub.mcp",
         "apps.tareas.mcp",
+        "apps.agentes.mcp",
     ],
     "scopes": {
         "core:read": "Lectura de empresas y clientes",
@@ -746,6 +747,8 @@ MCP_AGENT_CAPABILITIES: dict = {
         "integration_hub:write": "Disparo de sincronizaciones y push outbound de cobranza",
         "tareas:read": "Consulta de proyectos, tareas operativas y resumen ejecutivo",
         "tareas:write": "Creación, transición de tareas y confirmación de minutas",
+        "agentes:read": "Consulta de ejecuciones asíncronas de agentes IA",
+        "agentes:write": "Disparo asíncrono de análisis de agentes IA",
         "fiscal:read": "Consulta de correlativos fiscales",
         "fiscal:write": "Emisión de documentos fiscales",
         "manufactura:read": "Consulta de OF, costeo real y MRP",
