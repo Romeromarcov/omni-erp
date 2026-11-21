@@ -184,7 +184,7 @@ def _parse_decimal_tarifa(valor: Any) -> Decimal | None:
 
 def _cargar_tarifas_pricing() -> dict[str, dict[str, Decimal]]:
     """Combina ``DEFAULT_PRICING_PER_MILLION_USD`` con overrides de ``LLM_PRICING_JSON``."""
-    tabla = {k: dict(v) for k, v in DEFAULT_PRICING_PER_MILLION_USD.items()}
+    tabla = {k.strip().lower(): dict(v) for k, v in DEFAULT_PRICING_PER_MILLION_USD.items()}
     raw = (os.environ.get("LLM_PRICING_JSON") or "").strip()
     if not raw:
         return tabla
@@ -205,27 +205,28 @@ def _cargar_tarifas_pricing() -> dict[str, dict[str, Decimal]]:
         if t_in is None or t_out is None:
             logger.warning("Tarifa inválida en LLM_PRICING_JSON para '%s'; ignorada", modelo_key)
             continue
-        tabla[modelo_key.strip()] = {"input": t_in, "output": t_out}
+        tabla[modelo_key.strip().lower()] = {"input": t_in, "output": t_out}
     return tabla
 
 
 def _tarifa_para_modelo(modelo: str) -> dict[str, Decimal]:
     tabla = _cargar_tarifas_pricing()
-    clave = (modelo or "").strip()
-    if clave in tabla and clave != "default":
+    clave = (modelo or "").strip().lower()
+    if clave and clave != "default" and clave in tabla:
         return tabla[clave]
 
-    clave_lower = clave.lower()
-    candidatos_exactos = [k for k in tabla if k != "default" and k.lower() == clave_lower]
-    if candidatos_exactos:
-        return tabla[candidatos_exactos[0]]
-
-    prefijos = [k for k in tabla if k != "default" and clave_lower.startswith(k.lower())]
+    prefijos = [k for k in tabla if k != "default" and clave.startswith(k)]
     if prefijos:
         mejor = max(prefijos, key=len)
         return tabla[mejor]
 
     return tabla.get("default", DEFAULT_PRICING_PER_MILLION_USD["default"])
+
+
+def _tokens_no_negativos(valor: Any) -> int:
+    if isinstance(valor, bool):
+        return 0
+    return max(0, _entero(valor))
 
 
 def calcular_costo_estimado_usd(modelo: str, tokens_entrada: int, tokens_salida: int) -> Decimal:
@@ -235,8 +236,8 @@ def calcular_costo_estimado_usd(modelo: str, tokens_entrada: int, tokens_salida:
     de tarifas vía ``LLM_PRICING_JSON`` en formato ``{"modelo": {"input": "X", "output": "Y"}}``
     expresados en USD por millón de tokens.
     """
-    t_in = max(0, _entero(tokens_entrada))
-    t_out = max(0, _entero(tokens_salida))
+    t_in = _tokens_no_negativos(tokens_entrada)
+    t_out = _tokens_no_negativos(tokens_salida)
     tarifa = _tarifa_para_modelo(modelo)
     costo_in = (Decimal(t_in) * tarifa["input"]) / _MILLON
     costo_out = (Decimal(t_out) * tarifa["output"]) / _MILLON
@@ -479,7 +480,7 @@ def resetear_circuito() -> None:
 #: Si se asigna un callable, recibe por cada llamada un dict:
 #: {proveedor, uso, modelo, empresa_id, tokens_entrada, tokens_salida, latencia_ms}.
 #: Pensado para que P2-3 persista consumo por tenant sin tocar el gateway.
-registrar_consumo_hook: Optional[Callable[[dict], None]] = None
+registrar_consumo_hook: Optional[Callable[[dict[str, Any]], Any]] = None
 
 
 # ── Stream envuelto ──────────────────────────────────────────────────────────

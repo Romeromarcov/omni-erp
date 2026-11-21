@@ -23,7 +23,7 @@ Cubre:
 from __future__ import annotations
 
 import asyncio
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 import json
 from types import SimpleNamespace
@@ -120,8 +120,17 @@ class TestCalculoCostoDecimal:
         # Modelo desconocido usa tarifa fallback default (3.00 / 15.00)
         assert calcular_costo_estimado_usd("proveedor-externo-x", 1_000_000, 0) == Decimal("3.000000")
 
-        # Tokens negativos o inválidos se acotan a 0
+        # Tokens negativos, booleanos o inválidos se acotan a 0
         assert calcular_costo_estimado_usd("mi-modelo", -10, "abc") == Decimal("0.000000")  # type: ignore[arg-type]
+        assert calcular_costo_estimado_usd("mi-modelo", True, False) == Decimal("0.000000")  # type: ignore[arg-type]
+
+        # Override en LLM_PRICING_JSON con distinto casing sobrescribe la tarifa default
+        monkeypatch.setenv(
+            "LLM_PRICING_JSON",
+            json.dumps({modelo_chat.title(): {"input": "9.00", "output": "30.00"}}),
+        )
+        assert calcular_costo_estimado_usd(modelo_chat, 1_000_000, 1_000_000) == Decimal("39.000000")
+        assert calcular_costo_estimado_usd(modelo_chat.upper(), 1_000_000, 0) == Decimal("9.000000")
 
     def test_llm_pricing_json_tolera_valores_invalidos(self, monkeypatch):
         modelo_chat = llm_gateway.modelo_configurado(USO_CHAT)
@@ -514,6 +523,78 @@ class TestConsumoLLMApiYAdmin:
         assert model_admin.has_add_permission(req) is False
         assert model_admin.has_change_permission(req) is False
         assert model_admin.has_delete_permission(req) is False
+
+    def test_superusuario_omni_alcance_y_exclusiones(self, empresa_a, empresa_b):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        super_u = User.objects.create_user(
+            username="super_omni_p23",
+            password="x",
+            email="super_p23@omni.test",
+            is_active=True,
+            es_superusuario_omni=True,
+        )
+        c_a = ConsumoLLM.objects.create(
+            id_empresa=empresa_a,
+            proveedor="anthropic",
+            uso="agente",
+            modelo="m-a",
+            tokens_entrada=100,
+            tokens_salida=50,
+            costo_estimado_usd=Decimal("0.000350"),
+            latencia_ms=80,
+        )
+        c_b = ConsumoLLM.objects.create(
+            id_empresa=empresa_b,
+            proveedor="anthropic",
+            uso="chat",
+            modelo="m-b",
+            tokens_entrada=200,
+            tokens_salida=100,
+            costo_estimado_usd=Decimal("0.002100"),
+            latencia_ms=120,
+        )
+        c_global = ConsumoLLM.objects.create(
+            id_empresa=None,
+            proveedor="anthropic",
+            uso="agente",
+            modelo="m-global",
+            tokens_entrada=999,
+            tokens_salida=999,
+            costo_estimado_usd=Decimal("9.999999"),
+            latencia_ms=500,
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=super_u)
+
+        # Sin ?empresa_id= ve empresa_a y empresa_b, pero NUNCA filas globales (id_empresa=None)
+        r_list = client.get(URL_CONSUMO)
+        assert r_list.status_code == 200
+        ids = {row["id_consumo"] for row in r_list.json()["results"]}
+        assert ids == {str(c_a.pk), str(c_b.pk)}
+        assert str(c_global.pk) not in ids
+
+        r_res = client.get(URL_RESUMEN)
+        assert r_res.status_code == 200
+        assert r_res.json()["llamadas"] == 2
+        assert r_res.json()["costo_total_usd"] == "0.002450"
+
+        # Con ?empresa_id={empresa_b.pk} filtra estrictamente a empresa_b
+        r_list_b = client.get(f"{URL_CONSUMO}?empresa_id={empresa_b.pk}")
+        assert r_list_b.status_code == 200
+        assert [row["id_consumo"] for row in r_list_b.json()["results"]] == [str(c_b.pk)]
+
+        r_res_b = client.get(f"{URL_RESUMEN}?empresa_id={empresa_b.pk}")
+        assert r_res_b.status_code == 200
+        assert r_res_b.json()["llamadas"] == 1
+        assert r_res_b.json()["costo_total_usd"] == "0.002100"
+
+        # Con ?empresa_id={uuid_inexistente} devuelve 403
+        inexistente = uuid.uuid4()
+        assert client.get(f"{URL_CONSUMO}?empresa_id={inexistente}").status_code == 403
+        assert client.get(f"{URL_RESUMEN}?empresa_id={inexistente}").status_code == 403
 
 
 # ── 6. Paridad MCP (agentes_resumen_consumo_llm) ──────────────────────────────
