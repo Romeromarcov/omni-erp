@@ -1,0 +1,4 @@
+# Scanner SAST CLI aislado del venv de runtime/tests porque semgrep==1.97.0
+# fija internamente opentelemetry-api~=1.25.0 (vulnerable: GHSA-xcq7-p3pf-p88h,
+# GHSA-mf5v-w3w3-f6cg) incompatible con opentelemetry-api==1.45.2 de requirements.txt.
+semgrep==1.97.0; sys_platform != 'win32'

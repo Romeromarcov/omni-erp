@@ -4,7 +4,9 @@
 
 # ── Análisis estático de seguridad ──
 bandit==1.9.4
-semgrep==1.97.0; sys_platform != 'win32'
+# semgrep==1.97.0 vive aislado en requirements-semgrep.txt (usado por CI en un venv
+# dedicado) porque fija internamente opentelemetry-api~=1.25.0, incompatible con
+# opentelemetry-api==1.45.2 de requirements.txt.
 
 # ── Tipos ──
 mypy==1.13.0
