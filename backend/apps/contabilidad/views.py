@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import Prefetch, QuerySet
 from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -259,8 +259,12 @@ class AsientoContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.M
 
     def get_queryset(self) -> QuerySet[AsientoContable]:
         # R-CODE-1
-        return AsientoContable.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
-            "id_diario", "asiento_revertido", "contra_asiento"
+        return (
+            AsientoContable.objects.filter(id_empresa__in=_empresas(self.request))
+            .select_related("id_diario", "asiento_revertido", "contra_asiento")
+            .prefetch_related(
+                Prefetch("detalleasiento_set", queryset=DetalleAsiento.objects.select_related("id_contacto"))
+            )
         )
 
     @swagger_auto_schema(request_body=no_body, responses={200: AsientoContableSerializer})

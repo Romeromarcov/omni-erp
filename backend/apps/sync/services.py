@@ -42,24 +42,13 @@ class VentaPosError(Exception):
 
 
 def _permitir_stock_negativo_pos(empresa) -> bool:
-    """Lee ``permitir_stock_negativo_pos`` de ParametroSistema (override empresa > global)."""
-    from apps.configuracion_motor.models import ParametroSistema
+    """Lee ``permitir_stock_negativo_pos`` de ParametroSistema (override empresa > global, cacheado)."""
+    from apps.configuracion_motor.services import obtener_parametro
 
-    param = (
-        ParametroSistema.objects.filter(
-            id_empresa=empresa,
-            codigo_parametro="permitir_stock_negativo_pos",
-            activo=True,
-        ).first()
-        or ParametroSistema.objects.filter(
-            id_empresa__isnull=True,
-            codigo_parametro="permitir_stock_negativo_pos",
-            activo=True,
-        ).first()
-    )
-    if param is None:
+    valor = obtener_parametro("permitir_stock_negativo_pos", empresa=empresa, incluir_global=True)
+    if valor is None:
         return False
-    return str(param.valor_parametro).strip().lower() in _TRUTHY_PARAM
+    return valor.lower() in _TRUTHY_PARAM
 
 
 def _decimal(valor, campo: str) -> Decimal:

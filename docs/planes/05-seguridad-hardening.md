@@ -7,7 +7,7 @@
 
 | Campo        | Valor                                  |
 |--------------|----------------------------------------|
-| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1..P2-3/P2-5 ✅, P1-7/P2-4 parciales; P2-6/P3 abiertos |
+| **Estado**   | EN CURSO — P0-1 (RLS infra ✅, activación bloqueada por [CTF-012](../ctf/CTF-012.md)), P1-1..P1-6/P2-1..P2-5 ✅, P1-7 parcial; P2-6/P3 abiertos |
 | **Fecha**    | 2026-06-07 (estado actualizado 2026-11-17 contra `develop @ ff2bdb6`) |
 | **Esfuerzo** | ~3–4 semanas (repartibles en paralelo) |
 | **Owner**    | equipo-backend / equipo-agentes / devops |
@@ -38,7 +38,7 @@ Leyenda: ✅ implementado · ⚠️ parcial · ❌ falta.
 | 6 | RAG | ❌ | Sin pgvector / embeddings / vector store / retrieval (**P3-2 abierto**) |
 | 7 | Frontend comprimido sin source maps | ✅ | Vite sin `build.sourcemap`, bundle minificado, gzip nginx |
 | 8 | Rate limiting | ✅ | Nginx (`login 5/m`, `api 60/m`) + `django-ratelimit` en login + DRF throttling global y `EscrituraRateThrottle` (P1-1, #84) |
-| 9 | Cache | ⚠️ | `CACHES["default"]` con Redis DB 1 separado de Celery DB 0, fail-closed (`config/caches.py`, P2-4 #106). **Falta** cachear consultas calientes y barrido N+1 |
+| 9 | Cache | ✅ | `CACHES["default"]` con Redis DB 1 separado de Celery DB 0, fail-closed (`config/caches.py`, PR #106) + caché multi-tenant versionada (`apps/core/cache_utils.py`), BFS+caché `get_empresas_visible`, catálogos/tasas `finanzas` y `ParametroSistema` con invalidación por signals, y barrido N+1 O(1) (**P2-4 ✅**, `tests/integration/test_p24_cache_y_n1.py`) |
 | 10 | Escalabilidad | ✅ | uvicorn workers, Celery `concurrency=4`, stateless, Docker |
 | 11 | Monitoreo | ✅ | Sentry (`send_default_pii=False`), logging estructurado, healthchecks, `RegistroAuditoria` |
 | 12 | Sin API keys/secretos en código | ✅ | `SECRET_KEY` obligatorio desde env; todo desde env; `.env` en `.gitignore` |
@@ -262,30 +262,19 @@ modelos hardcodeados.
 - Frontend (`agentesService.ts`, `queryKeys.ts`, `AgentesPage.tsx`, `schema.d.ts`): tarjeta **"Consumo LLM (Tokens y Costo USD)"** con formateo `decimal.js` sin flotantes JS.
 - Tests en `tests/integration/test_llm_consumo_persistencia.py`, `tests/unit/test_llm_gateway.py`, `frontend/src/__tests__/agentesService.test.ts` y `AgentesPage.test.tsx`.
 
-### P2-4 · `CACHES` de Django con Redis (#9) — `🟡 PARCIAL` (PR #106; falta cacheo consultas/N+1)
-**Por qué:** Redis ya está para Celery; falta cachear queries ORM caras y reducir N+1.
+### P2-4 · `CACHES` de Django con Redis (#9) — `✅` (PR #106 + cierre P2-4 cacheo/N+1)
+**Por qué:** aprovechar Redis (separado de Celery) para cachear consultas calientes con aislamiento estricto multi-tenant y eliminar N+1 en ViewSets de mayor tráfico.
+**DoD:** invalidación selectiva por versión sin `cache.clear()` global en runtime; cero N+1 en listados críticos; aislamiento tenant garantizado.
 
-**Tareas pendientes:** cachear catálogos/consultas frecuentes usando `CACHES["default"]`; revisar
-N+1 con `select_related`/`prefetch_related` en ViewSets de mayor tráfico.
-**DoD:** invalidación correcta; sin N+1 en endpoints calientes.
-**Esfuerzo restante:** ~1 día. **Owner:** equipo-backend.
-
-#### Estado — `🟡 PARCIAL: CACHES hecho` (PR #106, `feature/p2-4-redis-p2-5-csp`)
-`CACHES["default"]` configurado con el backend **nativo** de Django
-(`django.core.cache.backends.redis.RedisCache`, sin necesidad del paquete
-`django-redis`) vía `config/caches.py`: con `REDIS_URL` usa Redis en una **DB
-distinta** de la del broker Celery (`REDIS_CACHE_DB`, default 1 vs. DB 0;
-colisión → `ImproperlyConfigured` fail-closed, porque `cache.clear()` hace
-`FLUSHDB`), `KEY_PREFIX` por entorno (`CACHE_KEY_PREFIX`, default
-`omni:<RAILWAY_ENVIRONMENT|dev>`); sin `REDIS_URL` cae a LocMem (dev local).
-**Bajo pytest se fuerza LocMem siempre** (CI exporta `REDIS_URL` sin servicio
-Redis en los jobs de pytest; determinismo de throttle/SEC-07/idempotencia).
-Los jobs CI con servidor vivo (e2e, contract) ahora levantan un service
-`redis:7-alpine` y ejercitan el path real. Con esto, rate-limiting SEC-07,
-throttling DRF (P1-1) y el circuit breaker del gateway LLM (P2-1)
-comparten estado entre workers en producción. Tests:
-`tests/integration/test_p24_caches_redis.py`. **Pendiente de P2-4:** cachear
-catálogos/consultas frecuentes + barrido N+1.
+#### Estado — `🟢 HECHO` (`config/caches.py` + `cache_utils` + cacheo/signals + barrido N+1)
+1. **Backend Redis fail-closed (PR #106):** `CACHES["default"]` configurado con el backend **nativo** de Django (`django.core.cache.backends.redis.RedisCache`) vía `config/caches.py`: con `REDIS_URL` usa Redis en DB distinta de Celery (`REDIS_CACHE_DB`, default 1 vs. DB 0; colisión → `ImproperlyConfigured` fail-closed), `KEY_PREFIX` por entorno (`omni:<RAILWAY_ENVIRONMENT|dev>`), LocMem en dev/pytest y `redis:7-alpine` en jobs CI con servidor vivo.
+2. **Capa multi-tenant versionada (`apps/core/cache_utils.py`):** `get_cached_or_set`, `bump_namespace_version`, `bump_namespaces`, `build_cache_key`, aislamiento estricto por `tenant_key` (`empresa_id` o `"global"` explícito, `R-CODE-1`), invalidación selectiva por versión (`incr`/`add`) y bloqueo de `QuerySet`/instancias ORM.
+3. **Consultas calientes e invalidación por signals:**
+   - `get_empresas_visible` + `get_all_subsidiarias` (`apps/core/viewsets.py`, `apps/core/signals.py`): BFS por niveles (1 query por profundidad en lugar de N+1 recursivo) y doble capa L1 (`ContextVar`) + L2 (`CACHES["default"]`) sobre tuplas de UUIDs con guarda RLS fail-closed e invalidación selectiva vía signals en `Empresa`, `Usuarios` y `Usuarios.empresas.through`.
+   - `apps/finanzas` (`cache.py`, `signals.py`, `apps.py`, `services.py`, `views.py`, `views_extra/tasa_oficial_bcv.py`, `mcp.py`): cacheo por empresa/global preservando `Decimal` (`R-CODE-4`) para `TasaCambio`, `TasaCambioOficialBCVView`, `Moneda` (`obtener_moneda_por_iso`, `MonedaViewSet.activas` / `MonedaEmpresaActiva`) y `MetodoPago` (`finanzas_get_metodos_pago`, `obtener_metodos_pago_empresa_nombres`), con invalidación en `pre_save`/`post_save`/`post_delete`/`m2m_changed`.
+   - `apps/configuracion_motor` (`services.py`, `signals.py`, `apps.py`) y consumidores (`cxc/config.py`, `cxc/api/fraccionamiento.py`, `cuentas_por_cobrar/services_cartera_provider.py`, `nomina/services.py`, `sync/services.py`): lectura cacheada multi-tenant `obtener_parametro` con invalidación automática sobre `ParametroSistema`.
+4. **Barrido N+1 O(1) en ViewSets:** `.select_related(...)`, `.prefetch_related(...)`, anotaciones `Count` y batch serializers en `finanzas` (`views.py`, `serializers.py`, `models.py`), `ventas` (`views.py`, `serializers.py` con `PedidoListSerializer`), `inventario/views.py`, `compras/views.py` y `contabilidad/views.py`, verificando `O(1)` (`N=2` vs `N=8`) con `django_assert_num_queries` / `CaptureQueriesContext`.
+5. **Tests:** `tests/integration/test_p24_caches_redis.py` y `tests/integration/test_p24_cache_y_n1.py`.
 
 ### P2-5 · CSP a nivel Django (R14, #3) — `✅` (PR #106)
 **Por qué:** defensa en profundidad si alguna vez se sirve HTML fuera de nginx.

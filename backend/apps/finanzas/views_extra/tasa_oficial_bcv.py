@@ -4,8 +4,8 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.finanzas.models import Moneda, TasaCambio
-from apps.finanzas.serializers import TasaCambioSerializer
+from apps.finanzas.cache import obtener_tasa_oficial_bcv_payload
+from apps.finanzas.models import Moneda
 
 
 class TasaCambioOficialBCVView(APIView):
@@ -51,7 +51,9 @@ class TasaCambioOficialBCVView(APIView):
             from apps.core.models import Empresa  # Ajusta el import si es necesario
 
             try:
-                empresa = get_empresas_visible(request.user).get(id_empresa=id_empresa)
+                empresa = (
+                    get_empresas_visible(request.user).select_related("id_moneda_base").get(id_empresa=id_empresa)
+                )
             except (Empresa.DoesNotExist, DjangoValidationError, ValueError, TypeError):
                 return Response({"detail": "Empresa o moneda base no encontrada."}, status=404)
             # FIX: el campo del modelo es `id_moneda_base` (no `moneda_base`);
@@ -72,17 +74,7 @@ class TasaCambioOficialBCVView(APIView):
             except Moneda.DoesNotExist:
                 return Response({"detail": "Moneda no encontrada."}, status=404)
 
-        tasa = (
-            TasaCambio.objects.filter(
-                fecha_tasa=fecha,
-                id_moneda_origen=origen,
-                id_moneda_destino=destino,
-                tipo_tasa="OFICIAL_BCV",
-                id_empresa=None,
-            )
-            .order_by("-fecha_tasa")
-            .first()
-        )
-        if not tasa:
+        payload = obtener_tasa_oficial_bcv_payload(origen.id_moneda, destino.id_moneda, fecha)
+        if not payload:
             return Response({"detail": "No hay tasa oficial BCV registrada para esa fecha."}, status=404)
-        return Response(TasaCambioSerializer(tasa).data)
+        return Response(payload)

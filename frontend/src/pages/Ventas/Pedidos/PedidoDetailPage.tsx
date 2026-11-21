@@ -119,7 +119,7 @@ const PedidoDetailPage: React.FC = () => {
     enabled: !!id_pedido,
   });
 
-  const { data: pagos = [] } = useQuery<PagoFinanzas[]>({
+  const { data: pagos = [], isLoading: pagosLoading } = useQuery<PagoFinanzas[]>({
     queryKey: pagosKeys.porDocumento('PEDIDO', id_pedido ?? ''),
     queryFn: () => pagosService.getPagosPedido(id_pedido!),
     enabled: !!id_pedido,
@@ -335,7 +335,11 @@ const PedidoDetailPage: React.FC = () => {
             <Divider sx={{ mb: 2 }} />
             {pagoSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pagoSuccess}</Alert>}
             {pagoError && <Alert severity="error" sx={{ mb: 2 }}>{pagoError}</Alert>}
-            {pagos && pagos.length > 0 ? (
+            {pagosLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : pagos && pagos.length > 0 ? (
               <List>
                 {pagos.map(pago => (
                   <ListItem key={pago.id_pago} divider>

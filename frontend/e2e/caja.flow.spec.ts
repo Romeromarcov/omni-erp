@@ -61,7 +61,7 @@ test.describe('Caja: pago de pedido → movimiento de caja', () => {
       await expect(
         page.getByRole('heading', { name: `Pedido ${pedido.numeroPedido}` }),
       ).toBeVisible();
-      await expect(page.getByText('Pagos')).toBeVisible();
+      await expect(page.getByText('Pagos', { exact: true })).toBeVisible();
       // El listado muestra "<método> - <moneda> <monto> - Tasa: ...". Gap UI
       // documentado en el PR: hoy renderiza los UUID del método/moneda (el
       // serializer no expone `id_metodo_pago_obj`), así que se localiza el

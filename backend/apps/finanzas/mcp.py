@@ -140,25 +140,21 @@ def finanzas_get_metodos_pago(
     Returns:
         Lista de métodos con id, nombre, tipo_metodo.
     """
-    from apps.finanzas.models import MetodoPago  # noqa: PLC0415
+    from apps.finanzas.cache import normalizar_empresa_uuid, obtener_metodos_pago_mcp  # noqa: PLC0415
 
     # finanzas_metodo_pago tiene null_visible=True: bajo rls_tenant_context ve filas globales (NULL) y del tenant.
     with _ctx(capability_token, f"{_SCOPE}:read") as ctx:
-        metodos = MetodoPago.objects.filter(activo=True).order_by("nombre_metodo")
+        tenant_uuid = normalizar_empresa_uuid(ctx["tenant_id"])
+        if tenant_uuid is None:
+            raise ValueError("tenant_id inválido en contexto MCP.")
+        metodos = obtener_metodos_pago_mcp(tenant_uuid)
         logger.info(
             "finanzas_get_metodos_pago | actor=%s | tenant=%s | count=%d",
             ctx["actor_id"],
             ctx["tenant_id"],
             len(metodos),
         )
-        return [
-            {
-                "id_metodo_pago": str(m.id_metodo_pago),
-                "nombre_metodo": m.nombre_metodo,
-                "tipo_metodo": m.tipo_metodo,
-            }
-            for m in metodos
-        ]
+        return metodos
 
 
 def finanzas_pagos_terceros_pendientes(

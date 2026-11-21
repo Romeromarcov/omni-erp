@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
+from django.db.models import Prefetch
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -77,7 +78,12 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return Pedido.objects.filter(id_empresa__in=empresas_visibles).order_by("-fecha_pedido", "-fecha_creacion")
+        return (
+            Pedido.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente", "id_vendedor")
+            .prefetch_related(Prefetch("detalles", queryset=DetallePedido.objects.select_related("id_producto")))
+            .order_by("-fecha_pedido", "-fecha_creacion")
+        )
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -184,7 +190,11 @@ class NotaVentaViewSet(
 
     def get_queryset(self):
         # R-CODE-1
-        qs = NotaVenta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_creacion")
+        qs = (
+            NotaVenta.objects.filter(id_empresa__in=_empresas(self.request))
+            .select_related("id_cliente")
+            .order_by("-fecha_creacion")
+        )
         # POS devoluciones (1.G): búsqueda de la venta original por número exacto.
         numero = self.request.query_params.get("numero_nota")
         if numero:
@@ -484,8 +494,10 @@ class FacturaFiscalViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.Mode
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return FacturaFiscal.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_emision", "-fecha_creacion"
+        return (
+            FacturaFiscal.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_emision", "-fecha_creacion")
         )
 
     @action(detail=True, methods=["get"], url_path="pdf")
@@ -528,8 +540,10 @@ class NotaCreditoVentaViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.M
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return NotaCreditoVenta.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_emision", "-fecha_creacion"
+        return (
+            NotaCreditoVenta.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_emision", "-fecha_creacion")
         )
 
 
@@ -554,8 +568,10 @@ class DevolucionVentaViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.Mo
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return DevolucionVenta.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_devolucion", "-fecha_creacion"
+        return (
+            DevolucionVenta.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_devolucion", "-fecha_creacion")
         )
 
 
@@ -580,8 +596,10 @@ class CotizacionViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelVi
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return Cotizacion.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_cotizacion", "-fecha_creacion"
+        return (
+            Cotizacion.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_cotizacion", "-fecha_creacion")
         )
 
     def perform_create(self, serializer):
@@ -639,8 +657,10 @@ class NotaCreditoFiscalViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return NotaCreditoFiscal.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_emision", "-fecha_creacion"
+        return (
+            NotaCreditoFiscal.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_emision", "-fecha_creacion")
         )
 
 
