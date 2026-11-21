@@ -4,17 +4,21 @@ from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import logging
 from typing import Any
 import uuid
 
-from django.db import transaction
+from django.db import DEFAULT_DB_ALIAS, connections, models, transaction
+from django.db.models import Avg, Count, Sum, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
+from apps.core import llm_gateway
 from apps.core.exceptions import DomainError
+from apps.core.models import Empresa
 
-from .models import EjecucionAgente, PrediccionAgente
+from .models import ConsumoLLM, EjecucionAgente, PrediccionAgente
 
 logger = logging.getLogger("agentes")
 
@@ -164,3 +168,151 @@ def encolar_ejecucion_agente(
 
     ejecucion.refresh_from_db()
     return ejecucion
+
+
+# ── Persistencia y resumen de consumo LLM (Plan 05 P2-3) ──────────────────────
+
+_COSTO_QUANT = Decimal("0.000001")
+
+
+def _entero_no_negativo(valor: Any) -> int:
+    if isinstance(valor, bool):
+        return 0
+    try:
+        return max(0, int(valor))
+    except (TypeError, ValueError):
+        return 0
+
+
+def persistir_consumo_llm(evento: dict[str, Any]) -> ConsumoLLM | None:
+    """
+    Persiste un evento de consumo emitido por ``apps.core.llm_gateway`` en ``ConsumoLLM``.
+
+    Es fail-safe: valida UUID de ``empresa_id``, respeta rollbacks pendientes y usa un
+    savepoint ``transaction.atomic()`` para nunca romper llamadas LLM ni envenenar
+    transacciones externas ante fallos de BD o tests unitarios sin ``django_db``.
+    """
+    if not isinstance(evento, dict):
+        return None
+
+    empresa_raw = evento.get("empresa_id")
+    empresa_uuid: uuid.UUID | None = None
+    if empresa_raw is not None and str(empresa_raw).strip():
+        try:
+            empresa_uuid = uuid.UUID(str(empresa_raw).strip())
+        except (ValueError, TypeError):
+            logger.debug("persistir_consumo_llm: empresa_id inválido (%r); omitido", empresa_raw)
+            return None
+
+    conn = connections[DEFAULT_DB_ALIAS]
+    if getattr(conn, "needs_rollback", False):
+        logger.warning("persistir_consumo_llm: transacción en rollback pendiente; consumo no persistido")
+        return None
+
+    proveedor = str(evento.get("proveedor") or "desconocido").strip()[:50] or "desconocido"
+    uso = str(evento.get("uso") or "agente").strip()[:30] or "agente"
+    modelo = str(evento.get("modelo") or "desconocido").strip()[:100] or "desconocido"
+    tokens_entrada = _entero_no_negativo(evento.get("tokens_entrada"))
+    tokens_salida = _entero_no_negativo(evento.get("tokens_salida"))
+    latencia_ms = _entero_no_negativo(evento.get("latencia_ms"))
+    costo_usd = llm_gateway.calcular_costo_estimado_usd(modelo, tokens_entrada, tokens_salida)
+
+    try:
+        with transaction.atomic():
+            if empresa_uuid is not None and not Empresa.objects.filter(pk=empresa_uuid).exists():
+                logger.warning("persistir_consumo_llm: empresa %s no existe; consumo no persistido", empresa_uuid)
+                return None
+            return ConsumoLLM.objects.create(
+                id_empresa_id=empresa_uuid,
+                proveedor=proveedor,
+                uso=uso,
+                modelo=modelo,
+                tokens_entrada=tokens_entrada,
+                tokens_salida=tokens_salida,
+                costo_estimado_usd=costo_usd,
+                latencia_ms=latencia_ms,
+            )
+    except Exception as exc:  # noqa: BLE001 — fail-safe: no tumbar llamadas LLM ni transacciones padre
+        if "Database access not allowed" in str(exc):
+            logger.debug("persistir_consumo_llm omitido en test sin BD")
+        else:
+            logger.warning("No se pudo persistir ConsumoLLM (%s); el consumo quedó solo en logs", type(exc).__name__)
+        return None
+
+
+def registrar_hook_consumo_llm(*, force: bool = True) -> None:
+    """Conecta ``persistir_consumo_llm`` en ``llm_gateway.registrar_consumo_hook`` (idempotente)."""
+    if force or llm_gateway.registrar_consumo_hook is None:
+        llm_gateway.registrar_consumo_hook = persistir_consumo_llm
+
+
+def _formatear_usd(valor: Decimal | None) -> str:
+    cuantizado = Decimal(valor or 0).quantize(_COSTO_QUANT, rounding=ROUND_HALF_UP)
+    return f"{cuantizado:.6f}"
+
+
+def calcular_resumen_consumo_llm(qs) -> dict[str, Any]:
+    """Agrega métricas de consumo LLM (totales y desglose por modelo/uso) sobre ``qs``."""
+    zero_dec = Value(Decimal("0.000000"), output_field=models.DecimalField(max_digits=16, decimal_places=6))
+    totales = qs.aggregate(
+        llamadas=Count("pk"),
+        tokens_entrada_total=Coalesce(Sum("tokens_entrada"), 0),
+        tokens_salida_total=Coalesce(Sum("tokens_salida"), 0),
+        costo_total_usd=Coalesce(Sum("costo_estimado_usd"), zero_dec),
+        latencia_promedio=Avg("latencia_ms"),
+    )
+    latencia_raw = totales["latencia_promedio"]
+    latencia_promedio_ms = (
+        int(Decimal(str(latencia_raw)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        if latencia_raw is not None
+        else 0
+    )
+
+    por_modelo_rows = (
+        qs.values("modelo")
+        .annotate(
+            llamadas=Count("pk"),
+            tokens_entrada_total=Coalesce(Sum("tokens_entrada"), 0),
+            tokens_salida_total=Coalesce(Sum("tokens_salida"), 0),
+            costo_total_usd=Coalesce(Sum("costo_estimado_usd"), zero_dec),
+        )
+        .order_by("-costo_total_usd", "-llamadas", "modelo")
+    )
+    por_uso_rows = (
+        qs.values("uso")
+        .annotate(
+            llamadas=Count("pk"),
+            tokens_entrada_total=Coalesce(Sum("tokens_entrada"), 0),
+            tokens_salida_total=Coalesce(Sum("tokens_salida"), 0),
+            costo_total_usd=Coalesce(Sum("costo_estimado_usd"), zero_dec),
+        )
+        .order_by("-costo_total_usd", "-llamadas", "uso")
+    )
+
+    return {
+        "llamadas": int(totales["llamadas"] or 0),
+        "tokens_entrada_total": int(totales["tokens_entrada_total"] or 0),
+        "tokens_salida_total": int(totales["tokens_salida_total"] or 0),
+        "costo_total_usd": _formatear_usd(totales["costo_total_usd"]),
+        "latencia_promedio_ms": latencia_promedio_ms,
+        "por_modelo": [
+            {
+                "modelo": row["modelo"],
+                "llamadas": int(row["llamadas"] or 0),
+                "tokens_entrada_total": int(row["tokens_entrada_total"] or 0),
+                "tokens_salida_total": int(row["tokens_salida_total"] or 0),
+                "costo_total_usd": _formatear_usd(row["costo_total_usd"]),
+            }
+            for row in por_modelo_rows
+        ],
+        "por_uso": [
+            {
+                "uso": row["uso"],
+                "llamadas": int(row["llamadas"] or 0),
+                "tokens_entrada_total": int(row["tokens_entrada_total"] or 0),
+                "tokens_salida_total": int(row["tokens_salida_total"] or 0),
+                "costo_total_usd": _formatear_usd(row["costo_total_usd"]),
+            }
+            for row in por_uso_rows
+        ],
+    }

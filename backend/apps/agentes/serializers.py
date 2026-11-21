@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from .models import EjecucionAgente, PrediccionAgente
+from .models import ConsumoLLM, EjecucionAgente, PrediccionAgente
 
 
 class PrediccionAgenteSerializer(serializers.ModelSerializer):
@@ -101,3 +101,70 @@ class ClasificarGastoInputSerializer(serializers.Serializer):
 
     gasto_id = serializers.UUIDField(required=True)
     aplicar = serializers.BooleanField(required=False, default=False)
+
+
+class ConsumoLLMSerializer(serializers.ModelSerializer):
+    """Serializer de solo lectura para registros de consumo y costo LLM (Plan 05 P2-3)."""
+
+    class Meta:
+        model = ConsumoLLM
+        fields = [
+            "id_consumo",
+            "id_empresa",
+            "proveedor",
+            "uso",
+            "modelo",
+            "tokens_entrada",
+            "tokens_salida",
+            "costo_estimado_usd",
+            "latencia_ms",
+            "creado_en",
+        ]
+        read_only_fields = fields
+
+
+class ConsumoLLMPorModeloSerializer(serializers.Serializer):
+    """Desglose agregado de consumo LLM por modelo."""
+
+    modelo = serializers.CharField(read_only=True)
+    llamadas = serializers.IntegerField(read_only=True)
+    tokens_entrada_total = serializers.IntegerField(read_only=True)
+    tokens_salida_total = serializers.IntegerField(read_only=True)
+    costo_total_usd = serializers.DecimalField(
+        max_digits=16,
+        decimal_places=6,
+        coerce_to_string=True,
+        read_only=True,
+    )
+
+
+class ConsumoLLMPorUsoSerializer(serializers.Serializer):
+    """Desglose agregado de consumo LLM por uso."""
+
+    uso = serializers.CharField(read_only=True)
+    llamadas = serializers.IntegerField(read_only=True)
+    tokens_entrada_total = serializers.IntegerField(read_only=True)
+    tokens_salida_total = serializers.IntegerField(read_only=True)
+    costo_total_usd = serializers.DecimalField(
+        max_digits=16,
+        decimal_places=6,
+        coerce_to_string=True,
+        read_only=True,
+    )
+
+
+class ConsumoLLMResumenSerializer(serializers.Serializer):
+    """Resumen agregado de consumo LLM (totales y desglose por modelo/uso)."""
+
+    llamadas = serializers.IntegerField(read_only=True)
+    tokens_entrada_total = serializers.IntegerField(read_only=True)
+    tokens_salida_total = serializers.IntegerField(read_only=True)
+    costo_total_usd = serializers.DecimalField(
+        max_digits=16,
+        decimal_places=6,
+        coerce_to_string=True,
+        read_only=True,
+    )
+    latencia_promedio_ms = serializers.IntegerField(read_only=True)
+    por_modelo = ConsumoLLMPorModeloSerializer(many=True, read_only=True)
+    por_uso = ConsumoLLMPorUsoSerializer(many=True, read_only=True)

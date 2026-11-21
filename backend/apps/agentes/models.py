@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -184,3 +186,46 @@ class EjecucionAgente(models.Model):
 
     def __str__(self) -> str:
         return f"{self.agente} [{self.estado}] ({self.id_ejecucion})"
+
+
+class ConsumoLLM(models.Model):
+    """
+    Registro persistente e inmutable del consumo de tokens y costo estimado USD
+    por tenant en llamadas al gateway LLM (Plan 05 P2-3).
+    """
+
+    id_consumo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="consumos_llm",
+        db_index=True,
+    )
+    proveedor = models.CharField(max_length=50, db_index=True)
+    uso = models.CharField(max_length=30, db_index=True)
+    modelo = models.CharField(max_length=100, db_index=True)
+    tokens_entrada = models.PositiveIntegerField(default=0)
+    tokens_salida = models.PositiveIntegerField(default=0)
+    costo_estimado_usd = models.DecimalField(
+        max_digits=14,
+        decimal_places=6,
+        default=Decimal("0.000000"),
+    )
+    latencia_ms = models.PositiveIntegerField(default=0)
+    creado_en = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "agentes_consumo_llm"
+        verbose_name = "Consumo LLM"
+        verbose_name_plural = "Consumos LLM"
+        ordering = ["-creado_en"]
+        indexes = [
+            models.Index(fields=["id_empresa", "-creado_en"]),
+            models.Index(fields=["id_empresa", "uso", "modelo"]),
+        ]
+
+    def __str__(self) -> str:
+        emp = self.id_empresa_id or "global"
+        return f"{self.proveedor}/{self.modelo} [{self.uso}] @ {emp} (${self.costo_estimado_usd})"

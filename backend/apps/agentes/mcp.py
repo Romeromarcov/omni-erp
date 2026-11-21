@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import date
 import logging
+import re
 from typing import Any
 import uuid
 
@@ -13,6 +15,7 @@ from apps.core.exceptions import sanitize_mcp_error
 logger = logging.getLogger("omni.mcp.agentes")
 
 _SCOPE = "agentes"
+_FECHA_ISO_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 @contextmanager
@@ -28,6 +31,23 @@ def _parse_uuid(valor: str, campo: str) -> uuid.UUID:
     if "\x00" in raw:
         raise ValueError(f"{campo} inválido.")
     return uuid.UUID(raw.strip())
+
+
+def _parse_fecha(valor: str | None, campo: str) -> date | None:
+    if valor is None:
+        return None
+    raw = str(valor)
+    if "\x00" in raw:
+        raise ValueError(f"{campo} inválido.")
+    limpio = raw.strip()
+    if not limpio:
+        return None
+    if not _FECHA_ISO_RE.match(limpio):
+        raise ValueError(f"Formato de fecha inválido para '{campo}'. Use YYYY-MM-DD.")
+    try:
+        return date.fromisoformat(limpio)
+    except ValueError as exc:
+        raise ValueError(f"Fecha inválida para '{campo}'.") from exc
 
 
 def agentes_disparar_analisis(
@@ -214,6 +234,67 @@ def agentes_listar_ejecuciones(
         }
 
 
+def agentes_resumen_consumo_llm(
+    capability_token: str,
+    empresa_id: str,
+    fecha_desde: str | None = None,
+    fecha_hasta: str | None = None,
+    modelo: str | None = None,
+    uso: str | None = None,
+) -> dict[str, Any]:
+    """
+    Consulta el resumen agregado de consumo de tokens y costo estimado USD LLM de la empresa.
+
+    Scope requerido: ``agentes:read``
+    """
+    from apps.agentes.models import ConsumoLLM  # noqa: PLC0415
+    from apps.agentes.services import calcular_resumen_consumo_llm  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            empresa_uuid = _parse_uuid(str(ctx["empresa_id"]), "empresa_id")
+            f_desde = _parse_fecha(fecha_desde, "fecha_desde")
+            f_hasta = _parse_fecha(fecha_hasta, "fecha_hasta")
+        except (ValueError, TypeError) as exc:
+            return {"error": str(exc)}
+
+        if f_desde is not None and f_hasta is not None and f_desde > f_hasta:
+            return {"error": "'fecha_desde' no puede ser posterior a 'fecha_hasta'."}
+        if (modelo and "\x00" in str(modelo)) or (uso and "\x00" in str(uso)):
+            return {"error": "Parámetro de filtro inválido."}
+
+        try:
+            qs = ConsumoLLM.objects.filter(
+                id_empresa__isnull=False,
+                id_empresa_id=empresa_uuid,
+            )
+            if f_desde is not None:
+                qs = qs.filter(creado_en__date__gte=f_desde)
+            if f_hasta is not None:
+                qs = qs.filter(creado_en__date__lte=f_hasta)
+            if modelo and str(modelo).strip():
+                qs = qs.filter(modelo=str(modelo).strip())
+            if uso and str(uso).strip():
+                qs = qs.filter(uso=str(uso).strip())
+            resumen = calcular_resumen_consumo_llm(qs)
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="agentes_resumen_consumo_llm",
+                )
+            }
+
+        logger.info(
+            "agentes_resumen_consumo_llm | actor=%s | tenant=%s | llamadas=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            resumen["llamadas"],
+        )
+        return resumen
+
+
 MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": agentes_disparar_analisis,
@@ -228,6 +309,11 @@ MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": agentes_listar_ejecuciones,
         "name": "agentes_listar_ejecuciones",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": agentes_resumen_consumo_llm,
+        "name": "agentes_resumen_consumo_llm",
         "scope": f"{_SCOPE}:read",
     },
 ]

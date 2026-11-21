@@ -577,6 +577,220 @@
             },
             "parameters": []
         },
+        "/agentes/consumo-llm/": {
+            "get": {
+                "operationId": "agentes_consumo-llm_list",
+                "summary": "Consulta de solo lectura del consumo de tokens y costos LLM por tenant (Plan 05 P2-3).",
+                "description": "GET /api/agentes/consumo-llm/         — listado histórico paginado\nGET /api/agentes/consumo-llm/{id}/    — detalle de evento\nGET /api/agentes/consumo-llm/resumen/ — resumen agregado (totales + por_modelo + por_uso)",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "modelo",
+                        "in": "query",
+                        "description": "Filtrar por identificador exacto del modelo LLM.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "uso",
+                        "in": "query",
+                        "description": "Filtrar por tipo de uso (agente, chat, analisis).",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "fecha_desde",
+                        "in": "query",
+                        "description": "Fecha inicial inclusive (YYYY-MM-DD).",
+                        "required": false,
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "fecha_hasta",
+                        "in": "query",
+                        "description": "Fecha final inclusive (YYYY-MM-DD).",
+                        "required": false,
+                        "type": "string",
+                        "format": "date"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ConsumoLLM"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "agentes"
+                ]
+            },
+            "parameters": []
+        },
+        "/agentes/consumo-llm/resumen/": {
+            "get": {
+                "operationId": "agentes_consumo-llm_resumen",
+                "summary": "GET /api/agentes/consumo-llm/resumen/",
+                "description": "Retorna totales agregados (llamadas, tokens in/out, costo_total_usd,\nlatencia_promedio_ms) y desglose ``por_modelo`` y ``por_uso``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "modelo",
+                        "in": "query",
+                        "description": "Filtrar por identificador exacto del modelo LLM.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "uso",
+                        "in": "query",
+                        "description": "Filtrar por tipo de uso (agente, chat, analisis).",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "fecha_desde",
+                        "in": "query",
+                        "description": "Fecha inicial inclusive (YYYY-MM-DD).",
+                        "required": false,
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "fecha_hasta",
+                        "in": "query",
+                        "description": "Fecha final inclusive (YYYY-MM-DD).",
+                        "required": false,
+                        "type": "string",
+                        "format": "date"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConsumoLLMResumen"
+                        }
+                    }
+                },
+                "tags": [
+                    "agentes"
+                ]
+            },
+            "parameters": []
+        },
+        "/agentes/consumo-llm/{id_consumo}/": {
+            "get": {
+                "operationId": "agentes_consumo-llm_read",
+                "summary": "Consulta de solo lectura del consumo de tokens y costos LLM por tenant (Plan 05 P2-3).",
+                "description": "GET /api/agentes/consumo-llm/         — listado histórico paginado\nGET /api/agentes/consumo-llm/{id}/    — detalle de evento\nGET /api/agentes/consumo-llm/resumen/ — resumen agregado (totales + por_modelo + por_uso)",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConsumoLLM"
+                        }
+                    }
+                },
+                "tags": [
+                    "agentes"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_consumo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Consumo LLM.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/agentes/ejecuciones/": {
             "get": {
                 "operationId": "agentes_ejecuciones_list",
@@ -49020,6 +49234,178 @@
                 }
             }
         },
+        "ConsumoLLM": {
+            "type": "object",
+            "properties": {
+                "id_consumo": {
+                    "title": "Id consumo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "proveedor": {
+                    "title": "Proveedor",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "uso": {
+                    "title": "Uso",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "modelo": {
+                    "title": "Modelo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tokens_entrada": {
+                    "title": "Tokens entrada",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida": {
+                    "title": "Tokens salida",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_estimado_usd": {
+                    "title": "Costo estimado usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "latencia_ms": {
+                    "title": "Latencia ms",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "creado_en": {
+                    "title": "Creado en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConsumoLLMPorModelo": {
+            "type": "object",
+            "properties": {
+                "modelo": {
+                    "title": "Modelo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "llamadas": {
+                    "title": "Llamadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_entrada_total": {
+                    "title": "Tokens entrada total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida_total": {
+                    "title": "Tokens salida total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_total_usd": {
+                    "title": "Costo total usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConsumoLLMPorUso": {
+            "type": "object",
+            "properties": {
+                "uso": {
+                    "title": "Uso",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "llamadas": {
+                    "title": "Llamadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_entrada_total": {
+                    "title": "Tokens entrada total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida_total": {
+                    "title": "Tokens salida total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_total_usd": {
+                    "title": "Costo total usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConsumoLLMResumen": {
+            "type": "object",
+            "properties": {
+                "llamadas": {
+                    "title": "Llamadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_entrada_total": {
+                    "title": "Tokens entrada total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida_total": {
+                    "title": "Tokens salida total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_total_usd": {
+                    "title": "Costo total usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "latencia_promedio_ms": {
+                    "title": "Latencia promedio ms",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "por_modelo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConsumoLLMPorModelo"
+                    },
+                    "readOnly": true
+                },
+                "por_uso": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConsumoLLMPorUso"
+                    },
+                    "readOnly": true
+                }
+            }
+        },
         "EjecucionAgente": {
             "type": "object",
             "properties": {
@@ -57356,7 +57742,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T02:48:40.794369-04:00"
+                    "default": "2026-11-21T04:35:43.420157-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

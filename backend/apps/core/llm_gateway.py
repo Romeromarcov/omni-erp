@@ -35,6 +35,8 @@ del proveedor sigue viniendo del entorno, p. ej. ``ANTHROPIC_API_KEY``):
     LLM_MAX_RETRIES      Reintentos con backoff exponencial del SDK (default: 2).
     LLM_CB_UMBRAL        Fallos consecutivos que abren el circuito (default: 5).
     LLM_CB_VENTANA       Segundos que el circuito permanece abierto (default: 60).
+    LLM_PRICING_JSON     Overrides de tarifas USD por 1M de tokens
+                         (ej. ``{"modelo": {"input": "3.00", "output": "15.00"}}``).
 
 Los defaults de modelo son los IDs que ya usaba el código antes del gateway.
 Si el modelo principal y el alterno coinciden (p. ej. uso "chat" con el
@@ -65,6 +67,7 @@ Registro de consumo por tenant (P2-3 básico):
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
@@ -72,6 +75,7 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Callable, Optional
 
 logger = logging.getLogger("omni.llm_gateway")
@@ -145,6 +149,99 @@ def modelo_configurado(uso: str = USO_AGENTE) -> str:
 def modelo_fallback() -> str:
     """Modelo alterno de la cascada, resuelto por env."""
     return os.environ.get("LLM_MODEL_FALLBACK") or _MODELO_FALLBACK_DEFAULT
+
+
+# ── Tarifas y cálculo de costo USD (P2-3) ─────────────────────────────────────
+
+_MILLON = Decimal("1000000")
+_COSTO_QUANT = Decimal("0.000001")
+
+#: Tarifas por defecto en USD por cada 1,000,000 de tokens (entrada / salida).
+#: Todo ID de modelo Anthropic vive exclusivamente en este módulo (guardia de superficie).
+DEFAULT_PRICING_PER_MILLION_USD: dict[str, dict[str, Decimal]] = {
+    "claude-haiku-4-5-20251001": {"input": Decimal("1.00"), "output": Decimal("5.00")},
+    "claude-sonnet-4-6": {"input": Decimal("3.00"), "output": Decimal("15.00")},
+    "claude-opus-4-5": {"input": Decimal("5.00"), "output": Decimal("25.00")},
+    # Familias (match por prefijo cuando se configuran snapshots nuevos por env)
+    "claude-haiku": {"input": Decimal("1.00"), "output": Decimal("5.00")},
+    "claude-sonnet": {"input": Decimal("3.00"), "output": Decimal("15.00")},
+    "claude-opus": {"input": Decimal("5.00"), "output": Decimal("25.00")},
+    "default": {"input": Decimal("3.00"), "output": Decimal("15.00")},
+}
+
+
+def _parse_decimal_tarifa(valor: Any) -> Decimal | None:
+    if isinstance(valor, bool):
+        return None
+    try:
+        d = Decimal(str(valor))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    if not d.is_finite() or d < 0:
+        return None
+    return d
+
+
+def _cargar_tarifas_pricing() -> dict[str, dict[str, Decimal]]:
+    """Combina ``DEFAULT_PRICING_PER_MILLION_USD`` con overrides de ``LLM_PRICING_JSON``."""
+    tabla = {k.strip().lower(): dict(v) for k, v in DEFAULT_PRICING_PER_MILLION_USD.items()}
+    raw = (os.environ.get("LLM_PRICING_JSON") or "").strip()
+    if not raw:
+        return tabla
+    try:
+        data = json.loads(raw)
+    except (TypeError, ValueError):
+        logger.warning("LLM_PRICING_JSON inválido; usando tarifas por defecto")
+        return tabla
+    if not isinstance(data, dict):
+        logger.warning("LLM_PRICING_JSON debe ser un objeto JSON; usando tarifas por defecto")
+        return tabla
+
+    for modelo_key, entrada in data.items():
+        if not isinstance(modelo_key, str) or not modelo_key.strip() or not isinstance(entrada, dict):
+            continue
+        t_in = _parse_decimal_tarifa(entrada.get("input"))
+        t_out = _parse_decimal_tarifa(entrada.get("output"))
+        if t_in is None or t_out is None:
+            logger.warning("Tarifa inválida en LLM_PRICING_JSON para '%s'; ignorada", modelo_key)
+            continue
+        tabla[modelo_key.strip().lower()] = {"input": t_in, "output": t_out}
+    return tabla
+
+
+def _tarifa_para_modelo(modelo: str) -> dict[str, Decimal]:
+    tabla = _cargar_tarifas_pricing()
+    clave = (modelo or "").strip().lower()
+    if clave and clave != "default" and clave in tabla:
+        return tabla[clave]
+
+    prefijos = [k for k in tabla if k != "default" and clave.startswith(k)]
+    if prefijos:
+        mejor = max(prefijos, key=len)
+        return tabla[mejor]
+
+    return tabla.get("default", DEFAULT_PRICING_PER_MILLION_USD["default"])
+
+
+def _tokens_no_negativos(valor: Any) -> int:
+    if isinstance(valor, bool):
+        return 0
+    return max(0, _entero(valor))
+
+
+def calcular_costo_estimado_usd(modelo: str, tokens_entrada: int, tokens_salida: int) -> Decimal:
+    """Calcula el costo estimado en USD con aritmética exacta ``Decimal`` (R-CODE-4).
+
+    Redondea a 6 decimales (``0.000001`` USD, ``ROUND_HALF_UP``). Acepta overrides
+    de tarifas vía ``LLM_PRICING_JSON`` en formato ``{"modelo": {"input": "X", "output": "Y"}}``
+    expresados en USD por millón de tokens.
+    """
+    t_in = _tokens_no_negativos(tokens_entrada)
+    t_out = _tokens_no_negativos(tokens_salida)
+    tarifa = _tarifa_para_modelo(modelo)
+    costo_in = (Decimal(t_in) * tarifa["input"]) / _MILLON
+    costo_out = (Decimal(t_out) * tarifa["output"]) / _MILLON
+    return (costo_in + costo_out).quantize(_COSTO_QUANT, rounding=ROUND_HALF_UP)
 
 
 # ── Excepción y resultado tipados ────────────────────────────────────────────
@@ -383,7 +480,7 @@ def resetear_circuito() -> None:
 #: Si se asigna un callable, recibe por cada llamada un dict:
 #: {proveedor, uso, modelo, empresa_id, tokens_entrada, tokens_salida, latencia_ms}.
 #: Pensado para que P2-3 persista consumo por tenant sin tocar el gateway.
-registrar_consumo_hook: Optional[Callable[[dict], None]] = None
+registrar_consumo_hook: Optional[Callable[[dict[str, Any]], Any]] = None
 
 
 # ── Stream envuelto ──────────────────────────────────────────────────────────

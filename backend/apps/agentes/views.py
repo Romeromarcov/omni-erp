@@ -14,29 +14,33 @@ Expone:
   - EjecucionAgenteViewSet: consulta de solo lectura de ejecuciones asíncronas.
 """
 
+from datetime import date
 import logging
+import re
 
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, NulSafeFilterMixin, get_empresas_visible, validar_uuid_param
 
-from .models import EjecucionAgente, PrediccionAgente
+from .models import ConsumoLLM, EjecucionAgente, PrediccionAgente
 from .serializers import (
     AnalizarCobranzaInputSerializer,
     AnalizarPersonalizacionInputSerializer,
     AnalizarReordenInputSerializer,
     ClasificarGastoInputSerializer,
+    ConsumoLLMResumenSerializer,
+    ConsumoLLMSerializer,
     EjecucionAgenteSerializer,
     PrediccionAgenteSerializer,
 )
-from .services import AgenteError, encolar_ejecucion_agente
+from .services import AgenteError, calcular_resumen_consumo_llm, encolar_ejecucion_agente
 
 logger = logging.getLogger(__name__)
 
@@ -561,3 +565,151 @@ class EjecucionAgenteViewSet(NulSafeFilterMixin, viewsets.ReadOnlyModelViewSet):
         if lookup_url_kwarg in self.kwargs:
             validar_uuid_param(self.kwargs[lookup_url_kwarg], self.lookup_field)
         return super().get_object()
+
+
+_FECHA_ISO_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+_CONSUMO_LLM_QUERY_PARAMS = [
+    _EMPRESA_ID_QUERY_PARAM,
+    openapi.Parameter(
+        "modelo",
+        openapi.IN_QUERY,
+        description="Filtrar por identificador exacto del modelo LLM.",
+        type=openapi.TYPE_STRING,
+        required=False,
+    ),
+    openapi.Parameter(
+        "uso",
+        openapi.IN_QUERY,
+        description="Filtrar por tipo de uso (agente, chat, analisis).",
+        type=openapi.TYPE_STRING,
+        required=False,
+    ),
+    openapi.Parameter(
+        "fecha_desde",
+        openapi.IN_QUERY,
+        description="Fecha inicial inclusive (YYYY-MM-DD).",
+        type=openapi.TYPE_STRING,
+        format=openapi.FORMAT_DATE,
+        required=False,
+    ),
+    openapi.Parameter(
+        "fecha_hasta",
+        openapi.IN_QUERY,
+        description="Fecha final inclusive (YYYY-MM-DD).",
+        type=openapi.TYPE_STRING,
+        format=openapi.FORMAT_DATE,
+        required=False,
+    ),
+]
+
+
+def _parse_fecha_query(raw: str | None, campo: str) -> date | None:
+    if raw is None:
+        return None
+    if "\x00" in raw:
+        raise ValidationError({campo: "Parámetro de consulta inválido."})
+    limpio = raw.strip()
+    if not limpio:
+        return None
+    if not _FECHA_ISO_RE.match(limpio):
+        raise ValidationError({campo: f"Formato de fecha inválido para '{campo}'. Use YYYY-MM-DD."})
+    try:
+        return date.fromisoformat(limpio)
+    except ValueError as exc:
+        raise ValidationError({campo: f"Fecha inválida para '{campo}'."}) from exc
+
+
+class ConsumoLLMViewSet(NulSafeFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    Consulta de solo lectura del consumo de tokens y costos LLM por tenant (Plan 05 P2-3).
+
+    GET /api/agentes/consumo-llm/         — listado histórico paginado
+    GET /api/agentes/consumo-llm/{id}/    — detalle de evento
+    GET /api/agentes/consumo-llm/resumen/ — resumen agregado (totales + por_modelo + por_uso)
+    """
+
+    queryset = ConsumoLLM.objects.all()
+    serializer_class = ConsumoLLMSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PageNumberPagination
+    lookup_value_regex = r"[0-9a-fA-F-]{36}"
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["modelo", "uso", "proveedor"]
+    ordering_fields = [
+        "creado_en",
+        "costo_estimado_usd",
+        "tokens_entrada",
+        "tokens_salida",
+        "latencia_ms",
+        "modelo",
+        "uso",
+    ]
+    ordering = ["-creado_en"]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ConsumoLLM.objects.none()
+        # R-CODE-1: estricto a empresas visibles; nunca expone filas globales (id_empresa=None).
+        empresas = get_empresas_visible(self.request.user)
+        qs = ConsumoLLM.objects.select_related("id_empresa").filter(
+            id_empresa__isnull=False,
+            id_empresa__in=empresas,
+        )
+
+        empresa_raw = self.request.query_params.get("empresa_id")
+        if empresa_raw is not None:
+            if "\x00" in empresa_raw:
+                raise ValidationError({"empresa_id": "Parámetro de consulta inválido."})
+            if empresa_raw.strip():
+                empresa_uuid = validar_uuid_param(empresa_raw, "empresa_id")
+                if not empresas.filter(pk=empresa_uuid).exists():
+                    raise PermissionDenied("No tienes permiso para operar sobre esa empresa.")
+                qs = qs.filter(id_empresa_id=empresa_uuid)
+
+        for param_name, field_name in (("modelo", "modelo"), ("uso", "uso")):
+            val = self.request.query_params.get(param_name)
+            if val is not None:
+                if "\x00" in val:
+                    raise ValidationError({param_name: "Parámetro de consulta inválido."})
+                limpio = val.strip()
+                if limpio:
+                    qs = qs.filter(**{field_name: limpio})
+
+        fecha_desde = _parse_fecha_query(self.request.query_params.get("fecha_desde"), "fecha_desde")
+        fecha_hasta = _parse_fecha_query(self.request.query_params.get("fecha_hasta"), "fecha_hasta")
+        if fecha_desde is not None and fecha_hasta is not None and fecha_desde > fecha_hasta:
+            raise ValidationError({"fecha_desde": "'fecha_desde' no puede ser posterior a 'fecha_hasta'."})
+        if fecha_desde is not None:
+            qs = qs.filter(creado_en__date__gte=fecha_desde)
+        if fecha_hasta is not None:
+            qs = qs.filter(creado_en__date__lte=fecha_hasta)
+
+        return qs
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            validar_uuid_param(self.kwargs[lookup_url_kwarg], self.lookup_field)
+        return super().get_object()
+
+    @swagger_auto_schema(manual_parameters=_CONSUMO_LLM_QUERY_PARAMS)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        manual_parameters=_CONSUMO_LLM_QUERY_PARAMS,
+        responses={200: ConsumoLLMResumenSerializer},
+    )
+    @action(detail=False, methods=["get"], url_path="resumen")
+    def resumen(self, request):
+        """
+        GET /api/agentes/consumo-llm/resumen/
+
+        Retorna totales agregados (llamadas, tokens in/out, costo_total_usd,
+        latencia_promedio_ms) y desglose ``por_modelo`` y ``por_uso``.
+        """
+        qs = self.filter_queryset(self.get_queryset())
+        resumen_data = calcular_resumen_consumo_llm(qs)
+        serializer = ConsumoLLMResumenSerializer(resumen_data)
+        return Response(serializer.data)
