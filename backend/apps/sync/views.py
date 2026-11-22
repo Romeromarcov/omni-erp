@@ -20,6 +20,7 @@ from decimal import Decimal
 from django.apps import apps as django_apps
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -30,7 +31,16 @@ from apps.core.idempotency import idempotent
 from apps.core.viewsets import get_empresa_primaria, get_empresas_visible
 
 from .registry import SYNC_ENTITIES
-from .services import VentaPosError, crear_venta_pos_offline
+from .serializers import SyncPushInputSerializer
+from .services import (
+    SyncConflictError,
+    SyncPushError,
+    VentaPosError,
+    aplicar_actualizacion_optimista,
+    aplicar_lote_actualizaciones_optimistas,
+    contiene_nul,
+    crear_venta_pos_offline,
+)
 
 LIMITE_DEFECTO = 500
 LIMITE_MAXIMO = 1000
@@ -161,3 +171,72 @@ class SyncPushVentasView(APIView):
             )
 
         return Response(resultado, status=status.HTTP_201_CREATED)
+
+
+class SyncPushView(APIView):
+    """Push optimista de ediciones offline (individual o lote) — CTF-008 Nivel 2.
+
+    ``POST /api/sync/push/``
+
+    Aplica mutaciones sobre entidades whitelistadas en ``registry.py`` verificando
+    ``expected_fecha_actualizacion`` bajo bloqueo ``select_for_update()``. Ante
+    divergencia retorna HTTP 409 ``CONFLICTO_VERSION`` con ``registro_servidor``.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(request_body=SyncPushInputSerializer)
+    @idempotent("sync:push-ediciones")
+    def post(self, request):
+        if contiene_nul(request.data):
+            return Response(
+                {"error": "El payload contiene caracteres inválidos.", "codigo": "CARACTER_INVALIDO"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        empresas = get_empresas_visible(request.user)
+        if not empresas.exists():
+            return Response(
+                {"error": "El usuario no tiene empresa asignada."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not isinstance(request.data, dict):
+            return Response(
+                {"error": "El cuerpo debe ser un objeto JSON."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            if "mutaciones" in request.data:
+                resultado = aplicar_lote_actualizaciones_optimistas(
+                    empresas=empresas,
+                    mutaciones=request.data.get("mutaciones"),
+                )
+            else:
+                resultado = aplicar_actualizacion_optimista(
+                    empresas=empresas,
+                    entity=request.data.get("entity"),
+                    record_id=request.data.get("id"),
+                    expected_fecha_actualizacion=request.data.get("expected_fecha_actualizacion"),
+                    cambios=request.data.get("cambios"),
+                )
+        except SyncConflictError as exc:
+            cuerpo = {
+                "error": str(exc),
+                "codigo": exc.codigo,
+                "entity": exc.entity,
+                "id": exc.record_id,
+                "registro_servidor": exc.registro_servidor,
+            }
+            if exc.index is not None:
+                cuerpo["index"] = exc.index
+            return Response(cuerpo, status=status.HTTP_409_CONFLICT)
+        except SyncPushError as exc:
+            http_status = (
+                status.HTTP_404_NOT_FOUND if exc.codigo == "NO_ENCONTRADO" else status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+            extra = {"codigo": exc.codigo} if exc.codigo else None
+            return domain_error_response(exc, status_code=http_status, extra=extra)
+
+        return Response(resultado, status=status.HTTP_200_OK)

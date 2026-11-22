@@ -10,7 +10,7 @@
  * `fecha_actualizacion` visto y deduplicando el registro del borde por PK
  * (el backend usa `>=` inclusivo).
  */
-import { get } from './api';
+import { get, post, type HttpError } from './api';
 
 /** Entidades sincronizables expuestas por el backend (registry de apps/sync). */
 export type SyncEntity =
@@ -19,6 +19,35 @@ export type SyncEntity =
   | 'unidades_medida'
   | 'clientes'
   | 'variantes_producto';
+
+export type SyncEditableEntity = 'clientes' | 'productos' | 'categorias_producto';
+
+export interface SyncMutationPayload {
+  entity: SyncEditableEntity;
+  id: string;
+  expected_fecha_actualizacion: string;
+  cambios: Record<string, string | boolean | null>;
+}
+
+export interface SyncPushSuccessResponse {
+  entity: SyncEditableEntity;
+  id: string;
+  server_time: string;
+  registro: SyncRecord;
+}
+
+export interface SyncConflictPayload {
+  error: string;
+  codigo: 'CONFLICTO_VERSION';
+  entity: SyncEditableEntity;
+  id: string;
+  registro_servidor: SyncRecord;
+  index?: number;
+}
+
+export type SyncPushResult =
+  | { ok: true; data: SyncPushSuccessResponse }
+  | { ok: false; conflicto: SyncConflictPayload };
 
 export interface SyncRecord {
   fecha_actualizacion: string;
@@ -96,4 +125,36 @@ export async function pullAllDeltas<T extends SyncRecord = SyncRecord>(
     );
   }
   return { records: [...porPk.values()], serverTime };
+}
+
+/**
+ * Envía una mutación optimista a `POST /api/sync/push/`.
+ * Ante HTTP 409 (`CONFLICTO_VERSION`) retorna `{ ok: false, conflicto }` con
+ * `registro_servidor` para que la UI muestre local vs servidor y permita reintentar.
+ */
+export async function pushOptimisticUpdate(
+  payload: SyncMutationPayload,
+  idempotencyKey?: string,
+): Promise<SyncPushResult> {
+  const headers: Record<string, string> = {};
+  if (idempotencyKey) {
+    headers['Idempotency-Key'] = idempotencyKey;
+  }
+  try {
+    const data = await post<SyncPushSuccessResponse>(
+      '/sync/push/',
+      payload as unknown as Record<string, unknown>,
+      Object.keys(headers).length > 0 ? { headers } : undefined,
+    );
+    return { ok: true, data };
+  } catch (err) {
+    const httpErr = err as HttpError;
+    if (httpErr.status === 409) {
+      const parsed = JSON.parse(httpErr.message) as Partial<SyncConflictPayload>;
+      if (parsed.codigo === 'CONFLICTO_VERSION' && parsed.registro_servidor) {
+        return { ok: false, conflicto: parsed as SyncConflictPayload };
+      }
+    }
+    throw err;
+  }
 }

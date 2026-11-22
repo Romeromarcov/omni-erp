@@ -18,12 +18,20 @@ Garantías:
 
 from __future__ import annotations
 
+import datetime
+import uuid
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
+from django.apps import apps as django_apps
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, models, transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+
+from .registry import SYNC_ENTITIES, SyncEntity
 
 CERO = Decimal("0")
 #: Tolerancia al comparar el total del cliente con el del servidor.
@@ -364,4 +372,258 @@ def crear_venta_pos_offline(empresa, usuario, datos: dict) -> dict:
         "alerta_stock_negativo": alerta_stock_negativo,
         "productos_stock_negativo": productos_stock_negativo,
         "pagos": [str(p.id_pago) for p in pagos_creados],
+    }
+
+
+# ── Push de ediciones con concurrencia optimista (CTF-008 Nivel 2) ────────────
+
+MAX_MUTACIONES_LOTE = 100
+
+
+class SyncPushError(Exception):
+    """Error de validación/autorización en sync push de ediciones (404 / 422)."""
+
+    def __init__(self, mensaje: str, *, codigo: str | None = None):
+        super().__init__(mensaje)
+        self.codigo = codigo
+
+
+class SyncConflictError(Exception):
+    """Conflicto de concurrencia optimista (409 CONFLICTO_VERSION)."""
+
+    def __init__(
+        self,
+        mensaje: str,
+        *,
+        entity: str,
+        record_id: str,
+        registro_servidor: dict[str, Any],
+        codigo: str = "CONFLICTO_VERSION",
+        index: int | None = None,
+    ):
+        super().__init__(mensaje)
+        self.entity = entity
+        self.record_id = record_id
+        self.registro_servidor = registro_servidor
+        self.codigo = codigo
+        self.index = index
+
+
+def contiene_nul(valor: Any) -> bool:
+    """Detecta bytes NUL (``\\x00``) recursivamente en strings, listas o dicts."""
+    if isinstance(valor, str):
+        return "\x00" in valor
+    if isinstance(valor, dict):
+        return any(contiene_nul(k) or contiene_nul(v) for k, v in valor.items())
+    if isinstance(valor, (list, tuple)):
+        return any(contiene_nul(item) for item in valor)
+    return False
+
+
+def _jsonificar_sync(valor: Any) -> Any:
+    if isinstance(valor, Decimal):
+        return str(valor)
+    if isinstance(valor, uuid.UUID):
+        return str(valor)
+    if isinstance(valor, (datetime.datetime, datetime.date)):
+        return valor.isoformat()
+    if hasattr(valor, "pk"):
+        return str(valor.pk)
+    return valor
+
+
+def _serializar_registro(instancia: models.Model, entidad: SyncEntity) -> dict[str, Any]:
+    resultado: dict[str, Any] = {}
+    for campo in entidad.fields:
+        val = getattr(instancia, campo, None)
+        resultado[campo] = _jsonificar_sync(val)
+    return resultado
+
+
+def _parse_uuid_estricto(raw: Any, campo: str) -> uuid.UUID:
+    if not isinstance(raw, str) or not raw.strip() or "\x00" in raw:
+        raise SyncPushError(f"El campo '{campo}' debe ser un UUID válido.", codigo="UUID_INVALIDO")
+    try:
+        return uuid.UUID(raw.strip())
+    except (ValueError, TypeError) as exc:
+        raise SyncPushError(f"El campo '{campo}' debe ser un UUID válido.", codigo="UUID_INVALIDO") from exc
+
+
+def _parse_expected_timestamp(raw: Any) -> datetime.datetime:
+    if not isinstance(raw, str) or not raw.strip() or "\x00" in raw:
+        raise SyncPushError(
+            "El campo 'expected_fecha_actualizacion' es requerido en formato ISO 8601.",
+            codigo="VERSION_INVALIDA",
+        )
+    dt = parse_datetime(raw.strip())
+    if dt is None:
+        raise SyncPushError(
+            "El campo 'expected_fecha_actualizacion' no es un timestamp ISO 8601 válido.",
+            codigo="VERSION_INVALIDA",
+        )
+    if timezone.is_naive(dt):
+        if settings.USE_TZ:
+            dt = timezone.make_aware(dt, datetime.timezone.utc)
+    else:
+        dt = dt.astimezone(datetime.timezone.utc)
+    return dt
+
+
+def _timestamps_coinciden(actual: Any, esperado: datetime.datetime) -> bool:
+    if not isinstance(actual, datetime.datetime):
+        return False
+    actual_norm = (
+        timezone.make_aware(actual, datetime.timezone.utc)
+        if timezone.is_naive(actual)
+        else actual.astimezone(datetime.timezone.utc)
+    )
+    return actual_norm == esperado
+
+
+def _normalizar_campo(model_field: Any, valor: Any, nombre_campo: str) -> Any:
+    if contiene_nul(valor):
+        raise SyncPushError(f"El campo '{nombre_campo}' contiene caracteres inválidos.", codigo="CARACTER_INVALIDO")
+
+    if valor is None:
+        if getattr(model_field, "null", False):
+            return None
+        raise SyncPushError(f"El campo '{nombre_campo}' no admite valor nulo.", codigo="VALOR_INVALIDO")
+
+    if isinstance(model_field, models.BooleanField):
+        if not isinstance(valor, bool):
+            raise SyncPushError(f"El campo '{nombre_campo}' debe ser booleano.", codigo="VALOR_INVALIDO")
+        return valor
+
+    if isinstance(model_field, models.DecimalField):
+        if isinstance(valor, bool):
+            raise SyncPushError(f"El campo '{nombre_campo}' debe ser numérico Decimal.", codigo="VALOR_INVALIDO")
+        try:
+            dec = Decimal(str(valor))
+        except (InvalidOperation, ValueError, TypeError) as exc:
+            raise SyncPushError(f"Valor decimal inválido en '{nombre_campo}'.", codigo="VALOR_INVALIDO") from exc
+        if not dec.is_finite():
+            raise SyncPushError(f"El campo '{nombre_campo}' debe ser finito.", codigo="VALOR_INVALIDO")
+        return dec
+
+    if isinstance(model_field, (models.CharField, models.TextField)):
+        if not isinstance(valor, str):
+            raise SyncPushError(f"El campo '{nombre_campo}' debe ser texto.", codigo="VALOR_INVALIDO")
+        return valor.strip()
+
+    return valor
+
+
+@transaction.atomic
+def aplicar_actualizacion_optimista(
+    *,
+    empresas,
+    entity: Any,
+    record_id: Any,
+    expected_fecha_actualizacion: Any,
+    cambios: Any,
+) -> dict[str, Any]:
+    """
+    Aplica una edición optimista sobre una entidad whitelistada de ``SYNC_ENTITIES``.
+
+    Bloquea la fila con ``select_for_update()`` filtrando estrictamente por
+    ``empresas`` (R-CODE-1). Si ``fecha_actualizacion`` difiere de
+    ``expected_fecha_actualizacion``, hace rollback y lanza ``SyncConflictError`` (409).
+    """
+    if not isinstance(entity, str) or entity not in SYNC_ENTITIES:
+        raise SyncPushError(f"Entidad no sincronizable: {entity!r}.", codigo="ENTIDAD_INVALIDA")
+
+    entidad = SYNC_ENTITIES[entity]
+    if not entidad.editable_fields:
+        raise SyncPushError(f"La entidad '{entity}' es de solo lectura en sync push.", codigo="ENTIDAD_NO_EDITABLE")
+
+    pk_uuid = _parse_uuid_estricto(record_id, "id")
+    expected_dt = _parse_expected_timestamp(expected_fecha_actualizacion)
+
+    if not isinstance(cambios, dict) or not cambios:
+        raise SyncPushError("El campo 'cambios' debe ser un objeto no vacío.", codigo="CAMBIOS_INVALIDOS")
+
+    campos_permitidos = set(entidad.editable_fields)
+    no_permitidos = sorted(set(cambios.keys()) - campos_permitidos)
+    if no_permitidos:
+        raise SyncPushError(
+            f"Campos no editables para '{entity}': {', '.join(no_permitidos)}.",
+            codigo="CAMPO_NO_EDITABLE",
+        )
+
+    modelo = django_apps.get_model(entidad.model_label)
+    instancia = (
+        modelo.objects.select_for_update()
+        .filter(**{f"{entidad.empresa_field}__in": empresas, entidad.pk_field: pk_uuid})
+        .first()
+    )
+    if instancia is None:
+        raise SyncPushError("Registro no encontrado en la empresa.", codigo="NO_ENCONTRADO")
+
+    actual_ts = getattr(instancia, entidad.delta_field, None)
+    if not _timestamps_coinciden(actual_ts, expected_dt):
+        raise SyncConflictError(
+            "El registro fue modificado en el servidor desde la última sincronización.",
+            entity=entity,
+            record_id=str(pk_uuid),
+            registro_servidor=_serializar_registro(instancia, entidad),
+        )
+
+    campos_actualizar: list[str] = []
+    for campo, valor in cambios.items():
+        model_field = instancia._meta.get_field(campo)
+        normalizado = _normalizar_campo(model_field, valor, campo)
+        setattr(instancia, campo, normalizado)
+        campos_actualizar.append(campo)
+
+    try:
+        instancia.full_clean()
+    except DjangoValidationError as exc:
+        raise SyncPushError(
+            f"Error de validación al actualizar '{entity}': {exc}", codigo="VALIDACION_FALLIDA"
+        ) from exc
+
+    if entidad.delta_field not in campos_actualizar:
+        campos_actualizar.append(entidad.delta_field)
+    instancia.save(update_fields=campos_actualizar)
+
+    return {
+        "entity": entity,
+        "id": str(getattr(instancia, entidad.pk_field)),
+        "server_time": timezone.now().isoformat(),
+        "registro": _serializar_registro(instancia, entidad),
+    }
+
+
+@transaction.atomic
+def aplicar_lote_actualizaciones_optimistas(*, empresas, mutaciones: Any) -> dict[str, Any]:
+    """Ejecuta un lote atómico (1..100) de mutaciones optimistas; un 409 revierte todo."""
+    if not isinstance(mutaciones, list) or not mutaciones:
+        raise SyncPushError("'mutaciones' debe ser una lista no vacía.", codigo="LOTE_INVALIDO")
+    if len(mutaciones) > MAX_MUTACIONES_LOTE:
+        raise SyncPushError(
+            f"El lote excede el máximo de {MAX_MUTACIONES_LOTE} mutaciones.",
+            codigo="LOTE_EXCEDIDO",
+        )
+
+    resultados: list[dict[str, Any]] = []
+    for idx, mut in enumerate(mutaciones):
+        if not isinstance(mut, dict):
+            raise SyncPushError(f"'mutaciones[{idx}]' debe ser un objeto JSON.", codigo="LOTE_INVALIDO")
+        try:
+            res = aplicar_actualizacion_optimista(
+                empresas=empresas,
+                entity=mut.get("entity"),
+                record_id=mut.get("id"),
+                expected_fecha_actualizacion=mut.get("expected_fecha_actualizacion"),
+                cambios=mut.get("cambios"),
+            )
+        except SyncConflictError as exc:
+            exc.index = idx
+            raise
+        resultados.append(res)
+
+    return {
+        "server_time": timezone.now().isoformat(),
+        "count": len(resultados),
+        "results": resultados,
     }
