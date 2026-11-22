@@ -28,6 +28,7 @@ interface AuthContextType {
   dispositivoInfo: DispositivoInfo | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<DispositivoInfo | null>;
+  verifyMfaLogin: (mfaToken: string, codigo: string) => Promise<DispositivoInfo | null>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   setDispositivoInfo: (info: DispositivoInfo | null) => void;
@@ -183,14 +184,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [applyAuthenticatedScope]);
 
-  const login = async (username: string, password: string): Promise<DispositivoInfo | null> => {
-    // OJO: NO tocar `isLoading` aquí. Ese flag protege solo la rehidratación
-    // inicial; mientras está en true AppRouter desmonta el árbol completo
-    // (incluida LoginPage), lo que reseteaba el paso de selección de
-    // empresa/sucursal tras el login (bug detectado por el E2E de TEST-6).
-    // El spinner del formulario lo maneja LoginPage con su estado local.
-    // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie.
-    const { token: newToken, usuario, dispositivo } = await authService.loginAndFetchUser(username, password);
+  const aplicarSesionAutenticada = (
+    newToken: string,
+    usuario: Usuario,
+    dispositivo?: DispositivoInfo,
+  ): DispositivoInfo | null => {
     applyAuthenticatedScope(usuario);
 
     setTokenState(newToken);
@@ -222,8 +220,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return dispositivo || null;
   };
 
+  const login = async (username: string, password: string): Promise<DispositivoInfo | null> => {
+    // OJO: NO tocar `isLoading` aquí. Ese flag protege solo la rehidratación
+    // inicial; mientras está en true AppRouter desmonta el árbol completo
+    // (incluida LoginPage), lo que reseteaba el paso de selección de
+    // empresa/sucursal tras el login (bug detectado por el E2E de TEST-6).
+    // El spinner del formulario lo maneja LoginPage con su estado local.
+    // SEC-03: `refresh` is no longer returned — it arrives as an httpOnly cookie.
+    const { token: newToken, usuario, dispositivo } = await authService.loginAndFetchUser(username, password);
+    return aplicarSesionAutenticada(newToken, usuario, dispositivo);
+  };
+
+  const verifyMfaLogin = async (mfaToken: string, codigo: string): Promise<DispositivoInfo | null> => {
+    const { token: newToken, usuario, dispositivo } = await authService.verifyMfaAndFetchUser(mfaToken, codigo);
+    return aplicarSesionAutenticada(newToken, usuario, dispositivo);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, cajaFisica, dispositivoInfo, isLoading, login, logout, refreshUser, setDispositivoInfo }}>
+    <AuthContext.Provider value={{ user, token, cajaFisica, dispositivoInfo, isLoading, login, verifyMfaLogin, logout, refreshUser, setDispositivoInfo }}>
       {children}
     </AuthContext.Provider>
   );

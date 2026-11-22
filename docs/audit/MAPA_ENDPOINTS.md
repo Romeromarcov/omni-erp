@@ -1456,6 +1456,12 @@
 | `api/auth/change-password/` | change_password_view | — | — | — | IsAuthenticated |
 | `api/auth/login/` | login_view | — | — | — | AllowAny |
 | `api/auth/logout/` | logout_view | — | — | — | IsAuthenticated |
+| `api/auth/mfa/confirmar/` | mfa_confirmar_view | — | — | — | IsAuthenticated |
+| `api/auth/mfa/desactivar/` | mfa_desactivar_view | — | — | — | IsAuthenticated |
+| `api/auth/mfa/estado/` | mfa_estado_view | — | — | — | IsAuthenticated |
+| `api/auth/mfa/iniciar/` | mfa_iniciar_view | — | — | — | IsAuthenticated |
+| `api/auth/mfa/regenerar-codigos/` | mfa_regenerar_codigos_view | — | — | — | IsAuthenticated |
+| `api/auth/mfa/verificar/` | mfa_verificar_view | — | — | — | AllowAny |
 | `api/auth/profile/` | user_profile_view | — | — | — | IsAuthenticated |
 | `api/auth/profile/update/` | update_profile_view | — | — | — | IsAuthenticated |
 | `api/auth/token/` | CustomTokenObtainPairView | — | — | — | — |
@@ -1501,4 +1507,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 270_
+_Total ViewSets: 276_

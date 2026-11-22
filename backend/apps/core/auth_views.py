@@ -137,6 +137,22 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
         username = request.data.get("username", "unknown")
         if response.status_code == 200:
+            user_id = (response.data or {}).get("user", {}).get("id")
+            if user_id:
+                from .mfa import emitir_mfa_token, usuario_tiene_mfa_activo
+                from .models import Usuarios
+
+                user_obj = Usuarios.objects.filter(pk=user_id).first()
+                if user_obj is not None and usuario_tiene_mfa_activo(user_obj):
+                    logger.info("MFA challenge issued on token endpoint for %s", _uref(username))
+                    return Response(
+                        {
+                            "mfa_requerido": True,
+                            "mfa_token": emitir_mfa_token(user_obj.pk),
+                            "metodo": "TOTP",
+                        },
+                        status=status.HTTP_200_OK,
+                    )
             logger.info("Successful login for %s", _uref(username))
         else:
             logger.warning("Failed login attempt for %s", _uref(username))
@@ -155,6 +171,150 @@ def _login_rls_context(user):
     return rls.rls_tenant_context(visible_ids)
 
 
+def _abrir_sesion_caja_si_aplica(
+    dispositivo_info: dict, accion_info: dict, user, device_ip: str, device_user_agent: str
+) -> None:
+    if accion_info["accion"] not in ("abrir_sesion_automatico", "abrir_sesion"):
+        return
+    try:
+        caja_fisica = accion_info["datos"]["caja_fisica"]
+        from apps.finanzas.models import SesionCajaFisica
+
+        sesion = SesionCajaFisica.abrir_sesion(
+            caja_fisica=caja_fisica,
+            usuario=user,
+            ip_address=device_ip,
+            user_agent=device_user_agent,
+        )
+        dispositivo_info["sesion_abierta"] = {
+            "id_sesion": str(sesion.id_sesion),
+            "estado": sesion.estado,
+            "fecha_apertura": sesion.fecha_apertura,
+            "caja_fisica": {
+                "id_caja_fisica": str(caja_fisica.id_caja_fisica),
+                "nombre": caja_fisica.nombre,
+            },
+        }
+    except Exception as e:
+        logger.error(f"Error abriendo sesión automáticamente: {e}", exc_info=True)
+        dispositivo_info["error_sesion"] = "No se pudo abrir la sesión automáticamente."
+
+
+def _procesar_dispositivo_login(request, user) -> dict | None:
+    device_fingerprint = request.data.get("device_fingerprint")
+    if not device_fingerprint:
+        return None
+    device_user_agent = request.data.get("device_user_agent", request.META.get("HTTP_USER_AGENT", ""))
+    device_ip = request.data.get("device_ip", request.META.get("REMOTE_ADDR", ""))
+    try:
+        empresa = user.empresas.first()
+        sucursal = user.sucursales.first() or user.id_sucursal_predeterminada
+        if not (empresa and sucursal):
+            logger.warning("%s no tiene empresa o sucursal asignada", _uref(user.username))
+            return None
+
+        from .serializers import DispositivoSerializer
+        from .utils import detectar_o_registrar_dispositivo, determinar_accion_dispositivo
+
+        dispositivo, dispositivo_creado = detectar_o_registrar_dispositivo(
+            fingerprint=device_fingerprint,
+            user_agent=device_user_agent,
+            ip_address=device_ip,
+            empresa=empresa,
+            sucursal=sucursal,
+            usuario=user,
+        )
+        accion_info = determinar_accion_dispositivo(dispositivo, user)
+        dispositivo_serializado = DispositivoSerializer(dispositivo).data
+        dispositivo_info: dict = {
+            "id_dispositivo": str(dispositivo.id_dispositivo),
+            "nombre_dispositivo": dispositivo.nombre_dispositivo,
+            "creado": dispositivo_creado,
+            "accion": accion_info["accion"],
+            "mensaje": accion_info["mensaje"],
+            "datos": {},
+        }
+
+        if accion_info["accion"] in ["abrir_sesion", "abrir_sesion_automatico"]:
+            from apps.finanzas.serializers import CajaFisicaSerializer
+
+            dispositivo_info["datos"] = {
+                "caja_fisica": CajaFisicaSerializer(accion_info["datos"]["caja_fisica"]).data,
+                "dispositivo": dispositivo_serializado,
+            }
+        elif accion_info["accion"] == "sesion_activa":
+            from apps.finanzas.serializers import CajaFisicaSerializer, SesionCajaFisicaSerializer
+
+            dispositivo_info["datos"] = {
+                "caja_fisica": CajaFisicaSerializer(accion_info["datos"]["caja_fisica"]).data,
+                "sesion": SesionCajaFisicaSerializer(accion_info["datos"]["sesion"]).data,
+            }
+        elif accion_info["accion"] == "preguntar_caja":
+            dispositivo_info["datos"] = {
+                "dispositivo": dispositivo_serializado,
+                "empresa": {
+                    "id_empresa": str(accion_info["datos"]["empresa"].id_empresa),
+                    "nombre_comercial": accion_info["datos"]["empresa"].nombre_comercial,
+                },
+                "sucursal": {
+                    "id_sucursal": str(accion_info["datos"]["sucursal"].id_sucursal),
+                    "nombre": accion_info["datos"]["sucursal"].nombre,
+                },
+                "user_agent": accion_info["datos"]["user_agent"],
+                "ip_address": accion_info["datos"]["ip_address"],
+            }
+
+        _abrir_sesion_caja_si_aplica(dispositivo_info, accion_info, user, device_ip, device_user_agent)
+        return dispositivo_info
+    except Exception as e:
+        logger.error(f"Error procesando dispositivo: {e}", exc_info=True)
+        return {"error": "Error interno al procesar el dispositivo."}
+
+
+def emitir_sesion_login_response(request, user) -> Response:
+    """Emite JWT access + httpOnly refresh cookie + info de dispositivo para ``user``."""
+    refresh = RefreshToken.for_user(user)
+    user.last_login = timezone.now()
+    user.save(update_fields=["last_login"])
+
+    from .serializers import UsuariosSerializer
+
+    with _login_rls_context(user):
+        user_data = UsuariosSerializer(user).data
+        dispositivo_info = _procesar_dispositivo_login(request, user)
+
+    response_data = {"access": str(refresh.access_token), "user": user_data}
+    if dispositivo_info:
+        response_data["dispositivo"] = dispositivo_info
+
+    response = Response(response_data, status=status.HTTP_200_OK)
+
+    from datetime import timedelta
+    from typing import Literal
+
+    from django.conf import settings as django_settings
+
+    cookie_secure = not django_settings.DEBUG
+    raw_samesite = getattr(django_settings, "REFRESH_TOKEN_COOKIE_SAMESITE", "Lax")
+    cookie_samesite: Literal["Lax", "Strict", "None"] = "Lax"
+    if raw_samesite == "Strict":
+        cookie_samesite = "Strict"
+    elif raw_samesite == "None":
+        cookie_samesite = "None"
+    lifetime = django_settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME")
+    cookie_max_age = int(lifetime.total_seconds()) if isinstance(lifetime, timedelta) else 7 * 86400
+    response.set_cookie(
+        key="refresh_token",
+        value=str(refresh),
+        max_age=cookie_max_age,
+        httponly=True,
+        secure=cookie_secure,
+        samesite=cookie_samesite,
+        path="/api/auth/",
+    )
+    return response
+
+
 @ratelimit(key="ip", rate="5/m", method="POST", block=False, group="omni_erp.login")
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -163,7 +323,6 @@ def login_view(request):
     Login endpoint that returns JWT tokens and maneja detección de dispositivos.
     SEC-07: Rate-limited to 5 POST requests per minute per IP.
     """
-    # SEC-07: check rate limit flag set by @ratelimit decorator
     if getattr(request, "limited", False):
         return Response(
             {"error": "Demasiados intentos de login. Espere un momento antes de intentar de nuevo."},
@@ -172,212 +331,44 @@ def login_view(request):
 
     username = request.data.get("username")
     password = request.data.get("password")
-    device_fingerprint = request.data.get("device_fingerprint")
-    device_user_agent = request.data.get("device_user_agent", request.META.get("HTTP_USER_AGENT", ""))
-    device_ip = request.data.get("device_ip", request.META.get("REMOTE_ADDR", ""))
 
     if not username or not password:
         logger.warning("Username or password missing in request data")
         return Response({"error": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # P1-3: lockout por usuario+IP (django-axes). Se responde 429 con mensaje
-    # genérico (no filtra si el usuario existe).
     if _esta_bloqueado_por_axes(request, username):
         logger.warning("Login bloqueado por axes para %s", _uref(username))
         return Response({"error": LOCKOUT_MESSAGE}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
-    # P1-3: pasar el request a authenticate() es OBLIGATORIO para que
-    # django-axes registre el intento (IP + username) y aplique el lockout.
     user = authenticate(
         request=getattr(request, "_request", request),
         username=username,
         password=password,
     )
 
-    if user is not None:
-        if user.is_active:
-            refresh = RefreshToken.for_user(user)
-            user.last_login = timezone.now()
-            user.save(update_fields=["last_login"])
-            logger.info("Successful login for %s", _uref(username))
-
-            from .serializers import UsuariosSerializer
-
-            with _login_rls_context(user):
-                user_data = UsuariosSerializer(user).data
-
-                # Información de dispositivo
-                dispositivo_info = None
-
-                if device_fingerprint:
-                    try:
-                        # Obtener empresa y sucursal del usuario (primera empresa/sucursal asignada)
-                        empresa = user.empresas.first()
-                        sucursal = user.sucursales.first() or user.id_sucursal_predeterminada
-
-                        if empresa and sucursal:
-                            from .utils import detectar_o_registrar_dispositivo, determinar_accion_dispositivo
-
-                            # Detectar o registrar dispositivo
-                            dispositivo, dispositivo_creado = detectar_o_registrar_dispositivo(
-                                fingerprint=device_fingerprint,
-                                user_agent=device_user_agent,
-                                ip_address=device_ip,
-                                empresa=empresa,
-                                sucursal=sucursal,
-                                usuario=user,
-                            )
-
-                            # Determinar acción a tomar
-                            accion_info = determinar_accion_dispositivo(dispositivo, user)
-
-                            # Serializar datos del dispositivo para evitar errores de JSON
-                            from .serializers import DispositivoSerializer
-
-                            dispositivo_serializado = DispositivoSerializer(dispositivo).data
-
-                            dispositivo_info = {
-                                "id_dispositivo": str(dispositivo.id_dispositivo),
-                                "nombre_dispositivo": dispositivo.nombre_dispositivo,
-                                "creado": dispositivo_creado,
-                                "accion": accion_info["accion"],
-                                "mensaje": accion_info["mensaje"],
-                                "datos": {},
-                            }
-
-                            # Serializar datos adicionales según la acción
-                            if accion_info["accion"] in ["abrir_sesion", "abrir_sesion_automatico"]:
-                                from apps.finanzas.serializers import CajaFisicaSerializer
-
-                                caja_fisica_serializada = CajaFisicaSerializer(
-                                    accion_info["datos"]["caja_fisica"]
-                                ).data
-                                dispositivo_info["datos"] = {
-                                    "caja_fisica": caja_fisica_serializada,
-                                    "dispositivo": dispositivo_serializado,
-                                }
-                            elif accion_info["accion"] == "sesion_activa":
-                                from apps.finanzas.serializers import CajaFisicaSerializer, SesionCajaFisicaSerializer
-
-                                caja_fisica_serializada = CajaFisicaSerializer(
-                                    accion_info["datos"]["caja_fisica"]
-                                ).data
-                                sesion_serializada = SesionCajaFisicaSerializer(accion_info["datos"]["sesion"]).data
-                                dispositivo_info["datos"] = {
-                                    "caja_fisica": caja_fisica_serializada,
-                                    "sesion": sesion_serializada,
-                                }
-                            elif accion_info["accion"] == "preguntar_caja":
-                                dispositivo_info["datos"] = {
-                                    "dispositivo": dispositivo_serializado,
-                                    "empresa": {
-                                        "id_empresa": str(accion_info["datos"]["empresa"].id_empresa),
-                                        "nombre_comercial": accion_info["datos"]["empresa"].nombre_comercial,
-                                    },
-                                    "sucursal": {
-                                        "id_sucursal": str(accion_info["datos"]["sucursal"].id_sucursal),
-                                        "nombre": accion_info["datos"]["sucursal"].nombre,
-                                    },
-                                    "user_agent": accion_info["datos"]["user_agent"],
-                                    "ip_address": accion_info["datos"]["ip_address"],
-                                }
-
-                            # Si se debe abrir sesión automáticamente
-                            if accion_info["accion"] == "abrir_sesion_automatico":
-                                try:
-                                    caja_fisica = accion_info["datos"]["caja_fisica"]
-                                    from apps.finanzas.models import SesionCajaFisica
-
-                                    sesion = SesionCajaFisica.abrir_sesion(
-                                        caja_fisica=caja_fisica,
-                                        usuario=user,
-                                        ip_address=device_ip,
-                                        user_agent=device_user_agent,
-                                    )
-
-                                    dispositivo_info["sesion_abierta"] = {
-                                        "id_sesion": str(sesion.id_sesion),
-                                        "estado": sesion.estado,
-                                        "fecha_apertura": sesion.fecha_apertura,
-                                        "caja_fisica": {
-                                            "id_caja_fisica": str(caja_fisica.id_caja_fisica),
-                                            "nombre": caja_fisica.nombre,
-                                        },
-                                    }
-
-                                except Exception as e:
-                                    logger.error(f"Error abriendo sesión automáticamente: {e}", exc_info=True)
-                                    dispositivo_info["error_sesion"] = "No se pudo abrir la sesión automáticamente."
-
-                            # Si se debe abrir sesión (modal)
-                            elif accion_info["accion"] == "abrir_sesion":
-                                try:
-                                    caja_fisica = accion_info["datos"]["caja_fisica"]
-                                    from apps.finanzas.models import SesionCajaFisica
-
-                                    sesion = SesionCajaFisica.abrir_sesion(
-                                        caja_fisica=caja_fisica,
-                                        usuario=user,
-                                        ip_address=device_ip,
-                                        user_agent=device_user_agent,
-                                    )
-
-                                    dispositivo_info["sesion_abierta"] = {
-                                        "id_sesion": str(sesion.id_sesion),
-                                        "estado": sesion.estado,
-                                        "fecha_apertura": sesion.fecha_apertura,
-                                        "caja_fisica": {
-                                            "id_caja_fisica": str(caja_fisica.id_caja_fisica),
-                                            "nombre": caja_fisica.nombre,
-                                        },
-                                    }
-
-                                except Exception as e:
-                                    logger.error(f"Error abriendo sesión automáticamente: {e}", exc_info=True)
-                                    dispositivo_info["error_sesion"] = "No se pudo abrir la sesión automáticamente."
-
-                        else:
-                            logger.warning("%s no tiene empresa o sucursal asignada", _uref(username))
-
-                    except Exception as e:
-                        logger.error(f"Error procesando dispositivo: {e}", exc_info=True)
-                        dispositivo_info = {"error": "Error interno al procesar el dispositivo."}
-
-            response_data = {"access": str(refresh.access_token), "user": user_data}
-
-            if dispositivo_info:
-                response_data["dispositivo"] = dispositivo_info
-
-            response = Response(response_data, status=status.HTTP_200_OK)
-
-            # SEC-03: Almacenar refresh token como httpOnly cookie (nunca en el body).
-            # Esto elimina la exposición a XSS que tendría si se devolviera en JSON.
-            from django.conf import settings as django_settings
-
-            cookie_secure = not django_settings.DEBUG  # secure=True solo en producción (HTTPS)
-            cookie_samesite = getattr(django_settings, "REFRESH_TOKEN_COOKIE_SAMESITE", "Lax")
-            cookie_max_age = int(
-                django_settings.SIMPLE_JWT.get(
-                    "REFRESH_TOKEN_LIFETIME", __import__("datetime").timedelta(days=7)
-                ).total_seconds()
-            )
-            response.set_cookie(
-                key="refresh_token",
-                value=str(refresh),
-                max_age=cookie_max_age,
-                httponly=True,
-                secure=cookie_secure,
-                samesite=cookie_samesite,
-                path="/api/auth/",  # restringir path para no enviar en cada request
-            )
-            return response
-
-        else:
-            logger.warning("Login attempt for inactive %s", _uref(username))
-            return Response({"error": "User account is disabled"}, status=status.HTTP_401_UNAUTHORIZED)
-    else:
+    if user is None:
         logger.warning("Failed login attempt for %s", _uref(username))
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if not user.is_active:
+        logger.warning("Login attempt for inactive %s", _uref(username))
+        return Response({"error": "User account is disabled"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    from .mfa import emitir_mfa_token, usuario_tiene_mfa_activo
+
+    if usuario_tiene_mfa_activo(user):
+        logger.info("MFA challenge issued for %s", _uref(username))
+        return Response(
+            {
+                "mfa_requerido": True,
+                "mfa_token": emitir_mfa_token(user.pk),
+                "metodo": "TOTP",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    logger.info("Successful login for %s", _uref(username))
+    return emitir_sesion_login_response(request, user)
 
 
 @api_view(["POST"])

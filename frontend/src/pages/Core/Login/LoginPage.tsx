@@ -5,20 +5,35 @@ import { DeviceActionModal } from '../../../components/DeviceActionModal';
 import { get } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { DispositivoInfo } from '../../../types/dispositivos';
-import { Box, Button, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
+import { Alert, Box, Button, FormControl, InputLabel, Select, MenuItem, TextField, Typography } from '@mui/material';
 import { BrandMark, Wordmark } from '../../../components/ui';
+
+function extraerRetoMfa(err: unknown): { mfaToken: string; metodo: string } | null {
+  if (
+    err instanceof Error &&
+    err.name === 'MfaChallengeError' &&
+    'mfaToken' in err &&
+    typeof (err as { mfaToken?: unknown }).mfaToken === 'string'
+  ) {
+    const challenge = err as { mfaToken: string; metodo?: string };
+    return { mfaToken: challenge.mfaToken, metodo: challenge.metodo || 'TOTP' };
+  }
+  return null;
+}
 
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, setDispositivoInfo: setAuthDispositivoInfo } = useAuth();
+  const { login, verifyMfaLogin, setDispositivoInfo: setAuthDispositivoInfo } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [empresa, setEmpresa] = useState<string>('');
   const [sucursal, setSucursal] = useState('');
   const [empresas, setEmpresas] = useState<Array<{ id_empresa: string; nombre_legal: string; nombre_comercial?: string }>>([]);
   const [sucursales, setSucursales] = useState<Array<{ id_sucursal: string; nombre: string; id_empresa: string }>>([]);
-  const [step, setStep] = useState<'login' | 'select'>('login');
+  const [step, setStep] = useState<'login' | 'mfa' | 'select'>('login');
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const [dispositivoInfo, setDispositivoInfo] = useState<DispositivoInfo | null>(null);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
 
@@ -31,52 +46,81 @@ const LoginPage: React.FC = () => {
   }, []);
 
 
+  const completarPostLogin = async (dispositivoResult: DispositivoInfo | null) => {
+    // Si hay información de dispositivo, verificar la acción
+    if (dispositivoResult) {
+      setDispositivoInfo(dispositivoResult);
+
+      // Si la acción es automática o ya hay sesión activa, ir directamente al dashboard
+      if (dispositivoResult.accion === 'abrir_sesion_automatico' || dispositivoResult.accion === 'sesion_activa') {
+        if (dispositivoResult.sesion_abierta) {
+          setAuthDispositivoInfo(dispositivoResult);
+        }
+        navigate('/dashboard');
+        return;
+      }
+    }
+
+    // Después de login, siempre cargar empresas y sucursales para selección
+    const empresasRes = await get('/core/empresas/');
+    let empresasList: Array<{ id_empresa: string; nombre_legal: string; nombre_comercial?: string }> = [];
+    if (Array.isArray(empresasRes)) empresasList = empresasRes;
+    else if (empresasRes && typeof empresasRes === 'object' && 'results' in empresasRes && Array.isArray((empresasRes as { results: unknown }).results)) {
+      empresasList = (empresasRes as { results: Array<{ id_empresa: string; nombre_legal: string; nombre_comercial?: string }> }).results;
+    }
+    setEmpresas(empresasList);
+
+    const sucursalesRes = await get('/core/sucursales/');
+    let sucursalesList: Array<{ id_sucursal: string; nombre: string; id_empresa: string }> = [];
+    if (Array.isArray(sucursalesRes)) sucursalesList = sucursalesRes;
+    else if (sucursalesRes && typeof sucursalesRes === 'object' && 'results' in sucursalesRes && Array.isArray((sucursalesRes as { results: unknown }).results)) {
+      sucursalesList = (sucursalesRes as { results: Array<{ id_sucursal: string; nombre: string; id_empresa: string }> }).results;
+    }
+    setSucursales(sucursalesList);
+
+    setStep('select');
+  };
+
   const handleLogin = async (username: string, password: string) => {
     setLoading(true);
     setError('');
     try {
       const dispositivoResult = await login(username, password);
-
-      // Si hay información de dispositivo, verificar la acción
-      if (dispositivoResult) {
-        setDispositivoInfo(dispositivoResult);
-        
-        // Si la acción es automática o ya hay sesión activa, ir directamente al dashboard
-        if (dispositivoResult.accion === 'abrir_sesion_automatico' || dispositivoResult.accion === 'sesion_activa') {
-          // Actualizar la información del dispositivo en el AuthContext si hay sesión abierta
-          if (dispositivoResult.sesion_abierta) {
-            setAuthDispositivoInfo(dispositivoResult);
-          }
-          navigate('/dashboard');
-          setLoading(false);
-          return;
-        }
-        
-        // Para otras acciones, continuar con el flujo normal
-      }
-
-      // Después de login, siempre cargar empresas y sucursales para selección
-      const empresasRes = await get('/core/empresas/');
-      let empresasList: Array<{ id_empresa: string; nombre_legal: string; nombre_comercial?: string }> = [];
-      if (Array.isArray(empresasRes)) empresasList = empresasRes;
-      else if (empresasRes && typeof empresasRes === 'object' && 'results' in empresasRes && Array.isArray((empresasRes as { results: unknown }).results)) {
-        empresasList = (empresasRes as { results: Array<{ id_empresa: string; nombre_legal: string; nombre_comercial?: string }> }).results;
-      }
-      setEmpresas(empresasList);
-
-      const sucursalesRes = await get('/core/sucursales/');
-      let sucursalesList: Array<{ id_sucursal: string; nombre: string; id_empresa: string }> = [];
-      if (Array.isArray(sucursalesRes)) sucursalesList = sucursalesRes;
-      else if (sucursalesRes && typeof sucursalesRes === 'object' && 'results' in sucursalesRes && Array.isArray((sucursalesRes as { results: unknown }).results)) {
-        sucursalesList = (sucursalesRes as { results: Array<{ id_sucursal: string; nombre: string; id_empresa: string }> }).results;
-      }
-      setSucursales(sucursalesList);
-
-      // Ir al paso de selección
-      setStep('select');
+      await completarPostLogin(dispositivoResult);
     } catch (err: unknown) {
+      const retoMfa = extraerRetoMfa(err);
+      if (retoMfa) {
+        setMfaToken(retoMfa.mfaToken);
+        setMfaCode('');
+        setError('');
+        setStep('mfa');
+        return;
+      }
       console.error('Login error:', err);
       let errorMsg = 'Credenciales inválidas';
+      try {
+        const parsed = JSON.parse((err as Error).message);
+        if (parsed && parsed.error) errorMsg = parsed.error;
+      } catch { /* no-op */ }
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaCode.trim()) {
+      setError('Ingresa el código de verificación.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const dispositivoResult = await verifyMfaLogin(mfaToken, mfaCode.trim());
+      await completarPostLogin(dispositivoResult);
+    } catch (err: unknown) {
+      let errorMsg = 'Código de verificación 2FA inválido o expirado';
       try {
         const parsed = JSON.parse((err as Error).message);
         if (parsed && parsed.error) errorMsg = parsed.error;
@@ -190,6 +234,45 @@ const LoginPage: React.FC = () => {
                 ¿No tienes cuenta? Regístrate gratis
               </Button>
             </>
+          )}
+          {step === 'mfa' && (
+            <form onSubmit={handleMfaSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 1 }}>
+                <BrandMark size={44} />
+                <Typography variant="h6" sx={{ textAlign: 'center', fontWeight: 700, color: '#1a237e' }}>
+                  Verificación en dos pasos (2FA)
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  Ingresa el código de 6 dígitos de tu app autenticadora o un código de respaldo.
+                </Typography>
+              </Box>
+              {error && <Alert severity="error">{error}</Alert>}
+              <TextField
+                label="Código 2FA o respaldo"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value)}
+                autoFocus
+                fullWidth
+                disabled={loading}
+                inputProps={{ autoComplete: 'one-time-code' }}
+              />
+              <Button type="submit" variant="contained" fullWidth disabled={loading}>
+                {loading ? 'Verificando...' : 'Verificar y continuar'}
+              </Button>
+              <Button
+                variant="text"
+                fullWidth
+                disabled={loading}
+                onClick={() => {
+                  setStep('login');
+                  setMfaToken('');
+                  setMfaCode('');
+                  setError('');
+                }}
+              >
+                Volver al inicio de sesión
+              </Button>
+            </form>
           )}
           {step === 'select' && (
             <form

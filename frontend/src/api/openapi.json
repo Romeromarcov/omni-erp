@@ -2168,6 +2168,150 @@
             },
             "parameters": []
         },
+        "/auth/mfa/confirmar/": {
+            "post": {
+                "operationId": "auth_mfa_confirmar_create",
+                "description": "Valida el primer código TOTP y activa 2FA devolviendo códigos de respaldo una sola vez.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MfaCodigoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MfaCodigoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            },
+            "parameters": []
+        },
+        "/auth/mfa/desactivar/": {
+            "post": {
+                "operationId": "auth_mfa_desactivar_create",
+                "description": "Desactiva 2FA exigiendo contraseña actual + código TOTP o de respaldo válido.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MfaDesactivarInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MfaDesactivarInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            },
+            "parameters": []
+        },
+        "/auth/mfa/estado/": {
+            "get": {
+                "operationId": "auth_mfa_estado_list",
+                "description": "Retorna el estado de 2FA/TOTP del usuario autenticado (sin exponer secretos).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            },
+            "parameters": []
+        },
+        "/auth/mfa/iniciar/": {
+            "post": {
+                "operationId": "auth_mfa_iniciar_create",
+                "description": "Genera secreto pendiente y QR SVG para configurar TOTP.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            },
+            "parameters": []
+        },
+        "/auth/mfa/regenerar-codigos/": {
+            "post": {
+                "operationId": "auth_mfa_regenerar-codigos_create",
+                "description": "Rota los 8 códigos de respaldo tras verificar un TOTP vigente.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MfaCodigoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MfaCodigoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            },
+            "parameters": []
+        },
+        "/auth/mfa/verificar/": {
+            "post": {
+                "operationId": "auth_mfa_verificar_create",
+                "description": "Completa el login validando ``mfa_token`` efímero + código TOTP o de respaldo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MfaVerificarInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MfaVerificarInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            },
+            "parameters": []
+        },
         "/auth/profile/": {
             "get": {
                 "operationId": "auth_profile_list",
@@ -52989,6 +53133,62 @@
                 }
             }
         },
+        "MfaCodigoInput": {
+            "required": [
+                "codigo"
+            ],
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 1
+                }
+            }
+        },
+        "MfaDesactivarInput": {
+            "required": [
+                "password",
+                "codigo"
+            ],
+            "type": "object",
+            "properties": {
+                "password": {
+                    "title": "Password",
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 1
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 1
+                }
+            }
+        },
+        "MfaVerificarInput": {
+            "required": [
+                "mfa_token",
+                "codigo"
+            ],
+            "type": "object",
+            "properties": {
+                "mfa_token": {
+                    "title": "Mfa token",
+                    "type": "string",
+                    "maxLength": 512,
+                    "minLength": 1
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 1
+                }
+            }
+        },
         "CustomTokenObtainPair": {
             "required": [
                 "username",
@@ -58486,6 +58686,11 @@
                     "description": "Capa de mercado (tasas, métodos de pago locales). Activable independientemente.",
                     "type": "boolean"
                 },
+                "requerir_mfa_admins": {
+                    "title": "Requerir mfa admins",
+                    "description": "Si True, se recomienda/exige 2FA TOTP para administradores y superusuarios de esta empresa.",
+                    "type": "boolean"
+                },
                 "empresa_matriz": {
                     "title": "Empresa Matriz",
                     "type": "string",
@@ -61672,7 +61877,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-22T13:29:46.971291-04:00"
+                    "default": "2026-11-22T14:41:23.472161-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

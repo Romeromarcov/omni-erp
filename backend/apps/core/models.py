@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 
 from .base_models import IntegrationFieldsMixin, OmniBaseModel
+from .fields import EncryptedTextField
 from .validators import normalizar_email, normalizar_telefono
 
 
@@ -75,6 +76,10 @@ class Empresa(OmniBaseModel, IntegrationFieldsMixin):
     localizacion_mercado_activa = models.BooleanField(
         default=True,
         help_text="Capa de mercado (tasas, métodos de pago locales). Activable independientemente.",
+    )
+    requerir_mfa_admins = models.BooleanField(
+        default=False,
+        help_text="Si True, se recomienda/exige 2FA TOTP para administradores y superusuarios de esta empresa.",
     )
 
     class Meta:
@@ -1153,3 +1158,42 @@ def crear_notificacion(
         url_accion=url_accion,
         metadata=metadata or {},
     )
+
+
+class ConfiguracionMFA(OmniBaseModel):
+    """
+    Configuración 2FA/TOTP por usuario (RFC 6238, Plan 05 P3-1).
+
+    Almacena el secreto TOTP cifrado con Fernet (``EncryptedTextField``) y
+    códigos de respaldo de un solo uso hasheados con PBKDF2-SHA256.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    usuario = models.OneToOneField(
+        "Usuarios",
+        on_delete=models.CASCADE,
+        related_name="configuracion_mfa",
+        verbose_name="Usuario",
+    )
+    secret = EncryptedTextField(blank=True, default="", verbose_name="Secreto TOTP cifrado")
+    habilitado = models.BooleanField(default=False, verbose_name="MFA habilitado")
+    confirmado_en = models.DateTimeField(null=True, blank=True, verbose_name="Confirmado en")
+    codigos_respaldo = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Códigos de respaldo (PBKDF2)",
+    )
+    ultimo_paso_totp = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Último contador TOTP aceptado (anti-replay)",
+    )
+
+    class Meta:
+        db_table = "core_configuracion_mfa"
+        verbose_name = "Configuración MFA"
+        verbose_name_plural = "Configuraciones MFA"
+
+    def __str__(self) -> str:
+        estado = "activo" if self.habilitado else "pendiente"
+        return f"MFA({self.usuario_id}, {estado})"

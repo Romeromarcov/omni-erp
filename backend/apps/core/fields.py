@@ -57,3 +57,28 @@ class EncryptedJSONField(models.JSONField):
         token = _fernet().encrypt(json.dumps(value, default=str).encode()).decode()
         # super() (JSONField) serializa el token como string JSON dentro de jsonb.
         return super().get_prep_value(token)
+
+
+class EncryptedTextField(models.TextField):
+    """TextField cifrado en reposo con Fernet (Plan 05 P3-1 / secretos TOTP)."""
+
+    def from_db_value(self, value, expression, connection):
+        return self.to_python(value)
+
+    def to_python(self, value):
+        if value is None or value == "":
+            return "" if value == "" else None
+        if not isinstance(value, str):
+            value = str(value)
+        if value.startswith("gAAAAA"):
+            try:
+                return _fernet().decrypt(value.encode("ascii")).decode("utf-8")
+            except InvalidToken:
+                return value
+        return value
+
+    def get_prep_value(self, value):
+        raw = super().get_prep_value(value)
+        if raw in (None, ""):
+            return raw
+        return _fernet().encrypt(str(raw).encode("utf-8")).decode("ascii")

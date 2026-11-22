@@ -16,7 +16,6 @@ import datetime
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
-from django.utils import timezone
 from unittest.mock import MagicMock, patch
 
 from apps.core.models import Empresa
@@ -54,9 +53,10 @@ def _make_middleware(settings_overrides=None, settings=None):
     return middleware, get_response, dummy_response
 
 
-def _make_request(user=None, path="/api/inventario/"):
+def _make_request(user=None, path="/api/inventario/", headers=None):
     factory = RequestFactory()
-    request = factory.get(path)
+    extra = headers or {}
+    request = factory.get(path, **extra)
     if user is not None:
         request.user = user
     else:
@@ -85,7 +85,7 @@ class TestSuscripcionActivaMiddlewareDisabled:
         middleware, get_response, _ = _make_middleware()
         # No subscriptions created — but middleware is disabled
         request = _make_request(user=usuario)
-        response = middleware(request)
+        middleware(request)
         get_response.assert_called_once()
 
 
@@ -95,13 +95,12 @@ class TestSuscripcionActivaMiddlewareEnabled:
     def test_active_subscription_passes(self, settings, usuario, empresa, db):
         """User with active subscription gets through."""
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
-        today = datetime.date.today()
 
         # Mock suscripcion_activa to return a truthy value (subscription exists)
         with patch("apps.saas.middleware.SuscripcionActivaMiddleware._verificar_suscripcion", return_value=None):
             middleware, get_response, dummy = _make_middleware()
             request = _make_request(user=usuario)
-            response = middleware(request)
+            middleware(request)
             get_response.assert_called_once_with(request)
 
     def test_no_subscription_returns_402(self, settings, usuario, empresa, db):
@@ -296,3 +295,103 @@ class TestSuscripcionActivaIntegration:
         request = _make_request(user=usuario)
         middleware(request)
         get_response.assert_called_once()
+
+
+class TestSuscripcionActivaHardening:
+    """PR-34: fail-closed opt-in (503) y resolución multi-empresa vía X-Empresa-ID."""
+
+    @pytest.fixture
+    def plan(self, db):
+        from apps.saas.models import Plan
+
+        return Plan.objects.create(
+            nombre="Plan Multi",
+            precio_mensual="49.99",
+            max_usuarios=10,
+            max_empresas=2,
+        )
+
+    def test_exception_with_fail_closed_returns_503_without_leak(self, settings, usuario, empresa, db):
+        import json
+
+        settings.SAAS_VERIFICAR_SUSCRIPCION = True
+        settings.SAAS_FAIL_CLOSED = True
+        middleware, get_response, _ = _make_middleware()
+
+        with patch("apps.saas.models.suscripcion_activa", side_effect=RuntimeError("sensitive DB password=xyz")):
+            request = _make_request(user=usuario)
+            response = middleware(request)
+
+        assert response.status_code == 503
+        get_response.assert_not_called()
+        body = json.loads(response.content)
+        assert body["codigo"] == "SERVICIO_SUSCRIPCION_NO_DISPONIBLE"
+        assert "sensitive" not in response.content.decode("utf-8")
+        assert "password" not in response.content.decode("utf-8")
+
+    def test_exception_with_fail_closed_false_stays_fail_open(self, settings, usuario, empresa, db):
+        settings.SAAS_VERIFICAR_SUSCRIPCION = True
+        settings.SAAS_FAIL_CLOSED = False
+        middleware, get_response, _ = _make_middleware()
+
+        with patch("apps.saas.models.suscripcion_activa", side_effect=RuntimeError("DB timeout")):
+            request = _make_request(user=usuario)
+            response = middleware(request)
+
+        assert response.status_code == 200
+        get_response.assert_called_once()
+
+    def test_multi_empresa_respects_x_empresa_id_when_user_belongs(self, settings, usuario, empresa, plan, db):
+        from apps.saas.models import Suscripcion
+
+        settings.SAAS_VERIFICAR_SUSCRIPCION = True
+        empresa_b = Empresa.objects.create(nombre_legal="Empresa Sin Plan", identificador_fiscal="J-88888888-8")
+        usuario.empresas.add(empresa_b)
+
+        today = datetime.date.today()
+        Suscripcion.objects.create(
+            id_empresa=empresa,
+            id_plan=plan,
+            estado="ACTIVA",
+            fecha_inicio=today - datetime.timedelta(days=5),
+            fecha_fin=today + datetime.timedelta(days=25),
+        )
+
+        middleware, get_response, _ = _make_middleware()
+        # Con X-Empresa-ID de empresa A (activa) -> 200
+        req_a = _make_request(user=usuario, headers={"HTTP_X_EMPRESA_ID": str(empresa.id_empresa)})
+        resp_a = middleware(req_a)
+        assert resp_a.status_code == 200
+
+        # Con X-Empresa-ID de empresa B (sin suscripción) -> 402
+        req_b = _make_request(user=usuario, headers={"HTTP_X_EMPRESA_ID": str(empresa_b.id_empresa)})
+        resp_b = middleware(req_b)
+        assert resp_b.status_code == 402
+        assert get_response.call_count == 1
+
+    def test_foreign_or_malformed_x_empresa_id_falls_back_to_user_empresa(self, settings, usuario, empresa, plan, db):
+        from apps.saas.models import Suscripcion
+
+        settings.SAAS_VERIFICAR_SUSCRIPCION = True
+        empresa_ajena = Empresa.objects.create(nombre_legal="Ajena Con Plan", identificador_fiscal="J-77777777-7")
+        today = datetime.date.today()
+        # Empresa ajena SÍ tiene suscripción, pero la empresa del usuario NO.
+        Suscripcion.objects.create(
+            id_empresa=empresa_ajena,
+            id_plan=plan,
+            estado="ACTIVA",
+            fecha_inicio=today - datetime.timedelta(days=5),
+            fecha_fin=today + datetime.timedelta(days=25),
+        )
+
+        middleware, get_response, _ = _make_middleware()
+        # Intentar colar ID de empresa ajena -> debe ignorarlo, usar `empresa` (sin plan) y retornar 402
+        req_ajena = _make_request(user=usuario, headers={"HTTP_X_EMPRESA_ID": str(empresa_ajena.id_empresa)})
+        resp_ajena = middleware(req_ajena)
+        assert resp_ajena.status_code == 402
+
+        # Header malformado -> fallback seguro a empresa del usuario -> 402
+        req_mal = _make_request(user=usuario, headers={"HTTP_X_EMPRESA_ID": "no-es-uuid"})
+        resp_mal = middleware(req_mal)
+        assert resp_mal.status_code == 402
+        get_response.assert_not_called()

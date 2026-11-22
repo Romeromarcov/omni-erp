@@ -12,10 +12,12 @@ vi.mock('react-router-dom', async () => {
 });
 
 const loginMock = vi.fn();
+const verifyMfaLoginMock = vi.fn();
 const setAuthDispositivoInfoMock = vi.fn();
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({
     login: loginMock,
+    verifyMfaLogin: verifyMfaLoginMock,
     setDispositivoInfo: setAuthDispositivoInfoMock,
     user: null,
     token: null,
@@ -221,5 +223,27 @@ describe('LoginPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /cerrar-modal/i }));
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/dashboard'));
+  });
+
+  it('muestra paso 2FA cuando login exige MfaChallengeError y completa autenticación', async () => {
+    const challenge = Object.assign(new Error('MFA requerido'), {
+      name: 'MfaChallengeError',
+      mfaToken: 'signed-challenge-tok',
+      metodo: 'TOTP',
+    });
+    loginMock.mockRejectedValueOnce(challenge);
+    verifyMfaLoginMock.mockResolvedValueOnce(null);
+
+    renderLoginPage();
+    await doLogin();
+
+    expect(await screen.findByText(/verificación en dos pasos/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/código 2fa o respaldo/i), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: /verificar y continuar/i }));
+
+    await waitFor(() => {
+      expect(verifyMfaLoginMock).toHaveBeenCalledWith('signed-challenge-tok', '123456');
+    });
+    expect(await screen.findByText(/selecciona empresa y sucursal/i)).toBeInTheDocument();
   });
 });

@@ -70,10 +70,13 @@ export interface DispositivoInfo {
 }
 
 export interface LoginResponse {
-  access: string;
-  refresh: string;
-  user: Usuario;
+  access?: string;
+  refresh?: string;
+  user?: Usuario;
   dispositivo?: DispositivoInfo;
+  mfa_requerido?: boolean;
+  mfa_token?: string;
+  metodo?: string;
 }
 
 export interface DispositivoAccionRequest {

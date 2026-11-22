@@ -3,12 +3,25 @@ import type { Usuario } from './users';
 import type { LoginResponse, DispositivoInfo } from '../types/dispositivos';
 import { getDeviceInfo } from '../utils/deviceFingerprint';
 import { statusDeError } from '../utils/api';
+import { verificarMfaLogin } from './mfa';
 import {
   setSessionUser,
   setSessionRoles,
   setSessionPermisos,
   clearSession,
 } from './session';
+
+export class MfaChallengeError extends Error {
+  readonly mfaToken: string;
+  readonly metodo: string;
+
+  constructor(mfaToken: string, metodo = 'TOTP') {
+    super('Se requiere verificación de segundo factor (2FA).');
+    this.name = 'MfaChallengeError';
+    this.mfaToken = mfaToken;
+    this.metodo = metodo;
+  }
+}
 
 export async function fetchMe(): Promise<Usuario> {
   return get<Usuario>('/core/usuarios/me/');
@@ -49,6 +62,30 @@ export async function loadRolesYPermisos(usuarioId: string): Promise<void> {
   }
 }
 
+async function finalizarAutenticacion(res: LoginResponse): Promise<{
+  token: string;
+  usuario: Usuario;
+  dispositivo?: DispositivoInfo;
+}> {
+  if (!res.access) {
+    throw new Error('Respuesta de autenticación sin token de acceso.');
+  }
+  // FE-HIGH-13: access token kept in memory only (never localStorage).
+  // The refresh token arrives as an httpOnly cookie set by the backend.
+  setAccessToken(res.access);
+
+  const usuario = await fetchMe();
+  setSessionUser(usuario);
+
+  await loadRolesYPermisos(usuario.id);
+
+  return {
+    token: res.access,
+    usuario,
+    dispositivo: res.dispositivo,
+  };
+}
+
 export async function loginAndFetchUser(username: string, password: string): Promise<{
   token: string;
   // SEC-03: refresh token is managed as an httpOnly cookie by the browser.
@@ -64,20 +101,21 @@ export async function loginAndFetchUser(username: string, password: string): Pro
     ...deviceInfo,
   });
 
-  // FE-HIGH-13: access token kept in memory only (never localStorage).
-  // The refresh token arrives as an httpOnly cookie set by the backend.
-  setAccessToken(res.access);
+  if (res.mfa_requerido && res.mfa_token) {
+    throw new MfaChallengeError(res.mfa_token, res.metodo ?? 'TOTP');
+  }
 
-  const usuario = await fetchMe();
-  setSessionUser(usuario);
+  return finalizarAutenticacion(res);
+}
 
-  await loadRolesYPermisos(usuario.id);
-
-  return {
-    token: res.access,
-    usuario,
-    dispositivo: res.dispositivo,
-  };
+export async function verifyMfaAndFetchUser(mfaToken: string, codigo: string): Promise<{
+  token: string;
+  usuario: Usuario;
+  dispositivo?: DispositivoInfo;
+}> {
+  const deviceInfo = getDeviceInfo();
+  const res = await verificarMfaLogin(mfaToken, codigo, deviceInfo);
+  return finalizarAutenticacion(res);
 }
 
 export type HydrateSessionResult =
