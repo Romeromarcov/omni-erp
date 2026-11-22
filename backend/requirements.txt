@@ -51,7 +51,7 @@ google-auth==2.53.0
 
 # ── CxC — Cobranza Inteligente ───────────────────────────────────────────────
 # BCV scraping (bcv_scrape.py en integration_hub/connectors/tasas_ve/)
-beautifulsoup4==4.13.4
+beautifulsoup4==4.15.0
 lxml==6.1.0  # PYSEC-2026-87 — fix en 6.1.0
 # Agente IA de cobranza (CobranzaAgent en apps/cxc/agents/)
 anthropic==2.9.0
