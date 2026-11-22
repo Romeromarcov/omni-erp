@@ -18,7 +18,7 @@ django-axes==8.3.1
 # P2-5 hardening: Content-Security-Policy emitida por Django (admin/API/docs)
 django-csp==4.0
 drf-yasg==1.21.10
-celery==5.6.3
+celery==5.7.0
 redis==7.4.0
 django-storages[s3]==1.14.6
 boto3==1.43.6
