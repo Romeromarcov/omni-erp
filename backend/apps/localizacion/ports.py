@@ -12,7 +12,7 @@ legal) y dos de la capa de mercado (tasas, métodos de pago). Implementaciones
 """
 
 from abc import ABC, abstractmethod
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 
@@ -37,7 +37,7 @@ class CalculadoraNomina(ABC):
     """Conceptos y deducciones obligatorias de nómina del país."""
 
     @abstractmethod
-    def calcular(self, *, empleado, periodo, empresa) -> dict: ...
+    def calcular(self, *, empleado, periodo, empresa, contexto: dict | None = None) -> dict: ...
 
 
 class LibroLegal(ABC):
@@ -103,26 +103,46 @@ class GeneradorDocumentoLegalNoOp(GeneradorDocumentoLegal):
 
 
 class CalculadoraNominaNoOp(CalculadoraNomina):
-    """Sin reglas legales de nómina de país: deducciones y neto en cero."""
+    """Sin reglas legales de nómina de país: cálculo salarial básico sin reglas LOTTT."""
 
-    def calcular(self, *, empleado, periodo, empresa) -> dict:
+    def calcular(self, *, empleado, periodo, empresa, contexto: dict | None = None) -> dict:
         cero = Decimal("0")
+        salario_periodo = cero
+        otras_asig = cero
+        otras_ded = cero
+        if contexto and contexto.get("salario_mensual") is not None:
+            datos = dict(contexto.get("datos") or {})
+            dias = int(datos.get("dias_trabajados", 30))
+            salario_mensual = Decimal(str(contexto["salario_mensual"]))
+            salario_periodo = (salario_mensual * Decimal(dias) / Decimal("30")).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            otras_asig = Decimal(str(datos.get("otras_asignaciones", cero))).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            otras_ded = Decimal(str(datos.get("otras_deducciones", cero))).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+
+        total_asignaciones = salario_periodo + otras_asig
+        total_deducciones = otras_ded
+        neto_pagar = max(total_asignaciones - total_deducciones, cero)
         return {
-            "salario_periodo": cero,
+            "salario_periodo": salario_periodo,
             "monto_horas_extra_diurnas": cero,
             "monto_horas_extra_nocturnas": cero,
             "monto_bono_nocturno": cero,
-            "otras_asignaciones": cero,
-            "total_devengado_salarial": cero,
+            "otras_asignaciones": otras_asig,
+            "total_devengado_salarial": total_asignaciones,
             "cestaticket": cero,
             "sso": cero,
             "faov": cero,
             "rpe": cero,
             "islr": cero,
-            "otras_deducciones": cero,
-            "total_deducciones": cero,
-            "total_asignaciones": cero,
-            "neto_pagar": cero,
+            "otras_deducciones": otras_ded,
+            "total_deducciones": total_deducciones,
+            "total_asignaciones": total_asignaciones,
+            "neto_pagar": neto_pagar,
             "provision_utilidades": cero,
             "provision_vacaciones": cero,
             "provision_bono_vacacional": cero,

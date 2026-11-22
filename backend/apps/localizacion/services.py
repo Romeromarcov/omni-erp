@@ -27,15 +27,18 @@ PUERTOS_MERCADO_NOOP: dict[str, type[Any]] = {
 _NOOP_CLASSES: tuple[type[Any], ...] = tuple(PUERTOS_LEGAL_NOOP.values()) + tuple(PUERTOS_MERCADO_NOOP.values())
 
 
-def get_localizacion(empresa) -> dict[str, Any]:
+def get_localizacion(empresa, *, default_pais: str | None = None) -> dict[str, Any]:
     """
     Devuelve ``{nombre_puerto: implementación}`` con los 6 puertos para la empresa.
 
-    - Si la empresa no tiene país registrado: devuelve los 6 ``NoOp``.
+    - Si la empresa no tiene país registrado: devuelve los 6 ``NoOp`` (salvo si el
+      caller legacy indica ``default_pais="VE"`` para retrocompatibilidad strangler-fig).
     - Si ``localizacion_legal_activa`` es ``False``: los 4 puertos legales son ``NoOp``.
     - Si ``localizacion_mercado_activa`` es ``False``: los 2 puertos de mercado son ``NoOp``.
     """
     pais = getattr(empresa, "pais_codigo_iso", None)
+    if not (pais and str(pais).strip()) and default_pais:
+        pais = default_pais
     registrados = dict(registry.get(pais) or {})
 
     legal_activa = bool(getattr(empresa, "localizacion_legal_activa", True))

@@ -539,12 +539,15 @@ def emitir_factura_fiscal(
     Returns:
         {"factura": FacturaFiscal, "asiento": AsientoContable}
     """
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
     from apps.fiscal.services import (
         PeriodoCerradoError,
-        calcular_impuestos,
         siguiente_numero,
         validar_periodo_abierto,
     )
+    from apps.localizacion.ports import GeneradorDocumentoLegalNoOp
+    from apps.localizacion.services import get_localizacion
     from apps.ventas.models import FacturaFiscal
 
     if nota_venta.estado != "ENTREGADA":
@@ -572,11 +575,16 @@ def emitir_factura_fiscal(
     detalles = list(nota_venta.detalles.select_related("id_producto"))
     subtotal = sum(d.subtotal for d in detalles)
 
-    # Use calcular_impuestos for proper IVA/IGTF computation
-    impuestos = calcular_impuestos(subtotal, empresa, moneda)
-    monto_iva = impuestos["monto_iva"]
-    monto_igtf = impuestos["monto_igtf"]
-    total = impuestos["total"]
+    # ADR-007: resolver motor de impuestos y generador legal vía localización de empresa
+    loc = get_localizacion(empresa, default_pais="VE")
+    impuestos = loc["MotorImpuestos"].calcular(
+        subtotal=Decimal(str(subtotal)),
+        empresa=empresa,
+        contexto={"moneda": moneda},
+    )
+    monto_iva = impuestos.get("monto_iva", impuestos.get("iva", Decimal("0")))
+    monto_igtf = impuestos.get("monto_igtf", impuestos.get("igtf", Decimal("0")))
+    total = Decimal(str(subtotal)) + monto_iva + monto_igtf
 
     factura = FacturaFiscal.objects.create(
         id_empresa=empresa,
@@ -592,6 +600,16 @@ def emitir_factura_fiscal(
         id_moneda=moneda,
         estado="EMITIDA",
     )
+
+    generador = loc["GeneradorDocumentoLegal"]
+    try:
+        documento_legal = generador.emitir(documento=factura, empresa=empresa)
+    except (ValueError, DjangoValidationError):
+        es_noop = isinstance(generador, GeneradorDocumentoLegalNoOp)
+        documento_legal = {
+            "requiere_pie_legal_seniat": not es_noop,
+            "noop": es_noop,
+        }
 
     try:
         asiento = generar_asiento("FACTURA_VENTA", factura, factura.id_empresa, usuario=usuario)
@@ -703,6 +721,7 @@ def emitir_factura_fiscal(
         "asiento_iva": asiento_iva,
         "asiento_iva_error": asiento_iva_error,
         "cxc": cxc,
+        "documento_legal": documento_legal,
     }
 
 

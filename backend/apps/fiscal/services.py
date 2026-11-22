@@ -125,6 +125,18 @@ def calcular_iva(subtotal: Decimal, tipo_iva: str, empresa=None) -> dict:
     if subtotal < 0:
         raise ImpuestoError("El subtotal no puede ser negativo.")
 
+    if empresa is not None:
+        from apps.localizacion.ports import MotorImpuestosNoOp
+        from apps.localizacion.services import get_localizacion
+
+        if isinstance(get_localizacion(empresa, default_pais="VE")["MotorImpuestos"], MotorImpuestosNoOp):
+            return {
+                "base_imponible": subtotal,
+                "tasa": Decimal("0"),
+                "monto_iva": Decimal("0"),
+                "total": subtotal,
+            }
+
     tasa = (
         _obtener_tasa_iva(empresa, tipo_iva)
         if empresa
@@ -165,13 +177,12 @@ def calcular_igtf(monto_pago: Decimal, metodo_pago: str, empresa=None) -> dict:
     monto_pago = Decimal(str(monto_pago))
     aplica = metodo_pago in METODOS_PAGO_IGTF
 
-    # GAP-2 / ADR-007: el IGTF es de la capa legal venezolana. No aplica si la
-    # empresa tiene la localización legal desactivada o su país no es Venezuela.
+    # GAP-2 / ADR-007: el IGTF se resuelve vía el puerto MotorImpuestos de la empresa.
     if empresa is not None:
-        if not getattr(empresa, "localizacion_legal_activa", True):
-            aplica = False
-        pais = getattr(empresa, "pais_codigo_iso", None)
-        if pais and pais.upper() not in ("VE", "VEN"):
+        from apps.localizacion.ports import MotorImpuestosNoOp
+        from apps.localizacion.services import get_localizacion
+
+        if isinstance(get_localizacion(empresa, default_pais="VE")["MotorImpuestos"], MotorImpuestosNoOp):
             aplica = False
 
     if not aplica:
@@ -281,25 +292,8 @@ def siguiente_numero(empresa, tipo: str) -> str:
         return f"{config.prefijo}{config.numero_actual:0{config.digitos}d}"
 
 
-def calcular_impuestos(subtotal: Decimal, empresa, moneda=None) -> dict:
-    """
-    Calcula IVA e IGTF para un subtotal dado la configuración de la empresa.
-
-    Args:
-        subtotal: base imponible
-        empresa: instancia Empresa
-        moneda: instancia Moneda o None (IGTF solo aplica si moneda no es VES/BS)
-
-    Returns:
-        {
-            "base_imponible": Decimal,
-            "tasa_iva": Decimal,
-            "monto_iva": Decimal,
-            "tasa_igtf": Decimal,
-            "monto_igtf": Decimal,
-            "total": Decimal,
-        }
-    """
+def _calcular_impuestos_ve(subtotal: Decimal, empresa, moneda=None) -> dict:
+    """Implementación VE de cálculo de impuestos (IVA + IGTF) delegada desde MotorImpuestosVE."""
     from .models import ConfiguracionFiscalEmpresa, TasaIVAEmpresa
 
     subtotal = Decimal(str(subtotal))
@@ -321,13 +315,6 @@ def calcular_impuestos(subtotal: Decimal, empresa, moneda=None) -> dict:
         tasa_iva = Decimal(str(tasa_iva_obj.tasa))
     except TasaIVAEmpresa.DoesNotExist:
         tasa_iva = TASA_IVA_GENERAL if contribuyente_iva else TASA_IVA_EXENTO
-
-    # Get IGTF rate for return value
-    try:
-        tasa_iva_reducido_obj = TasaIVAEmpresa.objects.get(id_empresa=empresa, tipo="REDUCIDO", activo=True)
-        _tasa_reducido = Decimal(str(tasa_iva_reducido_obj.tasa))
-    except TasaIVAEmpresa.DoesNotExist:
-        _tasa_reducido = TASA_IVA_REDUCIDO
 
     # Compute IVA
     monto_iva = (subtotal * tasa_iva).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -351,4 +338,32 @@ def calcular_impuestos(subtotal: Decimal, empresa, moneda=None) -> dict:
         "tasa_igtf": tasa_igtf_efectiva,
         "monto_igtf": monto_igtf,
         "total": subtotal + monto_iva + monto_igtf,
+    }
+
+
+def calcular_impuestos(subtotal: Decimal, empresa, moneda=None) -> dict:
+    """
+    Calcula impuestos para un subtotal delegando en ``get_localizacion(empresa)["MotorImpuestos"]`` (ADR-007).
+
+    Para empresas VE activas mantiene 100 % el comportamiento SENIAT (IVA + IGTF).
+    Para empresas sin localización legal activa usa ``MotorImpuestosNoOp`` (IVA=0, IGTF=0).
+    """
+    subtotal_dec = Decimal(str(subtotal))
+    if empresa is None:
+        return _calcular_impuestos_ve(subtotal_dec, empresa, moneda=moneda)
+
+    from apps.localizacion.services import get_localizacion
+
+    motor = get_localizacion(empresa, default_pais="VE")["MotorImpuestos"]
+    res = motor.calcular(subtotal=subtotal_dec, empresa=empresa, contexto={"moneda": moneda})
+    monto_iva = res.get("monto_iva", res.get("iva", Decimal("0")))
+    monto_igtf = res.get("monto_igtf", res.get("igtf", Decimal("0")))
+    base = res.get("base_imponible", subtotal_dec)
+    return {
+        "base_imponible": base,
+        "tasa_iva": res.get("tasa_iva", Decimal("0")),
+        "monto_iva": monto_iva,
+        "tasa_igtf": res.get("tasa_igtf", Decimal("0")),
+        "monto_igtf": monto_igtf,
+        "total": res.get("total", base + monto_iva + monto_igtf),
     }

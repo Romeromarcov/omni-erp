@@ -26,14 +26,9 @@ from rest_framework.views import APIView
 
 from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import get_empresas_visible
+from apps.localizacion.services import get_localizacion
 
-from .libros_seniat import (
-    _periodo_a_rango,
-    generar_libro_compras_pdf,
-    generar_libro_compras_txt,
-    generar_libro_ventas_pdf,
-    generar_libro_ventas_txt,
-)
+from .libros_seniat import _periodo_a_rango
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -113,7 +108,9 @@ class LibroVentasView(APIView):
         if err:
             return err
 
-        contenido = generar_libro_ventas_txt(empresa, inicio, fin)
+        contenido = get_localizacion(empresa, default_pais="VE")["LibroLegal"].generar(
+            empresa=empresa, periodo=(inicio, fin), tipo="ventas", formato="txt"
+        )
         nombre = f"libro_ventas_{inicio}_{fin}.txt"
         resp = HttpResponse(contenido, content_type="text/plain; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{nombre}"'
@@ -131,7 +128,9 @@ class LibroComprasView(APIView):
         if err:
             return err
 
-        contenido = generar_libro_compras_txt(empresa, inicio, fin)
+        contenido = get_localizacion(empresa, default_pais="VE")["LibroLegal"].generar(
+            empresa=empresa, periodo=(inicio, fin), tipo="compras", formato="txt"
+        )
         nombre = f"libro_compras_{inicio}_{fin}.txt"
         resp = HttpResponse(contenido, content_type="text/plain; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{nombre}"'
@@ -152,7 +151,9 @@ class LibroVentasPDFView(APIView):
         if err:
             return err
 
-        pdf_bytes = generar_libro_ventas_pdf(empresa, inicio, fin)
+        pdf_bytes = get_localizacion(empresa, default_pais="VE")["LibroLegal"].generar(
+            empresa=empresa, periodo=(inicio, fin), tipo="ventas", formato="pdf"
+        )
         nombre = f"libro_ventas_{inicio}_{fin}.pdf"
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{nombre}"'
@@ -170,7 +171,9 @@ class LibroComprasPDFView(APIView):
         if err:
             return err
 
-        pdf_bytes = generar_libro_compras_pdf(empresa, inicio, fin)
+        pdf_bytes = get_localizacion(empresa, default_pais="VE")["LibroLegal"].generar(
+            empresa=empresa, periodo=(inicio, fin), tipo="compras", formato="pdf"
+        )
         nombre = f"libro_compras_{inicio}_{fin}.pdf"
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{nombre}"'
